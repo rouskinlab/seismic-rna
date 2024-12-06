@@ -267,9 +267,9 @@ VersionF = Field("version", "Version of SEISMIC-RNA", str, __version__)
 BranchesF = Field("branches", "Branches", list, list())
 SampleF = Field("sample", "Sample", str)
 RefF = Field("ref", "Reference", str)
-SectF = Field("sect", "Section", str)
-End5F = Field("end5", "Section 5' end", int)
-End3F = Field("end3", "Section 3' end", int)
+RegF = Field("reg", "Region", str)
+End5F = Field("end5", "Region 5' end", int)
+End3F = Field("end3", "Region 3' end", int)
 MinReadsF = OptionField(opt_min_reads)
 TimeBeganF = Field("began",
                    "Time began",
@@ -421,7 +421,7 @@ PosKeptF = Field("pos_kept",
                  iconv=iconv_array_int,
                  oconv=get_oconv_list(int))
 NumPosInitF = Field("n_pos_init",
-                    "Total number of positions in the section",
+                    "Total number of positions in the region",
                     int)
 NumPosCutPolyAF = Field("n_pos_polya",
                         "Number of positions in stretches of consecutive A "
@@ -449,10 +449,11 @@ NumReadsInitF = Field("n_reads_init",
 NumReadCutListF = Field("n_reads_list",
                         "Number of reads masked from a list",
                         int)
-NumReadsLoNCovF = Field("n_reads_min_ncov",
-                        "Number of reads with too few bases covering the "
-                        "section",
-                        int)
+NumReadsLoNCovF = Field(
+    "n_reads_min_ncov",
+    "Number of reads with too few bases covering the region",
+    int
+)
 NumDiscontigF = Field("n_reads_discontig",
                       "Number of reads with discontiguous mates",
                       int)
@@ -506,7 +507,7 @@ BestKF = Field("best_k", "Best number of clusters", int)
 
 # Join fields
 
-JoinedSectionsF = Field("joined_sections", "Joined sections", list)
+JoinedRegionsF = Field("joined_regions", "Joined regions", list)
 JoinedClustersF = Field("joined_clusters",
                         "Joined clusters",
                         dict,

@@ -1,6 +1,6 @@
 from .fasta import *
 from .refs import *
-from .section import *
+from .region import *
 from .xna import *
 
 ########################################################################

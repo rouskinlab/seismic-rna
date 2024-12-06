@@ -10,7 +10,7 @@ VARNA color file: Content format
 
 Each line of a VARNA color file corresponds to one position in the RNA
 sequence you folded.
-For each position that has data (i.e. is within the section from which
+For each position that has data (i.e. is within the region from which
 the data came and was not masked), the line has the normalized mutation
 rate, which is a decimal number between 0 and 1 (inclusive).
 For every position without data, the line just has the value -1.

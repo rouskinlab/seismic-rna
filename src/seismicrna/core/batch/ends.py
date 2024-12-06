@@ -4,7 +4,7 @@ import numpy as np
 
 from ..array import ensure_order, ensure_same_length, find_dims
 from ..logs import logger
-from ..seq import Section
+from ..seq import Region
 from ..types import fit_uint_type
 
 rng = np.random.default_rng()
@@ -331,7 +331,7 @@ class EndCoords(object):
     """ Collection of 5' and 3' segment end coordinates. """
 
     def __init__(self, *,
-                 section: Section,
+                 region: Region,
                  seg_end5s: np.ndarray,
                  seg_end3s: np.ndarray,
                  sanitize: bool = True,
@@ -340,8 +340,8 @@ class EndCoords(object):
         # Validate and store the segment end coordinates.
         self._end5s, self._end3s = sanitize_segment_ends(seg_end5s,
                                                          seg_end3s,
-                                                         section.end5,
-                                                         section.end3,
+                                                         region.end5,
+                                                         region.end3,
                                                          sanitize)
 
     @cached_property

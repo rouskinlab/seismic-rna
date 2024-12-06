@@ -3,7 +3,7 @@ from typing import Generator, Iterable
 import pandas as pd
 
 from ..logs import logger
-from ..seq import FIELD_END5, FIELD_END3, POS_NAME, Section
+from ..seq import FIELD_END5, FIELD_END3, POS_NAME, Region
 
 
 UNPAIRED = 0
@@ -53,18 +53,18 @@ def dict_to_pairs(pair_dict: dict[int, int]):
             yield a, b
 
 
-def pairs_to_table(pairs: Iterable[tuple[int, int]], section: Section):
-    """ Series of every position in the section and the base to which it
+def pairs_to_table(pairs: Iterable[tuple[int, int]], region: Region):
+    """ Series of every position in the region and the base to which it
     pairs, or 0 if it does not pair. """
-    table = pd.Series(UNPAIRED, index=section.range)
-    seq = str(section.seq)
+    table = pd.Series(UNPAIRED, index=region.range)
+    seq = str(region.seq)
 
     def add_pair(a: int, b: int):
         """ Add a base pair at position `a` to position `b`. """
-        if not section.end5 <= a <= section.end3:
-            raise ValueError(f"Position {a} is not in {section}")
+        if not region.end5 <= a <= region.end3:
+            raise ValueError(f"Position {a} is not in {region}")
         # Find the current pairing partner at this position.
-        index = a, seq[a - section.end5]
+        index = a, seq[a - region.end5]
         if (b2 := table[index]) == UNPAIRED:
             # There is no pairing partner at this position: add it.
             table[index] = b
@@ -84,10 +84,10 @@ def pairs_to_table(pairs: Iterable[tuple[int, int]], section: Section):
     return table
 
 
-def dict_to_table(pair_dict: dict[int, int], section: Section):
-    """ Series of every position in the section and the base to which it
+def dict_to_table(pair_dict: dict[int, int], region: Region):
+    """ Series of every position in the region and the base to which it
     pairs, or 0 if it does not pair. """
-    return pairs_to_table(dict_to_pairs(pair_dict), section)
+    return pairs_to_table(dict_to_pairs(pair_dict), region)
 
 
 def table_to_pairs(table: pd.Series):

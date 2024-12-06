@@ -11,36 +11,36 @@ from .refs import RefSeqs
 from .xna import BASEA, BASEC, BASEN, DNA
 from ..logs import logger
 
-# Names of the section index levels.
+# Names of the region index levels.
 POS_NAME = "Position"
 BASE_NAME = "Base"
 SEQ_INDEX_NAMES = POS_NAME, BASE_NAME
 FULL_NAME = "full"
 
-# Fields in the sections file.
+# Fields in the regions file.
 FIELD_REF = "Reference"
-FIELD_SECT = "Section"
+FIELD_REG = "Region"
 FIELD_END5 = "5' End"
 FIELD_END3 = "3' End"
 FIELD_PFWD = "Forward Primer"
 FIELD_PREV = "Reverse Primer"
 
-SectionTuple = namedtuple("PrimerTuple", ("pos5", "pos3"))
+RegionTuple = namedtuple("RegionTuple", ("pos5", "pos3"))
 
 
-def get_sect_coords_primers(sects_file: Path):
+def get_reg_coords_primers(regs_file: Path):
     """
-    Parse a file defining each section by the name of its reference and
+    Parse a file defining each region by the name of its reference and
     either its 5' and 3' coordinates or its forward and reverse primer
     sequences. Return one map from each reference and 5'/3' coordinate
-    pair to the name of the corresponding section, and another from each
-    reference and primer pair to the name of the corresponding section.
+    pair to the name of the corresponding region, and another from each
+    reference and primer pair to the name of the corresponding region.
 
     Parameters
     ----------
-    sects_file: Path
-        CSV file of a table that defines the sections. The table must
-        have columns labeled "Reference", "Section", "5' End", "3' End",
+    regs_file: Path
+        CSV file of a table that defines the regions. The table must
+        have columns labeled "Reference", "Region", "5' End", "3' End",
         "Forward Primer", and "Reverse Primer". Others are ignored.
 
     Returns
@@ -48,19 +48,19 @@ def get_sect_coords_primers(sects_file: Path):
     tuple[dict[tuple[str, int, int], str],
           dict[tuple[str, DNA, DNA], str]]
         Two mappings, the first from (ref name, 5' coord, 3' coord) to
-        each section, the second from (ref name, fwd primer, rev primer)
-        to each section. If the section is named in the "Section" column
-        of the table, then that name will be used as the section name.
-        Otherwise, the section name will be an empty string.
+        each region, the second from (ref name, fwd primer, rev primer)
+        to each region. If the region is named in the "Region" column
+        of the table, then that name will be used as the region name.
+        Otherwise, the region name will be an empty string.
     """
 
     # Initialize dictionaries mapping references and coordinates/primers
-    # to section names.
+    # to region names.
     coords: dict[tuple[str, int, int], str] = dict()
     primers: dict[tuple[str, DNA, DNA], str] = dict()
 
-    def map_sect(mapping: dict[tuple, str], key: tuple, value: str):
-        """ Add one section to the map if not already present. """
+    def map_reg(mapping: dict[tuple, str], key: tuple, value: str):
+        """ Add one region to the map if not already present. """
         # Check whether the mapping already contains the key.
         try:
             prev = mapping[key]
@@ -82,25 +82,25 @@ def get_sect_coords_primers(sects_file: Path):
                     f"Key {key} mapped to {repr(prev)} and to {repr(value)}"
                 )
 
-    # Read every row of the sections file.
-    sections = pd.read_csv(sects_file)
-    lines = zip(sections[FIELD_REF], sections[FIELD_SECT],
-                sections[FIELD_END5], sections[FIELD_END3],
-                sections[FIELD_PFWD], sections[FIELD_PREV])
-    for i, (ref, sect, end5, end3, fwd, rev) in enumerate(lines, start=1):
+    # Read every row of the regions file.
+    regions = pd.read_csv(regs_file)
+    lines = zip(regions[FIELD_REF], regions[FIELD_REG],
+                regions[FIELD_END5], regions[FIELD_END3],
+                regions[FIELD_PFWD], regions[FIELD_PREV])
+    for i, (ref, reg, end5, end3, fwd, rev) in enumerate(lines, start=1):
         try:
             # The reference name must have a value.
             if pd.isnull(ref):
                 raise ValueError(f"Missing {FIELD_REF}")
             else:
                 ref = str(ref)
-            # The section name may be left blank.
-            sect = "" if pd.isnull(sect) else str(sect)
-            if sect.lower() == FULL_NAME.lower():
+            # The region name may be left blank.
+            reg = "" if pd.isnull(reg) else str(reg)
+            if reg.lower() == FULL_NAME.lower():
                 raise ValueError(
-                    f"A section cannot be given the name {repr(FULL_NAME)}, "
+                    f"A region cannot be given the name {repr(FULL_NAME)}, "
                     "which reserved for when a reference is automatically "
-                    "given a full section in the absence of coordinates/primers"
+                    "given a full region in the absence of coordinates/primers"
                 )
             # Check whether coordinates or primers were given.
             has_coords = not (pd.isnull(end5) or pd.isnull(end3))
@@ -109,11 +109,11 @@ def get_sect_coords_primers(sects_file: Path):
                 raise ValueError(f"Got both coordinates ({end5}, {end3}) "
                                  f"and primers ({fwd}, {rev})")
             elif has_coords:
-                # Map the reference and coordinates to the section.
-                map_sect(coords, (ref, int(end5), int(end3)), sect)
+                # Map the reference and coordinates to the region.
+                map_reg(coords, (ref, int(end5), int(end3)), reg)
             elif has_primers:
-                # Map the reference and primers to the section.
-                map_sect(primers, (ref, DNA(fwd), DNA(rev)), sect)
+                # Map the reference and primers to the region.
+                map_reg(primers, (ref, DNA(fwd), DNA(rev)), reg)
             else:
                 raise ValueError(f"Got neither coordinates nor primers")
         except Exception as error:
@@ -315,8 +315,8 @@ def hyphenate_ends(end5: int, end3: int):
     return f"{end5}-{end3}"
 
 
-class Section(object):
-    """ Section of a reference sequence between two coordinates. """
+class Region(object):
+    """ Region of a reference sequence between two coordinates. """
 
     MASK_POLYA = "pos-polya"
     MASK_GU = "pos-gu"
@@ -344,13 +344,13 @@ class Section(object):
             Length of the full reference sequence. Must be ≥ 0. If None,
             defaults to the 3' end position in `seq`.
         end5: int | None = None
-            Coordinate of the reference sequence at which the section's
+            Coordinate of the reference sequence at which the region's
             5' end is located.
         end3: int | None = None
-            Coordinate of the reference sequence at which the section's
+            Coordinate of the reference sequence at which the region's
             3' end is located.
         name: str | None = None
-            Name of the section. If None, defaults to `self.range`.
+            Name of the region. If None, defaults to `self.range`.
         """
         self.ref = ref
         if seq5 < 1:
@@ -365,7 +365,7 @@ class Section(object):
         elif reflen < seq3:
             raise ValueError(f"The 3' end of the given sequence is {seq3}, "
                              f"but the full reference is only {reflen} nt")
-        # Validate that the section lies within the given sequence.
+        # Validate that the region lies within the given sequence.
         if end5 is not None:
             if end5 < seq5:
                 raise ValueError(f"Need end5 ≥ seq5, but got {end5} < {seq5}")
@@ -381,13 +381,13 @@ class Section(object):
         if self.end5 > self.end3 + 1:
             raise ValueError("Need end5 ≤ end3 + 1, "
                              f"but got {self.end5} > {self.end3 + 1}")
-        # Determine the sequence of the section and whether it is the
+        # Determine the sequence of the region and whether it is the
         # full reference sequence.
         self.seq = DNA(seq[self.end5 - seq5: self.end3 - (seq5 - 1)])
         self.full = self.end5 == 1 and self.end3 == reflen
-        # Assign the name of the section.
+        # Assign the name of the region.
         if name is None:
-            # Default to "full" if the section spans the full reference
+            # Default to "full" if the region spans the full reference
             # sequence and neither the 5' nor 3' coordinate was given.
             # Otherwise, default to the hyphenated coordinates.
             self.name = (FULL_NAME
@@ -404,7 +404,7 @@ class Section(object):
 
     @cached_property
     def length(self):
-        """ Length of the entire section. """
+        """ Length of the entire region. """
         return self.end3 - self.end5 + 1
 
     @cached_property
@@ -417,13 +417,13 @@ class Section(object):
         return hyphenate_ends(self.end5, self.end3)
 
     @cached_property
-    def ref_sect(self):
+    def ref_reg(self):
         return f"{self.ref}__{self.name}"
 
     def to_dict(self):
         return dict(ref=self.ref,
                     seq=self.seq,
-                    sect=self.name,
+                    reg=self.name,
                     end5=self.end5,
                     end3=self.end3)
 
@@ -441,7 +441,7 @@ class Section(object):
     @property
     def masked_zero(self) -> np.ndarray:
         """ Masked positions as integers (0-indexed with respect to the
-        first position in the section). """
+        first position in the region). """
         # Do not cache this method since self.masked_int can change.
         return self.masked_int - self.end5
 
@@ -466,38 +466,38 @@ class Section(object):
     @property
     def unmasked_zero(self) -> np.ndarray:
         """ Unmasked positions as integers (0-indexed with respect to
-        the first position in the section). """
+        the first position in the region). """
         # Do not cache this method since self.unmasked_int can change.
         return self.unmasked_int - self.end5
 
     @property
     def unmasked(self):
-        """ Index of unmasked positions in the section. """
+        """ Index of unmasked positions in the region. """
         # Do not cache this method since self.unmasked_int can change.
         return seq_pos_to_index(self.seq, self.unmasked_int, self.end5)
 
     @cached_property
     def range_int(self):
-        """ All positions in the section as integers. """
+        """ All positions in the region as integers. """
         return np.arange(self.end5, self.end3 + 1, dtype=int)
 
     @cached_property
     def range_one(self):
-        """ All 1-indexed positions in the section as integers. """
+        """ All 1-indexed positions in the region as integers. """
         return np.arange(1, self.length + 1, dtype=int)
 
     @cached_property
     def range(self):
-        """ Index of all positions in the section. """
+        """ Index of all positions in the region. """
         return seq_pos_to_index(self.seq, self.range_int, self.end5)
 
     @property
     def size(self):
-        """ Number of relevant positions in the section. """
+        """ Number of relevant positions in the region. """
         return self.length - self.masked_int.size
 
     def copy(self, masks: bool = True):
-        """ Return an identical section. """
+        """ Return an identical region. """
         copied = self.__class__(ref=self.ref,
                                 seq=self.seq,
                                 seq5=self.end5,
@@ -532,7 +532,7 @@ class Section(object):
         """
         # Convert positions to a NumPy integer array.
         p = np.unique(np.asarray(list(positions), dtype=int))
-        # Check for positions outside the section.
+        # Check for positions outside the region.
         if np.any(p < self.end5) or np.any(p > self.end3):
             out = p[np.logical_or(p < self.end5, p > self.end3)]
             raise ValueError(f"Got positions to mask outside of {self}: {out}")
@@ -549,11 +549,11 @@ class Section(object):
         # Do not log self._masks[name] due to memory leak.
         logger.detail(f"Added mask {repr(name)} to {self}")
         # Return self to allow chaining repeated calls to add_mask(),
-        # e.g. section.add_mask("a", [1]).add_mask("b", [2], True).
+        # e.g. region.add_mask("a", [1]).add_mask("b", [2], True).
         return self
 
     def remove_mask(self, name: str, missing_ok: bool = False):
-        """ Remove the specified mask from the section. """
+        """ Remove the specified mask from the region. """
         try:
             self._masks.pop(name)
         except KeyError:
@@ -597,11 +597,11 @@ class Section(object):
         """ Mask a list of positions. """
         return self.add_mask(self.MASK_LIST, pos)
 
-    def subsection(self,
-                   end5: int | None = None,
-                   end3: int | None = None,
-                   name: str | None = None):
-        """ Return a new section from part of this section. """
+    def subregion(self,
+                  end5: int | None = None,
+                  end3: int | None = None,
+                  name: str | None = None):
+        """ Return a new region from part of this region. """
         return self.__class__(self.ref,
                               self.seq,
                               seq5=self.end5,
@@ -614,25 +614,25 @@ class Section(object):
                                     else name))
 
     def renumber_from(self, seq5: int, name: str | None = None):
-        """ Return a new Section renumbered starting from a position.
+        """ Return a new region renumbered starting from a position.
 
         Parameters
         ----------
         seq5: int
             Position from which to start the new numbering system.
         name: str | None = None
-            Name of the renumbered section.
+            Name of the renumbered region.
 
         Returns
         -------
-        Section
-            Section with renumbered positions.
+        Region
+            Region with renumbered positions.
         """
         renumbered = self.__class__(self.ref,
                                     self.seq,
                                     seq5=seq5,
                                     name=name if name is not None else "")
-        # Copy any masked positions from this section, offseting them by
+        # Copy any masked positions from this region, offseting them by
         # the difference between the numbering systems.
         offset = renumbered.end5 - self.end5
         for mask_name, pos in self._masks.items():
@@ -640,14 +640,14 @@ class Section(object):
         return renumbered
 
     def __str__(self):
-        return f"Section {self.ref_sect} ({self.hyphen})"
+        return f"Region {self.ref_reg} ({self.hyphen})"
 
     def __eq__(self, other):
         if self is other:
             return True
-        if not isinstance(other, Section):
+        if not isinstance(other, Region):
             return NotImplemented
-        # Compare the sections' sequences, positions, and names.
+        # Compare the regions' sequences, positions, and names.
         if any([self.ref != other.ref,
                 self.seq != other.seq,
                 self.full != other.full,
@@ -669,45 +669,45 @@ class Section(object):
         return not self == other
 
 
-def intersect(*sections: Section, name: str | None = None):
-    """ Intersect one or more sections.
+def intersect(*regions: Region, name: str | None = None):
+    """ Intersect one or more regions.
 
     Parameters
     ----------
-    *sections: Section
-        Sections to intersect.
+    *regions: Region
+        Regions to intersect.
     name: str | None = None
-        Name for the section to return.
+        Name for the region to return.
 
     Returns
     -------
-    Section
-        Intersection of all given sections.
+    Region
+        Intersection of all given regions.
     """
-    if not sections:
-        raise ValueError("Cannot intersect zero sections")
+    if not regions:
+        raise ValueError("Cannot intersect zero regions")
     # Confirm that all reference names match.
-    refs = list(set(section.ref for section in sections))
+    refs = list(set(region.ref for region in regions))
     if len(refs) != 1:
         raise ValueError(f"Expected exactly one reference, but got {refs}")
     ref = refs[0]
     # Compute the 5' and 3' coordinates of the intersection.
-    end5 = max(section.end5 for section in sections)
-    end3 = min(section.end3 for section in sections)
+    end5 = max(region.end5 for region in regions)
+    end3 = min(region.end3 for region in regions)
     if end5 <= end3:
         # Confirm that the sequences match over the intersection.
-        seqs = list(set(section.seq[end5 - section.end5:
-                                    end3 - section.end5 + 1]
-                        for section in sections))
+        seqs = list(set(region.seq[end5 - region.end5:
+                                   end3 - region.end5 + 1]
+                        for region in regions))
         if len(seqs) != 1:
             raise ValueError(f"Expected exactly one sequence, but got {seqs}")
         seq = seqs[0]
     else:
-        # The intersection among the given sections is empty.
+        # The intersection among the given regions is empty.
         seq = DNA("")
         end3 = end5 - 1
-    if all(section.full for section in sections):
-        # If all sections are full-length, then make the intersection
+    if all(region.full for region in regions):
+        # If all regions are full-length, then make the intersection
         # full-length as well.
         seq5 = 1
         end5 = None
@@ -715,12 +715,12 @@ def intersect(*sections: Section, name: str | None = None):
     else:
         seq5 = end5
     # Create the intersection.
-    intersection = Section(ref, seq, seq5=seq5, end5=end5, end3=end3, name=name)
-    # Keep a position only if unmasked in all sections; equivalently,
-    # mask a position if masked in any section.
-    masked = sections[0].masked_int
-    for section in sections[1:]:
-        masked = np.union1d(section.masked_int, masked)
+    intersection = Region(ref, seq, seq5=seq5, end5=end5, end3=end3, name=name)
+    # Keep a position only if unmasked in all regions; equivalently,
+    # mask a position if masked in any region.
+    masked = regions[0].masked_int
+    for region in regions[1:]:
+        masked = np.union1d(region.masked_int, masked)
     # The masked positions must be limited to those in the intersection.
     masked = np.intersect1d(masked, intersection.range_int, assume_unique=True)
     if masked.size > 0:
@@ -728,61 +728,61 @@ def intersect(*sections: Section, name: str | None = None):
     return intersection
 
 
-def unite(*sections: Section,
+def unite(*regions: Region,
           name: str | None = None,
           refseq: DNA | None = None):
-    """ Unite one or more sections.
+    """ Unite one or more regions.
 
     Parameters
     ----------
-    *sections: Section
-        Sections to unite.
+    *regions: Region
+        Regions to unite.
     name: str | None = None
-        Name for the section to return.
+        Name for the region to return.
     refseq: DNA | None = None
         Reference sequence (optional) for filling any gaps in the union
-        of the sections. If given, then it must match every section at
+        of the regions. If given, then it must match every region at
         the corresponding positions. If omitted, then any positions not
-        covered by at least one section will be filled with N.
+        covered by at least one region will be filled with N.
 
     Returns
     -------
-    Section
-        Union of all given sections.
+    Region
+        Union of all given regions.
     """
-    if not sections:
-        raise ValueError("Cannot unite zero sections")
+    if not regions:
+        raise ValueError("Cannot unite zero regions")
     # Confirm that all reference names match.
-    refs = list(set(section.ref for section in sections))
+    refs = list(set(region.ref for region in regions))
     if len(refs) != 1:
         raise ValueError(f"Expected exactly one reference, but got {refs}")
     ref = refs[0]
     # Compute the 5' and 3' coordinates of the union.
-    end5 = min(section.end5 for section in sections)
-    end3 = max(section.end3 for section in sections)
+    end5 = min(region.end5 for region in regions)
+    end3 = max(region.end3 for region in regions)
     # Determine the coverage and sequence of the union.
     if refseq is not None:
-        # Create a section from the given reference sequence.
-        refsect = Section(ref, refseq, end5=end5, end3=end3)
-        # Verify that every section matches the reference sequence.
-        for s in sections:
+        # Create a region from the given reference sequence.
+        ref_reg = Region(ref, refseq, end5=end5, end3=end3)
+        # Verify that every region matches the reference sequence.
+        for reg in regions:
             # This will succeed only if the sequences match.
-            intersect(s, refsect)
-        seq = refsect.seq
+            intersect(reg, ref_reg)
+        seq = ref_reg.seq
     else:
-        # Determine a consensus sequence by overlapping the sections.
+        # Determine a consensus sequence by overlapping the regions.
         seq_array = pd.Series(BASEN, index=np.arange(end5, end3 + 1))
-        for s in sections:
-            # Verify that the section matches the sequence.
-            if np.any((s.seq.array != seq_array.loc[s.end5: s.end3])
-                      & (seq_array.loc[s.end5: s.end3] != BASEN)):
-                seq = DNA("".join(seq_array.loc[s.end5: s.end3]))
-                raise ValueError(f"Sequences differ: {s.seq} ≠ {seq}")
-            # Fill in the sequence based on the section.
-            seq_array.loc[s.end5: s.end3] = s.seq.array
+        for reg in regions:
+            # Verify that the region matches the sequence.
+            if np.any((reg.seq.array != seq_array.loc[reg.end5: reg.end3])
+                      & (seq_array.loc[reg.end5: reg.end3] != BASEN)):
+                seq = DNA("".join(seq_array.loc[reg.end5: reg.end3]))
+                raise ValueError(f"Sequences differ: {reg.seq} ≠ {seq}")
+            # Fill in the sequence based on the region.
+            seq_array.loc[reg.end5: reg.end3] = reg.seq.array
         seq = DNA("".join(seq_array))
-    if all(section.full for section in sections):
-        # If all sections are full-length, then also make the union
+    if all(region.full for region in regions):
+        # If all regions are full-length, then also make the union
         # full-length.
         seq5 = 1
         end5 = None
@@ -790,23 +790,23 @@ def unite(*sections: Section,
     else:
         seq5 = end5
     # Create the union.
-    union = Section(ref, seq, seq5=seq5, end5=end5, end3=end3, name=name)
-    # Keep a position only if unmasked in at least one section.
-    unmasked = sections[0].unmasked_int
-    for s in sections[1:]:
-        unmasked = np.union1d(s.unmasked_int, unmasked)
+    union = Region(ref, seq, seq5=seq5, end5=end5, end3=end3, name=name)
+    # Keep a position only if unmasked in at least one region.
+    unmasked = regions[0].unmasked_int
+    for reg in regions[1:]:
+        unmasked = np.union1d(reg.unmasked_int, unmasked)
     if unmasked.size < union.size:
         union.add_mask("gaps", unmasked, complement=True)
     return union
 
 
-class SectionFinder(Section):
+class RegionFinder(Region):
     """
-    The 5' and 3' ends of a section can be given explicitly as integers,
+    The 5' and 3' ends of a region can be given explicitly as integers,
     but if the sample is of an amplicon (i.e. generated by RT-PCR using
     site-specific primers), then it is often more convenient to enter
     the sequences of the PCR primers and have the software determine the
-    coordinates. SectionFinder accepts 5' and 3' coordinates given as
+    coordinates. RegionFinder accepts 5' and 3' coordinates given as
     integers or primers, validates them, and stores the coordinates as
     integers, as follows:
 
@@ -838,10 +838,10 @@ class SectionFinder(Section):
             Positional number to assign the 5' end of the given part of
             the reference sequence. Must be ≥ 1.
         end5: int | None = None
-            Coordinate of the reference sequence at which the section's
+            Coordinate of the reference sequence at which the region's
             5' end is located.
         end3: int | None = None
-            Coordinate of the reference sequence at which the section's
+            Coordinate of the reference sequence at which the region's
             3' end is located.
         fwd: DNA | None = None
             (For amplicons only) Sequence of the forward PCR primer
@@ -853,14 +853,14 @@ class SectionFinder(Section):
         primer_gap: int = 1
             (For coordinates specified by fwd/rev only) Number of
             positions 3' of the forward primer and 5' of the reverse
-            primer to exclude from the section. Coordinates within 1 - 2
+            primer to exclude from the region. Coordinates within 1 - 2
             nucleotides of each primer may contain DMS reactivity
             artifacts. If primer_gap = 0, then end5 and end3 are set,
             respectively, to the coordinates immediately adjacent to
             (i.e. 1 nucleotide 3' and 5' of) the 3' end of the forward
             and reverse primers.
         exclude_primers: bool = False
-            Whether to exclude the primer sequences from the section.
+            Whether to exclude the primer sequences from the region.
         """
         if primer_gap < 0:
             raise ValueError(f"primer_gap must be ≥ 0, but got {primer_gap}")
@@ -874,11 +874,11 @@ class SectionFinder(Section):
                 # Locate the forward primer.
                 primer_site = self.locate(seq, fwd, seq5)
                 if exclude_primers:
-                    # Place the 5' end of the section (primer_gap + 1)
+                    # Place the 5' end of the region (primer_gap + 1)
                     # positions after the 3' end of the reverse primer.
                     end5 = primer_site.pos3 + (primer_gap + 1)
                 else:
-                    # Place the 5' end of the section at the 5' end of
+                    # Place the 5' end of the region at the 5' end of
                     # the reverse primer.
                     end5 = primer_site.pos5
         if end3 is None:
@@ -887,17 +887,17 @@ class SectionFinder(Section):
                 # Locate the reverse primer.
                 primer_site = self.locate(seq, rev.rc, seq5)
                 if exclude_primers:
-                    # Place the 3' end of the section (primer_gap + 1)
+                    # Place the 3' end of the region (primer_gap + 1)
                     # positions before the 5' end of the reverse primer.
                     end3 = primer_site.pos5 - (primer_gap + 1)
                 else:
-                    # Place the 3' end of the section at the 3' end of
+                    # Place the 3' end of the region at the 3' end of
                     # the reverse primer.
                     end3 = primer_site.pos3
         super().__init__(ref, seq, seq5=seq5, end5=end5, end3=end3, **kwargs)
 
     @staticmethod
-    def locate(seq: DNA, primer: DNA, seq5: int) -> SectionTuple:
+    def locate(seq: DNA, primer: DNA, seq5: int) -> RegionTuple:
         """
         Return the 5' and 3' positions (1-indexed) of a primer within a
         reference sequence. The primer must occur exactly once in the
@@ -916,7 +916,7 @@ class SectionFinder(Section):
 
         Returns
         -------
-        SectionTuple
+        RegionTuple
             Named tuple of the first and last positions that the primer
             occupies in the reference sequence. Positions are 1-indexed
             and include the first and last coordinates.
@@ -929,7 +929,7 @@ class SectionFinder(Section):
                              f"in ref {seq}")
         pos5 = matches[0].start() + seq5
         pos3 = matches[0].end() + (seq5 - 1)
-        return SectionTuple(pos5, pos3)
+        return RegionTuple(pos5, pos3)
 
 
 def get_coords_by_ref(coords: Iterable[tuple[str, int | DNA, int | DNA]]):
@@ -943,107 +943,107 @@ def get_coords_by_ref(coords: Iterable[tuple[str, int | DNA, int | DNA]]):
     return ref_coords
 
 
-class RefSections(object):
-    """ A collection of sections, grouped by reference. """
+class RefRegions(object):
+    """ A collection of regions, grouped by reference. """
 
     def __init__(self,
                  ref_seqs: Iterable[tuple[str, DNA]], *,
-                 sects_file: Path | None = None,
+                 regs_file: Path | None = None,
                  coords: Iterable[tuple[str, int, int]] = (),
                  primers: Iterable[tuple[str, DNA, DNA]] = (),
                  primer_gap: int = 0,
                  exclude_primers: bool = False,
                  default_full: bool = True):
-        # Get the names of the sections from the sections file, if any.
-        sect_coords = dict()
-        sect_primers = dict()
-        if sects_file is not None:
+        # Get the names of the regions from the regions file, if any.
+        reg_coords = dict()
+        reg_primers = dict()
+        if regs_file is not None:
             try:
-                sect_coords, sect_primers = get_sect_coords_primers(sects_file)
-                # Combines the coordinates from the sects_file and from the
+                reg_coords, reg_primers = get_reg_coords_primers(regs_file)
+                # Combines the coordinates from the regs_file and from the
                 # coord parameter.
             except Exception as error:
                 logger.error(error)
             else:
-                coords = list(coords) + list(sect_coords)
-                primers = list(primers) + list(sect_primers)
+                coords = list(coords) + list(reg_coords)
+                primers = list(primers) + list(reg_primers)
         # Group coordinates and primers by reference.
         ref_coords = get_coords_by_ref(coords)
         ref_primers = get_coords_by_ref(primers)
-        # For each reference, generate sections from the coordinates.
-        self._sections: dict[str, dict[tuple[int, int], Section]] = dict()
+        # For each reference, generate regions from the coordinates.
+        self._regions: dict[str, dict[tuple[int, int], Region]] = dict()
         for ref, refseq in RefSeqs(ref_seqs):
-            self._sections[ref] = dict()
+            self._regions[ref] = dict()
             for end5, end3 in ref_coords[ref]:
-                # Add a section for each pair of 5' and 3' coordinates.
-                sect = sect_coords.get((ref, end5, end3))
-                self._add_section(ref,
-                                  refseq,
-                                  end5=end5,
-                                  end3=end3,
-                                  name=sect)
+                # Add a region for each pair of 5' and 3' coordinates.
+                reg = reg_coords.get((ref, end5, end3))
+                self._add_region(ref,
+                                 refseq,
+                                 end5=end5,
+                                 end3=end3,
+                                 name=reg)
             for fwd, rev in ref_primers[ref]:
-                # Add a section for each pair of fwd and rev primers.
-                sect = sect_primers.get((ref, fwd, rev))
-                self._add_section(ref,
-                                  refseq,
-                                  fwd=fwd,
-                                  rev=rev,
-                                  primer_gap=primer_gap,
-                                  exclude_primers=exclude_primers,
-                                  name=sect)
-            if default_full and not self._sections[ref]:
-                # If no sections were given for the reference, then add
-                # a section that spans the full reference.
-                self._add_section(ref, refseq)
+                # Add a region for each pair of fwd and rev primers.
+                reg = reg_primers.get((ref, fwd, rev))
+                self._add_region(ref,
+                                 refseq,
+                                 fwd=fwd,
+                                 rev=rev,
+                                 primer_gap=primer_gap,
+                                 exclude_primers=exclude_primers,
+                                 name=reg)
+            if default_full and not self._regions[ref]:
+                # If no regions were given for the reference, then add
+                # a region that spans the full reference.
+                self._add_region(ref, refseq)
 
-    def _add_section(self, *args, **kwargs):
-        """ Create a section and add it to the object. """
+    def _add_region(self, *args, **kwargs):
+        """ Create a region and add it to the object. """
         try:
-            section = SectionFinder(*args, **kwargs)
+            region = RegionFinder(*args, **kwargs)
         except Exception as error:
             logger.error(error)
         else:
-            # Check if the section was seen already.
-            if (seen := self._sections[section.ref].get(section.coord)) is None:
-                # The section was not seen already: add it.
-                self._sections[section.ref][section.coord] = section
-            elif seen.name == section.name:
-                # The section was seen already with the same name.
-                logger.warning(f"Got duplicate section: {section}")
+            # Check if the region was seen already.
+            if (seen := self._regions[region.ref].get(region.coord)) is None:
+                # The region was not seen already: add it.
+                self._regions[region.ref][region.coord] = region
+            elif seen.name == region.name:
+                # The region was seen already with the same name.
+                logger.warning(f"Got duplicate region: {region}")
             else:
-                # The section was seen already with a different name.
-                logger.error(f"Section {seen} was redefined with as {section}; "
+                # The region was seen already with a different name.
+                logger.error(f"Region {seen} was redefined with as {region}; "
                              f"using the first encountered: {seen}")
 
     def list(self, ref: str):
-        """ List the sections for a given reference. """
-        return list(self._sections[ref].values())
+        """ List the regions for a given reference. """
+        return list(self._regions[ref].values())
 
     @property
     def refs(self):
         """ Reference names. """
-        return list(self._sections)
+        return list(self._regions)
 
     @property
     def dict(self):
-        """ List the sections for every reference. """
-        return {ref: list(sections.values())
-                for ref, sections in self._sections.items()}
+        """ List the regions for every reference. """
+        return {ref: list(regions.values())
+                for ref, regions in self._regions.items()}
 
     @property
-    def sections(self):
-        """ List all sections. """
-        return [section for sections in self._sections.values()
-                for section in sections.values()]
+    def regions(self):
+        """ List all regions. """
+        return [region for regions in self._regions.values()
+                for region in regions.values()]
 
     @property
     def count(self):
-        """ Total number of sections. """
-        return sum(map(len, self._sections.values()))
+        """ Total number of regions. """
+        return sum(map(len, self._regions.values()))
 
     def __str__(self):
-        return f"{type(self).__name__} ({self.count}): {list(self._sections)}"
+        return f"{type(self).__name__} ({self.count}): {list(self._regions)}"
 
 ########################################################################
 #                                                                      #

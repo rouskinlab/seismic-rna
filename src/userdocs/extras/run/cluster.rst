@@ -16,7 +16,7 @@ Cluster all masked reads in ``out``::
     seismic cluster out
 
 Cluster reads from ``sample-1`` masked over reference reference ``ref-1``,
-section ``abc``::
+region ``abc``::
 
     seismic cluster out/sample-1/mask/ref-1/abc
 
@@ -102,7 +102,7 @@ You can set the number of independent EM runs using ``--em-runs`` (``-e``).
 Cluster: Output files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-All output files go into the directory ``OUT/SAMPLE/cluster/REFERENCE/SECTION``.
+All output files go into the directory ``OUT/SAMPLE/cluster/REFERENCE/REGION``.
 
 Cluster output file: Batch of cluster memberships
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

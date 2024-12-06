@@ -14,7 +14,7 @@ from seismicrna.core.array import find_dims
 from seismicrna.core.random import stochastic_round
 from seismicrna.core.rel import NOCOV, MATCH, DELET, SUB_A, SUB_C, SUB_G, SUB_T
 from seismicrna.core.rna import RNAStructure, parse_db_structure
-from seismicrna.core.seq import DNA, Section, BASEA, BASEC, BASEG, BASET
+from seismicrna.core.seq import DNA, Region, BASEA, BASEC, BASEG, BASET
 from seismicrna.graph.color import get_cmap, RelColorMap, SeqColorMap
 from seismicrna.core.table import (COVER_REL,
                                    MATCH_REL,
@@ -333,9 +333,9 @@ def clip_rels(rels: np.ndarray,
 def calc_is_paired(seq: DNA, ss_dbs: Iterable[str]):
     """ Determine whether each base is paired or unpaired in the given
     dot-bracket structures. """
-    section = Section("", seq)
+    region = Region("", seq)
     return np.stack(
-        [RNAStructure(section=section,
+        [RNAStructure(region=region,
                       title=str(k),
                       pairs=parse_db_structure(ss)).is_paired.values
          for k, ss in enumerate(ss_dbs)],
@@ -582,8 +582,8 @@ def main():
     seq = DNA("GACCGAGTCACCTACGGA")
     ss_dbs = ["..(((((....)).))).",
               "(((...))).((...))."]
-    section_end5 = 1
-    section_end3 = 14
+    region_end5 = 1
+    region_end3 = 14
     min_ncov_read = 6
     min_ninfo_pos = 10
     min_mut_gap = 1
@@ -609,12 +609,12 @@ def main():
     draw_rels(f"relate-1.{FILE_FORMAT}", rels)
     graph_cov(f"relate-1-cov.{FILE_FORMAT}", calc_coverage(rels))
     graph_mus(f"relate-1-mus.{FILE_FORMAT}", calc_mus_avg(mu, pi))
-    # Illustrate mask: define section.
-    end5s = np.maximum(end5s, section_end5)
-    end3s = np.minimum(end3s, section_end3)
-    rels = rels[:, section_end5: section_end3 + 1]
-    mu = mu[section_end5: section_end3 + 1]
-    seq = seq[section_end5: section_end3 + 1]
+    # Illustrate mask: define region.
+    end5s = np.maximum(end5s, region_end5)
+    end3s = np.minimum(end3s, region_end3)
+    rels = rels[:, region_end5: region_end3 + 1]
+    mu = mu[region_end5: region_end3 + 1]
+    seq = seq[region_end5: region_end3 + 1]
     draw_rels(f"mask-0.{FILE_FORMAT}", rels)
     # Illustrate mask: exclude positions.
     mask_pos = np.array([base not in "AC" for base in seq])
@@ -628,8 +628,8 @@ def main():
     rels[np.nonzero(muts)] = MUTAT
     rels[:, mask_pos] = NOCOV
     for i, (end5, end3) in enumerate(zip(end5s, end3s, strict=True)):
-        rels[i, :end5 - section_end5] = NOCOV
-        rels[i, end3 - section_end5 + 1:] = NOCOV
+        rels[i, :end5 - region_end5] = NOCOV
+        rels[i, end3 - region_end5 + 1:] = NOCOV
     draw_rels(f"mask-2.{FILE_FORMAT}", rels,
               mask_pos=mask_pos)
     # Illustrate mask: mask reads.
@@ -644,7 +644,7 @@ def main():
               mask_pos=mask_pos, mask_reads=mask_reads)
     graph_cov(f"mask-3-cov.{FILE_FORMAT}",
               calc_coverage(rels),
-              start=section_end5)
+              start=region_end5)
     # Illustrate mask: mask positions.
     mask_pos |= np.count_nonzero(rels != NOCOV, axis=0) < min_ninfo_pos
     rels[:, mask_pos] = NOCOV
@@ -653,10 +653,10 @@ def main():
               mask_pos=mask_pos, mask_reads=mask_reads)
     graph_cov(f"mask-4-cov.{FILE_FORMAT}",
               calc_coverage(rels),
-              start=section_end5)
+              start=region_end5)
     graph_mus(f"mask-4-mus.{FILE_FORMAT}",
               calc_mus_avg(mu, pi),
-              start=section_end5)
+              start=region_end5)
     # Illustrate cluster:
     rels[np.nonzero(rels == UNINF)] = MATCH
     p_clust = calc_p_clust_given_read(
@@ -666,7 +666,7 @@ def main():
         draw_rels(f"cluster-0-{k + 1}.{FILE_FORMAT}", rels,
                   alpha=p_clust[:, k], mask_pos=mask_pos, mask_reads=mask_reads)
         graph_mus(f"cluster-0-{k + 1}-mus.{FILE_FORMAT}", mu[:, k],
-                  start=section_end5, y_max=calc_mu_y_max(mu))
+                  start=region_end5, y_max=calc_mu_y_max(mu))
         print(f"Mutation rates for cluster {k + 1}:")
         print(np.round(mu[:, k], 3))
 

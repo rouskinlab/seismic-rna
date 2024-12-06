@@ -10,9 +10,9 @@ Name                                                   Data Type
 ====================================================== ====================
 Name of Sample                                         str
 Name of Reference                                      str
-Name of Section                                        str
-5' end of Section                                      int
-3' end of Section                                      int
+Name of Region                                         str
+5' end of Region                                       int
+3' end of Region                                       int
 Count the Following as Mutations                       list[str]
 Count the Following as Matches                         list[str]
 Exclude G/U Bases                                      bool
@@ -58,9 +58,9 @@ Mask Report: Example
     {
         "Name of Sample": "ldi",
         "Name of Reference": "sars2_1799",
-        "Name of Section": "fse",
-        "5' end of Section": 397,
-        "3' end of Section": 426,
+        "Name of Region": "fse",
+        "5' end of Region": 397,
+        "3' end of Region": 426,
         "Count the Following as Mutations": [
             "A -> C",
             "A -> G",

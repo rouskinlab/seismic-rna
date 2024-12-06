@@ -47,22 +47,22 @@ Reference metadata
 Reference data
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-- ``{sect}``: Section layer, keyed by the name of the section.
+- ``{reg}``: Region layer, keyed by the name of the region.
 
-Section layer
+Region layer
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-The next layer describes one section of the reference sequence.
+The next layer describes one region of the reference sequence.
 
-Section metadata
+Region metadata
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-- ``#section_start``: 5' coordinate of the section.
-- ``#section_end``: 3' coordinate of the section.
-- ``#positions``: List of positions in the section; will contain all
+- ``#section_start``: 5' coordinate of the region.
+- ``#section_end``: 3' coordinate of the region.
+- ``#positions``: List of positions in the region; will contain all
   positions if you use ``--all-pos``, otherwise only unmasked positions.
 
-Section data
+Region data
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 - ``{profile}``: Profile layer.
@@ -70,7 +70,7 @@ Section data
 Profile layer
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-The deepest layer describes one profile made from the section (a profile
+The deepest layer describes one profile made from the region (a profile
 is a series of relationship data, from either the ensemble average or
 from one cluster).
 
@@ -78,7 +78,7 @@ Profile data (per position)
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 Most fields of the profile are lists of decimal numbers, each number
-corresponding to one position in the section's ``#positions`` field.
+corresponding to one position in the region's ``#positions`` field.
 
 - ``cov``: Number of reads covering each position.
 - ``info``: Number of informative reads at each position.

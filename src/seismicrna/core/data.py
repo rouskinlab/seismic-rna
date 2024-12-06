@@ -5,14 +5,14 @@ from pathlib import Path
 from typing import Any, Callable, Iterable
 
 from . import path
-from .batch import MutsBatch, SectionMutsBatch, ReadBatch, list_batch_nums
+from .batch import MutsBatch, RegionMutsBatch, ReadBatch, list_batch_nums
 from .io import MutsBatchIO, ReadBatchIO, RefseqIO
 from .logs import logger
 from .rel import RelPattern
 from .report import (DATETIME_FORMAT,
                      SampleF,
                      RefF,
-                     SectF,
+                     RegF,
                      End5F,
                      End3F,
                      TimeEndedF,
@@ -20,10 +20,10 @@ from .report import (DATETIME_FORMAT,
                      ChecksumsF,
                      RefseqChecksumF,
                      PooledSamplesF,
-                     JoinedSectionsF,
+                     JoinedRegionsF,
                      Report,
                      BatchedReport)
-from .seq import FULL_NAME, DNA, Section, hyphenate_ends, unite
+from .seq import FULL_NAME, DNA, Region, hyphenate_ends, unite
 
 
 class Dataset(ABC):
@@ -63,17 +63,17 @@ class Dataset(ABC):
     @property
     @abstractmethod
     def end5(self) -> int:
-        """ 5' end of the section. """
+        """ 5' end of the region. """
 
     @property
     @abstractmethod
     def end3(self) -> int:
-        """ 3' end of the section. """
+        """ 3' end of the region. """
 
     @property
     @abstractmethod
-    def sect(self) -> str:
-        """ Name of the section. """
+    def reg(self) -> str:
+        """ Name of the region. """
 
     @property
     @abstractmethod
@@ -150,8 +150,8 @@ class UnbiasDataset(Dataset, ABC):
         to be 0 when using the quick heuristic for unbiasing. """
 
 
-class SectionDataset(Dataset, ABC):
-    """ Dataset with a known reference sequence and section. """
+class RegionDataset(Dataset, ABC):
+    """ Dataset with a known reference sequence and region. """
 
     @property
     @abstractmethod
@@ -165,15 +165,15 @@ class SectionDataset(Dataset, ABC):
 
     @cached_property
     @abstractmethod
-    def section(self) -> Section:
-        """ Section of the dataset. """
+    def region(self) -> Region:
+        """ Region of the dataset. """
 
 
-class MutsDataset(SectionDataset, ABC):
-    """ Dataset with a known section and explicit mutational data. """
+class MutsDataset(RegionDataset, ABC):
+    """ Dataset with a known region and explicit mutational data. """
 
     @abstractmethod
-    def get_batch(self, batch_num: int) -> SectionMutsBatch:
+    def get_batch(self, batch_num: int) -> RegionMutsBatch:
         """ Get a specific batch of data. """
 
     def get_batch_count_all(self, batch_num: int, **kwargs):
@@ -181,17 +181,17 @@ class MutsDataset(SectionDataset, ABC):
         return self.get_batch(batch_num).count_all(**kwargs)
 
 
-class NarrowDataset(SectionDataset, ABC):
-    """ Dataset with one section, in contrast to a WideDataset that
-    combines one or more sections. """
+class NarrowDataset(RegionDataset, ABC):
+    """ Dataset with one region, in contrast to a WideDataset that
+    combines one or more regions. """
 
     @cached_property
-    def section(self):
-        return Section(ref=self.ref,
-                       seq=self.refseq,
-                       end5=self.end5,
-                       end3=self.end3,
-                       name=self.sect)
+    def region(self):
+        return Region(ref=self.ref,
+                      seq=self.refseq,
+                      end5=self.end5,
+                      end3=self.end3,
+                      name=self.reg)
 
 
 class LoadFunction(object):
@@ -291,8 +291,8 @@ class LoadedDataset(Dataset, ABC):
         return self.report.get_field(End3F)
 
     @cached_property
-    def sect(self):
-        return self.report.get_field(SectF)
+    def reg(self):
+        return self.report.get_field(RegF)
 
     @property
     def timestamp(self):
@@ -355,10 +355,10 @@ class LoadedMutsDataset(LoadedDataset, MutsDataset, NarrowDataset, ABC):
             return self.reflen
 
     @cached_property
-    def sect(self):
+    def reg(self):
         try:
-            # Find the section name in the report, if it has this field.
-            return super().sect
+            # Find the region name in the report, if it has this field.
+            return super().reg
         except AttributeError:
             return (FULL_NAME if self.end5 == 1 and self.end3 == self.reflen
                     else hyphenate_ends(self.end5, self.end3))
@@ -405,7 +405,7 @@ class MergedDataset(Dataset, ABC):
         return max(dataset.timestamp for dataset in self.datasets)
 
 
-class MergedSectionDataset(MergedDataset, SectionDataset, ABC):
+class MergedRegionDataset(MergedDataset, RegionDataset, ABC):
 
     @cached_property
     def refseq(self):
@@ -464,8 +464,8 @@ class TallDataset(MergedDataset, ABC):
         return self._get_common_attr("end3")
 
     @cached_property
-    def sect(self):
-        return self._get_common_attr("sect")
+    def reg(self):
+        return self._get_common_attr("reg")
 
     @cached_property
     def nums_batches(self) -> list[int]:
@@ -502,61 +502,61 @@ class TallDataset(MergedDataset, ABC):
 
 class TallMutsDataset(TallDataset,
                       MutsDataset,
-                      MergedSectionDataset,
+                      MergedRegionDataset,
                       NarrowDataset,
                       ABC):
     """ TallDataset with mutational data. """
 
 
-class WideDataset(MergedSectionDataset, ABC):
+class WideDataset(MergedRegionDataset, ABC):
     """ Dataset made by horizontally joining other datasets from one or
-    more sections of the same reference sequence. """
+    more regions of the same reference sequence. """
 
     @cached_property
     def datasets(self):
-        # Determine the name of the joined section and the individual
-        # sections from the report.
-        joined_sects = self.report.get_field(JoinedSectionsF)
-        # Determine the report file for each joined section.
+        # Determine the name of the joined region and the individual
+        # regions from the report.
+        joined_regs = self.report.get_field(JoinedRegionsF)
+        # Determine the report file for each joined region.
         load_func = self.get_dataset_load_func()
-        section_report_files = [path.cast_path(
+        region_report_files = [path.cast_path(
             self.report_file,
             self.get_report_type().seg_types(),
             load_func.report_path_seg_types,
             **load_func.report_path_auto_fields,
-            sect=sect
-        ) for sect in joined_sects]
-        if not section_report_files:
+            reg=reg
+        ) for reg in joined_regs]
+        if not region_report_files:
             raise ValueError(f"{self} got no datasets")
         return list(map(self.get_dataset_load_func(),
-                        section_report_files))
+                        region_report_files))
 
     @cached_property
     def num_batches(self):
         return self._get_common_attr("num_batches")
 
     @cached_property
-    def sects(self):
-        """ Names of all joined sections. """
-        return self._list_dataset_attr("sect")
+    def regs(self):
+        """ Names of all joined regions. """
+        return self._list_dataset_attr("reg")
 
     @cached_property
-    def section(self):
-        return unite(*self._list_dataset_attr("section"),
-                     name=self.report.get_field(SectF),
+    def region(self):
+        return unite(*self._list_dataset_attr("region"),
+                     name=self.report.get_field(RegF),
                      refseq=self.refseq)
 
     @property
-    def sect(self):
-        return self.section.name
+    def reg(self):
+        return self.region.name
 
     @cached_property
     def end5(self):
-        return self.section.end5
+        return self.region.end5
 
     @cached_property
     def end3(self):
-        return self.section.end3
+        return self.region.end3
 
     @abstractmethod
     def _join(self, batches: Iterable[tuple[str, ReadBatch]]) -> ReadBatch:
@@ -564,7 +564,7 @@ class WideDataset(MergedSectionDataset, ABC):
 
     def get_batch(self, batch_num: int):
         # Join the batch with that number from every dataset.
-        return self._join((dataset.sect, dataset.get_batch(batch_num))
+        return self._join((dataset.reg, dataset.get_batch(batch_num))
                           for dataset in self.datasets)
 
 
@@ -583,7 +583,7 @@ class MultistepDataset(MutsDataset, ABC):
 
     @classmethod
     @abstractmethod
-    def get_dataset2_type(cls) -> type[SectionDataset]:
+    def get_dataset2_type(cls) -> type[RegionDataset]:
         """ Type of Dataset 2. """
 
     @classmethod
@@ -648,8 +648,8 @@ class MultistepDataset(MutsDataset, ABC):
         return self.data2.end3
 
     @property
-    def sect(self):
-        return self.data2.sect
+    def reg(self):
+        return self.data2.reg
 
     @property
     def timestamp(self):
@@ -674,7 +674,7 @@ class MultistepDataset(MutsDataset, ABC):
 
 class ArrowDataset(MultistepDataset, NarrowDataset, ABC):
     """ Dataset made by integrating two datasets from different steps of
-    the workflow, with one section. """
+    the workflow, with one region. """
 
 
 def load_datasets(input_path: Iterable[str | Path], load_func: LoadFunction):

@@ -5,7 +5,7 @@ from shutil import rmtree
 from typing import Iterable
 
 from seismicrna.core import path
-from seismicrna.core.batch.muts import SectionMutsBatch
+from seismicrna.core.batch.muts import RegionMutsBatch
 from seismicrna.core.io.seq import RefseqIO
 from seismicrna.core.logs import Level, set_config
 from seismicrna.core.ngs.xam import SAM_DELIM
@@ -81,7 +81,7 @@ def write_fasta_file(out_dir: Path):
     return fasta_file
 
 
-def extract_batches(batches: Iterable[SectionMutsBatch]):
+def extract_batches(batches: Iterable[RegionMutsBatch]):
     batches = list(batches)
     read_nums = [list(batch.read_nums) for batch in batches]
     seg_end5s = [batch.seg_end5s.tolist() for batch in batches]

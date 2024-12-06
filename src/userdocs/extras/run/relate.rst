@@ -73,7 +73,7 @@ would be flagged as possibly a match and possibly a subsitution to A, C, or G.
 Relate setting: Ambiguous insertions and deletions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-When insertions and deletions (indels) occur in repetitive regions, determining
+When insertions or deletions (indels) occur in repetitive sequences, determining
 which base(s) were inserted or deleted can be impossible due to the repetitive
 reference sequence itself, even if the reads were perfectly free of errors.
 To handle ambiguous indels, SEISMIC-RNA introduces a new algorithm that finds

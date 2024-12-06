@@ -7,11 +7,11 @@ from .batch import ClusterReadBatch
 from .emk import EMRunsK
 from ..core import path
 from ..core.header import ClustHeader
-from ..core.io import ReadBatchIO, SectIO
+from ..core.io import ReadBatchIO, RegIO
 from ..mask.data import MaskMutsDataset
 
 
-class ClusterIO(SectIO, ABC):
+class ClusterIO(RegIO, ABC):
 
     @classmethod
     def auto_fields(cls):
@@ -64,7 +64,7 @@ class ClusterBatchWriter(object):
                                      columns=ClustHeader(ks=[]).index)
             batch_file = ClusterBatchIO(sample=self.dataset.sample,
                                         ref=self.dataset.ref,
-                                        sect=self.dataset.sect,
+                                        reg=self.dataset.reg,
                                         batch=mask_batch.batch,
                                         resps=resps)
             _, checksum = batch_file.save(self.top,

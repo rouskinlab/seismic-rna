@@ -7,7 +7,7 @@ import numpy as np
 from ..array import locate_elements
 from ..batch import MutsBatch, match_reads_segments
 from ..data import WideMutsDataset
-from ..seq import Section
+from ..seq import Region
 
 BATCH_NUM = "batch"
 READ_NUMS = "read_nums"
@@ -52,7 +52,7 @@ def _join_position(muts: dict[int, dict[int, np.ndarray]],
 
 def _join_attrs(attrs: dict[str, Any],
                 add_attrs: dict[str, Any],
-                section: Section):
+                region: Region):
     # Verify the batch number matches (but no need to update).
     if attrs[BATCH_NUM] != add_attrs[BATCH_NUM]:
         raise ValueError(f"Inconsistent batch number ({attrs[BATCH_NUM]} "
@@ -68,7 +68,7 @@ def _join_attrs(attrs: dict[str, Any],
     attrs[READ_NUMS] = union_read_nums
     # Merge the end coordinates, setting the 5' and 3' ends of missing
     # segments to one after the 3' end and one before the 5' end of the
-    # section, respectively (the 5'/3' coordinates are swapped so that
+    # region, respectively (the 5'/3' coordinates are swapped so that
     # any missing segments will have 5' coordinates greater than their
     # 3' coordinates and thus be masked).
     num_reads, = attrs[READ_NUMS].shape
@@ -76,10 +76,10 @@ def _join_attrs(attrs: dict[str, Any],
                                        attrs[SEG_END3S])
     _, add_num_segs = match_reads_segments(add_attrs[SEG_END5S],
                                            add_attrs[SEG_END3S])
-    seg_end5s = np.full((num_reads, num_segs), section.end3 + 1)
-    seg_end3s = np.full((num_reads, num_segs), section.end5 - 1)
-    add_seg_end5s = np.full((num_reads, add_num_segs), section.end3 + 1)
-    add_seg_end3s = np.full((num_reads, add_num_segs), section.end5 - 1)
+    seg_end5s = np.full((num_reads, num_segs), region.end3 + 1)
+    seg_end3s = np.full((num_reads, num_segs), region.end5 - 1)
+    add_seg_end5s = np.full((num_reads, add_num_segs), region.end3 + 1)
+    add_seg_end3s = np.full((num_reads, add_num_segs), region.end5 - 1)
     seg_end5s[read_indexes] = attrs[SEG_END5S]
     seg_end3s[read_indexes] = attrs[SEG_END3S]
     add_seg_end5s[add_read_indexes] = add_attrs[SEG_END5S]
@@ -90,7 +90,7 @@ def _join_attrs(attrs: dict[str, Any],
     muts = attrs[MUTS]
     add_muts = add_attrs[MUTS]
     attrs[MUTS] = {pos: _join_position(muts, add_muts, pos)
-                   for pos in section.unmasked_int}
+                   for pos in region.unmasked_int}
 
 
 class JoinMutsDataset(WideMutsDataset, ABC):
@@ -115,9 +115,9 @@ class JoinMutsDataset(WideMutsDataset, ABC):
     @classmethod
     def _get_first_batch(cls, batches: Iterable[tuple[str, MutsBatch]]):
         """ Get the first batch; raise ValueError if no batches. """
-        for sect, batch in batches:
+        for reg, batch in batches:
             cls.check_batch_type(batch)
-            return batch, sect
+            return batch, reg
         raise ValueError("Cannot get first batch among 0 batches")
 
     @cached_property
@@ -131,17 +131,17 @@ class JoinMutsDataset(WideMutsDataset, ABC):
 
     def _join_attrs(self, attrs: dict[str, Any], add_attrs: dict[str, Any]):
         """ Join the attributes from a new batch. """
-        _join_attrs(attrs, add_attrs, self.section)
+        _join_attrs(attrs, add_attrs, self.region)
 
     def _finalize_attrs(self, attrs: dict[str, Any]):
         """ Finalize the attributes. """
 
     def _join(self, batches: Iterable[tuple[str, MutsBatch]]):
         attrs = self._get_batch_attrs(*self._get_first_batch(batches))
-        for sect, batch in batches:
-            self._join_attrs(attrs, self._get_batch_attrs(batch, sect))
+        for reg, batch in batches:
+            self._join_attrs(attrs, self._get_batch_attrs(batch, reg))
         self._finalize_attrs(attrs)
-        return self.get_batch_type()(section=self.section, **attrs)
+        return self.get_batch_type()(region=self.region, **attrs)
 
 ########################################################################
 #                                                                      #

@@ -3,7 +3,7 @@ from ..core import path
 from ..core.report import (BatchedReport,
                            SampleF,
                            RefF,
-                           SectF,
+                           RegF,
                            End5F,
                            End3F,
                            CountMutsF,
@@ -58,10 +58,10 @@ class MaskReport(BatchedReport, MaskIO):
     @classmethod
     def fields(cls):
         return [
-            # Sample, reference, and section information.
+            # Sample, reference, and region information.
             SampleF,
             RefF,
-            SectF,
+            RegF,
             End5F,
             End3F,
             # Types of mutations and matches to count.

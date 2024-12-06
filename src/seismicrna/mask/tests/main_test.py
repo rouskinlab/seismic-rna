@@ -10,7 +10,7 @@ import numpy as np
 from seismicrna.core import path
 from seismicrna.core.io.seq import RefseqIO
 from seismicrna.core.logs import Level, set_config
-from seismicrna.core.seq.section import Section
+from seismicrna.core.seq.region import Region
 from seismicrna.core.seq.xna import DNA
 from seismicrna.mask.data import MaskMutsDataset
 from seismicrna.mask.main import run as run_mask
@@ -21,7 +21,7 @@ from seismicrna.relate.report import RelateReport
 POOLED_SAMPLE = "pooled"
 REF = "ref"
 REF_SEQ = DNA("CGCAAATC")
-SECTION = Section(REF, REF_SEQ)
+REGION = Region(REF, REF_SEQ)
 
 # Read CGCAAATC
 #    0 ========
@@ -90,7 +90,7 @@ def write_datasets(out_dir: Path,
             # Write the batches of relate data and read names.
             relate_batch = RelateBatchIO(
                 sample=sample,
-                section=SECTION,
+                region=REGION,
                 batch=batch,
                 seg_end5s=batch_end5s,
                 seg_end3s=batch_end3s,
@@ -143,7 +143,7 @@ def extract_read_nums(dataset: MaskMutsDataset):
 
 
 def extract_positions(dataset: MaskMutsDataset):
-    return list(dataset.section.unmasked_int)
+    return list(dataset.region.unmasked_int)
 
 
 class TestMask(ut.TestCase, ABC):

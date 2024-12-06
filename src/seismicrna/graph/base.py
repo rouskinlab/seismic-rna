@@ -146,7 +146,7 @@ class GraphBase(ABC):
         return (path.SampSeg,
                 path.CmdSeg,
                 path.RefSeg,
-                path.SectSeg,
+                path.RegSeg,
                 path.GraphSeg)
 
     def __init__(self, *,
@@ -200,13 +200,13 @@ class GraphBase(ABC):
 
     @property
     @abstractmethod
-    def sect(self) -> str:
-        """ Name of the reference section from which the data come. """
+    def reg(self) -> str:
+        """ Name of the reference region from which the data come. """
 
     @property
     @abstractmethod
     def seq(self) -> DNA:
-        """ Sequence of the section from which the data come. """
+        """ Sequence of the region from which the data come. """
 
     @cached_property
     def details(self) -> list[str]:
@@ -238,7 +238,7 @@ class GraphBase(ABC):
                 path.SAMP: self.sample,
                 path.CMD: path.CMD_GRAPH_DIR,
                 path.REF: self.ref,
-                path.SECT: self.sect,
+                path.REG: self.reg,
                 path.GRAPH: self.graph_filename}
 
     def get_path(self, ext: str):
@@ -436,7 +436,7 @@ class GraphBase(ABC):
                 f"of {self.relationships} bases "
                 f"in {self.title_action_sample} "
                 f"over reference {repr(self.ref)} "
-                f"section {repr(self.sect)}"]
+                f"region {repr(self.reg)}"]
 
     @cached_property
     def _title_details(self):

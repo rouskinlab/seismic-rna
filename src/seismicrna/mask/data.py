@@ -92,13 +92,13 @@ class MaskMutsDataset(ArrowDataset, UnbiasDataset):
         return getattr(self.data2, "quick_unbias_thresh")
 
     @cached_property
-    def section(self):
+    def region(self):
         # Mask the positions that were not kept.
-        section = super().section
-        section.add_mask(self.MASK_NAME,
-                         getattr(self.data2, "pos_kept"),
-                         complement=True)
-        return section
+        region = super().region
+        region.add_mask(self.MASK_NAME,
+                        getattr(self.data2, "pos_kept"),
+                        complement=True)
+        return region
 
     def _integrate(self, batch1: RelateBatch, batch2: MaskBatchIO):
         if self.masked_read_nums is not None:
@@ -109,7 +109,7 @@ class MaskMutsDataset(ArrowDataset, UnbiasDataset):
             read_nums = batch2.read_nums
         return apply_mask(batch1,
                           read_nums,
-                          self.section,
+                          self.region,
                           sanitize=False)
 
 

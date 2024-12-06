@@ -13,7 +13,7 @@ from ..header import (REL_NAME,
                       parse_header)
 from ..mu import winsorize
 from ..rna import RNAProfile
-from ..seq import DNA, SEQ_INDEX_NAMES, Section, index_to_pos, index_to_seq
+from ..seq import DNA, SEQ_INDEX_NAMES, Region, index_to_pos, index_to_seq
 
 # General fields
 READ_TITLE = "Read Name"
@@ -157,8 +157,8 @@ class Table(ABC):
 
     @property
     @abstractmethod
-    def sect(self) -> str:
-        """ Name of the table's section. """
+    def reg(self) -> str:
+        """ Name of the table's region. """
 
     @cached_property
     @abstractmethod
@@ -298,31 +298,31 @@ class PositionTable(RelTypeTable, ABC):
         return int(self.range_int[-1])
 
     @cached_property
-    def section(self):
-        """ Section covered by the table. """
+    def region(self):
+        """ Region covered by the table. """
         # Infer masked positions from the table.
         masked_bool = self.data.isna().all(axis=1)
         unmasked_bool = ~masked_bool
         unmasked = self.data.index[unmasked_bool]
         unmasked_int = index_to_pos(unmasked)
-        section = Section(self.ref,
-                          self.seq,
-                          seq5=self.end5,
-                          end5=self.end5,
-                          end3=self.end3,
-                          name=self.sect)
-        section.add_mask(self.MASK, unmasked_int, complement=True)
-        return section
+        region = Region(self.ref,
+                        self.seq,
+                        seq5=self.end5,
+                        end5=self.end5,
+                        end3=self.end3,
+                        name=self.reg)
+        region.add_mask(self.MASK, unmasked_int, complement=True)
+        return region
 
     def _fetch_data(self,
                     columns: pd.Index,
                     exclude_masked: bool = False):
-        return (self.data.loc[self.section.unmasked, columns] if exclude_masked
+        return (self.data.loc[self.region.unmasked, columns] if exclude_masked
                 else self.data.loc[:, columns])
 
     @abstractmethod
     def _iter_profiles(self, *,
-                       sections: Iterable[Section] | None,
+                       regions: Iterable[Region] | None,
                        quantile: float,
                        rel: str,
                        k: int | None,
@@ -330,13 +330,13 @@ class PositionTable(RelTypeTable, ABC):
         """ Yield RNA mutational profiles from the table. """
 
     def iter_profiles(self, *,
-                      sections: Iterable[Section] | None = None,
+                      regions: Iterable[Region] | None = None,
                       quantile: float = 0.,
                       rel: str = MUTAT_REL,
                       k: int | None = None,
                       clust: int | None = None):
         """ Yield RNA mutational profiles from the table. """
-        yield from self._iter_profiles(sections=sections,
+        yield from self._iter_profiles(regions=regions,
                                        quantile=quantile,
                                        rel=rel,
                                        k=k,
@@ -378,11 +378,11 @@ class PositionTable(RelTypeTable, ABC):
         # Model the counts using binomial distributions.
         lo, up = binom.interval(confidence, n, p.values)
         # Copy the confidence interval bounds into two DataFrames.
-        index = self.section.unmasked if exclude_masked else self.data.index
+        index = self.region.unmasked if exclude_masked else self.data.index
         lower = pd.DataFrame(np.nan, index=index, columns=p.columns)
         upper = pd.DataFrame(np.nan, index=index, columns=p.columns)
-        lower.loc[self.section.unmasked] = lo / n if use_ratio else lo
-        upper.loc[self.section.unmasked] = up / n if use_ratio else up
+        lower.loc[self.region.unmasked] = lo / n if use_ratio else lo
+        upper.loc[self.region.unmasked] = up / n if use_ratio else up
         return lower, upper
 
     def ci_count(self, confidence: float, **kwargs):
@@ -515,7 +515,7 @@ class PositionTable(RelTypeTable, ABC):
             n_every_rel = rng.multinomial(n_any_rel, p_every_rel)
             # Extract the number of each kind of relationship.
             n_each_rel = pd.DataFrame(n_every_rel[:, :len(rel_kinds)],
-                                      index=self.section.unmasked,
+                                      index=self.region.unmasked,
                                       columns=rel_kinds)
             return n_each_rel
 
@@ -558,7 +558,7 @@ class PositionTable(RelTypeTable, ABC):
         rng = np.random.default_rng(seed)
         # Initialize the resampled data.
         resampled = pd.DataFrame(np.nan,
-                                 index=(self.section.unmasked if exclude_masked
+                                 index=(self.region.unmasked if exclude_masked
                                         else self.data.index),
                                  columns=self.data.columns)
         for k, clust in self.header.clusts:
@@ -578,7 +578,7 @@ class PositionTable(RelTypeTable, ABC):
             # Record the resampled data for the cluster.
             for rel, n_rel in resampled_clust.items():
                 key = (rel, k, clust) if k > 0 else rel
-                resampled.loc[self.section.unmasked, key] = n_rel
+                resampled.loc[self.region.unmasked, key] = n_rel
         return resampled
 
 
@@ -612,7 +612,7 @@ class AbundanceTable(Table, ABC):
 
     @classmethod
     def path_segs(cls):
-        return path.SECT_DIR_SEGS + (path.AbundanceTableSeg,)
+        return path.REG_DIR_SEGS + (path.AbundanceTableSeg,)
 
     @classmethod
     def index_depth(cls):

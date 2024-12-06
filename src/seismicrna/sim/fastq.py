@@ -259,12 +259,12 @@ def from_report(report_file: Path, *,
     rdata = RelateDataset(report_file)
     ndata = ReadNamesDataset(report_file)
     sim_dir = _get_common_attr(rdata, ndata, "top")
-    section = rdata.section
+    region = rdata.region
     batches = zip(rdata.iter_batches(), ndata.iter_batches())
     return generate_fastq(sim_dir,
                           sample,
-                          section.ref,
-                          section.seq,
+                          region.ref,
+                          region.seq,
                           rdata.paired,
                           read_length,
                           batches,
@@ -284,9 +284,9 @@ def from_param_dir(param_dir: Path, *,
                    **kwargs):
     """ Simulate a FASTQ file from parameter files. """
     sim_dir, _, _ = get_param_dir_fields(param_dir)
-    section, pmut, u5s, u3s, pends, pclust = load_param_dir(param_dir, profile)
+    region, pmut, u5s, u3s, pends, pclust = load_param_dir(param_dir, profile)
     batches = simulate_batches(sample=sample,
-                               ref=section.ref,
+                               ref=region.ref,
                                pmut=pmut,
                                uniq_end5s=u5s,
                                uniq_end3s=u3s,
@@ -299,8 +299,8 @@ def from_param_dir(param_dir: Path, *,
                                **kwargs)
     return generate_fastq(sim_dir.joinpath(path.SIM_SAMPLES_DIR),
                           sample,
-                          section.ref,
-                          section.seq,
+                          region.ref,
+                          region.seq,
                           paired,
                           read_length,
                           batches,

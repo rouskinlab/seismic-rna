@@ -37,7 +37,7 @@ Command::
 
 Outputs:
 
-    - ``out/{sample}/graph/{ref}/{sect}/profile_masked_m-ratio-q0.csv`` ::
+    - ``out/{sample}/graph/{ref}/{reg}/profile_masked_m-ratio-q0.csv`` ::
 
         Position,Base,Mutated
         196,A,0.03212678813091909
@@ -47,7 +47,7 @@ Outputs:
         200,T,
         ...
 
-    - ``out/{sample}/graph/{ref}/{sect}/profile_masked_m-ratio-q0.html``
+    - ``out/{sample}/graph/{ref}/{reg}/profile_masked_m-ratio-q0.html``
 
         .. image::
             profile_m-ratio.png
@@ -61,7 +61,7 @@ Command::
 
 Outputs:
 
-    - ``out/{sample}/graph/{ref}/{sect}/profile_masked_acgtdi-ratio-q0.csv`` ::
+    - ``out/{sample}/graph/{ref}/{reg}/profile_masked_acgtdi-ratio-q0.csv`` ::
 
         Position,Base,Subbed-A,Subbed-C,Subbed-G,Subbed-T,Deleted,Inserted
         196,A,0.0,0.018827932574530207,0.0016602828354697209,0.011638240863466542,0.0,0.0
@@ -71,7 +71,7 @@ Outputs:
         200,T,,,,,,
         ...
 
-    - ``out/{sample}/graph/{ref}/{sect}/profile_masked_acgtdi-ratio-q0.html``
+    - ``out/{sample}/graph/{ref}/{reg}/profile_masked_acgtdi-ratio-q0.html``
 
         .. image::
             profile_acgtdi-ratio.png
@@ -85,7 +85,7 @@ Command::
 
 Outputs:
 
-    - ``out/{sample}/graph/{ref}/{sect}/profile_masked_n-count.csv`` ::
+    - ``out/{sample}/graph/{ref}/{reg}/profile_masked_n-count.csv`` ::
 
         Position,Base,Informed
         196,A,301334.2
@@ -95,7 +95,7 @@ Outputs:
         200,T,
         ...
 
-    - ``out/{sample}/graph/{ref}/{sect}/profile_masked_n-count.html``
+    - ``out/{sample}/graph/{ref}/{reg}/profile_masked_n-count.html``
 
         .. image::
             profile_n-count.png

@@ -22,32 +22,32 @@ directory ``{out}``, you could use the command ::
 Fold: Settings
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Fold setting: Define sections
+Fold setting: Define regions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-You can predict structures of the full reference sequences or specific sections.
-See :doc:`../sections` for ways to define sections.
+You can predict structures of the full reference sequences or specific regions.
+See :doc:`../regions` for ways to define regions.
 
-Defining sections in ``seismic fold`` works identically to ``seismic mask`` but
+Defining regions in ``seismic fold`` works identically to ``seismic mask`` but
 accomplishes a very different purpose.
-Sections in ``seismic fold`` determine for which parts of the reference sequence
+Regions in ``seismic fold`` determine for which parts of the reference sequence
 to predict structures.
-Sections in ``seismic mask`` determine for which parts of the reference sequence
+Regions in ``seismic mask`` determine for which parts of the reference sequence
 to use mutational data.
-SEISMIC-RNA allows these sections to be different.
+SEISMIC-RNA allows these regions to be different.
 There are several common scenarios:
 
-- The section you are folding matches the section for which you have data.
+- The region you are folding matches the region for which you have data.
   For example, you could have mutationally profiled a full transcript and now
   want to predict the structure of the full transcript using the data from the
   full mutational profile.
-- You are folding a section that contains and is longer than the section for
+- You are folding a region that contains and is longer than the region for
   which you have data.
   For example, you could have mutationally profiled a short amplicon from a much
   longer transcript; and after clustering that amplicon, you want to model each
   alternative structure of the long transcript while using the short mutational
   profile of each cluster to guide the structure predictions.
-- You are folding a short section that is contained by a longer section for
+- You are folding a short region that is contained by a longer region for
   which you have mutational profiling data.
   For example, you could have mutationally profiled a full transcript and now
   want to predict the structure of a small part of the transcript that you are
@@ -79,12 +79,12 @@ Option in ``seismic fold`` Option in RNAstructure Fold Brief explanation
 Fold: Output files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-All output files go into the directory ``{out}/{sample}/fold/{ref}/{sect}``,
+All output files go into the directory ``{out}/{sample}/fold/{ref}/{reg}``,
 where ``{out}`` is the output directory, ``{sample}`` is the sample, ``{ref}``
-is the reference, and ``{sect}`` is the section you *folded* (**not** that from
+is the reference, and ``{reg}`` is the region you *folded* (**not** that from
 which the data came).
-The files for each predicted structure are named ``{sect}__{profile}``, where
-``{sect}`` is the section from which the *data* came (**not** that which you
+The files for each predicted structure are named ``{reg}__{profile}``, where
+``{reg}`` is the region from which the *data* came (**not** that which you
 folded) and ``{profile}`` is the mutational profile of those data, which can be
 ``average`` (ensemble average) or ``cluster-{n}-{i}`` (where ``{n}`` is the
 number of clusters and ``{i}`` is the cluster number).

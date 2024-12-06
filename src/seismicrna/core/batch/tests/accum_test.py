@@ -7,16 +7,16 @@ from seismicrna.cluster.batch import ClusterMutsBatch
 from seismicrna.core.batch.accum import accumulate_batches
 from seismicrna.core.batch.ends import END5_COORD, END3_COORD
 from seismicrna.core.batch.index import RB_INDEX_NAMES
-from seismicrna.core.batch.muts import SectionMutsBatch
+from seismicrna.core.batch.muts import RegionMutsBatch
 from seismicrna.core.header import RelClustHeader
 from seismicrna.core.rel import RelPattern
-from seismicrna.core.seq.section import Section
+from seismicrna.core.seq.region import Region
 from seismicrna.core.seq.xna import DNA
 from seismicrna.mask.batch import MaskMutsBatch
 from seismicrna.relate.batch import RelateBatch
 
 
-def get_batch_count_all_func(batches: list[SectionMutsBatch]):
+def get_batch_count_all_func(batches: list[RegionMutsBatch]):
 
     def get_batch_count_all(batch_num: int, **kwargs):
         return batches[batch_num].count_all(**kwargs)
@@ -42,11 +42,11 @@ class TestAccumulateBatches(ut.TestCase):
         3 !!._
         4 ?.._
         """
-        section = Section("myref", DNA("ACGT"))
+        region = Region("myref", DNA("ACGT"))
         patterns = {"Matches": RelPattern.muts().invert(),
                     "Mutations": RelPattern.muts()}
         batches = [
-            RelateBatch(section=section,
+            RelateBatch(region=region,
                         batch=0,
                         muts={1: {128: np.array([2, 3]),
                                   129: np.array([4])},
@@ -68,8 +68,8 @@ class TestAccumulateBatches(ut.TestCase):
         n, ends, fpp, fpr = accumulate_batches(
             get_batch_count_all_func(batches),
             len(batches),
-            section.seq,
-            section.unmasked_int,
+            region.seq,
+            region.unmasked_int,
             patterns,
         )
         self.assertEqual(n, 5)
@@ -78,7 +78,7 @@ class TestAccumulateBatches(ut.TestCase):
              [1, 4],
              [3, 1],
              [1, 1]],
-            section.range,
+            region.range,
             list(patterns)
         )))
         self.assertTrue(fpr.equals(pd.DataFrame(
@@ -117,11 +117,11 @@ class TestAccumulateBatches(ut.TestCase):
         0 !!._
         1 ?.._
         """
-        section = Section("myref", DNA("ACGT"))
+        region = Region("myref", DNA("ACGT"))
         patterns = {"Matches": RelPattern.muts().invert(),
                     "Mutations": RelPattern.muts()}
         batches = [
-            RelateBatch(section=section,
+            RelateBatch(region=region,
                         batch=0,
                         muts={1: {128: np.array([2])},
                               2: {16: np.array([0, 1, 2])},
@@ -134,7 +134,7 @@ class TestAccumulateBatches(ut.TestCase):
                         seg_end3s=np.array([[4],
                                             [4],
                                             [3]])),
-            RelateBatch(section=section,
+            RelateBatch(region=region,
                         batch=1,
                         muts={1: {128: np.array([0]),
                                   129: np.array([1])},
@@ -149,8 +149,8 @@ class TestAccumulateBatches(ut.TestCase):
         n, ends, fpp, fpr = accumulate_batches(
             get_batch_count_all_func(batches),
             len(batches),
-            section.seq,
-            section.unmasked_int,
+            region.seq,
+            region.unmasked_int,
             patterns,
         )
         self.assertEqual(n, 5)
@@ -159,7 +159,7 @@ class TestAccumulateBatches(ut.TestCase):
              [1, 4],
              [3, 1],
              [1, 1]],
-            section.range,
+            region.range,
             list(patterns)
         )))
         self.assertTrue(fpr.equals(pd.DataFrame(
@@ -198,12 +198,12 @@ class TestAccumulateBatches(ut.TestCase):
         0 !!._
         6 ?.._
         """
-        section = Section("myref", DNA("NNACNGNT"))
-        section.add_mask("mask", [3, 4, 6, 8], complement=True)
+        region = Region("myref", DNA("NNACNGNT"))
+        region.add_mask("mask", [3, 4, 6, 8], complement=True)
         patterns = {"Matches": RelPattern.muts().invert(),
                     "Mutations": RelPattern.muts()}
         batches = [
-            MaskMutsBatch(section=section,
+            MaskMutsBatch(region=region,
                           batch=0,
                           muts={3: {128: np.array([7])},
                                 4: {16: np.array([2, 4, 7])},
@@ -217,7 +217,7 @@ class TestAccumulateBatches(ut.TestCase):
                                               [8],
                                               [7]]),
                           read_nums=np.array([2, 4, 7])),
-            MaskMutsBatch(section=section,
+            MaskMutsBatch(region=region,
                           batch=1,
                           muts={3: {128: np.array([0]),
                                     129: np.array([6])},
@@ -233,8 +233,8 @@ class TestAccumulateBatches(ut.TestCase):
         n, ends, fpp, fpr = accumulate_batches(
             get_batch_count_all_func(batches),
             len(batches),
-            section.seq,
-            section.unmasked_int,
+            region.seq,
+            region.unmasked_int,
             patterns,
         )
         self.assertEqual(n, 5)
@@ -243,7 +243,7 @@ class TestAccumulateBatches(ut.TestCase):
              [1, 4],
              [3, 1],
              [1, 1]],
-            section.unmasked,
+            region.unmasked,
             list(patterns)
         )))
         self.assertTrue(fpr.equals(pd.DataFrame(
@@ -283,8 +283,8 @@ class TestAccumulateBatches(ut.TestCase):
         0 !!._ 0.6 0.4
         6 ?.._ 0.8 0.2
         """
-        section = Section("myref", DNA("NNACNGNT"))
-        section.add_mask("mask", [3, 4, 6, 8], complement=True)
+        region = Region("myref", DNA("NNACNGNT"))
+        region.add_mask("mask", [3, 4, 6, 8], complement=True)
         patterns = {"Matches": RelPattern.muts().invert(),
                     "Mutations": RelPattern.muts()}
         ks = [1, 2]
@@ -292,7 +292,7 @@ class TestAccumulateBatches(ut.TestCase):
         rheader = rcheader.get_rel_header()
         cheader = rcheader.get_clust_header()
         batches = [
-            ClusterMutsBatch(section=section,
+            ClusterMutsBatch(region=region,
                              batch=0,
                              muts={3: {128: np.array([7])},
                                    4: {16: np.array([2, 4, 7])},
@@ -310,7 +310,7 @@ class TestAccumulateBatches(ut.TestCase):
                                                  [1.0, 0.5, 0.5]],
                                                 [2, 4, 7],
                                                 cheader.index)),
-            ClusterMutsBatch(section=section,
+            ClusterMutsBatch(region=region,
                              batch=1,
                              muts={3: {128: np.array([0]),
                                        129: np.array([6])},
@@ -329,8 +329,8 @@ class TestAccumulateBatches(ut.TestCase):
         n, ends, fpp, fpr = accumulate_batches(
             get_batch_count_all_func(batches),
             len(batches),
-            section.seq,
-            section.unmasked_int,
+            region.seq,
+            region.unmasked_int,
             patterns,
             ks,
         )
@@ -338,7 +338,7 @@ class TestAccumulateBatches(ut.TestCase):
         self.assertTrue(n.index.equals(cheader.index))
         self.assertTrue(np.allclose(n, [5.0, 2.3, 2.7]))
         self.assertIsInstance(fpp, pd.DataFrame)
-        self.assertTrue(fpp.index.equals(section.unmasked))
+        self.assertTrue(fpp.index.equals(region.unmasked))
         self.assertTrue(fpp.columns.equals(rcheader.index))
         self.assertTrue(np.allclose(fpp.values,
                                     [[1.0, 0.3, 0.7, 2.0, 1.1, 0.9],

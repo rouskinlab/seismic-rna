@@ -81,7 +81,7 @@ def run_ks(uniq_reads: UniqReads,
     path_kwargs = dict(top=top,
                        sample=uniq_reads.sample,
                        ref=uniq_reads.ref,
-                       sect=uniq_reads.section.name)
+                       reg=uniq_reads.region.name)
     runs_ks = dict()
     ks = validate_ks(ks)
     # Loop through every K if try_all_ks is True, otherwise go until the
@@ -148,12 +148,12 @@ def cluster(mask_report_file: Path, *,
         began = datetime.now()
         # Load the unique reads.
         dataset = load_mask_dataset(mask_report_file)
-        tmp_clust_dir = path.buildpar(*path.SECT_DIR_SEGS,
+        tmp_clust_dir = path.buildpar(*path.REG_DIR_SEGS,
                                       top=tmp_dir,
                                       cmd=path.CMD_CLUST_DIR,
                                       sample=dataset.sample,
                                       ref=dataset.ref,
-                                      sect=dataset.sect)
+                                      reg=dataset.reg)
         if dataset.min_mut_gap != 3:
             logger.warning("For clustering, it is highly recommended to use "
                            "the observer bias correction with min_mut_gap=3, "

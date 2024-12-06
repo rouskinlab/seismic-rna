@@ -296,6 +296,7 @@ WebAppFileExt = Field(str, [JSON_EXT], is_ext=True)
 SvgExt = Field(str, [SVG_EXT], is_ext=True)
 KtsExt = Field(str, [KTS_EXT], is_ext=True)
 
+
 # Path Segments ########################################################
 
 # Segment class
@@ -416,7 +417,7 @@ STAGE = "stage"
 CMD = "cmd"
 SAMP = "sample"
 REF = "ref"
-SECT = "sect"
+REG = "reg"
 BATCH = "batch"
 TABLE = "table"
 NCLUST = "k"
@@ -433,7 +434,7 @@ StageSeg = Segment("stage-dir", {STAGE: StageField}, order=70)
 SampSeg = Segment("sample-dir", {SAMP: NameField}, order=60)
 CmdSeg = Segment("command-dir", {CMD: CmdField}, order=50)
 RefSeg = Segment("ref-dir", {REF: NameField}, order=30)
-SectSeg = Segment("section-dir", {SECT: NameField}, order=20)
+RegSeg = Segment("reg-dir", {REG: NameField}, order=20)
 
 # File segments
 
@@ -518,9 +519,9 @@ VarnaColorSeg = Segment("varna-color",
                         frmt="{profile}__varna-color{ext}")
 
 # Draw
-SvgSeg = Segment("svg", {PROFILE: NameField, STRUCT:IntField, EXT: SvgExt},
+SvgSeg = Segment("svg", {PROFILE: NameField, STRUCT: IntField, EXT: SvgExt},
                  frmt="{profile}-{struct}{ext}")
-KtsSeg = Segment("kts", {PROFILE: NameField, STRUCT:IntField, EXT: KtsExt},
+KtsSeg = Segment("kts", {PROFILE: NameField, STRUCT: IntField, EXT: KtsExt},
                  frmt="{profile}-{struct}{ext}")
 
 # Graphs
@@ -534,7 +535,7 @@ WebAppFileSeg = Segment("webapp",
 # Path segment patterns
 CMD_DIR_SEGS = SampSeg, CmdSeg
 REF_DIR_SEGS = CMD_DIR_SEGS + (RefSeg,)
-SECT_DIR_SEGS = REF_DIR_SEGS + (SectSeg,)
+REG_DIR_SEGS = REF_DIR_SEGS + (RegSeg,)
 STAGE_DIR_SEGS = SampSeg, CmdSeg, StageSeg
 FASTA_STAGE_SEGS = StageSeg, FastaSeg
 FASTA_INDEX_DIR_STAGE_SEGS = StageSeg, RefSeg
@@ -546,9 +547,9 @@ DMFASTQ1_SEGS = SampSeg, DmFastq1Seg
 DMFASTQ2_SEGS = SampSeg, DmFastq2Seg
 XAM_SEGS = CMD_DIR_SEGS + (XamSeg,)
 XAM_STAGE_SEGS = STAGE_DIR_SEGS + (XamSeg,)
-CLUST_TAB_SEGS = SECT_DIR_SEGS + (ClustParamsDirSeg, ClustParamsFileSeg)
-CT_FILE_SEGS = SECT_DIR_SEGS + (ConnectTableSeg,)
-DB_FILE_SEGS = SECT_DIR_SEGS + (DotBracketSeg,)
+CLUST_TAB_SEGS = REG_DIR_SEGS + (ClustParamsDirSeg, ClustParamsFileSeg)
+CT_FILE_SEGS = REG_DIR_SEGS + (ConnectTableSeg,)
+DB_FILE_SEGS = REG_DIR_SEGS + (DotBracketSeg,)
 
 
 # Paths ################################################################

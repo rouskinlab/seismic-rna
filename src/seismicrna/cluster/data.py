@@ -89,8 +89,8 @@ class ClusterMutsDataset(ClusterDataset, ArrowDataset, UnbiasDataset):
         self.data1.pattern = pattern
 
     @property
-    def section(self):
-        return self.data1.section
+    def region(self):
+        return self.data1.region
 
     @property
     def min_mut_gap(self):
@@ -118,7 +118,7 @@ class ClusterMutsDataset(ClusterDataset, ArrowDataset, UnbiasDataset):
 
     def _integrate(self, batch1: MaskMutsBatch, batch2: ClusterBatchIO):
         return ClusterMutsBatch(batch=batch1.batch,
-                                section=batch1.section,
+                                region=batch1.region,
                                 seg_end5s=batch1.seg_end5s,
                                 seg_end3s=batch1.seg_end3s,
                                 muts=batch1.muts,
@@ -151,8 +151,8 @@ class JoinClusterMutsDataset(ClusterDataset,
         self._joined_clusts = self.report.get_field(JoinedClustersF)
         if self._joined_clusts is None:
             raise TypeError(f"{self} requires clusters, but got None")
-        if sorted(self._joined_clusts) != sorted(self.sects):
-            raise ValueError(f"{self} expected clusters for {self.sects}, "
+        if sorted(self._joined_clusts) != sorted(self.regs):
+            raise ValueError(f"{self} expected clusters for {self.regs}, "
                              f"but got {self._joined_clusts}")
 
     @cached_property
@@ -168,26 +168,26 @@ class JoinClusterMutsDataset(ClusterDataset,
         """ Index of k and cluster numbers. """
         return list_ks_clusts(self.ks)
 
-    def _sect_cols(self, sect: str):
-        """ Get the columns for a section's responsibilities. """
-        clusts = self._joined_clusts[sect]
+    def _reg_cols(self, reg: str):
+        """ Get the columns for a region's responsibilities. """
+        clusts = self._joined_clusts[reg]
         return pd.MultiIndex.from_tuples(
             [(k, clusts[k][clust]) for k, clust in self.clusts],
             names=ClustHeader.level_names()
         )
 
-    def _sect_resps(self, sect: str, resps: pd.DataFrame):
-        """ Get the cluster responsibilities for a section. """
+    def _reg_resps(self, reg: str, resps: pd.DataFrame):
+        """ Get the cluster responsibilities for a region. """
         # Reorder the columns.
-        reordered = resps.loc[:, self._sect_cols(sect)]
+        reordered = resps.loc[:, self._reg_cols(reg)]
         # Rename the columns by increasing k and cluster.
         reordered.columns = self.clusts
         return reordered
 
-    def _get_batch_attrs(self, batch: MutsBatch, sect: str):
-        attrs = super()._get_batch_attrs(batch, sect)
-        # Adjust the cluster labels based on the section.
-        attrs[RESPS] = self._sect_resps(sect, attrs[RESPS])
+    def _get_batch_attrs(self, batch: MutsBatch, reg: str):
+        attrs = super()._get_batch_attrs(batch, reg)
+        # Adjust the cluster labels based on the region.
+        attrs[RESPS] = self._reg_resps(reg, attrs[RESPS])
         return attrs
 
     def _join_attrs(self, attrs: dict[str, Any], add_attrs: dict[str, Any]):

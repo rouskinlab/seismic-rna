@@ -5,7 +5,7 @@ from typing import Iterable
 
 from click import command
 
-from .write import mask_section
+from .write import mask_region
 from ..core.arg import (CMD_MASK,
                         arg_input_path,
                         opt_tmp_pfx,
@@ -13,7 +13,7 @@ from ..core.arg import (CMD_MASK,
                         opt_mask_coords,
                         opt_mask_primers,
                         opt_primer_gap,
-                        opt_mask_sections_file,
+                        opt_mask_regions_file,
                         opt_max_mask_iter,
                         opt_mask_del,
                         opt_mask_ins,
@@ -43,17 +43,17 @@ from ..core.arg import (CMD_MASK,
 from ..core.data import load_datasets
 from ..core.logs import logger
 from ..core.run import run_func
-from ..core.seq import DNA, RefSections
+from ..core.seq import DNA, RefRegions
 from ..core.task import dispatch
 from ..relate.data import load_relate_dataset
 
 
-def load_sections(input_path: Iterable[str | Path],
+def load_regions(input_path: Iterable[str | Path],
                   coords: Iterable[tuple[str, int, int]],
                   primers: Iterable[tuple[str, DNA, DNA]],
                   primer_gap: int,
-                  sections_file: Path | None = None):
-    """ Open sections of relate reports. """
+                  regions_file: Path | None = None):
+    """ Open regions of relate reports. """
     # Load all datasets, grouped by their reference names.
     datasets = defaultdict(list)
     for dataset in load_datasets(input_path, load_relate_dataset):
@@ -61,25 +61,25 @@ def load_sections(input_path: Iterable[str | Path],
             datasets[dataset.ref].append(dataset)
         except Exception as error:
             logger.error(error)
-    # Determine the sections for each reference in the datasets.
-    sections = RefSections({(loader.ref, loader.refseq)
-                            for loader in chain(*datasets.values())},
-                           sects_file=sections_file,
-                           coords=coords,
-                           primers=primers,
-                           primer_gap=primer_gap,
-                           exclude_primers=True)
-    return datasets, sections
+    # Determine the regions for each reference in the datasets.
+    regions = RefRegions({(loader.ref, loader.refseq)
+                           for loader in chain(*datasets.values())},
+                         regs_file=regions_file,
+                         coords=coords,
+                         primers=primers,
+                         primer_gap=primer_gap,
+                         exclude_primers=True)
+    return datasets, regions
 
 
 @run_func(CMD_MASK, with_tmp=True, extra_defaults=extra_defaults)
 def run(input_path: tuple[str, ...], *,
         tmp_dir: Path,
-        # Sections
+        # Regions
         mask_coords: tuple[tuple[str, int, int], ...],
         mask_primers: tuple[tuple[str, DNA, DNA], ...],
         primer_gap: int,
-        mask_sections_file: str | None,
+        mask_regions_file: str | None,
         # Mutation counting
         mask_del: bool,
         mask_ins: bool,
@@ -112,19 +112,19 @@ def run(input_path: tuple[str, ...], *,
         max_procs: int,
         # Effort
         force: bool) -> list[Path]:
-    """ Define mutations and sections to filter reads and positions. """
-    # Load all Relate datasets and get the sections for each.
-    datasets, sections = load_sections(
+    """ Define mutations and regions to filter reads and positions. """
+    # Load all Relate datasets and get the regions for each.
+    datasets, regions = load_regions(
         input_path,
         coords=mask_coords,
         primers=mask_primers,
         primer_gap=primer_gap,
-        sections_file=optional_path(mask_sections_file)
+        regions_file=optional_path(mask_regions_file)
     )
-    # List the datasets and their sections.
-    args = [(dataset, section)
+    # List the datasets and their regions.
+    args = [(dataset, region)
             for ref, ref_datasets in datasets.items()
-            for dataset, section in product(ref_datasets, sections.list(ref))]
+            for dataset, region in product(ref_datasets, regions.list(ref))]
     # Define the keyword arguments.
     kwargs = dict(tmp_dir=tmp_dir,
                   mask_del=mask_del,
@@ -151,7 +151,7 @@ def run(input_path: tuple[str, ...], *,
                   brotli_level=brotli_level,
                   force=force)
     # Call the mutations and filter the relation vectors.
-    return dispatch(mask_section,
+    return dispatch(mask_region,
                     max_procs=max_procs,
                     args=args,
                     kwargs=kwargs)
@@ -162,11 +162,11 @@ params = [
     arg_input_path,
     opt_tmp_pfx,
     opt_keep_tmp,
-    # Sections
+    # Regions
     opt_mask_coords,
     opt_mask_primers,
     opt_primer_gap,
-    opt_mask_sections_file,
+    opt_mask_regions_file,
     # Mutation counting
     opt_mask_del,
     opt_mask_ins,
@@ -204,7 +204,7 @@ params = [
 
 @command(CMD_MASK, params=params)
 def cli(*args, **kwargs):
-    """ Define mutations and sections to filter reads and positions. """
+    """ Define mutations and regions to filter reads and positions. """
     return run(*args, **kwargs)
 
 ########################################################################

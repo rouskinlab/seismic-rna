@@ -7,11 +7,11 @@ import pandas as pd
 
 from ..core.array import calc_inverse, check_naturals, get_length
 from ..core.batch import (ReadBatch,
-                          SectionMutsBatch,
+                          RegionMutsBatch,
                           simulate_muts,
                           simulate_segment_ends)
 from ..core.rel import RelPattern
-from ..core.seq import Section, index_to_pos, index_to_seq
+from ..core.seq import Region, index_to_pos, index_to_seq
 
 
 def format_read_name(batch: int, read: int):
@@ -34,7 +34,7 @@ class FullReadBatch(ReadBatch, ABC):
         return self.read_nums
 
 
-class FullSectionMutsBatch(FullReadBatch, SectionMutsBatch, ABC):
+class FullRegionMutsBatch(FullReadBatch, RegionMutsBatch, ABC):
     pass
 
 
@@ -71,7 +71,7 @@ class ReadNamesBatch(FullReadBatch):
         return get_length(self.names, "read names")
 
 
-class RelateBatch(FullSectionMutsBatch):
+class RelateBatch(FullRegionMutsBatch):
 
     @classmethod
     def simulate(cls,
@@ -115,7 +115,7 @@ class RelateBatch(FullSectionMutsBatch):
             Number of reads in the batch.
         """
         check_naturals(index_to_pos(pmut.index), "positions")
-        section = Section(ref, index_to_seq(pmut.index))
+        region = Region(ref, index_to_seq(pmut.index))
         # Simulate a batch, ignoring min_mut_gap.
         seg_end5s, seg_end3s = simulate_segment_ends(uniq_end5s,
                                                      uniq_end3s,
@@ -125,7 +125,7 @@ class RelateBatch(FullSectionMutsBatch):
                                                       else 0),
                                                      p_rev)
         simulated_all = cls(batch=batch,
-                            section=section,
+                            region=region,
                             seg_end5s=seg_end5s,
                             seg_end3s=seg_end3s,
                             muts=simulate_muts(pmut, seg_end5s, seg_end3s),
@@ -140,7 +140,7 @@ class RelateBatch(FullSectionMutsBatch):
                                      assume_unique=True)
         renumber = calc_inverse(reads_noclose, what="reads_noclose")
         return cls(batch=batch,
-                   section=section,
+                   region=region,
                    seg_end5s=seg_end5s[reads_noclose],
                    seg_end3s=seg_end3s[reads_noclose],
                    muts={pos: {rel: renumber[np.setdiff1d(reads,

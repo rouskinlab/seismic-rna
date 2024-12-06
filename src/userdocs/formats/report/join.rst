@@ -13,8 +13,8 @@ Name                   Data Type
 ====================== =========
 Name of Sample         str
 Name of Reference      str
-Name of Section        str
-Joined Sections        list[str]
+Name of Region        str
+Joined Regions        list[str]
 Branches               list[str]
 Time Began             str
 Time Ended             str
@@ -30,8 +30,8 @@ Join Mask Report: Example
     {
         "Name of Sample": "ldi",
         "Name of Reference": "sars2_1799",
-        "Name of Section": "joined",
-        "Joined Sections": [
+        "Name of Region": "joined",
+        "Joined Regions": [
             "partner",
             "thefse"
         ],
@@ -53,8 +53,8 @@ Name                   Data Type
 ====================== ====================================
 Name of Sample         str
 Name of Reference      str
-Name of Section        str
-Joined Sections        list[str]
+Name of Region         str
+Joined Regions         list[str]
 Joined Clusters        dict[str, dict[int, dict[int, int]]]
 Branches               list[str]
 Time Began             str
@@ -71,13 +71,13 @@ Join Cluster Report: Example
     {
         "Name of Sample": "ldi",
         "Name of Reference": "sars2_1799",
-        "Name of Section": "joined",
-        "Joined Sections": [
+        "Name of Region": "joined",
+        "Joined Regions": [
             "partner",
             "thefse"
         ],
         "Joined Clusters": {
-            "mysection": {
+            "myregion": {
                 "1": {
                     "1": 1
                 },
@@ -91,7 +91,7 @@ Join Cluster Report: Example
                     "3": 2
                 }
             },
-            "yoursection": {
+            "yourregion": {
                 "1": {
                     "1": 1
                 },

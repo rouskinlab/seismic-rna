@@ -38,7 +38,7 @@ class RelateDataset(LoadedMutsDataset):
                            seg_end5s=relate_batch.seg_end5s,
                            seg_end3s=relate_batch.seg_end3s,
                            muts=relate_batch.muts,
-                           section=self.section,
+                           region=self.region,
                            sanitize=False)
 
 

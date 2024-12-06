@@ -9,7 +9,7 @@ from ..core.arg import (arg_fasta,
                         opt_sim_dir,
                         opt_tmp_pfx,
                         opt_profile_name,
-                        opt_fold_sections_file,
+                        opt_fold_regions_file,
                         opt_fold_coords,
                         opt_fold_primers,
                         opt_fold_constraint,
@@ -29,7 +29,7 @@ from ..core.extern import (RNASTRUCTURE_FOLD_CMD,
                            run_cmd)
 from ..core.rna import renumber_ct
 from ..core.run import run_func
-from ..core.seq import DNA, RefSections, Section, parse_fasta, write_fasta
+from ..core.seq import DNA, RefRegions, Region, parse_fasta, write_fasta
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write
 from ..fold.rnastructure import make_fold_cmd, retitle_ct, require_data_path
@@ -37,39 +37,39 @@ from ..fold.rnastructure import make_fold_cmd, retitle_ct, require_data_path
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 
-def get_ct_path(top: Path, section: Section, profile: str):
+def get_ct_path(top: Path, region: Region, profile: str):
     """ Get the path of a connectivity table (CT) file. """
     return path.buildpar(path.RefSeg,
-                         path.SectSeg,
+                         path.RegSeg,
                          path.ConnectTableSeg,
                          top=top.joinpath(path.SIM_PARAM_DIR),
-                         ref=section.ref,
-                         sect=section.name,
+                         ref=region.ref,
+                         reg=region.name,
                          profile=profile,
                          ext=path.CT_EXT)
 
 
-def fold_section(section: Section, *,
-                 sim_dir: Path,
-                 tmp_dir: Path,
-                 profile_name: str,
-                 fold_constraint: Path | None,
-                 fold_temp: float,
-                 fold_md: int,
-                 fold_mfe: bool,
-                 fold_max: int,
-                 fold_percent: float,
-                 keep_tmp: bool,
-                 force: bool,
-                 n_procs: int):
-    ct_sim = get_ct_path(sim_dir, section, profile_name)
+def fold_region(region: Region, *,
+                sim_dir: Path,
+                tmp_dir: Path,
+                profile_name: str,
+                fold_constraint: Path | None,
+                fold_temp: float,
+                fold_md: int,
+                fold_mfe: bool,
+                fold_max: int,
+                fold_percent: float,
+                keep_tmp: bool,
+                force: bool,
+                n_procs: int):
+    ct_sim = get_ct_path(sim_dir, region, profile_name)
     if need_write(ct_sim, force):
-        fasta_tmp = get_fasta_path(tmp_dir, section.ref)
-        ct_tmp = get_ct_path(tmp_dir, section, profile_name)
+        fasta_tmp = get_fasta_path(tmp_dir, region.ref)
+        ct_tmp = get_ct_path(tmp_dir, region, profile_name)
         try:
-            # Write a temporary FASTA file for this section only.
+            # Write a temporary FASTA file for this region only.
             write_fasta(fasta_tmp,
-                        [(section.ref, section.seq.tr())],
+                        [(region.ref, region.seq.tr())],
                         force=force)
             # Predict the RNA structure.
             run_cmd(args_to_cmd(make_fold_cmd(fasta_tmp,
@@ -85,9 +85,9 @@ def fold_section(section: Section, *,
             # Reformat the CT file title lines so that each is unique.
             retitle_ct(ct_tmp, ct_tmp, force=True)
             # Renumber the CT file so that it has the same numbering
-            # scheme as the section, rather than always starting at 1,
+            # scheme as the region, rather than always starting at 1,
             # the latter of which is always output by the Fold program.
-            renumber_ct(ct_tmp, ct_sim, section.end5, force=force)
+            renumber_ct(ct_tmp, ct_sim, region.end5, force=force)
         finally:
             if not keep_tmp:
                 fasta_tmp.unlink(missing_ok=True)
@@ -105,7 +105,7 @@ def run(fasta: str, *,
         profile_name: str,
         fold_coords: tuple[tuple[str, int, int], ...],
         fold_primers: tuple[tuple[str, DNA, DNA], ...],
-        fold_sections_file: str | None,
+        fold_regions_file: str | None,
         fold_constraint: str | None,
         fold_temp: float,
         fold_md: int,
@@ -119,17 +119,17 @@ def run(fasta: str, *,
     # Check for the dependencies and the DATAPATH environment variable.
     require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
     require_data_path()
-    # List the sections.
-    sections = RefSections(parse_fasta(Path(fasta), DNA),
-                           sects_file=(Path(fold_sections_file)
-                                       if fold_sections_file
-                                       else None),
-                           coords=fold_coords,
-                           primers=fold_primers)
-    return dispatch(fold_section,
+    # List the regions.
+    regions = RefRegions(parse_fasta(Path(fasta), DNA),
+                         regs_file=(Path(fold_regions_file)
+                                    if fold_regions_file
+                                    else None),
+                         coords=fold_coords,
+                         primers=fold_primers)
+    return dispatch(fold_region,
                     max_procs=max_procs,
                     pass_n_procs=True,
-                    args=as_list_of_tuples(sections.sections),
+                    args=as_list_of_tuples(regions.regions),
                     kwargs=dict(sim_dir=Path(sim_dir),
                                 tmp_dir=tmp_dir,
                                 profile_name=profile_name,
@@ -147,7 +147,7 @@ params = [arg_fasta,
           opt_sim_dir,
           opt_tmp_pfx,
           opt_profile_name,
-          opt_fold_sections_file,
+          opt_fold_regions_file,
           opt_fold_coords,
           opt_fold_primers,
           opt_fold_constraint,

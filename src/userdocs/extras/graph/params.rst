@@ -95,9 +95,9 @@ With ``-q``, only ratios are normalized -- not counts.
 General parameters for graphing: Output files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-All output files go into the directory ``{out}/{sample}/graph/{ref}/{sect}``,
+All output files go into the directory ``{out}/{sample}/graph/{ref}/{reg}``,
 where ``{out}`` is the output directory, ``{sample}`` is the sample, ``{ref}``
-is the reference, and ``{sect}`` is the section.
+is the reference, and ``{reg}`` is the region.
 Each output file is prefixed with the name of the subcommand that produced it.
 
 ``--cgroup``: Group orders and clusters into output files

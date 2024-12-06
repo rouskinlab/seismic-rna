@@ -27,33 +27,33 @@ from .mask.report import MaskReport
 DEFAULT_JOIN = "joined"
 
 
-def join_sections(out_dir: Path,
-                  name: str,
-                  sample: str,
-                  ref: str,
-                  sects: Iterable[str],
-                  clustered: bool, *,
-                  clusts: dict[str, dict[int, dict[int, int]]],
-                  force: bool):
-    """ Join one or more sections.
+def join_regions(out_dir: Path,
+                 name: str,
+                 sample: str,
+                 ref: str,
+                 regs: Iterable[str],
+                 clustered: bool, *,
+                 clusts: dict[str, dict[int, dict[int, int]]],
+                 force: bool):
+    """ Join one or more regions.
 
     Parameters
     ----------
     out_dir: pathlib.Path
         Output directory.
     name: str
-        Name of the joined section.
+        Name of the joined region.
     sample: str
         Name of the sample.
     ref: str
         Name of the reference.
-    sects: Iterable[str]
-        Names of the sections being joined.
+    regs: Iterable[str]
+        Names of the regions being joined.
     clustered: bool
         Whether the dataset is clustered.
     clusts: dict[str, dict[int, dict[int, int]]]
-        For each section, for each number of clusters, the cluster from
-        the original section to use as the cluster in the joined section
+        For each region, for each number of clusters, the cluster from
+        the original region to use as the cluster in the joined region
         (ignored if `clustered` is False).
     force: bool
         Force the report to be written, even if it exists.
@@ -64,17 +64,17 @@ def join_sections(out_dir: Path,
         Path of the Pool report file.
     """
     began = datetime.now()
-    # Deduplicate and sort the sections.
-    sect_counts = Counter(sects)
-    if max(sect_counts.values()) > 1:
-        logger.warning(f"Joined section {repr(name)} of sample {repr(sample)}, "
+    # Deduplicate and sort the regions.
+    reg_counts = Counter(regs)
+    if max(reg_counts.values()) > 1:
+        logger.warning(f"Joined region {repr(name)} of sample {repr(sample)}, "
                        f"reference {repr(ref)} in {out_dir} got duplicate "
-                       f"sections: {sect_counts}")
-    sects = sorted(sect_counts)
+                       f"regions: {reg_counts}")
+    regs = sorted(reg_counts)
     report_kwargs = dict(sample=sample,
                          ref=ref,
-                         sect=name,
-                         joined_sections=sects)
+                         reg=name,
+                         joined_regions=regs)
     # Determine whether the dataset is clustered.
     if clustered:
         report_kwargs |= dict(joined_clusters=clusts)
@@ -87,7 +87,7 @@ def join_sections(out_dir: Path,
     report_file = join_type.build_path(top=out_dir,
                                        sample=sample,
                                        ref=ref,
-                                       sect=name)
+                                       reg=name)
     if need_write(report_file, force):
         # Because Join report files have the same name as Mask/Cluster
         # reports, it would be possible to overwrite the latter with a
@@ -125,7 +125,7 @@ def run(input_path: tuple[str, ...], *,
         max_procs: int,
         # Effort
         force: bool) -> list[Path]:
-    """ Merge sections (horizontally) from the Mask or Cluster step. """
+    """ Merge regions (horizontally) from the Mask or Cluster step. """
     if not joined:
         # Exit immediately if no joined name was given.
         return list()
@@ -141,35 +141,35 @@ def run(input_path: tuple[str, ...], *,
         for dataset in load_datasets(input_path, load_func):
             # Check whether the dataset was joined.
             if isinstance(dataset, JoinMutsDataset):
-                # If so, then use all joined sections.
-                sects = dataset.sects
+                # If so, then use all joined regions.
+                regs = dataset.regs
             else:
-                # Otherwise, use just the section of the dataset.
-                sects = [dataset.sect]
+                # Otherwise, use just the region of the dataset.
+                regs = [dataset.reg]
             joins[(dataset.top,
                    dataset.sample,
                    dataset.ref,
-                   clustered)].extend(sects)
+                   clustered)].extend(regs)
             # If clustered, then check if the corresponding Mask dataset
             # has been joined.
             mask_report_file = MaskReport.build_path(top=dataset.top,
                                                      sample=dataset.sample,
                                                      ref=dataset.ref,
-                                                     sect=joined)
+                                                     reg=joined)
             if not mask_report_file.is_file():
                 # If not, then also join the Mask dataset.
                 mask_joins = joins[(dataset.top,
                                     dataset.sample,
                                     dataset.ref,
                                     False)]
-                mask_joins.extend([sect for sect in sects
-                                   if sect not in mask_joins])
-    # Make each joined section.
-    return dispatch(join_sections,
+                mask_joins.extend([reg for reg in regs
+                                   if reg not in mask_joins])
+    # Make each joined region.
+    return dispatch(join_regions,
                     max_procs=max_procs,
                     pass_n_procs=False,
-                    args=[(out_dir, joined, sample, ref, sects, clustered)
-                          for (out_dir, sample, ref, clustered), sects
+                    args=[(out_dir, joined, sample, ref, regs, clustered)
+                          for (out_dir, sample, ref, clustered), regs
                           in joins.items()],
                     kwargs=dict(clusts=clusts, force=force))
 
@@ -188,7 +188,7 @@ params = [
 
 @command(CMD_JOIN, params=params)
 def cli(*args, joined: str, **kwargs):
-    """ Merge sections (horizontally) from the Mask or Cluster step. """
+    """ Merge regions (horizontally) from the Mask or Cluster step. """
     if not joined:
         logger.warning(f"{CMD_JOIN} expected a name via --joined, but got "
                        f"{repr(joined)}; defaulting to {repr(DEFAULT_JOIN)}")

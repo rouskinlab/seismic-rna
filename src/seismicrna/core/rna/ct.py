@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import TextIO
 
 from .. import path
-from ..seq import RNA, Section
+from ..seq import RNA, Region
 
 
 NUM_FIELDS = 6
@@ -163,7 +163,7 @@ def _parse_ct_structure(ct_file: TextIO, length: int):
 
 
 def parse_ct(ct_path: Path):
-    """ Yield the title, section, and base pairs for each structure in a
+    """ Yield the title, region, and base pairs for each structure in a
     connectivity table (CT) file.
 
     Parameters
@@ -173,15 +173,15 @@ def parse_ct(ct_path: Path):
 
     Returns
     -------
-    Generator[tuple[str, Section, list[tuple[int, int]]], Any, None]
+    Generator[tuple[str, Region, list[tuple[int, int]]], Any, None]
     """
-    # Determine the reference and section names from the path.
+    # Determine the reference and region names from the path.
     fields = path.parse(ct_path,
                         path.RefSeg,
-                        path.SectSeg,
+                        path.RegSeg,
                         path.ConnectTableSeg)
     ref = fields[path.REF]
-    sect = fields[path.SECT]
+    reg = fields[path.REG]
     # Parse each structure in the CT file.
     with open(ct_path) as file:
         while header_line := file.readline():
@@ -189,10 +189,10 @@ def parse_ct(ct_path: Path):
             title, length = _parse_ct_header_line(header_line)
             # Determine the sequence and base pairs.
             seq, pairs, offset = _parse_ct_structure(file, length)
-            # Make a section from the sequence.
-            section = Section(ref, seq.rt(), seq5=offset + 1, name=sect)
-            # Yield the title, section, and base pairs.
-            yield title, section, pairs
+            # Make a region from the sequence.
+            region = Region(ref, seq.rt(), seq5=offset + 1, name=reg)
+            # Yield the title, region, and base pairs.
+            yield title, region, pairs
 
 ########################################################################
 #                                                                      #

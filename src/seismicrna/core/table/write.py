@@ -29,7 +29,7 @@ from ..data import MutsDataset
 from ..header import Header, make_header
 from ..logs import logger
 from ..rel import RelPattern, HalfRelPattern
-from ..seq import Section
+from ..seq import Region
 from ..write import need_write
 
 # These relationships are of all subtypes of mutations.
@@ -74,14 +74,14 @@ class Tabulator(ABC):
     def __init__(self, *,
                  top: Path,
                  sample: str,
-                 section: Section,
+                 region: Region,
                  count_pos: bool,
                  count_read: bool,
                  validate: bool = True):
         self.top = top
         self.sample = sample
-        self.refseq = section.seq
-        self.section = section
+        self.refseq = region.seq
+        self.region = region
         self.pattern = None
         self.ks = None
         self.count_ends = False
@@ -92,7 +92,7 @@ class Tabulator(ABC):
     @property
     def ref(self):
         """ Name of the reference. """
-        return self.section.ref
+        return self.region.ref
 
     @cached_property
     def pos_header(self):
@@ -108,7 +108,7 @@ class Tabulator(ABC):
     def _accum_kwargs(self):
         """ Keyword arguments for the accumulate function. """
         return dict(refseq=self.refseq,
-                    pos_nums=self.section.unmasked_int,
+                    pos_nums=self.region.unmasked_int,
                     patterns=all_patterns(self.pattern),
                     ks=self.ks,
                     count_ends=self.count_ends,
@@ -149,7 +149,7 @@ class Tabulator(ABC):
     def data_per_pos(self):
         """ DataFrame of per-position data. """
         return self._format_table(self.counts_per_pos,
-                                  self.pos_header).reindex(self.section.range)
+                                  self.pos_header).reindex(self.region.range)
 
     @cached_property
     def data_per_read(self):
@@ -274,8 +274,8 @@ class TableWriter(Table, ABC):
         return self.tabulator.ref
 
     @property
-    def sect(self):
-        return self.tabulator.section.name
+    def reg(self):
+        return self.tabulator.region.name
 
     @property
     def refseq(self):

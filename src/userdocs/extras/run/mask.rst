@@ -1,5 +1,5 @@
 
-Mask: Define mutations and sections to filter reads and positions
+Mask: Define mutations and regions to filter reads and positions
 --------------------------------------------------------------------------------
 
 Mask: Input files
@@ -26,13 +26,13 @@ To mask all relation vectors in ``{out}``, you can use the command ::
 Mask: Settings
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Mask setting: Define sections
+Mask setting: Define regions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-You can mask the full reference sequences or select specific sections.
+You can mask the full reference sequences or select specific regions.
 The latter is useful for investigating small elements of longer sequences, such
 as a 350 nt `IRES`_ within a 9,600 nt viral genome.
-See :doc:`../sections` for ways to define sections.
+See :doc:`../regions` for ways to define regions.
 
 Mask setting: Define mutations
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -110,14 +110,14 @@ Mask setting: Filter reads
 The second substep of masking is filtering reads.
 You can filter reads based on three criteria, in this order:
 
-Filter reads by number of positions covering the section
+Filter reads by number of positions covering the region
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-You can require every read to contain a minimum number of bases in the section
+You can require every read to contain a minimum number of bases in the region
 (i.e. set a minimum coverage) using ``--min-ncov-read`` followed by the minimum
 coverage.
 The minimum coverage must be at least 1 because reads that do not cover the
-section at all should always be filtered out.
+region at all should always be filtered out.
 Note that this filter considers only positions that were not pre-excluded (see
 :ref:`mask_exclude`).
 
@@ -130,7 +130,7 @@ followed by the minimum fraction of informative positions.
 For example, to require 95% of the non-excluded positions in the read to be
 informative, use ``--min-finfo-read 0.95``.
 Note that the denominator of this fraction is the number of bases in the read
-that cover the section; it is not just the length of the section or of the read.
+that cover the region; it is not just the length of the region or of the read.
 
 Filter reads by fraction of mutated positions
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -205,9 +205,9 @@ You can set the maximum fraction of mutated reads using ``--max-fmut-pos {f}``.
 Mask: Output files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-All output files go into the directory ``{out}/{sample}/mask/{ref}/{sect}``,
+All output files go into the directory ``{out}/{sample}/mask/{ref}/{reg}``,
 where ``{out}`` is the output directory, ``{sample}`` is the sample, ``{ref}``
-is the reference, and ``{sect}`` is the section.
+is the reference, and ``{reg}`` is the region.
 
 Mask output file: Batch of masked reads
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -240,8 +240,8 @@ of reads removed by each filter.
   that would keep more reads, such as a lower value for ``--min-finfo-read`` or
   ``--min-mut-gap`` or a higher value for ``--max-fmut-read``.
 - If you are losing too many reads for having too few informative positions,
-  then also double check the 5' and 3' ends of the section over which you are
-  masking and ensure that the section is not too long compared to your reads.
+  then also double check the 5' and 3' ends of the region over which you are
+  masking and ensure that the region is not too long compared to your reads.
 - If you are losing too many reads for having too many mutations, or mutations
   that are too close together, then there may be a problem with the data quality
   that is causing excessive mutations, such as
@@ -269,7 +269,7 @@ number of positions removed by each filter.
   then there are three likely reasons:
 
   - Your sample was sequenced with insufficient depth or quality.
-  - Your sample contained insufficient RNAs from this reference/section.
+  - Your sample contained insufficient RNAs from this reference/region.
   - You lost too many reads during filtering; see :ref:`mask_too_many_reads`.
 
 - If you are losing too many positions for having too many mutations, then there

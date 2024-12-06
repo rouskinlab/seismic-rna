@@ -74,12 +74,13 @@ rnartist {
 TEMPLATE = Template(TEMPLATE_STRING)
 RNARTIST_PATH = os.environ.get("RNARTISTCORE")
 
-TABLES = {path.CMD_REL_DIR:(RelatePositionTable,
-                            RelatePositionTableLoader),
-          path.CMD_MASK_DIR:(MaskPositionTable,
-                             MaskPositionTableLoader),
-          path.CMD_CLUST_DIR:(ClusterPositionTable,
-                              ClusterPositionTableLoader)}
+TABLES = {path.CMD_REL_DIR: (RelatePositionTable,
+                             RelatePositionTableLoader),
+          path.CMD_MASK_DIR: (MaskPositionTable,
+                              MaskPositionTableLoader),
+          path.CMD_CLUST_DIR: (ClusterPositionTable,
+                               ClusterPositionTableLoader)}
+
 
 class ColorBlock:
     def __init__(self,
@@ -102,6 +103,7 @@ class ColorBlock:
             'color_filter': self.color_filter,
             'location': self.location
         }
+
 
 class JinjaData:
     def __init__(self,
@@ -131,6 +133,7 @@ class JinjaData:
             'color_blocks': [block.to_dict() if hasattr(block, 'to_dict') else block for block in self.color_blocks]
         }
 
+
 def parse_color_file(file_path):
     color_dict = dict()
     with open(file_path, 'r') as file:
@@ -141,12 +144,12 @@ def parse_color_file(file_path):
             color_dict[pos] = value
     return color_dict
 
+
 def build_jinja_data(struct: str,
                      color_dict: dict,
                      name: str,
                      out_dir: Path,
                      highlight_pos: Iterable[int] = None):
-
     color_blocks = [ColorBlock("N", "#caccce"),
                     ColorBlock("n", "black"),
                     ColorBlock("N", "#88CCEE", "#7287D9",
@@ -159,7 +162,6 @@ def build_jinja_data(struct: str,
                                {"between": (0.8, 1.0)}),
                     ColorBlock("n", "white", "white", {"between": (0.2, 1.0)}),
                     ColorBlock("n", "black", "black", {"between": (0.0, 0.2)})]
-
 
     if highlight_pos:
         for pos in highlight_pos:
@@ -182,7 +184,7 @@ class RNArtistRun(object):
 
     def _parse_profile(self):
         match = re.search(r'(.+?)__(.+?)-', self.profile)
-        self.data_sect = match.group(1) if match else None
+        self.data_reg = match.group(1) if match else None
         self.table_type = match.group(2) if match else None
         if not match:
             logger.warning("Could not parse profile: {self.profile}.")
@@ -196,7 +198,7 @@ class RNArtistRun(object):
         self.top, self.fields = FoldReport.parse_path(report)
         self.sample = self.fields.get(path.SAMP)
         self.ref = self.fields.get(path.REF)
-        self.sect = self.fields.get(path.SECT)
+        self.reg = self.fields.get(path.REG)
         self.profile = self.fields.get(path.PROFILE)
         self.report = FoldReport.load(report)
         self.tmp_dir = tmp_dir
@@ -222,7 +224,7 @@ class RNArtistRun(object):
                 path.CMD: path.CMD_FOLD_DIR,
                 path.SAMP: self.sample,
                 path.REF: self.ref,
-                path.SECT: self.sect}
+                path.REG: self.reg}
 
     def _get_dir(self, top: Path):
         """ Get the directory in which to write files of this RNA.
@@ -237,7 +239,7 @@ class RNArtistRun(object):
         pathlib.Path
             Parent directory of files for this RNA.
         """
-        return path.builddir(*path.SECT_DIR_SEGS, **self._get_dir_fields(top))
+        return path.builddir(*path.REG_DIR_SEGS, **self._get_dir_fields(top))
 
     def _get_file(self, top: Path, file_seg: path.Segment, **file_fields):
         """ Get the path to a file of the RNA.
@@ -265,7 +267,7 @@ class RNArtistRun(object):
         else:
             logger.warning(f"Cannot use table of type {self.table_type} to "
                            "calculate AUROC.")
-        return (None, None)
+        return None, None
 
     @property
     def table_class(self):
@@ -278,10 +280,11 @@ class RNArtistRun(object):
     @property
     def table_file(self):
         return (self.table_class.build_path(top=self.top,
-                                          sample=self.sample,
-                                          ref=self.ref,
-                                          sect=self.data_sect)
+                                            sample=self.sample,
+                                            ref=self.ref,
+                                            reg=self.data_reg)
                 if self.table_class else None)
+
     @cached_property
     def table(self):
         return (self.table_loader(self.table_file)
@@ -388,8 +391,8 @@ class RNArtistRun(object):
         max_auc = 0
         best_auc = 0
         structs = [struct for struct in from_ct(self.get_ct_file(self.top))]
-        sections = [structs[0].section]
-        for profile in self.table.iter_profiles(sections=sections):
+        regions = [structs[0].region]
+        for profile in self.table.iter_profiles(regions=regions):
             if self.profile == profile.profile:
                 for struct_num, struct in enumerate(structs):
                     state = RNAState.from_struct_profile(struct, profile)
@@ -451,11 +454,11 @@ class RNArtistRun(object):
                 structs[struct_num] = dict(seq=struct.seq,
                                            value=struct.db_structure)
         args = [
-                (f"{self.profile}-{struct_num}",
-                 struct,
-                 self.get_svg_file(self.top, struct=struct_num),
-                 self.get_script_file(top=self.tmp_dir, struct=struct_num))
-                for struct_num, struct in structs.items()]
+            (f"{self.profile}-{struct_num}",
+             struct,
+             self.get_svg_file(self.top, struct=struct_num),
+             self.get_script_file(top=self.tmp_dir, struct=struct_num))
+            for struct_num, struct in structs.items()]
         results = dispatch(self.process_struct,
                            self.n_procs,
                            args=args,
@@ -481,7 +484,6 @@ def draw(report_path: Path, *,
     # By convention, a function must return a Path for dispatch to deem
     # that it has completed successfully.
     return rnartist.run(keep_tmp, force)
-
 
 ########################################################################
 #                                                                      #

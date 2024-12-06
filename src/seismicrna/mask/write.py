@@ -15,11 +15,11 @@ from .report import MaskReport
 from .table import MaskBatchTabulator, MaskDatasetTabulator
 from ..core import path
 from ..core.arg import docdef
-from ..core.batch import SectionMutsBatch
+from ..core.batch import RegionMutsBatch
 from ..core.logs import logger
 from ..core.rel import RelPattern
 from ..core.report import mask_iter_no_convergence
-from ..core.seq import FIELD_REF, POS_NAME, Section, index_to_pos
+from ..core.seq import FIELD_REF, POS_NAME, Region, index_to_pos
 from ..core.table import MUTAT_REL, INFOR_REL
 from ..core.tmp import release_to_out
 from ..core.write import need_write
@@ -45,7 +45,7 @@ class Masker(object):
     @docdef.auto()
     def __init__(self,
                  dataset: RelateDataset | PoolDataset,
-                 section: Section,
+                 region: Region,
                  pattern: RelPattern, *,
                  max_mask_iter: int,
                  mask_polya: int,
@@ -70,16 +70,16 @@ class Masker(object):
         # Set the general parameters.
         self._began = datetime.now()
         self.dataset = dataset
-        self.section = Section(dataset.ref,
-                               dataset.refseq,
-                               end5=section.end5,
-                               end3=section.end3,
-                               name=section.name)
+        self.region = Region(dataset.ref,
+                             dataset.refseq,
+                             end5=region.end5,
+                             end3=region.end3,
+                             name=region.name)
         self.pattern = pattern
         self.max_iter = max_mask_iter
         self._iter = 0
         self._converged = False
-        # Set the parameters for excluding positions from the section.
+        # Set the parameters for excluding positions from the region.
         if not 0 < mask_polya <= 5:
             logger.warning("It is not recommended to keep sequences of 5 or "
                            "more consecutive As because of an artifact during "
@@ -153,34 +153,34 @@ class Masker(object):
     @property
     def pos_gu(self):
         """ Positions masked for having a G or U base. """
-        return (self.section.get_mask(self.section.MASK_GU)
+        return (self.region.get_mask(self.region.MASK_GU)
                 if self.mask_gu
                 else np.array([], dtype=int))
 
     @property
     def pos_polya(self):
         """ Positions masked for lying in a poly(A) sequence. """
-        return self.section.get_mask(self.section.MASK_POLYA)
+        return self.region.get_mask(self.region.MASK_POLYA)
 
     @property
     def pos_list(self):
         """ Positions masked arbitrarily from a list. """
-        return self.section.get_mask(self.section.MASK_LIST)
+        return self.region.get_mask(self.region.MASK_LIST)
 
     @property
     def pos_min_ninfo(self):
         """ Positions masked for having too few informative reads. """
-        return self.section.get_mask(self.MASK_POS_NINFO)
+        return self.region.get_mask(self.MASK_POS_NINFO)
 
     @property
     def pos_max_fmut(self):
         """ Positions masked for having too many mutations. """
-        return self.section.get_mask(self.MASK_POS_FMUT)
+        return self.region.get_mask(self.MASK_POS_FMUT)
 
     @property
     def pos_kept(self):
         """ Positions kept. """
-        return self.section.unmasked_int
+        return self.region.unmasked_int
 
     @property
     def _force_write(self):
@@ -210,9 +210,9 @@ class Masker(object):
                                        ).loc[dataset_ref].index.values])
         # Drop redundant positions and sort the remaining ones.
         mask_pos = np.unique(np.asarray(mask_pos, dtype=int))
-        # Keep only the positions in the section.
-        return mask_pos[np.logical_and(mask_pos >= self.section.end5,
-                                       mask_pos <= self.section.end3)]
+        # Keep only the positions in the region.
+        return mask_pos[np.logical_and(mask_pos >= self.region.end5,
+                                       mask_pos <= self.region.end3)]
 
     @staticmethod
     def _get_mask_read(mask_read: Iterable[str],
@@ -230,7 +230,7 @@ class Masker(object):
             mask_read_combined = set(mask_read)
         return np.asarray(list(mask_read_combined), dtype=str)
 
-    def _filter_exclude_read(self, batch: SectionMutsBatch):
+    def _filter_exclude_read(self, batch: RegionMutsBatch):
         """ Filter out reads in the list of pre-excluded read. """
         if self.mask_read.size == 0:
             # Pre-exclude no reads.
@@ -250,7 +250,7 @@ class Masker(object):
         # Return a new batch of only those reads.
         return apply_mask(batch, reads)
 
-    def _filter_min_ncov_read(self, batch: SectionMutsBatch):
+    def _filter_min_ncov_read(self, batch: RegionMutsBatch):
         """ Filter out reads with too few covered positions. """
         if self.min_ncov_read < 1:
             raise ValueError(f"min_ncov_read must be ≥ 1, but got "
@@ -263,7 +263,7 @@ class Masker(object):
         # Return a new batch of only those reads.
         return apply_mask(batch, reads)
 
-    def _filter_discontig(self, batch: SectionMutsBatch):
+    def _filter_discontig(self, batch: RegionMutsBatch):
         """ Filter out reads with discontiguous mates. """
         if not self.mask_discontig:
             # Keep discontiguous reads.
@@ -277,7 +277,7 @@ class Masker(object):
         # Return a new batch of only those reads.
         return apply_mask(batch, reads)
 
-    def _filter_min_finfo_read(self, batch: SectionMutsBatch):
+    def _filter_min_finfo_read(self, batch: RegionMutsBatch):
         """ Filter out reads with too few informative positions. """
         if not 0. <= self.min_finfo_read <= 1.:
             raise ValueError(f"min_finfo_read must be ≥ 0, ≤ 1, but got "
@@ -296,7 +296,7 @@ class Masker(object):
         # Return a new batch of only those reads.
         return apply_mask(batch, reads)
 
-    def _filter_max_fmut_read(self, batch: SectionMutsBatch):
+    def _filter_max_fmut_read(self, batch: RegionMutsBatch):
         """ Filter out reads with too many mutations. """
         if not 0. <= self.max_fmut_read <= 1.:
             raise ValueError(f"max_fmut_read must be ≥ 0, ≤ 1, but got "
@@ -316,7 +316,7 @@ class Masker(object):
         # Return a new batch of only those reads.
         return apply_mask(batch, reads)
 
-    def _mask_min_mut_gap(self, batch: SectionMutsBatch):
+    def _mask_min_mut_gap(self, batch: RegionMutsBatch):
         """ Filter out reads with mutations that are too close. """
         if not self.min_mut_gap >= 0:
             raise ValueError(
@@ -333,11 +333,11 @@ class Masker(object):
         return apply_mask(batch, reads)
 
     def _exclude_positions(self):
-        """ Pre-exclude positions from the section. """
-        self.section.mask_polya(self.mask_polya)
+        """ Pre-exclude positions from the region. """
+        self.region.mask_polya(self.mask_polya)
         if self.mask_gu:
-            self.section.mask_gu()
-        self.section.mask_list(self.mask_pos)
+            self.region.mask_gu()
+        self.region.mask_list(self.mask_pos)
 
     def _get_n_reads_path(self, batch_num: int):
         """ Get the path to the file of the number of reads masked out
@@ -346,7 +346,7 @@ class Masker(object):
             top=self.top,
             sample=self.dataset.sample,
             ref=self.dataset.ref,
-            sect=self.section.name,
+            reg=self.region.name,
             batch=batch_num
         ).with_suffix(path.JSON_EXT)
 
@@ -356,7 +356,7 @@ class Masker(object):
             top=self.top,
             sample=self.dataset.sample,
             ref=self.dataset.ref,
-            sect=self.section.name,
+            reg=self.region.name,
             batch=batch_num
         ).with_suffix(path.TXT_EXT)
 
@@ -370,7 +370,7 @@ class Masker(object):
         n_reads[self.MASK_READ_INIT] = (n := batch.num_reads)
         if self._iter == 1:
             # Keep only the unmasked positions.
-            batch = apply_mask(batch, section=self.section)
+            batch = apply_mask(batch, region=self.region)
             # Remove pre-excluded reads.
             batch = self._filter_exclude_read(batch)
             n_reads[self.MASK_READ_LIST] = (n - (n := batch.num_reads))
@@ -394,7 +394,7 @@ class Masker(object):
         # Save the batch.
         batch_file = MaskBatchIO(sample=self.dataset.sample,
                                  ref=self.dataset.ref,
-                                 sect=self.section.name,
+                                 reg=self.region.name,
                                  batch=batch.batch,
                                  read_nums=batch.read_nums)
         _, checksum = batch_file.save(self.top,
@@ -418,7 +418,7 @@ class Masker(object):
         if not 1 <= self.min_ninfo_pos:
             raise ValueError("min_ninfo_pos must be ≥ 1, "
                              f"but got {self.min_ninfo_pos}")
-        self.section.add_mask(
+        self.region.add_mask(
             self.MASK_POS_NINFO,
             index_to_pos(info.index[info < self.min_ninfo_pos])
         )
@@ -426,7 +426,7 @@ class Masker(object):
         if not 0. <= self.max_fmut_pos <= 1.:
             raise ValueError("max_fmut_pos must be ≥ 0 and ≤ 1, "
                              f"but got {self.max_fmut_pos}")
-        self.section.add_mask(
+        self.region.add_mask(
             self.MASK_POS_FMUT,
             index_to_pos(info.index[(muts / info) > self.max_fmut_pos])
         )
@@ -440,7 +440,7 @@ class Masker(object):
             top=self.top,
             sample=self.dataset.sample,
             refseq=self.dataset.refseq,
-            section=self.section,
+            region=self.region,
             pattern=self.pattern,
             min_mut_gap=self.min_mut_gap,
             quick_unbias=self.quick_unbias,
@@ -541,9 +541,9 @@ class Masker(object):
         return MaskReport(
             sample=self.dataset.sample,
             ref=self.dataset.ref,
-            sect=self.section.name,
-            end5=self.section.end5,
-            end3=self.section.end3,
+            reg=self.region.name,
+            end5=self.region.end5,
+            end3=self.region.end3,
             checksums={self.CHECKSUM_KEY: self.checksums},
             n_batches=self.dataset.num_batches,
             count_refs=self.pattern.nos,
@@ -554,7 +554,7 @@ class Masker(object):
             min_ninfo_pos=self.min_ninfo_pos,
             max_fmut_pos=self.max_fmut_pos,
             max_mask_iter=self.max_iter,
-            n_pos_init=self.section.length,
+            n_pos_init=self.region.length,
             n_pos_gu=self.pos_gu.size,
             n_pos_polya=self.pos_polya.size,
             n_pos_list=self.pos_list.size,
@@ -590,30 +590,30 @@ class Masker(object):
         )
 
     def __str__(self):
-        return f"Mask {self.dataset} over {self.section}"
+        return f"Mask {self.dataset} over {self.region}"
 
 
-def mask_section(dataset: RelateDataset | PoolDataset,
-                 section: Section,
-                 mask_del: bool,
-                 mask_ins: bool,
-                 mask_mut: Iterable[str], *,
-                 tmp_dir: Path,
-                 force: bool,
-                 mask_pos_table: bool,
-                 mask_read_table: bool,
-                 n_procs: int,
-                 **kwargs):
-    """ Filter a section of a set of bit vectors. """
+def mask_region(dataset: RelateDataset | PoolDataset,
+                region: Region,
+                mask_del: bool,
+                mask_ins: bool,
+                mask_mut: Iterable[str], *,
+                tmp_dir: Path,
+                force: bool,
+                mask_pos_table: bool,
+                mask_read_table: bool,
+                n_procs: int,
+                **kwargs):
+    """ Mask out certain reads, positions, and relationships. """
     # Check if the report file already exists.
     report_file = MaskReport.build_path(top=dataset.top,
                                         sample=dataset.sample,
                                         ref=dataset.ref,
-                                        sect=section.name)
+                                        reg=region.name)
     if need_write(report_file, force):
         pattern = RelPattern.from_counts(not mask_del, not mask_ins, mask_mut)
         masker = Masker(dataset,
-                        section,
+                        region,
                         pattern,
                         top=tmp_dir,
                         count_read=mask_read_table,

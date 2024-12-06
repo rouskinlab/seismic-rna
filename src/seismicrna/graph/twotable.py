@@ -83,8 +83,8 @@ class TwoTableGraph(OneRelGraph, ABC):
         return self._get_common_attribute("ref")
 
     @cached_property
-    def sect(self):
-        return self._get_common_attribute("sect")
+    def reg(self):
+        return self._get_common_attribute("reg")
 
     @cached_property
     def seq(self):
@@ -240,22 +240,22 @@ class TwoTableWriter(GraphWriter, ABC):
 
 
 def iter_table_pairs(tables: Iterable[Table]):
-    """ Yield every pair of tables whose reference and section match. """
+    """ Yield every pair of tables whose reference and region match. """
     tables = list(tables)
-    # Group the tables by reference and section.
+    # Group the tables by reference and region.
     table_groups = defaultdict(list)
     for table in tables:
-        key = table.ref, table.sect
+        key = table.ref, table.reg
         if table in table_groups[key]:
             logger.warning(f"Duplicate table: {table}")
         else:
             table_groups[key].append(table)
     # Yield every pair of tables from each group.
-    for (ref, sect), tables in table_groups.items():
+    for (ref, reg), tables in table_groups.items():
         n_files = len(tables)
         n_pairs = n_files * (n_files - 1) // 2
         logger.detail(f"Found {n_files} table files ({n_pairs} pairs) "
-                      f"with reference {repr(ref)} and section {repr(sect)}")
+                      f"with reference {repr(ref)} and region {repr(reg)}")
         yield from combinations(tables, 2)
 
 

@@ -11,7 +11,7 @@ from ..core.header import NUM_CLUSTS_NAME, format_clust_name, validate_ks
 from ..core.logs import logger
 from ..core.rel import RelPattern
 from ..core.rna import RNAProfile
-from ..core.seq import DNA, Section
+from ..core.seq import DNA, Region
 from ..core.table import (COVER_REL,
                           MATCH_REL,
                           MUTAT_REL,
@@ -42,34 +42,34 @@ class PartialTable(Table, ABC):
         return {path.TOP: self.top,
                 path.SAMP: self.sample,
                 path.REF: self.ref,
-                path.SECT: self.sect}
+                path.REG: self.reg}
 
 
 class PartialPositionTable(PartialTable, PositionTable, ABC):
 
     @classmethod
     def path_segs(cls):
-        return path.SECT_DIR_SEGS + (path.PositionTableSeg,)
+        return path.REG_DIR_SEGS + (path.PositionTableSeg,)
 
     def _iter_profiles(self, *,
-                       sections: Iterable[Section] | None,
+                       regions: Iterable[Region] | None,
                        quantile: float,
                        rel: str,
                        k: int | None,
                        clust: int | None):
         """ Yield RNA mutational profiles from a table. """
-        if sections is not None:
-            sections = list(sections)
+        if regions is not None:
+            regions = list(regions)
         else:
-            sections = [self.section]
+            regions = [self.region]
         for hk, hc in self.header.clusts:
             if (k is None or k == hk) and (clust is None or clust == hc):
                 data_name = path.fill_whitespace(format_clust_name(hk, hc),
                                                  fill="-")
-                for section in sections:
-                    yield RNAProfile(section=section,
+                for region in regions:
+                    yield RNAProfile(region=region,
                                      sample=self.sample,
-                                     data_sect=self.sect,
+                                     data_reg=self.reg,
                                      data_name=data_name,
                                      data=self.fetch_ratio(quantile=quantile,
                                                            rel=rel,
@@ -82,7 +82,7 @@ class PartialReadTable(PartialTable, ReadTable, ABC):
 
     @classmethod
     def path_segs(cls):
-        return path.SECT_DIR_SEGS + (path.ReadTableSeg,)
+        return path.REG_DIR_SEGS + (path.ReadTableSeg,)
 
 
 class MaskTable(AvgTable, ABC):
@@ -124,13 +124,13 @@ class PartialTabulator(Tabulator, ABC):
 
     def __init__(self, *,
                  refseq: DNA,
-                 section: Section,
+                 region: Region,
                  pattern: RelPattern,
                  min_mut_gap: int,
                  quick_unbias: bool,
                  quick_unbias_thresh: float,
                  **kwargs):
-        super().__init__(section=section, **kwargs)
+        super().__init__(region=region, **kwargs)
         self.refseq = refseq
         self.pattern = pattern
         self.min_mut_gap = min_mut_gap
@@ -149,10 +149,10 @@ class PartialTabulator(Tabulator, ABC):
         else:
             end_counts = self.end_counts.values
         end5s = (self.end_counts.index.get_level_values(END5_COORD).values
-                 - self.section.end5)
+                 - self.region.end5)
         end3s = (self.end_counts.index.get_level_values(END3_COORD).values
-                 - self.section.end5)
-        return calc_p_ends_observed(self.section.length,
+                 - self.region.end5)
+        return calc_p_ends_observed(self.region.length,
                                     end5s,
                                     end3s,
                                     end_counts)
@@ -161,9 +161,9 @@ class PartialTabulator(Tabulator, ABC):
     def _adjusted(self):
         table_per_pos = super().data_per_pos
         if self.min_mut_gap > 0:
-            if self.section.length > np.sqrt(1_000_000_000):
-                logger.warning("Using bias correction on a section with "
-                               f"{self.section.length} positions requires "
+            if self.region.length > np.sqrt(1_000_000_000):
+                logger.warning("Using bias correction on a region with "
+                               f"{self.region.length} positions requires "
                                ">1 GB of memory. If this is impractical, you "
                                "can (at the cost of lower accuracy) disable "
                                "bias correction using --min-mut-gap 0.")
@@ -171,7 +171,7 @@ class PartialTabulator(Tabulator, ABC):
                 return adjust_counts(table_per_pos,
                                      self.p_ends_given_clust_noclose,
                                      self.num_reads,
-                                     self.section,
+                                     self.region,
                                      self.min_mut_gap,
                                      self.quick_unbias,
                                      self.quick_unbias_thresh)
@@ -211,25 +211,25 @@ class MaskDatasetTabulator(MaskTabulator, PartialDatasetTabulator):
 
 
 def _insert_masked(p_mut: pd.Series | pd.DataFrame,
-                   section: Section):
+                   region: Region):
     """ 2D array where masked positions are filled with 0. """
     # Fill masked positions with 0.
-    p_mut = p_mut.reindex(index=section.range, fill_value=0.)
+    p_mut = p_mut.reindex(index=region.range, fill_value=0.)
     # Convert to a 2D NumPy array.
-    return p_mut.values.reshape((section.length, -1))
+    return p_mut.values.reshape((region.length, -1))
 
 
 def adjust_counts(table_per_pos: pd.DataFrame,
                   p_ends_given_clust_noclose: np.ndarray,
                   n_reads_clust: pd.Series | int,
-                  section: Section,
+                  region: Region,
                   min_mut_gap: int,
                   quick_unbias: bool,
                   quick_unbias_thresh: float):
     """ Adjust the given table of masked/clustered counts per position
     to correct for observer bias. """
     # Determine which positions are unmasked.
-    unmask = section.unmasked_bool
+    unmask = region.unmasked_bool
     # Calculate the fraction of mutations at each position among reads
     # with no two mutations too close.
     with np.errstate(divide="ignore"):
@@ -237,7 +237,7 @@ def adjust_counts(table_per_pos: pd.DataFrame,
         # resulting NaN values are zeroed by nan_to_num.
         p_mut_given_noclose = np.nan_to_num(_insert_masked(
             table_per_pos[MUTAT_REL] / table_per_pos[INFOR_REL],
-            section
+            region
         ))
     if isinstance(n_reads_clust, int):
         # There is only one cluster, so the probability that each read
@@ -259,8 +259,8 @@ def adjust_counts(table_per_pos: pd.DataFrame,
             calc_p_noclose_given_ends_auto(p_mut, min_mut_gap)
         )
         # Drop the cluster dimension from the parameters.
-        if p_mut.shape != (section.length, 1):
-            raise ValueError(f"p_mut must have shape {(section.length, 1)}, "
+        if p_mut.shape != (region.length, 1):
+            raise ValueError(f"p_mut must have shape {(region.length, 1)}, "
                              f"but got {p_mut.shape}")
         p_mut = p_mut.reshape((-1,))
         if p_clust.shape != (1,):

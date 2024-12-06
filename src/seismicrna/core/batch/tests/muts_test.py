@@ -12,52 +12,52 @@ from seismicrna.core.rel.code import (DELET,
                                       SUB_C,
                                       SUB_G,
                                       SUB_T)
-from seismicrna.core.seq import DNA, Section
+from seismicrna.core.seq import DNA, Region
 
 
 class TestCalcMutsMatrix(ut.TestCase):
 
     def test_full_reads_no_muts(self):
         for length in range(10):
-            section = Section("myref", DNA.random(length))
+            region = Region("myref", DNA.random(length))
             muts = dict()
             for num_reads in range(10):
                 read_nums = np.arange(num_reads)
-                seg_end5s = np.full((num_reads, 1), section.end5)
-                seg_end3s = np.full((num_reads, 1), section.end3)
+                seg_end5s = np.full((num_reads, 1), region.end5)
+                seg_end3s = np.full((num_reads, 1), region.end3)
                 with self.subTest(length=length, num_reads=num_reads):
-                    result = calc_muts_matrix(section,
+                    result = calc_muts_matrix(region,
                                               read_nums,
                                               seg_end5s,
                                               seg_end3s,
                                               muts)
-                    expect = pd.DataFrame(MATCH, read_nums, section.unmasked)
+                    expect = pd.DataFrame(MATCH, read_nums, region.unmasked)
                     self.assertTrue(expect.equals(result))
 
     def test_full_reads_no_muts_some_masked(self):
-        section = Section("myref", DNA("GTACTCAG"))
-        section.mask_gu()
+        region = Region("myref", DNA("GTACTCAG"))
+        region.mask_gu()
         muts = dict()
         for num_reads in range(10):
             read_nums = np.arange(num_reads)
-            seg_end5s = np.full((num_reads, 1), section.end5)
-            seg_end3s = np.full((num_reads, 1), section.end3)
+            seg_end5s = np.full((num_reads, 1), region.end5)
+            seg_end3s = np.full((num_reads, 1), region.end3)
             with self.subTest(num_reads=num_reads):
-                result = calc_muts_matrix(section,
+                result = calc_muts_matrix(region,
                                           read_nums,
                                           seg_end5s,
                                           seg_end3s,
                                           muts)
-                expect = pd.DataFrame(MATCH, read_nums, section.unmasked)
+                expect = pd.DataFrame(MATCH, read_nums, region.unmasked)
                 self.assertTrue(expect.equals(result))
 
     def test_partial_reads_no_muts(self):
-        section = Section("myref", DNA.random(5))
+        region = Region("myref", DNA.random(5))
         muts = dict()
         read_nums = np.array([2, 3, 5, 7, 8, 9, 12, 13, 16, 19, 20])
         seg_end5s = np.array([[1, 1, 1, 1, 1, 1, 2, 3, 4, 5, 6]]).T
         seg_end3s = np.array([[0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5]]).T
-        result = calc_muts_matrix(section,
+        result = calc_muts_matrix(region,
                                   read_nums,
                                   seg_end5s,
                                   seg_end3s,
@@ -74,17 +74,17 @@ class TestCalcMutsMatrix(ut.TestCase):
                                [NOCOV, NOCOV, NOCOV, NOCOV, MATCH],
                                [NOCOV, NOCOV, NOCOV, NOCOV, NOCOV]],
                               read_nums,
-                              section.unmasked)
+                              region.unmasked)
         self.assertTrue(expect.equals(result))
 
     def test_partial_reads_no_muts_some_masked(self):
-        section = Section("myref", DNA("TAGCT"))
-        section.mask_gu()
+        region = Region("myref", DNA("TAGCT"))
+        region.mask_gu()
         muts = dict()
         read_nums = np.array([2, 3, 5, 7, 8, 9, 12, 13, 16, 19, 20])
         seg_end5s = np.array([[1, 1, 1, 1, 1, 1, 2, 3, 4, 5, 6]]).T
         seg_end3s = np.array([[0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5]]).T
-        result = calc_muts_matrix(section,
+        result = calc_muts_matrix(region,
                                   read_nums,
                                   seg_end5s,
                                   seg_end3s,
@@ -101,18 +101,18 @@ class TestCalcMutsMatrix(ut.TestCase):
                                [NOCOV, NOCOV],
                                [NOCOV, NOCOV]],
                               read_nums,
-                              section.unmasked)
+                              region.unmasked)
         self.assertTrue(expect.equals(result))
 
     def test_paired_reads_no_muts(self):
-        section = Section("myref", DNA.random(5))
+        region = Region("myref", DNA.random(5))
         muts = dict()
         read_nums = np.array([2, 3, 5, 7, 8, 9, 12, 13, 16])
         seg_end5s = np.array([[1, 1, 1, 1, 1, 2, 3, 4, 5],
                               [1, 2, 3, 4, 5, 5, 5, 5, 5]]).T
         seg_end3s = np.array([[1, 1, 1, 1, 1, 2, 3, 4, 5],
                               [1, 2, 3, 4, 5, 5, 5, 5, 5]]).T
-        result = calc_muts_matrix(section,
+        result = calc_muts_matrix(region,
                                   read_nums,
                                   seg_end5s,
                                   seg_end3s,
@@ -127,11 +127,11 @@ class TestCalcMutsMatrix(ut.TestCase):
                                [NOCOV, NOCOV, NOCOV, MATCH, MATCH],
                                [NOCOV, NOCOV, NOCOV, NOCOV, MATCH]],
                               read_nums,
-                              section.unmasked)
+                              region.unmasked)
         self.assertTrue(expect.equals(result))
 
     def test_paired_reads_masked_segments(self):
-        section = Section("myref", DNA.random(5))
+        region = Region("myref", DNA.random(5))
         muts = dict()
         read_nums = np.array([2, 3, 5, 7, 8, 9, 12, 13, 16])
         seg_end5s = np.array([[1, 1, 1, 1, 1, 2, 3, 4, 5],
@@ -141,7 +141,7 @@ class TestCalcMutsMatrix(ut.TestCase):
         seg_end5s, seg_end3s = mask_segment_ends(seg_end5s, seg_end3s)
         self.assertTrue(np.ma.is_masked(seg_end5s))
         self.assertTrue(np.ma.is_masked(seg_end3s))
-        result = calc_muts_matrix(section,
+        result = calc_muts_matrix(region,
                                   read_nums,
                                   seg_end5s,
                                   seg_end3s,
@@ -156,11 +156,11 @@ class TestCalcMutsMatrix(ut.TestCase):
                                [NOCOV, NOCOV, NOCOV, NOCOV, MATCH],
                                [NOCOV, NOCOV, NOCOV, NOCOV, MATCH]],
                               read_nums,
-                              section.unmasked)
+                              region.unmasked)
         self.assertTrue(expect.equals(result))
 
     def test_partial_reads_muts(self):
-        section = Section("myref", DNA.random(5))
+        region = Region("myref", DNA.random(5))
         muts = {1: {DELET: np.array([3]),
                     SUB_A: np.array([5]),
                     SUB_C: np.array([7]),
@@ -189,7 +189,7 @@ class TestCalcMutsMatrix(ut.TestCase):
         read_nums = np.array([2, 3, 5, 7, 8, 9, 12, 13, 16, 19, 20])
         seg_end5s = np.array([[1, 1, 1, 1, 1, 1, 2, 3, 4, 5, 6]]).T
         seg_end3s = np.array([[0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5]]).T
-        result = calc_muts_matrix(section,
+        result = calc_muts_matrix(region,
                                   read_nums,
                                   seg_end5s,
                                   seg_end3s,
@@ -206,7 +206,7 @@ class TestCalcMutsMatrix(ut.TestCase):
                                [NOCOV, NOCOV, NOCOV, NOCOV, SUB_T],
                                [NOCOV, NOCOV, NOCOV, NOCOV, NOCOV]],
                               read_nums,
-                              section.unmasked)
+                              region.unmasked)
         self.assertTrue(expect.equals(result))
 
 

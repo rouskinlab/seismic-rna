@@ -19,7 +19,7 @@ from ..core.arg import (opt_param_dir,
                         opt_brotli_level,
                         opt_force,
                         opt_max_procs)
-from ..core.rna import find_ct_section
+from ..core.rna import find_ct_region
 from ..core.run import run_func
 from ..core.task import as_list_of_tuples, dispatch
 from ..relate.sim import simulate_relate
@@ -28,24 +28,24 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 
 
 def get_param_dir_fields(param_dir: Path):
-    fields = path.parse(param_dir, path.RefSeg, path.SectSeg)
+    fields = path.parse(param_dir, path.RefSeg, path.RegSeg)
     params_dir = fields[path.TOP]
     if params_dir.name != path.SIM_PARAM_DIR:
         raise ValueError(
             f"Expected parameter directory named {repr(path.SIM_PARAM_DIR)}, "
             f"but got {repr(params_dir.name)}"
         )
-    return params_dir.parent, fields[path.REF], fields[path.SECT]
+    return params_dir.parent, fields[path.REF], fields[path.REG]
 
 
 def load_param_dir(param_dir: Path, profile: str):
     """ Load all parameters for a profile in a directory. """
     prefix = param_dir.joinpath(profile)
-    section = find_ct_section(prefix.with_suffix(path.CT_EXT))
+    region = find_ct_region(prefix.with_suffix(path.CT_EXT))
     pmut = load_pmut(prefix.with_suffix(path.PARAM_MUTS_EXT))
     u5s, u3s, pends = load_pends(prefix.with_suffix(path.PARAM_ENDS_EXT))
     pclust = load_pclust(prefix.with_suffix(path.PARAM_CLUSTS_EXT))
-    return section, pmut, u5s, u3s, pends, pclust
+    return region, pmut, u5s, u3s, pends, pclust
 
 
 def from_param_dir(param_dir: Path,
@@ -54,10 +54,10 @@ def from_param_dir(param_dir: Path,
                    **kwargs):
     """ Simulate a Relate dataset given parameter files. """
     sim_dir, _, _ = get_param_dir_fields(param_dir)
-    section, pmut, u5s, u3s, pends, pclust = load_param_dir(param_dir, profile)
+    region, pmut, u5s, u3s, pends, pclust = load_param_dir(param_dir, profile)
     return simulate_relate(out_dir=sim_dir.joinpath(path.SIM_SAMPLES_DIR),
-                           ref=section.ref,
-                           refseq=section.seq,
+                           ref=region.ref,
+                           refseq=region.seq,
                            pmut=pmut,
                            uniq_end5s=u5s,
                            uniq_end3s=u3s,

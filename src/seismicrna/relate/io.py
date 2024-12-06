@@ -8,7 +8,7 @@ from .batch import ReadNamesBatch, RelateBatch
 from ..core import path
 from ..core.io import MutsBatchIO, ReadBatchIO, RefIO
 from ..core.logs import logger
-from ..core.seq import DNA, Section
+from ..core.seq import DNA, Region
 from ..core.types import fit_uint_type
 
 
@@ -85,7 +85,7 @@ def from_reads(reads: Iterable[tuple[str, tuple[list[int], [list[int]]], dict[in
                                   names=names)
     rel_batch = RelateBatchIO(sample=sample,
                               batch=batch,
-                              section=Section(ref, refseq),
+                              region=Region(ref, refseq),
                               seg_end5s=seg_end5s,
                               seg_end3s=seg_end3s,
                               muts=muts)

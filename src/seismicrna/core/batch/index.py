@@ -34,7 +34,7 @@ def iter_base_types(base_pos_index: pd.Index):
 
 def iter_windows(pos_nums: np.ndarray, size: int):
     """ Yield the positions in each window of size positions of the
-    section. """
+    region. """
     if size < 1:
         raise ValueError(f"size must be ≥ 1, but got {size}")
     if get_length(pos_nums, "pos_nums") > 0:

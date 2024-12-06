@@ -14,7 +14,7 @@ from ..core.arg import (opt_ct_file,
                         opt_force,
                         opt_max_procs)
 from ..core.batch import END5_COORD, END3_COORD
-from ..core.rna import find_ct_section
+from ..core.rna import find_ct_region
 from ..core.run import run_func
 from ..core.stats import calc_beta_params
 from ..core.task import as_list_of_tuples, dispatch
@@ -111,9 +111,9 @@ def sim_pends(end5: int,
     Parameters
     ----------
     end5: int
-        5' end of the section (minimum allowed 5' end coordinate).
+        5' end of the region (minimum allowed 5' end coordinate).
     end3: int
-        3' end of the section (maximum allowed 5' end coordinate).
+        3' end of the region (maximum allowed 5' end coordinate).
     center_fmean: float
         Mean read center, as a fraction of the reference length.
     center_fvar: float
@@ -130,28 +130,28 @@ def sim_pends(end5: int,
     tuple[np.ndarray, np.ndarray, np.ndarray]
         5' and 3' coordinates and their probabilities.
     """
-    # Length of the section.
+    # Length of the region.
     _validate_int(end5, "end5", minimum=1)
     _validate_int(end3, "end3", minimum=0)
     difference = end3 - end5
-    section_length = difference + 1
-    if section_length < 0:
-        raise ValueError("Length of the section must be ≥ 0, but got "
-                         f"{section_length} (end5={end5}, end3={end3})")
+    region_length = difference + 1
+    if region_length < 0:
+        raise ValueError("Length of the region must be ≥ 0, but got "
+                         f"{region_length} (end5={end5}, end3={end3})")
     # Mean center (average of 5' and 3' ends) among all reads.
     _validate_fraction(center_fmean, "center_fmean")
     mean_read_center = center_fmean * difference + end5
-    # Central position of the section (can be a half-integer).
-    section_center = (end5 + end3) / 2
+    # Central position of the region (can be a half-integer).
+    region_center = (end5 + end3) / 2
     # Maximum possible mean read length given the mean read center.
-    max_mean_read_length = section_length - 2 * abs(mean_read_center
-                                                    - section_center)
+    max_mean_read_length = region_length - 2 * abs(mean_read_center
+                                                   - region_center)
     # Mean length among all reads.
     _validate_fraction(length_fmean, "length_fmean")
     mean_read_length = length_fmean * max_mean_read_length
     # Calculate the probability of each read length.
     _validate_fraction(length_fvar, "length_fvar")
-    p_read_length = _calc_p_bins(section_length + 1,
+    p_read_length = _calc_p_bins(region_length + 1,
                                  mean_read_length,
                                  length_fvar)
     # For each read length, calculate the probability of each pair of
@@ -163,7 +163,7 @@ def sim_pends(end5: int,
     for read_length in map(int, np.flatnonzero(p_read_length)):
         if keep_empty_reads or read_length >= 1:
             # Number of positions at which the read can start.
-            n_position_options = section_length - read_length + 1
+            n_position_options = region_length - read_length + 1
             # Mean 5' end of reads with this length.
             end5_mean = mean_read_center - (read_length - 1) / 2
             # Calculate the probability of each 5'/3' end position.
@@ -194,9 +194,9 @@ def sim_pends_ct(ct_file: Path, *,
                  force: bool):
     pends_file = ct_file.with_suffix(path.PARAM_ENDS_EXT)
     if need_write(pends_file, force):
-        section = find_ct_section(ct_file)
-        uniq_end5s, uniq_end3s, pends = sim_pends(section.end5,
-                                                  section.end3,
+        region = find_ct_region(ct_file)
+        uniq_end5s, uniq_end3s, pends = sim_pends(region.end5,
+                                                  region.end3,
                                                   center_fmean,
                                                   center_fvar,
                                                   length_fmean,

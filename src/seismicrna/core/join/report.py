@@ -1,14 +1,14 @@
 from .. import path
-from ..io import SectIO
+from ..io import RegIO
 from ..report import (Report,
                       SampleF,
                       RefF,
-                      SectF,
-                      JoinedSectionsF,
+                      RegF,
+                      JoinedRegionsF,
                       JoinedClustersF)
 
 
-class JoinMaskReport(Report, SectIO):
+class JoinMaskReport(Report, RegIO):
 
     @classmethod
     def file_seg_type(cls):
@@ -20,9 +20,9 @@ class JoinMaskReport(Report, SectIO):
             # Sample and reference.
             SampleF,
             RefF,
-            SectF,
+            RegF,
             # Joined data.
-            JoinedSectionsF,
+            JoinedRegionsF,
         ] + super().fields()
 
     @classmethod
@@ -30,7 +30,7 @@ class JoinMaskReport(Report, SectIO):
         return {**super().auto_fields(), path.CMD: path.CMD_MASK_DIR}
 
 
-class JoinClusterReport(Report, SectIO):
+class JoinClusterReport(Report, RegIO):
 
     @classmethod
     def file_seg_type(cls):
@@ -42,9 +42,9 @@ class JoinClusterReport(Report, SectIO):
             # Sample and reference.
             SampleF,
             RefF,
-            SectF,
+            RegF,
             # Joined data.
-            JoinedSectionsF,
+            JoinedRegionsF,
             JoinedClustersF,
         ] + super().fields()
 

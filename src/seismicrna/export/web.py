@@ -35,9 +35,9 @@ META_SYMBOL = '#'
 SAMPLE = "sample"
 REF_SEQ = "sequence"
 REF_NUM_ALIGN = "num_aligned"
-SECT_END5 = "section_start"
-SECT_END3 = "section_end"
-SECT_POS = "positions"
+REG_END5 = "section_start"
+REG_END3 = "section_end"
+REG_POS = "positions"
 POS_DATA = {"cov": COVER_REL,
             "info": INFOR_REL,
             "sub_N": SUBST_REL,
@@ -84,21 +84,21 @@ def get_ref_metadata(top: Path,
                                             "reference"))
 
 
-def get_sect_metadata(top: Path,
-                      sample: str,
-                      ref: str,
-                      sect: str,
-                      all_pos: bool):
+def get_reg_metadata(top: Path,
+                     sample: str,
+                     ref: str,
+                     reg: str,
+                     all_pos: bool):
     dataset = MaskMutsDataset(MaskReport.build_path(top=top,
                                                     sample=sample,
                                                     ref=ref,
-                                                    sect=sect))
-    positions = (dataset.section.range_int if all_pos
-                 else dataset.section.unmasked_int)
-    sect_metadata = {SECT_END5: dataset.end5,
-                     SECT_END3: dataset.end3,
-                     SECT_POS: positions.tolist()}
-    return format_metadata(sect_metadata)
+                                                    reg=reg))
+    positions = (dataset.region.range_int if all_pos
+                 else dataset.region.unmasked_int)
+    reg_metadata = {REG_END5: dataset.end5,
+                    REG_END3: dataset.end3,
+                    REG_POS: positions.tolist()}
+    return format_metadata(reg_metadata)
 
 
 def conform_series(series: pd.Series | pd.DataFrame):
@@ -226,7 +226,7 @@ def get_sample_data(top: Path,
     # Cache results from the metadata functions to improve speed.
     ref_metadata = cache(partial(get_ref_metadata,
                                  refs_metadata=refs_metadata))
-    sect_metadata = cache(get_sect_metadata)
+    reg_metadata = cache(get_reg_metadata)
     # Add the metadata for the sample.
     data = get_sample_metadata(sample, samples_metadata)
     # Use a while loop with list.pop() until tables is empty rather
@@ -237,16 +237,16 @@ def get_sample_data(top: Path,
     while tables:
         table = tables.pop()
         ref = table.ref
-        sect = table.sect
-        # Add the metadata for the reference and section.
+        reg = table.reg
+        # Add the metadata for the reference and region.
         if ref not in data:
             data[ref] = ref_metadata(top, sample, ref)
-        if sect not in data[ref]:
-            data[ref][sect] = sect_metadata(top, sample, ref, sect, all_pos)
+        if reg not in data[ref]:
+            data[ref][reg] = reg_metadata(top, sample, ref, reg, all_pos)
         for clust, clust_data in get_table_data(table, all_pos).items():
-            if clust not in data[ref][sect]:
-                data[ref][sect][clust] = dict()
-            data[ref][sect][clust].update(clust_data)
+            if clust not in data[ref][reg]:
+                data[ref][reg][clust] = dict()
+            data[ref][reg][clust].update(clust_data)
     return data
 
 

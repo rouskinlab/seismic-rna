@@ -40,8 +40,8 @@ class OneTableGraph(GraphBase, ABC):
         return self.table.ref
 
     @property
-    def sect(self):
-        return self.table.sect
+    def reg(self):
+        return self.table.reg
 
     @property
     def seq(self):

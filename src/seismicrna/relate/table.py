@@ -10,7 +10,7 @@ from .report import RelateReport
 from ..core import path
 from ..core.header import RelHeader, parse_header
 from ..core.logs import logger
-from ..core.seq import FULL_NAME, DNA, Section
+from ..core.seq import FULL_NAME, DNA, Region
 from ..core.table import (Table,
                           Tabulator,
                           DatasetTabulator,
@@ -63,7 +63,7 @@ class RelateTable(AvgTable, ABC):
 class RelatePositionTable(RelateTable, FullPositionTable, ABC):
 
     def _iter_profiles(self, *,
-                       sections: Iterable[Section] | None,
+                       regions: Iterable[Region] | None,
                        quantile: float,
                        rel: str,
                        k: int | None,
@@ -93,8 +93,8 @@ class FullTabulator(Tabulator, ABC):
 
     def __init__(self, *, ref: str, refseq: DNA, **kwargs):
         # For a full tabulator, the full reference sequence must be used
-        # as the section.
-        super().__init__(section=Section(ref, refseq), **kwargs)
+        # as the region.
+        super().__init__(region=Region(ref, refseq), **kwargs)
 
 
 class AverageTabulator(Tabulator, ABC):
@@ -148,7 +148,7 @@ class TableLoader(Table, ABC):
         self._out_dir = fields[path.TOP]
         self._sample = fields[path.SAMP]
         self._ref = fields[path.REF]
-        self._sect = fields.get(path.SECT, FULL_NAME)
+        self._reg = fields.get(path.REG, FULL_NAME)
         if not self.path.with_suffix(table_file.suffix).samefile(table_file):
             raise ValueError(f"{type(self).__name__} got path {table_file}, "
                              f"but expected {self.path}")
@@ -166,8 +166,8 @@ class TableLoader(Table, ABC):
         return self._ref
 
     @property
-    def sect(self) -> str:
-        return self._sect
+    def reg(self) -> str:
+        return self._reg
 
     @cached_property
     def refseq(self):

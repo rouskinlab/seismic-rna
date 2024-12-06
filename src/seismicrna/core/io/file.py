@@ -97,16 +97,16 @@ class RefIO(FileIO, ABC):
         self.ref = ref
 
 
-class SectIO(RefIO, ABC):
-    """ File with a section of a reference. """
+class RegIO(RefIO, ABC):
+    """ File with a region of a reference. """
 
     @classmethod
     def dir_seg_types(cls):
-        return super().dir_seg_types() + (path.SectSeg,)
+        return super().dir_seg_types() + (path.RegSeg,)
 
-    def __init__(self, *, sect: str, **kwargs):
+    def __init__(self, *, reg: str, **kwargs):
         super().__init__(**kwargs)
-        self.sect = sect
+        self.reg = reg
 
 
 class BrickleIO(FileIO, ABC):

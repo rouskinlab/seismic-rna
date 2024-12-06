@@ -11,7 +11,7 @@ PRECISION = 6  # number of digits behind the decimal point
 def get_table_path(top: Path,
                    sample: str,
                    ref: str,
-                   sect: str,
+                   reg: str,
                    table: str,
                    k: int,
                    run: int):
@@ -21,7 +21,7 @@ def get_table_path(top: Path,
                          cmd=path.CMD_CLUST_DIR,
                          sample=sample,
                          ref=ref,
-                         sect=sect,
+                         reg=reg,
                          table=table,
                          k=k,
                          run=run,
@@ -32,14 +32,14 @@ def write_single_run_table(run: EMRun,
                            top: Path,
                            sample: str,
                            ref: str,
-                           sect: str,
+                           reg: str,
                            rank: int, *,
                            attr: str,
                            table: str):
     """ Write a DataFrame of one type of data from one independent run
     of EM clustering to a CSV file. """
     data = getattr(run, attr)
-    file = get_table_path(top, sample, ref, sect, table, run.k, rank)
+    file = get_table_path(top, sample, ref, reg, table, run.k, rank)
     data.round(PRECISION).to_csv(file, header=True, index=True)
     logger.routine(f"Wrote {table} of {run} to {file}")
     return file
@@ -49,13 +49,13 @@ def write_pis(run: EMRun,
               top: Path,
               sample: str,
               ref: str,
-              sect: str,
+              reg: str,
               rank: int):
     return write_single_run_table(run,
                                   top,
                                   sample,
                                   ref,
-                                  sect,
+                                  reg,
                                   rank,
                                   attr="pis",
                                   table=path.CLUST_PARAM_PIS)
@@ -65,13 +65,13 @@ def write_mus(run: EMRun,
               top: Path,
               sample: str,
               ref: str,
-              sect: str,
+              reg: str,
               rank: int):
     return write_single_run_table(run,
                                   top,
                                   sample,
                                   ref,
-                                  sect,
+                                  reg,
                                   rank,
                                   attr="mus",
                                   table=path.CLUST_PARAM_MUS)

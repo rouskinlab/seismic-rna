@@ -19,6 +19,7 @@ CMD_DB2CT = "db2ct"
 CMD_DRAW = "draw"
 CMD_SIM = "sim"
 CMD_DATAPATH = "datapath"
+CMD_MIGRATE = "migrate"
 CMD_TEST = "test"
 
 ########################################################################
