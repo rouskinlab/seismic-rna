@@ -39,7 +39,7 @@ from ..relate.table import (RelateTable,
 
 # Define actions.
 ACTION_REL = "all"
-ACTION_MASK = "masked"
+ACTION_MASK = "filtered"
 ACTION_CLUST = "clustered"
 
 # String to join sample names.
