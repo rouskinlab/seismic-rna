@@ -1,143 +1,270 @@
-from collections import Counter, defaultdict
-from datetime import datetime
+import gzip
 from pathlib import Path
-from typing import Iterable
 
 from click import command
 
-from .core.arg import (CMD_POOL,
+from .core.arg import (CMD_MIGRATE,
                        arg_input_path,
-                       opt_pool,
-                       opt_max_procs,
-                       opt_force)
-from .core.data import load_datasets
-from .core.logs import logger
+                       opt_max_procs)
 from .core.run import run_func
-from .core.task import dispatch
-from .core.write import need_write
-from .relate.data import PoolDataset, load_relate_dataset
-from .relate.report import RelateReport, PoolReport
+from .core.task import as_list_of_tuples, dispatch
 
 DEFAULT_POOL = "pooled"
+JSON_INDENT = " " * 4
+JSON_DELIM = f",\n{JSON_INDENT}"
 
 
-def pool_samples(out_dir: Path,
-                 name: str,
-                 ref: str,
-                 samples: Iterable[str], *,
-                 force: bool):
-    """ Combine one or more samples into a pooled sample.
+def find_and_replace(file: Path, find: str, replace: str, count: int = 1):
+    if file.suffix.endswith(".gz"):
+        open_func = gzip.open
+    else:
+        open_func = open
+    with open_func(file, "rt") as f:
+        text = f.read()
+    find_count = text.count(find)
+    if 0 <= count != find_count:
+        raise ValueError(f"{file} contains {repr(find)} {find_count} time(s)")
+    text = text.replace(find, replace)
+    with open_func(file, "wt") as f:
+        f.write(text)
+    return find_count
 
-    Parameters
-    ----------
-    out_dir: pathlib.Path
-        Output directory.
-    name: str
-        Name of the pool.
-    ref: str
-        Name of the reference
-    samples: Iterable[str]
-        Names of the samples in the pool.
-    force: bool
-        Force the report to be written, even if it exists.
 
-    Returns
-    -------
-    pathlib.Path
-        Path of the Pool report file.
-    """
-    began = datetime.now()
-    # Deduplicate and sort the samples.
-    sample_counts = Counter(samples)
-    if max(sample_counts.values()) > 1:
-        logger.warning(f"Pool {repr(name)} with reference {repr(ref)} "
-                       f"in {out_dir} got duplicate samples: {sample_counts}")
-    samples = sorted(sample_counts)
-    # Determine the output report file.
-    report_file = PoolReport.build_path(top=out_dir, sample=name, ref=ref)
-    if need_write(report_file, force):
-        # Because Relate and Pool report files have the same name, it
-        # would be possible to overwrite a Relate report with a Pool
-        # report, rendering the Relate dataset unusable; prevent this.
-        if report_file.is_file():
-            # Check whether the report file contains a Relate report.
-            try:
-                RelateReport.load(report_file)
-            except ValueError:
-                # The report file does not contain a Relate report.
-                pass
+def migrate_relate_ref_dir(ref_dir: Path):
+    relate_report_file = ref_dir.joinpath("relate-report.json")
+    find_and_replace(relate_report_file,
+                     '"Mark all ambiguous insertions and deletions":',
+                     JSON_DELIM.join(
+                         ['"Mark each insertion on the base to its 3\' (True) or 5\' (False) side": true',
+                          f'"Mark all ambiguous insertions and deletions (indels)":']))
+    find_and_replace(relate_report_file,
+                     "qnames",
+                     "readnames")
+    return ref_dir
+
+
+def migrate_mask_reg_dir(reg_dir: Path):
+    mask_report_file = reg_dir.joinpath("mask-report.json")
+    find_and_replace(mask_report_file,
+                     "Section",
+                     "Region",
+                     count=3)
+    find_and_replace(mask_report_file,
+                     "section",
+                     "region",
+                     count=3)
+    find_and_replace(mask_report_file,
+                     "unambiguous",
+                     "informative",
+                     count=5)
+    find_and_replace(mask_report_file,
+                     '"Number of reads with too few bases covering the region":',
+                     JSON_DELIM.join(['"Number of reads masked from a list": 0',
+                                      '"Number of reads with too few bases covering the region":']))
+    find_and_replace(mask_report_file,
+                     '"Correct observer bias using a quick (typically linear time) heuristic":',
+                     JSON_DELIM.join(['"Maximum number of iterations for masking (0 for no limit)": 1',
+                                      '"Number of iterations until convergence (0 if not converged)": 1',
+                                      '"Correct observer bias using a quick (typically linear time) heuristic":']))
+    return reg_dir
+
+
+def migrate_mask_ref_dir(ref_dir: Path, n_procs: int):
+    dispatch(migrate_mask_reg_dir,
+             max_procs=n_procs,
+             pass_n_procs=False,
+             args=as_list_of_tuples(ref_dir.iterdir()))
+    return ref_dir
+
+
+def migrate_cluster_reg_dir(reg_dir: Path):
+    cluster_report_file = reg_dir.joinpath("cluster-report.json")
+    find_and_replace(cluster_report_file,
+                     "Section",
+                     "Region")
+    return reg_dir
+
+
+def migrate_cluster_ref_dir(ref_dir: Path, n_procs: int):
+    dispatch(migrate_cluster_reg_dir,
+             max_procs=n_procs,
+             pass_n_procs=False,
+             args=as_list_of_tuples(ref_dir.iterdir()))
+    return ref_dir
+
+
+def migrate_table_reg_dir(reg_dir: Path):
+    reg = reg_dir.name
+    ref = reg_dir.parent.name
+    sample_dir = reg_dir.parent.parent.parent
+    for table_name in ["relate-per-pos.csv",
+                       "relate-per-read.csv.gz",
+                       "mask-per-pos.csv",
+                       "mask-per-read.csv.gz",
+                       "clust-per-pos.csv",
+                       "clust-freq.csv"]:
+        table_file = reg_dir.joinpath(table_name)
+        if table_file.is_file():
+            if "per" in table_name:
+                find_and_replace(table_file,
+                                 "Unambiguous",
+                                 "Informative",
+                                 count=-1)
+            if table_name.startswith("relate"):
+                cmd = "relate"
+                to_dir = sample_dir.joinpath(cmd).joinpath(ref)
+            elif table_name.startswith("mask"):
+                cmd = "mask"
+                to_dir = sample_dir.joinpath(cmd).joinpath(ref).joinpath(reg)
+            elif table_name.startswith("clust"):
+                cmd = "cluster"
+                to_dir = sample_dir.joinpath(cmd).joinpath(ref).joinpath(reg)
             else:
-                # The report file contains a Relate report.
-                raise TypeError(f"Cannot overwrite {RelateReport.__name__} "
-                                f"in {report_file} with {PoolReport.__name__}: "
-                                f"would cause data loss")
-            # Check whether the report file contains a Pool report.
-            try:
-                PoolReport.load(report_file)
-            except ValueError:
-                # The report file does not contain a Pool report.
-                raise TypeError(f"Cannot overwrite {report_file} with "
-                                f"{PoolReport.__name__}: would cause data loss")
-        ended = datetime.now()
-        report = PoolReport(sample=name,
-                            ref=ref,
-                            pooled_samples=samples,
-                            began=began,
-                            ended=ended)
-        report.save(out_dir, force=True)
-    return report_file
+                raise ValueError(table_name)
+            if "per-pos" in table_name:
+                table_type = "positions"
+            elif "per-read" in table_name:
+                table_type = "reads"
+            elif "freq" in table_name:
+                table_type = "abundances"
+            else:
+                raise ValueError(table_name)
+            to_name = f"{cmd}-{table_type}{''.join(table_file.suffixes)}"
+            to_file = to_dir.joinpath(to_name)
+            table_file.rename(to_file)
+    reg_dir.rmdir()
+    return reg_dir
 
 
-@run_func(CMD_POOL)
+def migrate_table_ref_dir(ref_dir: Path, n_procs: int):
+    dispatch(migrate_table_reg_dir,
+             max_procs=n_procs,
+             pass_n_procs=False,
+             args=as_list_of_tuples(ref_dir.iterdir()))
+    ref_dir.rmdir()
+    return ref_dir
+
+
+def migrate_fold_reg_dir(reg_dir: Path):
+    for file in reg_dir.iterdir():
+        if file.name.endswith("fold-report.json"):
+            find_and_replace(file,
+                             "Section",
+                             "Region")
+    return reg_dir
+
+
+def migrate_fold_ref_dir(ref_dir: Path, n_procs: int):
+    dispatch(migrate_fold_reg_dir,
+             max_procs=n_procs,
+             pass_n_procs=False,
+             args=as_list_of_tuples(ref_dir.iterdir()))
+    return ref_dir
+
+
+def migrate_graph_file(graph_file: Path):
+    if graph_file.suffix in [".html", ".svg"]:
+        find_and_replace(graph_file, "Unambiguous", "Informative", count=-1)
+        find_and_replace(graph_file, "masked", "filtered", count=-1)
+        find_and_replace(graph_file, "' section '", "' region '")
+    graph_name = graph_file.name
+    if graph_name.split("_")[1] == "masked":
+        graph_name = graph_name.replace("masked", "filtered", 1)
+        graph_file = graph_file.rename(graph_file.parent.joinpath(graph_name))
+    return graph_file
+
+
+def migrate_graph_reg_dir(reg_dir: Path, n_procs: int):
+    dispatch(migrate_graph_file,
+             max_procs=n_procs,
+             pass_n_procs=False,
+             args=as_list_of_tuples(reg_dir.iterdir()))
+    return reg_dir
+
+
+def migrate_graph_ref_dir(ref_dir: Path, n_procs: int):
+    dispatch(migrate_graph_reg_dir,
+             max_procs=n_procs,
+             pass_n_procs=True,
+             args=as_list_of_tuples(ref_dir.iterdir()))
+    return ref_dir
+
+
+def migrate_sample_dir(sample_dir: Path, n_procs: int):
+    relate_dir = sample_dir.joinpath("relate")
+    if relate_dir.is_dir():
+        dispatch(migrate_relate_ref_dir,
+                 max_procs=n_procs,
+                 pass_n_procs=False,
+                 args=as_list_of_tuples(relate_dir.iterdir()))
+    mask_dir = sample_dir.joinpath("mask")
+    if mask_dir.is_dir():
+        dispatch(migrate_mask_ref_dir,
+                 max_procs=n_procs,
+                 pass_n_procs=True,
+                 args=as_list_of_tuples(mask_dir.iterdir()))
+    cluster_dir = sample_dir.joinpath("cluster")
+    if cluster_dir.is_dir():
+        dispatch(migrate_cluster_ref_dir,
+                 max_procs=n_procs,
+                 pass_n_procs=True,
+                 args=as_list_of_tuples(cluster_dir.iterdir()))
+    table_dir = sample_dir.joinpath("table")
+    if table_dir.is_dir():
+        dispatch(migrate_table_ref_dir,
+                 max_procs=n_procs,
+                 pass_n_procs=True,
+                 args=as_list_of_tuples(table_dir.iterdir()),
+                 raise_on_error=True)
+        try:
+            table_dir.rmdir()
+        except OSError:
+            pass
+    fold_dir = sample_dir.joinpath("fold")
+    if fold_dir.is_dir():
+        dispatch(migrate_fold_ref_dir,
+                 max_procs=n_procs,
+                 pass_n_procs=True,
+                 args=as_list_of_tuples(fold_dir.iterdir()),
+                 raise_on_error=True)
+    graph_dir = sample_dir.joinpath("graph")
+    if graph_dir.is_dir():
+        dispatch(migrate_graph_ref_dir,
+                 max_procs=n_procs,
+                 pass_n_procs=True,
+                 args=as_list_of_tuples(graph_dir.iterdir()),
+                 raise_on_error=True)
+    return sample_dir
+
+
+def migrate_out_dir(out_dir: Path, n_procs: int):
+    dispatch(migrate_sample_dir,
+             max_procs=n_procs,
+             pass_n_procs=True,
+             args=as_list_of_tuples(out_dir.iterdir()))
+    return out_dir
+
+
+@run_func(CMD_MIGRATE)
 def run(input_path: tuple[str, ...], *,
-        pool: str,
-        # Parallelization
-        max_procs: int,
-        # Effort
-        force: bool) -> list[Path]:
-    """ Merge samples (vertically) from the Relate step. """
-    if not pool:
-        # Exit immediately if no pool name was given.
-        return list()
-    # Group the datasets by output directory and reference name.
-    pools = defaultdict(list)
-    for dataset in load_datasets(input_path, load_relate_dataset):
-        # Check whether the dataset was pooled.
-        if isinstance(dataset, PoolDataset):
-            # If so, then use all samples in the pool.
-            samples = dataset.samples
-        else:
-            # Otherwise, use just the sample of the dataset.
-            samples = [dataset.sample]
-        pools[dataset.top, dataset.ref].extend(samples)
-    # Make each pool of samples.
-    return dispatch(pool_samples,
+        max_procs: int) -> list[Path]:
+    """ Migrate output directories from v0.21 to v0.22 """
+    return dispatch(migrate_out_dir,
                     max_procs=max_procs,
-                    pass_n_procs=False,
-                    args=[(out_dir, pool, ref, samples)
-                          for (out_dir, ref), samples in pools.items()],
-                    kwargs=dict(force=force))
+                    pass_n_procs=True,
+                    args=as_list_of_tuples(map(Path, input_path)))
 
 
 params = [
     arg_input_path,
-    # Pooling
-    opt_pool,
-    # Parallelization
-    opt_max_procs,
-    # Effort
-    opt_force,
+    opt_max_procs
 ]
 
 
-@command(CMD_POOL, params=params)
-def cli(*args, pool: str, **kwargs):
-    """ Merge samples (vertically) from the Relate step. """
-    if not pool:
-        logger.warning(f"{CMD_POOL} expected a name via --pool, but got "
-                       f"{repr(pool)}; defaulting to {repr(DEFAULT_POOL)}")
-        pool = DEFAULT_POOL
-    return run(*args, pool=pool, **kwargs)
+@command(CMD_MIGRATE, params=params)
+def cli(*args, **kwargs):
+    """ Migrate output directories from v0.21 to v0.22 """
+    return run(*args, **kwargs)
 
 ########################################################################
 #                                                                      #

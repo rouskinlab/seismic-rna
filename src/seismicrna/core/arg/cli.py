@@ -692,7 +692,7 @@ opt_min_finfo_read = Option(
     ("--min-finfo-read",),
     type=float,
     default=0.95,
-    help="Mask reads with less than this fraction of unambiguous base calls"
+    help="Mask reads with less than this fraction of informative base calls"
 )
 
 opt_max_fmut_read = Option(
@@ -713,7 +713,7 @@ opt_min_ninfo_pos = Option(
     ("--min-ninfo-pos",),
     type=int,
     default=1000,
-    help="Mask positions with fewer than this many unambiguous base calls"
+    help="Mask positions with fewer than this many informative base calls"
 )
 
 opt_max_fmut_pos = Option(

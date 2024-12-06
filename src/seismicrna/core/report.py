@@ -406,7 +406,7 @@ PosCutListF = Field("pos_list",
                     iconv=iconv_array_int,
                     oconv=get_oconv_list(int))
 PosCutLoInfoF = Field("pos_min_ninfo",
-                      "Positions with too few unambiguous base calls",
+                      "Positions with too few informative base calls",
                       np.ndarray,
                       iconv=iconv_array_int,
                       oconv=get_oconv_list(int))
@@ -434,7 +434,7 @@ NumPosCutListF = Field("n_pos_list",
                        "Number of positions masked from a list",
                        int)
 NumPosCutLoInfoF = Field("n_pos_min_ninfo",
-                         "Number of positions with too few unambiguous base "
+                         "Number of positions with too few informative base "
                          "calls",
                          int)
 NumPosCutHiMutF = Field("n_pos_max_fmut",
@@ -458,7 +458,7 @@ NumDiscontigF = Field("n_reads_discontig",
                       "Number of reads with discontiguous mates",
                       int)
 NumReadsLoInfoF = Field("n_reads_min_finfo",
-                        "Number of reads with too few unambiguous base calls",
+                        "Number of reads with too few informative base calls",
                         int)
 NumReadsHiMutF = Field("n_reads_max_fmut",
                        "Number of reads with too many mutations",
