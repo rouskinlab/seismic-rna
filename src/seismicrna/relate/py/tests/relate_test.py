@@ -184,7 +184,6 @@ class TestCalcRelsRead(ut.TestCase):
                                 expect = end5_expect, end3_expect, dict()
                                 self.assertEqual(result, expect)
 
-    @ut.skip
     def test_soft_clips(self):
         reflen = 10
         refseq = DNA.random(reflen)
@@ -228,7 +227,6 @@ class TestCalcRelsRead(ut.TestCase):
                                     expect = end5_expect, end3_expect, dict()
                                     self.assertEqual(result, expect)
 
-    @ut.skip
     def test_ambig_delet_low_qual(self):
         """ Test ambiguous deletions with all low-quality positions. """
         reflen = 10
