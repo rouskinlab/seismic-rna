@@ -9,7 +9,6 @@ from .core.arg import (CMD_MIGRATE,
 from .core.run import run_func
 from .core.task import as_list_of_tuples, dispatch
 
-DEFAULT_POOL = "pooled"
 JSON_INDENT = " " * 4
 JSON_DELIM = f",\n{JSON_INDENT}"
 
