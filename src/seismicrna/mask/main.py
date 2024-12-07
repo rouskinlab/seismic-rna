@@ -49,10 +49,10 @@ from ..relate.data import load_relate_dataset
 
 
 def load_regions(input_path: Iterable[str | Path],
-                  coords: Iterable[tuple[str, int, int]],
-                  primers: Iterable[tuple[str, DNA, DNA]],
-                  primer_gap: int,
-                  regions_file: Path | None = None):
+                 coords: Iterable[tuple[str, int, int]],
+                 primers: Iterable[tuple[str, DNA, DNA]],
+                 primer_gap: int,
+                 regions_file: Path | None = None):
     """ Open regions of relate reports. """
     # Load all datasets, grouped by their reference names.
     datasets = defaultdict(list)
@@ -63,7 +63,7 @@ def load_regions(input_path: Iterable[str | Path],
             logger.error(error)
     # Determine the regions for each reference in the datasets.
     regions = RefRegions({(loader.ref, loader.refseq)
-                           for loader in chain(*datasets.values())},
+                          for loader in chain(*datasets.values())},
                          regs_file=regions_file,
                          coords=coords,
                          primers=primers,

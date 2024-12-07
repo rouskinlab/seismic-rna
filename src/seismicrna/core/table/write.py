@@ -188,8 +188,10 @@ class Tabulator(ABC):
                 raise TypeError(table_type)
 
     def write_tables(self, *, force: bool = False, **kwargs):
+        files = list()
         for table in self.generate_tables(**kwargs):
-            table.write(force)
+            files.append(table.write(force))
+        return files
 
 
 class CountTabulator(Tabulator, ABC):
