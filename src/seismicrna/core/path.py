@@ -496,13 +496,13 @@ ClustRepSeg = Segment("clust-rep", {EXT: ReportExt}, frmt="cluster-report{ext}")
 # Table
 PositionTableSeg = Segment("position-table",
                            {TABLE: PosTableField, EXT: PosTableExt},
-                           frmt="{table}-positions{ext}")
+                           frmt="{table}-position-table{ext}")
 ReadTableSeg = Segment("read-table",
                        {TABLE: ReadTableField, EXT: ReadTableExt},
-                       frmt="{table}-reads{ext}")
+                       frmt="{table}-read-table{ext}")
 AbundanceTableSeg = Segment("abundance-table",
                             {TABLE: AbundanceField, EXT: AbundanceExt},
-                            frmt="{table}-abundances{ext}")
+                            frmt="{table}-abundance-table{ext}")
 
 # Fold
 FoldRepSeg = Segment("fold-rep",

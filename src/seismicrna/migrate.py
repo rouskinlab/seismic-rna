@@ -121,14 +121,14 @@ def migrate_table_reg_dir(reg_dir: Path):
             else:
                 raise ValueError(table_name)
             if "per-pos" in table_name:
-                table_type = "positions"
+                table_type = "position"
             elif "per-read" in table_name:
-                table_type = "reads"
+                table_type = "read"
             elif "freq" in table_name:
-                table_type = "abundances"
+                table_type = "abundance"
             else:
                 raise ValueError(table_name)
-            to_name = f"{cmd}-{table_type}{''.join(table_file.suffixes)}"
+            to_name = f"{cmd}-{table_type}-table{''.join(table_file.suffixes)}"
             to_file = to_dir.joinpath(to_name)
             table_file.rename(to_file)
     reg_dir.rmdir()
