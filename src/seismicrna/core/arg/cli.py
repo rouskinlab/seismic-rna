@@ -582,7 +582,7 @@ opt_pool = Option(
 # Mask
 
 opt_mask_regions_file = Option(
-    ("--mask-regions-file", "-s"),
+    ("--mask-regions-file", "-i"),
     type=Path(exists=True, dir_okay=False),
     help="Mask regions of references from coordinates/primers in a CSV file"
 )
@@ -756,6 +756,13 @@ opt_mask_read_table = Option(
     type=bool,
     default=True,
     help="Tabulate relationships per read for mask data"
+)
+
+opt_verify_times = Option(
+    ("--verify-times/--no-verify-times",),
+    type=bool,
+    default=True,
+    help="Verify that report files from later steps have later timestamps"
 )
 
 # Cluster options

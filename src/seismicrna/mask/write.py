@@ -622,14 +622,6 @@ def mask_region(dataset: RelateDataset | PoolDataset,
         tabulator, report_saved = masker.mask()
         tabulator.write_tables(pos=mask_pos_table, read=mask_read_table)
         release_to_out(dataset.top, tmp_dir, report_saved.parent)
-    else:
-        # Write the tables if they do not exist.
-        MaskDatasetTabulator(
-            dataset=MaskMutsDataset(report_file),
-            count_pos=mask_pos_table,
-            count_read=mask_read_table,
-            max_procs=n_procs,
-        ).write_tables(pos=mask_pos_table, read=mask_read_table)
     return report_file.parent
 
 ########################################################################

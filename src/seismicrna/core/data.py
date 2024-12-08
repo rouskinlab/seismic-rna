@@ -34,9 +34,9 @@ class Dataset(ABC):
     def get_report_type(cls) -> type[Report]:
         """ Type of report. """
 
-    def __init__(self, report_file: Path, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, report_file: Path, verify_times: bool = True):
         self.report_file = report_file
+        self.verify_times = verify_times
         # Load the report here so that if the report does not have the
         # expected fields, an error will be raised inside __init__.
         # Doing so is essential for LoadFunction to determine which type
@@ -609,29 +609,33 @@ class MultistepDataset(MutsDataset, ABC):
         )
 
     @classmethod
-    def load_dataset1(cls, dataset2_report_file: Path):
+    def load_dataset1(cls, dataset2_report_file: Path, verify_times: bool):
         """ Load Dataset 1. """
         load_func = cls.get_dataset1_load_func()
-        return load_func(cls.get_dataset1_report_file(dataset2_report_file))
+        return load_func(cls.get_dataset1_report_file(dataset2_report_file),
+                         verify_times=verify_times)
 
     @classmethod
-    def load_dataset2(cls, dataset2_report_file: Path):
+    def load_dataset2(cls, dataset2_report_file: Path, verify_times: bool):
         """ Load Dataset 2. """
         load_func = cls.get_dataset2_load_func()
-        return load_func(dataset2_report_file)
+        return load_func(dataset2_report_file,
+                         verify_times=verify_times)
 
     def __init__(self, dataset2_report_file: Path, **kwargs):
         super().__init__(dataset2_report_file, **kwargs)
-        data1 = self.load_dataset1(dataset2_report_file)
-        data2 = self.load_dataset2(dataset2_report_file)
-        if data1.timestamp > data2.timestamp:
-            raise ValueError(f"To make a {type(self).__name__}, "
-                             f"the {type(data1).__name__} must have been "
-                             f"written before the {type(data2).__name__}, "
-                             f"but the timestamps in their report files are "
-                             f"{data1.timestamp.strftime(DATETIME_FORMAT)} and "
-                             f"{data2.timestamp.strftime(DATETIME_FORMAT)}, "
-                             f"respectively")
+        data1 = self.load_dataset1(dataset2_report_file, self.verify_times)
+        data2 = self.load_dataset2(dataset2_report_file, self.verify_times)
+        if self.verify_times and data1.timestamp > data2.timestamp:
+            raise ValueError(
+                f"To make a {type(self).__name__}, the {type(data1).__name__} "
+                f"must have been written before the {type(data2).__name__}, "
+                f"but the timestamps in their report files are "
+                f"{data1.timestamp.strftime(DATETIME_FORMAT)} and "
+                f"{data2.timestamp.strftime(DATETIME_FORMAT)}, respectively. "
+                f"If you are sure this inconsistency is not a problem, "
+                f"then you can suppress this error using --no-verify-times"
+            )
         self.data1 = data1
         self.data2 = data2
 
@@ -677,7 +681,9 @@ class ArrowDataset(MultistepDataset, NarrowDataset, ABC):
     the workflow, with one region. """
 
 
-def load_datasets(input_path: Iterable[str | Path], load_func: LoadFunction):
+def load_datasets(input_path: Iterable[str | Path],
+                  load_func: LoadFunction,
+                  **kwargs):
     """ Yield a Dataset from each report file in `input_path`.
 
     Parameters
@@ -690,7 +696,7 @@ def load_datasets(input_path: Iterable[str | Path], load_func: LoadFunction):
     for report_file in path.find_files_chain(input_path,
                                              load_func.report_path_seg_types):
         try:
-            yield load_func(report_file)
+            yield load_func(report_file, **kwargs)
         except Exception as error:
             logger.error(error)
 

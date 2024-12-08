@@ -26,6 +26,7 @@ from ..core.arg import (CMD_CLUSTER,
                         opt_write_all_ks,
                         opt_cluster_pos_table,
                         opt_cluster_abundance_table,
+                        opt_verify_times,
                         opt_brotli_level,
                         opt_max_procs,
                         opt_force)
@@ -54,6 +55,7 @@ def run(input_path: tuple[str, ...], *,
         write_all_ks: bool,
         cluster_pos_table: bool,
         cluster_abundance_table: bool,
+        verify_times: bool,
         brotli_level: int,
         max_procs: int,
         force: bool,
@@ -86,6 +88,7 @@ def run(input_path: tuple[str, ...], *,
                                 write_all_ks=write_all_ks,
                                 cluster_pos_table=cluster_pos_table,
                                 cluster_abundance_table=cluster_abundance_table,
+                                verify_times=verify_times,
                                 brotli_level=brotli_level,
                                 force=force,
                                 tmp_dir=tmp_dir))
@@ -114,6 +117,8 @@ params = [
     # Table options
     opt_cluster_pos_table,
     opt_cluster_abundance_table,
+    # Validation
+    opt_verify_times,
     # Compression
     opt_brotli_level,
     # Parallelization

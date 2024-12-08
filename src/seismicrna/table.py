@@ -13,6 +13,7 @@ from .core.arg import (CMD_TABLE,
                        opt_mask_read_table,
                        opt_cluster_pos_table,
                        opt_cluster_abundance_table,
+                       opt_verify_times,
                        opt_max_procs,
                        opt_force)
 from .core.data import MutsDataset, load_datasets
@@ -50,24 +51,30 @@ def run(input_path: tuple[str, ...], *,
         mask_read_table: bool,
         cluster_pos_table: bool,
         cluster_abundance_table: bool,
+        verify_times: bool,
         max_procs: int,
         force: bool) -> list[Path]:
     """ Tabulate counts of relationships per read and position. """
     # Load the datasets from the report files.
     args = list()
-    for dataset in load_datasets(input_path, load_relate_dataset):
+    for dataset in load_datasets(input_path,
+                                 load_relate_dataset):
         args.append((dataset,
                      RelateDatasetTabulator,
                      relate_pos_table,
                      relate_read_table,
                      False))
-    for dataset in load_datasets(input_path, load_mask_dataset):
+    for dataset in load_datasets(input_path,
+                                 load_mask_dataset,
+                                 verify_times=verify_times):
         args.append((dataset,
                      MaskDatasetTabulator,
                      mask_pos_table,
                      mask_read_table,
                      False))
-    for dataset in load_datasets(input_path, load_cluster_dataset):
+    for dataset in load_datasets(input_path,
+                                 load_cluster_dataset,
+                                 verify_times=verify_times):
         args.append((dataset,
                      ClusterDatasetTabulator,
                      cluster_pos_table,
@@ -89,6 +96,8 @@ params = [
     opt_mask_read_table,
     opt_cluster_pos_table,
     opt_cluster_abundance_table,
+    # Validation
+    opt_verify_times,
     # Parallelization
     opt_max_procs,
     # Effort

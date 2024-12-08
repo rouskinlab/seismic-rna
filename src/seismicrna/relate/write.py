@@ -220,14 +220,6 @@ class RelationWriter(object):
                 ended=ended
             )
             release_to_out(out_dir, release_dir, report_saved.parent)
-        else:
-            # Write the tables if they do not exist.
-            RelateDatasetTabulator(
-                dataset=RelateDataset(report_file),
-                count_pos=relate_pos_table,
-                count_read=relate_read_table,
-                max_procs=n_procs,
-            ).write_tables(pos=relate_pos_table, read=relate_read_table)
         return report_file.parent
 
     def __str__(self):
