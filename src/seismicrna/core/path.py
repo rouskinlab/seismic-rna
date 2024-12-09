@@ -35,7 +35,6 @@ CMD_ALIGN_DIR = "align"
 CMD_REL_DIR = "relate"
 CMD_MASK_DIR = "mask"
 CMD_CLUST_DIR = "cluster"
-CMD_TABLE_DIR = "table"
 CMD_LIST_DIR = "list"
 CMD_FOLD_DIR = "fold"
 CMD_GRAPH_DIR = "graph"
@@ -72,10 +71,7 @@ CLUST_PARAMS_DIR = "parameters"
 CLUST_STATS_DIR = "statistics"
 CLUST_COUNTS_DIR = "read-counts"
 
-RELATE_TABLE = "relate"
-MASK_TABLE = "mask"
-CLUST_TABLE = "clust"
-TABLES = (RELATE_TABLE, MASK_TABLE, CLUST_TABLE)
+TABLES = (CMD_REL_DIR, CMD_MASK_DIR, CMD_CLUST_DIR)
 
 # File extensions
 
@@ -117,6 +113,7 @@ DBN_EXT = ".dbn"
 DOT_EXT = ".dot"
 DOT_EXTS = DB_EXT, DBN_EXT, DOT_EXT
 DMS_EXT = ".dms"
+KTS_EXT = ".kts"
 HTML_EXT = ".html"
 SVG_EXT = ".svg"
 PDF_EXT = ".pdf"
@@ -165,9 +162,7 @@ def sanitize(path: str | pathlib.Path, strict: bool = False):
     pathlib.Path
         Absolute, normalized, symlink-free path.
     """
-    sanitized = pathlib.Path(path).resolve(strict=strict)
-    logger.detail(f"Sanitized path {path} to path {sanitized}")
-    return sanitized
+    return pathlib.Path(path).resolve(strict=strict)
 
 
 # Path Fields ##########################################################
@@ -250,7 +245,6 @@ class Field(object):
                 f"{repr(self.dtype.__name__)}: {error}"
             ) from None
         self.validate(val)
-        logger.detail(f"{self} parsed {repr(text)} to {repr(val)}")
         return val
 
     @cached_property
@@ -269,7 +263,6 @@ CmdField = Field(str, [CMD_ALIGN_DIR,
                        CMD_REL_DIR,
                        CMD_MASK_DIR,
                        CMD_CLUST_DIR,
-                       CMD_TABLE_DIR,
                        CMD_LIST_DIR,
                        CMD_FOLD_DIR,
                        CMD_GRAPH_DIR])
@@ -278,7 +271,7 @@ IntField = Field(int)
 ClustRunResultsField = Field(str, CLUST_PARAMS)
 PosTableField = Field(str, TABLES)
 ReadTableField = Field(str, TABLES)
-FreqTableField = Field(str, [CLUST_TABLE])
+AbundanceField = Field(str, [CMD_CLUST_DIR])
 
 # File extensions
 TextExt = Field(str, [TXT_EXT], is_ext=True)
@@ -288,7 +281,7 @@ BatchExt = Field(str, [BROTLI_PICKLE_EXT], is_ext=True)
 ClustTabExt = Field(str, CSV_EXTS, is_ext=True)
 PosTableExt = Field(str, [CSV_EXT], is_ext=True)
 ReadTableExt = Field(str, [CSVZIP_EXT], is_ext=True)
-FreqTableExt = Field(str, [CSV_EXT], is_ext=True)
+AbundanceExt = Field(str, [CSV_EXT], is_ext=True)
 FastaExt = Field(str, FASTA_EXTS, is_ext=True)
 FastaIndexExt = Field(str, BOWTIE2_INDEX_EXTS, is_ext=True)
 FastqExt = Field(str, FQ_EXTS, is_ext=True)
@@ -300,6 +293,8 @@ DotBracketExt = Field(str, DOT_EXTS, is_ext=True)
 DmsReactsExt = Field(str, [DMS_EXT], is_ext=True)
 GraphExt = Field(str, GRAPH_EXTS, is_ext=True)
 WebAppFileExt = Field(str, [JSON_EXT], is_ext=True)
+SvgExt = Field(str, [SVG_EXT], is_ext=True)
+KtsExt = Field(str, [KTS_EXT], is_ext=True)
 
 
 # Path Segments ########################################################
@@ -369,10 +364,7 @@ class Segment(object):
             if text.endswith(ext):
                 # The text ends with this extension, so it must be the
                 # longest valid extension in which the text ends.
-                logger.detail(f"{self} matched {repr(text)} "
-                              f"to longest extension {repr(ext)}")
                 return ext
-        logger.detail(f"{self} did not match {repr(text)} to any extension")
         return
 
     def build(self, **vals: Any):
@@ -383,9 +375,7 @@ class Segment(object):
         fields = {name: field.build(vals[name])
                   for name, field in self.field_types.items()}
         # Return the formatted segment.
-        segment = self.frmt.format(**fields)
-        logger.detail(f"{self} built {vals} into segment {repr(segment)}")
-        return segment
+        return self.frmt.format(**fields)
 
     def parse(self, text: str):
         ext = None
@@ -408,10 +398,8 @@ class Segment(object):
             vals.append(ext)
         # Return a dict of the names of the fields in the segment and
         # their parsed values.
-        fields = {name: field.parse(group) for (name, field), group
-                  in zip(self.field_types.items(), vals, strict=True)}
-        logger.detail(f"{self} parsed {repr(text)} into fields {fields}")
-        return fields
+        return {name: field.parse(group) for (name, field), group
+                in zip(self.field_types.items(), vals, strict=True)}
 
     @cached_property
     def as_str(self):
@@ -429,7 +417,7 @@ STAGE = "stage"
 CMD = "cmd"
 SAMP = "sample"
 REF = "ref"
-SECT = "sect"
+REG = "reg"
 BATCH = "batch"
 TABLE = "table"
 NCLUST = "k"
@@ -437,6 +425,7 @@ RUN = "run"
 PROFILE = "profile"
 GRAPH = "graph"
 EXT = "ext"
+STRUCT = "struct"
 
 # Directory segments
 
@@ -445,7 +434,7 @@ StageSeg = Segment("stage-dir", {STAGE: StageField}, order=70)
 SampSeg = Segment("sample-dir", {SAMP: NameField}, order=60)
 CmdSeg = Segment("command-dir", {CMD: CmdField}, order=50)
 RefSeg = Segment("ref-dir", {REF: NameField}, order=30)
-SectSeg = Segment("section-dir", {SECT: NameField}, order=20)
+RegSeg = Segment("reg-dir", {REG: NameField}, order=20)
 
 # File segments
 
@@ -474,9 +463,9 @@ AlignRefRepSeg = Segment("align-ref-rep",
 
 # Relate
 RefseqFileSeg = Segment("refseq-file", {EXT: RefseqFileExt}, frmt="refseq{ext}")
-QnamesBatSeg = Segment("name-bat",
-                       {BATCH: IntField, EXT: BatchExt},
-                       frmt="qnames-batch-{batch}{ext}")
+ReadNamesBatSeg = Segment("name-bat",
+                          {BATCH: IntField, EXT: BatchExt},
+                          frmt="names-batch-{batch}{ext}")
 RelateBatSeg = Segment("rel-bat",
                        {BATCH: IntField, EXT: BatchExt},
                        frmt="relate-batch-{batch}{ext}")
@@ -505,15 +494,15 @@ ClustBatSeg = Segment("clust-bat",
 ClustRepSeg = Segment("clust-rep", {EXT: ReportExt}, frmt="cluster-report{ext}")
 
 # Table
-PosTableSeg = Segment("pos-table",
-                      {TABLE: PosTableField, EXT: PosTableExt},
-                      frmt="{table}-per-pos{ext}")
+PositionTableSeg = Segment("position-table",
+                           {TABLE: PosTableField, EXT: PosTableExt},
+                           frmt="{table}-position-table{ext}")
 ReadTableSeg = Segment("read-table",
                        {TABLE: ReadTableField, EXT: ReadTableExt},
-                       frmt="{table}-per-read{ext}")
-FreqTableSeg = Segment("freq-table",
-                       {TABLE: FreqTableField, EXT: FreqTableExt},
-                       frmt="{table}-freq{ext}")
+                       frmt="{table}-read-table{ext}")
+AbundanceTableSeg = Segment("abundance-table",
+                            {TABLE: AbundanceField, EXT: AbundanceExt},
+                            frmt="{table}-abundance-table{ext}")
 
 # Fold
 FoldRepSeg = Segment("fold-rep",
@@ -529,6 +518,12 @@ VarnaColorSeg = Segment("varna-color",
                         {PROFILE: NameField, EXT: TextExt},
                         frmt="{profile}__varna-color{ext}")
 
+# Draw
+SvgSeg = Segment("svg", {PROFILE: NameField, STRUCT: IntField, EXT: SvgExt},
+                 frmt="{profile}-{struct}{ext}")
+KtsSeg = Segment("kts", {PROFILE: NameField, STRUCT: IntField, EXT: KtsExt},
+                 frmt="{profile}-{struct}{ext}")
+
 # Graphs
 GraphSeg = Segment("graph", {GRAPH: NameField, EXT: GraphExt})
 
@@ -540,7 +535,7 @@ WebAppFileSeg = Segment("webapp",
 # Path segment patterns
 CMD_DIR_SEGS = SampSeg, CmdSeg
 REF_DIR_SEGS = CMD_DIR_SEGS + (RefSeg,)
-SECT_DIR_SEGS = REF_DIR_SEGS + (SectSeg,)
+REG_DIR_SEGS = REF_DIR_SEGS + (RegSeg,)
 STAGE_DIR_SEGS = SampSeg, CmdSeg, StageSeg
 FASTA_STAGE_SEGS = StageSeg, FastaSeg
 FASTA_INDEX_DIR_STAGE_SEGS = StageSeg, RefSeg
@@ -552,12 +547,9 @@ DMFASTQ1_SEGS = SampSeg, DmFastq1Seg
 DMFASTQ2_SEGS = SampSeg, DmFastq2Seg
 XAM_SEGS = CMD_DIR_SEGS + (XamSeg,)
 XAM_STAGE_SEGS = STAGE_DIR_SEGS + (XamSeg,)
-CLUST_TAB_SEGS = SECT_DIR_SEGS + (ClustParamsDirSeg, ClustParamsFileSeg)
-POS_TABLE_SEGS = SECT_DIR_SEGS + (PosTableSeg,)
-READ_TABLE_SEGS = SECT_DIR_SEGS + (ReadTableSeg,)
-FREQ_TABLE_SEGS = SECT_DIR_SEGS + (FreqTableSeg,)
-CT_FILE_SEGS = SECT_DIR_SEGS + (ConnectTableSeg,)
-DB_FILE_SEGS = SECT_DIR_SEGS + (DotBracketSeg,)
+CLUST_TAB_SEGS = REG_DIR_SEGS + (ClustParamsDirSeg, ClustParamsFileSeg)
+CT_FILE_SEGS = REG_DIR_SEGS + (ConnectTableSeg,)
+DB_FILE_SEGS = REG_DIR_SEGS + (DotBracketSeg,)
 
 
 # Paths ################################################################
@@ -584,8 +576,6 @@ class Path(object):
     def build(self, **fields: Any):
         """ Return a `pathlib.Path` instance by assembling the given
         `fields` into a full path. """
-        strf = str(fields)
-        logger.detail(f"{self} began building fields {strf}")
         # Build the new path one segment at a time.
         segments = list()
         for seg_type in self.seg_types:
@@ -596,7 +586,6 @@ class Path(object):
                               for name in seg_type.field_types}
             except KeyError as error:
                 raise PathValueError(f"Missing field for {seg_type}: {error}")
-            logger.detail(f"{self} found fields for {seg_type}: {seg_fields}")
             # Generate a string representation of the segment using the
             # values of its fields, and add it to the growing path.
             segments.append(seg_type.build(**seg_fields))
@@ -608,12 +597,10 @@ class Path(object):
                                  f"fields {exp} for segment types {segs}")
         # Assemble the segment strings into a path, and return it.
         path = pathlib.Path(*segments)
-        logger.detail(f"{self} ended building fields {strf} into path {path}")
         return path
 
     def parse(self, path: str | pathlib.Path):
         """ Return the field names and values from a given path. """
-        logger.detail(f"{self} began parsing path {path}")
         # Convert the given path into a canonical, absolute path.
         path = str(sanitize(path))
         # Get the field names and values one segment at a time.
@@ -629,14 +616,12 @@ class Path(object):
                 # Split off the deepest part of the path (tail), and
                 # parse it using the current segment type.
                 path, tail = os.path.split(path)
-            logger.detail(f"{self} found path tail {repr(tail)} for {seg_type}")
             # Verify that the entire path has not been consumed.
             if not tail:
                 raise PathValueError(f"No path remains to parse {seg_type}")
             # Parse the deepest part of the path to obtain the fields,
             # and use them to update the field names and values.
             fields.update(seg_type.parse(tail))
-        logger.detail(f"{self} ended parsing path {path} into fields {fields}")
         return fields
 
     @cached_property
@@ -653,20 +638,13 @@ class Path(object):
 @cache
 def create_path_type(*segment_types: Segment):
     """ Create and cache a Path instance from the segment types. """
-    path_type = Path(*segment_types)
-    logger.detail(
-        f"Created path type {path_type} from segment types {segment_types}"
-    )
-    return path_type
+    return Path(*segment_types)
 
 
 def build(*segment_types: Segment, **field_values: Any):
     """ Return a `pathlib.Path` from the given segment types and
     field values. """
-    path = create_path_type(*segment_types).build(**field_values)
-    logger.detail(f"Built path {path} from segment types {segment_types} "
-                  f"and fields {field_values}")
-    return path
+    return create_path_type(*segment_types).build(**field_values)
 
 
 def builddir(*segment_types: Segment, **field_values: Any):
@@ -708,13 +686,11 @@ def get_fields_in_seg_types(*segment_types: Segment) -> dict[str, Field]:
     fields = {field_name: field
               for segment_type in segment_types
               for field_name, field in segment_type.field_types.items()}
-    logger.detail(f"Segment types {segment_types} contain fields {fields}")
     return fields
 
 
 def deduplicate(paths: Iterable[str | pathlib.Path]):
     """ Yield the non-redundant paths. """
-    logger.detail(f"Began deduplicating paths")
     total = 0
     seen = set()
     for path in map(sanitize, paths):
@@ -723,11 +699,7 @@ def deduplicate(paths: Iterable[str | pathlib.Path]):
             logger.warning(f"Duplicate path: {path}")
         else:
             seen.add(path)
-            logger.detail(f"Non-duplicated path: {path}")
             yield path
-    logger.detail(
-        f"Ended deduplicating paths: {total} total, {len(seen)} unique"
-    )
 
 
 def deduplicated(func: Callable):
@@ -772,11 +744,9 @@ def path_matches(path: str | pathlib.Path, segments: Sequence[Segment]):
         parse(path, *segments)
     except PathError:
         # The path does not match this sequence of path segments.
-        logger.detail(f"Path {path} does not match segment types {segments}")
         return False
     else:
         # The path matches this sequence of path segments.
-        logger.detail(f"Path {path} matches segment types {segments}")
         return True
 
 
@@ -803,21 +773,17 @@ def find_files(path: str | pathlib.Path, segments: Sequence[Segment]):
         Paths of files matching the segments.
     """
     path = sanitize(path, strict=True)
-    strs = str(list(map(str, segments)))
     if path.is_dir():
         # Search the directory for files matching the segments.
-        logger.detail(f"Began searching {path} and any subdirectories "
-                      f"for files matching {strs}")
+        logger.detail(f"Began searching {path} and any of its subdirectories "
+                      f"for files matching {list(map(str, segments))}")
         yield from chain(*map(partial(find_files, segments=segments),
                               path.iterdir()))
     else:
         # Assume the path is a file; check if it matches the segments.
         if path_matches(path, segments):
             # If so, then yield it.
-            logger.detail(f"File {path} matches {strs}")
             yield path
-        else:
-            logger.detail(f"File {path} does not match {strs}")
 
 
 @deduplicated
@@ -858,22 +824,16 @@ def cast_path(input_path: pathlib.Path,
         Path comprising `output_segments` made of fields in `input_path`
         (as determined by `input_segments`).
     """
-    logger.detail(f"Began casting {input_path} from segments {input_segments} "
-                  f"to segments {output_segments}")
     # Extract the fields from the input path using the input segments.
     top, fields = parse_top_separate(input_path, *input_segments)
-    logger.detail(f"Parsed fields {fields} from {input_path}")
     if override:
         # Override and supplement the fields in the input path.
         fields |= override
-        logger.detail(f"Overrode fields to {fields} using {override}")
     # Normalize the fields to comply with the output segments.
     fields = {field_name: fields[field_name]
               for field_name in get_fields_in_seg_types(*output_segments)}
-    logger.detail(f"Normalized fields to {fields}")
     # Generate a new output path from the normalized fields.
     output_path = build(*output_segments, top=top, **fields)
-    logger.detail(f"Ended casting {input_path} to {output_path}")
     return output_path
 
 
@@ -903,7 +863,6 @@ def transpath(to_dir: str | pathlib.Path,
     pathlib.Path
         Hypothetical path after moving `path` from `indir` to `outdir`.
     """
-    logger.detail(f"Began transplanting {path} in {from_dir} to {to_dir}")
     # Ensure from_dir is sanitized.
     from_dir = sanitize(from_dir, strict)
     # Find the part of the given path relative to from_dir.
@@ -911,15 +870,9 @@ def transpath(to_dir: str | pathlib.Path,
     if relpath == pathlib.Path():
         # If the relative path is empty, then use the parent directory
         # of from_dir instead.
-        logger.detail(f"Relative path of {path} to {from_dir} is empty; "
-                      f"moving from {from_dir.parent} instead")
         return transpath(to_dir, from_dir.parent, path, strict)
-    logger.detail(f"Relative path of {path} to {from_dir} is {relpath}")
     # Append the relative part of the path to to_dir.
-    output_path = sanitize(to_dir, strict).joinpath(relpath)
-    logger.detail(f"Ended transplanting {path} in {from_dir} "
-                  f"to {output_path} in {to_dir}")
-    return output_path
+    return sanitize(to_dir, strict).joinpath(relpath)
 
 
 def transpaths(to_dir: str | pathlib.Path,
@@ -945,20 +898,13 @@ def transpaths(to_dir: str | pathlib.Path,
     tuple[pathlib.Path, ...]
         Hypothetical paths after moving all paths in `path` to `outdir`.
     """
-    logger.detail(f"Began transplanting paths {paths} to {to_dir}")
     if not paths:
         # There are no paths to transplant.
         return tuple()
     # Determine the longest common sub-path of all given paths.
     common_path = os.path.commonpath([sanitize(p, strict) for p in paths])
-    logger.detail(f"{common_path} is the longest common subpath of {paths}")
     # Move each path from that common path to the given directory.
-    output_paths = tuple(transpath(to_dir, common_path, p, strict)
-                         for p in paths)
-    logger.detail(
-        f"Ended transplanting paths {paths} to {output_paths} in {to_dir}"
-    )
-    return output_paths
+    return tuple(transpath(to_dir, common_path, p, strict) for p in paths)
 
 ########################################################################
 #                                                                      #

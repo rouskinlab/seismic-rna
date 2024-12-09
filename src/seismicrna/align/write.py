@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 from shutil import rmtree
@@ -336,10 +337,10 @@ def split_references(xam_whole: Path, *,
     logger.routine(f"Began splitting {xam_whole} by reference")
     sample = path.parse(xam_whole, *path.XAM_SEGS)[path.SAMP]
     # Guess how many reads mapped to each reference by the index stats.
-    reads_refs = run_idxstats(xam_whole)
+    refs_counts = run_idxstats(xam_whole)
     # Guess which references received enough reads.
-    guess_refs = {ref for ref, reads_ref in reads_refs.items()
-                  if reads_ref >= min_reads}
+    guess_refs = {ref for ref, count in refs_counts.items()
+                  if count >= min_reads}
     logger.detail(
         f"Guessed that there are ≥ {min_reads} read(s) in each of the "
         f"{len(guess_refs)} reference(s) {sorted(guess_refs)}"
@@ -354,7 +355,6 @@ def split_references(xam_whole: Path, *,
     # was guessed to have received enough reads.
     nums_reads = dispatch(extract_reference,
                           max_procs=n_procs,
-                          parallel=True,
                           pass_n_procs=True,
                           args=list(ref_headers.items()),
                           kwargs=dict(xam_whole=xam_whole,
@@ -386,11 +386,11 @@ def split_references(xam_whole: Path, *,
                                       rev_label=rev_label,
                                       min_reads=min_reads))
     # Collect the number of reads for each reference into one dict.
-    reads_refs = dict()
+    refs_counts = dict()
     for num_reads in nums_reads:
         for ref, count in num_reads.items():
             logger.detail(f"Reference {repr(ref)} got {count} read(s)")
-            if ref in reads_refs:
+            if ref in refs_counts:
                 logger.error(f"Reference {repr(ref)} is duplicated")
                 xam_ref = path.build(*path.XAM_SEGS,
                                      top=top,
@@ -404,9 +404,18 @@ def split_references(xam_whole: Path, *,
                 except OSError:
                     pass
             else:
-                reads_refs[ref] = count
+                refs_counts[ref] = count
+    # Sort the references in decreasing order of the number of aligned
+    # reads, and then alphabetically in case of a tie.
+    counts_refs = defaultdict(list)
+    for ref, count in refs_counts.items():
+        counts_refs[count].append(ref)
+    refs_counts = dict()
+    for count in sorted(counts_refs, reverse=True):
+        for ref in sorted(counts_refs[count]):
+            refs_counts[ref] = count
     logger.routine(f"Ended splitting {xam_whole} by reference")
-    return reads_refs
+    return refs_counts
 
 
 def fq_pipeline(fq_inp: FastqUnit,
@@ -658,7 +667,6 @@ def fq_pipeline(fq_inp: FastqUnit,
 def fqs_pipeline(fq_units: list[FastqUnit],
                  main_fasta: Path, *,
                  max_procs: int,
-                 parallel: bool,
                  out_dir: Path,
                  tmp_dir: Path,
                  keep_tmp: bool,
@@ -761,7 +769,6 @@ def fqs_pipeline(fq_units: list[FastqUnit],
     # Generate alignment map (XAM) files.
     xam_dirs = dispatch(fq_pipeline,
                         max_procs,
-                        parallel,
                         args=iter_args,
                         kwargs=dict(out_dir=out_dir,
                                     tmp_dir=tmp_dir,

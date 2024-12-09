@@ -7,11 +7,12 @@ from click import command
 
 from .report import FoldReport
 from .rnastructure import fold, require_data_path
+from ..cluster.table import ClusterPositionTableLoader
 from ..core.arg import (CMD_FOLD,
                         arg_input_path,
                         opt_tmp_pfx,
                         opt_keep_tmp,
-                        opt_fold_sections_file,
+                        opt_fold_regions_file,
                         opt_fold_coords,
                         opt_fold_primers,
                         opt_fold_full,
@@ -23,7 +24,6 @@ from ..core.arg import (CMD_FOLD,
                         opt_fold_max,
                         opt_fold_percent,
                         opt_max_procs,
-                        opt_parallel,
                         opt_force,
                         optional_path,
                         extra_defaults)
@@ -32,49 +32,39 @@ from ..core.extern import (RNASTRUCTURE_FOLD_CMD,
 from ..core.logs import logger
 from ..core.rna import RNAProfile, ct_to_db
 from ..core.run import run_func
-from ..core.seq import DNA, RefSections, RefSeqs, Section
+from ..core.seq import DNA, RefRegions, RefSeqs, Region
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write
-from ..table.base import MaskPosTable, ClustPosTable
-from ..table.load import find_pos_tables, load_pos_table
+from ..mask.table import MaskPositionTableLoader
 
 DEFAULT_QUANTILE = 0.95
 
 
 def find_foldable_tables(input_path: Iterable[str | Path]):
     """ Find tables that can be folded. """
-    for file in find_pos_tables(input_path):
-        try:
-            logger.detail(f"Loading table from {file}")
-            table = load_pos_table(file)
-        except Exception as error:
-            logger.error(error)
-        else:
-            if isinstance(table, (ClustPosTable, MaskPosTable)):
-                logger.detail(f"Loaded table from {file} for use with fold")
-                yield file, table
-            else:
-                logger.detail(f"Table from {file} cannot be used to fold")
+    paths = list(input_path)
+    for table_type in [MaskPositionTableLoader, ClusterPositionTableLoader]:
+        yield from table_type.load_tables(paths)
 
 
-def fold_section(rna: RNAProfile, *,
-                 out_dir: Path,
-                 tmp_dir: Path,
-                 quantile: float,
-                 fold_temp: float,
-                 fold_constraint: Path | None,
-                 fold_md: int,
-                 fold_mfe: bool,
-                 fold_max: int,
-                 fold_percent: float,
-                 force: bool,
-                 n_procs: int,
-                 **kwargs):
-    """ Fold a section of an RNA from one mutational profile. """
+def fold_region(rna: RNAProfile, *,
+                out_dir: Path,
+                tmp_dir: Path,
+                quantile: float,
+                fold_temp: float,
+                fold_constraint: Path | None,
+                fold_md: int,
+                fold_mfe: bool,
+                fold_max: int,
+                fold_percent: float,
+                force: bool,
+                n_procs: int,
+                **kwargs):
+    """ Fold a region of an RNA from one mutational profile. """
     report_file = FoldReport.build_path(top=out_dir,
                                         sample=rna.sample,
                                         ref=rna.ref,
-                                        sect=rna.sect,
+                                        reg=rna.reg,
                                         profile=rna.profile)
     if need_write(report_file, force):
         began = datetime.now()
@@ -94,7 +84,7 @@ def fold_section(rna: RNAProfile, *,
         ended = datetime.now()
         report = FoldReport(sample=rna.sample,
                             ref=rna.ref,
-                            sect=rna.sect,
+                            reg=rna.reg,
                             profile=rna.profile,
                             quantile=quantile,
                             fold_temp=fold_temp,
@@ -108,18 +98,17 @@ def fold_section(rna: RNAProfile, *,
     return report_file
 
 
-def fold_profile(table: MaskPosTable | ClustPosTable,
-                 sections: list[Section],
+def fold_profile(table: MaskPositionTableLoader | ClusterPositionTableLoader,
+                 regions: list[Region],
                  quantile: float,
                  n_procs: int,
                  **kwargs):
     """ Fold an RNA molecule from one table of reactivities. """
-    return dispatch(fold_section,
+    return dispatch(fold_region,
                     n_procs,
-                    parallel=True,
                     pass_n_procs=True,
                     args=as_list_of_tuples(table.iter_profiles(
-                        sections=sections, quantile=quantile)
+                        regions=regions, quantile=quantile)
                     ),
                     kwargs=dict(out_dir=table.top,
                                 quantile=quantile,
@@ -133,7 +122,7 @@ def fold_profile(table: MaskPosTable | ClustPosTable,
 def run(input_path: tuple[str, ...], *,
         fold_coords: tuple[tuple[str, int, int], ...],
         fold_primers: tuple[tuple[str, DNA, DNA], ...],
-        fold_sections_file: str | None,
+        fold_regions_file: str | None,
         fold_full: bool,
         quantile: float,
         fold_temp: float,
@@ -145,7 +134,6 @@ def run(input_path: tuple[str, ...], *,
         tmp_dir: Path,
         keep_tmp: bool,
         max_procs: int,
-        parallel: bool,
         force: bool):
     """ Predict RNA secondary structures using mutation rates. """
     # Check for the dependencies and the DATAPATH environment variable.
@@ -158,27 +146,26 @@ def run(input_path: tuple[str, ...], *,
                        f"setting quantile to {DEFAULT_QUANTILE}")
         quantile = DEFAULT_QUANTILE
     # List the tables.
-    tables = [table for _, table in find_foldable_tables(input_path)]
-    # Get the sections to fold for every reference sequence.
+    tables = list(find_foldable_tables(input_path))
+    # Get the regions to fold for every reference sequence.
     ref_seqs = RefSeqs()
     for table in tables:
         ref_seqs.add(table.ref, table.refseq)
-    fold_sections = RefSections(ref_seqs,
-                                sects_file=optional_path(fold_sections_file),
-                                coords=fold_coords,
-                                primers=fold_primers,
-                                default_full=fold_full).dict
-    # For each table whose reference had no sections defined, default to
-    # the table's section.
-    args = [(table, (fold_sections[table.ref]
-                     if fold_sections[table.ref]
-                     else [table.section]))
+    fold_regions = RefRegions(ref_seqs,
+                              regs_file=optional_path(fold_regions_file),
+                              coords=fold_coords,
+                              primers=fold_primers,
+                              default_full=fold_full).dict
+    # For each table whose reference had no regions defined, default to
+    # the table's region.
+    args = [(table, (fold_regions[table.ref]
+                     if fold_regions[table.ref]
+                     else [table.region]))
             for table in tables]
     # Fold the RNA profiles.
     return list(chain(*dispatch(
         fold_profile,
         max_procs,
-        parallel,
         pass_n_procs=True,
         args=args,
         kwargs=dict(tmp_dir=tmp_dir,
@@ -196,7 +183,7 @@ def run(input_path: tuple[str, ...], *,
 
 params = [
     arg_input_path,
-    opt_fold_sections_file,
+    opt_fold_regions_file,
     opt_fold_coords,
     opt_fold_primers,
     opt_fold_full,
@@ -210,7 +197,6 @@ params = [
     opt_tmp_pfx,
     opt_keep_tmp,
     opt_max_procs,
-    opt_parallel,
     opt_force,
 ]
 

@@ -1,25 +1,13 @@
 from functools import cached_property
 
 from .batch import RelateBatch
-from .io import QnamesBatchIO, RelateBatchIO
-from .report import RelateReport
-from ..core.data import LoadedDataset, LoadedMutsDataset
-
-
-class QnamesDataset(LoadedDataset):
-    """ Dataset of read names from the Relate step. """
-
-    @classmethod
-    def get_batch_type(cls):
-        return QnamesBatchIO
-
-    @classmethod
-    def get_report_type(cls):
-        return RelateReport
-
-    @property
-    def pattern(self):
-        return None
+from .io import ReadNamesBatchIO, RelateBatchIO
+from .report import RelateReport, PoolReport
+from ..core.data import (LoadedDataset,
+                         LoadedMutsDataset,
+                         LoadFunction,
+                         TallDataset,
+                         TallMutsDataset)
 
 
 class RelateDataset(LoadedMutsDataset):
@@ -50,8 +38,52 @@ class RelateDataset(LoadedMutsDataset):
                            seg_end5s=relate_batch.seg_end5s,
                            seg_end3s=relate_batch.seg_end3s,
                            muts=relate_batch.muts,
-                           section=self.section,
+                           region=self.region,
                            sanitize=False)
+
+
+class PoolDataset(TallMutsDataset):
+    """ Load pooled batches of relationships. """
+
+    @classmethod
+    def get_report_type(cls):
+        return PoolReport
+
+    @classmethod
+    def get_dataset_load_func(cls):
+        return load_relate_dataset
+
+
+class ReadNamesDataset(LoadedDataset):
+    """ Dataset of read names from the Relate step. """
+
+    @classmethod
+    def get_batch_type(cls):
+        return ReadNamesBatchIO
+
+    @classmethod
+    def get_report_type(cls):
+        return RelateReport
+
+    @property
+    def pattern(self):
+        return None
+
+
+class PoolReadNamesDataset(TallDataset):
+    """ Pooled Dataset of read names. """
+
+    @classmethod
+    def get_report_type(cls):
+        return PoolReport
+
+    @classmethod
+    def get_dataset_load_func(cls):
+        return load_read_names_dataset
+
+
+load_relate_dataset = LoadFunction(RelateDataset, PoolDataset)
+load_read_names_dataset = LoadFunction(ReadNamesDataset, PoolReadNamesDataset)
 
 ########################################################################
 #                                                                      #

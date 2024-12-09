@@ -15,31 +15,31 @@ from ..core.write import need_write, write_mode
 from ..fold.rnastructure import parse_energy
 from ..mask.data import MaskMutsDataset
 from ..mask.report import MaskReport
-from ..pool.data import load_relate_dataset
+from ..relate.data import load_relate_dataset
 from ..relate.report import RelateReport
-from ..table.base import (COVER_REL,
-                          UNAMB_REL,
+from ..core.table import (COVER_REL,
+                          INFOR_REL,
                           SUBST_REL,
                           SUB_A_REL,
                           SUB_C_REL,
                           SUB_G_REL,
                           SUB_T_REL,
                           DELET_REL,
-                          INSRT_REL)
-from ..table.base import (Table,
-                          PosTable,
+                          INSRT_REL,
+                          Table,
+                          PositionTable,
                           ReadTable,
-                          ClustFreqTable)
+                          AbundanceTable)
 
 META_SYMBOL = '#'
 SAMPLE = "sample"
 REF_SEQ = "sequence"
 REF_NUM_ALIGN = "num_aligned"
-SECT_END5 = "section_start"
-SECT_END3 = "section_end"
-SECT_POS = "positions"
+REG_END5 = "section_start"
+REG_END3 = "section_end"
+REG_POS = "positions"
 POS_DATA = {"cov": COVER_REL,
-            "info": UNAMB_REL,
+            "info": INFOR_REL,
             "sub_N": SUBST_REL,
             "sub_A": SUB_A_REL,
             "sub_C": SUB_C_REL,
@@ -84,21 +84,21 @@ def get_ref_metadata(top: Path,
                                             "reference"))
 
 
-def get_sect_metadata(top: Path,
-                      sample: str,
-                      ref: str,
-                      sect: str,
-                      all_pos: bool):
-    dataset = MaskMutsDataset.load(MaskReport.build_path(top=top,
-                                                         sample=sample,
-                                                         ref=ref,
-                                                         sect=sect))
-    positions = (dataset.section.range_int if all_pos
-                 else dataset.section.unmasked_int)
-    sect_metadata = {SECT_END5: dataset.end5,
-                     SECT_END3: dataset.end3,
-                     SECT_POS: positions.tolist()}
-    return format_metadata(sect_metadata)
+def get_reg_metadata(top: Path,
+                     sample: str,
+                     ref: str,
+                     reg: str,
+                     all_pos: bool):
+    dataset = MaskMutsDataset(MaskReport.build_path(top=top,
+                                                    sample=sample,
+                                                    ref=ref,
+                                                    reg=reg))
+    positions = (dataset.region.range_int if all_pos
+                 else dataset.region.unmasked_int)
+    reg_metadata = {REG_END5: dataset.end5,
+                    REG_END3: dataset.end3,
+                    REG_POS: positions.tolist()}
+    return format_metadata(reg_metadata)
 
 
 def conform_series(series: pd.Series | pd.DataFrame):
@@ -112,7 +112,7 @@ def conform_series(series: pd.Series | pd.DataFrame):
     return series
 
 
-def get_db_structs(table: PosTable,
+def get_db_structs(table: PositionTable,
                    k: int | None = None,
                    clust: int | None = None):
     structs = dict()
@@ -138,7 +138,7 @@ def get_db_structs(table: PosTable,
     return structs, energies
 
 
-def iter_pos_table_struct(table: PosTable, k: int, clust: int):
+def iter_pos_table_struct(table: PositionTable, k: int, clust: int):
     structs, energies = get_db_structs(table, k, clust)
     keys = list(structs)
     if keys != list(energies):
@@ -152,7 +152,7 @@ def iter_pos_table_struct(table: PosTable, k: int, clust: int):
         yield FREE_ENERGY, energies[key]
 
 
-def iter_pos_table_series(table: PosTable,
+def iter_pos_table_series(table: PositionTable,
                           k: int,
                           clust: int,
                           all_pos: bool):
@@ -173,7 +173,7 @@ def iter_pos_table_series(table: PosTable,
     ).to_list()
 
 
-def iter_pos_table_data(table: PosTable, k: int, clust: int, all_pos: bool):
+def iter_pos_table_data(table: PositionTable, k: int, clust: int, all_pos: bool):
     yield from iter_pos_table_series(table, k, clust, all_pos)
     yield from iter_pos_table_struct(table, k, clust)
 
@@ -188,7 +188,7 @@ def iter_read_table_data(table: ReadTable, k: int, clust: int):
     yield SUBST_HIST, np.bincount(read_counts, minlength=1).tolist()
 
 
-def iter_clust_table_data(table: ClustFreqTable, k: int, clust: int):
+def iter_clust_table_data(table: AbundanceTable, k: int, clust: int):
     clust_count = table.data[table.header.select(k=k,
                                                  clust=clust)].squeeze()
     k_count = table.data[table.header.select(k=k)].sum().squeeze()
@@ -199,11 +199,11 @@ def iter_clust_table_data(table: ClustFreqTable, k: int, clust: int):
 
 
 def iter_table_data(table: Table, k: int, clust: int, all_pos: bool):
-    if isinstance(table, PosTable):
+    if isinstance(table, PositionTable):
         yield from iter_pos_table_data(table, k, clust, all_pos)
     elif isinstance(table, ReadTable):
         yield from iter_read_table_data(table, k, clust)
-    elif isinstance(table, ClustFreqTable):
+    elif isinstance(table, AbundanceTable):
         yield from iter_clust_table_data(table, k, clust)
     else:
         raise TypeError(f"Invalid table type: {type(table).__name__}")
@@ -226,7 +226,7 @@ def get_sample_data(top: Path,
     # Cache results from the metadata functions to improve speed.
     ref_metadata = cache(partial(get_ref_metadata,
                                  refs_metadata=refs_metadata))
-    sect_metadata = cache(get_sect_metadata)
+    reg_metadata = cache(get_reg_metadata)
     # Add the metadata for the sample.
     data = get_sample_metadata(sample, samples_metadata)
     # Use a while loop with list.pop() until tables is empty rather
@@ -237,16 +237,16 @@ def get_sample_data(top: Path,
     while tables:
         table = tables.pop()
         ref = table.ref
-        sect = table.sect
-        # Add the metadata for the reference and section.
+        reg = table.reg
+        # Add the metadata for the reference and region.
         if ref not in data:
             data[ref] = ref_metadata(top, sample, ref)
-        if sect not in data[ref]:
-            data[ref][sect] = sect_metadata(top, sample, ref, sect, all_pos)
+        if reg not in data[ref]:
+            data[ref][reg] = reg_metadata(top, sample, ref, reg, all_pos)
         for clust, clust_data in get_table_data(table, all_pos).items():
-            if clust not in data[ref][sect]:
-                data[ref][sect][clust] = dict()
-            data[ref][sect][clust].update(clust_data)
+            if clust not in data[ref][reg]:
+                data[ref][reg][clust] = dict()
+            data[ref][reg][clust].update(clust_data)
     return data
 
 

@@ -1,4 +1,5 @@
 from shutil import which
+from os import environ
 
 
 class DependencyError(RuntimeError):
@@ -17,6 +18,16 @@ def require_dependency(dependency: str, module: str = ""):
         message = (f"{repr(dependency)} is required {by}but was not found. "
                    f"Please install it (if not yet) and place the executable "
                    f"for {repr(dependency)} in your PATH.")
+        raise DependencyError(message)
+
+def require_env_var(dependency: str, module: str = ""):
+    """ If a dependency does not exist, return an error message. """
+    if not environ.get(dependency):
+        by = f"by '{module}' " if module else ""
+        message = (f"The environmental variable {repr(dependency)} is "
+                   f"required {by}but was not "
+                   "found. Please set it to the "
+                   "correct value before continuing.")
         raise DependencyError(message)
 
 ########################################################################

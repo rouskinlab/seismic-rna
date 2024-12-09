@@ -146,6 +146,49 @@ static const uint16_t FLAG_2ND = 128;
 static const uint16_t MAX_FLAG = 4095;  // 4095 = 2^12 - 1
 
 
+static PyObject* new_empty_dict(PyObject* self, PyObject* args)
+{
+    // Create an empty Python dictionary.
+    PyObject* dict = PyDict_New();
+    if (dict == NULL) {return NULL;}  // Memory allocation failed.
+    return dict;
+}
+
+
+int set_relationship(position: int, relationship: int)
+{
+    // Define the key and value.
+    PyObject* key = PyLong_FromLong(position);
+    PyObject* value = PyLong_FromLong(relationship);
+
+    if (key == NULL || value == NULL)
+    {
+        // Decrement reference counts if not NULL.
+        Py_XDECREF(key);
+        Py_XDECREF(value);
+        Py_DECREF(dict);
+        return 1;
+    }
+
+    // Add the key-value pair to the dictionary.
+    if (PyDict_SetItem(dict, key, value) < 0)
+    {
+        Py_DECREF(key);
+        Py_DECREF(value);
+        Py_DECREF(dict);
+        return 1;
+    }
+
+    // Clean up the references for the key and value (they are now owned
+    // by the dictionary).
+    Py_DECREF(key);
+    Py_DECREF(value);
+
+    return 0;
+}
+
+
+
 /*
 Parse a string (str) and store the value in an integer (number).
 A basic wrapper around string-to-unsigned-long (strtoul) that also

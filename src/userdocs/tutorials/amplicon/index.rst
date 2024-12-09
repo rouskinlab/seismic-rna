@@ -3,7 +3,7 @@ Tutorial 1: Amplicon prepared with RT-PCR
 ================================================================================
 
 This tutorial demonstrates how to analyze a dataset that was prepared using
-RT-PCR (with forward and reverse primers) of one specific section of an RNA.
+RT-PCR (with forward and reverse primers) of one specific region of an RNA.
 
 
 TL;DR
@@ -43,10 +43,10 @@ is associated with a different rate of HIV-1 replication.
 
 In this hypothetical experiment, you *in vitro* transcribe a 232 nt segment of
 the RRE, perform two DMS-MaPseq experiments on it (along with a no-DMS control),
-amplify a section using RT-PCR, and sequence the amplicons using paired-end 150
+amplify a region using RT-PCR, and sequence the amplicons using paired-end 150
 x 150 nt read lengths.
 
-*The FASTQ files in this tutorial were actually generated using ``seismic +sim``
+*The FASTQ files in this tutorial were actually generated using ``seismic sim``
 and don't resemble the authentic DMS mutational patterns.
 
 
@@ -123,7 +123,7 @@ Open ``out/nodms/graph/rre/full/profile_masked_n-count.html`` in a web broser.
 
 - ``nodms`` is the sample
 - ``rre`` is the reference (i.e. name of the RNA)
-- ``full`` is the section of the reference you are looking at
+- ``full`` is the region of the reference you are looking at
 - ``profile`` is the type of graph (a bar graph with position on the x-axis)
 - ``masked`` means graph the data come from the Mask step
 - ``n`` is the shorthand for "unambiguous"
@@ -238,7 +238,7 @@ This is what each of the arguments does:
 - ``--mask-pos rre 176`` means mask position 176 (because it had a high mutation
   rate in the no-DMS sample).
 - ``-p rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC`` defines a
-  section of the reference ``rre`` that corresponds to the amplicon flanked by
+  region of the reference ``rre`` that corresponds to the amplicon flanked by
   primers ``GGAGCTTTGTTCCTTGGGTTCTTGG`` and ``GGAGCTGTTGATCCTTTAGGTATCTTTC``.
 - ``hiv-rre.fa`` means use the sequence in this FASTA file as the reference
   (i.e. mutation-free) sequence for the RNA.
@@ -308,7 +308,7 @@ This is what each of the arguments does:
 - ``--mask-pos rre 176`` means mask position 176 (because it had a high mutation
   rate in the no-DMS sample).
 - ``-p rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC`` defines a
-  section of the reference ``rre`` that corresponds to the amplicon flanked by
+  region of the reference ``rre`` that corresponds to the amplicon flanked by
   primers ``GGAGCTTTGTTCCTTGGGTTCTTGG`` and ``GGAGCTGTTGATCCTTTAGGTATCTTTC``.
 - ``--cluster`` means enable clustering to find alternative structures.
 - ``--fold`` means enable secondary structure prediction.
@@ -330,7 +330,7 @@ the time and version)::
     {
         "Sample": "dms-pool",
         "Reference": "rre",
-        "Section": "26-204",
+        "Region": "26-204",
         "Number of unique reads": 12383,
         "Start at this many clusters": 1,
         "Stop at this many clusters (0 for no limit)": 0,

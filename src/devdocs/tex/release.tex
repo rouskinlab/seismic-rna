@@ -92,7 +92,7 @@ pip install -U build
 pip install -U twine
         \end{verbatim}
     \item Make sure the code, including the version in \verb|src/seismicrna/core/version.py|, is correct. You CANNOT edit a PyPI release after it has been uploaded, nor can you delete it and upload a revision with the same version number.
-    \item Ensure that all unit tests succeed by running \verb|seismic +test|. Do not release the code if any tests fail.
+    \item Ensure that all unit tests succeed by running \verb|seismic test|. Do not release the code if any tests fail.
     \item Navigate to the main directory \verb|seismic-rna|; if it already contains a directory called \verb|dist|, then delete \verb|dist|.
     \item Build the package:
         \begin{verbatim}
@@ -134,7 +134,7 @@ git checkout master
 git pull upstream master
 git push origin master
         \end{verbatim}
-    \item Create a new branch for the new version, e.g. called \verb|seismic-rna_v2.7.18|, by typing \verb|conda checkout -b seismic-rna_v2.7.18|.
+    \item Create a new branch for the new version, e.g. called \verb|seismic-rna_v2.7.18|, by typing \verb|git checkout -b seismic-rna_v2.7.18|.
     \item Copy \verb|build.sh| and \verb|meta.yaml| from \verb|seismic-rna/conda| (in your SEISMIC-RNA repository) to \verb|recipes/seismic-rna| (in your Bioconda Recipes repository).
     \item Activate your \verb|bioconda| environment by typing \verb|conda activate bioconda|.
     \item Lint your updates by typing \verb|bioconda-utils lint --packages seismic-rna| and confirm that it prints an OK message, not ``Errors were found".

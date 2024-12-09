@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from collections import Counter
 from functools import cached_property
+from typing import Iterable
 
 import numpy as np
 import pandas as pd
@@ -15,11 +16,11 @@ from .count import (calc_count_per_pos,
                     count_end_coords)
 from .ends import EndCoords, match_reads_segments
 from .index import iter_windows
-from .read import ReadBatch, PartialReadBatch
+from .read import ReadBatch
 from ..array import calc_inverse, find_dims
-from ..header import REL_NAME
+from ..header import REL_NAME, make_header
 from ..rel import MATCH, NOCOV, REL_TYPE, RelPattern
-from ..seq import Section, index_to_pos
+from ..seq import Region, index_to_pos
 from ..types import fit_uint_type
 
 rng = np.random.default_rng()
@@ -29,14 +30,14 @@ NUM_SEGMENTS = "segments"
 
 
 def sanitize_muts(muts: dict[int, dict[int, list[int] | np.ndarray]],
-                  section: Section,
+                  region: Region,
                   data_type: type,
                   sanitize: bool = True):
     return {pos: ({REL_TYPE(rel): np.asarray(reads, data_type)
                    for rel, reads in muts[pos].items()}
                   if sanitize
                   else muts[pos])
-            for pos in section.unmasked_int}
+            for pos in region.unmasked_int}
 
 
 def simulate_muts(pmut: pd.DataFrame,
@@ -98,7 +99,7 @@ def _fill_matches(matrix: np.ndarray,
         matrix[read_index, index5s[i]: index3s[i]] = MATCH
 
 
-def calc_muts_matrix(section: Section,
+def calc_muts_matrix(region: Region,
                      read_nums: np.ndarray,
                      seg_end5s: np.ndarray,
                      seg_end3s: np.ndarray,
@@ -111,17 +112,17 @@ def calc_muts_matrix(section: Section,
                      ["read_nums", "seg_end5s", "seg_end3s"])
     num_reads = dims[NUM_READS]
     num_segments = dims[NUM_SEGMENTS]
-    section_unmasked = section.unmasked_int
-    matrix = np.full((num_reads, section_unmasked.size), NOCOV)
+    region_unmasked = region.unmasked_int
+    matrix = np.full((num_reads, region_unmasked.size), NOCOV)
     if matrix.size > 0:
         # Map each 5' and 3' end coordinate to its index in the unmasked
-        # positions of the section.
-        pos5_indexes = calc_inverse(section_unmasked,
-                                    require=(section.end3 + 1),
+        # positions of the region.
+        pos5_indexes = calc_inverse(region_unmasked,
+                                    require=(region.end3 + 1),
                                     fill=True,
                                     fill_rev=True)
-        pos3_indexes = calc_inverse(section_unmasked,
-                                    require=section.end3,
+        pos3_indexes = calc_inverse(region_unmasked,
+                                    require=region.end3,
                                     fill=True,
                                     fill_rev=False) + 1
         # Fill all covered positions with matches.
@@ -142,28 +143,28 @@ def calc_muts_matrix(section: Section,
                               unmasked_read_indexes)
         # Overlay the mutation data.
         read_indexes = calc_inverse(read_nums)
-        for pos in section_unmasked:
+        for pos in region_unmasked:
             if rels := muts.get(pos):
                 column = matrix[:, pos5_indexes[pos]]
                 for rel, reads in rels.items():
                     column[read_indexes[reads]] = rel
-    return pd.DataFrame(matrix, read_nums, section.unmasked)
+    return pd.DataFrame(matrix, read_nums, region.unmasked)
 
 
 class MutsBatch(EndCoords, ReadBatch, ABC):
     """ Batch of mutational data. """
 
     def __init__(self, *,
-                 section: Section,
+                 region: Region,
                  sanitize: bool = True,
                  muts: dict[int, dict[int, list[int] | np.ndarray]],
-                 masked_read_nums: list[int] | None = None,
+                 masked_read_nums: np.ndarray | list[int] | None = None,
                  **kwargs):
-        super().__init__(section=section, sanitize=sanitize, **kwargs)
+        super().__init__(region=region, sanitize=sanitize, **kwargs)
         # Validate and store the mutations.
-        self._muts = sanitize_muts(muts, section, self.read_dtype, sanitize)
+        self._muts = sanitize_muts(muts, region, self.read_dtype, sanitize)
         if masked_read_nums is not None:
-            self.masked_read_nums = np.array(masked_read_nums, dtype=int)
+            self.masked_read_nums = np.asarray(masked_read_nums, dtype=int)
 
     @property
     def muts(self):
@@ -188,21 +189,36 @@ class MutsBatch(EndCoords, ReadBatch, ABC):
                                 self.read_weights)
 
 
-class SectionMutsBatch(MutsBatch, ABC):
-    """ Batch of mutational data that knows its section. """
+def _add_to_column(added: pd.Series | pd.DataFrame,
+                   frame: pd.DataFrame,
+                   column: str):
+    """ Add the values in `added` to the column `column` of `frame`. """
+    frame_col = frame[column]
+    if not frame_col.index.equals(added.index):
+        raise ValueError(f"Got different indexes for frame {frame_col.index} "
+                         f"and added values {added.index}")
+    if (isinstance(added, pd.DataFrame)
+            and not frame_col.columns.equals(added.columns)):
+        raise ValueError(f"Got different columns for frame {frame_col.columns} "
+                         f"and added values {added.columns}")
+    frame[column] = (frame_col + added).values
 
-    def __init__(self, *, section: Section, **kwargs):
-        self.section = section
-        super().__init__(section=section, **kwargs)
+
+class RegionMutsBatch(MutsBatch, ABC):
+    """ Batch of mutational data that knows its region. """
+
+    def __init__(self, *, region: Region, **kwargs):
+        self.region = region
+        super().__init__(region=region, **kwargs)
 
     def iter_windows(self, size: int):
-        """ Yield the positions in each window of the section. """
+        """ Yield the positions in each window of the region. """
         yield from iter_windows(self.pos_nums, size)
 
     @cached_property
     def pos_index(self):
         """ Index of unmasked positions and bases. """
-        return self.section.unmasked
+        return self.region.unmasked
 
     @cached_property
     def _coverage(self):
@@ -247,7 +263,7 @@ class SectionMutsBatch(MutsBatch, ABC):
     @cached_property
     def matrix(self):
         """ Matrix of relationships at each position in each read. """
-        return calc_muts_matrix(self.section,
+        return calc_muts_matrix(self.region,
                                 self.read_nums,
                                 self.seg_end5s,
                                 self.seg_end3s,
@@ -260,17 +276,56 @@ class SectionMutsBatch(MutsBatch, ABC):
 
     def count_per_pos(self, pattern: RelPattern):
         """ Count the reads that fit a relationship pattern at each
-        position in a section. """
+        position in a region. """
         return calc_count_per_pos(pattern,
                                   self.cover_per_pos,
                                   self.rels_per_pos)
 
     def count_per_read(self, pattern: RelPattern):
-        """ Count the positions in a section that fit a relationship
+        """ Count the positions in a region that fit a relationship
         pattern in each read. """
         return calc_count_per_read(pattern,
                                    self.cover_per_read,
                                    self.rels_per_read)
+
+    def count_all(self,
+                  patterns: dict[str, RelPattern],
+                  ks: Iterable[int] | None = None, *,
+                  count_ends: bool = True,
+                  count_pos: bool = True,
+                  count_read: bool = True):
+        """ Calculate all counts. """
+        # Determine whether the data are clustered.
+        header = make_header(rels=list(patterns), ks=ks)
+        if header.clustered():
+            dtype = float
+            rel_header = header.get_rel_header()
+        else:
+            dtype = int
+            rel_header = header
+        zero = dtype(0)
+        # Initialize the counts to 0.
+        count_per_pos = (
+            pd.DataFrame(zero, self.region.unmasked, header.index)
+            if count_pos else None
+        )
+        count_per_read = (
+            pd.DataFrame(0, self.batch_read_index, rel_header.index)
+            if count_read else None
+        )
+        for column, pattern in patterns.items():
+            if count_per_pos is not None:
+                # Count the matching reads per position.
+                _, count_per_pos_pattern = self.count_per_pos(pattern)
+                _add_to_column(count_per_pos_pattern, count_per_pos, column)
+            if count_per_read is not None:
+                # Count the matching positions per read.
+                _, count_per_read_pattern = self.count_per_read(pattern)
+                count_per_read.loc[:, column] = count_per_read_pattern.values
+        return (self.num_reads,
+                (self.read_end_counts if count_ends else None),
+                count_per_pos,
+                count_per_read)
 
     def reads_noclose_muts(self, pattern: RelPattern, min_gap: int):
         """ List the reads with no two mutations too close. """
@@ -287,7 +342,7 @@ class SectionMutsBatch(MutsBatch, ABC):
         read_counts = np.zeros_like(nonprox, dtype=self.pos_dtype)
         # Track which positions are being counted.
         pos_counted = set()
-        # Iterate over all windows in the section.
+        # Iterate over all windows in the region.
         for _, win_pos in self.iter_windows(min_gap + 1):
             win_pos_set = set(win_pos)
             for pos in win_pos_set - pos_counted:
@@ -344,10 +399,6 @@ class SectionMutsBatch(MutsBatch, ABC):
                                                        mut_counts,
                                                        strict=True):
             yield read_num, ((tuple(end5), tuple(end3)), tuple(muts[:count]))
-
-
-class PartialMutsBatch(MutsBatch, PartialReadBatch, ABC):
-    pass
 
 ########################################################################
 #                                                                      #

@@ -97,25 +97,25 @@ class RefIO(FileIO, ABC):
         self.ref = ref
 
 
-class SectIO(RefIO, ABC):
-    """ File with a section of a reference. """
+class RegIO(RefIO, ABC):
+    """ File with a region of a reference. """
 
     @classmethod
     def dir_seg_types(cls):
-        return super().dir_seg_types() + (path.SectSeg,)
+        return super().dir_seg_types() + (path.RegSeg,)
 
-    def __init__(self, *, sect: str, **kwargs):
+    def __init__(self, *, reg: str, **kwargs):
         super().__init__(**kwargs)
-        self.sect = sect
+        self.reg = reg
 
 
 class BrickleIO(FileIO, ABC):
     """ Brotli-compressed file of a Pickled object (Brickle). """
 
     @classmethod
-    def load(cls, file: Path, checksum: str = ""):
+    def load(cls, file: Path, **kwargs):
         """ Load from a compressed pickle file. """
-        return load_brickle(file, checksum=checksum, check_type=cls)
+        return load_brickle(file, check_type=cls, **kwargs)
 
     def save(self, top: Path, *args, **kwargs):
         """ Save to a pickle file compressed with Brotli. """

@@ -24,11 +24,8 @@ ANY_B = REL_TYPE(SUB_B | MATCH)
 ANY_D = REL_TYPE(SUB_D | MATCH)
 ANY_H = REL_TYPE(SUB_H | MATCH)
 ANY_V = REL_TYPE(SUB_V | MATCH)
-INS_8 = REL_TYPE(INS_5 | INS_3)
-INDEL = REL_TYPE(DELET | INS_8)
-MINS5 = REL_TYPE(INS_5 | MATCH)
-MINS3 = REL_TYPE(INS_3 | MATCH)
-ANY_8 = REL_TYPE(INS_8 | MATCH)
+INSRT = REL_TYPE(INS_5 | INS_3)
+INDEL = REL_TYPE(DELET | INSRT)
 
 ########################################################################
 #                                                                      #

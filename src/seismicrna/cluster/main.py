@@ -24,8 +24,10 @@ from ..core.arg import (CMD_CLUSTER,
                         opt_max_nrmsd_vs_best,
                         opt_try_all_ks,
                         opt_write_all_ks,
+                        opt_cluster_pos_table,
+                        opt_cluster_abundance_table,
+                        opt_verify_times,
                         opt_brotli_level,
-                        opt_parallel,
                         opt_max_procs,
                         opt_force)
 from ..core.run import run_func
@@ -51,9 +53,11 @@ def run(input_path: tuple[str, ...], *,
         max_nrmsd_vs_best: float,
         try_all_ks: bool,
         write_all_ks: bool,
+        cluster_pos_table: bool,
+        cluster_abundance_table: bool,
+        verify_times: bool,
         brotli_level: int,
         max_procs: int,
-        parallel: bool,
         force: bool,
         tmp_dir: Path) -> list[Path]:
     """ Infer alternative structures by clustering reads' mutations. """
@@ -64,7 +68,6 @@ def run(input_path: tuple[str, ...], *,
     # Cluster each mask dataset.
     return dispatch(cluster,
                     max_procs,
-                    parallel,
                     pass_n_procs=True,
                     args=as_list_of_tuples(report_files),
                     kwargs=dict(min_clusters=min_clusters,
@@ -83,6 +86,9 @@ def run(input_path: tuple[str, ...], *,
                                 max_nrmsd_vs_best=max_nrmsd_vs_best,
                                 try_all_ks=try_all_ks,
                                 write_all_ks=write_all_ks,
+                                cluster_pos_table=cluster_pos_table,
+                                cluster_abundance_table=cluster_abundance_table,
+                                verify_times=verify_times,
                                 brotli_level=brotli_level,
                                 force=force,
                                 tmp_dir=tmp_dir))
@@ -108,11 +114,15 @@ params = [
     opt_max_nrmsd_vs_best,
     opt_try_all_ks,
     opt_write_all_ks,
+    # Table options
+    opt_cluster_pos_table,
+    opt_cluster_abundance_table,
+    # Validation
+    opt_verify_times,
     # Compression
     opt_brotli_level,
     # Parallelization
     opt_max_procs,
-    opt_parallel,
     # Effort
     opt_force,
     opt_tmp_pfx,

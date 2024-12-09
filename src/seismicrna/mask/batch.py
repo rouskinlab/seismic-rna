@@ -1,13 +1,27 @@
+from abc import ABC
 from functools import cached_property
 
 import numpy as np
 import pandas as pd
 
-from ..core.array import get_length
-from ..core.batch import (SectionMutsBatch,
-                          PartialMutsBatch,
-                          PartialReadBatch)
-from ..core.seq import Section
+from ..core.array import calc_inverse, get_length
+from ..core.batch import ReadBatch, RegionMutsBatch
+from ..core.seq import Region
+
+
+class PartialReadBatch(ReadBatch, ABC):
+
+    @cached_property
+    def max_read(self):
+        return self.read_nums.max(initial=0)
+
+    @cached_property
+    def read_indexes(self):
+        return calc_inverse(self.read_nums, what="read_nums", verify=False)
+
+
+class PartialRegionMutsBatch(PartialReadBatch, RegionMutsBatch, ABC):
+    pass
 
 
 class MaskReadBatch(PartialReadBatch):
@@ -29,7 +43,7 @@ class MaskReadBatch(PartialReadBatch):
         return get_length(self.read_nums, "read_nums")
 
 
-class MaskMutsBatch(MaskReadBatch, SectionMutsBatch, PartialMutsBatch):
+class MaskMutsBatch(MaskReadBatch, PartialRegionMutsBatch):
 
     @property
     def read_weights(self):
@@ -41,9 +55,9 @@ class MaskMutsBatch(MaskReadBatch, SectionMutsBatch, PartialMutsBatch):
         return read_weights
 
 
-def apply_mask(batch: SectionMutsBatch,
+def apply_mask(batch: RegionMutsBatch,
                read_nums: np.ndarray | None = None,
-               section: Section | None = None,
+               region: Region | None = None,
                sanitize: bool = False):
     # Determine which reads to use.
     if read_nums is not None:
@@ -59,14 +73,14 @@ def apply_mask(batch: SectionMutsBatch,
         seg_end5s = batch.seg_end5s
         seg_end3s = batch.seg_end3s
         masked_reads = None
-    # Determine the section of the new batch.
-    if section is not None:
-        # Clip the read coordinates to the section bounds.
-        seg_end5s = seg_end5s.clip(section.end5, section.end3 + 1)
-        seg_end3s = seg_end3s.clip(section.end5 - 1, section.end3)
+    # Determine the region of the new batch.
+    if region is not None:
+        # Clip the read coordinates to the region bounds.
+        seg_end5s = seg_end5s.clip(region.end5, region.end3 + 1)
+        seg_end3s = seg_end3s.clip(region.end5 - 1, region.end3)
     else:
-        # Use the same section as the given batch.
-        section = batch.section
+        # Use the same region as the given batch.
+        region = batch.region
     # Select only the given positions and reads.
     muts = {pos: ({mut: np.setdiff1d(pos_mut_reads,
                                      masked_reads,
@@ -74,10 +88,10 @@ def apply_mask(batch: SectionMutsBatch,
                    for mut, pos_mut_reads in batch.muts[pos].items()}
                   if masked_reads is not None
                   else batch.muts[pos])
-            for pos in section.unmasked_int}
+            for pos in region.unmasked_int}
     return MaskMutsBatch(batch=batch.batch,
                          read_nums=read_nums,
-                         section=section,
+                         region=region,
                          seg_end5s=seg_end5s,
                          seg_end3s=seg_end3s,
                          muts=muts,

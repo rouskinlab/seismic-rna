@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
 from itertools import chain
-from pathlib import Path
 
 from .base import (GraphBase,
                    GraphRunner,
@@ -11,15 +10,15 @@ from .base import (GraphBase,
                    make_tracks,
                    make_path_subject,
                    make_title_action_sample)
+from ..core.table import Table, PositionTable
 from ..core.task import dispatch
-from ..table.base import Table, PosTable
 
 
 class OneTableGraph(GraphBase, ABC):
     """ Graph of data from one Table. """
 
     def __init__(self, *,
-                 table: Table | PosTable,
+                 table: Table | PositionTable,
                  k: int | None,
                  clust: int | None,
                  **kwargs):
@@ -41,8 +40,8 @@ class OneTableGraph(GraphBase, ABC):
         return self.table.ref
 
     @property
-    def sect(self):
-        return self.table.sect
+    def reg(self):
+        return self.table.reg
 
     @property
     def seq(self):
@@ -72,13 +71,13 @@ class OneTableGraph(GraphBase, ABC):
 
 class OneTableWriter(GraphWriter, ABC):
 
-    def __init__(self, table_file: Path):
-        super().__init__(table_file)
+    def __init__(self, table: Table):
+        super().__init__(table)
 
     @cached_property
     def table(self):
         """ The table providing the data for the graph(s). """
-        return self.load_table_file(self.table_files[0])
+        return self.tables[0]
 
     @abstractmethod
     def get_graph(self, *args, **kwargs) -> OneTableGraph:
@@ -99,7 +98,6 @@ class OneTableRunner(GraphRunner, ABC):
     def run(cls,
             input_path: tuple[str, ...], *,
             max_procs: int,
-            parallel: bool,
             **kwargs):
         # Generate a table writer for each table.
         writer_type = cls.get_writer_type()
@@ -107,7 +105,6 @@ class OneTableRunner(GraphRunner, ABC):
                    for table_file in cls.list_table_files(input_path)]
         return list(chain(*dispatch([writer.write for writer in writers],
                                     max_procs,
-                                    parallel,
                                     pass_n_procs=False,
                                     kwargs=kwargs)))
 

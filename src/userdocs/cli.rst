@@ -99,49 +99,49 @@ Extra Utilities
 .. _cli_listpos:
 
 .. click:: seismicrna.lists.listpos:cli
-    :prog: seismic +listpos
+    :prog: seismic listpos
 
 .. _cli_cleanfa:
 
 .. click:: seismicrna.cleanfa:cli
-    :prog: seismic +cleanfa
+    :prog: seismic cleanfa
 
 .. _cli_renumct:
 
 .. click:: seismicrna.renumct:cli
-    :prog: seismic +renumct
+    :prog: seismic renumct
 
 .. _cli_test:
 
 .. click:: seismicrna.test:cli
-    :prog: seismic +test
+    :prog: seismic test
 
-seismic +sim
+seismic sim
 --------------------------------------------------------------------------------
 
 .. click:: seismicrna.sim.total:cli
-    :prog: seismic +sim total
+    :prog: seismic sim total
 
 .. click:: seismicrna.sim.ref:cli
-    :prog: seismic +sim ref
+    :prog: seismic sim ref
 
 .. click:: seismicrna.sim.fold:cli
-    :prog: seismic +sim fold
+    :prog: seismic sim fold
 
 .. click:: seismicrna.sim.params:cli
-    :prog: seismic +sim params
+    :prog: seismic sim params
 
 .. click:: seismicrna.sim.muts:cli
-    :prog: seismic +sim muts
+    :prog: seismic sim muts
 
 .. click:: seismicrna.sim.ends:cli
-    :prog: seismic +sim ends
+    :prog: seismic sim ends
 
 .. click:: seismicrna.sim.clusts:cli
-    :prog: seismic +sim clusts
+    :prog: seismic sim clusts
    
 .. click:: seismicrna.sim.relate:cli
-    :prog: seismic +sim relate
+    :prog: seismic sim relate
 
 .. click:: seismicrna.sim.fastq:cli
-    :prog: seismic +sim fastq
+    :prog: seismic sim fastq

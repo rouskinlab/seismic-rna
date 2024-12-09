@@ -6,7 +6,7 @@ from typing import Any, Hashable
 
 from .base import GraphBase
 from ..core.seq import BASEA, BASEC, BASEG, BASET, BASEN
-from ..table.base import REL_CODES
+from ..core.table import REL_CODES
 
 
 class ColorMap(ABC):

@@ -9,7 +9,7 @@ from seismicrna.relate.py.cigar import (CIG_ALIGN,
                                         CIG_SCLIP)
 from seismicrna.relate.aux.cigarop import (CigarOp,
                                            count_cigar_muts,
-                                           find_cigar_op_pos)
+                                           find_cigar_op_pos_read)
 
 
 class TestCigarOp(ut.TestCase):
@@ -58,19 +58,19 @@ class TestCountCigarMuts(ut.TestCase):
         self.assertEqual(count_cigar_muts("9S23=1X13=1D9=2I56=3S"), 4)
 
 
-class TestFindCigarOpPos(ut.TestCase):
+class TestFindCigarOpPosRead(ut.TestCase):
     """ Test function `find_cigar_op_pos`. """
 
     def test_cigar_xeq_aln_valid(self):
         """ Find aligned positions in a CIGAR string with =/X codes. """
-        self.assertEqual(list(find_cigar_op_pos("9S23=1X3I13=1D9=2I31=1I25=",
-                                                CIG_ALIGN)),
+        self.assertEqual(list(find_cigar_op_pos_read("9S23=1X3I13=1D9=2I31=1I25=",
+                                                     CIG_ALIGN)),
                          [])
 
     def test_cigar_m_aln_valid(self):
         """ Find aligned positions in a CIGAR string with M codes. """
         self.assertEqual(
-            list(find_cigar_op_pos("9S24M3I13M1D9M2I31M1I25M", CIG_ALIGN)),
+            list(find_cigar_op_pos_read("9S24M3I13M1D9M2I31M1I25M", CIG_ALIGN)),
             [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
              26, 27, 28, 29, 30, 31, 32, 33, 37, 38, 39, 40, 41, 42, 43, 44,
              45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 61, 62,
@@ -83,7 +83,7 @@ class TestFindCigarOpPos(ut.TestCase):
     def test_cigar_xeq_mat_valid(self):
         """ Find matches in a CIGAR string with =/X codes. """
         self.assertEqual(
-            list(find_cigar_op_pos("9S23=1X3I13=1D9=2I31=1I25=", CIG_MATCH)),
+            list(find_cigar_op_pos_read("9S23=1X3I13=1D9=2I31=1I25=", CIG_MATCH)),
             [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
              26, 27, 28, 29, 30, 31, 32, 37, 38, 39, 40, 41, 42, 43, 44, 45,
              46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 61, 62, 63,
@@ -95,56 +95,56 @@ class TestFindCigarOpPos(ut.TestCase):
 
     def test_cigar_m_mat_valid(self):
         """ Find matches in a CIGAR string with M codes. """
-        self.assertEqual(list(find_cigar_op_pos("9S24M3I13M1D9M2I31M1I25M",
-                                                CIG_MATCH)),
+        self.assertEqual(list(find_cigar_op_pos_read("9S24M3I13M1D9M2I31M1I25M",
+                                                     CIG_MATCH)),
                          [])
 
     def test_cigar_xeq_sub_valid(self):
         """ Find substitutions in a CIGAR string with =/X codes. """
-        self.assertEqual(list(find_cigar_op_pos("9S23=1X3I13=1D9=2I31=1I25=",
-                                                CIG_SUBST)),
+        self.assertEqual(list(find_cigar_op_pos_read("9S23=1X3I13=1D9=2I31=1I25=",
+                                                     CIG_SUBST)),
                          [33])
 
     def test_cigar_m_sub_valid(self):
         """ Find substitutions in a CIGAR string with M codes. """
-        self.assertEqual(list(find_cigar_op_pos("9S24M3I13M1D9M2I31M1I25M",
-                                                CIG_SUBST)),
+        self.assertEqual(list(find_cigar_op_pos_read("9S24M3I13M1D9M2I31M1I25M",
+                                                     CIG_SUBST)),
                          [])
 
     def test_cigar_xeq_del_valid(self):
         """ Find deletions in a CIGAR string with =/X codes. """
-        self.assertEqual(list(find_cigar_op_pos("9S23=1X3I13=1D9=2I31=1I25=",
-                                                CIG_DELET)),
+        self.assertEqual(list(find_cigar_op_pos_read("9S23=1X3I13=1D9=2I31=1I25=",
+                                                     CIG_DELET)),
                          [])
 
     def test_cigar_m_del_valid(self):
         """ Find deletions in a CIGAR string with M codes. """
-        self.assertEqual(list(find_cigar_op_pos("9S24M3I13M1D9M2I31M1I25M",
-                                                CIG_DELET)),
+        self.assertEqual(list(find_cigar_op_pos_read("9S24M3I13M1D9M2I31M1I25M",
+                                                     CIG_DELET)),
                          [])
 
     def test_cigar_xeq_ins_valid(self):
         """ Find insertions in a CIGAR string with =/X codes. """
-        self.assertEqual(list(find_cigar_op_pos("9S23=1X3I13=1D9=2I31=1I25=",
-                                                CIG_INSRT)),
+        self.assertEqual(list(find_cigar_op_pos_read("9S23=1X3I13=1D9=2I31=1I25=",
+                                                     CIG_INSRT)),
                          [34, 35, 36, 59, 60, 92])
 
     def test_cigar_m_ins_valid(self):
         """ Find insertions in a CIGAR string with M codes. """
-        self.assertEqual(list(find_cigar_op_pos("9S24M3I13M1D9M2I31M1I25M",
-                                                CIG_INSRT)),
+        self.assertEqual(list(find_cigar_op_pos_read("9S24M3I13M1D9M2I31M1I25M",
+                                                     CIG_INSRT)),
                          [34, 35, 36, 59, 60, 92])
 
     def test_cigar_xeq_scl_valid(self):
         """ Find soft clippings in a CIGAR string with =/X codes. """
-        self.assertEqual(list(find_cigar_op_pos("9S23=1X3I13=1D9=2I31=1I25=",
-                                                CIG_SCLIP)),
+        self.assertEqual(list(find_cigar_op_pos_read("9S23=1X3I13=1D9=2I31=1I25=",
+                                                     CIG_SCLIP)),
                          [1, 2, 3, 4, 5, 6, 7, 8, 9])
 
     def test_cigar_m_scl_valid(self):
         """ Find soft clippings in a CIGAR string with M codes. """
-        self.assertEqual(list(find_cigar_op_pos("9S24M3I13M1D9M2I31M1I25M",
-                                                CIG_SCLIP)),
+        self.assertEqual(list(find_cigar_op_pos_read("9S24M3I13M1D9M2I31M1I25M",
+                                                     CIG_SCLIP)),
                          [1, 2, 3, 4, 5, 6, 7, 8, 9])
 
 

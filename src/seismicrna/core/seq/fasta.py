@@ -42,13 +42,11 @@ def format_fasta_name_line(name: str):
 
 def format_fasta_seq_lines(seq: XNA, wrap: int = 0):
     """ Format a sequence in a FASTA file so that each line has at most
-    `wrap` characters, or no limit if `wrap` is 0. """
-    if wrap < 0:
-        raise ValueError(f"Wrap must be ≥ 0, but got {wrap}")
-    if wrap == 0 or wrap >= len(seq):
-        return f"{seq}{linesep}"
-    return "".join(f"{seq[start: start + wrap]}{linesep}"
-                   for start in range(0, len(seq), wrap))
+    `wrap` characters, or no limit if `wrap` is ≤ 0. """
+    if 0 < wrap < len(seq):
+        return "".join(f"{seq[start: start + wrap]}{linesep}"
+                       for start in range(0, len(seq), wrap))
+    return f"{seq}{linesep}"
 
 
 def format_fasta_record(name: str, seq: XNA, wrap: int = 0):
@@ -113,8 +111,8 @@ def parse_fasta(fasta: Path,
 def get_fasta_seq(fasta: Path, seq_type: type[XNA], name: str):
     """ Get one sequence of a given name from a FASTA file. """
     if not isinstance(seq_type, type) and issubclass(seq_type, XNA):
-        raise TypeError("Expected seq_type to be subclass of Seq, but got "
-                        f"{repr(seq_type)}")
+        raise TypeError(f"Expected seq_type to be subclass of {XNA.__name__}, "
+                        f"but got {repr(seq_type)}")
     try:
         _, seq = next(iter(parse_fasta(fasta, seq_type, (name,))))
     except StopIteration:

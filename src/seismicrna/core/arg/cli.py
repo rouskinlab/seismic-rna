@@ -32,8 +32,8 @@ BOWTIE2_ORIENT_FF = "ff"
 BOWTIE2_ORIENT = BOWTIE2_ORIENT_FR, BOWTIE2_ORIENT_RF, BOWTIE2_ORIENT_FF
 
 BOWTIE2_GBAR_DEFAULT = 4
-CLIP_END5_DEFAULT = max(BOWTIE2_GBAR_DEFAULT, 3)
-CLIP_END3_DEFAULT = max(BOWTIE2_GBAR_DEFAULT, 6)
+CLIP_END5_DEFAULT = BOWTIE2_GBAR_DEFAULT
+CLIP_END3_DEFAULT = BOWTIE2_GBAR_DEFAULT
 MIN_READ_LENGTH_DEFAULT = CLIP_END5_DEFAULT + CLIP_END3_DEFAULT + 1
 
 NO_GROUP = "c"
@@ -97,12 +97,6 @@ opt_keep_tmp = Option(
 )
 
 # Resource usage options
-opt_parallel = Option(
-    ("--parallel/--serial",),
-    type=bool,
-    default=True,
-    help="Run tasks in parallel or in series"
-)
 
 opt_max_procs = Option(
     ("--max-procs",),
@@ -415,14 +409,14 @@ opt_bt2_x = Option(
 opt_bt2_score_min_e2e = Option(
     ("--bt2-score-min-e2e",),
     type=str,
-    default="L,-1,-0.5",
+    default="L,-1,-0.8",
     help="Discard alignments that score below this threshold in end-to-end mode"
 )
 
 opt_bt2_score_min_loc = Option(
     ("--bt2-score-min-loc",),
     type=str,
-    default="L,1,0.5",
+    default="L,1,0.8",
     help="Discard alignments that score below this threshold in local mode"
 )
 
@@ -502,7 +496,14 @@ opt_ambindel = Option(
     ("--ambindel/--no-ambindel",),
     type=bool,
     default=True,
-    help="Mark all ambiguous insertions and deletions"
+    help="Mark all ambiguous insertions and deletions (indels)"
+)
+
+opt_insert3 = Option(
+    ("--insert3/--insert5",),
+    type=bool,
+    default=True,
+    help="Mark each insertion on the base to its 3' (True) or 5' (False) side"
 )
 
 opt_brotli_level = Option(
@@ -555,6 +556,20 @@ opt_f1r2_fwd = Option(
           "to be forward-stranded")
 )
 
+opt_relate_pos_table = Option(
+    ("--relate-pos-table/--no-relate-pos-table",),
+    type=bool,
+    default=True,
+    help="Tabulate relationships per position for relate data"
+)
+
+opt_relate_read_table = Option(
+    ("--relate-read-table/--no-relate-read-table",),
+    type=bool,
+    default=True,
+    help="Tabulate relationships per read for relate data"
+)
+
 # Pool
 
 opt_pool = Option(
@@ -566,10 +581,10 @@ opt_pool = Option(
 
 # Mask
 
-opt_mask_sections_file = Option(
-    ("--mask-sections-file", "-s"),
+opt_mask_regions_file = Option(
+    ("--mask-regions-file", "-i"),
     type=Path(exists=True, dir_okay=False),
-    help="Mask sections of references from coordinates/primers in a CSV file"
+    help="Mask regions of references from coordinates/primers in a CSV file"
 )
 
 opt_mask_coords = Option(
@@ -577,7 +592,7 @@ opt_mask_coords = Option(
     type=(str, int, int),
     multiple=True,
     default=(),
-    help="Mask a section of a reference given its 5' and 3' end coordinates"
+    help="Mask a region of a reference given its 5' and 3' end coordinates"
 )
 
 opt_mask_primers = Option(
@@ -585,14 +600,14 @@ opt_mask_primers = Option(
     type=(str, DNA, DNA),
     multiple=True,
     default=(),
-    help="Mask a section of a reference given its forward and reverse primers"
+    help="Mask a region of a reference given its forward and reverse primers"
 )
 
 opt_primer_gap = Option(
     ("--primer-gap",),
     type=int,
     default=0,
-    help="Leave a gap of this many bases between the primer and the section"
+    help="Leave a gap of this many bases between the primer and the region"
 )
 
 opt_mask_del = Option(
@@ -645,6 +660,20 @@ opt_mask_pos_file = Option(
     help="Mask positions in references from a file"
 )
 
+opt_mask_read = Option(
+    ("--mask-read",),
+    type=str,
+    multiple=True,
+    default=(),
+    help="Mask the read with this name"
+)
+
+opt_mask_read_file = Option(
+    ("--mask-read-file",),
+    type=Path(dir_okay=False, exists=True),
+    help="Mask the reads with names in this file"
+)
+
 opt_mask_discontig = Option(
     ("--mask-discontig/--keep-discontig",),
     type=bool,
@@ -656,14 +685,14 @@ opt_min_ncov_read = Option(
     ("--min-ncov-read",),
     type=int,
     default=1,
-    help="Mask reads with fewer than this many bases covering the section"
+    help="Mask reads with fewer than this many bases covering the region"
 )
 
 opt_min_finfo_read = Option(
     ("--min-finfo-read",),
     type=float,
     default=0.95,
-    help="Mask reads with less than this fraction of unambiguous base calls"
+    help="Mask reads with less than this fraction of informative base calls"
 )
 
 opt_max_fmut_read = Option(
@@ -684,7 +713,7 @@ opt_min_ninfo_pos = Option(
     ("--min-ninfo-pos",),
     type=int,
     default=1000,
-    help="Mask positions with fewer than this many unambiguous base calls"
+    help="Mask positions with fewer than this many informative base calls"
 )
 
 opt_max_fmut_pos = Option(
@@ -706,6 +735,34 @@ opt_quick_unbias_thresh = Option(
     type=float,
     default=0.001,
     help="Treat mutated fractions under this threshold as 0 with --quick-unbias"
+)
+
+opt_max_mask_iter = Option(
+    ("--max-mask-iter",),
+    type=int,
+    default=0,
+    help="Maximum number of iterations for masking (0 for no limit)"
+)
+
+opt_mask_pos_table = Option(
+    ("--mask-pos-table/--no-mask-pos-table",),
+    type=bool,
+    default=True,
+    help="Tabulate relationships per position for mask data"
+)
+
+opt_mask_read_table = Option(
+    ("--mask-read-table/--no-mask-read-table",),
+    type=bool,
+    default=True,
+    help="Tabulate relationships per read for mask data"
+)
+
+opt_verify_times = Option(
+    ("--verify-times/--no-verify-times",),
+    type=bool,
+    default=True,
+    help="Verify that report files from later steps have later timestamps"
 )
 
 # Cluster options
@@ -762,7 +819,7 @@ opt_jackpot_conf_level = Option(
 opt_max_jackpot_quotient = Option(
     ("--max-jackpot-quotient",),
     type=float,
-    default=1.2,
+    default=1.1,
     help="Remove runs whose jackpotting quotient exceeds this limit"
 )
 
@@ -829,42 +886,33 @@ opt_em_thresh = Option(
     help="Stop EM when the log likelihood increases by less than this threshold"
 )
 
+opt_cluster_pos_table = Option(
+    ("--cluster-pos-table/--no-cluster-pos-table",),
+    type=bool,
+    default=True,
+    help="Tabulate relationships per position for cluster data"
+)
+
+opt_cluster_abundance_table = Option(
+    ("--cluster-abundance-table/--no-cluster-abundance-table",),
+    type=bool,
+    default=True,
+    help="Tabulate number of reads per cluster for cluster data"
+)
+
 # Join options
 
 opt_joined = Option(
     ("--joined", "-J"),
     type=str,
     default="",
-    help="Joined section name"
+    help="Joined region name"
 )
 
 opt_join_clusts = Option(
     ("--join-clusts", "-j"),
     type=Path(dir_okay=False, exists=True),
     help="Join clusters from this CSV file"
-)
-
-# Table options
-
-opt_table_pos = Option(
-    ("--table-pos/--no-table-pos",),
-    type=bool,
-    default=True,
-    help="Make a table counting relationships per position"
-)
-
-opt_table_read = Option(
-    ("--table-read/--no-table-read",),
-    type=bool,
-    default=True,
-    help="Make a table counting relationships per read"
-)
-
-opt_table_clust = Option(
-    ("--table-clust/--no-table-clust",),
-    type=bool,
-    default=True,
-    help="Make a table counting reads per cluster (only for cluster reports)"
 )
 
 # List options
@@ -885,10 +933,10 @@ opt_fold = Option(
     help="Predict the secondary structure using the RNAstructure Fold program"
 )
 
-opt_fold_sections_file = Option(
-    ("--fold-sections-file", "-f"),
+opt_fold_regions_file = Option(
+    ("--fold-regions-file", "-f"),
     type=Path(exists=True, dir_okay=False),
-    help="Fold sections of references from coordinates/primers in a CSV file"
+    help="Fold regions of references from coordinates/primers in a CSV file"
 )
 
 opt_fold_coords = Option(
@@ -896,7 +944,7 @@ opt_fold_coords = Option(
     type=(str, int, int),
     multiple=True,
     default=(),
-    help="Fold a section of a reference given its 5' and 3' end coordinates"
+    help="Fold a region of a reference given its 5' and 3' end coordinates"
 )
 
 opt_fold_primers = Option(
@@ -904,7 +952,7 @@ opt_fold_primers = Option(
     type=(str, DNA, DNA),
     multiple=True,
     default=(),
-    help="Fold a section of a reference given its forward and reverse primers"
+    help="Fold a region of a reference given its forward and reverse primers"
 )
 
 opt_quantile = Option(
@@ -1032,8 +1080,8 @@ opt_fold_full = Option(
     ("--fold-full/--fold-table",),
     type=bool,
     default=True,
-    help="If no sections are specified, whether to default to the full section "
-         "or to the table's section"
+    help="If no regions are specified, whether to default to the full region "
+         "or to the table's region"
 )
 
 opt_hist_bins = Option(
@@ -1132,6 +1180,24 @@ opt_graph_aucroll = Option(
     type=bool,
     default=False,
     help="Graph rolling areas under receiver operating characteristic curves"
+)
+
+# Draw
+
+opt_struct_num = Option(
+    ("--struct-num",),
+    type=int,
+    multiple=True,
+    default=None,
+    help=("Draw the specified structure (zero-indexed) or -1 for all structures."
+          " Otherwise draw the structure with the best AUROC.")
+)
+
+opt_color = Option(
+    ("--color/--no-color",),
+    type=bool,
+    default=True,
+    help="Color bases by their reactivity"
 )
 
 # CT renumbering
@@ -1263,25 +1329,32 @@ opt_vmut_unpaired = Option(
     help="Set the relative variance of mutation rates of unpaired bases"
 )
 
-opt_end3_fmean = Option(
-    ("--end3-fmean", "-3"),
-    type=float,
-    default=0.75,
-    help="Set the mean 3' end as a fraction of the section length"
-)
-
-opt_insert_fmean = Option(
-    ("--insert-fmean", "-l"),
+opt_center_fmean = Option(
+    ("--center-fmean",),
     type=float,
     default=0.5,
-    help="Set the mean read length as a fraction of the section length"
+    help="Set the mean read center as a fraction of the region length"
 )
 
-opt_ends_var = Option(
-    ("--ends-var", "-e"),
+opt_center_fvar = Option(
+    ("--center-fvar",),
     type=float,
-    default=0.25,
-    help="Set the variance of end coordinates as a fraction of its supremum"
+    default=1/3,
+    help="Set the variance of the read center as a fraction of its maximum"
+)
+
+opt_length_fmean = Option(
+    ("--length-fmean",),
+    type=float,
+    default=0.5,
+    help="Set the mean read length as a fraction of the region length"
+)
+
+opt_length_fvar = Option(
+    ("--length-fvar",),
+    type=float,
+    default=1/81,
+    help="Set the variance of the read length as a fraction of its maximum"
 )
 
 opt_clust_conc = Option(

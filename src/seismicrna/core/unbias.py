@@ -421,7 +421,7 @@ def _adjust_min_gap(num_pos: int, min_gap: int):
     Parameters
     ----------
     num_pos: int
-        Number of positions in the reference section.
+        Number of positions in the reference region.
     min_gap: int
         Minimum number of non-mutated bases between two mutations.
 
@@ -1629,19 +1629,19 @@ def calc_params_observed(n_pos_total: int,
     Parameters
     ----------
     n_pos_total: int
-        Total number of positions in the section.
+        Total number of positions in the region.
     unmasked_pos: Iterable[int]
         Unmasked positions; must be zero-indexed with respect to the
-        5' end of the section.
+        5' end of the region.
     muts_per_pos: Iterable[np.ndarray]
         For each unmasked position, numbers of all reads with a mutation
         at that position.
     end5s: np.ndarray
         5' end of every unique read; must be 0-indexed with respect to
-        the 5' end of the section.
+        the 5' end of the region.
     end3s: np.ndarray
         3' end of every unique read; must be 0-indexed with
-        respect to the 5' end of the section.
+        respect to the 5' end of the region.
     counts_per_uniq: np.ndarray
         Number of times each unique read occurs.
     resps: np.ndarray

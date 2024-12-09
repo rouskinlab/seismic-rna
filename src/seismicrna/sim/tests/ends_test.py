@@ -1,114 +1,145 @@
 import unittest as ut
 
-from seismicrna.sim.ends import _sim_ends
+import numpy as np
+
+from seismicrna.sim.ends import sim_pends
 
 
-class TestSimEnds(ut.TestCase):
+class TestSimPEnds(ut.TestCase):
 
-    def test_typical(self):
-        num_reads = 100000
-        for end5 in [1, 11]:
-            for end3 in [90, 100]:
-                for mean3 in [60., 80.]:
-                    for meanr in [20., 40.]:
-                        for var in [0.1, 0.5]:
-                            kwargs = dict(end5=end5,
-                                          end3=end3,
-                                          end3_mean=mean3,
-                                          read_mean=meanr,
-                                          variance=var)
-                            with self.subTest(**kwargs):
-                                end5s, end3s = _sim_ends(num_reads=num_reads,
-                                                         **kwargs)
-                                lengths = end3s - end5s + 1
-                                mean5 = mean3 - meanr + 1
-                                self.assertEqual(round(end5s.mean()), mean5)
-                                self.assertEqual(round(end3s.mean()), mean3)
-                                self.assertEqual(round(lengths.mean()), meanr)
+    def equate(self,
+               end5: int,
+               end3: int,
+               center_fmean: float,
+               center_fvar: float,
+               length_fmean: float,
+               length_fvar: float,
+               end5s: np.ndarray,
+               end3s: np.ndarray,
+               pends: np.ndarray,
+               **kwargs):
+        for result, expect in zip(sim_pends(end5,
+                                            end3,
+                                            center_fmean,
+                                            center_fvar,
+                                            length_fmean,
+                                            length_fvar,
+                                            **kwargs),
+                                  [end5s, end3s, pends],
+                                  strict=True):
+            self.assertTrue(np.array_equal(result, expect))
 
-    def test_no_gap5(self):
-        num_reads = 100000
-        for end5 in [1, 11]:
-            for end3 in [90, 100]:
-                for mean3 in [60., 80.]:
-                    meanr = mean3 - (end5 - 1)
-                    for var in [0.1, 0.5]:
-                        kwargs = dict(end5=end5,
-                                      end3=end3,
-                                      end3_mean=mean3,
-                                      read_mean=meanr,
-                                      variance=var)
-                        with self.subTest(**kwargs):
-                            end5s, end3s = _sim_ends(num_reads=num_reads,
-                                                     **kwargs)
-                            lengths = end3s - end5s + 1
-                            mean5 = mean3 - meanr + 1
-                            self.assertEqual(round(end5s.mean()), mean5)
-                            self.assertEqual(round(end3s.mean()), mean3)
-                            self.assertEqual(round(lengths.mean()), meanr)
+    def test_zero_length_1_to_0_keep(self):
+        self.equate(end5=1,
+                    end3=0,
+                    center_fmean=0.5,
+                    center_fvar=0.5,
+                    length_fmean=0.5,
+                    length_fvar=0.5,
+                    end5s=np.array([1]),
+                    end3s=np.array([0]),
+                    pends=np.array([1.]))
 
-    def test_read_zero(self):
-        num_reads = 100000
-        meanr = 0.
-        for end5 in [1, 11]:
-            for end3 in [90, 100]:
-                for mean3 in [60., 80.]:
-                    for var in [0.1, 0.5]:
-                        kwargs = dict(end5=end5,
-                                      end3=end3,
-                                      end3_mean=mean3,
-                                      read_mean=meanr,
-                                      variance=var)
-                        with self.subTest(**kwargs):
-                            end5s, end3s = _sim_ends(num_reads=num_reads,
-                                                     **kwargs)
-                            lengths = end3s - end5s + 1
-                            self.assertEqual(round(end5s.mean()), mean3)
-                            self.assertEqual(round(end3s.mean()), mean3)
-                            self.assertEqual(round(lengths.mean()), 1)
+    def test_zero_length_9_to_8_keep(self):
+        self.equate(end5=9,
+                    end3=8,
+                    center_fmean=0.5,
+                    center_fvar=0.5,
+                    length_fmean=0.5,
+                    length_fvar=0.5,
+                    end5s=np.array([9]),
+                    end3s=np.array([8]),
+                    pends=np.array([1.]))
 
-    def test_no_gap3(self):
-        num_reads = 100000
-        for end5 in [1, 11]:
-            for end3 in [90, 100]:
-                mean3 = end3
-                for meanr in [20., 40.]:
-                    for var in [0.1, 0.5]:
-                        kwargs = dict(end5=end5,
-                                      end3=end3,
-                                      end3_mean=mean3,
-                                      read_mean=meanr,
-                                      variance=var)
-                        with self.subTest(**kwargs):
-                            end5s, end3s = _sim_ends(num_reads=num_reads,
-                                                     **kwargs)
-                            lengths = end3s - end5s + 1
-                            mean5 = mean3 - meanr + 1
-                            self.assertEqual(round(end5s.mean()), mean5)
-                            self.assertEqual(round(end3s.mean()), mean3)
-                            self.assertEqual(round(lengths.mean()), meanr)
+    def test_zero_length_9_to_8_drop(self):
+        self.equate(end5=9,
+                    end3=8,
+                    center_fmean=0.5,
+                    center_fvar=0.5,
+                    length_fmean=0.5,
+                    length_fvar=0.5,
+                    end5s=np.array([]),
+                    end3s=np.array([]),
+                    pends=np.array([]),
+                    keep_empty_reads=False)
 
-    def test_var_zero(self):
-        num_reads = 100000
-        var = 0.
-        for end5 in [1, 11]:
-            for end3 in [90, 100]:
-                for mean3 in [60., 80.]:
-                    for meanr in [20., 40.]:
-                        kwargs = dict(end5=end5,
-                                      end3=end3,
-                                      end3_mean=mean3,
-                                      read_mean=meanr,
-                                      variance=var)
-                        with self.subTest(**kwargs):
-                            end5s, end3s = _sim_ends(num_reads=num_reads,
-                                                     **kwargs)
-                            lengths = end3s - end5s + 1
-                            mean5 = mean3 - meanr + 1
-                            self.assertEqual(round(end5s.mean()), mean5)
-                            self.assertEqual(round(end3s.mean()), mean3)
-                            self.assertEqual(round(lengths.mean()), meanr)
+    def test_center_fvar_0_length_fvar_0(self):
+        self.equate(end5=11,
+                    end3=19,
+                    center_fmean=0.,
+                    center_fvar=0.,
+                    length_fmean=1.,
+                    length_fvar=0.,
+                    end5s=np.array([11]),
+                    end3s=np.array([11]),
+                    pends=np.array([1.]))
+        self.equate(end5=11,
+                    end3=19,
+                    center_fmean=0.25,
+                    center_fvar=0.,
+                    length_fmean=1.,
+                    length_fvar=0.,
+                    end5s=np.array([11]),
+                    end3s=np.array([15]),
+                    pends=np.array([1.]))
+        self.equate(end5=11,
+                    end3=19,
+                    center_fmean=0.5,
+                    center_fvar=0.,
+                    length_fmean=1.,
+                    length_fvar=0.,
+                    end5s=np.array([11]),
+                    end3s=np.array([19]),
+                    pends=np.array([1.]))
+        self.equate(end5=11,
+                    end3=19,
+                    center_fmean=0.5,
+                    center_fvar=0.,
+                    length_fmean=0.5,
+                    length_fvar=0.,
+                    end5s=np.array([13]),
+                    end3s=np.array([17]),
+                    pends=np.array([1.]))
+        self.equate(end5=11,
+                    end3=19,
+                    center_fmean=0.75,
+                    center_fvar=0.,
+                    length_fmean=1.,
+                    length_fvar=0.,
+                    end5s=np.array([15]),
+                    end3s=np.array([19]),
+                    pends=np.array([1.]))
+        self.equate(end5=11,
+                    end3=19,
+                    center_fmean=1.,
+                    center_fvar=0.,
+                    length_fmean=1.,
+                    length_fvar=0.,
+                    end5s=np.array([19]),
+                    end3s=np.array([19]),
+                    pends=np.array([1.]))
 
 
 if __name__ == "__main__":
     ut.main()
+
+########################################################################
+#                                                                      #
+# © Copyright 2024, the Rouskin Lab.                                   #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

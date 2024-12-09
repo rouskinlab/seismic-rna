@@ -9,7 +9,6 @@ from ..core import path
 from ..core.arg import (opt_ct_file,
                         opt_clust_conc,
                         opt_force,
-                        opt_parallel,
                         opt_max_procs)
 from ..core.header import ClustHeader
 from ..core.rna import from_ct
@@ -83,12 +82,10 @@ def run(*,
         ct_file: tuple[str, ...],
         clust_conc: float,
         force: bool,
-        parallel: bool,
         max_procs: int):
     """ Simulate the rate of each kind of mutation at each position. """
     return dispatch(sim_pclust_ct,
                     max_procs=max_procs,
-                    parallel=parallel,
                     pass_n_procs=False,
                     args=as_list_of_tuples(map(Path, ct_file)),
                     kwargs=dict(concentration=(clust_conc if clust_conc
@@ -100,7 +97,6 @@ params = [
     opt_ct_file,
     opt_clust_conc,
     opt_force,
-    opt_parallel,
     opt_max_procs
 ]
 
@@ -109,3 +105,24 @@ params = [
 def cli(*args, **kwargs):
     """ Simulate the proportions of 5' and 3' end coordinates. """
     run(*args, **kwargs)
+
+########################################################################
+#                                                                      #
+# © Copyright 2024, the Rouskin Lab.                                   #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

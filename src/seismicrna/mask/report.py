@@ -3,14 +3,14 @@ from ..core import path
 from ..core.report import (BatchedReport,
                            SampleF,
                            RefF,
-                           SectF,
+                           RegF,
                            End5F,
                            End3F,
                            CountMutsF,
                            CountRefsF,
                            ExclGUF,
                            ExclPolyAF,
-                           ExclUserPosF,
+                           ExclListPosF,
                            DiscontigF,
                            NumDiscontigF,
                            MinNInfoPosF,
@@ -33,13 +33,16 @@ from ..core.report import (BatchedReport,
                            MaxFMutReadF,
                            MinMutGapF,
                            NumReadsInitF,
+                           NumReadCutListF,
                            NumReadsLoNCovF,
                            NumReadsLoInfoF,
                            NumReadsHiMutF,
                            NumReadsCloseMutF,
                            NumReadsKeptF,
                            QuickUnbiasF,
-                           QuickUnbiasThreshF)
+                           QuickUnbiasThreshF,
+                           MaxMaskIterF,
+                           NumMaskIterF)
 
 
 class MaskReport(BatchedReport, MaskIO):
@@ -55,10 +58,10 @@ class MaskReport(BatchedReport, MaskIO):
     @classmethod
     def fields(cls):
         return [
-            # Sample, reference, and section information.
+            # Sample, reference, and region information.
             SampleF,
             RefF,
-            SectF,
+            RegF,
             End5F,
             End3F,
             # Types of mutations and matches to count.
@@ -67,7 +70,7 @@ class MaskReport(BatchedReport, MaskIO):
             # Position filtering parameters.
             ExclGUF,
             ExclPolyAF,
-            ExclUserPosF,
+            ExclListPosF,
             MinNInfoPosF,
             MaxFMutPosF,
             # Position filtering results.
@@ -92,12 +95,16 @@ class MaskReport(BatchedReport, MaskIO):
             MinMutGapF,
             # Read filtering results.
             NumReadsInitF,
+            NumReadCutListF,
             NumReadsLoNCovF,
             NumDiscontigF,
             NumReadsLoInfoF,
             NumReadsHiMutF,
             NumReadsCloseMutF,
             NumReadsKeptF,
+            # Iterations.
+            MaxMaskIterF,
+            NumMaskIterF,
             # Observer bias correction.
             QuickUnbiasF,
             QuickUnbiasThreshF,

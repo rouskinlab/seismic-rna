@@ -4,7 +4,7 @@ from ..core import path
 from ..core.report import (Report,
                            SampleF,
                            RefF,
-                           SectF,
+                           RegF,
                            ProfileF,
                            Quantile,
                            FoldTempF,
@@ -20,7 +20,7 @@ class FoldReport(Report):
     def fields(cls):
         return [SampleF,
                 RefF,
-                SectF,
+                RegF,
                 ProfileF,
                 Quantile,
                 FoldTempF,
@@ -35,7 +35,7 @@ class FoldReport(Report):
 
     @classmethod
     def dir_seg_types(cls):
-        return path.SampSeg, path.CmdSeg, path.RefSeg, path.SectSeg
+        return path.SampSeg, path.CmdSeg, path.RefSeg, path.RegSeg
 
     @classmethod
     def auto_fields(cls):

@@ -7,18 +7,18 @@ from .db import parse_db
 from .struct import RNAStructure
 from ..logs import logger
 from ..path import CT_EXT, DB_EXT
-from ..seq import Section
+from ..seq import Region
 from ..write import need_write, write_mode
 
 
 def _from_file(file: Path, parser: Callable, *args, **kwargs):
     titles: set[str] = set()
-    for title, section, pairs in parser(file, *args, **kwargs):
+    for title, region, pairs in parser(file, *args, **kwargs):
         if title in titles:
             logger.warning(f"Title {repr(title)} is repeated in {file}")
         else:
             titles.add(title)
-        yield RNAStructure(title=title, section=section, pairs=pairs)
+        yield RNAStructure(title=title, region=region, pairs=pairs)
 
 
 def from_ct(ct_path: Path):
@@ -57,18 +57,18 @@ def from_db(db_path: Path, seq5: int = 1):
     yield from _from_file(db_path, parse_db, seq5=seq5)
 
 
-def find_ct_section(ct_path: Path) -> Section:
-    """ Section shared among all structures in a CT file. """
+def find_ct_region(ct_path: Path) -> Region:
+    """ Region shared among all structures in a CT file. """
     structures = iter(from_ct(ct_path))
     try:
         structure = next(structures)
     except StopIteration:
         raise ValueError(f"No structures in {ct_path}")
-    section = structure.section
+    region = structure.region
     for structure in structures:
-        if structure.section != section:
-            raise ValueError(f"Got > 1 unique section in {ct_path}")
-    return section
+        if structure.region != region:
+            raise ValueError(f"Got > 1 unique region in {ct_path}")
+    return region
 
 
 def to_ct(structures: Iterable[RNAStructure],

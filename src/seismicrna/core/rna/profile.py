@@ -3,17 +3,17 @@ from pathlib import Path
 
 import pandas as pd
 
-from .base import RNASection
+from .base import RNARegion
 from .. import path
 from ..seq import write_fasta
 
 
-class RNAProfile(RNASection):
+class RNAProfile(RNARegion):
     """ Mutational profile of an RNA. """
 
     def __init__(self, *,
                  sample: str,
-                 data_sect: str,
+                 data_reg: str,
                  data_name: str,
                  data: pd.Series,
                  **kwargs):
@@ -22,8 +22,8 @@ class RNAProfile(RNASection):
         ----------
         sample: str
             Name of the sample from which the mutational profile comes.
-        data_sect: str
-            Name of the section from which the mutational profile comes.
+        data_reg: str
+            Name of the region from which the mutational profile comes.
         data_name: str
             Name of the mutational profile (e.g. "cluster_2-1").
         data: pandas.Series
@@ -31,7 +31,7 @@ class RNAProfile(RNASection):
         """
         super().__init__(**kwargs)
         self.sample = sample
-        self.data_sect = data_sect
+        self.data_reg = data_reg
         self.data_name = data_name
         if not isinstance(data, pd.Series):
             raise TypeError(
@@ -39,25 +39,25 @@ class RNAProfile(RNASection):
             )
         if data.min() < 0. or data.max() > 1.:
             raise ValueError(f"Got mutation rates outside [0, 1]:\n{data}")
-        self.data = data.reindex(self.section.range)
+        self.data = data.reindex(self.region.range)
 
     @cached_property
     def init_args(self):
         return super().init_args | dict(sample=self.sample,
-                                        data_sect=self.data_sect,
+                                        data_reg=self.data_reg,
                                         data_name=self.data_name,
                                         data=self.data)
 
     def _renumber_from_args(self, seq5: int):
         return super()._renumber_from_args(seq5) | dict(
             data=pd.Series(self.data.values,
-                           index=self.section.renumber_from(seq5).range)
+                           index=self.region.renumber_from(seq5).range)
         )
 
     @property
     def profile(self):
         """ Name of the mutational profile. """
-        return f"{self.data_sect}__{self.data_name}"
+        return f"{self.data_reg}__{self.data_name}"
 
     def _get_dir_fields(self, top: Path):
         """ Get the path fields for the directory of this RNA.
@@ -76,7 +76,7 @@ class RNAProfile(RNASection):
                 path.CMD: path.CMD_FOLD_DIR,
                 path.SAMP: self.sample,
                 path.REF: self.ref,
-                path.SECT: self.sect}
+                path.REG: self.reg}
 
     def _get_dir(self, top: Path):
         """ Get the directory in which to write files of this RNA.
@@ -91,7 +91,7 @@ class RNAProfile(RNASection):
         pathlib.Path
             Parent directory of files for this RNA.
         """
-        return path.builddir(*path.SECT_DIR_SEGS, **self._get_dir_fields(top))
+        return path.builddir(*path.REG_DIR_SEGS, **self._get_dir_fields(top))
 
     def _get_file(self, top: Path, file_seg: path.Segment, **file_fields):
         """ Get the path to a file of the RNA.
@@ -233,10 +233,10 @@ class RNAProfile(RNASection):
             File into which the DMS reactivities were written.
         """
         # The DMS reactivities must be numbered starting from 1 at the
-        # beginning of the section, even if the section does not start
-        # at 1. Renumber the section from 1.
+        # beginning of the region, even if the region does not start
+        # at 1. Renumber the region from 1.
         dms = self.data.copy()
-        dms.index = self.section.range_one
+        dms.index = self.region.range_one
         # Drop bases with missing data to make RNAstructure ignore them.
         dms.dropna(inplace=True)
         # Write the DMS reactivities to the DMS file.

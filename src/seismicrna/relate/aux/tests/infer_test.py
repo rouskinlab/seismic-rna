@@ -1,20 +1,16 @@
 import unittest as ut
 from typing import Iterable
 
-from ..infer import infer_read
-from ....core.rel import (DELET,
-                          INS_5,
-                          INS_3,
-                          INS_8,
-                          ANY_N,
-                          MINS5,
-                          MINS3,
-                          ANY_8,
-                          SUB_A,
-                          SUB_C,
-                          SUB_G,
-                          SUB_T)
-from ....core.seq import DNA
+from seismicrna.relate.aux.infer import infer_read
+from seismicrna.core.rel import (DELET,
+                                 INS_5,
+                                 INS_3,
+                                 ANY_N,
+                                 SUB_A,
+                                 SUB_C,
+                                 SUB_G,
+                                 SUB_T)
+from seismicrna.core.seq import DNA
 
 
 class TestInferRead(ut.TestCase):
@@ -32,7 +28,8 @@ class TestInferRead(ut.TestCase):
                 self.assertEqual(infer_read(refseq, end5, end3, muts),
                                  (DNA(read), qual, cigar))
 
-    def assert_raise(self, ref: DNA,
+    def assert_raise(self,
+                     ref: DNA,
                      relvecs: Iterable[tuple[int, int, dict[int, int]]],
                      error: type[Exception],
                      regex: str):
@@ -179,27 +176,26 @@ class TestInferRead(ut.TestCase):
                           ValueError,
                           "Deletion cannot be at position [0-9]+ in .+")
 
-    def test_insert_valid(self):
+    def test_insert5_valid(self):
         """ Test when the read has insertions. """
         ref = DNA("ACGT")
         relvecs = [
             # 1 insertion
-            (1, 4, {1: MINS5, 2: MINS3}),
-            (1, 4, {2: MINS5, 3: MINS3}),
-            (1, 4, {3: MINS5, 4: MINS3}),
-            (1, 3, {1: MINS5, 2: MINS3}),
-            (1, 3, {2: MINS5, 3: MINS3}),
-            (2, 4, {2: MINS5, 3: MINS3}),
-            (2, 4, {3: MINS5, 4: MINS3}),
-            (2, 3, {2: MINS5, 3: MINS3}),
+            (1, 4, {1: INS_5}),
+            (1, 4, {2: INS_5}),
+            (1, 4, {3: INS_5}),
+            (1, 3, {1: INS_5}),
+            (1, 3, {2: INS_5}),
+            (2, 4, {2: INS_5}),
+            (2, 4, {3: INS_5}),
+            (2, 3, {2: INS_5}),
             # 2 insertions, 1 base apart
-            (1, 4, {1: MINS5, 2: ANY_8, 3: MINS3}),
-            (1, 4, {2: MINS5, 3: ANY_8, 4: MINS3}),
+            (1, 4, {1: INS_5, 2: INS_5}),
+            (1, 4, {2: INS_5, 3: INS_5}),
             # 2 insertions, 2 bases apart
-            (1, 4, {1: MINS5, 2: MINS3, 3: MINS5, 4: MINS3}),
+            (1, 4, {1: INS_5, 3: INS_5}),
             # 3 insertions, 1 base apart
-            (1, 4, {1: MINS5, 2: ANY_8, 3: ANY_8, 4: MINS3}),
-
+            (1, 4, {1: INS_5, 2: INS_5, 3: INS_5}),
         ]
         expects = [
             # 1 insertion
@@ -221,124 +217,112 @@ class TestInferRead(ut.TestCase):
         ]
         self.assert_equal(ref, relvecs, expects)
 
-    def test_insert_end5_invalid(self):
+    def test_insert3_valid(self):
+        """ Test when the read has insertions. """
+        ref = DNA("ACGT")
+        relvecs = [
+            # 1 insertion
+            (1, 4, {2: INS_3}),
+            (1, 4, {3: INS_3}),
+            (1, 4, {4: INS_3}),
+            (1, 3, {2: INS_3}),
+            (1, 3, {3: INS_3}),
+            (2, 4, {3: INS_3}),
+            (2, 4, {4: INS_3}),
+            (2, 3, {3: INS_3}),
+            # 2 insertions, 1 base apart
+            (1, 4, {2: INS_3, 3: INS_3}),
+            (1, 4, {3: INS_3, 4: INS_3}),
+            # 2 insertions, 2 bases apart
+            (1, 4, {2: INS_3, 4: INS_3}),
+            # 3 insertions, 1 base apart
+            (1, 4, {2: INS_3, 3: INS_3, 4: INS_3}),
+        ]
+        expects = [
+            # 1 insertion
+            ("ANCGT", "IIIII", "1=1I3="),
+            ("ACNGT", "IIIII", "2=1I2="),
+            ("ACGNT", "IIIII", "3=1I1="),
+            ("ANCG", "IIII", "1=1I2="),
+            ("ACNG", "IIII", "2=1I1="),
+            ("CNGT", "IIII", "1=1I2="),
+            ("CGNT", "IIII", "2=1I1="),
+            ("CNG", "III", "1=1I1="),
+            # 2 insertions, 1 base apart
+            ("ANCNGT", "IIIIII", "1=1I1=1I2="),
+            ("ACNGNT", "IIIIII", "2=1I1=1I1="),
+            # 2 insertions, 2 bases apart
+            ("ANCGNT", "IIIIII", "1=1I2=1I1="),
+            # 3 insertions, 1 base apart
+            ("ANCNGNT", "IIIIIII", "1=1I1=1I1=1I1="),
+        ]
+        self.assert_equal(ref, relvecs, expects)
+
+    def test_insert5_end5_invalid(self):
         """ Test when the read has an insertion at the 5' end. """
         ref = DNA("ACGT")
         relvecs = [
-            (1, 4, {4: MINS5}),
-            (1, 4, {3: MINS5, 4: ANY_8}),
-            (1, 4, {2: MINS5, 3: ANY_8, 4: ANY_8}),
-            (1, 4, {1: MINS5, 2: ANY_8, 3: ANY_8, 4: ANY_8}),
-            (2, 3, {3: MINS5}),
-            (2, 3, {2: MINS5, 3: ANY_8}),
+            (1, 4, {4: INS_5}),
+            (1, 4, {3: INS_5, 4: INS_5}),
+            (1, 4, {2: INS_5, 3: INS_5, 4: INS_5}),
+            (1, 4, {1: INS_5, 2: INS_5, 3: INS_5, 4: INS_5}),
+            (2, 3, {3: INS_5}),
+            (2, 3, {2: INS_5, 3: INS_5}),
         ]
         self.assert_raise(ref,
                           relvecs,
                           ValueError,
                           "Position [0-9]+ in .+ cannot be 5' of an insertion")
 
-    def test_insert_end3_invalid(self):
+    def test_insert3_end3_invalid(self):
         """ Test when the read has an insertion at the 3' end. """
         ref = DNA("ACGT")
         relvecs = [
-            (1, 4, {1: MINS3}),
-            (1, 4, {1: ANY_8, 2: MINS3}),
-            (1, 4, {1: ANY_8, 2: ANY_8, 3: MINS3}),
-            (1, 4, {1: ANY_8, 2: ANY_8, 3: ANY_8, 4: MINS3}),
-            (2, 3, {2: MINS3}),
-            (2, 3, {2: ANY_8, 3: MINS3}),
+            (1, 4, {1: INS_3}),
+            (1, 4, {1: INS_3, 2: INS_3}),
+            (1, 4, {1: INS_3, 2: INS_3, 3: INS_3}),
+            (1, 4, {1: INS_3, 2: INS_3, 3: INS_3, 4: INS_3}),
+            (2, 3, {2: INS_3}),
+            (2, 3, {2: INS_3, 3: INS_3}),
         ]
         self.assert_raise(ref,
                           relvecs,
                           ValueError,
                           "Position [0-9]+ in .+ cannot be 3' of an insertion")
 
-    def test_insert_dangling_5_invalid(self):
-        """ Test when the read has an unmatched 5' insertion. """
-        ref = DNA("ACGT")
-        relvecs = [
-            (1, 4, {1: MINS5}),
-            (1, 4, {2: MINS5}),
-            (1, 4, {3: MINS5}),
-            (1, 4, {1: MINS5, 3: MINS3}),
-            (1, 4, {2: MINS5, 4: MINS3}),
-            (2, 3, {2: MINS5}),
-        ]
-        self.assert_raise(ref,
-                          relvecs,
-                          ValueError,
-                          "Missing 3' ins at [0-9]+ in .+")
-
-    def test_insert_dangling_3_invalid(self):
-        """ Test when the read has an unmatched 3' insertion. """
-        ref = DNA("ACGT")
-        relvecs = [
-            (1, 4, {2: MINS3}),
-            (1, 4, {3: MINS3}),
-            (1, 4, {4: MINS3}),
-            (2, 3, {3: MINS3}),
-        ]
-        self.assert_raise(ref,
-                          relvecs,
-                          ValueError,
-                          "Unexpected 3' ins at [0-9+] in .+")
-
-    def test_insert_bare_invalid(self):
-        """ Test when the read has bare insertions (with no underlying
-        relationship). """
-        ref = DNA("ACGT")
-        relvecs = [
-            # 1 bare insertion
-            (1, 4, {1: MINS5, 2: INS_3}),
-            (1, 4, {2: MINS5, 3: INS_3}),
-            (1, 4, {3: MINS5, 4: INS_3}),
-            (1, 4, {1: INS_5, 2: MINS3}),
-            (1, 4, {2: INS_5, 3: MINS3}),
-            (1, 4, {3: INS_5, 4: MINS3}),
-            (2, 3, {2: MINS5, 3: INS_3}),
-            (2, 3, {2: INS_5, 3: MINS3}),
-            # 2 bare insertions
-            (1, 4, {1: MINS5, 2: INS_8, 3: INS_3}),
-            (1, 4, {2: MINS5, 3: INS_8, 4: INS_3}),
-        ]
-        self.assert_raise(ref,
-                          relvecs,
-                          ValueError,
-                          "Invalid relation 0")
-
     def test_insert_deletion_invalid(self):
         """ Test when the read has an insertion next to a deletion. """
         ref = DNA("ACGT")
         relvecs = [
-            (1, 4, {1: MINS5, 2: INS_3 + DELET}),
-            (1, 4, {2: MINS5, 3: INS_3 + DELET}),
-            (1, 4, {3: MINS5, 4: INS_3 + DELET}),
-            (1, 4, {1: DELET + INS_5, 2: MINS3}),
-            (1, 4, {2: DELET + INS_5, 3: MINS3}),
-            (1, 4, {3: DELET + INS_5, 4: MINS3}),
+            (1, 4, {2: INS_3 + DELET}),
+            (1, 4, {3: INS_3 + DELET}),
+            (1, 4, {4: INS_3 + DELET}),
+            (1, 4, {1: DELET + INS_5}),
+            (1, 4, {2: DELET + INS_5}),
+            (1, 4, {3: DELET + INS_5}),
         ]
         self.assert_raise(ref,
                           relvecs,
                           ValueError,
                           "Position .+ is del and ins")
 
-    def test_insert_non_match_valid(self):
+    def test_insert5_non_match_valid(self):
         """ Test when the read has insertions next to substitutions or
         low-quality base calls. """
         ref = DNA("ACGT")
         relvecs = [
             # 1 insertion next to 1 substitution
-            (1, 4, {1: SUB_C + INS_5, 2: MINS3}),
-            (1, 4, {1: SUB_C, 2: MINS5, 3: MINS3}),
-            (1, 4, {1: MINS5, 2: INS_3 + SUB_T}),
-            (1, 4, {2: SUB_T + INS_5, 3: MINS3}),
-            (1, 4, {2: SUB_T, 3: MINS5, 4: MINS3}),
+            (1, 4, {1: SUB_C + INS_5}),
+            (1, 4, {1: SUB_C, 2: INS_5}),
+            (1, 4, {2: INS_3 + SUB_T}),
+            (1, 4, {2: SUB_T + INS_5}),
+            (1, 4, {2: SUB_T, 3: INS_5}),
             # 1 insertion next to 1 low-quality base call
-            (1, 4, {1: ANY_N - SUB_A + INS_5, 2: MINS3}),
-            (1, 4, {1: ANY_N - SUB_A, 2: MINS5, 3: MINS3}),
-            (1, 4, {1: MINS5, 2: INS_3 + ANY_N - SUB_C}),
-            (1, 4, {2: ANY_N - SUB_C + INS_5, 3: MINS3}),
-            (1, 4, {2: ANY_N - SUB_C, 3: MINS5, 4: MINS3}),
+            (1, 4, {1: ANY_N - SUB_A + INS_5}),
+            (1, 4, {1: ANY_N - SUB_A, 2: INS_5}),
+            (1, 4, {1: INS_5, 2: INS_3 + ANY_N - SUB_C}),
+            (1, 4, {2: ANY_N - SUB_C + INS_5}),
+            (1, 4, {2: ANY_N - SUB_C, 3: INS_5}),
         ]
         expects = [
             # 1 insertion next to 1 substitution
@@ -355,6 +339,44 @@ class TestInferRead(ut.TestCase):
             ("ANGNT", "I!III", "1=1M1=1I1="),
         ]
         self.assert_equal(ref, relvecs, expects)
+
+    def test_insert3_non_match_valid(self):
+        """ Test when the read has insertions next to substitutions or
+        low-quality base calls. """
+        ref = DNA("ACGT")
+        relvecs = [
+            # 1 insertion next to 1 substitution
+            (1, 4, {1: SUB_C, 2: INS_3}),
+            (1, 4, {1: SUB_C, 3: INS_3}),
+            (1, 4, {2: INS_3 + SUB_T}),
+            (1, 4, {2: SUB_T, 3: INS_3}),
+            (1, 4, {2: SUB_T, 4: INS_3}),
+            # 1 insertion next to 1 low-quality base call
+            (1, 4, {1: ANY_N - SUB_A, 2: INS_3}),
+            (1, 4, {1: ANY_N - SUB_A, 3: INS_3}),
+            (1, 4, {2: INS_3 + ANY_N - SUB_C}),
+            (1, 4, {2: ANY_N - SUB_C, 3: INS_3}),
+            (1, 4, {2: ANY_N - SUB_C, 4: INS_3}),
+        ]
+        expects = [
+            # 1 insertion next to 1 substitution
+            ("CNCGT", "IIIII", "1X1I3="),
+            ("CCNGT", "IIIII", "1X1=1I2="),
+            ("ANTGT", "IIIII", "1=1I1X2="),
+            ("ATNGT", "IIIII", "1=1X1I2="),
+            ("ATGNT", "IIIII", "1=1X1=1I1="),
+            # 1 insertion next to 1 low-quality base call
+            ("NNCGT", "!IIII", "1M1I3="),
+            ("NCNGT", "!IIII", "1M1=1I2="),
+            ("ANNGT", "II!II", "1=1I1M2="),
+            ("ANNGT", "I!III", "1=1M1I2="),
+            ("ANGNT", "I!III", "1=1M1=1I1="),
+        ]
+        self.assert_equal(ref, relvecs, expects)
+
+
+if __name__ == "__main__":
+    ut.main()
 
 ########################################################################
 #                                                                      #

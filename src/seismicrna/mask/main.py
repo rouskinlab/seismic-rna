@@ -5,7 +5,7 @@ from typing import Iterable
 
 from click import command
 
-from .write import mask_section
+from .write import mask_region
 from ..core.arg import (CMD_MASK,
                         arg_input_path,
                         opt_tmp_pfx,
@@ -13,14 +13,17 @@ from ..core.arg import (CMD_MASK,
                         opt_mask_coords,
                         opt_mask_primers,
                         opt_primer_gap,
-                        opt_mask_sections_file,
+                        opt_mask_regions_file,
+                        opt_max_mask_iter,
                         opt_mask_del,
                         opt_mask_ins,
                         opt_mask_mut,
                         opt_mask_polya,
                         opt_mask_gu,
-                        opt_mask_pos_file,
                         opt_mask_pos,
+                        opt_mask_pos_file,
+                        opt_mask_read,
+                        opt_mask_read_file,
                         opt_mask_discontig,
                         opt_min_ncov_read,
                         opt_min_finfo_read,
@@ -30,48 +33,53 @@ from ..core.arg import (CMD_MASK,
                         opt_max_fmut_pos,
                         opt_quick_unbias,
                         opt_quick_unbias_thresh,
+                        opt_mask_pos_table,
+                        opt_mask_read_table,
                         opt_brotli_level,
                         opt_max_procs,
-                        opt_parallel,
                         opt_force,
                         optional_path,
                         extra_defaults)
 from ..core.data import load_datasets
+from ..core.logs import logger
 from ..core.run import run_func
-from ..core.seq import DNA, RefSections
+from ..core.seq import DNA, RefRegions
 from ..core.task import dispatch
-from ..pool.data import load_relate_dataset
+from ..relate.data import load_relate_dataset
 
 
-def load_sections(input_path: Iterable[str | Path],
-                  coords: Iterable[tuple[str, int, int]],
-                  primers: Iterable[tuple[str, DNA, DNA]],
-                  primer_gap: int,
-                  sections_file: Path | None = None):
-    """ Open sections of relate reports. """
+def load_regions(input_path: Iterable[str | Path],
+                 coords: Iterable[tuple[str, int, int]],
+                 primers: Iterable[tuple[str, DNA, DNA]],
+                 primer_gap: int,
+                 regions_file: Path | None = None):
+    """ Open regions of relate reports. """
     # Load all datasets, grouped by their reference names.
     datasets = defaultdict(list)
     for dataset in load_datasets(input_path, load_relate_dataset):
-        datasets[dataset.ref].append(dataset)
-    # Determine the sections for each reference in the datasets.
-    sections = RefSections({(loader.ref, loader.refseq)
-                            for loader in chain(*datasets.values())},
-                           sects_file=sections_file,
-                           coords=coords,
-                           primers=primers,
-                           primer_gap=primer_gap,
-                           exclude_primers=True)
-    return datasets, sections
+        try:
+            datasets[dataset.ref].append(dataset)
+        except Exception as error:
+            logger.error(error)
+    # Determine the regions for each reference in the datasets.
+    regions = RefRegions({(loader.ref, loader.refseq)
+                          for loader in chain(*datasets.values())},
+                         regs_file=regions_file,
+                         coords=coords,
+                         primers=primers,
+                         primer_gap=primer_gap,
+                         exclude_primers=True)
+    return datasets, regions
 
 
 @run_func(CMD_MASK, with_tmp=True, extra_defaults=extra_defaults)
 def run(input_path: tuple[str, ...], *,
         tmp_dir: Path,
-        # Sections
+        # Regions
         mask_coords: tuple[tuple[str, int, int], ...],
         mask_primers: tuple[tuple[str, DNA, DNA], ...],
         primer_gap: int,
-        mask_sections_file: str | None,
+        mask_regions_file: str | None,
         # Mutation counting
         mask_del: bool,
         mask_ins: bool,
@@ -81,36 +89,42 @@ def run(input_path: tuple[str, ...], *,
         mask_gu: bool,
         mask_pos: tuple[tuple[str, int], ...],
         mask_pos_file: str | None,
+        mask_read: tuple[str, ...],
+        mask_read_file: str | None,
         mask_discontig: bool,
         min_ninfo_pos: int,
         max_fmut_pos: float,
         min_ncov_read: int,
         min_finfo_read: float,
-        max_fmut_read: int,
+        max_fmut_read: float,
         min_mut_gap: int,
         # Observer bias correction
         quick_unbias: bool,
         quick_unbias_thresh: float,
+        # Iteration
+        max_mask_iter: int,
+        # Table options
+        mask_pos_table: bool,
+        mask_read_table: bool,
         # Compression
         brotli_level: int,
         # Parallelization
         max_procs: int,
-        parallel: bool,
         # Effort
         force: bool) -> list[Path]:
-    """ Define mutations and sections to filter reads and positions. """
-    # Load all Relate datasets and get the sections for each.
-    datasets, sections = load_sections(
+    """ Define mutations and regions to filter reads and positions. """
+    # Load all Relate datasets and get the regions for each.
+    datasets, regions = load_regions(
         input_path,
         coords=mask_coords,
         primers=mask_primers,
         primer_gap=primer_gap,
-        sections_file=optional_path(mask_sections_file)
+        regions_file=optional_path(mask_regions_file)
     )
-    # List the datasets and their sections.
-    args = [(dataset, section)
+    # List the datasets and their regions.
+    args = [(dataset, region)
             for ref, ref_datasets in datasets.items()
-            for dataset, section in product(ref_datasets, sections.list(ref))]
+            for dataset, region in product(ref_datasets, regions.list(ref))]
     # Define the keyword arguments.
     kwargs = dict(tmp_dir=tmp_dir,
                   mask_del=mask_del,
@@ -120,6 +134,8 @@ def run(input_path: tuple[str, ...], *,
                   mask_gu=mask_gu,
                   mask_pos=list(mask_pos),
                   mask_pos_file=optional_path(mask_pos_file),
+                  mask_read=list(mask_read),
+                  mask_read_file=optional_path(mask_read_file),
                   mask_discontig=mask_discontig,
                   min_ncov_read=min_ncov_read,
                   min_finfo_read=min_finfo_read,
@@ -129,13 +145,14 @@ def run(input_path: tuple[str, ...], *,
                   max_fmut_pos=max_fmut_pos,
                   quick_unbias=quick_unbias,
                   quick_unbias_thresh=quick_unbias_thresh,
+                  max_mask_iter=max_mask_iter,
+                  mask_pos_table=mask_pos_table,
+                  mask_read_table=mask_read_table,
                   brotli_level=brotli_level,
                   force=force)
     # Call the mutations and filter the relation vectors.
-    return dispatch(mask_section,
+    return dispatch(mask_region,
                     max_procs=max_procs,
-                    parallel=parallel,
-                    pass_n_procs=False,
                     args=args,
                     kwargs=kwargs)
 
@@ -145,11 +162,11 @@ params = [
     arg_input_path,
     opt_tmp_pfx,
     opt_keep_tmp,
-    # Sections
+    # Regions
     opt_mask_coords,
     opt_mask_primers,
     opt_primer_gap,
-    opt_mask_sections_file,
+    opt_mask_regions_file,
     # Mutation counting
     opt_mask_del,
     opt_mask_ins,
@@ -161,6 +178,8 @@ params = [
     opt_mask_pos_file,
     opt_min_ninfo_pos,
     opt_max_fmut_pos,
+    opt_mask_read,
+    opt_mask_read_file,
     opt_mask_discontig,
     opt_min_ncov_read,
     opt_min_finfo_read,
@@ -169,11 +188,15 @@ params = [
     # Observer bias correction
     opt_quick_unbias,
     opt_quick_unbias_thresh,
+    # Iteration
+    opt_max_mask_iter,
+    # Table options
+    opt_mask_pos_table,
+    opt_mask_read_table,
     # Compression
     opt_brotli_level,
     # Parallelization
     opt_max_procs,
-    opt_parallel,
     # Effort
     opt_force,
 ]
@@ -181,7 +204,7 @@ params = [
 
 @command(CMD_MASK, params=params)
 def cli(*args, **kwargs):
-    """ Define mutations and sections to filter reads and positions. """
+    """ Define mutations and regions to filter reads and positions. """
     return run(*args, **kwargs)
 
 ########################################################################

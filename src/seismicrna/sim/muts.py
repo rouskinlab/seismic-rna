@@ -14,7 +14,6 @@ from ..core.arg import (opt_ct_file,
                         opt_vmut_paired,
                         opt_vmut_unpaired,
                         opt_force,
-                        opt_parallel,
                         opt_max_procs)
 from ..core.header import RelClustHeader, make_header, list_clusts
 from ..core.rel import (MATCH,
@@ -74,7 +73,7 @@ def verify_proportions(p: Any):
 
 
 def make_pmut_means(*,
-                    ploq: float = 0.04,
+                    ploq: float = 0.02,
                     pam: float,
                     pac: float = 0.30,
                     pag: float = 0.16,
@@ -276,7 +275,8 @@ def sim_pmut(positions: pd.Index,
         mean_nonzero = mean.loc[mean[base] != 0., base]
         var_nonzero = relative_variance * (mean_nonzero * (1. - mean_nonzero))
         # Simulate the mutation rates.
-        if (num_nonzero := np.count_nonzero(mean_nonzero)) > 1:
+        num_nonzero = np.count_nonzero(mean_nonzero)
+        if num_nonzero > 1:
             pmut_base = rng.dirichlet(calc_dirichlet_params(mean_nonzero.values,
                                                             var_nonzero.values),
                                       size=base_pos.size)
@@ -381,12 +381,10 @@ def run(*,
         vmut_paired: float,
         vmut_unpaired: float,
         force: bool,
-        parallel: bool,
         max_procs: int):
     """ Simulate the rate of each kind of mutation at each position. """
     return dispatch(run_struct,
                     max_procs=max_procs,
-                    parallel=parallel,
                     pass_n_procs=False,
                     args=as_list_of_tuples(map(Path, ct_file)),
                     kwargs=dict(pmut_paired=pmut_paired,
@@ -403,7 +401,6 @@ params = [
     opt_vmut_paired,
     opt_vmut_unpaired,
     opt_force,
-    opt_parallel,
     opt_max_procs
 ]
 
@@ -412,3 +409,24 @@ params = [
 def cli(*args, **kwargs):
     """ Simulate the rate of each kind of mutation at each position. """
     run(*args, **kwargs)
+
+########################################################################
+#                                                                      #
+# © Copyright 2024, the Rouskin Lab.                                   #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

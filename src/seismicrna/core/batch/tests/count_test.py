@@ -3,6 +3,7 @@ import unittest as ut
 import numpy as np
 import pandas as pd
 
+from seismicrna.core.array import calc_inverse
 from seismicrna.core.batch.count import (calc_coverage,
                                          _calc_uniq_read_weights,
                                          count_end_coords,
@@ -11,9 +12,8 @@ from seismicrna.core.batch.count import (calc_coverage,
                                          calc_count_per_pos,
                                          calc_count_per_read)
 from seismicrna.core.batch.ends import END5_COORD, END3_COORD
-from seismicrna.core.batch.read import calc_inverse
 from seismicrna.core.rel import HalfRelPattern, RelPattern
-from seismicrna.core.seq.section import SEQ_INDEX_NAMES, seq_pos_to_index
+from seismicrna.core.seq.region import SEQ_INDEX_NAMES, seq_pos_to_index
 from seismicrna.core.seq.xna import DNA
 
 rng = np.random.default_rng(0)
@@ -981,14 +981,14 @@ class TestCalcRelsPerRead(ut.TestCase):
                         [0, 0, 0, 0],
                         [0, 0, 0, 0],
                         [1, 1, 0, 0]]}
-        rels_per_pos = calc_rels_per_read(mutations,
-                                          positions,
-                                          cover_per_read,
-                                          read_indexes)
-        self.assertIsInstance(rels_per_pos, dict)
-        self.assertSetEqual(set(rels_per_pos), set(expect))
+        rels_per_read = calc_rels_per_read(mutations,
+                                           positions,
+                                           cover_per_read,
+                                           read_indexes)
+        self.assertIsInstance(rels_per_read, dict)
+        self.assertSetEqual(set(rels_per_read), set(expect))
         for rel, rexp in expect.items():
-            rres = rels_per_pos[rel]
+            rres = rels_per_read[rel]
             self.assertIsInstance(rres, pd.DataFrame)
             self.assertTrue(rres.equals(
                 pd.DataFrame(rexp, read_nums, ["A", "C", "G", "T"])

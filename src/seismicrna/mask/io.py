@@ -2,10 +2,10 @@ from abc import ABC
 
 from .batch import MaskReadBatch
 from ..core import path
-from ..core.io import ReadBatchIO, SectIO
+from ..core.io import ReadBatchIO, RegIO
 
 
-class MaskIO(SectIO, ABC):
+class MaskIO(RegIO, ABC):
 
     @classmethod
     def auto_fields(cls):

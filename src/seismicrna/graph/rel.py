@@ -2,7 +2,7 @@ from abc import ABC
 from functools import cached_property
 
 from .base import GraphBase
-from ..table.base import get_rel_name
+from ..core.table import get_rel_name
 
 
 class OneRelGraph(GraphBase, ABC):
@@ -18,7 +18,7 @@ class OneRelGraph(GraphBase, ABC):
             are given in seismicrna.table.base.REL_CODES, as follows:
 
             - Covered: v
-            - Informed: n
+            - Informative: n
             - Matched: r
             - Mutated: m
             - Subbed: s
@@ -64,7 +64,7 @@ class MultiRelsGraph(GraphBase, ABC):
             are given in seismicrna.table.base.REL_CODES, as follows:
 
             - Covered: v
-            - Informed: n
+            - Informative: n
             - Matched: r
             - Mutated: m
             - Subbed: s

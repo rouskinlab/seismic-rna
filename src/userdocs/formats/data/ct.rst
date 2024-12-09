@@ -28,7 +28,7 @@ SEISMIC-RNA can parse sequences that obey the following rules:
 
 - Every body line comprises six whitespace-delimited fields:
 
-  1. Index in the section
+  1. Index in the region
   2. Base
   3. Previous (index minus 1), or 0 if the first index
   4. Next (index plus 1), or 0 if the last index
@@ -64,13 +64,13 @@ CT as input file
 Structures for these commands must be input as CT files:
 
 - ``seismic graph roc``
-- ``seismic +renumct``
+- ``seismic renumct``
 
 CT as output file
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 - The ``fold`` command outputs a CT file for each predicted structure.
-- The ``+renumct`` command outputs a renumbered CT file for each input
+- The ``renumct`` command outputs a renumbered CT file for each input
   CT file.
 
 CT as temporary file

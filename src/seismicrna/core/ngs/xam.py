@@ -139,7 +139,7 @@ def view_xam_cmd(xam_inp: Path | None,
                  refs_file: Path | None = None,
                  n_procs: int = 1):
     """ Convert between SAM and BAM formats, extract reads aligning to a
-    specific reference/section, and filter by flag and mapping quality
+    specific reference/region, and filter by flag and mapping quality
     using `samtools view`. """
     args = [SAMTOOLS_CMD, "view",
             "-@", calc_extra_threads(n_procs)]
@@ -182,10 +182,10 @@ def view_xam_cmd(xam_inp: Path | None,
         args.append("-u")
     if xam_inp:
         args.append(xam_inp)
-    # Reference and section specification
+    # Reference and region specification
     if ref:
         if end5 is not None and end3 is not None:
-            # View only reads aligning to a section of this reference.
+            # View only reads aligning to a region of this reference.
             args.append(f"{ref}:{end5}-{end3}")
         else:
             # View only reads aligning to this reference.

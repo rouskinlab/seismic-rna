@@ -5,9 +5,7 @@ from typing import Any, Callable, Iterable
 from .logs import logger, get_config, set_config
 
 
-def calc_pool_size(num_tasks: int,
-                   max_procs: int,
-                   parallel: bool):
+def calc_pool_size(num_tasks: int, max_procs: int):
     """ Calculate the size of a process pool.
 
     Parameters
@@ -16,8 +14,6 @@ def calc_pool_size(num_tasks: int,
         Number of tasks to parallelize. Must be ≥ 1.
     max_procs: int
         Maximum number of processes to run at one time. Must be ≥ 1.
-    parallel: bool
-        Whether to run multiple tasks in parallel.
 
     Returns
     -------
@@ -25,7 +21,7 @@ def calc_pool_size(num_tasks: int,
         - Number of tasks to run in parallel. Always ≥ 1.
         - Number of processes to run for each task. Always ≥ 1.
     """
-    logger.routine("Began calculating pool size")
+    logger.detail("Began calculating pool size")
     if max_procs < 1:
         logger.warning(f"max_procs must be ≥ 1, but got {max_procs}; "
                        f"defaulting to 1")
@@ -40,7 +36,7 @@ def calc_pool_size(num_tasks: int,
     # that is managing the process pool.
     max_child_procs = max(max_procs - 1, 1)
     max_simultaneous = min(num_tasks, max_child_procs)
-    if parallel and max_simultaneous > 1:
+    if max_simultaneous > 1:
         # Parallelize the tasks, controlled by the parent process, and
         # distribute the child processors evenly among the pooled tasks.
         pool_size = max_simultaneous
@@ -50,8 +46,8 @@ def calc_pool_size(num_tasks: int,
         # parent and can thus have all processors.
         pool_size = 1
         num_procs_per_task = max_procs
-    logger.routine(f"Ended calculating pool size: {pool_size} "
-                   f"({num_procs_per_task} processors per task)")
+    logger.detail(f"Ended calculating pool size: {pool_size} "
+                  f"({num_procs_per_task} processors per task)")
     return pool_size, num_procs_per_task
 
 
@@ -105,8 +101,8 @@ class Task(object):
 
 def dispatch(funcs: list[Callable] | Callable,
              max_procs: int,
-             parallel: bool, *,
              pass_n_procs: bool = True,
+             raise_on_error: bool = False,
              args: list[tuple] | tuple = (),
              kwargs: dict[str, Any] | None = None):
     """
@@ -124,19 +120,20 @@ def dispatch(funcs: list[Callable] | Callable,
         called for each tuple of positional arguments in `args`.
     max_procs: int
         Maximum number of processes to run at one time. Must be ≥ 1.
-    parallel: bool
-        Whether to run multiple tasks in parallel.
-    pass_n_procs: bool = True
+    pass_n_procs: bool
         Whether to pass the number of processes to the function as the
         keyword argument `n_procs`.
-    args: list[tuple] | tuple = ()
+    raise_on_error: bool
+        Whether to raise an error if any tasks fail (if False, only log
+        a warning message).
+    args: list[tuple] | tuple
         Positional arguments to pass to each function in `funcs`. Can be
         a list of tuples of positional arguments or a single tuple that
         is not in a list. If a single tuple, then each function receives
         `args` as positional arguments. If a list, then `args` must be
         the same length as `funcs`; each function `funcs[i]` receives
         `args[i]` as positional arguments.
-    kwargs: dict[str, Any] | None = None
+    kwargs: dict[str, Any] | None
         Keyword arguments to pass to every function call.
 
     Returns
@@ -175,16 +172,10 @@ def dispatch(funcs: list[Callable] | Callable,
         logger.warning("No tasks were given to dispatch")
         return list()
     # Determine how to parallelize each task.
-    pool_size, n_procs_per_task = calc_pool_size(n_tasks,
-                                                 max_procs,
-                                                 parallel)
+    pool_size, n_procs_per_task = calc_pool_size(n_tasks, max_procs)
     if pass_n_procs:
         # Add the number of processes as a keyword argument.
         kwargs = {**kwargs, "n_procs": n_procs_per_task}
-    elif not parallel:
-        logger.warning("For tasks that cannot be parallelized internally, "
-                       "running such tasks in parallel is generally more "
-                       "efficient than running them in series")
     if pool_size > 1:
         # Run the tasks in parallel.
         with ProcessPoolExecutor(max_workers=pool_size) as pool:
@@ -217,9 +208,10 @@ def dispatch(funcs: list[Callable] | Callable,
     n_fail = n_tasks - n_pass
     if n_fail:
         p_fail = n_fail / n_tasks * 100.
-        logger.warning(
-            f"Failed {n_fail} of {n_tasks} task(s) ({round(p_fail, 1)} %)"
-        )
+        message = f"Failed {n_fail} of {n_tasks} task(s) ({round(p_fail, 1)} %)"
+        if raise_on_error:
+            raise RuntimeError(message)
+        logger.warning(message)
     else:
         logger.task(f"All {n_tasks} task(s) completed successfully")
     return results

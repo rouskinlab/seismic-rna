@@ -7,7 +7,7 @@ from ..core import path
 from ..core.report import (BatchedReport,
                            SampleF,
                            RefF,
-                           SectF,
+                           RegF,
                            NumUniqReadKeptF,
                            MinClustsF,
                            MaxClustsF,
@@ -43,10 +43,10 @@ class ClusterReport(BatchedReport, ClusterIO):
     @classmethod
     def fields(cls):
         return [
-            # Sample, reference, and section information.
+            # Sample, reference, and region information.
             SampleF,
             RefF,
-            SectF,
+            RegF,
             NumUniqReadKeptF,
             # Clustering parameters.
             MinClustsF,
@@ -102,7 +102,7 @@ class ClusterReport(BatchedReport, ClusterIO):
         """ Create a ClusterReport from EmClustering objects. """
         return cls(sample=uniq_reads.sample,
                    ref=uniq_reads.ref,
-                   sect=uniq_reads.section.name,
+                   reg=uniq_reads.region.name,
                    n_uniq_reads=uniq_reads.num_uniq,
                    min_clusters=min_clusters,
                    max_clusters=max_clusters,

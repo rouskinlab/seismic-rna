@@ -29,9 +29,9 @@ To suppress per-position and per-read tables, use ``--no-table-pos`` and
 Table: Output files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-All output files go into the directory ``{out}/{sample}/table/{ref}/{sect}``,
+All output files go into the directory ``{out}/{sample}/table/{ref}/{reg}``,
 where ``{out}`` is the output directory, ``{sample}`` is the sample, ``{ref}``
-is the reference, and ``{sect}`` is the section.
+is the reference, and ``{reg}`` is the region.
 Each output file from Relate, Mask, and Cluster reports are prefixed with
 ``relate-``, ``mask-``, and ``clust-``, respectively.
 

@@ -5,13 +5,15 @@ from typing import Iterable
 
 import numpy as np
 
+from .data import ClusterMutsDataset
 from .emk import EMRunsK, find_best_k, sort_runs
 from .em import EMRun
-from .io import write_batches
+from .io import ClusterBatchWriter
 from .obsexp import write_obs_exp_counts
 from .params import write_mus, write_pis
 from .report import ClusterReport
 from .summary import write_summaries
+from .table import ClusterDatasetTabulator
 from .uniq import UniqReads
 from ..core import path
 from ..core.header import validate_ks
@@ -50,7 +52,6 @@ def run_k(uniq_reads: UniqReads,
     args = [(uniq_reads, k, seed) for seed in seeds]
     runs = list(dispatch([EMRun for _ in range(em_runs)],
                          n_procs,
-                         parallel=True,
                          pass_n_procs=False,
                          args=args,
                          kwargs=kwargs))
@@ -80,7 +81,7 @@ def run_ks(uniq_reads: UniqReads,
     path_kwargs = dict(top=top,
                        sample=uniq_reads.sample,
                        ref=uniq_reads.ref,
-                       sect=uniq_reads.section.name)
+                       reg=uniq_reads.region.name)
     runs_ks = dict()
     ks = validate_ks(ks)
     # Loop through every K if try_all_ks is True, otherwise go until the
@@ -126,6 +127,7 @@ def run_ks(uniq_reads: UniqReads,
 
 
 def cluster(mask_report_file: Path, *,
+            tmp_dir: Path,
             min_clusters: int,
             max_clusters: int,
             try_all_ks: bool,
@@ -134,7 +136,9 @@ def cluster(mask_report_file: Path, *,
             n_procs: int,
             brotli_level: int,
             force: bool,
-            tmp_dir: Path,
+            cluster_pos_table: bool,
+            cluster_abundance_table: bool,
+            verify_times: bool,
             **kwargs):
     """ Cluster unique reads from one mask dataset. """
     # Check if the cluster report file already exists.
@@ -144,13 +148,14 @@ def cluster(mask_report_file: Path, *,
     if need_write(cluster_report_file, force):
         began = datetime.now()
         # Load the unique reads.
-        dataset = load_mask_dataset(mask_report_file)
-        tmp_clust_dir = path.buildpar(*path.SECT_DIR_SEGS,
+        dataset = load_mask_dataset(mask_report_file,
+                                    verify_times=verify_times)
+        tmp_clust_dir = path.buildpar(*path.REG_DIR_SEGS,
                                       top=tmp_dir,
                                       cmd=path.CMD_CLUST_DIR,
                                       sample=dataset.sample,
                                       ref=dataset.ref,
-                                      sect=dataset.sect)
+                                      reg=dataset.reg)
         if dataset.min_mut_gap != 3:
             logger.warning("For clustering, it is highly recommended to use "
                            "the observer bias correction with min_mut_gap=3, "
@@ -189,10 +194,11 @@ def cluster(mask_report_file: Path, *,
         else:
             write_ks = []
         # Output the cluster memberships in batches of reads.
-        checksums, ks_written = write_batches(dataset,
-                                              write_ks,
-                                              brotli_level,
-                                              tmp_dir)
+        batch_writer = ClusterBatchWriter(dataset,
+                                          write_ks,
+                                          brotli_level,
+                                          tmp_dir)
+        batch_writer.write_batches()
         # Write the observed and expected counts for every best run.
         counts_dir = tmp_clust_dir.joinpath(path.CLUST_COUNTS_DIR)
         counts_dir.mkdir()
@@ -209,15 +215,23 @@ def cluster(mask_report_file: Path, *,
                                              max_clusters=max_clusters,
                                              try_all_ks=try_all_ks,
                                              write_all_ks=write_all_ks,
-                                             ks_written=ks_written,
+                                             ks_written=batch_writer.ks_written,
                                              em_runs=em_runs,
-                                             checksums=checksums,
+                                             checksums=batch_writer.checksums,
                                              began=began,
                                              ended=ended,
                                              **kwargs)
         report_saved = report.save(tmp_dir)
         release_to_out(dataset.top, tmp_dir, report_saved.parent)
-    return cluster_report_file
+        # Write the tables.
+        ClusterDatasetTabulator(
+            dataset=ClusterMutsDataset(cluster_report_file,
+                                       verify_times=verify_times),
+            count_pos=cluster_pos_table,
+            count_read=False,
+            max_procs=n_procs,
+        ).write_tables(pos=cluster_pos_table, clust=cluster_abundance_table)
+    return cluster_report_file.parent
 
 ########################################################################
 #                                                                      #

@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Iterable, TextIO
 
 from .. import path
-from ..seq import RNA, Section
+from ..seq import RNA, Region
 
 DB_NAME_MARK = ">"
 UNPAIRED_MARK = "."
@@ -80,7 +80,7 @@ def _parse_db_record(db_file: TextIO, seq: RNA | None, seq5: int):
 
 
 def parse_db(db_path: Path, seq5: int = 1):
-    """ Yield the title, section, and base pairs for each structure in a
+    """ Yield the title, region, and base pairs for each structure in a
     dot-bracket (DB) file.
 
     Parameters
@@ -92,15 +92,15 @@ def parse_db(db_path: Path, seq5: int = 1):
 
     Returns
     -------
-    Generator[tuple[str, Section, list[tuple[int, int]]], Any, None]
+    Generator[tuple[str, Region, list[tuple[int, int]]], Any, None]
     """
-    # Determine the reference and section names from the path.
+    # Determine the reference and region names from the path.
     fields = path.parse(db_path,
                         path.RefSeg,
-                        path.SectSeg,
+                        path.RegSeg,
                         path.DotBracketSeg)
     ref = fields[path.REF]
-    sect = fields[path.SECT]
+    reg = fields[path.REG]
     # Parse each structure in the CT file.
     seq = None
     with open(db_path) as file:
@@ -109,10 +109,10 @@ def parse_db(db_path: Path, seq5: int = 1):
             title = _parse_db_header(header_line)
             # Determine the sequence and base pairs.
             seq, pairs = _parse_db_record(file, seq, seq5)
-            # Make a section from the sequence.
-            section = Section(ref, seq.rt(), seq5=seq5, name=sect)
-            # Yield the title, section, and base pairs.
-            yield title, section, pairs
+            # Make a region from the sequence.
+            region = Region(ref, seq.rt(), seq5=seq5, name=reg)
+            # Yield the title, region, and base pairs.
+            yield title, region, pairs
 
 
 def format_db_structure(pairs: Iterable[tuple[int, int]],

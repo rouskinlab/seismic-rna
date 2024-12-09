@@ -1,27 +1,29 @@
 from abc import ABC, abstractmethod
+from datetime import datetime
 from functools import cached_property
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
 from . import path
-from .batch import MutsBatch, ReadBatch, list_batch_nums
+from .batch import MutsBatch, RegionMutsBatch, ReadBatch, list_batch_nums
 from .io import MutsBatchIO, ReadBatchIO, RefseqIO
 from .logs import logger
 from .rel import RelPattern
-from .report import (SampleF,
+from .report import (DATETIME_FORMAT,
+                     SampleF,
                      RefF,
-                     SectF,
+                     RegF,
                      End5F,
                      End3F,
+                     TimeEndedF,
                      NumBatchF,
                      ChecksumsF,
                      RefseqChecksumF,
                      PooledSamplesF,
-                     JoinedSectionsF,
-                     JoinedClustersF,
+                     JoinedRegionsF,
                      Report,
                      BatchedReport)
-from .seq import FULL_NAME, DNA, Section, hyphenate_ends, unite
+from .seq import FULL_NAME, DNA, Region, hyphenate_ends, unite
 
 
 class Dataset(ABC):
@@ -32,47 +34,61 @@ class Dataset(ABC):
     def get_report_type(cls) -> type[Report]:
         """ Type of report. """
 
-    @classmethod
-    def load_report(cls, report_file: Path):
-        """ Load the report from a file. """
-        report_type = cls.get_report_type()
-        return report_type.load(report_file)
+    def __init__(self, report_file: Path, verify_times: bool = True):
+        self.report_file = report_file
+        self.verify_times = verify_times
+        # Load the report here so that if the report does not have the
+        # expected fields, an error will be raised inside __init__.
+        # Doing so is essential for LoadFunction to determine which type
+        # of dataset to load, since it bases that decision on whether
+        # __init__ succeeds or raises an error.
+        self.report = self.get_report_type().load(self.report_file)
 
-    @classmethod
-    @abstractmethod
-    def load(cls, report_file: Path):
-        """ Load a dataset from a report file. """
-        return cls()
-
-    @property
-    @abstractmethod
+    @cached_property
     def top(self) -> Path:
         """ Top-level directory of the dataset. """
+        top, _ = self.get_report_type().parse_path(self.report_file)
+        return top
 
     @property
-    @abstractmethod
     def sample(self) -> str:
         """ Name of the sample. """
+        return self.report.get_field(SampleF)
 
     @property
-    @abstractmethod
     def ref(self) -> str:
         """ Name of the reference. """
+        return self.report.get_field(RefF)
 
     @property
     @abstractmethod
     def end5(self) -> int:
-        """ 5' end of the section. """
+        """ 5' end of the region. """
 
     @property
     @abstractmethod
     def end3(self) -> int:
-        """ 3' end of the section. """
+        """ 3' end of the region. """
 
     @property
     @abstractmethod
-    def sect(self) -> str:
-        """ Name of the section. """
+    def reg(self) -> str:
+        """ Name of the region. """
+
+    @property
+    @abstractmethod
+    def timestamp(self) -> datetime:
+        """ Time at which the data were written. """
+
+    @property
+    def dir(self) -> Path:
+        """ Directory containing the dataset. """
+        return self.report_file.parent
+
+    @property
+    @abstractmethod
+    def data_dirs(self) -> list[Path]:
+        """ All directories containing data for the dataset. """
 
     @property
     @abstractmethod
@@ -110,6 +126,13 @@ class Dataset(ABC):
 class UnbiasDataset(Dataset, ABC):
     """ Dataset with attributes for correcting observer bias. """
 
+    def __init__(self,
+                 *args,
+                 masked_read_nums: dict[[int, list]] | None = None,
+                 **kwargs):
+        super().__init__(*args, **kwargs)
+        self.masked_read_nums = masked_read_nums
+
     @property
     @abstractmethod
     def min_mut_gap(self) -> int:
@@ -127,8 +150,8 @@ class UnbiasDataset(Dataset, ABC):
         to be 0 when using the quick heuristic for unbiasing. """
 
 
-class MutsDataset(Dataset, ABC):
-    """ Dataset with explicit mutational data. """
+class RegionDataset(Dataset, ABC):
+    """ Dataset with a known reference sequence and region. """
 
     @property
     @abstractmethod
@@ -142,21 +165,33 @@ class MutsDataset(Dataset, ABC):
 
     @cached_property
     @abstractmethod
-    def section(self) -> Section:
-        """ Section of the dataset. """
+    def region(self) -> Region:
+        """ Region of the dataset. """
 
 
-class NarrowDataset(MutsDataset, ABC):
-    """ MutsDataset with one section, in contrast to a WideDataset that
-    unites one or more sections. """
+class MutsDataset(RegionDataset, ABC):
+    """ Dataset with a known region and explicit mutational data. """
+
+    @abstractmethod
+    def get_batch(self, batch_num: int) -> RegionMutsBatch:
+        """ Get a specific batch of data. """
+
+    def get_batch_count_all(self, batch_num: int, **kwargs):
+        """ Calculate the counts for a specific batch of data. """
+        return self.get_batch(batch_num).count_all(**kwargs)
+
+
+class NarrowDataset(RegionDataset, ABC):
+    """ Dataset with one region, in contrast to a WideDataset that
+    combines one or more regions. """
 
     @cached_property
-    def section(self):
-        return Section(ref=self.ref,
-                       seq=self.refseq,
-                       end5=self.end5,
-                       end3=self.end3,
-                       name=self.sect)
+    def region(self):
+        return Region(ref=self.ref,
+                      seq=self.refseq,
+                      end5=self.end5,
+                      end3=self.end3,
+                      name=self.reg)
 
 
 class LoadFunction(object):
@@ -202,14 +237,14 @@ class LoadFunction(object):
         return any(isinstance(dataset, dataset_type)
                    for dataset_type in self._dataset_types)
 
-    def __call__(self, report_file: Path):
+    def __call__(self, report_file: Path, **kwargs):
         """ Load a dataset from the report file. """
         # Try to load the report file using each type of dataset.
         errors = dict()
         for dataset_type in self._dataset_types:
             try:
                 # Return the first dataset type that works.
-                return dataset_type.load(report_file)
+                return dataset_type(report_file, **kwargs)
             except FileNotFoundError:
                 # Re-raise FileNotFoundError because, if the report file
                 # does not exist, then no dataset type can load it.
@@ -247,46 +282,29 @@ class LoadedDataset(Dataset, ABC):
         """ Name of the type of batch. """
         return cls.get_batch_type().btype()
 
-    @classmethod
-    def load(cls, report_file: Path):
-        report = cls.get_report_type().load(report_file)
-        top, _ = cls.get_report_type().parse_path(report_file)
-        return cls(report, top)
-
-    def __init__(self, report: BatchedReport, top: Path):
-        if not isinstance(report, self.get_report_type()):
-            raise TypeError(f"Expected report type {self.get_report_type()}, "
-                            f"but got {type(report)}")
-        self.report = report
-        self._top = top
-
-    @property
-    def top(self):
-        return self._top
-
-    @property
-    def sample(self):
-        return self.report.get_field(SampleF)
-
-    @property
-    def ref(self):
-        return self.report.get_field(RefF)
-
-    @property
+    @cached_property
     def end5(self):
         return self.report.get_field(End5F)
 
-    @property
+    @cached_property
     def end3(self):
         return self.report.get_field(End3F)
 
-    @property
-    def sect(self):
-        return self.report.get_field(SectF)
-
     @cached_property
+    def reg(self):
+        return self.report.get_field(RegF)
+
+    @property
+    def timestamp(self):
+        return self.report.get_field(TimeEndedF)
+
+    @property
     def num_batches(self):
         return self.report.get_field(NumBatchF)
+
+    @property
+    def data_dirs(self):
+        return [self.dir]
 
     def get_batch_path(self, batch: int):
         """ Get the path to a batch of a specific number. """
@@ -299,41 +317,48 @@ class LoadedDataset(Dataset, ABC):
         return self.report.get_field(ChecksumsF)[self.get_btype_name()][batch]
 
     def get_batch(self, batch_num: int) -> ReadBatchIO | MutsBatchIO:
-        batch = self.get_batch_type().load(self.get_batch_path(batch_num),
-                                           self.get_batch_checksum(batch_num))
+        batch = self.get_batch_type().load(
+            self.get_batch_path(batch_num),
+            checksum=self.get_batch_checksum(batch_num)
+        )
         if batch.batch != batch_num:
             raise ValueError(f"Expected batch to have number {batch_num}, "
                              f"but got {batch.batch}")
         return batch
 
 
-class LoadedMutsDataset(LoadedDataset, NarrowDataset, ABC):
+class LoadedMutsDataset(LoadedDataset, MutsDataset, NarrowDataset, ABC):
 
     @cached_property
     def refseq(self):
-        return RefseqIO.load(RefseqIO.build_path(top=self.top,
-                                                 sample=self.sample,
-                                                 ref=self.ref),
-                             self.report.get_field(RefseqChecksumF)).refseq
+        return RefseqIO.load(
+            RefseqIO.build_path(top=self.top,
+                                sample=self.sample,
+                                ref=self.ref),
+            checksum=self.report.get_field(RefseqChecksumF)
+        ).refseq
 
-    @property
+    @cached_property
     def end5(self):
         try:
+            # Find the 5' end in the report, if it has this field.
             return super().end5
         except AttributeError:
             return 1
 
-    @property
+    @cached_property
     def end3(self):
         try:
+            # Find the 3' end in the report, if it has this field.
             return super().end3
         except AttributeError:
             return self.reflen
 
-    @property
-    def sect(self):
+    @cached_property
+    def reg(self):
         try:
-            return super().sect
+            # Find the region name in the report, if it has this field.
+            return super().reg
         except AttributeError:
             return (FULL_NAME if self.end5 == 1 and self.end3 == self.reflen
                     else hyphenate_ends(self.end5, self.end3))
@@ -347,14 +372,20 @@ class MergedDataset(Dataset, ABC):
     def get_dataset_load_func(cls) -> LoadFunction:
         """ Function to load one constituent dataset. """
 
-    def __init__(self, datasets: Iterable[Dataset]):
-        self._datasets = list(datasets)
-        if not self._datasets:
-            raise ValueError(f"{type(self).__name__} got no datasets")
+    @cached_property
+    @abstractmethod
+    def datasets(self) -> list[Dataset]:
+        """ Constituent datasets that were merged. """
+
+    @cached_property
+    def data_dirs(self):
+        return [self.dir] + [dataset_dir
+                             for dataset in self.datasets
+                             for dataset_dir in dataset.data_dirs]
 
     def _list_dataset_attr(self, name: str):
         """ Get a list of an attribute for each dataset. """
-        return [getattr(dataset, name) for dataset in self._datasets]
+        return [getattr(dataset, name) for dataset in self.datasets]
 
     def _get_common_attr(self, name: str):
         """ Get a common attribute among datasets. """
@@ -365,16 +396,20 @@ class MergedDataset(Dataset, ABC):
         return attrs[0]
 
     @cached_property
-    def top(self):
-        return self._get_common_attr("top")
-
-    @cached_property
-    def ref(self):
-        return self._get_common_attr("ref")
-
-    @cached_property
     def pattern(self):
         return self._get_common_attr("pattern")
+
+    @cached_property
+    def timestamp(self):
+        # Use the time of the most recent constituent dataset.
+        return max(dataset.timestamp for dataset in self.datasets)
+
+
+class MergedRegionDataset(MergedDataset, RegionDataset, ABC):
+
+    @cached_property
+    def refseq(self):
+        return self._get_common_attr("refseq")
 
 
 class MergedUnbiasDataset(MergedDataset, UnbiasDataset, ABC):
@@ -393,44 +428,27 @@ class MergedUnbiasDataset(MergedDataset, UnbiasDataset, ABC):
         return self._get_common_attr("quick_unbias_thresh")
 
 
-class MergedMutsDataset(MergedDataset, MutsDataset, ABC):
-    """ MergedDataset with explicit mutational data. """
-
-    @cached_property
-    def refseq(self):
-        return self._get_common_attr("refseq")
-
-
-class TallDataset(MergedDataset, NarrowDataset, ABC):
+class TallDataset(MergedDataset, ABC):
     """ Dataset made by vertically pooling other datasets from one or
     more samples aligned to the same reference sequence. """
 
-    @classmethod
-    def load(cls, report_file: Path):
+    @cached_property
+    def datasets(self):
         # Determine the sample name and pooled samples from the report.
-        report = cls.load_report(report_file)
-        sample = report.get_field(SampleF)
-        pooled_samples = report.get_field(PooledSamplesF)
+        pooled_samples = self.report.get_field(PooledSamplesF)
         # Determine the report file for each sample in the pool.
-        load_func = cls.get_dataset_load_func()
+        load_func = self.get_dataset_load_func()
         sample_report_files = [path.cast_path(
-            report_file,
-            cls.get_report_type().seg_types(),
+            self.report_file,
+            self.get_report_type().seg_types(),
             load_func.report_path_seg_types,
             **load_func.report_path_auto_fields,
             sample=sample
         ) for sample in pooled_samples]
-        # Create the pooled dataset from the sample datasets.
-        return cls(sample, map(cls.get_dataset_load_func(),
-                               sample_report_files))
-
-    def __init__(self, sample: str, datasets: Iterable[Dataset]):
-        self._sample = sample
-        super().__init__(datasets)
-
-    @property
-    def sample(self):
-        return self._sample
+        if not sample_report_files:
+            raise ValueError(f"{self} got no datasets")
+        return list(map(self.get_dataset_load_func(),
+                        sample_report_files))
 
     @cached_property
     def samples(self) -> list[str]:
@@ -446,8 +464,8 @@ class TallDataset(MergedDataset, NarrowDataset, ABC):
         return self._get_common_attr("end3")
 
     @cached_property
-    def sect(self):
-        return self._get_common_attr("sect")
+    def reg(self):
+        return self._get_common_attr("reg")
 
     @cached_property
     def nums_batches(self) -> list[int]:
@@ -475,80 +493,70 @@ class TallDataset(MergedDataset, NarrowDataset, ABC):
         # Determine the dataset and the batch number in that dataset.
         dataset_num, dataset_batch_num = self._translate_batch_num(batch_num)
         # Load the batch.
-        batch = self._datasets[dataset_num].get_batch(dataset_batch_num)
+        batch = self.datasets[dataset_num].get_batch(dataset_batch_num)
         # Renumber the batch from the numbering in its original dataset
         # to the numbering in the pooled dataset.
         batch.batch = batch_num
         return batch
 
 
-class TallMutsDataset(TallDataset, MergedMutsDataset, ABC):
+class TallMutsDataset(TallDataset,
+                      MutsDataset,
+                      MergedRegionDataset,
+                      NarrowDataset,
+                      ABC):
     """ TallDataset with mutational data. """
 
 
-class WideDataset(MergedMutsDataset, ABC):
+class WideDataset(MergedRegionDataset, ABC):
     """ Dataset made by horizontally joining other datasets from one or
-    more sections of the same reference sequence. """
+    more regions of the same reference sequence. """
 
-    @classmethod
-    def load(cls, report_file: Path):
-        # Determine the name of the joined section and the individual
-        # sections from the report.
-        report = cls.load_report(report_file)
-        sect = report.get_field(SectF)
-        joined_sects = report.get_field(JoinedSectionsF)
-        clusts = report.get_field(JoinedClustersF, missing_ok=True)
-        # Determine the report file for each joined section.
-        load_func = cls.get_dataset_load_func()
-        section_report_files = [path.cast_path(
-            report_file,
-            cls.get_report_type().seg_types(),
+    @cached_property
+    def datasets(self):
+        # Determine the name of the joined region and the individual
+        # regions from the report.
+        joined_regs = self.report.get_field(JoinedRegionsF)
+        # Determine the report file for each joined region.
+        load_func = self.get_dataset_load_func()
+        region_report_files = [path.cast_path(
+            self.report_file,
+            self.get_report_type().seg_types(),
             load_func.report_path_seg_types,
             **load_func.report_path_auto_fields,
-            sect=sect
-        ) for sect in joined_sects]
-        # Create the joined dataset from the section datasets.
-        return cls(sect, clusts, map(cls.get_dataset_load_func(),
-                                     section_report_files))
-
-    def __init__(self,
-                 sect: str,
-                 clusts: dict | None,
-                 datasets: Iterable[Dataset]):
-        self._sect = sect
-        self._clusts = clusts
-        super().__init__(datasets)
+            reg=reg
+        ) for reg in joined_regs]
+        if not region_report_files:
+            raise ValueError(f"{self} got no datasets")
+        return list(map(self.get_dataset_load_func(),
+                        region_report_files))
 
     @cached_property
     def num_batches(self):
         return self._get_common_attr("num_batches")
 
     @cached_property
-    def sample(self):
-        return self._get_common_attr("sample")
+    def regs(self):
+        """ Names of all joined regions. """
+        return self._list_dataset_attr("reg")
 
     @cached_property
-    def sects(self):
-        """ Names of all joined sections. """
-        return self._list_dataset_attr("sect")
-
-    @cached_property
-    def section(self):
-        return unite(*self._list_dataset_attr("section"),
-                     name=self._sect,
+    def region(self):
+        return unite(*self._list_dataset_attr("region"),
+                     name=self.report.get_field(RegF),
                      refseq=self.refseq)
 
     @property
-    def sect(self):
-        return self.section.name
+    def reg(self):
+        return self.region.name
 
     @cached_property
     def end5(self):
-        return self.section.end5
+        return self.region.end5
 
     @cached_property
     def end3(self):
-        return self.section.end3
+        return self.region.end3
 
     @abstractmethod
     def _join(self, batches: Iterable[tuple[str, ReadBatch]]) -> ReadBatch:
@@ -556,8 +564,12 @@ class WideDataset(MergedMutsDataset, ABC):
 
     def get_batch(self, batch_num: int):
         # Join the batch with that number from every dataset.
-        return self._join((dataset.sect, dataset.get_batch(batch_num))
-                          for dataset in self._datasets)
+        return self._join((dataset.reg, dataset.get_batch(batch_num))
+                          for dataset in self.datasets)
+
+
+class WideMutsDataset(WideDataset, MutsDataset, ABC):
+    """ WideDataset with mutation data. """
 
 
 class MultistepDataset(MutsDataset, ABC):
@@ -571,7 +583,7 @@ class MultistepDataset(MutsDataset, ABC):
 
     @classmethod
     @abstractmethod
-    def get_dataset2_type(cls) -> type[Dataset]:
+    def get_dataset2_type(cls) -> type[RegionDataset]:
         """ Type of Dataset 2. """
 
     @classmethod
@@ -597,49 +609,35 @@ class MultistepDataset(MutsDataset, ABC):
         )
 
     @classmethod
-    def load_dataset1(cls, dataset2_report_file: Path):
+    def load_dataset1(cls, dataset2_report_file: Path, verify_times: bool):
         """ Load Dataset 1. """
         load_func = cls.get_dataset1_load_func()
-        return load_func(cls.get_dataset1_report_file(dataset2_report_file))
+        return load_func(cls.get_dataset1_report_file(dataset2_report_file),
+                         verify_times=verify_times)
 
     @classmethod
-    def load_dataset2(cls, dataset2_report_file: Path):
+    def load_dataset2(cls, dataset2_report_file: Path, verify_times: bool):
         """ Load Dataset 2. """
         load_func = cls.get_dataset2_load_func()
-        return load_func(dataset2_report_file)
+        return load_func(dataset2_report_file,
+                         verify_times=verify_times)
 
-    @classmethod
-    def load(cls, dataset2_report_file: Path):
-        return cls(cls.load_dataset1(dataset2_report_file),
-                   cls.load_dataset2(dataset2_report_file))
-
-    def __init__(self, data1: MutsDataset, data2: Dataset):
-        if not isinstance(data2, self.get_dataset2_type()):
-            raise TypeError(f"{type(self).__name__} expected data2 to be "
-                            f"{self.get_dataset2_type().__name__}, "
-                            f"but got {type(data2).__name__}")
+    def __init__(self, dataset2_report_file: Path, **kwargs):
+        super().__init__(dataset2_report_file, **kwargs)
+        data1 = self.load_dataset1(dataset2_report_file, self.verify_times)
+        data2 = self.load_dataset2(dataset2_report_file, self.verify_times)
+        if self.verify_times and data1.timestamp > data2.timestamp:
+            raise ValueError(
+                f"To make a {type(self).__name__}, the {type(data1).__name__} "
+                f"must have been written before the {type(data2).__name__}, "
+                f"but the timestamps in their report files are "
+                f"{data1.timestamp.strftime(DATETIME_FORMAT)} and "
+                f"{data2.timestamp.strftime(DATETIME_FORMAT)}, respectively. "
+                f"If you are sure this inconsistency is not a problem, "
+                f"then you can suppress this error using --no-verify-times"
+            )
         self.data1 = data1
         self.data2 = data2
-
-    def _get_data_attr(self, name: str):
-        val1 = getattr(self.data1, name)
-        val2 = getattr(self.data2, name)
-        if val1 != val2:
-            raise ValueError(f"Inconsistent values for {repr(name)} in "
-                             f"{self.data1} ({val1}) and {self.data2} ({val2})")
-        return val1
-
-    @cached_property
-    def top(self):
-        return self._get_data_attr("top")
-
-    @cached_property
-    def sample(self):
-        return self._get_data_attr("sample")
-
-    @cached_property
-    def ref(self):
-        return self._get_data_attr("ref")
 
     @property
     def refseq(self):
@@ -654,8 +652,16 @@ class MultistepDataset(MutsDataset, ABC):
         return self.data2.end3
 
     @property
-    def sect(self):
-        return self.data2.sect
+    def reg(self):
+        return self.data2.reg
+
+    @property
+    def timestamp(self):
+        return self.data2.timestamp
+
+    @cached_property
+    def data_dirs(self):
+        return self.data1.data_dirs + self.data2.data_dirs
 
     @abstractmethod
     def _integrate(self, batch1: MutsBatch, batch2: ReadBatch) -> MutsBatch:
@@ -663,7 +669,7 @@ class MultistepDataset(MutsDataset, ABC):
 
     @property
     def num_batches(self):
-        return self._get_data_attr("num_batches")
+        return self.report.get_field(NumBatchF)
 
     def get_batch(self, batch_num: int):
         return self._integrate(self.data1.get_batch(batch_num),
@@ -672,10 +678,12 @@ class MultistepDataset(MutsDataset, ABC):
 
 class ArrowDataset(MultistepDataset, NarrowDataset, ABC):
     """ Dataset made by integrating two datasets from different steps of
-    the workflow, with one section. """
+    the workflow, with one region. """
 
 
-def load_datasets(input_path: Iterable[str | Path], load_func: LoadFunction):
+def load_datasets(input_path: Iterable[str | Path],
+                  load_func: LoadFunction,
+                  **kwargs):
     """ Yield a Dataset from each report file in `input_path`.
 
     Parameters
@@ -688,7 +696,7 @@ def load_datasets(input_path: Iterable[str | Path], load_func: LoadFunction):
     for report_file in path.find_files_chain(input_path,
                                              load_func.report_path_seg_types):
         try:
-            yield load_func(report_file)
+            yield load_func(report_file, **kwargs)
         except Exception as error:
             logger.error(error)
 

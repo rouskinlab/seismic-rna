@@ -9,6 +9,7 @@ from click import Argument, Option
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
+from ..cluster.table import ClusterTable, ClusterPositionTableLoader
 from ..core import path
 from ..core.arg import (NO_GROUP,
                         GROUP_BY_K,
@@ -24,24 +25,21 @@ from ..core.arg import (NO_GROUP,
                         opt_pdf,
                         opt_png,
                         opt_force,
-                        opt_max_procs,
-                        opt_parallel)
+                        opt_max_procs)
 from ..core.header import Header, format_clust_names
 from ..core.seq import DNA
+from ..core.table import Table, PositionTable
 from ..core.write import need_write
-from ..table.base import (Table,
-                          PosTable,
-                          RelTable,
-                          MaskTable,
-                          ClustTable)
-from ..table.load import (find_pos_tables,
-                          find_read_tables,
-                          load_pos_table,
-                          load_read_table)
+from ..mask.table import (MaskTable,
+                          MaskPositionTableLoader,
+                          MaskReadTableLoader)
+from ..relate.table import (RelateTable,
+                            RelatePositionTableLoader,
+                            RelateReadTableLoader)
 
 # Define actions.
 ACTION_REL = "all"
-ACTION_MASK = "masked"
+ACTION_MASK = "filtered"
 ACTION_CLUST = "clustered"
 
 # String to join sample names.
@@ -71,11 +69,11 @@ def _track_titles(tracks: list[tuple[int, int]] | None):
 
 
 def get_action_name(table: Table):
-    if isinstance(table, RelTable):
+    if isinstance(table, RelateTable):
         return ACTION_REL
     if isinstance(table, MaskTable):
         return ACTION_MASK
-    if isinstance(table, ClustTable):
+    if isinstance(table, ClusterTable):
         return ACTION_CLUST
     raise TypeError(f"Invalid table type: {type(table).__name__}")
 
@@ -148,7 +146,7 @@ class GraphBase(ABC):
         return (path.SampSeg,
                 path.CmdSeg,
                 path.RefSeg,
-                path.SectSeg,
+                path.RegSeg,
                 path.GraphSeg)
 
     def __init__(self, *,
@@ -160,8 +158,8 @@ class GraphBase(ABC):
         use_ratio: bool
             Use the ratio of the number of times the relationship occurs
             to the number of occurrances of another kind of relationship
-            (which is Covered for Covered and Informed, and Informed for
-            all other relationships), rather than the raw count.
+            (which is Covered for Covered and Informative; Informative
+            for all other relationships), rather than the raw count.
         quantile: float
             If `use_ratio` is True, then normalize the ratios to this
             quantile and then winsorize them to the interval [0, 1].
@@ -202,13 +200,13 @@ class GraphBase(ABC):
 
     @property
     @abstractmethod
-    def sect(self) -> str:
-        """ Name of the reference section from which the data come. """
+    def reg(self) -> str:
+        """ Name of the reference region from which the data come. """
 
     @property
     @abstractmethod
     def seq(self) -> DNA:
-        """ Sequence of the section from which the data come. """
+        """ Sequence of the region from which the data come. """
 
     @cached_property
     def details(self) -> list[str]:
@@ -240,7 +238,7 @@ class GraphBase(ABC):
                 path.SAMP: self.sample,
                 path.CMD: path.CMD_GRAPH_DIR,
                 path.REF: self.ref,
-                path.SECT: self.sect,
+                path.REG: self.reg,
                 path.GRAPH: self.graph_filename}
 
     def get_path(self, ext: str):
@@ -264,7 +262,7 @@ class GraphBase(ABC):
         """ Keyword arguments for self._fetch_data. """
         return dict(rel=self.rel_names)
 
-    def _fetch_data(self, table: PosTable, **kwargs):
+    def _fetch_data(self, table: PositionTable, **kwargs):
         """ Fetch data from the table. """
         kwargs = self._fetch_kwargs | kwargs
         return (table.fetch_ratio(quantile=self.quantile, **kwargs)
@@ -438,7 +436,7 @@ class GraphBase(ABC):
                 f"of {self.relationships} bases "
                 f"in {self.title_action_sample} "
                 f"over reference {repr(self.ref)} "
-                f"section {repr(self.sect)}"]
+                f"region {repr(self.reg)}"]
 
     @cached_property
     def _title_details(self):
@@ -454,19 +452,8 @@ class GraphBase(ABC):
 class GraphWriter(ABC):
     """ Write the proper graph(s) for the table(s). """
 
-    @classmethod
-    @abstractmethod
-    def get_table_loader(cls) -> Callable[[Path], Table]:
-        """ Function to load table files. """
-
-    @classmethod
-    def load_table_file(cls, table_file: Path):
-        """ Load one table file. """
-        loader = cls.get_table_loader()
-        return loader(table_file)
-
-    def __init__(self, *table_files: Path):
-        self.table_files = list(table_files)
+    def __init__(self, *tables: Table):
+        self.tables = list(tables)
 
     @abstractmethod
     def iter_graphs(self, *args, **kwargs) -> Generator[GraphBase, None, None]:
@@ -491,18 +478,21 @@ class GraphWriter(ABC):
                           for graph in self.iter_graphs(*args, **kwargs)))
 
 
-class PosGraphWriter(GraphWriter, ABC):
+def load_pos_tables(input_paths: Iterable[str | Path]):
+    """ Load position tables. """
+    paths = list(input_paths)
+    for table_type in [RelatePositionTableLoader,
+                       MaskPositionTableLoader,
+                       ClusterPositionTableLoader]:
+        yield from table_type.load_tables(paths)
 
-    @classmethod
-    def get_table_loader(cls):
-        return load_pos_table
 
-
-class ReadGraphWriter(GraphWriter, ABC):
-
-    @classmethod
-    def get_table_loader(cls):
-        return load_read_table
+def load_read_tables(input_paths: Iterable[str | Path]):
+    """ Load read tables. """
+    paths = list(input_paths)
+    for table_type in [RelateReadTableLoader,
+                       MaskReadTableLoader]:
+        yield from table_type.load_tables(paths)
 
 
 class GraphRunner(ABC):
@@ -530,8 +520,7 @@ class GraphRunner(ABC):
                 opt_pdf,
                 opt_png,
                 opt_force,
-                opt_max_procs,
-                opt_parallel]
+                opt_max_procs]
 
     @classmethod
     def var_params(cls) -> list[Argument | Option]:
@@ -547,13 +536,13 @@ class GraphRunner(ABC):
 
     @classmethod
     @abstractmethod
-    def get_table_finder(cls) -> Callable[[tuple[str, ...]], Generator]:
+    def get_table_loader(cls) -> Callable[[tuple[str, ...]], Generator]:
         """ Function to find and filter table files. """
 
     @classmethod
     def list_table_files(cls, input_path: tuple[str, ...]):
         """ Find, filter, and list all table files from input files. """
-        finder = cls.get_table_finder()
+        finder = cls.get_table_loader()
         return list(finder(input_path))
 
     @classmethod
@@ -571,7 +560,6 @@ class GraphRunner(ABC):
             png: bool,
             force: bool,
             max_procs: int,
-            parallel: bool,
             **kwargs) -> list[Path]:
         """ Run graphing. """
 
@@ -579,15 +567,15 @@ class GraphRunner(ABC):
 class PosGraphRunner(GraphRunner, ABC):
 
     @classmethod
-    def get_table_finder(cls):
-        return find_pos_tables
+    def get_table_loader(cls):
+        return load_pos_tables
 
 
 class ReadGraphRunner(GraphRunner, ABC):
 
     @classmethod
-    def get_table_finder(cls):
-        return find_read_tables
+    def get_table_loader(cls):
+        return load_read_tables
 
 ########################################################################
 #                                                                      #

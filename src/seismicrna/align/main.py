@@ -17,7 +17,6 @@ from ..core.arg import (CMD_ALIGN,
                         opt_tmp_pfx,
                         opt_force,
                         opt_keep_tmp,
-                        opt_parallel,
                         opt_max_procs,
                         opt_fastp,
                         opt_fastp_5,
@@ -125,7 +124,6 @@ def run(fasta: str, *,
         rev_label: str,
         # Parallelization
         max_procs: int,
-        parallel: bool,
         force: bool) -> list[Path]:
     """ Trim FASTQ files and align them to reference sequences. """
     # Check for external dependencies.
@@ -154,7 +152,6 @@ def run(fasta: str, *,
         keep_tmp=keep_tmp,
         force=force,
         max_procs=max_procs,
-        parallel=parallel,
         fastp=fastp,
         fastp_5=fastp_5,
         fastp_3=fastp_3,
@@ -251,7 +248,6 @@ params = [
     opt_f1r2_fwd,
     opt_rev_label,
     # Parallelization
-    opt_parallel,
     opt_max_procs,
     opt_force,
 ]

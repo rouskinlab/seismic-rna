@@ -1,11 +1,3 @@
-"""
-
-Tests for the Relate Core Module
-
-========================================================================
-
-"""
-
 import unittest as ut
 
 import numpy as np
@@ -17,10 +9,7 @@ from ..code import (IRREC,
                     DELET,
                     INS_5,
                     INS_3,
-                    INS_8,
-                    MINS5,
-                    MINS3,
-                    ANY_8,
+                    INSRT,
                     SUB_A,
                     SUB_C,
                     SUB_G,
@@ -49,10 +38,7 @@ class TestConstants(ut.TestCase):
     def test_derived_codes(self):
         """ Test the derived relation codes. """
         self.assertEqual(IRREC, 0)
-        self.assertEqual(MINS5, 5)
-        self.assertEqual(MINS3, 9)
-        self.assertEqual(INS_8, 12)
-        self.assertEqual(ANY_8, 13)
+        self.assertEqual(INSRT, 12)
         self.assertEqual(INDEL, 14)
         self.assertEqual(SUB_N, 240)
         self.assertEqual(ANY_N, 241)

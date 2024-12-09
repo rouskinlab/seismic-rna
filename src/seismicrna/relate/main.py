@@ -2,8 +2,8 @@ from pathlib import Path
 
 from click import command
 
+from .strands import write_both_strands
 from .write import write_all
-from ..align.write import format_ref_reverse
 from ..core import path
 from ..core.arg import (CMD_REL,
                         arg_input_path,
@@ -15,6 +15,7 @@ from ..core.arg import (CMD_REL,
                         opt_batch_size,
                         opt_phred_enc,
                         opt_min_phred,
+                        opt_insert3,
                         opt_ambindel,
                         opt_overhangs,
                         opt_clip_end5,
@@ -22,26 +23,12 @@ from ..core.arg import (CMD_REL,
                         opt_brotli_level,
                         opt_sep_strands,
                         opt_rev_label,
-                        opt_parallel,
+                        opt_relate_pos_table,
+                        opt_relate_read_table,
                         opt_max_procs,
                         opt_force,
                         opt_keep_tmp)
 from ..core.run import run_func
-from ..core.seq import DNA, parse_fasta, write_fasta
-
-
-def generate_both_strands(ref: str, seq: DNA, rev_label: str):
-    """ Yield both the forward and reverse strand for each sequence. """
-    yield ref, seq
-    yield format_ref_reverse(ref, rev_label), seq.rc
-
-
-def write_both_strands(fasta_in: Path, fasta_out: Path, rev_label: str):
-    """ Write a FASTA file of both forward and reverse strands. """
-    write_fasta(fasta_out,
-                (strand
-                 for ref, seq in parse_fasta(fasta_in, DNA)
-                 for strand in generate_both_strands(ref, seq, rev_label)))
 
 
 @run_func(CMD_REL, with_tmp=True, pass_keep_tmp=True)
@@ -54,14 +41,16 @@ def run(fasta: str,
         phred_enc: int,
         min_phred: int,
         batch_size: int,
+        insert3: bool,
         ambindel: bool,
         overhangs: bool,
         clip_end5: int,
         clip_end3: int,
         sep_strands: bool,
         rev_label: str,
+        relate_pos_table: bool,
+        relate_read_table: bool,
         max_procs: int,
-        parallel: bool,
         brotli_level: int,
         force: bool,
         keep_tmp: bool):
@@ -84,13 +73,15 @@ def run(fasta: str,
                      min_mapq=min_mapq,
                      phred_enc=phred_enc,
                      min_phred=min_phred,
+                     insert3=insert3,
                      ambindel=ambindel,
                      overhangs=overhangs,
                      clip_end5=clip_end5,
                      clip_end3=clip_end3,
                      batch_size=batch_size,
+                     relate_pos_table=relate_pos_table,
+                     relate_read_table=relate_read_table,
                      max_procs=max_procs,
-                     parallel=parallel,
                      brotli_level=brotli_level,
                      force=force,
                      keep_tmp=keep_tmp)
@@ -113,14 +104,17 @@ params = [
     # Relate options
     opt_min_reads,
     opt_batch_size,
+    opt_insert3,
     opt_ambindel,
     opt_overhangs,
     opt_clip_end5,
     opt_clip_end3,
     opt_brotli_level,
+    # Table options
+    opt_relate_pos_table,
+    opt_relate_read_table,
     # Parallelization
     opt_max_procs,
-    opt_parallel,
     # File generation
     opt_force,
     opt_keep_tmp,

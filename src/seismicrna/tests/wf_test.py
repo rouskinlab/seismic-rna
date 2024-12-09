@@ -12,7 +12,7 @@ from seismicrna.sim.ref import run as run_sim_ref
 from seismicrna.sim.total import run as run_sim_total
 from seismicrna.wf import run as wf_run
 
-STEPS = ["align", "relate", "mask", "cluster", "table", "fold", "graph"]
+STEPS = ["align", "relate", "mask", "cluster", "fold", "graph"]
 
 
 class TestWorkflow(ut.TestCase):
@@ -47,7 +47,8 @@ class TestWorkflow(ut.TestCase):
                                refs=self.REFS,
                                fold_max=2,
                                num_reads=20000,
-                               ends_var=0.001)
+                               center_fvar=0.001,
+                               length_fvar=0.001)
         sample_dir = self.SIM_DIR.joinpath("samples", self.SAMPLE)
         for fastq, mate in zip(fastqs, [1, 2], strict=True):
             self.assertEqual(fastq,
@@ -117,3 +118,24 @@ class TestWorkflow(ut.TestCase):
 
 if __name__ == "__main__":
     ut.main()
+
+########################################################################
+#                                                                      #
+# © Copyright 2024, the Rouskin Lab.                                   #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

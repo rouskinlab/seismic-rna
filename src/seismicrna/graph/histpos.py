@@ -2,7 +2,7 @@ import os
 
 from click import command
 
-from .base import PosGraphWriter, PosGraphRunner
+from .base import GraphWriter, PosGraphRunner
 from .histrel import RelHistogramGraph, RelHistogramWriter, RelHistogramRunner
 
 COMMAND = __name__.split(os.path.extsep)[-1]
@@ -23,7 +23,7 @@ class PosHistogramGraph(RelHistogramGraph):
         return "Number of positions"
 
 
-class PosHistogramWriter(RelHistogramWriter, PosGraphWriter):
+class PosHistogramWriter(RelHistogramWriter, GraphWriter):
 
     @classmethod
     def get_graph_type(cls):

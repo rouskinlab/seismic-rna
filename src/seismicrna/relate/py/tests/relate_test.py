@@ -7,7 +7,7 @@ from seismicrna.core.rel import DELET, IRREC, MATCH, NOCOV, SUB_G
 from seismicrna.core.seq import DNA
 from seismicrna.relate.py.cigar import CIG_ALIGN, CIG_DELET, CIG_SCLIP
 from seismicrna.relate.py.encode import encode_relate
-from seismicrna.relate.py.relate import _find_rels_read, _merge_mates, SamRead
+from seismicrna.relate.py.relate import _calc_rels_read, _merge_mates, SamRead
 from seismicrna.relate.aux.iterread import iter_alignments
 
 
@@ -22,8 +22,7 @@ def as_sam(name: str,
            tlen: int,
            read: DNA,
            qual: str):
-    """
-    Return a line in SAM format from the given fields.
+    """ Return a line in SAM format from the given fields.
 
     Parameters
     ----------
@@ -77,8 +76,7 @@ def as_sam(name: str,
                                     pnext, tlen, read, f"{qual}\n")))
 
 
-class TestFindRelsLine(ut.TestCase):
-    """ Test function `relate.relate_line`. """
+class TestCalcRelsRead(ut.TestCase):
 
     @staticmethod
     def relate(ref: str,
@@ -88,6 +86,7 @@ class TestFindRelsLine(ut.TestCase):
                cigar: str,
                end5: int,
                ambindel: bool,
+               insert3: bool,
                clip_end5: int,
                clip_end3: int):
         """ Generate a SAM line from the given information, and use it
@@ -103,24 +102,29 @@ class TestFindRelsLine(ut.TestCase):
                                   len(read),
                                   read,
                                   qual))
-        return _find_rels_read(sam_read,
+        return _calc_rels_read(sam_read,
                                refseq,
                                OK_QUAL,
+                               insert3,
                                ambindel,
                                clip_end5,
                                clip_end3)
 
-    def iter_cases(self, refseq: DNA, max_ins: int = 2):
+    def iter_cases_insert3(self, refseq: DNA, max_ins: int, insert3: bool):
         """ Iterate through every test case. """
-        for read, qual, cigar, end5, end3, rels in iter_alignments(refseq,
-                                                                   max_ins,
-                                                                   max_ins,
-                                                                   max_ins):
+        for read, qual, cigar, end5, end3, rels in iter_alignments(
+                refseq,
+                insert3=insert3,
+                max_ins=max_ins,
+                max_ins_len=max_ins,
+                max_ins_bases=max_ins
+        ):
             with self.subTest(refseq=refseq,
                               read=read,
                               qual=qual,
-                              end5=end5,
                               cigar=cigar,
+                              end5=end5,
+                              end3=end3,
                               rels=rels):
                 result = self.relate("ref",
                                      refseq,
@@ -129,26 +133,25 @@ class TestFindRelsLine(ut.TestCase):
                                      cigar,
                                      end5,
                                      ambindel=True,
+                                     insert3=insert3,
                                      clip_end5=0,
                                      clip_end3=0)
-                expect = (end5, end3, rels)
+                expect = end5, end3, rels
                 self.assertEqual(result, expect)
 
-    def test_aaaa_0ins(self):
-        """ Test all possible reads with 0 insertions from AAAA. """
-        self.iter_cases(DNA("AAAA"), 0)
+    def iter_cases(self, refseq: DNA, max_ins: int):
+        self.iter_cases_insert3(refseq, max_ins, False)
+        if max_ins > 0:
+            self.iter_cases_insert3(refseq, max_ins, True)
 
-    def test_aaaaaa_0ins(self):
-        """ Test all possible reads with 0 insertions from AAAAAA. """
-        self.iter_cases(DNA("AAAAAA"), 0)
+    def test_4nt_2ins(self):
+        self.iter_cases(DNA("AGCT"), 2)
 
-    def test_aacc_1ins(self):
-        """ Test all possible reads with ≤ 1 insertion from AACC. """
-        self.iter_cases(DNA("AACC"), 1)
+    def test_5nt_2ins(self):
+        self.iter_cases(DNA("CAAAT"), 2)
 
-    def test_acgt_1ins(self):
-        """ Test all possible reads with ≤ 1 insertion from ACGT. """
-        self.iter_cases(DNA("ACGT"), 1)
+    def test_6nt_2ins(self):
+        self.iter_cases(DNA("GTATAC"), 2)
 
     def test_all_matches(self):
         for reflen in range(1, 10):
@@ -168,17 +171,16 @@ class TestFindRelsLine(ut.TestCase):
                                               clip3=clip3):
                                 end5_expect = min(end5 + clip5, reflen + 1)
                                 end3_expect = max(end3 - clip3, 0)
-                                result = self.relate(
-                                    "ref",
-                                    refseq,
-                                    read,
-                                    qual,
-                                    cigar,
-                                    end5,
-                                    True,
-                                    clip5,
-                                    clip3
-                                )
+                                result = self.relate("ref",
+                                                     refseq,
+                                                     read,
+                                                     qual,
+                                                     cigar,
+                                                     end5,
+                                                     True,
+                                                     True,
+                                                     clip5,
+                                                     clip3)
                                 expect = end5_expect, end3_expect, dict()
                                 self.assertEqual(result, expect)
 
@@ -219,6 +221,7 @@ class TestFindRelsLine(ut.TestCase):
                                                          cigar,
                                                          end5,
                                                          True,
+                                                         True,
                                                          clip5,
                                                          clip3)
                                     expect = end5_expect, end3_expect, dict()
@@ -233,9 +236,12 @@ class TestFindRelsLine(ut.TestCase):
                 cigar_s5 = f"{soft5}{CIG_SCLIP}" if soft5 else ""
                 for soft3 in range(readlen - soft5 - 1):
                     cigar_s3 = f"{soft3}{CIG_SCLIP}" if soft3 else ""
-                    soft = soft5 + soft3
                     for end5 in range(soft5 + 1, reflen - readlen + 1):
-                        end3 = end5 + readlen - soft
+                        # The read has exactly 1 deletion, so readlen is
+                        # already 1 less than the number of bases the
+                        # read takes up of the reference sequence, so do
+                        # not substract 1 from end3.
+                        end3 = end5 + readlen - (soft5 + soft3)
                         for delpos in range(end5 + 1, end3):
                             cigar_md = "".join([f"{delpos - end5}{CIG_ALIGN}",
                                                 f"{1}{CIG_DELET}",
@@ -262,6 +268,7 @@ class TestFindRelsLine(ut.TestCase):
                                                              qual,
                                                              cigar,
                                                              end5,
+                                                             True,
                                                              True,
                                                              clip5,
                                                              clip3)

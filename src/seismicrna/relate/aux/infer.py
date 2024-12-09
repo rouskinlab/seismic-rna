@@ -8,7 +8,7 @@ from ...core.rel import (MATCH,
                          DELET,
                          INS_5,
                          INS_3,
-                         INS_8,
+                         INSRT,
                          SUB_A,
                          SUB_C,
                          SUB_G,
@@ -26,9 +26,8 @@ def infer_read(refseq: DNA,
                hi_qual: str = HI_QUAL,
                lo_qual: str = LO_QUAL,
                ins_len: int | Sequence[int] = 1):
-    """
-    Infer a read sequence and quality string from a reference sequence
-    and relation vector.
+    """ Infer the sequence and quality string of a read from a reference
+    sequence and relationships.
 
     Parameters
     ----------
@@ -55,7 +54,6 @@ def infer_read(refseq: DNA,
 
     Returns
     -------
-
     """
     # Validate the relation vector and reference sequence.
     if end5 < 1:
@@ -82,8 +80,8 @@ def infer_read(refseq: DNA,
     read: list[str] = list()
     qual: list[str] = list()
     cigars: list[CigarOp] = list()
-    ins3_next = False
     ins_count = 0
+    need_to_add_ins3 = False
 
     def add_to_cigar(op: str):
         """ Add one base of the relation vector to the CIGAR string. """
@@ -101,20 +99,18 @@ def infer_read(refseq: DNA,
         rel = muts.get(pos, MATCH)
         if rel == NOCOV:
             raise ValueError(f"Position {pos} in {end5}-{end3} is not covered")
-        if rel & INS_8:
+        if need_to_add_ins3 or rel & INSRT:
             # Specially handle insertions because they may overlap any
             # other relation except for a deletion.
             if rel & DELET:
                 # Being both a deletion and an insertion is forbidden.
                 raise ValueError(f"Position {pos} in {muts} is del and ins")
-            if rel & INS_3:
+            if need_to_add_ins3 or rel & INS_3:
                 if pos <= end5:
                     # Insertions cannot occur before the beginning of
                     # the read.
                     raise ValueError(f"Position {pos} in {end5}-{end3} cannot "
                                      f"be 3' of an insertion")
-                if not ins3_next:
-                    raise ValueError(f"Unexpected 3' ins at {pos} in {muts}")
                 # The current position is 5' of an insertion, so the
                 # inserted base must be added before the base at the
                 # current position is added. Insert a number of bases
@@ -130,12 +126,9 @@ def infer_read(refseq: DNA,
                 for _ in range(n_ins):
                     add_to_cigar(CIG_INSRT)
                 ins_count += 1
-                # Being 3' of an insertion is not allowed until the next
-                # position 5' of an insertion is reached.
-                ins3_next = False
-            elif ins3_next:
-                # Check if this position should be 3' of an insertion.
-                raise ValueError(f"Missing 3' ins at {pos} in {muts}")
+                # Reset need_to_add_ins3 to False once the insertion has
+                # been added.
+                need_to_add_ins3 = False
             if rel & INS_5:
                 if pos >= end3:
                     raise ValueError(f"Position {pos} in {end5}-{end3} cannot "
@@ -144,15 +137,16 @@ def infer_read(refseq: DNA,
                 # inserted base must be added after the base at the
                 # current position is added. Defer the responsibility of
                 # adding the inserted base to the base that lies 3' of
-                # the insertion and indicate that the next base must be
-                # 3' of an insertion by setting ins3_next to True.
-                ins3_next = True
+                # the insertion; indicate that the next base must be 3'
+                # of an insertion by setting need_to_add_ins3 to True.
+                need_to_add_ins3 = True
             # Switch off the insertion flag(s) in the relation so that
             # the base at this position can be added below.
-            rel = rel & ~INS_8
-        elif ins3_next:
-            # Check if this position should be 3' of an insertion.
-            raise ValueError(f"Missing 3' ins at {pos} in {muts}")
+            rel = rel & ~INSRT
+            if not rel:
+                # If no other relationship was under the insertion, then
+                # this position was otherwise a match.
+                rel = MATCH
         if rel == MATCH:
             # Match: Add the reference base to the read.
             read.append(ref_base)
@@ -186,9 +180,12 @@ def infer_read(refseq: DNA,
             add_to_cigar(CIG_SUBST)
     if len(read) != len(qual):
         raise ValueError(
-            f"Lengths of read ({len(read)}) and qual ({len(qual)}) differed")
+            f"Lengths of read ({len(read)}) and qual ({len(qual)}) differed"
+        )
     if not read:
         raise ValueError("Read contained no bases")
+    if need_to_add_ins3:
+        raise ValueError("Failed to mark the base 3' of an insertion")
     # Assemble and return the read, quality, and CIGAR strings.
     return DNA("".join(read)), "".join(qual), "".join(map(str, cigars))
 

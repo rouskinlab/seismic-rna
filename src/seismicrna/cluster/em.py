@@ -171,24 +171,24 @@ class EMRun(object):
         return self.uniq_reads.num_nonuniq
 
     @property
-    def section_end5(self):
-        """ 5' end of the section. """
-        return self.uniq_reads.section.end5
+    def region_end5(self):
+        """ 5' end of the region. """
+        return self.uniq_reads.region.end5
 
     @cached_property
     def _unmasked(self):
         """ Unmasked positions (0-indexed). """
-        return self.uniq_reads.section.unmasked_zero
+        return self.uniq_reads.region.unmasked_zero
 
     @cached_property
     def _masked(self):
         """ Masked positions (0-indexed). """
-        return self.uniq_reads.section.masked_zero
+        return self.uniq_reads.region.masked_zero
 
     @property
     def _n_pos_total(self):
         """ Number of positions, including those masked. """
-        return self.uniq_reads.section.length
+        return self.uniq_reads.region.length
 
     @cached_property
     def _n_pos_unmasked(self):
@@ -435,7 +435,7 @@ class EMRun(object):
     def mus(self):
         """ Log mutation rate at each position for each cluster. """
         return pd.DataFrame(self._p_mut[self._unmasked],
-                            index=self.uniq_reads.section.unmasked_int,
+                            index=self.uniq_reads.region.unmasked_int,
                             columns=self._clusters)
 
     def get_resps(self, batch_num: int):

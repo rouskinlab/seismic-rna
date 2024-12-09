@@ -1,3 +1,4 @@
+import numpy as np
 from functools import cached_property
 
 from .batch import MaskMutsBatch, apply_mask
@@ -8,22 +9,23 @@ from ..core.data import (ArrowDataset,
                          LoadFunction,
                          MergedUnbiasDataset,
                          UnbiasDataset)
+from ..core.join import (BATCH_NUM,
+                         READ_NUMS,
+                         SEG_END5S,
+                         SEG_END3S,
+                         MUTS,
+                         JoinMutsDataset,
+                         JoinMaskReport)
 from ..core.rel import RelPattern
 from ..core.report import (CountMutsF,
                            CountRefsF,
                            MinMutGapF,
                            PosKeptF,
                            QuickUnbiasF,
-                           QuickUnbiasThreshF)
-from ..joinbase.data import (BATCH_NUM,
-                             READ_NUMS,
-                             SEG_END5S,
-                             SEG_END3S,
-                             MUTS,
-                             JoinMutsDataset)
-from ..joinbase.report import JoinMaskReport
-from ..pool.data import load_relate_dataset
+                           QuickUnbiasThreshF,
+                           JoinedClustersF)
 from ..relate.batch import RelateBatch
+from ..relate.data import load_relate_dataset
 
 
 class MaskReadDataset(LoadedDataset, UnbiasDataset):
@@ -90,18 +92,24 @@ class MaskMutsDataset(ArrowDataset, UnbiasDataset):
         return getattr(self.data2, "quick_unbias_thresh")
 
     @cached_property
-    def section(self):
+    def region(self):
         # Mask the positions that were not kept.
-        section = super().section
-        section.add_mask(self.MASK_NAME,
-                         getattr(self.data2, "pos_kept"),
-                         complement=True)
-        return section
+        region = super().region
+        region.add_mask(self.MASK_NAME,
+                        getattr(self.data2, "pos_kept"),
+                        complement=True)
+        return region
 
     def _integrate(self, batch1: RelateBatch, batch2: MaskBatchIO):
+        if self.masked_read_nums is not None:
+            read_nums = np.setdiff1d(batch2.read_nums,
+                                     self.masked_read_nums.get(batch2.batch),
+                                     assume_unique=True)
+        else:
+            read_nums = batch2.read_nums
         return apply_mask(batch1,
-                          batch2.read_nums,
-                          self.section,
+                          read_nums,
+                          self.region,
                           sanitize=False)
 
 
@@ -125,8 +133,9 @@ class JoinMaskMutsDataset(JoinMutsDataset, MergedUnbiasDataset):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self._clusts is not None:
-            raise TypeError(f"{self} has no clusters, but got {self._clusts}")
+        clusts = self.report.get_field(JoinedClustersF, missing_ok=True)
+        if clusts is not None:
+            raise TypeError(f"{self} has no clusters, but got {clusts}")
 
 
 load_mask_dataset = LoadFunction(MaskMutsDataset, JoinMaskMutsDataset)

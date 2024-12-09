@@ -18,13 +18,13 @@ def run(*,
         pmut_unpaired: tuple[tuple[str, float], ...],
         vmut_paired: float,
         vmut_unpaired: float,
-        end3_fmean: float,
-        insert_fmean: float,
-        ends_var: float,
+        center_fmean: float,
+        center_fvar: float,
+        length_fmean: float,
+        length_fvar: float,
         clust_conc: float,
         force: bool,
-        max_procs: int,
-        parallel: bool):
+        max_procs: int):
     """ Simulate parameter files. """
     muts_mod.run(ct_file=ct_file,
                  pmut_paired=pmut_paired,
@@ -32,19 +32,17 @@ def run(*,
                  vmut_paired=vmut_paired,
                  vmut_unpaired=vmut_unpaired,
                  force=force,
-                 parallel=parallel,
                  max_procs=max_procs)
     ends_mod.run(ct_file=ct_file,
-                 end3_fmean=end3_fmean,
-                 insert_fmean=insert_fmean,
-                 ends_var=ends_var,
+                 center_fmean=center_fmean,
+                 center_fvar=center_fvar,
+                 length_fmean=length_fmean,
+                 length_fvar=length_fvar,
                  force=force,
-                 parallel=parallel,
                  max_procs=max_procs)
     clusts_mod.run(ct_file=ct_file,
                    clust_conc=clust_conc,
                    force=force,
-                   parallel=parallel,
                    max_procs=max_procs)
 
 

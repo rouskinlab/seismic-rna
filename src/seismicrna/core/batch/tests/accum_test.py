@@ -4,18 +4,27 @@ import numpy as np
 import pandas as pd
 
 from seismicrna.cluster.batch import ClusterMutsBatch
-from seismicrna.core.batch.accum import accumulate
+from seismicrna.core.batch.accum import accumulate_batches
 from seismicrna.core.batch.ends import END5_COORD, END3_COORD
 from seismicrna.core.batch.index import RB_INDEX_NAMES
+from seismicrna.core.batch.muts import RegionMutsBatch
 from seismicrna.core.header import RelClustHeader
 from seismicrna.core.rel import RelPattern
-from seismicrna.core.seq.section import Section
+from seismicrna.core.seq.region import Region
 from seismicrna.core.seq.xna import DNA
 from seismicrna.mask.batch import MaskMutsBatch
 from seismicrna.relate.batch import RelateBatch
 
 
-class TestAccumulate(ut.TestCase):
+def get_batch_count_all_func(batches: list[RegionMutsBatch]):
+
+    def get_batch_count_all(batch_num: int, **kwargs):
+        return batches[batch_num].count_all(**kwargs)
+
+    return get_batch_count_all
+
+
+class TestAccumulateBatches(ut.TestCase):
 
     def test_relate_1_batch(self):
         """
@@ -33,11 +42,11 @@ class TestAccumulate(ut.TestCase):
         3 !!._
         4 ?.._
         """
-        section = Section("myref", DNA("ACGT"))
+        region = Region("myref", DNA("ACGT"))
         patterns = {"Matches": RelPattern.muts().invert(),
                     "Mutations": RelPattern.muts()}
         batches = [
-            RelateBatch(section=section,
+            RelateBatch(region=region,
                         batch=0,
                         muts={1: {128: np.array([2, 3]),
                                   129: np.array([4])},
@@ -56,11 +65,12 @@ class TestAccumulate(ut.TestCase):
                                             [3],
                                             [3]]))
         ]
-        n, (fpp, ipp), (fpr, ipr), ends = accumulate(
-            batches,
-            section.seq,
+        n, ends, fpp, fpr = accumulate_batches(
+            get_batch_count_all_func(batches),
+            len(batches),
+            region.seq,
+            region.unmasked_int,
             patterns,
-            pos_nums=section.unmasked_int
         )
         self.assertEqual(n, 5)
         self.assertTrue(fpp.equals(pd.DataFrame(
@@ -68,15 +78,7 @@ class TestAccumulate(ut.TestCase):
              [1, 4],
              [3, 1],
              [1, 1]],
-            section.range,
-            list(patterns)
-        )))
-        self.assertTrue(ipp.equals(pd.DataFrame(
-            [[3, 3],
-             [5, 5],
-             [4, 4],
-             [2, 2]],
-            section.range,
+            region.range,
             list(patterns)
         )))
         self.assertTrue(fpr.equals(pd.DataFrame(
@@ -85,17 +87,6 @@ class TestAccumulate(ut.TestCase):
              [0, 3],
              [1, 2],
              [2, 0]],
-            pd.MultiIndex.from_arrays([[0, 0, 0, 0, 0],
-                                       [0, 1, 2, 3, 4]],
-                                      names=RB_INDEX_NAMES),
-            list(patterns)
-        )))
-        self.assertTrue(ipr.equals(pd.DataFrame(
-            [[2, 2],
-             [4, 4],
-             [3, 3],
-             [3, 3],
-             [2, 2]],
             pd.MultiIndex.from_arrays([[0, 0, 0, 0, 0],
                                        [0, 1, 2, 3, 4]],
                                       names=RB_INDEX_NAMES),
@@ -126,11 +117,11 @@ class TestAccumulate(ut.TestCase):
         0 !!._
         1 ?.._
         """
-        section = Section("myref", DNA("ACGT"))
+        region = Region("myref", DNA("ACGT"))
         patterns = {"Matches": RelPattern.muts().invert(),
                     "Mutations": RelPattern.muts()}
         batches = [
-            RelateBatch(section=section,
+            RelateBatch(region=region,
                         batch=0,
                         muts={1: {128: np.array([2])},
                               2: {16: np.array([0, 1, 2])},
@@ -143,7 +134,7 @@ class TestAccumulate(ut.TestCase):
                         seg_end3s=np.array([[4],
                                             [4],
                                             [3]])),
-            RelateBatch(section=section,
+            RelateBatch(region=region,
                         batch=1,
                         muts={1: {128: np.array([0]),
                                   129: np.array([1])},
@@ -155,11 +146,12 @@ class TestAccumulate(ut.TestCase):
                         seg_end3s=np.array([[3],
                                             [3]]))
         ]
-        n, (fpp, ipp), (fpr, ipr), ends = accumulate(
-            batches,
-            section.seq,
+        n, ends, fpp, fpr = accumulate_batches(
+            get_batch_count_all_func(batches),
+            len(batches),
+            region.seq,
+            region.unmasked_int,
             patterns,
-            pos_nums=section.unmasked_int
         )
         self.assertEqual(n, 5)
         self.assertTrue(fpp.equals(pd.DataFrame(
@@ -167,15 +159,7 @@ class TestAccumulate(ut.TestCase):
              [1, 4],
              [3, 1],
              [1, 1]],
-            section.range,
-            list(patterns)
-        )))
-        self.assertTrue(ipp.equals(pd.DataFrame(
-            [[3, 3],
-             [5, 5],
-             [4, 4],
-             [2, 2]],
-            section.range,
+            region.range,
             list(patterns)
         )))
         self.assertTrue(fpr.equals(pd.DataFrame(
@@ -184,17 +168,6 @@ class TestAccumulate(ut.TestCase):
              [0, 3],
              [1, 2],
              [2, 0]],
-            pd.MultiIndex.from_arrays([[0, 0, 0, 1, 1],
-                                       [0, 1, 2, 0, 1]],
-                                      names=RB_INDEX_NAMES),
-            list(patterns)
-        )))
-        self.assertTrue(ipr.equals(pd.DataFrame(
-            [[2, 2],
-             [4, 4],
-             [3, 3],
-             [3, 3],
-             [2, 2]],
             pd.MultiIndex.from_arrays([[0, 0, 0, 1, 1],
                                        [0, 1, 2, 0, 1]],
                                       names=RB_INDEX_NAMES),
@@ -225,12 +198,12 @@ class TestAccumulate(ut.TestCase):
         0 !!._
         6 ?.._
         """
-        section = Section("myref", DNA("NNACNGNT"))
-        section.add_mask("mask", [3, 4, 6, 8], complement=True)
+        region = Region("myref", DNA("NNACNGNT"))
+        region.add_mask("mask", [3, 4, 6, 8], complement=True)
         patterns = {"Matches": RelPattern.muts().invert(),
                     "Mutations": RelPattern.muts()}
         batches = [
-            MaskMutsBatch(section=section,
+            MaskMutsBatch(region=region,
                           batch=0,
                           muts={3: {128: np.array([7])},
                                 4: {16: np.array([2, 4, 7])},
@@ -244,7 +217,7 @@ class TestAccumulate(ut.TestCase):
                                               [8],
                                               [7]]),
                           read_nums=np.array([2, 4, 7])),
-            MaskMutsBatch(section=section,
+            MaskMutsBatch(region=region,
                           batch=1,
                           muts={3: {128: np.array([0]),
                                     129: np.array([6])},
@@ -257,11 +230,12 @@ class TestAccumulate(ut.TestCase):
                                               [6]]),
                           read_nums=np.array([0, 6]))
         ]
-        n, (fpp, ipp), (fpr, ipr), ends = accumulate(
-            batches,
-            section.seq,
+        n, ends, fpp, fpr = accumulate_batches(
+            get_batch_count_all_func(batches),
+            len(batches),
+            region.seq,
+            region.unmasked_int,
             patterns,
-            pos_nums=section.unmasked_int
         )
         self.assertEqual(n, 5)
         self.assertTrue(fpp.equals(pd.DataFrame(
@@ -269,15 +243,7 @@ class TestAccumulate(ut.TestCase):
              [1, 4],
              [3, 1],
              [1, 1]],
-            section.unmasked,
-            list(patterns)
-        )))
-        self.assertTrue(ipp.equals(pd.DataFrame(
-            [[3, 3],
-             [5, 5],
-             [4, 4],
-             [2, 2]],
-            section.unmasked,
+            region.unmasked,
             list(patterns)
         )))
         self.assertTrue(fpr.equals(pd.DataFrame(
@@ -286,17 +252,6 @@ class TestAccumulate(ut.TestCase):
              [0, 3],
              [1, 2],
              [2, 0]],
-            pd.MultiIndex.from_arrays([[0, 0, 0, 1, 1],
-                                       [2, 4, 7, 0, 6]],
-                                      names=RB_INDEX_NAMES),
-            list(patterns)
-        )))
-        self.assertTrue(ipr.equals(pd.DataFrame(
-            [[2, 2],
-             [4, 4],
-             [3, 3],
-             [3, 3],
-             [2, 2]],
             pd.MultiIndex.from_arrays([[0, 0, 0, 1, 1],
                                        [2, 4, 7, 0, 6]],
                                       names=RB_INDEX_NAMES),
@@ -328,8 +283,8 @@ class TestAccumulate(ut.TestCase):
         0 !!._ 0.6 0.4
         6 ?.._ 0.8 0.2
         """
-        section = Section("myref", DNA("NNACNGNT"))
-        section.add_mask("mask", [3, 4, 6, 8], complement=True)
+        region = Region("myref", DNA("NNACNGNT"))
+        region.add_mask("mask", [3, 4, 6, 8], complement=True)
         patterns = {"Matches": RelPattern.muts().invert(),
                     "Mutations": RelPattern.muts()}
         ks = [1, 2]
@@ -337,7 +292,7 @@ class TestAccumulate(ut.TestCase):
         rheader = rcheader.get_rel_header()
         cheader = rcheader.get_clust_header()
         batches = [
-            ClusterMutsBatch(section=section,
+            ClusterMutsBatch(region=region,
                              batch=0,
                              muts={3: {128: np.array([7])},
                                    4: {16: np.array([2, 4, 7])},
@@ -355,7 +310,7 @@ class TestAccumulate(ut.TestCase):
                                                  [1.0, 0.5, 0.5]],
                                                 [2, 4, 7],
                                                 cheader.index)),
-            ClusterMutsBatch(section=section,
+            ClusterMutsBatch(region=region,
                              batch=1,
                              muts={3: {128: np.array([0]),
                                        129: np.array([6])},
@@ -371,32 +326,25 @@ class TestAccumulate(ut.TestCase):
                                                 [0, 6],
                                                 cheader.index))
         ]
-        n, (fpp, ipp), (fpr, ipr), ends = accumulate(
-            batches,
-            section.seq,
+        n, ends, fpp, fpr = accumulate_batches(
+            get_batch_count_all_func(batches),
+            len(batches),
+            region.seq,
+            region.unmasked_int,
             patterns,
-            ks=ks,
-            pos_nums=section.unmasked_int
+            ks,
         )
         self.assertIsInstance(n, pd.Series)
         self.assertTrue(n.index.equals(cheader.index))
         self.assertTrue(np.allclose(n, [5.0, 2.3, 2.7]))
         self.assertIsInstance(fpp, pd.DataFrame)
-        self.assertTrue(fpp.index.equals(section.unmasked))
+        self.assertTrue(fpp.index.equals(region.unmasked))
         self.assertTrue(fpp.columns.equals(rcheader.index))
         self.assertTrue(np.allclose(fpp.values,
                                     [[1.0, 0.3, 0.7, 2.0, 1.1, 0.9],
                                      [1.0, 0.8, 0.2, 4.0, 1.5, 2.5],
                                      [3.0, 1.7, 1.3, 1.0, 0.5, 0.5],
                                      [1.0, 0.3, 0.7, 1.0, 0.1, 0.9]]))
-        self.assertIsInstance(ipp, pd.DataFrame)
-        self.assertTrue(ipp.index.equals(section.unmasked))
-        self.assertTrue(ipp.columns.equals(rcheader.index))
-        self.assertTrue(np.allclose(ipp.values,
-                                    [[3.0, 1.4, 1.6, 3.0, 1.4, 1.6],
-                                     [5.0, 2.3, 2.7, 5.0, 2.3, 2.7],
-                                     [4.0, 2.2, 1.8, 4.0, 2.2, 1.8],
-                                     [2.0, 0.4, 1.6, 2.0, 0.4, 1.6]]))
         read_nums = pd.MultiIndex.from_arrays([[0, 0, 0, 1, 1],
                                                [2, 4, 7, 0, 6]],
                                               names=RB_INDEX_NAMES)
@@ -407,16 +355,6 @@ class TestAccumulate(ut.TestCase):
              [0, 3],
              [1, 2],
              [2, 0]],
-            read_nums,
-            rheader.index
-        )))
-        self.assertIsInstance(ipr, pd.DataFrame)
-        self.assertTrue(ipr.equals(pd.DataFrame(
-            [[2, 2],
-             [4, 4],
-             [3, 3],
-             [3, 3],
-             [2, 2]],
             read_nums,
             rheader.index
         )))
@@ -438,3 +376,24 @@ class TestAccumulate(ut.TestCase):
 
 if __name__ == "__main__":
     ut.main()
+
+########################################################################
+#                                                                      #
+# © Copyright 2024, the Rouskin Lab.                                   #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

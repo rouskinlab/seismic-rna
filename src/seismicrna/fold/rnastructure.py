@@ -1,7 +1,4 @@
-"""
-Struct -- RNAstructure Module
-
-Wrapper around RNAstructure from the Mathews Lab at U of Rochester:
+""" Wrapper around RNAstructure from the Mathews Lab at U of Rochester:
 https://rna.urmc.rochester.edu/RNAstructure.html
 """
 
@@ -424,9 +421,9 @@ def fold(rna: RNAProfile, *,
         # Reformat the CT file title lines so that each is unique.
         retitle_ct(ct_tmp, ct_tmp, force=True)
         # Renumber the CT file so that it has the same numbering scheme
-        # as the section, rather than always starting at 1, the latter
+        # as the region, rather than always starting at 1, the latter
         # of which is always output by the Fold program.
-        renumber_ct(ct_tmp, ct_out, rna.section.end5, force=True)
+        renumber_ct(ct_tmp, ct_out, rna.region.end5, force=True)
     finally:
         if not keep_tmp:
             # Delete the temporary files.
