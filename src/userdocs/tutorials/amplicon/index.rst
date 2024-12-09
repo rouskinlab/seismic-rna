@@ -23,7 +23,7 @@ TL;DR
 #. Process the DMS-treated replicates separately::
 
     seismic wf -x fq/dms1 -x fq/dms2 --mask-pos rre 176 -p rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC hiv-rre.fa
-    seismic graph scatter out/dms[12]/table/rre/26-204/mask-per-pos.csv
+    seismic graph scatter out/dms[12]/mask/rre/26-204/mask-position-table.csv
 
 #. Pool the replicates and process them together::
 
@@ -119,17 +119,17 @@ Check the graphs of coverage and mutation rate for the no-DMS control
 
 Next, check the unambiguous count (i.e. how many base calls at each position
 could be labeled unambiguously as either a match or a mutation).
-Open ``out/nodms/graph/rre/full/profile_masked_n-count.html`` in a web broser.
+Open ``out/nodms/graph/rre/full/profile_filtered_n-count.html`` in a web broser.
 
 - ``nodms`` is the sample
 - ``rre`` is the reference (i.e. name of the RNA)
 - ``full`` is the region of the reference you are looking at
 - ``profile`` is the type of graph (a bar graph with position on the x-axis)
-- ``masked`` means graph the data come from the Mask step
+- ``filtered`` means graph the data come from the Mask step
 - ``n`` is the shorthand for "unambiguous"
 - ``count`` means graph the *number* of reads
 
-    .. image:: img/nodms_profile_masked_n-count.png
+    .. image:: img/nodms_profile_filtered_n-count.png
 
 This graph shows that the number of unambiguous base calls at each position is
 fairly even -- around 2,200 -- across all positions amplified by the primers
@@ -138,17 +138,17 @@ This graph also shows that each position has enough unambigous base calls
 (>1,000) to obtain a reasonably accurate estimate of the mutation rate.
 
 After confirming there are sufficient unambiguous base calls, view the mutation
-rates by opening ``out/nodms/graph/rre/full/profile_masked_m-ratio-q0.html``
+rates by opening ``out/nodms/graph/rre/full/profile_filtered_m-ratio-q0.html``
 in a web browser.
 
-- ``nodms``, ``rre``, ``full``, ``profile``, and ``masked`` have the same
+- ``nodms``, ``rre``, ``full``, ``profile``, and ``filtered`` have the same
   meanings as before
 - ``m`` is the shorthand for "mutated"
 - ``ratio`` means graph the *ratio* of ``m`` (mutated) to unambiguously mutated
   or matching base calls (i.e. the mutation rate)
 - ``q0`` means do not normalize the mutation rates
 
-    .. image:: img/nodms_profile_masked_m-ratio.png
+    .. image:: img/nodms_profile_filtered_m-ratio.png
 
 This graph shows that the mutation rate is very low across all positions -- as
 expected for a sample that is not DMS-modified -- except for position 176, which
@@ -158,21 +158,21 @@ are at the other positions, but because this graph is interactive, you can click
 at the top of the y-axis and enter a new upper limit, such as 0.02.
 You can also mouse over a bar to see its mutation rate (G31 is shown here).
 
-    .. image:: img/nodms_profile_masked_m-ratio-0.02.png
+    .. image:: img/nodms_profile_filtered_m-ratio-0.02.png
 
 Now it is clear that every position except 176 has a mutation rate no greater
 than 1%, and most are below 0.5%, which is typical for non-DMS-modified RNA.
 
 To figure out why position 176 has such a high mutation rate, you can check the
 types of mutations that occur at each position, which are in another graph,
-``out/nodms/graph/rre/full/profile_masked_acgtdi-ratio-q0.html``.
+``out/nodms/graph/rre/full/profile_filtered_acgtdi-ratio-q0.html``.
 
-- ``nodms``, ``rre``, ``full``, ``profile``, ``masked``, ``ratio``, and ``q0``
+- ``nodms``, ``rre``, ``full``, ``profile``, ``filtered``, ``ratio``, and ``q0``
   have the same meanings as before
 - ``acgtdi`` are the shorthands for substitutions to A, C, G, and T; deletions;
   and insertions; respectively
 
-    .. image:: img/nodms_profile_masked_acgtdi-ratio.png
+    .. image:: img/nodms_profile_filtered_acgtdi-ratio.png
 
 This graph shows that nearly all (~97%) of the mutations at position 176 are
 A-to-G substitutions.
@@ -210,10 +210,10 @@ This is what each of the arguments does:
   case, the data from the Relate step for sample ``nodms``, reference ``rre``.
 
 After the command finishes running, you can see that position 176 was masked out
-by opening ``out/nodms/graph/rre/full/profile_masked_m-ratio-q0.html`` (position
+by opening ``out/nodms/graph/rre/full/profile_filtered_m-ratio-q0.html`` (position
 175 is highlighted to make the gap between it and position 177 more clear):
 
-    .. image:: img/nodms_profile_masked-176_m-ratio.png
+    .. image:: img/nodms_profile_filtered-176_m-ratio.png
 
 
 Process both DMS-modified replicates
@@ -252,20 +252,20 @@ replicates, to ensure they are reproducible.
 To create a scatter plot of the mutation rates and calculate the correlation,
 run the command ::
 
-    seismic graph scatter out/dms[12]/table/rre/26-204/mask-per-pos.csv
+    seismic graph scatter out/dms[12]/mask/rre/26-204/mask-position-table.csv
 
 - ``graph scatter`` means graph a scatter plot.
-- ``out/dms[12]/table/rre/26-204/mask-per-pos.csv`` means graph data from these
-  tables, where ``[12]`` is a `glob pattern`_ that is automatically expanded by
-  the shell into all files that match the pattern -- which in this case is
-  ``out/dms1/table/rre/26-204/mask-per-pos.csv out/dms2/table/rre/26-204/mask-per-pos.csv``.
+- ``out/dms[12]/table/rre/26-204/mask-position-table.csv`` means graph data from
+  these tables, where ``[12]`` is a `glob pattern`_ that is expanded by the
+  shell into all files that match the pattern -- which in this case is
+  ``out/dms1/table/rre/26-204/mask-position-table.csv out/dms2/table/rre/26-204/mask-position-table.csv``.
   You could instead type this expression to list both table files explicitly,
   but the former requires fewer key strokes.
 
-Open ``out/dms1__and__dms2/graph/rre/full/scatter_masked_m-ratio-q0.html`` in a
-web browser to view the scatter plot and correlation:
+Open ``out/dms1__and__dms2/graph/rre/26-204/scatter_filtered_m-ratio-q0.html``
+in a web browser to view the scatter plot and correlation:
 
-    .. image:: img/dms1__and__dms2_scatter_masked_m-ratio.png
+    .. image:: img/dms1__and__dms2_scatter_filtered_m-ratio.png
 
 The Pearson correlation is 0.998, which is extremely high.
 (For a general amplicon, ≥0.98 would be ideal, and ≥0.95 would be decent).
@@ -331,7 +331,7 @@ the time and version)::
         "Sample": "dms-pool",
         "Reference": "rre",
         "Region": "26-204",
-        "Number of unique reads": 12383,
+        "Number of unique reads": 12236,
         "Start at this many clusters": 1,
         "Stop at this many clusters (0 for no limit)": 0,
         "Try all numbers of clusters (Ks), even after finding the best number": false,
@@ -365,10 +365,10 @@ the time and version)::
             ]
         },
         "Branches": [],
-        "Time began": "2024-10-10 at 22:38:40",
-        "Time ended": "2024-10-10 at 22:40:25",
+        "Time began": "2024-12-08 at 23:10:31",
+        "Time ended": "2024-12-08 at 23:12:16",
         "Time taken (minutes)": 1.75,
-        "Version of SEISMIC-RNA": "0.21.0"
+        "Version of SEISMIC-RNA": "0.22.0"
     }
 
 The number of clusters detected is the field ``Best number of clusters``, which
