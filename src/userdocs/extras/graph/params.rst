@@ -31,7 +31,7 @@ For tables where each column is a type of relationship (i.e. ``per-pos`` and
 Each type of relationship has a one-letter code:
 
 -   ``v``: Covered
--   ``n``: Informed
+-   ``n``: Informative
 -   ``r``: Matched
 -   ``m``: Mutated
 -   ``s``: Subbed
@@ -76,11 +76,10 @@ count to another (``--use-ratio``).
     certain attribute.
     For example, you can graph mutation rates with ``-r m``.
 
-For ratios, the numerator is the count of the relationship; if that relationship
-is Covered or Informed, then the denominator is the count of Covered, otherwise
-the count of Informed relationships.
-For example, ``-r m`` would use the ratio of Mutated (``m``) to Informed; while
-``-r n`` would use the ratio of Informed (``n``) to Covered.
+Using a ratio divides the count of the relationship by the count of Covered if
+that relationship is Covered or Informative, otherwise Informative.
+For example, ``-r m`` would use the ratio of Mutated (``m``) to Informative;
+while ``-r n`` would use the ratio of Informative (``n``) to Covered.
 
 ``--quantile`` (``-q``): Quantile for normalizing ratios
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

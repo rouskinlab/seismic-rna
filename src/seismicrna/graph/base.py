@@ -158,8 +158,8 @@ class GraphBase(ABC):
         use_ratio: bool
             Use the ratio of the number of times the relationship occurs
             to the number of occurrances of another kind of relationship
-            (which is Covered for Covered and Informed, and Informed for
-            all other relationships), rather than the raw count.
+            (which is Covered for Covered and Informative; Informative
+            for all other relationships), rather than the raw count.
         quantile: float
             If `use_ratio` is True, then normalize the ratios to this
             quantile and then winsorize them to the interval [0, 1].

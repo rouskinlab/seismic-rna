@@ -18,7 +18,7 @@ class OneRelGraph(GraphBase, ABC):
             are given in seismicrna.table.base.REL_CODES, as follows:
 
             - Covered: v
-            - Informed: n
+            - Informative: n
             - Matched: r
             - Mutated: m
             - Subbed: s
@@ -64,7 +64,7 @@ class MultiRelsGraph(GraphBase, ABC):
             are given in seismicrna.table.base.REL_CODES, as follows:
 
             - Covered: v
-            - Informed: n
+            - Informative: n
             - Matched: r
             - Mutated: m
             - Subbed: s

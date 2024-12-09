@@ -87,7 +87,7 @@ Outputs:
 
     - ``out/{sample}/graph/{ref}/{reg}/profile_masked_n-count.csv`` ::
 
-        Position,Base,Informed
+        Position,Base,Informative
         196,A,301334.2
         197,C,305746.7
         198,A,303045.7
