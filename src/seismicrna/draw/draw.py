@@ -12,10 +12,12 @@ from ..core.extern.shell import args_to_cmd, run_cmd, JAVA_CMD, JAR_CMD
 from ..core.rna.io import from_ct
 from ..core.rna.state import RNAState
 from ..fold.report import FoldReport
+from ..core.header import AVERAGE_PREFIX
 
 from ..relate.table import RelatePositionTable, RelatePositionTableLoader
 from ..mask.table import MaskPositionTable, MaskPositionTableLoader
 from ..cluster.table import ClusterPositionTable, ClusterPositionTableLoader
+
 
 from jinja2 import Template
 
@@ -74,10 +76,8 @@ rnartist {
 TEMPLATE = Template(TEMPLATE_STRING)
 RNARTIST_PATH = os.environ.get("RNARTISTCORE")
 
-TABLES = {path.CMD_REL_DIR: (RelatePositionTable,
-                             RelatePositionTableLoader),
-          path.CMD_MASK_DIR: (MaskPositionTable,
-                              MaskPositionTableLoader),
+TABLES = {AVERAGE_PREFIX: (MaskPositionTable,
+                           MaskPositionTableLoader),
           path.CMD_CLUST_DIR: (ClusterPositionTable,
                                ClusterPositionTableLoader)}
 
@@ -183,11 +183,11 @@ def build_jinja_data(struct: str,
 class RNArtistRun(object):
 
     def _parse_profile(self):
-        match = re.search(r'(.+?)__(.+?)-', self.profile)
+        match = re.search(r'(.+?)__(?:(average|.+?(?=-)))', self.profile)
         self.data_reg = match.group(1) if match else None
         self.table_type = match.group(2) if match else None
         if not match:
-            logger.warning("Could not parse profile: {self.profile}.")
+            logger.warning(f"Could not parse profile: {self.profile}.")
 
     def __init__(self,
                  report: Path,
