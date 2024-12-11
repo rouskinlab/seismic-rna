@@ -17,7 +17,7 @@ from ..core.extern import require_env_var
 
 @run_func(CMD_DRAW, with_tmp=True, pass_keep_tmp=True)
 def run(input_path: tuple[str, ...], *,
-        struct_num: Iterable[int] | None,
+        struct_num: Iterable[int],
         color: bool,
         force: bool,
         max_procs: int,
@@ -32,7 +32,7 @@ def run(input_path: tuple[str, ...], *,
                     max_procs,
                     args=args,
                     pass_n_procs=True,
-                    kwargs=dict(struct_nums=struct_num,
+                    kwargs=dict(struct_num=struct_num,
                                 color=color,
                                 tmp_dir=tmp_dir,
                                 keep_tmp=keep_tmp,

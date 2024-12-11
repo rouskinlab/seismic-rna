@@ -1017,7 +1017,7 @@ opt_struct_num = Option(
     ("--struct-num",),
     type=int,
     multiple=True,
-    default=None,
+    default=(),
     help=("Draw the specified structure (zero-indexed) or -1 for all structures."
           " By default, draw the structure with the best AUROC.")
 )

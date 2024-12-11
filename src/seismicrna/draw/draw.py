@@ -192,7 +192,7 @@ class RNArtistRun(object):
     def __init__(self,
                  report: Path,
                  tmp_dir: Path,
-                 struct_nums: Iterable[int] | None,
+                 struct_num: Iterable[int],
                  color: bool,
                  n_procs: int):
         self.top, self.fields = FoldReport.parse_path(report)
@@ -202,7 +202,7 @@ class RNArtistRun(object):
         self.profile = self.fields.get(path.PROFILE)
         self.report = FoldReport.load(report)
         self.tmp_dir = tmp_dir
-        self.struct_nums = struct_nums
+        self.struct_num = list(struct_num)
         self.color = color
         self.n_procs = n_procs
         self._parse_profile()
@@ -446,11 +446,11 @@ class RNArtistRun(object):
 
     def run(self, keep_tmp: bool, force: bool):
         structs = dict()
-        if not self.struct_nums:
-            self.struct_nums = (self.best_struct,)
+        if not self.struct_num:
+            self.struct_num = (self.best_struct,)
         for struct_num, struct in enumerate(
                 from_ct(self.get_ct_file(self.top))):
-            if struct_num in self.struct_nums:
+            if struct_num in self.struct_num:
                 structs[struct_num] = dict(seq=struct.seq,
                                            value=struct.db_structure)
         args = [
@@ -469,7 +469,7 @@ class RNArtistRun(object):
 
 
 def draw(report_path: Path, *,
-         struct_nums: Iterable[int],
+         struct_num: Iterable[int],
          color: bool,
          tmp_dir: Path,
          keep_tmp: bool,
@@ -478,7 +478,7 @@ def draw(report_path: Path, *,
     """ Draw RNA structure(s) from a FoldReport. """
     rnartist = RNArtistRun(report_path,
                            tmp_dir,
-                           struct_nums,
+                           struct_num,
                            color,
                            n_procs)
     # By convention, a function must return a Path for dispatch to deem
