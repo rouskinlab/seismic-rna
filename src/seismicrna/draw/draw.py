@@ -287,8 +287,12 @@ class RNArtistRun(object):
 
     @cached_property
     def table(self):
-        return (self.table_loader(self.table_file)
-                if self.table_loader else None)
+        if self.table_file.exists():
+            return (self.table_loader(self.table_file)
+                    if self.table_loader else None)
+        else:
+            logger.warning(f"{self.table_file} does not exist.")
+            return None
 
     def get_ct_file(self, top: Path):
         """ Get the path to the connectivity table (CT) file.
@@ -413,10 +417,15 @@ class RNArtistRun(object):
 
     @cached_property
     def color_dict(self):
-        if self.color:
-            return parse_color_file(self.get_varna_color_file(self.top))
+        color_file = self.get_varna_color_file(self.top)
+        if color_file.exists():
+            if self.color:
+                return parse_color_file(color_file)
         else:
-            return dict()
+            logger.warning(f"{color_file} does not exist. "
+                           "Defaulting to --no-color")
+            self.color = False
+        return dict()
 
     def process_struct(self,
                        struct_name: str,
