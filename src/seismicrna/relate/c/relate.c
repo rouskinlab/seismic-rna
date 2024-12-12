@@ -340,16 +340,16 @@ static unsigned char encode_subs(char base)
 {
     switch (base)
     {
-    case BASET:
-        return SUB_T;
-    case BASEG:
-        return SUB_G;
-    case BASEC:
-        return SUB_C;
-    case BASEA:
-        return SUB_A;
-    default:
-        return SUB_N;
+        case BASET:
+            return SUB_T;
+        case BASEG:
+            return SUB_G;
+        case BASEC:
+            return SUB_C;
+        case BASEA:
+            return SUB_A;
+        default:
+            return SUB_N;
     }
 }
 
@@ -778,27 +778,27 @@ static int calc_rels_line(unsigned char *rels,
 }
 
 
-static int set_rel(PyObject *dict, size_t pos, unsigned char rel)
+static int set_rel(PyObject *rels_dict, size_t pos, unsigned char rel)
 {
     // Convert the C variables pos and rel into Python int objects.
-    PyObject *key = PyLong_FromLong((long)pos);
-    PyObject *value = PyLong_FromLong((long)rel);
+    PyObject *key = PyLong_FromSize_t(pos);
+    PyObject *value = PyLong_FromUnsignedLong((unsigned long)rel);
 
     if (key == NULL || value == NULL)
     {
         // Decrement reference counts if not NULL.
         Py_XDECREF(key);
         Py_XDECREF(value);
-        Py_DECREF(dict);
+        Py_DECREF(rels_dict);
         return 1;
     }
 
     // Add the key-value pair to the dictionary.
-    if (PyDict_SetItem(dict, key, value) < 0)
+    if (PyDict_SetItem(rels_dict, key, value) < 0)
     {
         Py_DECREF(key);
         Py_DECREF(value);
-        Py_DECREF(dict);
+        Py_DECREF(rels_dict);
         return 1;
     }
 
@@ -811,24 +811,24 @@ static int set_rel(PyObject *dict, size_t pos, unsigned char rel)
 }
 
 
-static int put_rel_in_dict(PyObject *dict,
+static int put_rel_in_dict(PyObject *rels_dict,
                            size_t pos,
                            unsigned char rel)
 {
-    // Matches are not added to the dict.
+    // Matches are not added to the rels_dict.
     if (rel != MATCH)
     {
         // It is impossible for any relationship within the region to be
         // non-covered (255, or 2^8 - 1).
         assert(rel != 255);
-        if (set_rel(dict, pos, rel))
+        if (set_rel(rels_dict, pos, rel))
             {return 1;}
     }
     return 0;
 }
 
 
-static int put_rels_in_dict(PyObject *dict,
+static int put_rels_in_dict(PyObject *rels_dict,
                             unsigned char *rels,
                             size_t end5,
                             size_t end3)
@@ -849,14 +849,14 @@ static int put_rels_in_dict(PyObject *dict,
         // It is impossible for any relationship within the region to be
         // irreconcilable (0) for one read: only between two reads.
         assert(rel != 0);
-        if (put_rel_in_dict(dict, pos, rel))
+        if (put_rel_in_dict(rels_dict, pos, rel))
             {return 1;}
     }
     return 0;
 }
 
 
-static int put_2_rels_in_dict(PyObject *dict,
+static int put_2_rels_in_dict(PyObject *rels_dict,
                               size_t fwd_end5,
                               size_t fwd_end3,
                               unsigned char *fwd_rels,
@@ -880,7 +880,7 @@ static int put_2_rels_in_dict(PyObject *dict,
     {
         // The forward read begins after the reverse read.
         both_end5 = fwd_end5;
-        if (put_rels_in_dict(dict,
+        if (put_rels_in_dict(rels_dict,
                              rev_rels,
                              rev_end5,
                              min(rev_end3, both_end5 - 1)))
@@ -890,7 +890,7 @@ static int put_2_rels_in_dict(PyObject *dict,
     {
         // The forward read begins with or after the reverse read.
         both_end5 = rev_end5;
-        if (put_rels_in_dict(dict,
+        if (put_rels_in_dict(rels_dict,
                              fwd_rels,
                              fwd_end5,
                              min(fwd_end3, both_end5 - 1)))
@@ -902,7 +902,7 @@ static int put_2_rels_in_dict(PyObject *dict,
     {
         // The forward read ends after the reverse read.
         both_end3 = rev_end3;
-        if (put_rels_in_dict(dict,
+        if (put_rels_in_dict(rels_dict,
                              fwd_rels,
                              fwd_end3,
                              max(fwd_end5, both_end3 + 1)))
@@ -912,7 +912,7 @@ static int put_2_rels_in_dict(PyObject *dict,
     {
         // The forward read ends with or after the reverse read.
         both_end3 = fwd_end3;
-        if (put_rels_in_dict(dict,
+        if (put_rels_in_dict(rels_dict,
                              rev_rels,
                              rev_end3,
                              max(rev_end5, both_end3 + 1)))
@@ -922,7 +922,7 @@ static int put_2_rels_in_dict(PyObject *dict,
     // Fill relationships in the region of overlap.
     for (size_t pos = both_end5; pos <= both_end3; pos++)
     {
-        if (put_rel_in_dict(dict, pos, fwd_rels[pos - 1] & rev_rels[pos - 1]))
+        if (put_rel_in_dict(rels_dict, pos, fwd_rels[pos - 1] & rev_rels[pos - 1]))
             {return 1;}
     }
 
@@ -930,14 +930,22 @@ static int put_2_rels_in_dict(PyObject *dict,
 }
 
 
+static int put_end_in_list(PyObject *ends_list, Py_ssize_t index, size_t end)
+{
+    PyObject *py_end = PyLong_FromSize_t(end);
+    if (py_end == NULL) {return 1;}
+    if (PyList_SetItem(ends_list, index, py_end)) {return 1;}
+    return 0;
+}
+
 
 /*
 Clean up by freeing all the dynamically allocated memory and optionally
-decrementing the reference count for dict, to prevent memory leaks.
+decrementing the reference count for py_object, to prevent memory leaks.
 */
 static PyObject *cleanup(unsigned char **rels1_ptr,
                          unsigned char **rels2_ptr,
-                         PyObject *dict)
+                         PyObject *py_object)
 {
     // All of the pointers to pointers must be non-NULL.
     assert(rels1_ptr != NULL);
@@ -961,10 +969,10 @@ static PyObject *cleanup(unsigned char **rels1_ptr,
         *rels2_ptr = NULL;
     }
 
-    // Decrement the reference count for dict.
-    if (dict != NULL)
+    // Decrement the reference count for py_object.
+    if (py_object != NULL)
     {
-        Py_XDECREF(dict);
+        Py_DECREF(py_object);
     }
 
     // Return NULL so that py_calc_rels_lines can call this:
@@ -1012,18 +1020,42 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
     assert(ref != NULL);
     assert(ref_seq != NULL);
 
-    // Initialize containers to hold the relationships.
+    // Determine the number of mates.
+    Py_ssize_t num_mates = (*line2) ? 2 : 1;
+
+    // Initialize containers to hold the results.
     unsigned char *rels1 = NULL, *rels2 = NULL;
-    PyObject *dict = PyDict_New();
-    if (dict == NULL)
-        {return cleanup(&rels1, &rels2, dict);}
+    
+    PyObject *ends_rels_tuple = PyTuple_New(2);
+    if (ends_rels_tuple == NULL)
+        {return cleanup(&rels1, &rels2, NULL);}
+    
+    PyObject *ends_tuple = PyTuple_New(2);
+    if (ends_tuple == NULL)
+        {return cleanup(&rels1, &rels2, ends_rels_tuple);}
+    PyTuple_SET_ITEM(ends_rels_tuple, 0, ends_tuple);
+
+    PyObject *end5s_list = PyList_New(num_mates);
+    if (end5s_list == NULL)
+        {return cleanup(&rels1, &rels2, ends_rels_tuple);}
+    PyTuple_SET_ITEM(ends_tuple, 0, end5s_list);
+
+    PyObject *end3s_list = PyList_New(num_mates);
+    if (end3s_list == NULL)
+        {return cleanup(&rels1, &rels2, ends_rels_tuple);}
+    PyTuple_SET_ITEM(ends_tuple, 1, end3s_list);
+    
+    PyObject *rels_dict = PyDict_New();
+    if (rels_dict == NULL)
+        {return cleanup(&rels1, &rels2, ends_rels_tuple);}
+    PyTuple_SET_ITEM(ends_rels_tuple, 1, rels_dict);
 
     // Allocate relationships for line 1.
     rels1 = calloc(ref_len, sizeof(rels1));
     if (rels1 == NULL)
     {
         PyErr_NoMemory();
-        return cleanup(&rels1, &rels2, dict);
+        return cleanup(&rels1, &rels2, ends_rels_tuple);
     }
 
     // Calculate relationships for line 1.
@@ -1040,12 +1072,11 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
                        ambindel,
                        clip_end5,
                        clip_end3))
-        {return cleanup(&rels1, &rels2, dict);}
+        {return cleanup(&rels1, &rels2, ends_rels_tuple);}
 
-    // Check if line 2 exists.
-    if (*line2)
+    if (num_mates > 1)
     {
-        // Line 2 exists.
+        // The read comprises forward (fwd) and reverse (rev) mates.
         size_t fwd_end5, fwd_end3, rev_end5, rev_end3;
         // Check if line 2 differs from line 1.
         if (strcmp(line1, line2))
@@ -1055,7 +1086,7 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
             if (rels2 == NULL)
             {
                 PyErr_NoMemory();
-                return cleanup(&rels1, &rels2, dict);
+                return cleanup(&rels1, &rels2, ends_rels_tuple);
             }
 
             // Calculate relationships for line 2.
@@ -1072,11 +1103,11 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
                                ambindel,
                                clip_end5,
                                clip_end3))
-                {return cleanup(&rels1, &rels2, dict);}
+                {return cleanup(&rels1, &rels2, ends_rels_tuple);}
 
             // Check if reads 1 and 2 are paired properly.
             if (validate_pair(&read1, &read2))
-                {return cleanup(&rels1, &rels2, dict);}
+                {return cleanup(&rels1, &rels2, ends_rels_tuple);}
 
             // Determine the 5'/3' ends of the forward/reverse reads.
             unsigned char *fwd_rels = NULL, *rev_rels = NULL;
@@ -1111,14 +1142,14 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
             }
 
             // Merge reads 1 and 2.
-            if (put_2_rels_in_dict(dict,
+            if (put_2_rels_in_dict(rels_dict,
                                    fwd_end5,
                                    fwd_end3,
                                    fwd_rels,
                                    rev_end5,
                                    rev_end3,
                                    rev_rels))
-                {return cleanup(&rels1, &rels2, dict);}
+                {return cleanup(&rels1, &rels2, ends_rels_tuple);}
         }
         else
         {
@@ -1127,28 +1158,44 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
             fwd_end3 = read1.ref_end3;
             rev_end5 = read1.ref_end5;
             rev_end3 = read1.ref_end3;
-            if (put_rels_in_dict(dict,
+            if (put_rels_in_dict(rels_dict,
                                  rels1,
                                  read1.ref_end5,
                                  read1.ref_end3))
-                {return cleanup(&rels1, &rels2, dict);}
+                {return cleanup(&rels1, &rels2, ends_rels_tuple);}
         }
+
+        // Fill int the lists of 5' and 3' ends.
+        if (put_end_in_list(end5s_list, 0, fwd_end5))
+            {return cleanup(&rels1, &rels2, ends_rels_tuple);}
+        if (put_end_in_list(end5s_list, 1, rev_end5))
+            {return cleanup(&rels1, &rels2, ends_rels_tuple);}
+        if (put_end_in_list(end3s_list, 0, fwd_end3))
+            {return cleanup(&rels1, &rels2, ends_rels_tuple);}
+        if (put_end_in_list(end3s_list, 1, rev_end3))
+            {return cleanup(&rels1, &rels2, ends_rels_tuple);}
     }
     else
     {
         // Line 2 does not exist.
-        if (put_rels_in_dict(dict,
+        if (put_rels_in_dict(rels_dict,
                              rels1,
                              read1.ref_end5,
                              read1.ref_end3))
-            {return cleanup(&rels1, &rels2, dict);}
+            {return cleanup(&rels1, &rels2, ends_rels_tuple);}
+        
+        // Fill int the lists of 5' and 3' ends.
+        if (put_end_in_list(end5s_list, 0, read1.ref_end5))
+            {return cleanup(&rels1, &rels2, ends_rels_tuple);}
+        if (put_end_in_list(end3s_list, 0, read1.ref_end3))
+            {return cleanup(&rels1, &rels2, ends_rels_tuple);}
     }
 
-    // Free the memory of rels1 and rels2, but NOT of the dict.
+    // Free the memory of rels1 and rels2, but not of the object that
+    // will be returned.
     cleanup(&rels1, &rels2, NULL);
 
-    // FIXME: return the dict for now, but eventually return a tuple
-    return dict;
+    return ends_rels_tuple;
 }
 
 

@@ -20,7 +20,7 @@ from ..core.ngs import (SAM_DELIM,
                         xam_paired)
 
 
-def line_attrs(line: str):
+def line_attrs(line: str) -> tuple[str, bool, bool]:
     """ Read attributes from a line in a SAM file. """
     name, flag_str, _ = line.split(SAM_DELIM, 2)
     flag = int(flag_str)
@@ -102,7 +102,7 @@ def _iter_records_single(sam_file: Path, start: int, stop: int):
                 raise ValueError(
                     f"Read {repr(name)} in {sam_file} is not single-end"
                 )
-            yield line, ""
+            yield name, line, ""
     logger.routine(f"Ended iterating through single-end records in {sam_file}")
 
 
@@ -131,12 +131,12 @@ def _iter_records_paired(sam_file: Path, start: int, stop: int):
                     if proper:
                         # The current read is properly paired with its
                         # mate: yield them together.
-                        yield prev_line, line
+                        yield name, prev_line, line
                     else:
                         # The current read is not properly paired with
                         # its mate: yield them separately.
-                        yield prev_line, prev_line
-                        yield line, line
+                        yield name, prev_line, prev_line
+                        yield name, line, line
                     # Reset the attributes of the previous read.
                     prev_line = ""
                     prev_name = ""
@@ -149,7 +149,7 @@ def _iter_records_paired(sam_file: Path, start: int, stop: int):
                                          f"in {sam_file} is properly paired "
                                          "but has no mate, "
                                          "which indicates a bug")
-                    yield prev_line, prev_line
+                    yield prev_name, prev_line, prev_line
                     # Save the current read so that if its mate is the
                     # next read, it can be returned as a pair.
                     prev_line = line
@@ -162,12 +162,12 @@ def _iter_records_paired(sam_file: Path, start: int, stop: int):
                 prev_name = name
                 prev_proper = proper
         if prev_line:
+            # In case the last read has not yet been yielded, do so.
             if prev_proper:
                 raise ValueError(f"Read {repr(prev_name)} in {sam_file} is "
                                  "properly paired but has no mate, which "
                                  "indicates a bug")
-            # In case the last read has not yet been yielded, do so.
-            yield prev_line, prev_line
+            yield prev_name, prev_line, prev_line
     logger.routine(f"Ended iterating through paired-end records in {sam_file}")
 
 

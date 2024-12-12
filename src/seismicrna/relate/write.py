@@ -2,12 +2,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Iterable
 
-from .data import RelateDataset
 from .io import from_reads, ReadNamesBatchIO, RelateBatchIO
 from .py.relate import calc_rels_lines
 from .report import RelateReport
 from .sam import XamViewer
-from .table import RelateCountTabulator, RelateDatasetTabulator
+from .table import RelateCountTabulator
 from ..core import path
 from ..core.io import RefseqIO
 from ..core.logs import logger
@@ -19,10 +18,10 @@ from ..core.tmp import get_release_working_dirs, release_to_out
 from ..core.write import need_write
 
 
-def relate_records(records: Iterable[tuple[str, str]], **kwargs):
-    for line1, line2 in records:
+def relate_records(records: Iterable[tuple[str, str, str]], **kwargs):
+    for name, line1, line2 in records:
         try:
-            yield calc_rels_lines(line1, line2, **kwargs)
+            yield name, calc_rels_lines(line1, line2, **kwargs)
         except Exception as error:
             logger.error(error)
 

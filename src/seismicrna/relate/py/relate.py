@@ -418,7 +418,7 @@ def calc_rels_lines(line1: str,
         # The read is single-ended.
         ends = [end51], [end31]
         rels = rels1
-    return read1.name, ends, rels
+    return ends, rels
 
 ########################################################################
 #                                                                      #
