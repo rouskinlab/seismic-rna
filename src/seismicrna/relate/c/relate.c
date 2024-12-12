@@ -40,7 +40,6 @@ static const unsigned char SUB_G = '\x40';
 static const unsigned char SUB_T = '\x80';
 static const unsigned char SUB_N = SUB_A | SUB_C | SUB_G | SUB_T;
 static const unsigned char ANY_N = SUB_N | MATCH;
-static const unsigned char NOCOV = '\xff';
 
 
 // SAM file parsing
@@ -96,18 +95,22 @@ int
 static int parse_ulong(unsigned long *ulong, const char *str)
 {
     // Neither ulong nor str may be NULL.
-    if (ulong == NULL) {return 1;}
-    if (str == NULL) {return 1;}
+    assert(ulong != NULL);
+    assert(str != NULL);
     // Parse str as a base-10 integer; store its numeric value in ulong.
     char *endptr;
     *ulong = strtoul(str, &endptr, DECIMAL);
     // Check if the parse failed to process any characters.
-    if (endptr == str) {return 1;}
+    if (endptr == str)
+    {
+        PyErr_SetString(PyExc_ValueError, "Failed to parse unsigned integer");
+        return 1;
+    }
     return 0;
 }
 
 
-typedef struct SamRead
+typedef struct
 {
     // Parsed attributes
     const char *name;    // read name
@@ -152,37 +155,92 @@ static int parse_sam_line(SamRead *read, const char *line)
 {
     assert(read != NULL);
     assert(line != NULL);
-    const char *end = NULL;  // Point to the end of the current field.
+    char *end = (char *)line;  // End of the current field.
     unsigned long temp_ulong;  // Hold parsed numbers before casting.
-    // Query name
-    if ((read->name = strtok_r(line, SAM_SEP, &end)) == NULL) {return 101;}
+
+    // Read name
+    if ((read->name = strtok_r(NULL, SAM_SEP, &end)) == NULL)
+    {
+        PyErr_SetString(PyExc_ValueError, "Failed to parse read name");
+        return 1;
+    }
+
     // Bitwise flag
-    if (parse_ulong(&temp_ulong, strtok_r(NULL, SAM_SEP, &end))) {return 102;}
+    if (parse_ulong(&temp_ulong, strtok_r(NULL, SAM_SEP, &end)))
+    {
+        PyErr_SetString(PyExc_ValueError, "Failed to parse SAM flag");
+        return 1;
+    }
     read->flag = temp_ulong;
-    if (read->flag > MAX_FLAG) {return 202;}
+    if (read->flag > MAX_FLAG)
+    {
+        PyErr_SetString(PyExc_ValueError, "SAM flag is too large");
+        return 1;
+    }
     // Individual flag bits
     read->paired = (read->flag & FLAG_PAIRED) > 0;
     read->reverse = (read->flag & FLAG_REV) > 0;
     read->first = (read->flag & FLAG_1ST) > 0;
     read->second = (read->flag & FLAG_2ND) > 0;
+
     // Reference name
-    if ((read->ref = strtok_r(NULL, SAM_SEP, &end)) == NULL) {return 103;}
+    if ((read->ref = strtok_r(NULL, SAM_SEP, &end)) == NULL)
+    {
+        PyErr_SetString(PyExc_ValueError, "Failed to parse reference name");
+        return 1;
+    }
+
     // Mapping position
-    if (parse_ulong(&temp_ulong, strtok_r(NULL, SAM_SEP, &end))) {return 104;}
+    if (parse_ulong(&temp_ulong, strtok_r(NULL, SAM_SEP, &end)))
+    {
+        PyErr_SetString(PyExc_ValueError, "Failed to parse mapping position");
+        return 1;
+    }
     read->pos = (size_t)temp_ulong;
+
     // Mapping quality
-    if (parse_ulong(&temp_ulong, strtok_r(NULL, SAM_SEP, &end))) {return 105;}
+    if (parse_ulong(&temp_ulong, strtok_r(NULL, SAM_SEP, &end)))
+    {
+        PyErr_SetString(PyExc_ValueError, "Failed to parse mapping quality");
+        return 1;
+    }
     read->mapq = temp_ulong;
+
     // CIGAR string
-    if ((read->cigar = strtok_r(NULL, SAM_SEP, &end)) == NULL) {return 106;}
+    if ((read->cigar = strtok_r(NULL, SAM_SEP, &end)) == NULL)
+    {
+        PyErr_SetString(PyExc_ValueError, "Failed to parse CIGAR string");
+        return 1;
+    }
+
     // Next reference (ignored)
-    if (strtok_r(NULL, SAM_SEP, &end) == NULL) {return 107;}
+    if (strtok_r(NULL, SAM_SEP, &end) == NULL)
+    {
+        PyErr_SetString(PyExc_ValueError, "Failed to parse next reference name");
+        return 1;
+    }
+
     // Next position (ignored)
-    if (strtok_r(NULL, SAM_SEP, &end) == NULL) {return 108;}
+    if (strtok_r(NULL, SAM_SEP, &end) == NULL)
+    {
+        PyErr_SetString(PyExc_ValueError, "Failed to parse next mapping position");
+        return 1;
+    }
+
     // Template length (ignored)
-    if (strtok_r(NULL, SAM_SEP, &end) == NULL) {return 109;}
+    if (strtok_r(NULL, SAM_SEP, &end) == NULL)
+    {
+        PyErr_SetString(PyExc_ValueError, "Failed to parse template length");
+        return 1;
+    }
+
     // Read sequence
-    if ((read->seq = strtok_r(NULL, SAM_SEP, &end)) == NULL) {return 110;}
+    if ((read->seq = strtok_r(NULL, SAM_SEP, &end)) == NULL)
+    {
+        PyErr_SetString(PyExc_ValueError, "Failed to parse read sequence");
+        return 1;
+    }
+
     // Read end position
     // Subtract 1 because end points to one after the \t delimiter, but
     // read->end must point to the tab delimiter itself, i.e.
@@ -191,50 +249,94 @@ static int parse_sam_line(SamRead *read, const char *line)
     //     ^read->end (= 4 + read->seq)
     //      ^end      (= 5 + read->seq)
     read->end = end - 1;
+
     // Read length (using pointer arithmetic)
     read->len = read->end - read->seq;
+
     // Read quality
-    if ((read->qual = strtok_r(NULL, SAM_SEP, &end)) == NULL) {return 111;}
+    if ((read->qual = strtok_r(NULL, SAM_SEP, &end)) == NULL)
+    {
+        PyErr_SetString(PyExc_ValueError, "Failed to parse read quality");
+        return 1;
+    }
+
     // Lengths of read and quality strings must match.
     // Subtract 1 from end for the same reason as in "Read end position"
-    if (read->len != (size_t)((end - 1) - read->qual)) {return 112;}
+    if (end != NULL && read->len != (size_t)((end - 1) - read->qual))
+    {
+        PyErr_SetString(PyExc_ValueError,
+                        "Sequence and quality strings differ in length");
+        return 1;
+    }
+
     // Initialize the 5' and 3' ends to placeholder 0 values.
     read->ref_end5 = 0;
     read->ref_end3 = 0;
+
     // Parsing the line succeeded.
     return 0;
 }
 
 
-static int validate_read(SamRead *read,
+static int validate_read(const SamRead *read,
                          const char *ref,
                          unsigned long min_mapq)
 {
     assert(read != NULL);
     assert(read->ref != NULL);
     assert(ref != NULL);
-    if (read->mapq < min_mapq) {return 1;}
-    if (strcmp(read->ref, ref)) {return 1;}
+    if (read->mapq < min_mapq)
+    {
+        PyErr_SetString(PyExc_ValueError, "Mapping quality is insufficient");
+        return 1;
+    }
+    if (strcmp(read->ref, ref))
+    {
+        PyErr_SetString(PyExc_ValueError,
+                        "Reference name does not match name of SAM file");
+        return 1;
+    }
     return 0;
 }
 
 
-static int validate_pair(SamRead *read1, SamRead *read2)
+static int validate_pair(const SamRead *read1,
+                         const SamRead *read2)
 {
     assert(read1 != NULL);
     assert(read2 != NULL);
     assert(read1->name != NULL);
     assert(read2->name != NULL);
-    if (strcmp(read1->name, read2->name)) {return 1;}
-    if (!(read1->paired && read2->paired)) {return 1;}
-    if (!(read1->first && read2->second)) {return 1;}
-    if (read1->reverse == read2->reverse) {return 1;}
+    if (strcmp(read1->name, read2->name))
+    {
+        PyErr_SetString(PyExc_ValueError,
+                        "Mates 1 and 2 have different reference names");
+        return 1;
+    }
+    if (!(read1->paired && read2->paired))
+    {
+        PyErr_SetString(PyExc_ValueError,
+                        "Mates 1 and 2 are not both paired-end");
+        return 1;
+    }
+    if (!(read1->first && read2->second))
+    {
+        PyErr_SetString(PyExc_ValueError,
+                        "Mates 1 and 2 are not marked as 1st and 2nd");
+        return 1;
+    }
+    if (read1->reverse == read2->reverse)
+    {
+        PyErr_SetString(PyExc_ValueError,
+                        "Mates 1 and 2 aligned in the same orientation");
+        return 1;
+    }
     return 0;
 }
 
 
 /* Encode a base character as a substitution. */
-static const unsigned char encode_subs(const char base)
+static unsigned char encode_subs(char base)
 {
     switch (base)
     {
@@ -256,18 +358,18 @@ static const unsigned char encode_subs(const char base)
 Encode a match as a match byte (if the read quality is sufficient),
 otherwise as an ambiguous byte (otherwise).
 */
-static const unsigned char encode_match(const char read_base,
-                                        const char read_qual,
-                                        const char min_qual)
+static unsigned char encode_match(char read_base,
+                                  char read_qual,
+                                  char min_qual)
 {
     return (read_qual >= min_qual) ? MATCH : (ANY_N ^ encode_subs(read_base));
 }
 
 
-static const unsigned char encode_relate(const char ref_base,
-                                         const char read_base,
-                                         const char read_qual,
-                                         const char min_qual)
+static unsigned char encode_relate(char ref_base,
+                                   char read_base,
+                                   char read_qual,
+                                   char min_qual)
 {
     if (read_qual < min_qual) {return ANY_N ^ encode_subs(ref_base);}
     return (ref_base == read_base) ? MATCH : encode_subs(read_base);
@@ -276,10 +378,10 @@ static const unsigned char encode_relate(const char ref_base,
 
 // CIGAR string operations
 
-typedef struct CigarOp
+typedef struct
 {
-    const char *op;  // type of operation
-    size_t len;      // length of operation
+    const char *op;    // type of operation
+    size_t len;  // length of operation
 } CigarOp;
 
 
@@ -311,7 +413,7 @@ static int get_next_cigar_op(CigarOp *cigar)
     // The character after the last digit to be parsed is the type of
     // the new operation; thus, after cigar->len is parsed, cigar->op
     // is finally pointed at the character after the last parsed digit.
-    cigar->len = (size_t)strtoul(cigar->op + 1, &cigar->op, DECIMAL);
+    cigar->len = (size_t)strtoul(cigar->op + 1, (char **)&cigar->op, DECIMAL);
     if (cigar->len == 0)
     {
         // The parse returns a length of 0 if it fails. This is normal
@@ -337,7 +439,7 @@ static const size_t MAX_NUM_PODS = 16;
 static const size_t MAX_POD_SIZE = 64;
 
 
-static const unsigned char get_ins_rel(int insert3)
+static unsigned char get_ins_rel(int insert3)
 {
     return insert3 ? INS_3 : INS_5;
 }
@@ -355,7 +457,7 @@ static size_t get_lateral(size_t lateral3, int insert3)
 }
 
 
-typedef struct Indel
+typedef struct
 {
     int insert;
     size_t opposite;
@@ -363,7 +465,7 @@ typedef struct Indel
 } Indel;
 
 
-typedef struct IndelPod
+typedef struct
 {
     size_t n;
     int insert;
@@ -372,7 +474,7 @@ typedef struct IndelPod
 } IndelPod;
 
 
-typedef struct IndelPodArray
+typedef struct
 {
     IndelPod pods[MAX_NUM_PODS];
     size_t size;
@@ -388,7 +490,12 @@ static int add_indel(IndelPodArray *pods,
     if ((pods->size == 0) || (pods->pods[pods->size - 1].insert != insert))
     {
         // Check if the maximum number of pods will be exceeded.
-        if (pods->size >= MAX_NUM_PODS) {return 1;}
+        if (pods->size >= MAX_NUM_PODS)
+        {
+            PyErr_SetString(PyExc_ValueError,
+                            "Read has too many pods of indels");
+            return 1;
+        }
         pod = &(pods->pods[pods->size]);
         // Initialize the members of a new pod.
         pod->n = pods->size;
@@ -400,7 +507,12 @@ static int add_indel(IndelPodArray *pods,
     // Choose the last pod.
     pod = &(pods->pods[pods->size - 1]);
     // Check if the maximum number of indels in a pod will be exceeded.
-    if (pod->size >= MAX_POD_SIZE) {return 1;}
+    if (pod->size >= MAX_POD_SIZE)
+    {
+        PyErr_SetString(PyExc_ValueError,
+                        "Too many indels in one pod");
+        return 1;
+    }
     Indel *indel = &(pod->indels[pod->size]);
     // Initialize the members of a new indel.
     indel->insert = insert;
@@ -446,7 +558,7 @@ static int calc_rels_read(unsigned char *rels,
                           SamRead *read,
                           const char *ref_seq,
                           size_t ref_len,
-                          const char min_qual,
+                          char min_qual,
                           int insert3,
                           int ambindel,
                           size_t clip_end5,
@@ -457,9 +569,29 @@ static int calc_rels_read(unsigned char *rels,
     assert(rels != NULL);
     assert(read != NULL);
     assert(ref_seq != NULL);
-    if (read->len == 0) {return 1;}
-    if (ref_len == 0) {return 1;}
-    if (read->pos == 0 || read->pos > ref_len) {return 1;}
+    if (read->len == 0)
+    {
+        PyErr_SetString(PyExc_ValueError, "Length of read sequence is 0");
+        return 1;
+    }
+    if (ref_len == 0)
+    {
+        PyErr_SetString(PyExc_ValueError, "Length of reference sequence is 0");
+        return 1;
+    }
+    if (read->pos == 0)
+    {
+        PyErr_SetString(PyExc_ValueError, "Mapping position is 0");
+        return 1;
+    }
+    if (read->pos > ref_len)
+    {
+        PyErr_SetString(
+            PyExc_ValueError,
+            "Mapping position is greater than length of reference sequence"
+        );
+        return 1;
+    }
 
     // Positions in the reference and read (0-indexed).
     size_t ref_pos = read->pos - 1;
@@ -621,7 +753,7 @@ static int calc_rels_line(unsigned char *rels,
                           const char *ref_seq,
                           size_t ref_len,
                           unsigned long min_mapq,
-                          const char min_qual,
+                          char min_qual,
                           int insert3,
                           int ambindel,
                           size_t clip_end5,
@@ -646,7 +778,7 @@ static int calc_rels_line(unsigned char *rels,
 }
 
 
-static int set_rel(PyObject *dict, const size_t pos, const unsigned char rel)
+static int set_rel(PyObject *dict, size_t pos, unsigned char rel)
 {
     // Convert the C variables pos and rel into Python int objects.
     PyObject *key = PyLong_FromLong((long)pos);
@@ -679,15 +811,16 @@ static int set_rel(PyObject *dict, const size_t pos, const unsigned char rel)
 }
 
 
-static int add_rel_to_dict(PyObject *dict,
+static int put_rel_in_dict(PyObject *dict,
                            size_t pos,
                            unsigned char rel)
 {
     // Matches are not added to the dict.
     if (rel != MATCH)
     {
-        // No relationship in the region can be 0 or NOCOV.
-        assert(rel != 0 && rel != NOCOV);
+        // It is impossible for any relationship within the region to be
+        // non-covered (255, or 2^8 - 1).
+        assert(rel != 255);
         if (set_rel(dict, pos, rel))
             {return 1;}
     }
@@ -712,7 +845,11 @@ static int put_rels_in_dict(PyObject *dict,
     {
         // Subtract 1 from the 1-indexed position to make it a 0-indexed
         // array index.
-        if (add_rel_to_dict(dict, pos, rels[pos - 1]))
+        unsigned char rel = rels[pos - 1];
+        // It is impossible for any relationship within the region to be
+        // irreconcilable (0) for one read: only between two reads.
+        assert(rel != 0);
+        if (put_rel_in_dict(dict, pos, rel))
             {return 1;}
     }
     return 0;
@@ -785,7 +922,7 @@ static int put_2_rels_in_dict(PyObject *dict,
     // Fill relationships in the region of overlap.
     for (size_t pos = both_end5; pos <= both_end3; pos++)
     {
-        if (add_rel_to_dict(dict, pos, fwd_rels[pos - 1] & rev_rels[pos - 1]))
+        if (put_rel_in_dict(dict, pos, fwd_rels[pos - 1] & rev_rels[pos - 1]))
             {return 1;}
     }
 
@@ -847,7 +984,7 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
     const char *ref_seq;
     unsigned long ref_len;
     unsigned long min_mapq;
-    const char min_qual;
+    char min_qual;
     int insert3;
     int ambindel;
     int overhangs;
@@ -867,9 +1004,7 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
                           &overhangs,
                           &clip_end5,
                           &clip_end3))
-    {
-        return NULL;
-    }
+        {return NULL;}
     
     // It is impossible for any of these pointers to be NULL.
     assert(line1 != NULL);
@@ -1002,6 +1137,11 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
     else
     {
         // Line 2 does not exist.
+        if (put_rels_in_dict(dict,
+                             rels1,
+                             read1.ref_end5,
+                             read1.ref_end3))
+            {return cleanup(&rels1, &rels2, dict);}
     }
 
     // Free the memory of rels1 and rels2, but NOT of the dict.
