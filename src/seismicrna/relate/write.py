@@ -4,7 +4,7 @@ from typing import Iterable
 
 from .data import RelateDataset
 from .io import from_reads, ReadNamesBatchIO, RelateBatchIO
-from .py.relate import calc_rels_line
+from .py.relate import calc_rels_lines
 from .report import RelateReport
 from .sam import XamViewer
 from .table import RelateCountTabulator, RelateDatasetTabulator
@@ -22,7 +22,7 @@ from ..core.write import need_write
 def relate_records(records: Iterable[tuple[str, str]], **kwargs):
     for line1, line2 in records:
         try:
-            yield calc_rels_line(line1, line2, **kwargs)
+            yield calc_rels_lines(line1, line2, **kwargs)
         except Exception as error:
             logger.error(error)
 

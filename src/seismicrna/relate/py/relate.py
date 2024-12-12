@@ -295,13 +295,13 @@ def _calc_rels_read(read: SamRead,
 
 
 def _validate_read(read: SamRead, ref: str, min_mapq: int):
+    if read.mapq < min_mapq:
+        raise ValueError(f"Read {repr(read.name)} mapped with quality score "
+                         f"{read.mapq}, less than the minimum of {min_mapq}")
     if read.ref != ref:
         raise ValueError(f"Read {repr(read.name)} mapped to a reference named "
                          f"{repr(read.ref)} but is in an alignment map file "
                          f"for a reference named {repr(ref)}")
-    if read.mapq < min_mapq:
-        raise ValueError(f"Read {repr(read.name)} mapped with quality score "
-                         f"{read.mapq}, less than the minimum of {min_mapq}")
 
 
 def _validate_pair(read1: SamRead, read2: SamRead):
@@ -364,17 +364,17 @@ def _merge_mates(end5f: int,
     return ([end5f, end5r], [end3f, end3r]), rels
 
 
-def calc_rels_line(line1: str,
-                   line2: str,
-                   ref: str,
-                   refseq: DNA,
-                   min_mapq: int,
-                   min_qual: str,
-                   insert3: bool,
-                   ambindel: bool,
-                   overhangs: bool,
-                   clip_end5: int = 0,
-                   clip_end3: int = 0):
+def calc_rels_lines(line1: str,
+                    line2: str,
+                    ref: str,
+                    refseq: DNA,
+                    min_mapq: int,
+                    min_qual: str,
+                    insert3: bool,
+                    ambindel: bool,
+                    overhangs: bool,
+                    clip_end5: int = 0,
+                    clip_end3: int = 0):
     # Generate the relationships for read 1.
     read1 = SamRead(line1)
     _validate_read(read1, ref, min_mapq)
