@@ -4,7 +4,6 @@ from abc import ABC, abstractmethod
 
 from .encode import encode_relate
 from ...core.rel import DELET, INS_5, INS_3, MATCH, SUB_N
-from ...core.seq import DNA
 
 
 def get_ins_rel(insert3: bool):
@@ -79,8 +78,8 @@ class Indel(ABC):
 
     @abstractmethod
     def _calc_rels(self,
-                   ref_seq: DNA,
-                   read_seq: DNA,
+                   ref_seq: str,
+                   read_seq: str,
                    read_qual: str,
                    min_qual: str,
                    swap_lateral: int,
@@ -93,8 +92,8 @@ class Indel(ABC):
                  rels: dict[int, int],
                  pods: list[IndelPod],
                  insert3: bool,
-                 ref_seq: DNA,
-                 read_seq: DNA,
+                 ref_seq: str,
+                 read_seq: str,
                  read_qual: str,
                  min_qual: str,
                  ref_end5: int,
@@ -115,8 +114,8 @@ class Indel(ABC):
 class Deletion(Indel):
 
     def _calc_rels(self,
-                   ref_seq: DNA,
-                   read_seq: DNA,
+                   ref_seq: str,
+                   read_seq: str,
                    read_qual: str,
                    min_qual: str,
                    swap_lateral: int,
@@ -144,8 +143,8 @@ class Deletion(Indel):
                  rels: dict[int, int],
                  pods: list[IndelPod],
                  insert3: bool,
-                 ref_seq: DNA,
-                 read_seq: DNA,
+                 ref_seq: str,
+                 read_seq: str,
                  read_qual: str,
                  min_qual: str,
                  ref_end5: int,
@@ -184,8 +183,8 @@ class Deletion(Indel):
 class Insertion(Indel):
 
     def _calc_rels(self,
-                   ref_seq: DNA,
-                   read_seq: DNA,
+                   ref_seq: str,
+                   read_seq: str,
                    read_qual: str,
                    min_qual: str,
                    swap_lateral: int,
@@ -216,8 +215,8 @@ class Insertion(Indel):
                  rels: dict[int, int],
                  pods: list[IndelPod],
                  insert3: bool,
-                 ref_seq: DNA,
-                 read_seq: DNA,
+                 ref_seq: str,
+                 read_seq: str,
                  read_qual: str,
                  min_qual: str,
                  ref_end5: int,
@@ -377,8 +376,8 @@ def _sort_pods(pods: list[IndelPod], move5to3: bool):
 def _find_ambindels(rels: dict[int, int],
                     pods: list[IndelPod],
                     insert3: bool,
-                    ref_seq: DNA,
-                    read_seq: DNA,
+                    ref_seq: str,
+                    read_seq: str,
                     read_qual: str,
                     min_qual: str,
                     ref_end5: int,
@@ -460,8 +459,8 @@ def _find_ambindels(rels: dict[int, int],
 def find_ambindels(rels: dict[int, int],
                    pods: list[IndelPod],
                    insert3: bool,
-                   ref_seq: DNA,
-                   read_seq: DNA,
+                   ref_seq: str,
+                   read_seq: str,
                    read_qual: str,
                    min_qual: str,
                    ref_end5: int,

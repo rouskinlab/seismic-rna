@@ -14,7 +14,6 @@ from .encode import encode_match, encode_relate
 from .error import RelateValueError
 from ...core.ngs import MAX_FLAG
 from ...core.rel import MATCH, DELET, NOCOV, IRREC
-from ...core.seq import DNA
 
 
 class SamFlag(object):
@@ -70,7 +69,7 @@ class SamRead(object):
             raise ValueError(f"Position must be ≥ 1, but got {self.pos}")
         self.mapq = int(fields[4])
         self.cigar = fields[5]
-        self.seq = DNA(fields[9])
+        self.seq = fields[9]
         self.qual = fields[10]
         if len(self.seq) != len(self.qual):
             raise RelateValueError(f"Lengths of seq ({len(self.seq)}) and qual "
@@ -93,7 +92,7 @@ def _add_indel(pods: list[IndelPod],
 
 
 def _calc_rels_read(read: SamRead,
-                    ref_seq: DNA,
+                    ref_seq: str,
                     min_qual: str,
                     insert3: bool,
                     ambindel: bool,
@@ -108,7 +107,7 @@ def _calc_rels_read(read: SamRead,
         Read from SAM file to be related
     ref_seq: str
         Reference sequence; refseq and muts must have the same length.
-    min_qual: int
+    min_qual: bytes
         ASCII encoding of the minimum Phred score to accept a base call
     ambindel: bool
         Whether to find and label all ambiguous insertions and deletions
@@ -367,20 +366,25 @@ def _merge_mates(end5f: int,
 def calc_rels_lines(line1: str,
                     line2: str,
                     ref: str,
-                    refseq: DNA,
+                    refseq: str,
+                    reflen: int,
                     min_mapq: int,
-                    min_qual: str,
+                    min_qual: bytes,
                     insert3: bool,
                     ambindel: bool,
                     overhangs: bool,
                     clip_end5: int = 0,
                     clip_end3: int = 0):
+    if len(refseq) != reflen:
+        raise ValueError(
+            f"Expected refseq to be {reflen} nt, but got {(len(refseq))} nt"
+        )
     # Generate the relationships for read 1.
     read1 = SamRead(line1)
     _validate_read(read1, ref, min_mapq)
     end51, end31, rels1 = _calc_rels_read(read1,
                                           refseq,
-                                          min_qual,
+                                          min_qual.decode(),
                                           insert3,
                                           ambindel,
                                           clip_end5,
@@ -398,7 +402,7 @@ def calc_rels_lines(line1: str,
             _validate_pair(read1, read2)
             end52, end32, rels2 = _calc_rels_read(read2,
                                                   refseq,
-                                                  min_qual,
+                                                  min_qual.decode(),
                                                   insert3,
                                                   ambindel,
                                                   clip_end5,
