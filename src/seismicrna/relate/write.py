@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Iterable
 
 from .io import from_reads, ReadNamesBatchIO, RelateBatchIO
-from .py.relate import calc_rels_lines
 from .report import RelateReport
 from .sam import XamViewer
 from .table import RelateCountTabulator
@@ -17,11 +16,39 @@ from ..core.task import as_list_of_tuples, dispatch
 from ..core.tmp import get_release_working_dirs, release_to_out
 from ..core.write import need_write
 
+try:
+    from .c.relate import calc_rels_lines
+except ImportError:
+    logger.warning("Failed to import C extension module for relate step; "
+                   "defaulting to the Python version, which is much slower")
+    from .py.relate import calc_rels_lines
 
-def relate_records(records: Iterable[tuple[str, str, str]], **kwargs):
+
+def relate_records(records: Iterable[tuple[str, str, str]],
+                   ref: str,
+                   refseq: str,
+                   reflen: int,
+                   min_mapq: int,
+                   min_qual: int,
+                   insert3: bool,
+                   ambindel: bool,
+                   overhangs: bool,
+                   clip_end5: int,
+                   clip_end3: int):
     for name, line1, line2 in records:
         try:
-            yield name, calc_rels_lines(line1, line2, **kwargs)
+            yield name, calc_rels_lines(line1,
+                                        line2,
+                                        ref,
+                                        refseq,
+                                        reflen,
+                                        min_mapq,
+                                        min_qual,
+                                        insert3,
+                                        ambindel,
+                                        overhangs,
+                                        clip_end5,
+                                        clip_end3)
         except Exception as error:
             logger.error(error)
 
@@ -41,7 +68,8 @@ def generate_batch(batch: int, *,
                    f"for batch {batch} of {xam_view}")
     names, relvecs = from_reads(relate_records(xam_view.iter_records(batch),
                                                ref=xam_view.ref,
-                                               refseq=refseq,
+                                               refseq=str(refseq),
+                                               reflen=len(refseq),
                                                **kwargs),
                                 xam_view.sample,
                                 xam_view.ref,
@@ -107,7 +135,7 @@ class RelationWriter(object):
             kwargs = dict(xam_view=self._xam,
                           top=top,
                           refseq=self.refseq,
-                          min_qual=encode_phred(min_phred, phred_enc),
+                          min_qual=ord(encode_phred(min_phred, phred_enc)),
                           **kwargs)
             # Generate and write relation vectors for each batch.
             num_batches = len(self._xam.indexes)

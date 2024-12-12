@@ -360,7 +360,7 @@ otherwise as an ambiguous byte (otherwise).
 */
 static unsigned char encode_match(char read_base,
                                   char read_qual,
-                                  char min_qual)
+                                  unsigned char min_qual)
 {
     return (read_qual >= min_qual) ? MATCH : (ANY_N ^ encode_subs(read_base));
 }
@@ -369,7 +369,7 @@ static unsigned char encode_match(char read_base,
 static unsigned char encode_relate(char ref_base,
                                    char read_base,
                                    char read_qual,
-                                   char min_qual)
+                                   unsigned char min_qual)
 {
     if (read_qual < min_qual) {return ANY_N ^ encode_subs(ref_base);}
     return (ref_base == read_base) ? MATCH : encode_subs(read_base);
@@ -558,7 +558,7 @@ static int calc_rels_read(unsigned char *rels,
                           SamRead *read,
                           const char *ref_seq,
                           size_t ref_len,
-                          char min_qual,
+                          unsigned char min_qual,
                           int insert3,
                           int ambindel,
                           size_t clip_end5,
@@ -753,7 +753,7 @@ static int calc_rels_line(unsigned char *rels,
                           const char *ref_seq,
                           size_t ref_len,
                           unsigned long min_mapq,
-                          char min_qual,
+                          unsigned char min_qual,
                           int insert3,
                           int ambindel,
                           size_t clip_end5,
@@ -992,14 +992,14 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
     const char *ref_seq;
     unsigned long ref_len;
     unsigned long min_mapq;
-    char min_qual;
+    unsigned char min_qual;
     int insert3;
     int ambindel;
     int overhangs;
     unsigned long clip_end5;
     unsigned long clip_end3;
     if (!PyArg_ParseTuple(args,
-                          "sssskkcpppkk",
+                          "sssskkbpppkk",
                           &line1,
                           &line2,
                           &ref,

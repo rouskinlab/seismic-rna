@@ -38,9 +38,8 @@ def decode_phred(quality_code: str, phred_encoding: int):
 
     Returns
     -------
-    str
-        The character whose ASCII code, in the encoding scheme of the
-        FASTQ file, represents valid quality.
+    int
+        The Phred quality score represented by the ASCII character.
     """
     return ord(quality_code) - phred_encoding
 
