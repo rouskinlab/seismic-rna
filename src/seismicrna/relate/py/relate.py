@@ -367,7 +367,6 @@ def calc_rels_lines(line1: str,
                     line2: str,
                     ref: str,
                     refseq: str,
-                    reflen: int,
                     min_mapq: int,
                     min_qual: int,
                     insert3: bool,
@@ -375,10 +374,6 @@ def calc_rels_lines(line1: str,
                     overhangs: bool,
                     clip_end5: int = 0,
                     clip_end3: int = 0):
-    if len(refseq) != reflen:
-        raise ValueError(
-            f"Expected refseq to be {reflen} nt, but got {(len(refseq))} nt"
-        )
     # Generate the relationships for read 1.
     read1 = SamRead(line1)
     _validate_read(read1, ref, min_mapq)

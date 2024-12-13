@@ -5,10 +5,12 @@ from seismicrna.core.arg import opt_min_mapq
 from seismicrna.core.ngs import LO_QUAL, OK_QUAL, MAX_FLAG, SAM_DELIM
 from seismicrna.core.rel import DELET, IRREC, MATCH, NOCOV, SUB_G
 from seismicrna.core.seq import DNA
+from seismicrna.relate.aux.iterread import iter_alignments
 from seismicrna.relate.py.cigar import CIG_ALIGN, CIG_DELET, CIG_SCLIP
 from seismicrna.relate.py.encode import encode_relate
-from seismicrna.relate.py.relate import _calc_rels_read, _merge_mates, SamRead
-from seismicrna.relate.aux.iterread import iter_alignments
+from seismicrna.relate.py.relate import (calc_rels_lines as calc_rels_lines_py,
+                                         _merge_mates)
+from seismicrna.relate.c.relate import calc_rels_lines as calc_rels_lines_c
 
 
 def as_sam(name: str,
@@ -76,10 +78,10 @@ def as_sam(name: str,
                                     pnext, tlen, read, f"{qual}\n")))
 
 
-class TestCalcRelsRead(ut.TestCase):
+class TestCalcRels1Line(ut.TestCase):
 
-    @staticmethod
-    def relate(ref: str,
+    def relate(self,
+               ref: str,
                refseq: DNA,
                read: DNA,
                qual: str,
@@ -91,24 +93,41 @@ class TestCalcRelsRead(ut.TestCase):
                clip_end3: int):
         """ Generate a SAM line from the given information, and use it
         to compute a relation vector. """
-        sam_read = SamRead(as_sam("read",
-                                  99,
-                                  ref,
-                                  end5,
-                                  opt_min_mapq.default,
-                                  cigar,
-                                  "=",
-                                  1,
-                                  len(read),
-                                  read,
-                                  qual))
-        return _calc_rels_read(sam_read,
-                               refseq,
-                               OK_QUAL,
-                               insert3,
-                               ambindel,
-                               clip_end5,
-                               clip_end3)
+        line = as_sam("read",
+                      99,
+                      ref,
+                      end5,
+                      opt_min_mapq.default,
+                      cigar,
+                      "=",
+                      1,
+                      len(read),
+                      read,
+                      qual)
+        result_py = calc_rels_lines_py(line,
+                                       "",
+                                       ref,
+                                       str(refseq),
+                                       0,
+                                       ord(OK_QUAL),
+                                       insert3,
+                                       ambindel,
+                                       False,
+                                       clip_end5,
+                                       clip_end3)
+        result_c = calc_rels_lines_c(line,
+                                     "",
+                                     ref,
+                                     str(refseq),
+                                     0,
+                                     ord(OK_QUAL),
+                                     insert3,
+                                     ambindel,
+                                     False,
+                                     clip_end5,
+                                     clip_end3)
+        self.assertEqual(result_py, result_c)
+        return result_py
 
     def iter_cases_insert3(self, refseq: DNA, max_ins: int, insert3: bool):
         """ Iterate through every test case. """
@@ -132,11 +151,11 @@ class TestCalcRelsRead(ut.TestCase):
                                      qual,
                                      cigar,
                                      end5,
-                                     ambindel=True,
+                                     ambindel=False,
                                      insert3=insert3,
                                      clip_end5=0,
                                      clip_end3=0)
-                expect = end5, end3, rels
+                expect = ([end5], [end3]), rels
                 self.assertEqual(result, expect)
 
     def iter_cases(self, refseq: DNA, max_ins: int):

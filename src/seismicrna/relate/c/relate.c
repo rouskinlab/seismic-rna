@@ -760,6 +760,8 @@ static int calc_rels_read(unsigned char *rels,
             }
             if (ref_pos >= ref_len)
             {
+                printf("REF POS: %zu\n", ref_pos);
+                printf("REF LEN: %zu\n", ref_len);
                 PyErr_SetString(
                     PyExc_ValueError,
                     "An insertion occured at the end of the reference"
@@ -1128,7 +1130,7 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
     const char *line2;
     const char *ref;
     const char *ref_seq;
-    unsigned long ref_len;
+    Py_ssize_t py_ref_len;
     unsigned long min_mapq;
     unsigned char min_qual;
     int insert3;
@@ -1137,12 +1139,12 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
     unsigned long clip_end5;
     unsigned long clip_end3;
     if (!PyArg_ParseTuple(args,
-                          "sssskkbpppkk",
+                          "ssss#kbpppkk",
                           &line1,
                           &line2,
                           &ref,
                           &ref_seq,
-                          &ref_len,
+                          &py_ref_len,
                           &min_mapq,
                           &min_qual,
                           &insert3,
@@ -1151,6 +1153,7 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
                           &clip_end5,
                           &clip_end3))
         {return NULL;}
+    size_t ref_len = (size_t)py_ref_len;
     
     // It is impossible for any of these pointers to be NULL.
     assert(line1 != NULL);

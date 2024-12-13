@@ -10,5 +10,5 @@ mv build/lib.macosx-10.13-x86_64-cpython-312/relate.cpython-312-darwin.so .
 rm -r build
 
 # Test the code.
-python test.py
+python example.py
 
