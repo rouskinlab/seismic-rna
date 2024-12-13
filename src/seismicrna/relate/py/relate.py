@@ -184,7 +184,7 @@ def _calc_rels_read(read: SamRead,
             if ref_pos + op_length > ref_length:
                 raise ValueError("CIGAR operation overshot the reference")
             read_pos += 1  # 1-indexed now until explicitly reset
-            if not 1 < read_pos < len(read.seq):
+            if not 1 < read_pos <= len(read.seq):
                 raise ValueError(f"Deletion in {read}, pos {read_pos}")
             for _ in range(op_length):
                 ref_pos += 1  # 1-indexed now until this iteration ends
@@ -213,7 +213,7 @@ def _calc_rels_read(read: SamRead,
             if read_pos + op_length > len(read.seq):
                 raise ValueError("CIGAR operation overshot the read")
             ref_pos += 1  # 1-indexed now until explicitly reset
-            if not 1 < ref_pos < ref_length:
+            if not 1 < ref_pos <= ref_length:
                 raise ValueError(f"Insertion in {read}, ref {ref_pos}")
             for _ in range(op_length):
                 read_pos += 1  # 1-indexed now until this iteration ends

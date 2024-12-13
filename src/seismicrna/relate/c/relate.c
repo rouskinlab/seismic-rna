@@ -712,7 +712,7 @@ static int calc_rels_read(unsigned char *rels,
                 );
                 return -1;
             }
-            if (read_pos >= read->len - 1)
+            if (read_pos >= read->len)
             {
                 PyErr_SetString(
                     PyExc_ValueError,
@@ -758,7 +758,7 @@ static int calc_rels_read(unsigned char *rels,
                 );
                 return -1;
             }
-            if (ref_pos >= ref_len - 1)
+            if (ref_pos >= ref_len)
             {
                 PyErr_SetString(
                     PyExc_ValueError,
@@ -950,8 +950,8 @@ static int set_rel(PyObject *rels_dict, size_t pos, unsigned char rel)
 
 
 static inline int put_rel_in_dict(PyObject *rels_dict,
-                           size_t pos,
-                           unsigned char rel)
+                                  size_t pos,
+                                  unsigned char rel)
 {
     // Matches are not added to the rels_dict.
     if (rel != MATCH)
@@ -1303,7 +1303,7 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
                 {return cleanup(&rels1, &rels2, ends_rels_tuple);}
         }
 
-        // Fill int the lists of 5' and 3' ends.
+        // Fill in the lists of 5' and 3' ends.
         if (put_end_in_list(end5s_list, 0, fwd_end5))
             {return cleanup(&rels1, &rels2, ends_rels_tuple);}
         if (put_end_in_list(end5s_list, 1, rev_end5))
