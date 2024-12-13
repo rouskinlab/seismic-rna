@@ -90,7 +90,7 @@ str
 Returns
 -------
 int
-    0 if successful, otherwise an error code (> 0)
+    0 if successful, otherwise -1
 */
 static int parse_ulong(unsigned long *ulong, const char *str)
 {
@@ -104,7 +104,7 @@ static int parse_ulong(unsigned long *ulong, const char *str)
     if (endptr == str)
     {
         PyErr_SetString(PyExc_ValueError, "Failed to parse unsigned integer");
-        return 1;
+        return -1;
     }
     return 0;
 }
@@ -149,7 +149,7 @@ line
 Returns
 -------
 int
-    0 if successful, otherwise an error code (> 0)
+    0 if successful, otherwise -1
 */
 static int parse_sam_line(SamRead *read, const char *line)
 {
@@ -162,20 +162,20 @@ static int parse_sam_line(SamRead *read, const char *line)
     if ((read->name = strtok_r(NULL, SAM_SEP, &end)) == NULL)
     {
         PyErr_SetString(PyExc_ValueError, "Failed to parse read name");
-        return 1;
+        return -1;
     }
 
     // Bitwise flag
     if (parse_ulong(&temp_ulong, strtok_r(NULL, SAM_SEP, &end)))
     {
         PyErr_SetString(PyExc_ValueError, "Failed to parse SAM flag");
-        return 1;
+        return -1;
     }
     read->flag = temp_ulong;
     if (read->flag > MAX_FLAG)
     {
         PyErr_SetString(PyExc_ValueError, "SAM flag is too large");
-        return 1;
+        return -1;
     }
     // Individual flag bits
     read->paired = (read->flag & FLAG_PAIRED) > 0;
@@ -187,14 +187,14 @@ static int parse_sam_line(SamRead *read, const char *line)
     if ((read->ref = strtok_r(NULL, SAM_SEP, &end)) == NULL)
     {
         PyErr_SetString(PyExc_ValueError, "Failed to parse reference name");
-        return 1;
+        return -1;
     }
 
     // Mapping position
     if (parse_ulong(&temp_ulong, strtok_r(NULL, SAM_SEP, &end)))
     {
         PyErr_SetString(PyExc_ValueError, "Failed to parse mapping position");
-        return 1;
+        return -1;
     }
     read->pos = (size_t)temp_ulong;
 
@@ -202,7 +202,7 @@ static int parse_sam_line(SamRead *read, const char *line)
     if (parse_ulong(&temp_ulong, strtok_r(NULL, SAM_SEP, &end)))
     {
         PyErr_SetString(PyExc_ValueError, "Failed to parse mapping quality");
-        return 1;
+        return -1;
     }
     read->mapq = temp_ulong;
 
@@ -210,35 +210,35 @@ static int parse_sam_line(SamRead *read, const char *line)
     if ((read->cigar = strtok_r(NULL, SAM_SEP, &end)) == NULL)
     {
         PyErr_SetString(PyExc_ValueError, "Failed to parse CIGAR string");
-        return 1;
+        return -1;
     }
 
     // Next reference (ignored)
     if (strtok_r(NULL, SAM_SEP, &end) == NULL)
     {
         PyErr_SetString(PyExc_ValueError, "Failed to parse next reference name");
-        return 1;
+        return -1;
     }
 
     // Next position (ignored)
     if (strtok_r(NULL, SAM_SEP, &end) == NULL)
     {
         PyErr_SetString(PyExc_ValueError, "Failed to parse next mapping position");
-        return 1;
+        return -1;
     }
 
     // Template length (ignored)
     if (strtok_r(NULL, SAM_SEP, &end) == NULL)
     {
         PyErr_SetString(PyExc_ValueError, "Failed to parse template length");
-        return 1;
+        return -1;
     }
 
     // Read sequence
     if ((read->seq = strtok_r(NULL, SAM_SEP, &end)) == NULL)
     {
         PyErr_SetString(PyExc_ValueError, "Failed to parse read sequence");
-        return 1;
+        return -1;
     }
 
     // Read end position
@@ -257,7 +257,7 @@ static int parse_sam_line(SamRead *read, const char *line)
     if ((read->qual = strtok_r(NULL, SAM_SEP, &end)) == NULL)
     {
         PyErr_SetString(PyExc_ValueError, "Failed to parse read quality");
-        return 1;
+        return -1;
     }
 
     // Lengths of read and quality strings must match.
@@ -266,7 +266,7 @@ static int parse_sam_line(SamRead *read, const char *line)
     {
         PyErr_SetString(PyExc_ValueError,
                         "Sequence and quality strings differ in length");
-        return 1;
+        return -1;
     }
 
     // Initialize the 5' and 3' ends to placeholder 0 values.
@@ -288,13 +288,13 @@ static int validate_read(const SamRead *read,
     if (read->mapq < min_mapq)
     {
         PyErr_SetString(PyExc_ValueError, "Mapping quality is insufficient");
-        return 1;
+        return -1;
     }
     if (strcmp(read->ref, ref))
     {
         PyErr_SetString(PyExc_ValueError,
                         "Reference name does not match name of SAM file");
-        return 1;
+        return -1;
     }
     return 0;
 }
@@ -311,32 +311,32 @@ static int validate_pair(const SamRead *read1,
     {
         PyErr_SetString(PyExc_ValueError,
                         "Mates 1 and 2 have different reference names");
-        return 1;
+        return -1;
     }
     if (!(read1->paired && read2->paired))
     {
         PyErr_SetString(PyExc_ValueError,
                         "Mates 1 and 2 are not both paired-end");
-        return 1;
+        return -1;
     }
     if (!(read1->first && read2->second))
     {
         PyErr_SetString(PyExc_ValueError,
                         "Mates 1 and 2 are not marked as 1st and 2nd");
-        return 1;
+        return -1;
     }
     if (read1->reverse == read2->reverse)
     {
         PyErr_SetString(PyExc_ValueError,
                         "Mates 1 and 2 aligned in the same orientation");
-        return 1;
+        return -1;
     }
     return 0;
 }
 
 
 /* Encode a base character as a substitution. */
-static unsigned char encode_subs(char base)
+static inline unsigned char encode_subs(char base)
 {
     switch (base)
     {
@@ -358,18 +358,18 @@ static unsigned char encode_subs(char base)
 Encode a match as a match byte (if the read quality is sufficient),
 otherwise as an ambiguous byte (otherwise).
 */
-static unsigned char encode_match(char read_base,
-                                  char read_qual,
-                                  unsigned char min_qual)
+static inline unsigned char encode_match(char read_base,
+                                         char read_qual,
+                                         unsigned char min_qual)
 {
     return (read_qual >= min_qual) ? MATCH : (ANY_N ^ encode_subs(read_base));
 }
 
 
-static unsigned char encode_relate(char ref_base,
-                                   char read_base,
-                                   char read_qual,
-                                   unsigned char min_qual)
+static inline unsigned char encode_relate(char ref_base,
+                                          char read_base,
+                                          char read_qual,
+                                          unsigned char min_qual)
 {
     if (read_qual < min_qual) {return ANY_N ^ encode_subs(ref_base);}
     return (ref_base == read_base) ? MATCH : encode_subs(read_base);
@@ -380,8 +380,8 @@ static unsigned char encode_relate(char ref_base,
 
 typedef struct
 {
-    const char *op;    // type of operation
-    size_t len;  // length of operation
+    const char *op;  // type of operation
+    size_t len;      // length of operation
 } CigarOp;
 
 
@@ -401,9 +401,9 @@ op
 Returns
 -------
 int
-    0 if successful, otherwise an error code >0
+    0 if successful, otherwise -1
 */
-static int get_next_cigar_op(CigarOp *cigar)
+static inline int get_next_cigar_op(CigarOp *cigar)
 {
     // Parse as many characters of text as possible to a number, cast
     // to uint32, and store in cigar->len (length of CIGAR operation).
@@ -422,10 +422,12 @@ static int get_next_cigar_op(CigarOp *cigar)
         // points evaluates to true, then it is not the null terminator
         // of a string, so the end of end of the CIGAR string has not
         // yet been reached, which is an error.
-        if (*cigar->op) {return 402;}
-        // Otherwise, simply point the operation to NULL to signal the
-        // normal end of the CIGAR string.
-        cigar->op = NULL;
+        if (*cigar->op)
+        {
+            PyErr_SetString(PyExc_ValueError,
+                            "Failed to parse a CIGAR operation");
+            return -1;
+        }
     }
     return 0;
 }
@@ -439,19 +441,19 @@ static const size_t MAX_NUM_PODS = 16;
 static const size_t MAX_POD_SIZE = 64;
 
 
-static unsigned char get_ins_rel(int insert3)
+static inline unsigned char get_ins_rel(int insert3)
 {
     return insert3 ? INS_3 : INS_5;
 }
 
 
-static size_t calc_lateral5(size_t lateral3)
+static inline size_t calc_lateral5(size_t lateral3)
 {
     return (lateral3 > 0) ? lateral3 - 1 : 0;
 }
 
 
-static size_t get_lateral(size_t lateral3, int insert3)
+static inline size_t get_lateral(size_t lateral3, int insert3)
 {
     return insert3 ? lateral3 : calc_lateral5(lateral3);
 }
@@ -494,7 +496,7 @@ static int add_indel(IndelPodArray *pods,
         {
             PyErr_SetString(PyExc_ValueError,
                             "Read has too many pods of indels");
-            return 1;
+            return -1;
         }
         pod = &(pods->pods[pods->size]);
         // Initialize the members of a new pod.
@@ -511,7 +513,7 @@ static int add_indel(IndelPodArray *pods,
     {
         PyErr_SetString(PyExc_ValueError,
                         "Too many indels in one pod");
-        return 1;
+        return -1;
     }
     Indel *indel = &(pod->indels[pod->size]);
     // Initialize the members of a new indel.
@@ -565,24 +567,23 @@ static int calc_rels_read(unsigned char *rels,
                           size_t clip_end3)
 {
     // Validate the arguments.
-    int error;
     assert(rels != NULL);
     assert(read != NULL);
     assert(ref_seq != NULL);
     if (read->len == 0)
     {
         PyErr_SetString(PyExc_ValueError, "Length of read sequence is 0");
-        return 1;
+        return -1;
     }
     if (ref_len == 0)
     {
         PyErr_SetString(PyExc_ValueError, "Length of reference sequence is 0");
-        return 1;
+        return -1;
     }
     if (read->pos == 0)
     {
         PyErr_SetString(PyExc_ValueError, "Mapping position is 0");
-        return 1;
+        return -1;
     }
     if (read->pos > ref_len)
     {
@@ -590,7 +591,7 @@ static int calc_rels_read(unsigned char *rels,
             PyExc_ValueError,
             "Mapping position is greater than length of reference sequence"
         );
-        return 1;
+        return -1;
     }
 
     // Positions in the reference and read (0-indexed).
@@ -610,13 +611,21 @@ static int calc_rels_read(unsigned char *rels,
     // CIGAR string.
     CigarOp cigar;
     cigar.op = read->cigar - 1;
+
     // Read the first operation from the CIGAR string; catch errors.
-    if (get_next_cigar_op(&cigar)) {return 402;}
+    if (get_next_cigar_op(&cigar)) {return -1;}
     // Return an error if there were no operations in the CIGAR string.
-    if (cigar.op == NULL) {return 401;}
+    if (cigar.op == NULL)
+    {
+        PyErr_SetString(
+            PyExc_ValueError,
+            "The CIGAR string contained no operations"
+        );
+        return -1;
+    }
 
     // Read the entire CIGAR string one operation at a time.
-    while (cigar.op != NULL)
+    while (*cigar.op)
     {
         // Decide what to do based on the current CIGAR operation.
         switch (*cigar.op)
@@ -625,8 +634,18 @@ static int calc_rels_read(unsigned char *rels,
         case CIG_MATCH:
             // The read and reference match over the entire operation.
             cigar_op_stop_pos = ref_pos + cigar.len;
-            if (cigar_op_stop_pos > ref_len) {return 404;}
-            if (read_pos + cigar.len > read->len) {return 404;}
+            if (cigar_op_stop_pos > ref_len)
+            {
+                PyErr_SetString(PyExc_ValueError,
+                                "A match extended out of the reference");
+                return -1;
+            }
+            if (read_pos + cigar.len > read->len)
+            {
+                PyErr_SetString(PyExc_ValueError,
+                                "A match extended out of the read");
+                return -1;
+            }
             while (ref_pos < cigar_op_stop_pos)
             {
                 rels[ref_pos] = encode_match(read->seq[read_pos],
@@ -642,8 +661,18 @@ static int calc_rels_read(unsigned char *rels,
             // The read and reference have matches or substitutions over
             // the entire operation.
             cigar_op_stop_pos = ref_pos + cigar.len;
-            if (cigar_op_stop_pos > ref_len) {return 404;}
-            if (read_pos + cigar.len > read->len) {return 404;}
+            if (cigar_op_stop_pos > ref_len)
+            {
+                PyErr_SetString(PyExc_ValueError,
+                                "An operation extended out of the reference");
+                return -1;
+            }
+            if (read_pos + cigar.len > read->len)
+            {
+                PyErr_SetString(PyExc_ValueError,
+                                "An operation extended out of the read");
+                return -1;
+            }
             while (ref_pos < cigar_op_stop_pos)
             {
                 rels[ref_pos] = encode_relate(ref_seq[ref_pos],
@@ -659,13 +688,44 @@ static int calc_rels_read(unsigned char *rels,
             // The portion of the reference sequence corresponding to
             // the operation is deleted from the read.
             cigar_op_stop_pos = ref_pos + cigar.len;
-            if (cigar_op_stop_pos > ref_len) {return 404;}
-            if (read_pos == 0 || read_pos >= read->len - 1) {return 1;}
+            if (cigar_op_stop_pos > ref_len)
+            {
+                PyErr_SetString(
+                    PyExc_ValueError,
+                    "A deletion extended out of the reference"
+                );
+                return -1;
+            }
+            if (ref_pos == 0)
+            {
+                PyErr_SetString(
+                    PyExc_ValueError,
+                    "A deletion occured at the beginning of the reference"
+                );
+                return -1;
+            }
+            if (read_pos == 0)
+            {
+                PyErr_SetString(
+                    PyExc_ValueError,
+                    "A deletion occured at the beginning of the read"
+                );
+                return -1;
+            }
+            if (read_pos >= read->len - 1)
+            {
+                PyErr_SetString(
+                    PyExc_ValueError,
+                    "A deletion occured at the end of the read"
+                );
+                return -1;
+            }
             while (ref_pos < cigar_op_stop_pos)
             {
+                // Mark the deletion in the array of relationships.
                 rels[ref_pos] = DELET;
-                error = add_indel(&pods, DELETION, ref_pos, read_pos);
-                if (error) {return error;}
+                // Add a deletion to the record of indels.
+                if (add_indel(&pods, DELETION, ref_pos, read_pos)) {return -1;}
                 ref_pos++;
             }
             break;
@@ -674,12 +734,42 @@ static int calc_rels_read(unsigned char *rels,
             // The read contains an insertion of one or more bases that
             // are not present in the reference sequence. 
             cigar_op_stop_pos = read_pos + cigar.len;
-            if (cigar_op_stop_pos > read->len) {return 404;}
-            if (ref_pos == 0 || ref_pos >= ref_len - 1) {return 1;}
+            if (cigar_op_stop_pos > read->len)
+            {
+                PyErr_SetString(
+                    PyExc_ValueError,
+                    "An insertion extended out of the read"
+                );
+                return -1;
+            }
+            if (read_pos == 0)
+            {
+                PyErr_SetString(
+                    PyExc_ValueError,
+                    "An insertion occured at the beginning of the read"
+                );
+                return -1;
+            }
+            if (ref_pos == 0)
+            {
+                PyErr_SetString(
+                    PyExc_ValueError,
+                    "An insertion occured at the beginning of the reference"
+                );
+                return -1;
+            }
+            if (ref_pos >= ref_len - 1)
+            {
+                PyErr_SetString(
+                    PyExc_ValueError,
+                    "An insertion occured at the end of the reference"
+                );
+                return -1;
+            }
             while (read_pos < cigar_op_stop_pos)
             {
-                error = add_indel(&pods, INSERTION, read_pos, ref_pos);
-                if (error) {return error;}
+                // Add an insertion to the record of indels.
+                if (add_indel(&pods, INSERTION, read_pos, ref_pos)) {return -1;}
                 read_pos++;
             }
             break;
@@ -689,17 +779,48 @@ static int calc_rels_read(unsigned char *rels,
             // during alignment. Like insertions, they consume the read
             // but not the reference.
             cigar_op_stop_pos = read_pos + cigar.len;
-            if (cigar_op_stop_pos > read->len) {return 404;}
+            if (cigar_op_stop_pos > read->len)
+            {
+                PyErr_SetString(
+                    PyExc_ValueError,
+                    "A soft clip extended out of the read"
+                );
+                return -1;
+            }
             if (read_pos == 0)
             {
                 // This is the soft clip from the 5' end of the read.
-                if (read_end5 != 1) {return 1;}
+                if (read_end5 != 1)
+                {
+                    PyErr_SetString(
+                        PyExc_ValueError,
+                        "The read contained > 1 soft clip at the beginning"
+                    );
+                    return -1;
+                }
+                // Move the 5' end forward to clip off that many bases.
                 read_end5 += cigar.len;
             }
             else
             {
                 // This is the soft clip from the 3' end of the read.
-                if (read_end3 != read->len) {return 1;}
+                if (cigar_op_stop_pos != read->len)
+                {
+                    PyErr_SetString(
+                        PyExc_ValueError,
+                        "The read contained a soft clip in the middle"
+                    );
+                    return -1;
+                }
+                if (read_end3 != read->len)
+                {
+                    PyErr_SetString(
+                        PyExc_ValueError,
+                        "The read contained > 1 soft clip at the end"
+                    );
+                    return -1;
+                }
+                // Move the 3' end backward to clip off that many bases.
                 read_end3 -= cigar.len;
             }
             read_pos = cigar_op_stop_pos;
@@ -707,18 +828,29 @@ static int calc_rels_read(unsigned char *rels,
         
         default:
             // The CIGAR operation was not recognized.
-            return 403;
+            PyErr_SetString(
+                PyExc_ValueError,
+                "The CIGAR string contained an unknown type of operation"
+            );
+            return -1;
         }
 
         // Read the next operation from the CIGAR string; catch errors.
-        if (get_next_cigar_op(&cigar)) {return 402;}
+        if (get_next_cigar_op(&cigar)) {return -1;}
     }
 
     // Verify that the sum of all CIGAR operations that consumed the
     // read equals the length of the read. The former equals read_pos
     // because for each CIGAR operation that consumed the read, the
     // length of the operation was added to read_pos.
-    if (read_pos != read->len) {return 405;}
+    if (read_pos != read->len)
+    {
+        PyErr_SetString(
+            PyExc_ValueError,
+            "A soft clip extended out of the read"
+        );
+        return -1;
+    }
     // Add insertions to rels.
     const unsigned char ins_rel = get_ins_rel(insert3);
     for (size_t p = 0; p < pods.size; p++)
@@ -742,6 +874,7 @@ static int calc_rels_read(unsigned char *rels,
     // Clip bases from the 5' and 3' ends of the read.
     read->ref_end5 = min(read->pos + clip_end5, ref_len + 1);
     read->ref_end3 = (ref_pos > clip_end3) ? (ref_pos - clip_end3) : 0;
+
     return 0;
 }
 
@@ -761,9 +894,14 @@ static int calc_rels_line(unsigned char *rels,
 {
     // Validate the SAM file line and parse it into a SamRead.
     assert(line != NULL);
-    if (!(*line)) {return 1;}
-    if (parse_sam_line(read, line)) {return 1;}
-    if (validate_read(read, ref, min_mapq)) {return 1;}
+    if (!(*line))
+    {
+        PyErr_SetString(PyExc_ValueError,
+                        "Got an empty line to parse as a SAM read");
+        return -1;
+    }
+    if (parse_sam_line(read, line)) {return -1;}
+    if (validate_read(read, ref, min_mapq)) {return -1;}
 
     // Calculate relationships for the read.
     return calc_rels_read(rels,
@@ -790,7 +928,7 @@ static int set_rel(PyObject *rels_dict, size_t pos, unsigned char rel)
         Py_XDECREF(key);
         Py_XDECREF(value);
         Py_DECREF(rels_dict);
-        return 1;
+        return -1;
     }
 
     // Add the key-value pair to the dictionary.
@@ -799,7 +937,7 @@ static int set_rel(PyObject *rels_dict, size_t pos, unsigned char rel)
         Py_DECREF(key);
         Py_DECREF(value);
         Py_DECREF(rels_dict);
-        return 1;
+        return -1;
     }
 
     // Clean up the references for the key and value (they are now owned
@@ -811,7 +949,7 @@ static int set_rel(PyObject *rels_dict, size_t pos, unsigned char rel)
 }
 
 
-static int put_rel_in_dict(PyObject *rels_dict,
+static inline int put_rel_in_dict(PyObject *rels_dict,
                            size_t pos,
                            unsigned char rel)
 {
@@ -821,8 +959,7 @@ static int put_rel_in_dict(PyObject *rels_dict,
         // It is impossible for any relationship within the region to be
         // non-covered (255, or 2^8 - 1).
         assert(rel != 255);
-        if (set_rel(rels_dict, pos, rel))
-            {return 1;}
+        if (set_rel(rels_dict, pos, rel)) {return -1;}
     }
     return 0;
 }
@@ -838,7 +975,7 @@ static int put_rels_in_dict(PyObject *rels_dict,
     if (end5 == 0 || end3 == 0)
     {
         PyErr_SetString(PyExc_ValueError, "Positions cannot be 0");
-        return 1;
+        return -1;
     }
 
     for (size_t pos = end5; pos <= end3; pos++)
@@ -849,8 +986,7 @@ static int put_rels_in_dict(PyObject *rels_dict,
         // It is impossible for any relationship within the region to be
         // irreconcilable (0) for one read: only between two reads.
         assert(rel != 0);
-        if (put_rel_in_dict(rels_dict, pos, rel))
-            {return 1;}
+        if (put_rel_in_dict(rels_dict, pos, rel)) {return -1;}
     }
     return 0;
 }
@@ -868,7 +1004,7 @@ static int put_2_rels_in_dict(PyObject *rels_dict,
     if (fwd_end5 == 0 || fwd_end3 == 0 || rev_end5 == 0 || rev_end3 == 0)
     {
         PyErr_SetString(PyExc_ValueError, "Positions cannot be 0");
-        return 1;
+        return -1;
     }
 
     // Find the region where both reads 1 and 2 overlap.
@@ -884,7 +1020,7 @@ static int put_2_rels_in_dict(PyObject *rels_dict,
                              rev_rels,
                              rev_end5,
                              min(rev_end3, both_end5 - 1)))
-            {return 1;}
+            {return -1;}
     }
     else
     {
@@ -894,7 +1030,7 @@ static int put_2_rels_in_dict(PyObject *rels_dict,
                              fwd_rels,
                              fwd_end5,
                              min(fwd_end3, both_end5 - 1)))
-            {return 1;}
+            {return -1;}
     }
 
     // Find the region 3' of the overlap.
@@ -906,7 +1042,7 @@ static int put_2_rels_in_dict(PyObject *rels_dict,
                              fwd_rels,
                              fwd_end3,
                              max(fwd_end5, both_end3 + 1)))
-            {return 1;}
+            {return -1;}
     }
     else
     {
@@ -916,14 +1052,16 @@ static int put_2_rels_in_dict(PyObject *rels_dict,
                              rev_rels,
                              rev_end3,
                              max(rev_end5, both_end3 + 1)))
-            {return 1;}
+            {return -1;}
     }
 
     // Fill relationships in the region of overlap.
     for (size_t pos = both_end5; pos <= both_end3; pos++)
     {
-        if (put_rel_in_dict(rels_dict, pos, fwd_rels[pos - 1] & rev_rels[pos - 1]))
-            {return 1;}
+        if (put_rel_in_dict(rels_dict,
+                            pos,
+                            fwd_rels[pos - 1] & rev_rels[pos - 1]))
+            {return -1;}
     }
 
     return 0;
@@ -933,8 +1071,8 @@ static int put_2_rels_in_dict(PyObject *rels_dict,
 static int put_end_in_list(PyObject *ends_list, Py_ssize_t index, size_t end)
 {
     PyObject *py_end = PyLong_FromSize_t(end);
-    if (py_end == NULL) {return 1;}
-    if (PyList_SetItem(ends_list, index, py_end)) {return 1;}
+    if (py_end == NULL) {return -1;}
+    if (PyList_SetItem(ends_list, index, py_end)) {return -1;}
     return 0;
 }
 
