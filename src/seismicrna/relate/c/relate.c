@@ -448,6 +448,9 @@ static inline int get_next_cigar_op(CigarOp *cigar)
 
 static const int DELETION = 0;
 static const int INSERTION = 1;
+static const int INIT_PODS_CAPACITY = 4;
+static const size_t INIT_POD_CAPACITY = 4;
+static const size_t CAPACITY_FACTOR = 2;
 
 
 static inline unsigned char get_ins_rel(int insert3)
@@ -481,14 +484,16 @@ typedef struct
     size_t n;
     int insert;
     Indel *indels;
-    size_t size;
+    size_t capacity;
+    size_t num_indels;
 } IndelPod;
 
 
 typedef struct
 {
     IndelPod *pods;
-    size_t size;
+    size_t capacity;
+    size_t num_pods;
 } IndelPodArray;
 
 
@@ -497,15 +502,17 @@ static int init_pod(IndelPod *pod, size_t n, int insert)
     pod->n = n;
     pod->insert = insert;
     // Assume that the pod is being initialized because an indel needs
-    // to go into the pod, so initialize with 1 indel already.
-    pod->indels = malloc(sizeof(Indel));
+    // to go into the pod, so initialize with the capacity to hold up to
+    // INIT_POD_CAPACITY indels.
+    pod->capacity = INIT_POD_CAPACITY;
+    pod->indels = malloc(pod->capacity * sizeof(Indel));
     if (pod->indels == NULL)
     {
         PyErr_NoMemory();
         return -1;
     }
     printf("malloc %p\n", pod->indels);
-    pod->size = 1;
+    pod->num_indels = 0;
     return 0;
 }
 
@@ -517,12 +524,14 @@ static int add_indel(IndelPodArray *pods,
 {
     IndelPod *pod = NULL;
     Indel *indel = NULL;
-    if (pods->size == 0)
+    if (pods->num_pods == 0)
     {
         assert(pods->pods == NULL);
-        // There are no pods yet: allocate a new array of pods.
-        pods->size = 1;
-        pods->pods = malloc(sizeof(IndelPod));
+        assert(pods->capacity == 0);
+        // There are no pods yet: allocate a new array of pods with the
+        // capacity to hold up to INIT_PODS_CAPACITY pods.
+        pods->capacity = INIT_PODS_CAPACITY;
+        pods->pods = malloc(pods->capacity * sizeof(IndelPod));
         if (pods->pods == NULL)
         {
             PyErr_NoMemory();
@@ -532,52 +541,72 @@ static int add_indel(IndelPodArray *pods,
         // Initialize the first pod in the new array.
         pod = pods->pods;
         if (init_pod(pod, 0, insert)) {return -1;}
+        // Increment num_pods only if init_pod succeeds because, if it
+        // fails, then pod->indels is NULL, so free_pods() would try to
+        // free() a NULL pointer if num_pods were already incremented.
+        pods->num_pods = 1;
     }
     else
     {
         assert(pods->pods != NULL);
+        assert(pods->capacity >= pods->num_pods);
         // There are pods: check if the last pod is the correct type.
-        if (pods->pods[pods->size - 1].insert != insert)
+        pod = &(pods->pods[pods->num_pods - 1]);
+        if (pod->insert != insert)
         {
-            // The last pod is not the correct type: allocate memory for
-            // one more pod.
-            pods->size++;
-            pod = realloc(pods->pods, pods->size * sizeof(IndelPod));
-            if (pod == NULL)
+            // The last pod is the other type: a new pod is needed.
+            if (pods->num_pods == pods->capacity)
             {
-                PyErr_NoMemory();
-                return -1;
+                // The array of pods is already at its maximum capacity:
+                // allocate a new array with twice the capacity.
+                pods->capacity *= CAPACITY_FACTOR;
+                pod = realloc(pods->pods, pods->capacity * sizeof(IndelPod));
+                if (pod == NULL)
+                {
+                    PyErr_NoMemory();
+                    return -1;
+                }
+                printf("implicit-free %p\n", pods->pods);
+                printf("realloc %p\n", pod);
+                pods->pods = pod;
             }
-            printf("implicit-free %p\n", pods->pods);
-            printf("realloc %p\n", pod);
-            pods->pods = pod;
             // Initialize the new pod.
-            pod = &(pods->pods[pods->size - 1]);
-            if (init_pod(pod, pods->size - 1, insert)) {return -1;}
+            pod = &(pods->pods[pods->num_pods]);
+            if (init_pod(pod, pods->num_pods, insert)) {return -1;}
+            // Increment num_pods only if init_pod succeeds because, if
+            // it fails, then pod->indels is NULL, so free_pods() would
+            // try to free() a NULL pointer if num_pods were already
+            // incremented.
+            pods->num_pods++;
         }
         else
         {
-            // The last pod is the correct type: allocate memory for
-            // one more indel.
-            pod = &(pods->pods[pods->size - 1]);
-            pod->size++;
-            indel = realloc(pod->indels, pod->size * sizeof(Indel));
-            if (indel == NULL)
+            // The last pod is the correct type.
+            if (pod->num_indels == pod->capacity)
             {
-                PyErr_NoMemory();
-                return -1;
+                // The pod is already at its maximum capacity: allocate
+                // a new array with twice the capacity.
+                pod->capacity *= CAPACITY_FACTOR;
+                indel = realloc(pod->indels, pod->capacity * sizeof(Indel));
+                if (indel == NULL)
+                {
+                    PyErr_NoMemory();
+                    return -1;
+                }
+                printf("implicit-free %p\n", pod->indels);
+                printf("realloc %p\n", indel);
+                pod->indels = indel;
             }
-            printf("implicit-free %p\n", pod->indels);
-            printf("realloc %p\n", indel);
-            pod->indels = indel;
         }
     }
     // Initialize the new indel.
     assert(pod != NULL);
-    indel = &(pod->indels[pod->size - 1]);
+    assert(pod->num_indels < pod->capacity);
+    indel = &(pod->indels[pod->num_indels]);
     indel->insert = insert;
     indel->opposite = opposite;
     indel->lateral3 = lateral3;
+    pod->num_indels++;
     return 0;
 }
 
@@ -586,12 +615,13 @@ static void free_pods(IndelPodArray *pods)
 {
     assert(pods != NULL);
     // Free the indel pods.
-    if (pods->size > 0)
+    if (pods->num_pods > 0)
     {
         assert(pods->pods != NULL);
         // Free the indels in each pod.
-        for (size_t p = 0; p < pods->size; p++)
+        for (size_t p = 0; p < pods->num_pods; p++)
         {
+            assert(pods->pods[p].indels != NULL);
             printf("free %p\n", pods->pods[p].indels);
             free(pods->pods[p].indels);
         }
@@ -599,7 +629,7 @@ static void free_pods(IndelPodArray *pods)
         free(pods->pods);
         // Now that its memory has been freed, point pods->pods at NULL.
         pods->pods = NULL;
-        pods->size = 0;
+        pods->num_pods = 0;
     }
     else
     {
@@ -934,12 +964,12 @@ static int calc_rels_read(unsigned char *rels,
     }
     // Add insertions to rels.
     const unsigned char ins_rel = get_ins_rel(insert3);
-    for (size_t p = 0; p < pods->size; p++)
+    for (size_t p = 0; p < pods->num_pods; p++)
     {
         IndelPod *pod = &(pods->pods[p]);
         if (pod->insert)
         {
-            for (size_t i = 0; i < pod->size; i++)
+            for (size_t i = 0; i < pod->num_indels; i++)
             {
                 size_t ins_pos = get_lateral(pod->indels[i].lateral3, insert3);
                 if (ins_pos < ref_len)
@@ -1256,8 +1286,9 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
     unsigned char *rels1 = NULL, *rels2 = NULL;
     
     IndelPodArray pods;
-    pods.size = 0;
     pods.pods = NULL;
+    pods.capacity = 0;
+    pods.num_pods = 0;
     
     PyObject *ends_rels_tuple = PyTuple_New(2);
     if (ends_rels_tuple == NULL)
