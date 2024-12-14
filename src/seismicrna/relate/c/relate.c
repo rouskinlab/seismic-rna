@@ -303,34 +303,45 @@ static int validate_read(const SamRead *read,
 static int validate_pair(const SamRead *read1,
                          const SamRead *read2)
 {
+    // None of the pointers can be NULL.
     assert(read1 != NULL);
     assert(read2 != NULL);
     assert(read1->name != NULL);
     assert(read2->name != NULL);
+
+    // Mates 1 and 2 must have the same name.
     if (strcmp(read1->name, read2->name))
     {
         PyErr_SetString(PyExc_ValueError,
-                        "Mates 1 and 2 have different reference names");
+                        "Mates 1 and 2 have different names");
         return -1;
     }
+
+    // Both mates must be paired-end.
     if (!(read1->paired && read2->paired))
     {
         PyErr_SetString(PyExc_ValueError,
                         "Mates 1 and 2 are not both paired-end");
         return -1;
     }
+
+    // Mates 1 and 2 must be marked as first and second, respectively.
     if (!(read1->first && read2->second))
     {
         PyErr_SetString(PyExc_ValueError,
-                        "Mates 1 and 2 are not marked as 1st and 2nd");
+                        "Mates 1 and 2 are not marked as first and second");
         return -1;
     }
+
+    // Mates 1 and 2 must be in opposite orientations (i.e. one must be
+    // marked as reversed and the other as not reversed).
     if (read1->reverse == read2->reverse)
     {
         PyErr_SetString(PyExc_ValueError,
                         "Mates 1 and 2 aligned in the same orientation");
         return -1;
     }
+
     return 0;
 }
 
@@ -355,8 +366,8 @@ static inline unsigned char encode_subs(char base)
 
 
 /*
-Encode a match as a match byte (if the read quality is sufficient),
-otherwise as an ambiguous byte (otherwise).
+Encode a match as a match if the read quality is sufficient, otherwise
+as ambiguous.
 */
 static inline unsigned char encode_match(char read_base,
                                          char read_qual,
@@ -437,8 +448,6 @@ static inline int get_next_cigar_op(CigarOp *cigar)
 
 static const int DELETION = 0;
 static const int INSERTION = 1;
-static const size_t MAX_NUM_PODS = 16;
-static const size_t MAX_POD_SIZE = 64;
 
 
 static inline unsigned char get_ins_rel(int insert3)
@@ -471,16 +480,34 @@ typedef struct
 {
     size_t n;
     int insert;
-    Indel indels[MAX_POD_SIZE];
+    Indel *indels;
     size_t size;
 } IndelPod;
 
 
 typedef struct
 {
-    IndelPod pods[MAX_NUM_PODS];
+    IndelPod *pods;
     size_t size;
 } IndelPodArray;
+
+
+static int init_pod(IndelPod *pod, size_t n, int insert)
+{
+    pod->n = n;
+    pod->insert = insert;
+    // Assume that the pod is being initialized because an indel needs
+    // to go into the pod, so initialize with 1 indel already.
+    pod->indels = malloc(sizeof(Indel));
+    if (pod->indels == NULL)
+    {
+        PyErr_NoMemory();
+        return -1;
+    }
+    printf("malloc %p\n", pod->indels);
+    pod->size = 1;
+    return 0;
+}
 
 
 static int add_indel(IndelPodArray *pods,
@@ -489,40 +516,95 @@ static int add_indel(IndelPodArray *pods,
                      size_t lateral3)
 {
     IndelPod *pod = NULL;
-    if ((pods->size == 0) || (pods->pods[pods->size - 1].insert != insert))
+    Indel *indel = NULL;
+    if (pods->size == 0)
     {
-        // Check if the maximum number of pods will be exceeded.
-        if (pods->size >= MAX_NUM_PODS)
+        assert(pods->pods == NULL);
+        // There are no pods yet: allocate a new array of pods.
+        pods->size = 1;
+        pods->pods = malloc(sizeof(IndelPod));
+        if (pods->pods == NULL)
         {
-            PyErr_SetString(PyExc_ValueError,
-                            "Read has too many pods of indels");
+            PyErr_NoMemory();
             return -1;
         }
-        pod = &(pods->pods[pods->size]);
-        // Initialize the members of a new pod.
-        pod->n = pods->size;
-        pod->insert = insert;
-        pod->size = 0;
-        // Increment the number of pods.
-        pods->size++;
+        printf("malloc %p\n", pods->pods);
+        // Initialize the first pod in the new array.
+        pod = pods->pods;
+        if (init_pod(pod, 0, insert)) {return -1;}
     }
-    // Choose the last pod.
-    pod = &(pods->pods[pods->size - 1]);
-    // Check if the maximum number of indels in a pod will be exceeded.
-    if (pod->size >= MAX_POD_SIZE)
+    else
     {
-        PyErr_SetString(PyExc_ValueError,
-                        "Too many indels in one pod");
-        return -1;
+        assert(pods->pods != NULL);
+        // There are pods: check if the last pod is the correct type.
+        if (pods->pods[pods->size - 1].insert != insert)
+        {
+            // The last pod is not the correct type: allocate memory for
+            // one more pod.
+            pods->size++;
+            pod = realloc(pods->pods, pods->size * sizeof(IndelPod));
+            if (pod == NULL)
+            {
+                PyErr_NoMemory();
+                return -1;
+            }
+            printf("implicit-free %p\n", pods->pods);
+            printf("realloc %p\n", pod);
+            pods->pods = pod;
+            // Initialize the new pod.
+            pod = &(pods->pods[pods->size - 1]);
+            if (init_pod(pod, pods->size - 1, insert)) {return -1;}
+        }
+        else
+        {
+            // The last pod is the correct type: allocate memory for
+            // one more indel.
+            pod = &(pods->pods[pods->size - 1]);
+            pod->size++;
+            indel = realloc(pod->indels, pod->size * sizeof(Indel));
+            if (indel == NULL)
+            {
+                PyErr_NoMemory();
+                return -1;
+            }
+            printf("implicit-free %p\n", pod->indels);
+            printf("realloc %p\n", indel);
+            pod->indels = indel;
+        }
     }
-    Indel *indel = &(pod->indels[pod->size]);
-    // Initialize the members of a new indel.
+    // Initialize the new indel.
+    assert(pod != NULL);
+    indel = &(pod->indels[pod->size - 1]);
     indel->insert = insert;
     indel->opposite = opposite;
     indel->lateral3 = lateral3;
-    // Increment the number of indels in the pod.
-    pod->size++;
     return 0;
+}
+
+
+static void free_pods(IndelPodArray *pods)
+{
+    assert(pods != NULL);
+    // Free the indel pods.
+    if (pods->size > 0)
+    {
+        assert(pods->pods != NULL);
+        // Free the indels in each pod.
+        for (size_t p = 0; p < pods->size; p++)
+        {
+            printf("free %p\n", pods->pods[p].indels);
+            free(pods->pods[p].indels);
+        }
+        printf("free %p\n", pods->pods);
+        free(pods->pods);
+        // Now that its memory has been freed, point pods->pods at NULL.
+        pods->pods = NULL;
+        pods->size = 0;
+    }
+    else
+    {
+        assert(pods->pods == NULL);
+    }
 }
 
 
@@ -557,6 +639,7 @@ On success: 0
 On failure: >0
 */
 static int calc_rels_read(unsigned char *rels,
+                          IndelPodArray *pods,
                           SamRead *read,
                           const char *ref_seq,
                           size_t ref_len,
@@ -602,10 +685,6 @@ static int calc_rels_read(unsigned char *rels,
     size_t read_end3 = read->len;
     // CIGAR operation stopping point.
     size_t cigar_op_stop_pos;
-
-    // Positions of deletions and insertions.
-    IndelPodArray pods;
-    pods.size = 0;
     
     // Initialize the CIGAR operation so that it points just before the
     // CIGAR string.
@@ -725,7 +804,7 @@ static int calc_rels_read(unsigned char *rels,
                 // Mark the deletion in the array of relationships.
                 rels[ref_pos] = DELET;
                 // Add a deletion to the record of indels.
-                if (add_indel(&pods, DELETION, ref_pos, read_pos)) {return -1;}
+                if (add_indel(pods, DELETION, ref_pos, read_pos)) {return -1;}
                 ref_pos++;
             }
             break;
@@ -771,7 +850,7 @@ static int calc_rels_read(unsigned char *rels,
             while (read_pos < cigar_op_stop_pos)
             {
                 // Add an insertion to the record of indels.
-                if (add_indel(&pods, INSERTION, read_pos, ref_pos)) {return -1;}
+                if (add_indel(pods, INSERTION, read_pos, ref_pos)) {return -1;}
                 read_pos++;
             }
             break;
@@ -855,14 +934,14 @@ static int calc_rels_read(unsigned char *rels,
     }
     // Add insertions to rels.
     const unsigned char ins_rel = get_ins_rel(insert3);
-    for (size_t p = 0; p < pods.size; p++)
+    for (size_t p = 0; p < pods->size; p++)
     {
-        IndelPod pod = pods.pods[p];
-        if (pod.insert)
+        IndelPod *pod = &(pods->pods[p]);
+        if (pod->insert)
         {
-            for (size_t i = 0; i < pod.size; i++)
+            for (size_t i = 0; i < pod->size; i++)
             {
-                size_t ins_pos = get_lateral(pod.indels[i].lateral3, insert3);
+                size_t ins_pos = get_lateral(pod->indels[i].lateral3, insert3);
                 if (ins_pos < ref_len)
                 {
                     rels[ins_pos] |= ins_rel;
@@ -882,6 +961,7 @@ static int calc_rels_read(unsigned char *rels,
 
 
 static int calc_rels_line(unsigned char *rels,
+                          IndelPodArray *pods,
                           SamRead *read,
                           const char *line,
                           const char *ref,
@@ -907,6 +987,7 @@ static int calc_rels_line(unsigned char *rels,
 
     // Calculate relationships for the read.
     return calc_rels_read(rels,
+                          pods,
                           read,
                           ref_seq,
                           ref_len,
@@ -974,9 +1055,9 @@ static int put_rels_in_dict(PyObject *rels_dict,
 {
     // Validate the arguments; positions are 1-indexed and cannot be 0.
     assert(rels != NULL);
-    if (end5 == 0 || end3 == 0)
+    if (end5 == 0)
     {
-        PyErr_SetString(PyExc_ValueError, "Positions cannot be 0");
+        PyErr_SetString(PyExc_ValueError, "5' end cannot be 0");
         return -1;
     }
 
@@ -1003,9 +1084,9 @@ static int put_2_rels_in_dict(PyObject *rels_dict,
                               unsigned char *rev_rels)
 {
     // Validate the arguments; positions are 1-indexed and cannot be 0.
-    if (fwd_end5 == 0 || fwd_end3 == 0 || rev_end5 == 0 || rev_end3 == 0)
+    if (fwd_end5 == 0 || rev_end5 == 0)
     {
-        PyErr_SetString(PyExc_ValueError, "Positions cannot be 0");
+        PyErr_SetString(PyExc_ValueError, "5' end cannot be 0");
         return -1;
     }
 
@@ -1085,18 +1166,21 @@ decrementing the reference count for py_object, to prevent memory leaks.
 */
 static PyObject *cleanup(unsigned char **rels1_ptr,
                          unsigned char **rels2_ptr,
+                         IndelPodArray *pods,
                          PyObject *py_object)
 {
     // All of the pointers to pointers must be non-NULL.
     assert(rels1_ptr != NULL);
     assert(rels2_ptr != NULL);
+    assert(pods != NULL);
 
     // Free rels1 and point it to NULL.
     unsigned char *rels1 = *rels1_ptr;
     if (rels1 != NULL)
     {
+        printf("free %p\n", rels1);
         free(rels1);
-        // Now that its memory has been freed, make rels1 point to NULL.
+        // Now that its memory has been freed, point rels1 at NULL.
         *rels1_ptr = NULL;
     }
 
@@ -1104,10 +1188,14 @@ static PyObject *cleanup(unsigned char **rels1_ptr,
     unsigned char *rels2 = *rels2_ptr;
     if (rels2 != NULL)
     {
+        printf("free %p\n", rels2);
         free(rels2);
-        // Now that its memory has been freed, make rels2 point to NULL.
+        // Now that its memory has been freed, point rels2 at NULL.
         *rels2_ptr = NULL;
     }
+
+    // Free pods.
+    free_pods(pods);
 
     // Decrement the reference count for py_object.
     if (py_object != NULL)
@@ -1115,8 +1203,7 @@ static PyObject *cleanup(unsigned char **rels1_ptr,
         Py_DECREF(py_object);
     }
 
-    // Return NULL so that py_calc_rels_lines can call this:
-    // return error_cleanup(...);
+    // Return NULL so that py_calc_rels_lines can "return cleanup(...);"
     return NULL;
 }
 
@@ -1165,43 +1252,53 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
     Py_ssize_t num_mates = (*line2) ? 2 : 1;
 
     // Initialize containers to hold the results.
+    
     unsigned char *rels1 = NULL, *rels2 = NULL;
+    
+    IndelPodArray pods;
+    pods.size = 0;
+    pods.pods = NULL;
     
     PyObject *ends_rels_tuple = PyTuple_New(2);
     if (ends_rels_tuple == NULL)
-        {return cleanup(&rels1, &rels2, NULL);}
+        {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
     
     PyObject *ends_tuple = PyTuple_New(2);
     if (ends_tuple == NULL)
-        {return cleanup(&rels1, &rels2, ends_rels_tuple);}
+        {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
     PyTuple_SET_ITEM(ends_rels_tuple, 0, ends_tuple);
 
     PyObject *end5s_list = PyList_New(num_mates);
     if (end5s_list == NULL)
-        {return cleanup(&rels1, &rels2, ends_rels_tuple);}
+        {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
     PyTuple_SET_ITEM(ends_tuple, 0, end5s_list);
 
     PyObject *end3s_list = PyList_New(num_mates);
     if (end3s_list == NULL)
-        {return cleanup(&rels1, &rels2, ends_rels_tuple);}
+        {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
     PyTuple_SET_ITEM(ends_tuple, 1, end3s_list);
     
     PyObject *rels_dict = PyDict_New();
     if (rels_dict == NULL)
-        {return cleanup(&rels1, &rels2, ends_rels_tuple);}
+        {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
     PyTuple_SET_ITEM(ends_rels_tuple, 1, rels_dict);
 
+    // Calculate the size needed for each relationship array.
+    size_t rels_size = ref_len * sizeof(rels1);
+
     // Allocate relationships for line 1.
-    rels1 = calloc(ref_len, sizeof(rels1));
+    rels1 = malloc(rels_size);
     if (rels1 == NULL)
     {
         PyErr_NoMemory();
-        return cleanup(&rels1, &rels2, ends_rels_tuple);
+        return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);
     }
+    printf("malloc %p\n", rels1);
 
     // Calculate relationships for line 1.
     SamRead read1;
     if (calc_rels_line(rels1,
+                       &pods,
                        &read1,
                        line1,
                        ref,
@@ -1213,7 +1310,7 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
                        ambindel,
                        clip_end5,
                        clip_end3))
-        {return cleanup(&rels1, &rels2, ends_rels_tuple);}
+        {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
 
     if (num_mates > 1)
     {
@@ -1222,17 +1319,22 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
         // Check if line 2 differs from line 1.
         if (strcmp(line1, line2))
         {
+            // Free the pods for line 1 so that line 2 can reuse them.
+            free_pods(&pods);
+
             // Allocate relationships for line 2.
-            rels2 = calloc(ref_len, sizeof(rels2));
+            rels2 = malloc(rels_size);
             if (rels2 == NULL)
             {
                 PyErr_NoMemory();
-                return cleanup(&rels1, &rels2, ends_rels_tuple);
+                return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);
             }
+            printf("malloc %p\n", rels2);
 
             // Calculate relationships for line 2.
             SamRead read2;
             if (calc_rels_line(rels2,
+                               &pods,
                                &read2,
                                line2,
                                ref,
@@ -1244,11 +1346,11 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
                                ambindel,
                                clip_end5,
                                clip_end3))
-                {return cleanup(&rels1, &rels2, ends_rels_tuple);}
+                {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
 
             // Check if reads 1 and 2 are paired properly.
             if (validate_pair(&read1, &read2))
-                {return cleanup(&rels1, &rels2, ends_rels_tuple);}
+                {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
 
             // Determine the 5'/3' ends of the forward/reverse reads.
             unsigned char *fwd_rels = NULL, *rev_rels = NULL;
@@ -1290,7 +1392,7 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
                                    rev_end5,
                                    rev_end3,
                                    rev_rels))
-                {return cleanup(&rels1, &rels2, ends_rels_tuple);}
+                {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
         }
         else
         {
@@ -1303,18 +1405,18 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
                                  rels1,
                                  read1.ref_end5,
                                  read1.ref_end3))
-                {return cleanup(&rels1, &rels2, ends_rels_tuple);}
+                {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
         }
 
         // Fill in the lists of 5' and 3' ends.
         if (put_end_in_list(end5s_list, 0, fwd_end5))
-            {return cleanup(&rels1, &rels2, ends_rels_tuple);}
+            {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
         if (put_end_in_list(end5s_list, 1, rev_end5))
-            {return cleanup(&rels1, &rels2, ends_rels_tuple);}
+            {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
         if (put_end_in_list(end3s_list, 0, fwd_end3))
-            {return cleanup(&rels1, &rels2, ends_rels_tuple);}
+            {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
         if (put_end_in_list(end3s_list, 1, rev_end3))
-            {return cleanup(&rels1, &rels2, ends_rels_tuple);}
+            {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
     }
     else
     {
@@ -1323,18 +1425,18 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
                              rels1,
                              read1.ref_end5,
                              read1.ref_end3))
-            {return cleanup(&rels1, &rels2, ends_rels_tuple);}
+            {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
         
         // Fill int the lists of 5' and 3' ends.
         if (put_end_in_list(end5s_list, 0, read1.ref_end5))
-            {return cleanup(&rels1, &rels2, ends_rels_tuple);}
+            {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
         if (put_end_in_list(end3s_list, 0, read1.ref_end3))
-            {return cleanup(&rels1, &rels2, ends_rels_tuple);}
+            {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
     }
 
     // Free the memory of rels1 and rels2, but not of the object that
     // will be returned.
-    cleanup(&rels1, &rels2, NULL);
+    cleanup(&rels1, &rels2, &pods, NULL);
 
     return ends_rels_tuple;
 }
