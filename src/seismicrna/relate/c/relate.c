@@ -72,26 +72,176 @@ static inline size_t max(size_t a, size_t b)
 }
 
 
-/*
-Parse a string (str) and store the value in an integer (number).
-A basic wrapper around string-to-unsigned-long (strtoul) that also
-determines whether a return value of 0 is correct (e.g. if str == "0")
-or if it is because parsing failed (strtoul returns 0 upon failure).
-Overflows are NOT checked for because in practice none of the values in
-the SAM file will be so large as to overflow an unsigned long type.
+typedef struct
+{
+    int insert;
+    size_t opposite;
+    size_t lateral3;
+} Indel;
 
-Parameters
-----------
-ulong
-    Non-NULL pointer to number in which to store the result
-str
-    Non-NULL pointer to string from which to parse the number
 
-Returns
--------
-int
-    0 if successful, otherwise -1
-*/
+typedef struct
+{
+    size_t order;
+    int insert;
+    Indel *indels;
+    size_t capacity;
+    size_t num_indels;
+} IndelPod;
+
+
+typedef struct
+{
+    IndelPod *pods;
+    size_t capacity;
+    size_t num_pods;
+} IndelPodArray;
+
+
+/* Initialize an IndelPodArray.
+Do NOT call this function more than once on an IndelPodArray without
+first calling free_pods(), or else memory in pods->pods will leak. */
+static void init_pods(IndelPodArray *pods)
+{
+    assert(pods != NULL);
+    // Initialize pods->pods to NULL so that the pointer doesn't dangle.
+    pods->pods = NULL;
+    pods->capacity = 0;
+    pods->num_pods = 0;
+}
+
+
+/* Free the dynamically allocated memory for an IndelPodArray and all
+IndelPods in the array.
+Do NOT call this function on an IndelPodArray that has not yet been
+initialized with init_pods(), or else it could free random memory,
+possibly causing an access violation or memory corruption. */
+static void free_pods(IndelPodArray *pods)
+{
+    assert(pods != NULL);
+    // Free each IndelPod.
+    for (size_t p = 0; p < pods->num_pods; p++)
+    {
+        assert(pods->pods != NULL);
+        free(pods->pods[p].indels);
+        printf("free %p\n", pods->pods[p].indels);
+    }
+    free(pods->pods);
+    printf("free %p\n", pods->pods);
+    // Now that its memory has been freed, reset all of its fields.
+    init_pods(pods);
+}
+
+
+typedef struct
+{
+    // Parsed attributes
+    const char *name;     // read name
+    unsigned long flag;   // bitwise flag
+    const char *ref;      // reference name
+    size_t pos;           // mapping position in the ref (1-indexed)
+    unsigned long mapq;   // mapping quality
+    const char *cigar;    // CIGAR string
+    const char *seq;      // read sequence
+    const char *qual;     // read quality
+    // Calculated attributes
+    const char *end;      // pointer to address after 3' end of read
+    size_t len;           // read length
+    int paired;           // whether read is paired
+    int reverse;          // whether read is reverse complemented
+    int first;            // whether read is the 1st read
+    int second;           // whether read is the 2nd read
+    size_t ref_bases;     // number of reference bases the read consumes
+    size_t ref_end5;      // 5' end of the read in the ref (1-indexed)
+    size_t ref_end3;      // 3' end of the read in the ref (1-indexed)
+    // Container attributes
+    unsigned char *rels;  // relationship array
+    IndelPodArray pods;   // pods for the ambiguous indel algorithm
+} SamRead;
+
+
+/* Initialize the fields of a SamRead using a line from a SAM file.
+Do NOT call this function more than once on the same SamRead without
+first calling free_read(), or else the memory allocated for read->rels
+and read->pods will leak. */
+static void init_read(SamRead *read)
+{
+    assert(read != NULL);
+    // Initialize all pointer fields to NULL to prevent errors caused
+    // by uninitialized pointers.
+    read->name = NULL;
+    read->ref = NULL;
+    read->cigar = NULL;
+    read->seq = NULL;
+    read->qual = NULL;
+    read->end = NULL;
+    read->rels = NULL;
+    // Initialize the read's pods.
+    init_pods(&(read->pods));
+}
+
+
+/* Free all of the dynamically allocated memory for a SamRead.
+Do NOT call this function on a SamRead that has not yet been initialized
+with init_read(), or else the uninitialized pointer read->rels will be
+freed, possibly causing an access violation or memory corruption. */
+static void free_read(SamRead *read)
+{
+    assert(read != NULL);
+    // Free the relationship array and point it to NULL.
+    free(read->rels);
+    printf("free %p\n", read->rels);
+    read->rels = NULL;
+    // Free the read's pods.
+    free_pods(&(read->pods));
+    // None of the other fields in the SamRead are dynamically allocated
+    // memory, so nothing else needs to be done with them.
+}
+
+
+// CIGAR string operations
+
+typedef struct
+{
+    const char *op;  // type of operation
+    size_t len;      // length of operation
+} CigarOp;
+
+
+/* Find the next operation in a CIGAR string and store it in cigar. */
+static inline int get_next_cigar_op(CigarOp *cigar)
+{
+    // Parse as many characters of text as possible to a number, cast
+    // to size_t, and store in cigar->len (length of CIGAR operation).
+    // Parsing must start one character ahead of the last character to
+    // be read from the CIGAR string (which is cigar->op, the type of
+    // the previous operation); thus, parsing starts at cigar->op + 1.
+    // The character after the last digit to be parsed is the type of
+    // the new operation; thus, after cigar->len is parsed, cigar->op
+    // is finally pointed at the character after the last parsed digit.
+    cigar->len = (size_t)strtoul(cigar->op + 1, (char **)&cigar->op, DECIMAL);
+    if (cigar->len == 0)
+    {
+        // The parse returns a length of 0 if it fails. This is normal
+        // when the end of the string is reached, but should not happen
+        // before then. If the character to which the CIGAR operation
+        // points evaluates to true, then it is not the null terminator
+        // of a string, so the end of end of the CIGAR string has not
+        // yet been reached, which is an error.
+        if (*cigar->op)
+        {
+            PyErr_SetString(PyExc_ValueError,
+                            "Failed to parse a CIGAR operation");
+            return -1;
+        }
+        // Point cigar->op to NULL to signify reaching the end.
+        cigar->op = NULL;
+    }
+    return 0;
+}
+
+
+/* Parse str into an unsigned integer ulong. */
 static int parse_ulong(unsigned long *ulong, const char *str)
 {
     // Neither ulong nor str may be NULL.
@@ -110,51 +260,21 @@ static int parse_ulong(unsigned long *ulong, const char *str)
 }
 
 
-typedef struct
-{
-    // Parsed attributes
-    const char *name;    // read name
-    unsigned long flag;  // bitwise flag
-    const char *ref;     // reference name
-    size_t pos;          // mapping position in the ref (1-indexed)
-    unsigned long mapq;  // mapping quality
-    const char *cigar;   // CIGAR string
-    const char *seq;     // read sequence
-    const char *qual;    // read quality
-    // Calculated attributes
-    const char *end;     // pointer to address just after 3' end of read
-    size_t len;          // read length
-    int paired;          // whether read is paired
-    int reverse;         // whether read is reverse complemented
-    int first;           // whether read is the 1st read
-    int second;          // whether read is the 2nd read
-    size_t ref_end5;     // 5' end of the read in the ref (1-indexed)
-    size_t ref_end3;     // 3' end of the read in the ref (1-indexed)
-} SamRead;
-
-
-/*
-Parse one line from a SAM file and store the information in each field
-in one of the field arguments passed to this function.
-
-Parameters
-----------
-read
-    Non-nullable pointer to the SAM read struct in which to store the
-    parsed information.
-line
-    Non-nullable pointer to the text of a SAM-formatted line to parse.
-    It must be tab-delimited and contain at least 11 fields (below).
-
-Returns
--------
-int
-    0 if successful, otherwise -1
-*/
-static int parse_sam_line(SamRead *read, const char *line)
+/* Fill the fields of a SamRead using a line from a SAM file.
+Do NOT call this function on a SamRead that has not yet been initialized
+with init_read(), so that in case this function fails and returns -1,
+the SamRead's memory can be freed safely with free_read(). */
+static int parse_sam_line(SamRead *read,
+                          const char *line,
+                          size_t clip_end5,
+                          size_t clip_end3,
+                          size_t ref_len)
 {
     assert(read != NULL);
     assert(line != NULL);
+    assert(read->rels == NULL);
+    assert(read->pods.pods == NULL);
+
     char *end = (char *)line;  // End of the current field.
     unsigned long temp_ulong;  // Hold parsed numbers before casting.
 
@@ -197,6 +317,18 @@ static int parse_sam_line(SamRead *read, const char *line)
         return -1;
     }
     read->pos = (size_t)temp_ulong;
+    if (read->pos == 0)
+    {
+        PyErr_SetString(PyExc_ValueError,
+                        "Mapping position is 0");
+        return -1;
+    }
+    if (read->pos > ref_len)
+    {
+        PyErr_SetString(PyExc_ValueError,
+                        "Mapping position exceeds length of reference");
+        return -1;
+    }
 
     // Mapping quality
     if (parse_ulong(&temp_ulong, strtok_r(NULL, SAM_SEP, &end)))
@@ -269,11 +401,59 @@ static int parse_sam_line(SamRead *read, const char *line)
         return -1;
     }
 
-    // Initialize the 5' and 3' ends to placeholder 0 values.
-    read->ref_end5 = 0;
-    read->ref_end3 = 0;
+    // Number of reference bases that the read consumes.
+    read->ref_bases = 0;
+    // Initialize the CIGAR operation so that it points just before the
+    // CIGAR string.
+    CigarOp cigar;
+    cigar.op = read->cigar - 1;
+    // Read the first operation from the CIGAR string; catch errors.
+    if (get_next_cigar_op(&cigar))
+        {return -1;}
+    // Read the entire CIGAR string one operation at a time.
+    while (cigar.op != NULL)
+    {
+        // Decide what to do based on the current CIGAR operation.
+        switch (*cigar.op)
+        {
+            case CIG_ALIGN:
+            case CIG_MATCH:
+            case CIG_SUBST:
+            case CIG_DELET:
+                // These operations consume the reference.
+                read->ref_bases += cigar.len;
+                break;
+            default:
+                // Other operations do not.
+                break;
+        }
+        // Read the next CIGAR operation; catch errors.
+        if (get_next_cigar_op(&cigar))
+            {return -1;}
+    }
+    // The number of bases consumed must be > 0.
+    if (read->ref_bases == 0)
+    {
+        PyErr_SetString(PyExc_ValueError,
+                        "CIGAR string consumes 0 bases in the reference");
+        return -1;
+    }
 
-    // Parsing the line succeeded.
+    // Reference position at which the 5' end of the read is located,
+    // which is the mapping position plus the 5' clip (up to a maximum
+    // of the reference length plus 1).
+    read->ref_end5 = min(read->pos + clip_end5, ref_len + 1);
+
+    // Reference position at which the 3' end of the read is located,
+    // which is the mapping position plus one less than the number of
+    // reference bases consumed, minus the 3' clip (down to a minimum
+    // of 0). Because read->ref_bases must be > 0, subtracting 1 will
+    // not yield a negative number and cause overflow.
+    size_t ref_end3 = read->pos + (read->ref_bases - 1);
+    // Also to avoid overflow, subtract clip_end3 only after confirming
+    // that the difference would not be negative.
+    read->ref_end3 = (ref_end3 > clip_end3) ? (ref_end3 - clip_end3) : 0;
+
     return 0;
 }
 
@@ -285,15 +465,16 @@ static int validate_read(const SamRead *read,
     assert(read != NULL);
     assert(read->ref != NULL);
     assert(ref != NULL);
-    if (read->mapq < min_mapq)
-    {
-        PyErr_SetString(PyExc_ValueError, "Mapping quality is insufficient");
-        return -1;
-    }
     if (strcmp(read->ref, ref))
     {
         PyErr_SetString(PyExc_ValueError,
                         "Reference name does not match name of SAM file");
+        return -1;
+    }
+    if (read->mapq < min_mapq)
+    {
+        PyErr_SetString(PyExc_ValueError,
+                        "Mapping quality is insufficient");
         return -1;
     }
     return 0;
@@ -342,65 +523,6 @@ static int validate_pair(const SamRead *read1,
         return -1;
     }
 
-    return 0;
-}
-
-
-// CIGAR string operations
-
-typedef struct
-{
-    const char *op;  // type of operation
-    size_t len;      // length of operation
-} CigarOp;
-
-
-/*
-Find the next operation in a CIGAR string. Store the kind of operation
-in cigar->op and the length of the operation in cigar->len. If parsing
-does not return a valid operation (which must have cigar->len > 0 and
-cigar->op != NULL), then set cigar->op to NULL. This event happens when
-the end of the CIGAR string is reached and does not signify an error.
-
-Parameters
-----------
-cigar
-    Non-nullable pointer to a CIGAR operation struct in which to store
-    the parsed information from the CIGAR string
-
-Returns
--------
-int
-    0 if successful, otherwise -1
-*/
-static inline int get_next_cigar_op(CigarOp *cigar)
-{
-    // Parse as many characters of text as possible to a number, cast
-    // to size_t, and store in cigar->len (length of CIGAR operation).
-    // Parsing must start one character ahead of the last character to
-    // be read from the CIGAR string (which is cigar->op, the type of
-    // the previous operation); thus, parsing starts at cigar->op + 1.
-    // The character after the last digit to be parsed is the type of
-    // the new operation; thus, after cigar->len is parsed, cigar->op
-    // is finally pointed at the character after the last parsed digit.
-    cigar->len = (size_t)strtoul(cigar->op + 1, (char **)&cigar->op, DECIMAL);
-    if (cigar->len == 0)
-    {
-        // The parse returns a length of 0 if it fails. This is normal
-        // when the end of the string is reached, but should not happen
-        // before then. If the character to which the CIGAR operation
-        // points evaluates to true, then it is not the null terminator
-        // of a string, so the end of end of the CIGAR string has not
-        // yet been reached, which is an error.
-        if (*cigar->op)
-        {
-            PyErr_SetString(PyExc_ValueError,
-                            "Failed to parse a CIGAR operation");
-            return -1;
-        }
-        // Point cigar->op to NULL to signify reaching the end.
-        cigar->op = NULL;
-    }
     return 0;
 }
 
@@ -486,32 +608,6 @@ static inline size_t get_lateral(size_t lateral3, int insert3)
 }
 
 
-typedef struct
-{
-    int insert;
-    size_t opposite;
-    size_t lateral3;
-} Indel;
-
-
-typedef struct
-{
-    size_t order;
-    int insert;
-    Indel *indels;
-    size_t capacity;
-    size_t num_indels;
-} IndelPod;
-
-
-typedef struct
-{
-    IndelPod *pods;
-    size_t capacity;
-    size_t num_pods;
-} IndelPodArray;
-
-
 static int init_pod(IndelPod *pod, size_t order, int insert)
 {
     pod->order = order;
@@ -526,7 +622,7 @@ static int init_pod(IndelPod *pod, size_t order, int insert)
         PyErr_NoMemory();
         return -1;
     }
-    // printf("malloc %p\n", pod->indels);
+    printf("malloc %p\n", pod->indels);
     pod->num_indels = 0;
     return 0;
 }
@@ -552,7 +648,7 @@ static int add_indel(IndelPodArray *pods,
             PyErr_NoMemory();
             return -1;
         }
-        // printf("malloc %p\n", pods->pods);
+        printf("malloc %p\n", pods->pods);
         // Initialize the first pod in the new array.
         pod = pods->pods;
         if (init_pod(pod, 0, insert)) {return -1;}
@@ -581,8 +677,8 @@ static int add_indel(IndelPodArray *pods,
                     PyErr_NoMemory();
                     return -1;
                 }
-                // printf("implicit-free %p\n", pods->pods);
-                // printf("realloc %p\n", pod);
+                printf("implicit-free %p\n", pods->pods);
+                printf("realloc %p\n", pod);
                 pods->pods = pod;
             }
             // Initialize the new pod.
@@ -608,8 +704,8 @@ static int add_indel(IndelPodArray *pods,
                     PyErr_NoMemory();
                     return -1;
                 }
-                // printf("implicit-free %p\n", pod->indels);
-                // printf("realloc %p\n", indel);
+                printf("implicit-free %p\n", pod->indels);
+                printf("realloc %p\n", indel);
                 pod->indels = indel;
             }
         }
@@ -623,33 +719,6 @@ static int add_indel(IndelPodArray *pods,
     indel->lateral3 = lateral3;
     pod->num_indels++;
     return 0;
-}
-
-
-static void free_pods(IndelPodArray *pods)
-{
-    assert(pods != NULL);
-    // Free the indel pods.
-    if (pods->num_pods > 0)
-    {
-        assert(pods->pods != NULL);
-        // Free the indels in each pod.
-        for (size_t p = 0; p < pods->num_pods; p++)
-        {
-            assert(pods->pods[p].indels != NULL);
-            // printf("free %p\n", pods->pods[p].indels);
-            free(pods->pods[p].indels);
-        }
-        // printf("free %p\n", pods->pods);
-        free(pods->pods);
-        // Now that its memory has been freed, point pods->pods at NULL.
-        pods->pods = NULL;
-        pods->num_pods = 0;
-    }
-    else
-    {
-        assert(pods->pods == NULL);
-    }
 }
 
 
@@ -1018,64 +1087,57 @@ static void find_ambindels(unsigned char *rels,
 }
 
 
-/* Count the reference bases consumed by the CIGAR string. */
-static int count_ref_bases(const char *read_cigar, size_t *ref_bases)
-{
-    assert(read_cigar != NULL);
-    assert(ref_bases != NULL);
-
-    // Initialize the count to 0.
-    *ref_bases = 0;
-
-    // Initialize the CIGAR operation so that it points just before the
-    // CIGAR string.
-    CigarOp cigar;
-    cigar.op = read_cigar - 1;
-
-    // Read the first operation from the CIGAR string; catch errors.
-    if (get_next_cigar_op(&cigar)) {return -1;}
-
-    // Read the entire CIGAR string one operation at a time.
-    while (cigar.op != NULL)
-    {
-        // Decide what to do based on the current CIGAR operation.
-        switch (*cigar.op)
-        {
-            case CIG_ALIGN:
-            case CIG_MATCH:
-            case CIG_SUBST:
-            case CIG_DELET:
-                // These operations consume the reference.
-                *ref_bases += cigar.len;
-                break;
-            default:
-                // Other operations do not.
-                break;
-        }
-
-        // Read the next CIGAR operation; catch errors.
-        if (get_next_cigar_op(&cigar)) {return -1;}
-    }
-
-    return 0;
-}
-
-
-/* Compute the relationships of a SamRead. */
-static int calc_rels_read(unsigned char *rels,
-                          IndelPodArray *pods,
-                          const SamRead *read,
-                          const char *rels_seq,
-                          size_t rels_len,
+/* Compute the relationships for a line in a SAM file.
+Do NOT call this function on a SamRead that has not yet been initialized
+with init_read(), or else read->pods will not be initialized properly,
+which will cause undefined and probably erroneous behavior.
+Do NOT call this function more than once on the same SamRead without
+first calling free_read(), or else the memory originally allocated to
+read->rels and read->pods will leak. */
+static int calc_rels_line(SamRead *read,
+                          const char *line,
+                          const char *ref,
+                          const char *ref_seq,
+                          size_t ref_len,
+                          unsigned long min_mapq,
                           unsigned char min_qual,
                           int insert3,
-                          int ambindel)
+                          int ambindel,
+                          size_t clip_end5,
+                          size_t clip_end3)
 {
-    // Validate the arguments.
-    assert(rels != NULL);
-    assert(pods != NULL);
+    // Validate the SAM file line and parse it into a SamRead.
     assert(read != NULL);
-    assert(rels_seq != NULL);
+    assert(line != NULL);
+    if (!(*line))
+    {
+        PyErr_SetString(PyExc_ValueError,
+                        "Got an empty line to parse as a SAM read");
+        return -1;
+    }
+    if (parse_sam_line(read, line, clip_end5, clip_end3, ref_len))
+        {return -1;}
+    if (validate_read(read, ref, min_mapq))
+        {return -1;}
+
+    // Point to where the read starts in the reference sequence.
+    // Because read->pos is guaranteed to be > 0, subtracting 1 will not
+    // yield a negative number and cause overflow.
+    const char *rels_seq = ref_seq + (read->pos - 1);
+
+    // Allocate memory for the relationships. The relationships will be
+    // filled using the CIGAR string, so the number of relationships
+    // allocated must equal the number of reference bases consumed by
+    // the CIGAR string, not the number after clipping.
+    assert(read->rels == NULL);  // If != NULL, then memory will leak.
+    assert(read->ref_bases > 0);
+    read->rels = malloc(read->ref_bases * sizeof(unsigned char));
+    if (read->rels == NULL)
+    {
+        PyErr_NoMemory();
+        return -1;
+    }
+    printf("malloc %p\n", read->rels);
 
     // Positions in the relationship array and read (0-indexed).
     size_t rels_pos = 0;
@@ -1105,7 +1167,7 @@ static int calc_rels_read(unsigned char *rels,
             case CIG_MATCH:
                 // The read and reference match.
                 cigar_op_stop_pos = rels_pos + cigar.len;
-                if (cigar_op_stop_pos > rels_len)
+                if (cigar_op_stop_pos > read->ref_bases)
                 {
                     PyErr_SetString(
                         PyExc_ValueError,
@@ -1123,9 +1185,9 @@ static int calc_rels_read(unsigned char *rels,
                 }
                 while (rels_pos < cigar_op_stop_pos)
                 {
-                    rels[rels_pos] = encode_match(read->seq[read_pos],
-                                                  read->qual[read_pos],
-                                                  min_qual);
+                    read->rels[rels_pos] = encode_match(read->seq[read_pos],
+                                                        read->qual[read_pos],
+                                                        min_qual);
                     rels_pos++;
                     read_pos++;
                 }
@@ -1135,7 +1197,7 @@ static int calc_rels_read(unsigned char *rels,
             case CIG_SUBST:
                 // The read and reference have matches or substitutions.
                 cigar_op_stop_pos = rels_pos + cigar.len;
-                if (cigar_op_stop_pos > rels_len)
+                if (cigar_op_stop_pos > read->ref_bases)
                 {
                     PyErr_SetString(
                         PyExc_ValueError,
@@ -1153,10 +1215,10 @@ static int calc_rels_read(unsigned char *rels,
                 }
                 while (rels_pos < cigar_op_stop_pos)
                 {
-                    rels[rels_pos] = encode_relate(rels_seq[rels_pos],
-                                                   read->seq[read_pos],
-                                                   read->qual[read_pos],
-                                                   min_qual);
+                    read->rels[rels_pos] = encode_relate(rels_seq[rels_pos],
+                                                         read->seq[read_pos],
+                                                         read->qual[read_pos],
+                                                         min_qual);
                     rels_pos++;
                     read_pos++;
                 }
@@ -1165,7 +1227,7 @@ static int calc_rels_read(unsigned char *rels,
             case CIG_DELET:
                 // A portion of the reference is deleted from the read.
                 cigar_op_stop_pos = rels_pos + cigar.len;
-                if (cigar_op_stop_pos > rels_len)
+                if (cigar_op_stop_pos > read->ref_bases)
                 {
                     PyErr_SetString(
                         PyExc_ValueError,
@@ -1200,9 +1262,9 @@ static int calc_rels_read(unsigned char *rels,
                 while (rels_pos < cigar_op_stop_pos)
                 {
                     // Mark the deletion in the array of relationships.
-                    rels[rels_pos] = DELET;
+                    read->rels[rels_pos] = DELET;
                     // Add a deletion to the record of indels.
-                    if (add_indel(pods, DELETION, rels_pos, read_pos))
+                    if (add_indel(&(read->pods), DELETION, rels_pos, read_pos))
                         {return -1;}
                     rels_pos++;
                 }
@@ -1235,10 +1297,8 @@ static int calc_rels_read(unsigned char *rels,
                     );
                     return -1;
                 }
-                if (rels_pos >= rels_len)
+                if (rels_pos >= read->ref_bases)
                 {
-                    // printf("REF POS: %zu\n", ref_pos);
-                    // printf("REF LEN: %zu\n", ref_len);
                     PyErr_SetString(
                         PyExc_ValueError,
                         "An insertion occured at the end of the reference"
@@ -1248,7 +1308,7 @@ static int calc_rels_read(unsigned char *rels,
                 while (read_pos < cigar_op_stop_pos)
                 {
                     // Add an insertion to the record of indels.
-                    if (add_indel(pods, INSERTION, read_pos, rels_pos))
+                    if (add_indel(&(read->pods), INSERTION, read_pos, rels_pos))
                         {return -1;}
                     read_pos++;
                 }
@@ -1279,7 +1339,7 @@ static int calc_rels_read(unsigned char *rels,
                         );
                         return -1;
                     }
-                    // Clip bases from the the 5' end of the read.
+                    // Soft clip bases from the the 5' end of the read.
                     read_end5 += cigar.len;
                 }
                 else
@@ -1320,15 +1380,9 @@ static int calc_rels_read(unsigned char *rels,
         if (get_next_cigar_op(&cigar)) {return -1;}
     }
 
-    // Verify that the sum of the lengths of all CIGAR operations that
-    // consumed the reference equals the length of the relationships.
-    if (rels_pos != rels_len)
-    {
-        PyErr_SetString(PyExc_ValueError,
-                        "The number of reference bases consumed by the CIGAR "
-                        "string differed from the length of the relationships");
-        return -1;
-    }
+    // The sum of the lengths of all CIGAR operations that consumed the
+    // reference must equal the length of the relationships.
+    assert(rels_pos == read->ref_bases);
     // Verify that the sum of the lengths of all CIGAR operations that
     // consumed the read equals the length of the read.
     if (read_pos != read->len)
@@ -1341,30 +1395,30 @@ static int calc_rels_read(unsigned char *rels,
 
     // Add insertions to rels.
     const unsigned char ins_rel = get_ins_rel(insert3);
-    for (size_t p = 0; p < pods->num_pods; p++)
+    for (size_t p = 0; p < read->pods.num_pods; p++)
     {
-        IndelPod *pod = &(pods->pods[p]);
+        IndelPod *pod = &(read->pods.pods[p]);
         if (pod->insert)
         {
             for (size_t i = 0; i < pod->num_indels; i++)
             {
                 size_t ins_pos = get_lateral(pod->indels[i].lateral3, insert3);
-                if (ins_pos < rels_len)
+                if (ins_pos < read->ref_bases)
                 {
-                    rels[ins_pos] |= ins_rel;
+                    read->rels[ins_pos] |= ins_rel;
                 }
             }
         }
     }
     
-    if (ambindel && pods->num_pods > 0)
+    if (ambindel && read->pods.num_pods > 0)
     {
         // Find and mark ambiguous insertions and deletions.
-        find_ambindels(rels,
-                       pods,
+        find_ambindels(read->rels,
+                       &(read->pods),
                        read,
                        rels_seq,
-                       rels_len,
+                       read->ref_bases,
                        read->pos,
                        rels_pos,
                        read_end5,
@@ -1374,106 +1428,6 @@ static int calc_rels_read(unsigned char *rels,
     }
 
     return 0;
-}
-
-
-static int calc_rels_line(unsigned char **rels,
-                          IndelPodArray *pods,
-                          SamRead *read,
-                          const char *line,
-                          const char *ref,
-                          const char *ref_seq,
-                          size_t ref_len,
-                          unsigned long min_mapq,
-                          unsigned char min_qual,
-                          int insert3,
-                          int ambindel,
-                          size_t clip_end5,
-                          size_t clip_end3)
-{
-    // Validate the SAM file line and parse it into a SamRead.
-    assert(line != NULL);
-    if (!(*line))
-    {
-        PyErr_SetString(PyExc_ValueError,
-                        "Got an empty line to parse as a SAM read");
-        return -1;
-    }
-    if (parse_sam_line(read, line)) {return -1;}
-    if (validate_read(read, ref, min_mapq)) {return -1;}
-
-    // Validate the read's start position.
-    if (read->pos == 0)
-    {
-        PyErr_SetString(
-            PyExc_ValueError,
-            "Mapping position is 0"
-        );
-        return -1;
-    }
-    if (read->pos > ref_len)
-    {
-        PyErr_SetString(
-            PyExc_ValueError,
-            "Mapping position is greater than length of reference sequence"
-        );
-        return -1;
-    }
-
-    // Count the reference bases consumed by the CIGAR string.
-    size_t ref_bases;
-    if (count_ref_bases(read->cigar, &ref_bases))
-        {return 1;}
-    if (ref_bases == 0)
-    {
-        PyErr_SetString(
-            PyExc_ValueError,
-            "The CIGAR string consumes 0 bases in the reference"
-        );
-        return -1;
-    }
-
-    // Calculate the reference position at which the 5' end of the read
-    // is located, which is the mapping position plus the 5' clip (up to
-    // a maximum of the reference length plus 1).
-    read->ref_end5 = min(read->pos + clip_end5, ref_len + 1);
-    // Calculate the reference position at which the 3' end of the read
-    // is located, which is the mapping position plus one less than the
-    // number of reference bases consumed, minus the 3' clip (down to a
-    // minimum of 0).
-    // Because ref_bases is guaranteed to be > 0, subtracting 1 will not
-    // yield a negative number and cause overflow.
-    read->ref_end3 = read->pos + (ref_bases - 1);
-    // Also to avoid overflow, subtract clip_end3 only after confirming
-    // that the difference would not be negative.
-    read->ref_end3 =
-        (read->ref_end3 > clip_end3) ? (read->ref_end3 - clip_end3) : 0;
-
-    // Allocate memory for the relationships. The relationships will be
-    // filled using the CIGAR string, so the number of relationships
-    // allocated must equal the number of reference bases consumed by
-    // the CIGAR string, not the number after clipping.
-    assert(rels != NULL);
-    assert(*rels == NULL);  // If *rels != NULL, then memory will leak.
-    *rels = malloc(ref_bases * sizeof(*rels));
-    if (*rels == NULL)
-    {
-        PyErr_NoMemory();
-        return -1;
-    }
-    // printf("malloc %p\n", rels1);
-
-    // Calculate relationships for the read.
-    // Because read->pos is guaranteed to be > 0, subtracting 1 will not
-    // yield a negative number and cause overflow.
-    return calc_rels_read(*rels,
-                          pods,
-                          read,
-                          ref_seq + (read->pos - 1),
-                          ref_bases,
-                          min_qual,
-                          insert3,
-                          ambindel);
 }
 
 
@@ -1554,79 +1508,75 @@ static int put_rels_in_dict(PyObject *rels_dict,
 
 
 static int put_2_rels_in_dict(PyObject *rels_dict,
-                              size_t fwd_read_pos,
-                              size_t fwd_end5,
-                              size_t fwd_end3,
-                              unsigned char *fwd_rels,
-                              size_t rev_read_pos,
-                              size_t rev_end5,
-                              size_t rev_end3,
-                              unsigned char *rev_rels)
+                              SamRead *fwd_read,
+                              SamRead *rev_read)
 {
     // Validate the arguments; positions are 1-indexed and the 5' ends
     // must be > 0.
-    assert(fwd_end5 > 0);
-    assert(rev_end5 > 0);
+    assert(fwd_read->end5 > 0);
+    assert(rev_read->end5 > 0);
 
     // Find the region where both reads 1 and 2 overlap.
     // All positions are 1-indexed.
     size_t both_end5, both_end3;
 
     // Find the region 5' of the overlap.
-    if (fwd_end5 > rev_end5)
+    if (fwd_read->ref_end5 > rev_read->ref_end5)
     {
         // The forward read begins after the reverse read.
-        both_end5 = fwd_end5;
+        both_end5 = fwd_read->ref_end5;
         if (put_rels_in_dict(rels_dict,
-                             rev_rels,
-                             rev_read_pos,
-                             rev_end5,
-                             min(rev_end3, both_end5 - 1)))
+                             rev_read->rels,
+                             rev_read->pos,
+                             rev_read->ref_end5,
+                             min(rev_read->ref_end3, both_end5 - 1)))
             {return -1;}
     }
     else
     {
-        // The forward read begins with or after the reverse read.
-        both_end5 = rev_end5;
+        // The forward read begins with or before the reverse read.
+        both_end5 = rev_read->ref_end5;
         if (put_rels_in_dict(rels_dict,
-                             fwd_rels,
-                             fwd_read_pos,
-                             fwd_end5,
-                             min(fwd_end3, both_end5 - 1)))
+                             fwd_read->rels,
+                             fwd_read->pos,
+                             fwd_read->ref_end5,
+                             min(fwd_read->ref_end3, both_end5 - 1)))
             {return -1;}
     }
 
     // Find the region 3' of the overlap.
-    if (fwd_end3 > rev_end3)
+    if (fwd_read->ref_end3 > rev_read->ref_end3)
     {
         // The forward read ends after the reverse read.
-        both_end3 = rev_end3;
+        both_end3 = rev_read->ref_end3;
         if (put_rels_in_dict(rels_dict,
-                             fwd_rels,
-                             fwd_read_pos,
-                             fwd_end3,
-                             max(fwd_end5, both_end3 + 1)))
+                             fwd_read->rels,
+                             fwd_read->pos,
+                             max(fwd_read->ref_end5, both_end3 + 1),
+                             fwd_read->ref_end3))
             {return -1;}
     }
     else
     {
-        // The forward read ends with or after the reverse read.
-        both_end3 = fwd_end3;
+        // The forward read ends with or before the reverse read.
+        both_end3 = fwd_read->ref_end3;
         if (put_rels_in_dict(rels_dict,
-                             rev_rels,
-                             rev_read_pos,
-                             rev_end3,
-                             max(rev_end5, both_end3 + 1)))
+                             rev_read->rels,
+                             rev_read->pos,
+                             max(rev_read->ref_end5, both_end3 + 1),
+                             rev_read->ref_end3))
             {return -1;}
     }
 
     // Fill relationships in the region of overlap.
-    assert(both_end5 >= fwd_read_pos);
-    assert(both_end5 >= rev_read_pos);
+    assert(both_end5 >= fwd_read->pos);
+    assert(both_end5 >= rev_read->pos);
     unsigned char rel;
     for (size_t pos = both_end5; pos <= both_end3; pos++)
     {
-        rel = fwd_rels[pos - fwd_read_pos] & rev_rels[pos - rev_read_pos];
+        rel = (fwd_read->rels[pos - fwd_read->pos]
+               &
+               rev_read->rels[pos - rev_read->pos]);
         if (put_rel_in_dict(rels_dict, pos, rel))
             {return -1;}
     }
@@ -1644,42 +1594,17 @@ static int put_end_in_list(PyObject *ends_list, Py_ssize_t index, size_t end)
 }
 
 
-/*
-Clean up by freeing all the dynamically allocated memory and optionally
-decrementing the reference count for py_object, to prevent memory leaks.
-*/
-static PyObject *cleanup(unsigned char **rels1_ptr,
-                         unsigned char **rels2_ptr,
-                         IndelPodArray *pods,
+/* Clean up by freeing all dynamically allocated memory for the reads
+and decrementing the reference count for py_object (if given).
+Do NOT pass SamReads that have not yet been initialized with init_read()
+to this function, because it will call free_read() on them. */
+static PyObject *cleanup(SamRead *read1,
+                         SamRead *read2,
                          PyObject *py_object)
 {
-    // All of the pointers to pointers must be non-NULL.
-    assert(rels1_ptr != NULL);
-    assert(rels2_ptr != NULL);
-    assert(pods != NULL);
-
-    // Free rels1 and point it to NULL.
-    unsigned char *rels1 = *rels1_ptr;
-    if (rels1 != NULL)
-    {
-        // printf("free %p\n", rels1);
-        free(rels1);
-        // Now that its memory has been freed, point rels1 at NULL.
-        *rels1_ptr = NULL;
-    }
-
-    // Free rels2 and point it to NULL.
-    unsigned char *rels2 = *rels2_ptr;
-    if (rels2 != NULL)
-    {
-        // printf("free %p\n", rels2);
-        free(rels2);
-        // Now that its memory has been freed, point rels2 at NULL.
-        *rels2_ptr = NULL;
-    }
-
-    // Free pods.
-    free_pods(pods);
+    // Free the dynamically allocated memory for the reads.
+    free_read(read1);
+    free_read(read2);
 
     // Decrement the reference count for py_object.
     if (py_object != NULL)
@@ -1701,7 +1626,7 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
     const char *line2;
     const char *ref;
     const char *ref_seq;
-    Py_ssize_t py_ref_len;
+    Py_ssize_t ref_len;
     unsigned long min_mapq;
     unsigned char min_qual;
     int insert3;
@@ -1715,7 +1640,7 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
                           &line2,
                           &ref,
                           &ref_seq,
-                          &py_ref_len,
+                          &ref_len,
                           &min_mapq,
                           &min_qual,
                           &insert3,
@@ -1724,7 +1649,6 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
                           &clip_end5,
                           &clip_end3))
         {return NULL;}
-    size_t ref_len = (size_t)py_ref_len;
     
     // It is impossible for any of these pointers to be NULL.
     assert(line1 != NULL);
@@ -1732,114 +1656,90 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
     assert(ref != NULL);
     assert(ref_seq != NULL);
 
+    // Declare two SamReads to hold the results and initialize them to
+    // prevent any errors caused by uninitialized pointers.
+    SamRead read1, read2;
+    init_read(&read1);
+    init_read(&read2);
+
     // Determine the number of mates.
     Py_ssize_t num_mates = (*line2) ? 2 : 1;
+    
+    // Initialize Python objects to return the results.
 
-    // Initialize containers to hold the results.
-    
-    unsigned char *rels1 = NULL, *rels2 = NULL;
-    
-    IndelPodArray pods;
-    pods.capacity = 0;
-    pods.pods = NULL;
-    pods.num_pods = 0;
-    
     PyObject *ends_rels_tuple = PyTuple_New(2);
     if (ends_rels_tuple == NULL)
-        {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
+        {return cleanup(&read1, &read2, ends_rels_tuple);}
     
     PyObject *ends_tuple = PyTuple_New(2);
     if (ends_tuple == NULL)
-        {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
+        {return cleanup(&read1, &read2, ends_rels_tuple);}
     PyTuple_SET_ITEM(ends_rels_tuple, 0, ends_tuple);
 
     PyObject *end5s_list = PyList_New(num_mates);
     if (end5s_list == NULL)
-        {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
+        {return cleanup(&read1, &read2, ends_rels_tuple);}
     PyTuple_SET_ITEM(ends_tuple, 0, end5s_list);
 
     PyObject *end3s_list = PyList_New(num_mates);
     if (end3s_list == NULL)
-        {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
+        {return cleanup(&read1, &read2, ends_rels_tuple);}
     PyTuple_SET_ITEM(ends_tuple, 1, end3s_list);
     
     PyObject *rels_dict = PyDict_New();
     if (rels_dict == NULL)
-        {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
+        {return cleanup(&read1, &read2, ends_rels_tuple);}
     PyTuple_SET_ITEM(ends_rels_tuple, 1, rels_dict);
 
     // Calculate relationships for line 1.
-    SamRead read1;
-    if (calc_rels_line(&rels1,
-                       &pods,
-                       &read1,
+    if (calc_rels_line(&read1,
                        line1,
                        ref,
                        ref_seq,
-                       ref_len,
+                       (size_t)ref_len,
                        min_mapq,
                        min_qual,
                        insert3,
                        ambindel,
                        clip_end5,
                        clip_end3))
-        {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
+        {return cleanup(&read1, &read2, ends_rels_tuple);}
 
     if (num_mates > 1)
     {
         // The read comprises forward (fwd) and reverse (rev) mates.
-        size_t fwd_end5, fwd_end3, rev_end5, rev_end3;
+        SamRead *fwd_read, *rev_read;
         // Check if line 2 differs from line 1.
         if (strcmp(line1, line2))
         {
-            // Free the pods for line 1 so that line 2 can reuse them.
-            free_pods(&pods);
-
             // Calculate relationships for line 2.
-            SamRead read2;
-            if (calc_rels_line(&rels2,
-                               &pods,
-                               &read2,
+            if (calc_rels_line(&read2,
                                line2,
                                ref,
                                ref_seq,
-                               ref_len,
+                               (size_t)ref_len,
                                min_mapq,
                                min_qual,
                                insert3,
                                ambindel,
                                clip_end5,
                                clip_end3))
-                {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
+                {return cleanup(&read1, &read2, ends_rels_tuple);}
 
             // Check if reads 1 and 2 are paired properly.
             if (validate_pair(&read1, &read2))
-                {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
+                {return cleanup(&read1, &read2, ends_rels_tuple);}
 
-            // Determine the 5'/3' ends of the forward/reverse reads.
-            size_t fwd_read_pos, rev_read_pos;
-            unsigned char *fwd_rels = NULL, *rev_rels = NULL;
+            // Determine which read is forward and which is reverse.
             if (read2.reverse)
             {
-                fwd_read_pos = read1.pos;
-                fwd_end5 = read1.ref_end5;
-                fwd_end3 = read1.ref_end3;
-                fwd_rels = rels1;
-                rev_read_pos = read2.pos;
-                rev_end5 = read2.ref_end5;
-                rev_end3 = read2.ref_end3;
-                rev_rels = rels2;
+                fwd_read = &read1;
+                rev_read = &read2;
             }
             else
             {
-                fwd_read_pos = read2.pos;
-                fwd_end5 = read2.ref_end5;
-                fwd_end3 = read2.ref_end3;
-                fwd_rels = rels2;
-                rev_read_pos = read1.pos;
-                rev_end5 = read1.ref_end5;
-                rev_end3 = read1.ref_end3;
-                rev_rels = rels1;
+                fwd_read = &read2;
+                rev_read = &read1;
             }
 
             // Remove overhangs if needed.
@@ -1847,69 +1747,65 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
             {
                 // The 5' end of the reverse mate cannot extend past
                 // the 5' end of the forward mate.
-                if (rev_end5 < fwd_end5) {rev_end5 = fwd_end5;}
+                if (rev_read->ref_end5 < fwd_read->ref_end5)
+                {
+                    rev_read->ref_end5 = fwd_read->ref_end5;
+                }
                 // The 3' end of the forward mate cannot extend past
                 // the 3' end of the reverse mate.
-                if (fwd_end3 > rev_end3) {fwd_end3 = rev_end3;}
+                if (fwd_read->ref_end3 > rev_read->ref_end3)
+                {
+                    fwd_read->ref_end3 = rev_read->ref_end3;
+                }
             }
 
             // Merge reads 1 and 2.
-            if (put_2_rels_in_dict(rels_dict,
-                                   fwd_read_pos,
-                                   fwd_end5,
-                                   fwd_end3,
-                                   fwd_rels,
-                                   rev_read_pos,
-                                   rev_end5,
-                                   rev_end3,
-                                   rev_rels))
-                {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
+            if (put_2_rels_in_dict(rels_dict, fwd_read, rev_read))
+                {return cleanup(&read1, &read2, ends_rels_tuple);}
         }
         else
         {
             // Lines 1 and 2 are identical.
-            fwd_end5 = read1.ref_end5;
-            fwd_end3 = read1.ref_end3;
-            rev_end5 = read1.ref_end5;
-            rev_end3 = read1.ref_end3;
+            fwd_read = &read1;
+            rev_read = &read1;
             if (put_rels_in_dict(rels_dict,
-                                 rels1,
+                                 read1.rels,
                                  read1.pos,
                                  read1.ref_end5,
                                  read1.ref_end3))
-                {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
+                {return cleanup(&read1, &read2, ends_rels_tuple);}
         }
 
         // Fill in the lists of 5' and 3' ends.
-        if (put_end_in_list(end5s_list, 0, fwd_end5))
-            {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
-        if (put_end_in_list(end5s_list, 1, rev_end5))
-            {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
-        if (put_end_in_list(end3s_list, 0, fwd_end3))
-            {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
-        if (put_end_in_list(end3s_list, 1, rev_end3))
-            {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
+        if (put_end_in_list(end5s_list, 0, fwd_read->ref_end5))
+            {return cleanup(&read1, &read2, ends_rels_tuple);}
+        if (put_end_in_list(end5s_list, 1, rev_read->ref_end5))
+            {return cleanup(&read1, &read2, ends_rels_tuple);}
+        if (put_end_in_list(end3s_list, 0, fwd_read->ref_end3))
+            {return cleanup(&read1, &read2, ends_rels_tuple);}
+        if (put_end_in_list(end3s_list, 1, rev_read->ref_end3))
+            {return cleanup(&read1, &read2, ends_rels_tuple);}
     }
     else
     {
         // Line 2 does not exist.
         if (put_rels_in_dict(rels_dict,
-                             rels1,
+                             read1.rels,
                              read1.pos,
                              read1.ref_end5,
                              read1.ref_end3))
-            {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
+            {return cleanup(&read1, &read2, ends_rels_tuple);}
         
         // Fill int the lists of 5' and 3' ends.
         if (put_end_in_list(end5s_list, 0, read1.ref_end5))
-            {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
+            {return cleanup(&read1, &read2, ends_rels_tuple);}
         if (put_end_in_list(end3s_list, 0, read1.ref_end3))
-            {return cleanup(&rels1, &rels2, &pods, ends_rels_tuple);}
+            {return cleanup(&read1, &read2, ends_rels_tuple);}
     }
 
-    // Free the memory of rels1 and rels2, but not of the object that
-    // will be returned.
-    cleanup(&rels1, &rels2, &pods, NULL);
+    // Free the memory of rels1 and rels2, but not of ends_rels_tuple
+    // which will be returned.
+    cleanup(&read1, &read2, NULL);
 
     return ends_rels_tuple;
 }
