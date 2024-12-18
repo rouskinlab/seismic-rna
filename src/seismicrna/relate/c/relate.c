@@ -10,52 +10,25 @@
 #include <string.h>
 
 
-// Exceptions
-
-static PyObject *RelateError;
 
 
-// Numbers
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//
+// Fundamental Definitions
+//
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
 
 static const int DECIMAL = 10;
-
-
-// Base encodings
 
 static const char BASEA = 'A';
 static const char BASEC = 'C';
 static const char BASEG = 'G';
 static const char BASET = 'T';
 
-
-// Relationship encodings
-
-static const unsigned char MATCH = '\x01';
-static const unsigned char DELET = '\x02';
-static const unsigned char INS_5 = '\x04';
-static const unsigned char INS_3 = '\x08';
-static const unsigned char SUB_A = '\x10';
-static const unsigned char SUB_C = '\x20';
-static const unsigned char SUB_G = '\x40';
-static const unsigned char SUB_T = '\x80';
-static const unsigned char SUB_N = SUB_A | SUB_C | SUB_G | SUB_T;
-static const unsigned char ANY_N = SUB_N | MATCH;
-
-
-// SAM file parsing
-
-static const char *SAM_SEP = "\t\n";
-static const char CIG_ALIGN = 'M';
-static const char CIG_DELET = 'D';
-static const char CIG_INSRT = 'I';
-static const char CIG_MATCH = '=';
-static const char CIG_SCLIP = 'S';
-static const char CIG_SUBST = 'X';
-static const unsigned long FLAG_PAIRED = 1;
-static const unsigned long FLAG_REV = 16;
-static const unsigned long FLAG_1ST = 64;
-static const unsigned long FLAG_2ND = 128;
-static const unsigned long MAX_FLAG = 4095;  // 4095 = 2^12 - 1
+static PyObject *RelateError;
 
 
 /* Return the smallest of two arguments. */
@@ -69,6 +42,106 @@ static inline size_t min(size_t a, size_t b)
 static inline size_t max(size_t a, size_t b)
 {
     return (a > b) ? a : b;
+}
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//
+// Relationship Encodings
+//
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+
+static const unsigned char MATCH = '\x01';
+static const unsigned char DELET = '\x02';
+static const unsigned char INS_5 = '\x04';
+static const unsigned char INS_3 = '\x08';
+static const unsigned char SUB_A = '\x10';
+static const unsigned char SUB_C = '\x20';
+static const unsigned char SUB_G = '\x40';
+static const unsigned char SUB_T = '\x80';
+static const unsigned char SUB_N = SUB_A | SUB_C | SUB_G | SUB_T;
+static const unsigned char ANY_N = SUB_N | MATCH;
+
+
+/* Encode a base character as a substitution. */
+static inline unsigned char encode_subs(char base)
+{
+    switch (base)
+    {
+        case BASET:
+            return SUB_T;
+        case BASEG:
+            return SUB_G;
+        case BASEC:
+            return SUB_C;
+        case BASEA:
+            return SUB_A;
+        default:
+            return SUB_N;
+    }
+}
+
+
+/* Encode a match or substitution as such if the quality is sufficient,
+otherwise as ambiguous. */
+static inline unsigned char encode_relate(char ref_base,
+                                          char read_base,
+                                          char read_qual,
+                                          unsigned char min_qual)
+{
+    if (read_qual < min_qual) {return ANY_N ^ encode_subs(ref_base);}
+    return (ref_base == read_base) ? MATCH : encode_subs(read_base);
+}
+
+
+/* More efficient version of encode_relate that assumes the base call
+is not a substitution. */
+static inline unsigned char encode_match(char read_base,
+                                         char read_qual,
+                                         unsigned char min_qual)
+{
+    return (read_qual >= min_qual) ? MATCH : (ANY_N ^ encode_subs(read_base));
+}
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//
+// Insertions and Deletions
+//
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+
+static const int DELETION = 0;
+static const int INSERTION = 1;
+static const size_t INIT_POD_CAPACITY = 8;
+static const size_t INIT_PODS_CAPACITY = 4;
+static const size_t CAPACITY_FACTOR = 2;
+
+
+static inline unsigned char get_ins_rel(int insert3)
+{
+    return insert3 ? INS_3 : INS_5;
+}
+
+
+static inline size_t calc_lateral5(size_t lateral3)
+{
+    return (lateral3 > 0) ? lateral3 - 1 : 0;
+}
+
+
+static inline size_t get_lateral(size_t lateral3, int insert3)
+{
+    return insert3 ? lateral3 : calc_lateral5(lateral3);
 }
 
 
@@ -88,6 +161,26 @@ typedef struct
     size_t capacity;
     size_t num_indels;
 } IndelPod;
+
+
+static int init_pod(IndelPod *pod, size_t order, int insert)
+{
+    pod->order = order;
+    pod->insert = insert;
+    // Assume that the pod is being initialized because an indel needs
+    // to go into the pod, so initialize with the capacity to hold up to
+    // INIT_POD_CAPACITY indels.
+    pod->capacity = INIT_POD_CAPACITY;
+    pod->indels = malloc(pod->capacity * sizeof(Indel));
+    if (pod->indels == NULL)
+    {
+        PyErr_NoMemory();
+        return -1;
+    }
+    printf("malloc %p\n", pod->indels);
+    pod->num_indels = 0;
+    return 0;
+}
 
 
 typedef struct
@@ -114,8 +207,9 @@ static void init_pods(IndelPodArray *pods)
 /* Free the dynamically allocated memory for an IndelPodArray and all
 IndelPods in the array.
 Do NOT call this function on an IndelPodArray that has not yet been
-initialized with init_pods(), or else it could free random memory,
-possibly causing an access violation or memory corruption. */
+initialized with init_pods(), or else the behavior is undefined and
+could free random memory, possibly triggering an access violation or
+corrupting the memory. */
 static void free_pods(IndelPodArray *pods)
 {
     assert(pods != NULL);
@@ -130,6 +224,192 @@ static void free_pods(IndelPodArray *pods)
     printf("free %p\n", pods->pods);
     // Now that its memory has been freed, reset all of its fields.
     init_pods(pods);
+}
+
+
+/* Add an Indel to the last IndelPod in an IndelPodArray. If the array
+has no IndelPods, or if the last IndelPod has the wrong type of Indel,
+then automatically append a new IndelPod to the IndelPodArray.
+Do NOT call this function on an IndelPodArray that has not yet been
+initialized with init_pods(), or else the behavior is undefined and
+could free random memory, possibly triggering an access violation or
+corrupting the memory. */
+static int add_indel(IndelPodArray *pods,
+                     int insert,
+                     size_t opposite,
+                     size_t lateral3)
+{
+    IndelPod *pod = NULL;
+    Indel *indel = NULL;
+    if (pods->num_pods == 0)
+    {
+        assert(pods->pods == NULL);
+        assert(pods->capacity == 0);
+
+        // There are no pods yet: allocate a new array of pods with the
+        // capacity to hold up to INIT_PODS_CAPACITY pods.
+        pods->capacity = INIT_PODS_CAPACITY;
+        pods->pods = malloc(pods->capacity * sizeof(IndelPod));
+        if (pods->pods == NULL)
+        {
+            PyErr_NoMemory();
+            return -1;
+        }
+        printf("malloc %p\n", pods->pods);
+
+        // Initialize the first pod in the new array.
+        pod = pods->pods;
+        if (init_pod(pod, 0, insert)) {return -1;}
+        // Increment num_pods only if init_pod succeeds because, if it
+        // fails, then pod->indels is NULL, so free_pods() would try to
+        // free() a NULL pointer if num_pods were already incremented.
+        pods->num_pods = 1;
+    }
+    else
+    {
+        assert(pods->pods != NULL);
+        assert(pods->capacity >= pods->num_pods);
+
+        // There are pods: check if the last pod is the correct type.
+        pod = &(pods->pods[pods->num_pods - 1]);
+        if (pod->insert != insert)
+        {
+            // The last pod is the wrong type: a new pod is needed.
+            if (pods->num_pods == pods->capacity)
+            {
+                // The array of pods is already at its maximum capacity:
+                // allocate a new array with twice the capacity.
+                pods->capacity *= CAPACITY_FACTOR;
+                IndelPod *new_pods = realloc(pods->pods,
+                                             pods->capacity * sizeof(IndelPod));
+                if (new_pods == NULL)
+                {
+                    PyErr_NoMemory();
+                    return -1;
+                }
+                printf("implicit-free %p\n", pods->pods);
+                printf("realloc %p\n", new_pods);
+                pods->pods = new_pods;
+            }
+
+            // Initialize the new pod.
+            pod = &(pods->pods[pods->num_pods]);
+            if (init_pod(pod, pods->num_pods, insert)) {return -1;}
+            // Increment num_pods only if init_pod succeeds because, if
+            // it fails, then pod->indels is NULL, so free_pods() would
+            // try to free() a NULL pointer if num_pods were already
+            // incremented.
+            pods->num_pods++;
+        }
+        else
+        {
+            // The last pod is the correct type.
+            if (pod->num_indels == pod->capacity)
+            {
+                // The pod is already at its maximum capacity: allocate
+                // a new array with twice the capacity.
+                pod->capacity *= CAPACITY_FACTOR;
+                Indel *new_indels = realloc(pod->indels,
+                                            pod->capacity * sizeof(Indel));
+                if (new_indels == NULL)
+                {
+                    PyErr_NoMemory();
+                    return -1;
+                }
+                printf("implicit-free %p\n", pod->indels);
+                printf("realloc %p\n", new_indels);
+                pod->indels = new_indels;
+            }
+        }
+    }
+
+    // Initialize the new indel.
+    assert(pod != NULL);
+    assert(pod->num_indels < pod->capacity);
+    indel = &(pod->indels[pod->num_indels]);
+    indel->insert = insert;
+    indel->opposite = opposite;
+    indel->lateral3 = lateral3;
+    pod->num_indels++;
+    return 0;
+}
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//
+// SAM Line Parser
+//
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+
+static const char *SAM_SEP = "\t\n";
+static const char CIG_ALIGN = 'M';
+static const char CIG_DELET = 'D';
+static const char CIG_INSRT = 'I';
+static const char CIG_MATCH = '=';
+static const char CIG_SCLIP = 'S';
+static const char CIG_SUBST = 'X';
+static const unsigned long FLAG_PAIRED = 1;
+static const unsigned long FLAG_REV = 16;
+static const unsigned long FLAG_1ST = 64;
+static const unsigned long FLAG_2ND = 128;
+static const unsigned long MAX_FLAG = 4095;  // 4095 = 2^12 - 1
+
+
+typedef struct
+{
+    const char *op;  // type of CIGAR operation
+    size_t len;      // length of CIGAR operation
+} CigarOp;
+
+
+/* Initialize a CigarOp. */
+static inline void init_cigar(CigarOp *cigar, const char *cigar_str)
+{
+    assert(cigar_str != NULL);
+    // Point the operation to one position before the CIGAR string.
+    cigar->op = cigar_str - 1;
+    cigar->len = 0;
+}
+
+
+/* Find the next operation in a CIGAR string and store it in cigar.
+Do NOT call this function on a CigarOp that has not yet been initialized
+with init_cigar(), or else it will try to read random memory, generating
+incorrect results and possibly causing an access violation. */
+static inline int get_next_cigar_op(CigarOp *cigar)
+{
+    // Parse as many characters of text as possible to a number, cast
+    // to size_t, and store in cigar->len (length of CIGAR operation).
+    // Parsing must start one character ahead of the last character to
+    // be read from the CIGAR string (which is cigar->op, the type of
+    // the previous operation); thus, parsing starts at cigar->op + 1.
+    // The character after the last digit to be parsed is the type of
+    // the new operation; thus, after cigar->len is parsed, cigar->op
+    // is finally pointed at the character after the last parsed digit.
+    cigar->len = (size_t)strtoul(cigar->op + 1, (char **)&cigar->op, DECIMAL);
+    if (cigar->len == 0)
+    {
+        // The parse returns a length of 0 if it fails. This is normal
+        // when the end of the string is reached, but should not happen
+        // before then. If the character to which the CIGAR operation
+        // points evaluates to true, then it is not the null terminator
+        // of a string, so the end of end of the CIGAR string has not
+        // yet been reached, which is an error.
+        if (*cigar->op)
+        {
+            PyErr_SetString(PyExc_ValueError,
+                            "Failed to parse a CIGAR operation");
+            return -1;
+        }
+        // Point cigar->op to NULL to signify reaching the end.
+        cigar->op = NULL;
+    }
+    return 0;
 }
 
 
@@ -196,48 +476,6 @@ static void free_read(SamRead *read)
     free_pods(&(read->pods));
     // None of the other fields in the SamRead are dynamically allocated
     // memory, so nothing else needs to be done with them.
-}
-
-
-// CIGAR string operations
-
-typedef struct
-{
-    const char *op;  // type of operation
-    size_t len;      // length of operation
-} CigarOp;
-
-
-/* Find the next operation in a CIGAR string and store it in cigar. */
-static inline int get_next_cigar_op(CigarOp *cigar)
-{
-    // Parse as many characters of text as possible to a number, cast
-    // to size_t, and store in cigar->len (length of CIGAR operation).
-    // Parsing must start one character ahead of the last character to
-    // be read from the CIGAR string (which is cigar->op, the type of
-    // the previous operation); thus, parsing starts at cigar->op + 1.
-    // The character after the last digit to be parsed is the type of
-    // the new operation; thus, after cigar->len is parsed, cigar->op
-    // is finally pointed at the character after the last parsed digit.
-    cigar->len = (size_t)strtoul(cigar->op + 1, (char **)&cigar->op, DECIMAL);
-    if (cigar->len == 0)
-    {
-        // The parse returns a length of 0 if it fails. This is normal
-        // when the end of the string is reached, but should not happen
-        // before then. If the character to which the CIGAR operation
-        // points evaluates to true, then it is not the null terminator
-        // of a string, so the end of end of the CIGAR string has not
-        // yet been reached, which is an error.
-        if (*cigar->op)
-        {
-            PyErr_SetString(PyExc_ValueError,
-                            "Failed to parse a CIGAR operation");
-            return -1;
-        }
-        // Point cigar->op to NULL to signify reaching the end.
-        cigar->op = NULL;
-    }
-    return 0;
 }
 
 
@@ -403,10 +641,9 @@ static int parse_sam_line(SamRead *read,
 
     // Number of reference bases that the read consumes.
     read->ref_bases = 0;
-    // Initialize the CIGAR operation so that it points just before the
-    // CIGAR string.
+    // Initialize the CIGAR operation.
     CigarOp cigar;
-    cigar.op = read->cigar - 1;
+    init_cigar(&cigar, read->cigar);
     // Read the first operation from the CIGAR string; catch errors.
     if (get_next_cigar_op(&cigar))
         {return -1;}
@@ -431,7 +668,7 @@ static int parse_sam_line(SamRead *read,
         if (get_next_cigar_op(&cigar))
             {return -1;}
     }
-    // The number of bases consumed must be > 0.
+    // The number of reference bases consumed must be > 0.
     if (read->ref_bases == 0)
     {
         PyErr_SetString(PyExc_ValueError,
@@ -458,6 +695,8 @@ static int parse_sam_line(SamRead *read,
 }
 
 
+/* Validate that a SamRead's reference name matches the name of the SAM
+file and that its mapping quality is sufficient. */
 static int validate_read(const SamRead *read,
                          const char *ref,
                          unsigned long min_mapq)
@@ -481,6 +720,8 @@ static int validate_read(const SamRead *read,
 }
 
 
+/* Validate that two paired-end SamReads that are allegedly mates have
+the same name and other compatible attributes. */
 static int validate_pair(const SamRead *read1,
                          const SamRead *read2)
 {
@@ -527,48 +768,18 @@ static int validate_pair(const SamRead *read1,
 }
 
 
-/* Encode a base character as a substitution. */
-static inline unsigned char encode_subs(char base)
-{
-    switch (base)
-    {
-        case BASET:
-            return SUB_T;
-        case BASEG:
-            return SUB_G;
-        case BASEC:
-            return SUB_C;
-        case BASEA:
-            return SUB_A;
-        default:
-            return SUB_N;
-    }
-}
 
 
-/* Encode a match or substitution as such if the quality is sufficient,
-otherwise as ambiguous. */
-static inline unsigned char encode_relate(char ref_base,
-                                          char read_base,
-                                          char read_qual,
-                                          unsigned char min_qual)
-{
-    if (read_qual < min_qual) {return ANY_N ^ encode_subs(ref_base);}
-    return (ref_base == read_base) ? MATCH : encode_subs(read_base);
-}
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//
+// Ambiguous Insertions and Deletions Algorithm
+//
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 
-/* More efficient version of encode_relate that assumes the base call
-is not a substitution. */
-static inline unsigned char encode_match(char read_base,
-                                         char read_qual,
-                                         unsigned char min_qual)
-{
-    return (read_qual >= min_qual) ? MATCH : (ANY_N ^ encode_subs(read_base));
-}
-
-
-/* Return whether two relationships are consistent with each other. */
+/* Check if two relationships are consistent with each other. */
 static inline int consistent_rels(char rel1, char rel2)
 {
     // Two relationships are consistent if they have one or more primary
@@ -581,149 +792,8 @@ static inline int consistent_rels(char rel1, char rel2)
 }
 
 
-// Insertions and deletions
-
-static const int DELETION = 0;
-static const int INSERTION = 1;
-static const int INIT_PODS_CAPACITY = 4;
-static const size_t INIT_POD_CAPACITY = 4;
-static const size_t CAPACITY_FACTOR = 2;
-
-
-static inline unsigned char get_ins_rel(int insert3)
-{
-    return insert3 ? INS_3 : INS_5;
-}
-
-
-static inline size_t calc_lateral5(size_t lateral3)
-{
-    return (lateral3 > 0) ? lateral3 - 1 : 0;
-}
-
-
-static inline size_t get_lateral(size_t lateral3, int insert3)
-{
-    return insert3 ? lateral3 : calc_lateral5(lateral3);
-}
-
-
-static int init_pod(IndelPod *pod, size_t order, int insert)
-{
-    pod->order = order;
-    pod->insert = insert;
-    // Assume that the pod is being initialized because an indel needs
-    // to go into the pod, so initialize with the capacity to hold up to
-    // INIT_POD_CAPACITY indels.
-    pod->capacity = INIT_POD_CAPACITY;
-    pod->indels = malloc(pod->capacity * sizeof(Indel));
-    if (pod->indels == NULL)
-    {
-        PyErr_NoMemory();
-        return -1;
-    }
-    printf("malloc %p\n", pod->indels);
-    pod->num_indels = 0;
-    return 0;
-}
-
-
-static int add_indel(IndelPodArray *pods,
-                     int insert,
-                     size_t opposite,
-                     size_t lateral3)
-{
-    IndelPod *pod = NULL;
-    Indel *indel = NULL;
-    if (pods->num_pods == 0)
-    {
-        assert(pods->pods == NULL);
-        assert(pods->capacity == 0);
-        // There are no pods yet: allocate a new array of pods with the
-        // capacity to hold up to INIT_PODS_CAPACITY pods.
-        pods->capacity = INIT_PODS_CAPACITY;
-        pods->pods = malloc(pods->capacity * sizeof(IndelPod));
-        if (pods->pods == NULL)
-        {
-            PyErr_NoMemory();
-            return -1;
-        }
-        printf("malloc %p\n", pods->pods);
-        // Initialize the first pod in the new array.
-        pod = pods->pods;
-        if (init_pod(pod, 0, insert)) {return -1;}
-        // Increment num_pods only if init_pod succeeds because, if it
-        // fails, then pod->indels is NULL, so free_pods() would try to
-        // free() a NULL pointer if num_pods were already incremented.
-        pods->num_pods = 1;
-    }
-    else
-    {
-        assert(pods->pods != NULL);
-        assert(pods->capacity >= pods->num_pods);
-        // There are pods: check if the last pod is the correct type.
-        pod = &(pods->pods[pods->num_pods - 1]);
-        if (pod->insert != insert)
-        {
-            // The last pod is the other type: a new pod is needed.
-            if (pods->num_pods == pods->capacity)
-            {
-                // The array of pods is already at its maximum capacity:
-                // allocate a new array with twice the capacity.
-                pods->capacity *= CAPACITY_FACTOR;
-                pod = realloc(pods->pods, pods->capacity * sizeof(IndelPod));
-                if (pod == NULL)
-                {
-                    PyErr_NoMemory();
-                    return -1;
-                }
-                printf("implicit-free %p\n", pods->pods);
-                printf("realloc %p\n", pod);
-                pods->pods = pod;
-            }
-            // Initialize the new pod.
-            pod = &(pods->pods[pods->num_pods]);
-            if (init_pod(pod, pods->num_pods, insert)) {return -1;}
-            // Increment num_pods only if init_pod succeeds because, if
-            // it fails, then pod->indels is NULL, so free_pods() would
-            // try to free() a NULL pointer if num_pods were already
-            // incremented.
-            pods->num_pods++;
-        }
-        else
-        {
-            // The last pod is the correct type.
-            if (pod->num_indels == pod->capacity)
-            {
-                // The pod is already at its maximum capacity: allocate
-                // a new array with twice the capacity.
-                pod->capacity *= CAPACITY_FACTOR;
-                indel = realloc(pod->indels, pod->capacity * sizeof(Indel));
-                if (indel == NULL)
-                {
-                    PyErr_NoMemory();
-                    return -1;
-                }
-                printf("implicit-free %p\n", pod->indels);
-                printf("realloc %p\n", indel);
-                pod->indels = indel;
-            }
-        }
-    }
-    // Initialize the new indel.
-    assert(pod != NULL);
-    assert(pod->num_indels < pod->capacity);
-    indel = &(pod->indels[pod->num_indels]);
-    indel->insert = insert;
-    indel->opposite = opposite;
-    indel->lateral3 = lateral3;
-    pod->num_indels++;
-    return 0;
-}
-
-
-/* Determine the order of two IndelPods. */
-static int comp_pods_fwd(const void *a, const void *b)
+/* Determine the order of two IndelPods from 5' to 3'. */
+static inline int comp_pods_5to3(const void *a, const void *b)
 {
     const IndelPod *pod1 = (const IndelPod *)a;
     const IndelPod *pod2 = (const IndelPod *)b;
@@ -736,8 +806,8 @@ static int comp_pods_fwd(const void *a, const void *b)
 }
 
 
-/* Determine the reverse order of two IndelPods. */
-static int comp_pods_rev(const void *a, const void *b)
+/* Determine the order of two IndelPods from 3' to 5'. */
+static inline int comp_pods_3to5(const void *a, const void *b)
 {
     const IndelPod *pod1 = (const IndelPod *)a;
     const IndelPod *pod2 = (const IndelPod *)b;
@@ -751,17 +821,18 @@ static int comp_pods_rev(const void *a, const void *b)
 
 
 /* Sort the IndelPods in an IndelPodArray, either forward or reverse. */
-static void sort_pods(IndelPodArray *pods, int move5to3)
+static inline void sort_pods(IndelPodArray *pods, int move5to3)
 {
+    assert(pods != NULL);
     if (move5to3)
-        {qsort(pods->pods, pods->num_pods, sizeof(IndelPod), comp_pods_fwd);}
+        {qsort(pods->pods, pods->num_pods, sizeof(IndelPod), comp_pods_5to3);}
     else
-        {qsort(pods->pods, pods->num_pods, sizeof(IndelPod), comp_pods_rev);}
+        {qsort(pods->pods, pods->num_pods, sizeof(IndelPod), comp_pods_3to5);}
 }
 
 
-/* Determine the order of two Indels. */
-static int comp_indels_fwd(const void *a, const void *b)
+/* Determine the order of two Indels from 5' to 3'. */
+static inline int comp_indels_5to3(const void *a, const void *b)
 {
     const Indel *indel1 = (const Indel *)a;
     const Indel *indel2 = (const Indel *)b;
@@ -774,8 +845,8 @@ static int comp_indels_fwd(const void *a, const void *b)
 }
 
 
-/* Determine the reverse order of two Indels. */
-static int comp_indels_rev(const void *a, const void *b)
+/* Determine the order of two Indels from 3' to 5'. */
+static inline int comp_indels_3to5(const void *a, const void *b)
 {
     const Indel *indel1 = (const Indel *)a;
     const Indel *indel2 = (const Indel *)b;
@@ -789,12 +860,13 @@ static int comp_indels_rev(const void *a, const void *b)
 
 
 /* Sort the Indels in an IndelPod, either forward or reverse. */
-static void sort_pod(IndelPod *pod, int move5to3)
+static inline void sort_pod(IndelPod *pod, int move5to3)
 {
+    assert(pod != NULL);
     if (move5to3)
-        {qsort(pod->indels, pod->num_indels, sizeof(Indel), comp_indels_fwd);}
+        {qsort(pod->indels, pod->num_indels, sizeof(Indel), comp_indels_5to3);}
     else
-        {qsort(pod->indels, pod->num_indels, sizeof(Indel), comp_indels_rev);}
+        {qsort(pod->indels, pod->num_indels, sizeof(Indel), comp_indels_3to5);}
 }
 
 
@@ -955,13 +1027,8 @@ static int try_move_indel(unsigned char *rels,
 }
 
 
-static void find_ambindels_recurse(unsigned char *rels,
-                                   IndelPodArray *pods,
-                                   SamRead *read,
-                                   const char *ref_seq,
-                                   size_t ref_len,
-                                   size_t ref_end5,
-                                   size_t ref_end3,
+static void find_ambindels_recurse(SamRead *read,
+                                   const char *rels_seq,
                                    size_t read_end5,
                                    size_t read_end3,
                                    unsigned char min_qual,
@@ -971,8 +1038,8 @@ static void find_ambindels_recurse(unsigned char *rels,
                                    size_t indel_index)
 {
     // Sort the indels in the pod and select the indel at this index.
-    assert(pod_index < pods->num_pods);
-    IndelPod *pod = &(pods->pods[pod_index]);
+    assert(pod_index < read->pods.num_pods);
+    IndelPod *pod = &(read->pods.pods[pod_index]);
     sort_pod(pod, move5to3);
     assert(indel_index < pod->num_indels);
     Indel *indel = &(pod->indels[indel_index]);
@@ -986,13 +1053,8 @@ static void find_ambindels_recurse(unsigned char *rels,
     if (try_move_indel())
     {
         // Try to move the indel at this index one more step.
-        find_ambindels_recurse(rels,
-                               pods,
-                               read,
-                               ref_seq,
-                               ref_len,
-                               ref_end5,
-                               ref_end3,
+        find_ambindels_recurse(read,
+                               rels_seq,
                                read_end5,
                                read_end3,
                                min_qual,
@@ -1012,13 +1074,8 @@ static void find_ambindels_recurse(unsigned char *rels,
     if (indel_index + 1 < pod->num_indels)
     {
         // Move the next indel in the pod.
-        find_ambindels_recurse(rels,
-                               pods,
-                               read,
-                               ref_seq,
-                               ref_len,
-                               ref_end5,
-                               ref_end3,
+        find_ambindels_recurse(read,
+                               rels_seq,
                                read_end5,
                                read_end3,
                                min_qual,
@@ -1032,13 +1089,8 @@ static void find_ambindels_recurse(unsigned char *rels,
     if (pod_index > 0)
     {
         // Move the indels in the previous pod.
-        find_ambindels_recurse(rels,
-                               pods,
-                               read,
-                               ref_seq,
-                               ref_len,
-                               ref_end5,
-                               ref_end3,
+        find_ambindels_recurse(read,
+                               rels_seq,
                                read_end5,
                                read_end3,
                                min_qual,
@@ -1050,37 +1102,27 @@ static void find_ambindels_recurse(unsigned char *rels,
 }
 
 
-static void find_ambindels(unsigned char *rels,
-                           IndelPodArray *pods,
-                           SamRead *read,
-                           const char *ref_seq,
-                           size_t ref_len,
-                           size_t ref_end5,
-                           size_t ref_end3,
+static void find_ambindels(SamRead *read,
+                           const char *rels_seq,
                            size_t read_end5,
                            size_t read_end3,
                            unsigned char min_qual,
                            int insert3)
 {
-    if (pods->num_pods > 0)
+    if (read->pods.num_pods > 0)
     {
-        assert(pods->pods != NULL);
+        assert(read->pods.pods != NULL);
         for (int move5to3 = 0; move5to3 <= 1; move5to3++)
         {
-            sort_pods(pods, move5to3);
-            find_ambindels_recurse(rels,
-                                   pods,
-                                   read,
-                                   ref_seq,
-                                   ref_len,
-                                   ref_end5,
-                                   ref_end3,
+            sort_pods(read->pods.pods, move5to3);
+            find_ambindels_recurse(read,
+                                   rels_seq,
                                    read_end5,
                                    read_end3,
                                    min_qual,
                                    insert3,
                                    move5to3,
-                                   pods->num_pods - 1,
+                                   read->pods.num_pods - 1,
                                    0);
         }
     }
@@ -1148,11 +1190,9 @@ static int calc_rels_line(SamRead *read,
     // CIGAR operation stopping point.
     size_t cigar_op_stop_pos;
     
-    // Initialize the CIGAR operation so that it points just before the
-    // CIGAR string.
-    assert(read->cigar != NULL);
+    // Initialize the CIGAR operation.
     CigarOp cigar;
-    cigar.op = read->cigar - 1;
+    init_cigar(&cigar, read->cigar);
 
     // Read the first operation from the CIGAR string; catch errors.
     if (get_next_cigar_op(&cigar)) {return -1;}
@@ -1318,7 +1358,7 @@ static int calc_rels_line(SamRead *read,
                 // Bases were soft-clipped from the 5' or 3' end of the
                 // read during alignment. Like insertions, they consume
                 // the read but not the reference; however, they are not
-                // mutations.
+                // mutations and so do not need to be marked.
                 cigar_op_stop_pos = read_pos + cigar.len;
                 if (cigar_op_stop_pos > read->len)
                 {
@@ -1414,13 +1454,8 @@ static int calc_rels_line(SamRead *read,
     if (ambindel && read->pods.num_pods > 0)
     {
         // Find and mark ambiguous insertions and deletions.
-        find_ambindels(read->rels,
-                       &(read->pods),
-                       read,
+        find_ambindels(read,
                        rels_seq,
-                       read->ref_bases,
-                       read->pos,
-                       rels_pos,
                        read_end5,
                        read_end3,
                        min_qual,
@@ -1508,8 +1543,8 @@ static int put_rels_in_dict(PyObject *rels_dict,
 
 
 static int put_2_rels_in_dict(PyObject *rels_dict,
-                              SamRead *fwd_read,
-                              SamRead *rev_read)
+                              const SamRead *fwd_read,
+                              const SamRead *rev_read)
 {
     // Validate the arguments; positions are 1-indexed and the 5' ends
     // must be > 0.
@@ -1742,7 +1777,7 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
                 rev_read = &read1;
             }
 
-            // Remove overhangs if needed.
+            // Optionally remove overhangs.
             if (!overhangs)
             {
                 // The 5' end of the reverse mate cannot extend past
@@ -1765,7 +1800,7 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
         }
         else
         {
-            // Lines 1 and 2 are identical.
+            // Lines 1 and 2 are identical: no need to process line 2.
             fwd_read = &read1;
             rev_read = &read1;
             if (put_rels_in_dict(rels_dict,
