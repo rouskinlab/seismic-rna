@@ -247,9 +247,7 @@ def _calc_rels_read(read: SamRead,
                 f"Invalid CIGAR operation: {repr(cigar_op.decode())}"
             )
     # Verify that the sum of all CIGAR operations that consumed the read
-    # equals the length of the read. The former equals read_pos because
-    # for each CIGAR operation that consumed the read, the length of the
-    # operation was added to read_pos.
+    # equals the length of the read.
     if read_pos != len(read.seq):
         raise RelateValueError(
             f"CIGAR string {repr(read.cigar)} consumed {read_pos} bases "
@@ -294,13 +292,13 @@ def _calc_rels_read(read: SamRead,
 
 
 def _validate_read(read: SamRead, ref: str, min_mapq: int):
-    if read.mapq < min_mapq:
-        raise ValueError(f"Read {repr(read.name)} mapped with quality score "
-                         f"{read.mapq}, less than the minimum of {min_mapq}")
     if read.ref != ref:
         raise ValueError(f"Read {repr(read.name)} mapped to a reference named "
                          f"{repr(read.ref)} but is in an alignment map file "
                          f"for a reference named {repr(ref)}")
+    if read.mapq < min_mapq:
+        raise ValueError(f"Read {repr(read.name)} mapped with quality score "
+                         f"{read.mapq}, less than the minimum of {min_mapq}")
 
 
 def _validate_pair(read1: SamRead, read2: SamRead):

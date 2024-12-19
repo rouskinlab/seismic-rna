@@ -11,6 +11,7 @@ src/seismic_rna.egg-info
 __pycache__/
 
 # C extensions
+*.o
 *.so
 
 # PyCharm

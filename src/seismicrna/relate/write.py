@@ -35,6 +35,9 @@ def relate_records(records: Iterable[tuple[str, str, str]],
                    clip_end5: int,
                    clip_end3: int):
     for name, line1, line2 in records:
+        print(line1)
+        print(line2)
+        print()
         try:
             yield name, calc_rels_lines(line1,
                                         line2,

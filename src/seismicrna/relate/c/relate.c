@@ -135,7 +135,8 @@ static inline unsigned char get_ins_rel(int insert3)
 
 static inline size_t calc_lateral5(size_t lateral3)
 {
-    return (lateral3 > 0) ? lateral3 - 1 : 0;
+    assert(lateral3 > 0);
+    return lateral3 - 1;
 }
 
 
@@ -147,6 +148,7 @@ static inline size_t get_lateral(size_t lateral3, int insert3)
 
 typedef struct
 {
+    size_t label;
     int insert;
     size_t opposite;
     size_t lateral3;
@@ -163,8 +165,14 @@ typedef struct
 } IndelPod;
 
 
+/* Initialize an IndelPod.
+Do NOT call this function more than once on an IndelPod without first
+calling free_pod(), or else memory in pod->indels will leak.
+Make SURE to call free_pod() eventually, or else memory in pod->indels
+will leak. */
 static int init_pod(IndelPod *pod, size_t order, int insert)
 {
+    assert(pod != NULL);
     pod->order = order;
     pod->insert = insert;
     // Assume that the pod is being initialized because an indel needs
@@ -177,9 +185,23 @@ static int init_pod(IndelPod *pod, size_t order, int insert)
         PyErr_NoMemory();
         return -1;
     }
-    printf("malloc %p\n", pod->indels);
+    // printf("malloc %p\n", pod->indels);
     pod->num_indels = 0;
     return 0;
+}
+
+
+/* Initialize an IndelPod.
+Do NOT call this function on an IndelPod that has not been initialized
+with init_pods(), or else the behavior is undefined and could free
+random memory, possibly triggering an access violation or corrupting the
+memory. */
+static void free_pod(IndelPod *pod)
+{
+    assert(pod != NULL);
+    free(pod->indels);
+    pod->indels = NULL;
+    // printf("free %p\n", pods->pods[p].indels);
 }
 
 
@@ -192,8 +214,9 @@ typedef struct
 
 
 /* Initialize an IndelPodArray.
-Do NOT call this function more than once on an IndelPodArray without
-first calling free_pods(), or else memory in pods->pods will leak. */
+Do NOT call this function on an IndelPodArray after calling add_indel(),
+unless free_pods() is called after add_indel() and before init_pods(),
+or else memory in pods->pods will leak. */
 static void init_pods(IndelPodArray *pods)
 {
     assert(pods != NULL);
@@ -216,12 +239,10 @@ static void free_pods(IndelPodArray *pods)
     // Free each IndelPod.
     for (size_t p = 0; p < pods->num_pods; p++)
     {
-        assert(pods->pods != NULL);
-        free(pods->pods[p].indels);
-        printf("free %p\n", pods->pods[p].indels);
+        free_pod(&(pods->pods[p]));
     }
     free(pods->pods);
-    printf("free %p\n", pods->pods);
+    // printf("free %p\n", pods->pods);
     // Now that its memory has been freed, reset all of its fields.
     init_pods(pods);
 }
@@ -233,7 +254,9 @@ then automatically append a new IndelPod to the IndelPodArray.
 Do NOT call this function on an IndelPodArray that has not yet been
 initialized with init_pods(), or else the behavior is undefined and
 could free random memory, possibly triggering an access violation or
-corrupting the memory. */
+corrupting the memory.
+Make SURE to call free_pods() eventually, or else memory in pods->pods
+will leak. */
 static int add_indel(IndelPodArray *pods,
                      int insert,
                      size_t opposite,
@@ -255,7 +278,7 @@ static int add_indel(IndelPodArray *pods,
             PyErr_NoMemory();
             return -1;
         }
-        printf("malloc %p\n", pods->pods);
+        // printf("malloc %p\n", pods->pods);
 
         // Initialize the first pod in the new array.
         pod = pods->pods;
@@ -287,8 +310,8 @@ static int add_indel(IndelPodArray *pods,
                     PyErr_NoMemory();
                     return -1;
                 }
-                printf("implicit-free %p\n", pods->pods);
-                printf("realloc %p\n", new_pods);
+                // printf("implicit-free %p\n", pods->pods);
+                // printf("realloc %p\n", new_pods);
                 pods->pods = new_pods;
             }
 
@@ -316,8 +339,8 @@ static int add_indel(IndelPodArray *pods,
                     PyErr_NoMemory();
                     return -1;
                 }
-                printf("implicit-free %p\n", pod->indels);
-                printf("realloc %p\n", new_indels);
+                // printf("implicit-free %p\n", pod->indels);
+                // printf("realloc %p\n", new_indels);
                 pod->indels = new_indels;
             }
         }
@@ -327,6 +350,7 @@ static int add_indel(IndelPodArray *pods,
     assert(pod != NULL);
     assert(pod->num_indels < pod->capacity);
     indel = &(pod->indels[pod->num_indels]);
+    indel->label = pod->num_indels;
     indel->insert = insert;
     indel->opposite = opposite;
     indel->lateral3 = lateral3;
@@ -423,15 +447,15 @@ typedef struct
     unsigned long mapq;   // mapping quality
     const char *cigar;    // CIGAR string
     const char *seq;      // read sequence
-    const char *qual;     // read quality
+    const char *quals;    // read quality scores
     // Calculated attributes
     const char *end;      // pointer to address after 3' end of read
     size_t len;           // read length
     int paired;           // whether read is paired
     int reverse;          // whether read is reverse complemented
-    int first;            // whether read is the 1st read
-    int second;           // whether read is the 2nd read
-    size_t ref_bases;     // number of reference bases the read consumes
+    int first;            // whether read is the first read
+    int second;           // whether read is the second read
+    size_t num_rels;      // number of relationships
     size_t ref_end5;      // 5' end of the read in the ref (1-indexed)
     size_t ref_end3;      // 3' end of the read in the ref (1-indexed)
     // Container attributes
@@ -453,7 +477,7 @@ static void init_read(SamRead *read)
     read->ref = NULL;
     read->cigar = NULL;
     read->seq = NULL;
-    read->qual = NULL;
+    read->quals = NULL;
     read->end = NULL;
     read->rels = NULL;
     // Initialize the read's pods.
@@ -470,7 +494,7 @@ static void free_read(SamRead *read)
     assert(read != NULL);
     // Free the relationship array and point it to NULL.
     free(read->rels);
-    printf("free %p\n", read->rels);
+    // printf("free %p\n", read->rels);
     read->rels = NULL;
     // Free the read's pods.
     free_pods(&(read->pods));
@@ -624,7 +648,7 @@ static int parse_sam_line(SamRead *read,
     read->len = read->end - read->seq;
 
     // Read quality
-    if ((read->qual = strtok_r(NULL, SAM_SEP, &end)) == NULL)
+    if ((read->quals = strtok_r(NULL, SAM_SEP, &end)) == NULL)
     {
         PyErr_SetString(PyExc_ValueError, "Failed to parse read quality");
         return -1;
@@ -632,7 +656,7 @@ static int parse_sam_line(SamRead *read,
 
     // Lengths of read and quality strings must match.
     // Subtract 1 from end for the same reason as in "Read end position"
-    if (end != NULL && read->len != (size_t)((end - 1) - read->qual))
+    if (end != NULL && read->len != (size_t)((end - 1) - read->quals))
     {
         PyErr_SetString(PyExc_ValueError,
                         "Sequence and quality strings differ in length");
@@ -640,7 +664,7 @@ static int parse_sam_line(SamRead *read,
     }
 
     // Number of reference bases that the read consumes.
-    read->ref_bases = 0;
+    read->num_rels = 0;
     // Initialize the CIGAR operation.
     CigarOp cigar;
     init_cigar(&cigar, read->cigar);
@@ -658,7 +682,7 @@ static int parse_sam_line(SamRead *read,
             case CIG_SUBST:
             case CIG_DELET:
                 // These operations consume the reference.
-                read->ref_bases += cigar.len;
+                read->num_rels += cigar.len;
                 break;
             default:
                 // Other operations do not.
@@ -669,7 +693,7 @@ static int parse_sam_line(SamRead *read,
             {return -1;}
     }
     // The number of reference bases consumed must be > 0.
-    if (read->ref_bases == 0)
+    if (read->num_rels == 0)
     {
         PyErr_SetString(PyExc_ValueError,
                         "CIGAR string consumes 0 bases in the reference");
@@ -684,9 +708,9 @@ static int parse_sam_line(SamRead *read,
     // Reference position at which the 3' end of the read is located,
     // which is the mapping position plus one less than the number of
     // reference bases consumed, minus the 3' clip (down to a minimum
-    // of 0). Because read->ref_bases must be > 0, subtracting 1 will
+    // of 0). Because read->num_rels must be > 0, subtracting 1 will
     // not yield a negative number and cause overflow.
-    size_t ref_end3 = read->pos + (read->ref_bases - 1);
+    size_t ref_end3 = read->pos + (read->num_rels - 1);
     // Also to avoid overflow, subtract clip_end3 only after confirming
     // that the difference would not be negative.
     read->ref_end3 = (ref_end3 > clip_end3) ? (ref_end3 - clip_end3) : 0;
@@ -779,19 +803,6 @@ static int validate_pair(const SamRead *read1,
 ////////////////////////////////////////////////////////////////////////////////
 
 
-/* Check if two relationships are consistent with each other. */
-static inline int consistent_rels(char rel1, char rel2)
-{
-    // Two relationships are consistent if they have one or more primary
-    // relationships (bits) in common.
-    if (rel1 & rel2) {return 1;}
-    // They are also consistent if they are both substitutions.
-    if ((rel1 & SUB_N) && (rel2 & SUB_N)) {return 1;}
-    // Otherwise, they are inconsistent.
-    return 0;
-}
-
-
 /* Determine the order of two IndelPods from 5' to 3'. */
 static inline int comp_pods_5to3(const void *a, const void *b)
 {
@@ -881,43 +892,64 @@ static inline void move_indel(Indel *indel, size_t opposite, size_t lateral3)
 /* Move one indel while adjusting the positions of any other indels in
 its pod through which the moving indel tunnels. */
 static void move_indels(IndelPod *pod,
-                        size_t indel_index,
+                        size_t label,
                         size_t opposite,
-                        size_t lateral3)
+                        size_t lateral3,
+                        int move5to3)
 {
-    // Determine which indel is at the given index.
-    assert(indel_index < pod->num_indels);
-    Indel *indel = &(pod->indels[indel_index]);
+    // Locate the indel with the given label.
+    Indel *indel = NULL;
+    size_t i = 0;
+    while (indel == NULL && i < pod->num_indels)
+    {
+        if (pod->indels[i].label == label)
+        {
+            indel = &(pod->indels[i]);
+        }
+        i++;
+    }
+    assert(indel != NULL);
+    assert(indel->insert == pod->insert);
+    assert(indel->opposite != opposite);
+
     // Move every other indel in the pod that lies between the given
     // indel and the position to which the given indel should be moved.
-    for (size_t i = 0; i < pod->num_indels; i++)
+    for (i = 0; i < pod->num_indels; i++)
     {
-        if (i != indel_index)
+        Indel *other = &(pod->indels[i]);
+        if (other != indel)
         {
+            assert(other->insert == pod->insert);
+            assert(other->label != label);
             // Check if the other indel lies between the given indel and
             // the position to which the given indel should be moved.
-            Indel *other = &(pod->indels[i]);
-            if ((indel->opposite < other->opposite &&
-                 other->opposite < opposite) ||
-                (indel->opposite > other->opposite &&
-                 other->opposite > opposite))
+            assert(other->opposite != indel->opposite);
+            assert(other->opposite != opposite);
+            if ((indel->opposite < other->opposite)
+                ==
+                (other->opposite < opposite))
             {
                 // If so, then move it.
-                move_indel(other, opposite, lateral3);
+                move_indel(other, other->opposite, lateral3);
             }
         }
     }
+
     // Move the given indel.
     move_indel(indel, opposite, lateral3);
+
+    // Re-sort the indels in the pod so they stay in positional order.
+    sort_pod(pod, move5to3);
 }
 
 
 /* Return whether a pod has an indel with the given opposite value. */
-static inline int pod_has_opposite(IndelPod *pod, size_t opposite)
+static inline int pod_has_opposite(const IndelPod *pod, size_t opposite)
 {
     for (size_t i = 0; i < pod->num_indels; i++)
     {
-        if (pod->indels[i].opposite == opposite) {return 1;}
+        if (pod->indels[i].opposite == opposite)
+            {return 1;}
     }
     return 0;
 }
@@ -925,105 +957,183 @@ static inline int pod_has_opposite(IndelPod *pod, size_t opposite)
 
 /* Calculate the positions for moving an indel. */
 static void calc_positions(size_t *swap_lateral,
-                          size_t *next_lateral3,
-                          size_t *next_opposite,
-                          IndelPod *pod,
-                          Indel *indel,
-                          int move5to3)
+                           size_t *next_lateral3,
+                           size_t *next_opposite,
+                           const IndelPod *pod,
+                           const Indel *indel,
+                           int move5to3)
 {
-    if (move5to3)
+    // Both of these attributes must be > 0 or else they will overflow
+    // if increment = -1.
+    assert(indel->opposite > 0);
+    assert(indel->lateral3 > 0);
+
+    // Find the position within the indel's own sequence with which to
+    // try to swap the indel.
+    *swap_lateral = get_lateral(indel->lateral3, move5to3);
+
+    // Determine the direction in which to move the indel.
+    size_t increment = move5to3 ? 1 : -1;
+
+    // If the indel moves, then its position within its own sequence
+    // will change.
+    *next_lateral3 = indel->lateral3 + increment;
+
+    // Find the position within the opposite sequence to which to try
+    // to move the indel.
+    *next_opposite = indel->opposite + increment;
+    while (pod_has_opposite(pod, *next_opposite))
     {
-        // Find the position within the indel's own sequence with which
-        // to try to swap the indel.
-        *swap_lateral = indel->lateral3;
-        // If the indel moves, then its position within its own sequence
-        // will change.
-        *next_lateral3 = indel->lateral3 + 1;
-        // Find the position within the opposite sequence to which to
-        // try to move the indel.
-        *next_opposite = indel->opposite + 1;
-        while (pod_has_opposite(pod, *next_opposite))
-            {(*next_opposite)++;}
-    }
-    else
-    {
-        // Find the position within the indel's own sequence with which
-        // to try to swap the indel.
-        *swap_lateral = calc_lateral5(indel->lateral3);
-        // If the indel moves, then its position within its own sequence
-        // will change.
-        assert(indel->lateral3 > 0);
-        *next_lateral3 = indel->lateral3 - 1;
-        // Find the position within the opposite sequence to which to
-        // try to move the indel.
-        assert(indel->opposite > 0);
-        *next_opposite = indel->opposite - 1;
-        while (pod_has_opposite(pod, *next_opposite))
-            assert(*next_opposite > 0);
-            {(*next_opposite)--;}
+        assert(*next_opposite > 0);
+        *next_opposite += increment;
     }
 }
 
 
-/* Check whether position is out of bounds. */
-static inline int check_out_of_bounds(size_t position,
-                                      size_t ref_end5,
-                                      size_t ref_end3)
+/* Check whether the indel would collide with another pod. */
+static inline int check_collisions(const IndelPodArray *pods,
+                                   size_t pod_index,
+                                   size_t next_lateral3)
 {
-    // 
+    size_t next_pod_index = pod_index + 1;
+    if (next_pod_index < pods->num_pods)
+    {
+        IndelPod *next_pod = &(pods->pods[next_pod_index]);
+        // Confirm the next pod has a different type of indel.
+        assert(next_pod->insert != pods->pods[pod_index].insert);
+        // Every pod must contain at least 1 indel.
+        assert(next_pod->num_indels > 0);
+        // In the next pod, check the first indel, which is the one that
+        // is closest to the current indel and could collide with it.
+        Indel *next_indel = &(next_pod->indels[0]);
+        return (next_indel->opposite == next_lateral3
+                ||
+                next_indel->opposite == calc_lateral5(next_lateral3));
+    }
+    // There is no next pod with which to collide.
+    return 0;
 }
 
 
-/* Try to move a deletion. */
-static int try_move_del(unsigned char *rels,
-                        IndelPodArray *pods,
-                        SamRead *read,
-                        const char *ref_seq,
-                        size_t ref_len,
-                        size_t ref_end5,
-                        size_t ref_end3,
-                        size_t read_end5,
-                        size_t read_end3,
-                        unsigned char min_qual,
-                        int insert3,
-                        int move5to3,
-                        size_t pod_index,
-                        size_t indel_index)
+/* Check if two relationships are consistent with each other. */
+static inline int consistent_rels(char rel1, char rel2)
 {
-    assert(pod_index < pods->num_pods);
-    IndelPod *pod = &(pods->pods[pod_index]);
-    assert(indel_index < pod->num_indels);
-    Indel *indel = &(pod->indels[indel_index]);
-
-    // Calculate the positions to which to move the deletion.
-    size_t swap_lateral;
-    size_t next_lateral3;
-    size_t next_opposite;
-    calc_positions(&swap_lateral,
-                   &next_lateral3,
-                   &next_opposite,
-                   pod,
-                   indel,
-                   move5to3);
+    // Two relationships are consistent if they have one or more primary
+    // relationships (bits) in common.
+    if (rel1 & rel2) {return 1;}
+    // They are also consistent if they are both substitutions.
+    if ((rel1 & SUB_N) && (rel2 & SUB_N)) {return 1;}
+    // Otherwise, they are inconsistent.
+    return 0;
 }
 
 
-static int try_move_indel(unsigned char *rels,
-                          IndelPodArray *pods,
+/* Calculate relationships for a deletion. */
+static void calc_rels_del(unsigned char *rel_del,
+                          unsigned char *rel_opp,
+                          const char *rels_seq,
+                          const char *read_seq,
+                          const char *read_quals,
+                          unsigned char min_qual,
+                          size_t swap_lateral,
+                          size_t next_opposite,
+                          size_t opposite)
+{
+    // Read base and its quality with which the deletion will swap.
+    char read_base = read_seq[swap_lateral];
+    char read_qual = read_quals[swap_lateral];
+    // Encode the relationship for the base that is currently deleted
+    // from the read, which would move opposite the read base.
+    *rel_del = encode_relate(rels_seq[opposite],
+                             read_base,
+                             read_qual,
+                             min_qual);
+    // Encode the relationship for the base that is currently opposite
+    // the read base, which would become a deletion after the move.
+    *rel_opp = encode_relate(rels_seq[next_opposite],
+                             read_base,
+                             read_qual,
+                             min_qual);
+}
+
+
+/* Try to move an indel. */
+static int try_move_indel(Indel *indel,
                           SamRead *read,
-                          const char *ref_seq,
-                          size_t ref_len,
-                          size_t ref_end5,
-                          size_t ref_end3,
+                          const char *rels_seq,
                           size_t read_end5,
                           size_t read_end3,
                           unsigned char min_qual,
                           int insert3,
                           int move5to3,
-                          size_t pod_index,
-                          size_t indel_index)
+                          size_t pod_index)
 {
+    // Find the pod.
+    assert(pod_index < read->pods.num_pods);
+    IndelPod *pod = &(read->pods.pods[pod_index]);
+    // Verify the indel belongs to the pod using pointer arithmetic.
+    assert(indel >= pod->indels
+           &&
+           (size_t)(indel - pod->indels) < pod->num_indels);
+    assert(indel->insert == pod->insert);
 
+    // Choose the method based on the type of indel.
+    unsigned char rel_indel, rel_opp;
+    if (indel->insert)
+    {
+        // FIXME
+        return 0;
+    }
+    else
+    {
+        // Calculate the positions to which to move the deletion.
+        size_t swap_lateral;
+        size_t next_lateral3;
+        size_t next_opposite;
+        calc_positions(&swap_lateral,
+                       &next_lateral3,
+                       &next_opposite,
+                       pod,
+                       indel,
+                       move5to3);
+        
+        // Stop if the next position would be out of bounds.
+        if (next_opposite == 0 || next_opposite >= read->num_rels - 1)
+            {return 0;}
+        // Stop if the indel would collide with another pod.
+        if (check_collisions(&(read->pods),
+                             pod_index,
+                             next_lateral3))
+            {return 0;}
+        
+        // Calculate what the relationships would be after the move.
+        calc_rels_del(&rel_indel,
+                      &rel_opp,
+                      rels_seq,
+                      read->seq,
+                      read->quals,
+                      min_qual,
+                      swap_lateral,
+                      next_opposite,
+                      indel->opposite);
+        // Stop if the relationships before and after the move are not
+        // consistent with each other.
+        if (!consistent_rels(rel_indel, rel_opp))
+            {return 0;}
+        
+        // When the deletion moves, the position from which it moves
+        // (indel->opposite) gains the relationship (rel_del) between
+        // the read base and the reference base that was originally
+        // deleted from the read.
+        read->rels[indel->opposite] |= rel_indel;
+        // Move the deletion.
+        move_indels(pod, indel->label, next_opposite, next_lateral3, move5to3);
+        // Mark the position to which the deletion moved.
+        read->rels[next_opposite] |= DELET;
+
+        // The deletion moved.
+        return 1;
+    }
 }
 
 
@@ -1037,22 +1147,30 @@ static void find_ambindels_recurse(SamRead *read,
                                    size_t pod_index,
                                    size_t indel_index)
 {
-    // Sort the indels in the pod and select the indel at this index.
+    // Select the pod at this index.
     assert(pod_index < read->pods.num_pods);
     IndelPod *pod = &(read->pods.pods[pod_index]);
-    sort_pod(pod, move5to3);
+    // Select the indel at this index.
     assert(indel_index < pod->num_indels);
     Indel *indel = &(pod->indels[indel_index]);
 
-    /*
-    // Record the initial position of the indel at this index.
+    // Record the initial attributes of the indel.
+    size_t label = indel->label;
     size_t init_opposite = indel->opposite;
     size_t init_lateral3 = indel->lateral3;
 
-    // Try to move the indel at this index one step.
-    if (try_move_indel())
+    // Try to move the indel.
+    if (try_move_indel(indel,
+                       read,
+                       rels_seq,
+                       read_end5,
+                       read_end3,
+                       min_qual,
+                       insert3,
+                       move5to3,
+                       pod_index))
     {
-        // Try to move the indel at this index one more step.
+        // Try to move the indel at this index another step.
         find_ambindels_recurse(read,
                                rels_seq,
                                read_end5,
@@ -1065,10 +1183,9 @@ static void find_ambindels_recurse(SamRead *read,
         if (move5to3)
         {
             // Move the indel back to its initial position.
-            move_indels(pod, indel_index, init_opposite, init_lateral3);
+            move_indels(pod, label, init_opposite, init_lateral3, move5to3);
         }
     }
-    */
 
     // Check if the pod contains another indel after the current one.
     if (indel_index + 1 < pod->num_indels)
@@ -1114,7 +1231,13 @@ static void find_ambindels(SamRead *read,
         assert(read->pods.pods != NULL);
         for (int move5to3 = 0; move5to3 <= 1; move5to3++)
         {
-            sort_pods(read->pods.pods, move5to3);
+            // Sort all of the pods.
+            sort_pods(&(read->pods), move5to3);
+            // In each pod, sort the indels.
+            for (size_t p = 0; p < read->pods.num_pods; p++)
+            {
+                sort_pod(&(read->pods.pods[p]), move5to3);
+            }
             find_ambindels_recurse(read,
                                    rels_seq,
                                    read_end5,
@@ -1135,7 +1258,9 @@ with init_read(), or else read->pods will not be initialized properly,
 which will cause undefined and probably erroneous behavior.
 Do NOT call this function more than once on the same SamRead without
 first calling free_read(), or else the memory originally allocated to
-read->rels and read->pods will leak. */
+read->rels and read->pods will leak.
+Make SURE to call free_read() eventually, or else memory in pods->rels
+will leak. */
 static int calc_rels_line(SamRead *read,
                           const char *line,
                           const char *ref,
@@ -1172,14 +1297,14 @@ static int calc_rels_line(SamRead *read,
     // allocated must equal the number of reference bases consumed by
     // the CIGAR string, not the number after clipping.
     assert(read->rels == NULL);  // If != NULL, then memory will leak.
-    assert(read->ref_bases > 0);
-    read->rels = malloc(read->ref_bases * sizeof(unsigned char));
+    assert(read->num_rels > 0);
+    read->rels = malloc(read->num_rels * sizeof(unsigned char));
     if (read->rels == NULL)
     {
         PyErr_NoMemory();
         return -1;
     }
-    printf("malloc %p\n", read->rels);
+    // printf("malloc %p\n", read->rels);
 
     // Positions in the relationship array and read (0-indexed).
     size_t rels_pos = 0;
@@ -1207,7 +1332,7 @@ static int calc_rels_line(SamRead *read,
             case CIG_MATCH:
                 // The read and reference match.
                 cigar_op_stop_pos = rels_pos + cigar.len;
-                if (cigar_op_stop_pos > read->ref_bases)
+                if (cigar_op_stop_pos > read->num_rels)
                 {
                     PyErr_SetString(
                         PyExc_ValueError,
@@ -1226,7 +1351,7 @@ static int calc_rels_line(SamRead *read,
                 while (rels_pos < cigar_op_stop_pos)
                 {
                     read->rels[rels_pos] = encode_match(read->seq[read_pos],
-                                                        read->qual[read_pos],
+                                                        read->quals[read_pos],
                                                         min_qual);
                     rels_pos++;
                     read_pos++;
@@ -1237,7 +1362,7 @@ static int calc_rels_line(SamRead *read,
             case CIG_SUBST:
                 // The read and reference have matches or substitutions.
                 cigar_op_stop_pos = rels_pos + cigar.len;
-                if (cigar_op_stop_pos > read->ref_bases)
+                if (cigar_op_stop_pos > read->num_rels)
                 {
                     PyErr_SetString(
                         PyExc_ValueError,
@@ -1257,7 +1382,7 @@ static int calc_rels_line(SamRead *read,
                 {
                     read->rels[rels_pos] = encode_relate(rels_seq[rels_pos],
                                                          read->seq[read_pos],
-                                                         read->qual[read_pos],
+                                                         read->quals[read_pos],
                                                          min_qual);
                     rels_pos++;
                     read_pos++;
@@ -1267,7 +1392,7 @@ static int calc_rels_line(SamRead *read,
             case CIG_DELET:
                 // A portion of the reference is deleted from the read.
                 cigar_op_stop_pos = rels_pos + cigar.len;
-                if (cigar_op_stop_pos > read->ref_bases)
+                if (cigar_op_stop_pos > read->num_rels)
                 {
                     PyErr_SetString(
                         PyExc_ValueError,
@@ -1337,7 +1462,7 @@ static int calc_rels_line(SamRead *read,
                     );
                     return -1;
                 }
-                if (rels_pos >= read->ref_bases)
+                if (rels_pos >= read->num_rels)
                 {
                     PyErr_SetString(
                         PyExc_ValueError,
@@ -1422,7 +1547,7 @@ static int calc_rels_line(SamRead *read,
 
     // The sum of the lengths of all CIGAR operations that consumed the
     // reference must equal the length of the relationships.
-    assert(rels_pos == read->ref_bases);
+    assert(rels_pos == read->num_rels);
     // Verify that the sum of the lengths of all CIGAR operations that
     // consumed the read equals the length of the read.
     if (read_pos != read->len)
@@ -1443,7 +1568,7 @@ static int calc_rels_line(SamRead *read,
             for (size_t i = 0; i < pod->num_indels; i++)
             {
                 size_t ins_pos = get_lateral(pod->indels[i].lateral3, insert3);
-                if (ins_pos < read->ref_bases)
+                if (ins_pos < read->num_rels)
                 {
                     read->rels[ins_pos] |= ins_rel;
                 }
@@ -1548,8 +1673,8 @@ static int put_2_rels_in_dict(PyObject *rels_dict,
 {
     // Validate the arguments; positions are 1-indexed and the 5' ends
     // must be > 0.
-    assert(fwd_read->end5 > 0);
-    assert(rev_read->end5 > 0);
+    assert(fwd_read->ref_end5 > 0);
+    assert(rev_read->ref_end5 > 0);
 
     // Find the region where both reads 1 and 2 overlap.
     // All positions are 1-indexed.
