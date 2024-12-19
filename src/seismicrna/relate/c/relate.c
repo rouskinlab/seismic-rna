@@ -14,11 +14,13 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-//
-// Fundamental Definitions
-//
+//                                                                            //
+// Fundamental Definitions                                                    //
+//                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+
+
 
 
 static const int DECIMAL = 10;
@@ -49,11 +51,13 @@ static inline size_t max(size_t a, size_t b)
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-//
-// Relationship Encodings
-//
+//                                                                            //
+// Relationship Encodings                                                     //
+//                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+
+
 
 
 static const unsigned char MATCH = '\x01';
@@ -113,11 +117,13 @@ static inline unsigned char encode_match(char read_base,
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-//
-// Insertions and Deletions
-//
+//                                                                            //
+// Insertions and Deletions                                                   //
+//                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+
+
 
 
 static const int DELETION = 0;
@@ -359,48 +365,17 @@ static int add_indel(IndelPodArray *pods,
 }
 
 
-/* Check whether the given Indel belongs to the given IndelPod. */
-static int indel_in_pod(const Indel *indel, const IndelPod *pod)
-{
-    assert(indel != NULL);
-    assert(pod != NULL);
-
-    if (indel < pod->indels)
-    {
-        // The indel's address is outside of the pod's indel array on
-        // the small side.
-        return 0;
-    }
-
-    // Use pointer arithmetic to find the distance between the addresses
-    // of the indel and of the pod's array of indels.
-    size_t distance = indel - pod->indels;
-    if (distance >= pod->num_indels)
-    {
-        // The indel's address is outside of the pod's indel array on
-        // the large side.
-        // The indel must also be outside of the entire chunk of memory
-        // allocated to the pod.
-        assert(distance >= pod->capacity);
-        return 0;
-    }
-
-    // Verify other attributes.
-    assert(indel->insert == pod->insert);
-    assert(indel->label < pod->num_indels);
-    return 1;
-}
-
-
 
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-//
-// SAM Line Parser
-//
+//                                                                            //
+// SAM Line Parser                                                            //
+//                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+
+
 
 
 static const char *SAM_SEP = "\t\n";
@@ -829,11 +804,13 @@ static int validate_pair(const SamRead *read1,
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-//
-// Ambiguous Insertions and Deletions Algorithm
-//
+//                                                                            //
+// Ambiguous Insertions and Deletions Algorithm                               //
+//                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+
+
 
 
 /* Determine the order of two IndelPods from 5' to 3'. */
@@ -994,7 +971,8 @@ static void calc_positions(size_t *swap_lateral,
     assert(swap_lateral != NULL);
     assert(next_lateral3 != NULL);
     assert(next_opposite != NULL);
-    assert(indel_in_pod(indel, pod));
+    assert(indel >= pod->indels
+           && (size_t)(indel - pod->indels) < pod->num_indels);
 
     // Find the position within the indel's own sequence with which to
     // try to swap the indel.
@@ -1168,8 +1146,9 @@ static int try_move_indel(Indel *indel,
     assert(read != NULL);
     assert(pod_index < read->pods.num_pods);
     IndelPod *pod = &(read->pods.pods[pod_index]);
-    assert(indel_in_pod(indel, pod));
-
+    assert(indel >= pod->indels
+           && (size_t)(indel - pod->indels) < pod->num_indels);
+    
     // Calculate the positions to which to move the indel.
     size_t swap_lateral, next_lateral3, next_opposite;
     calc_positions(&swap_lateral,
@@ -1268,24 +1247,7 @@ static int try_move_indel(Indel *indel,
                 // Mark the position that was adjacent to the insertion
                 // before it moved.
                 read->rels[init_lateral] |= rel_opp_;
-                //printf("marked swap\n\n");
             }
-
-            /*
-            printf("Moved insertion marked on opposite side\n");
-            printf("%zu, %zu, %i, %i\n\n",
-                   indel->lateral3,
-                   get_lateral(indel->lateral3, insert3),
-                   rel_indel,
-                   insert3);
-            
-            printf("b rels");
-            for (size_t r = 0; r < read->num_rels; r++)
-            {
-                printf(" %i", read->rels[r]);
-            }
-            printf("\n");
-            */
 
             // Mark the position to which the insertion moved.
             size_t curr_lateral = get_lateral(indel->lateral3, insert3);
@@ -1294,19 +1256,10 @@ static int try_move_indel(Indel *indel,
             {
                 read->rels[curr_lateral] |= rel_indel;
             }
-
-            /*
-            printf("a rels");
-            for (size_t r = 0; r < read->num_rels; r++)
-            {
-                printf(" %i", read->rels[r]);
-            }
-            printf("\n\n");
-            */
         }
     }
     else
-    {    
+    {
         // The indel is a deletion.
         // Stop if the next position would be the first or last position
         // in the reference.
@@ -1362,28 +1315,6 @@ static void find_ambindels_recurse(SamRead *read,
                                    size_t pod_index,
                                    size_t indel_index)
 {
-    /*
-    printf("find_ambindels_recurse %i (%zu #%zu)\n",
-           move5to3,
-           pod_index,
-           indel_index);
-    for (size_t p = 0; p < read->pods.num_pods; p++)
-    {
-        IndelPod *pod = &(read->pods.pods[p]);
-        for (size_t i = 0; i < pod->num_indels; i++)
-        {
-            Indel *indel = &(pod->indels[i]);
-            printf("pod <%i> %zu #%zu : (%zu, %zu)\n",
-                   indel->insert,
-                   p,
-                   i,
-                   indel->opposite,
-                   indel->lateral3);
-        }
-    }
-    printf("\n");
-    */
-
     // Select the pod at this index.
     assert(pod_index < read->pods.num_pods);
     IndelPod *pod = &(read->pods.pods[pod_index]);
@@ -1468,15 +1399,6 @@ static void find_ambindels_recurse(SamRead *read,
                                pod_index - 1,
                                0);
     }
-
-    /*
-    printf("R rels");
-    for (size_t r = 0; r < read->num_rels; r++)
-    {
-        printf(" %i", read->rels[r]);
-    }
-    printf("\n\n");
-    */
 }
 
 
@@ -1521,6 +1443,19 @@ static void find_ambindels(SamRead *read,
                                0);
     }
 }
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//                                                                            //
+// Relationship Calculator                                                    //
+//                                                                            //
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+
 
 
 /* Compute the relationships for a line in a SAM file.
@@ -1874,6 +1809,19 @@ static int calc_rels_line(SamRead *read,
 }
 
 
+
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//                                                                            //
+// Python Datatype Conversion                                                 //
+//                                                                            //
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+
 static int set_rel(PyObject *rels_dict, size_t pos, unsigned char rel)
 {
     // Convert the C variables pos and rel into Python int objects.
@@ -2035,6 +1983,19 @@ static int put_end_in_list(PyObject *ends_list, Py_ssize_t index, size_t end)
     if (PyList_SetItem(ends_list, index, py_end)) {return -1;}
     return 0;
 }
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//                                                                            //
+// Python Interface                                                           //
+//                                                                            //
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+
 
 
 /* Clean up by freeing all dynamically allocated memory for the reads

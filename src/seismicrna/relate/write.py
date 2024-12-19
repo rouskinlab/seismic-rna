@@ -17,10 +17,11 @@ from ..core.tmp import get_release_working_dirs, release_to_out
 from ..core.write import need_write
 
 try:
-    from .c.relate import calc_rels_lines
+    from .c.relate import RelateError, calc_rels_lines
 except ImportError:
     logger.warning("Failed to import C extension module for relate step; "
                    "defaulting to the Python version, which is much slower")
+    from .py.error import RelateError
     from .py.relate import calc_rels_lines
 
 
@@ -35,9 +36,6 @@ def relate_records(records: Iterable[tuple[str, str, str]],
                    clip_end5: int,
                    clip_end3: int):
     for name, line1, line2 in records:
-        print(line1)
-        print(line2)
-        print()
         try:
             yield name, calc_rels_lines(line1,
                                         line2,
@@ -50,7 +48,7 @@ def relate_records(records: Iterable[tuple[str, str, str]],
                                         overhangs,
                                         clip_end5,
                                         clip_end3)
-        except Exception as error:
+        except RelateError as error:
             logger.error(error)
 
 
