@@ -459,7 +459,7 @@ static inline int get_next_cigar_op(CigarOp *cigar)
         // yet been reached, which is an error.
         if (*cigar->op)
         {
-            PyErr_SetString(PyExc_ValueError,
+            PyErr_SetString(RelateError,
                             "Failed to parse a CIGAR operation");
             return -1;
         }
@@ -548,7 +548,7 @@ static int parse_ulong(unsigned long *ulong, const char *str)
     // Check if the parse failed to process any characters.
     if (endptr == str)
     {
-        PyErr_SetString(PyExc_ValueError, "Failed to parse unsigned integer");
+        PyErr_SetString(RelateError, "Failed to parse unsigned integer");
         return -1;
     }
     return 0;
@@ -576,20 +576,20 @@ static int parse_sam_line(SamRead *read,
     // Read name
     if ((read->name = strtok_r(NULL, SAM_SEP, &end)) == NULL)
     {
-        PyErr_SetString(PyExc_ValueError, "Failed to parse read name");
+        PyErr_SetString(RelateError, "Failed to parse read name");
         return -1;
     }
 
     // Bitwise flag
     if (parse_ulong(&temp_ulong, strtok_r(NULL, SAM_SEP, &end)))
     {
-        PyErr_SetString(PyExc_ValueError, "Failed to parse SAM flag");
+        PyErr_SetString(RelateError, "Failed to parse SAM flag");
         return -1;
     }
     read->flag = temp_ulong;
     if (read->flag > MAX_FLAG)
     {
-        PyErr_SetString(PyExc_ValueError, "SAM flag is too large");
+        PyErr_SetString(RelateError, "SAM flag is too large");
         return -1;
     }
     // Individual flag bits
@@ -601,26 +601,26 @@ static int parse_sam_line(SamRead *read,
     // Reference name
     if ((read->ref = strtok_r(NULL, SAM_SEP, &end)) == NULL)
     {
-        PyErr_SetString(PyExc_ValueError, "Failed to parse reference name");
+        PyErr_SetString(RelateError, "Failed to parse reference name");
         return -1;
     }
 
     // Mapping position
     if (parse_ulong(&temp_ulong, strtok_r(NULL, SAM_SEP, &end)))
     {
-        PyErr_SetString(PyExc_ValueError, "Failed to parse mapping position");
+        PyErr_SetString(RelateError, "Failed to parse mapping position");
         return -1;
     }
     read->pos = (size_t)temp_ulong;
     if (read->pos == 0)
     {
-        PyErr_SetString(PyExc_ValueError,
+        PyErr_SetString(RelateError,
                         "Mapping position is 0");
         return -1;
     }
     if (read->pos > ref_len)
     {
-        PyErr_SetString(PyExc_ValueError,
+        PyErr_SetString(RelateError,
                         "Mapping position exceeds length of reference");
         return -1;
     }
@@ -628,7 +628,7 @@ static int parse_sam_line(SamRead *read,
     // Mapping quality
     if (parse_ulong(&temp_ulong, strtok_r(NULL, SAM_SEP, &end)))
     {
-        PyErr_SetString(PyExc_ValueError, "Failed to parse mapping quality");
+        PyErr_SetString(RelateError, "Failed to parse mapping quality");
         return -1;
     }
     read->mapq = temp_ulong;
@@ -636,35 +636,35 @@ static int parse_sam_line(SamRead *read,
     // CIGAR string
     if ((read->cigar = strtok_r(NULL, SAM_SEP, &end)) == NULL)
     {
-        PyErr_SetString(PyExc_ValueError, "Failed to parse CIGAR string");
+        PyErr_SetString(RelateError, "Failed to parse CIGAR string");
         return -1;
     }
 
     // Next reference (ignored)
     if (strtok_r(NULL, SAM_SEP, &end) == NULL)
     {
-        PyErr_SetString(PyExc_ValueError, "Failed to parse next reference name");
+        PyErr_SetString(RelateError, "Failed to parse next reference name");
         return -1;
     }
 
     // Next position (ignored)
     if (strtok_r(NULL, SAM_SEP, &end) == NULL)
     {
-        PyErr_SetString(PyExc_ValueError, "Failed to parse next mapping position");
+        PyErr_SetString(RelateError, "Failed to parse next mapping position");
         return -1;
     }
 
     // Template length (ignored)
     if (strtok_r(NULL, SAM_SEP, &end) == NULL)
     {
-        PyErr_SetString(PyExc_ValueError, "Failed to parse template length");
+        PyErr_SetString(RelateError, "Failed to parse template length");
         return -1;
     }
 
     // Read sequence
     if ((read->seq = strtok_r(NULL, SAM_SEP, &end)) == NULL)
     {
-        PyErr_SetString(PyExc_ValueError, "Failed to parse read sequence");
+        PyErr_SetString(RelateError, "Failed to parse read sequence");
         return -1;
     }
 
@@ -683,7 +683,7 @@ static int parse_sam_line(SamRead *read,
     // Read quality
     if ((read->quals = strtok_r(NULL, SAM_SEP, &end)) == NULL)
     {
-        PyErr_SetString(PyExc_ValueError, "Failed to parse read quality");
+        PyErr_SetString(RelateError, "Failed to parse read quality");
         return -1;
     }
 
@@ -691,7 +691,7 @@ static int parse_sam_line(SamRead *read,
     // Subtract 1 from end for the same reason as in "Read end position"
     if (end != NULL && read->len != (size_t)((end - 1) - read->quals))
     {
-        PyErr_SetString(PyExc_ValueError,
+        PyErr_SetString(RelateError,
                         "Sequence and quality strings differ in length");
         return -1;
     }
@@ -728,8 +728,8 @@ static int parse_sam_line(SamRead *read,
     // The number of reference bases consumed must be > 0.
     if (read->num_rels == 0)
     {
-        PyErr_SetString(PyExc_ValueError,
-                        "CIGAR string consumes 0 bases in the reference");
+        PyErr_SetString(RelateError,
+                        "CIGAR string consumed 0 bases in the reference");
         return -1;
     }
 
@@ -763,13 +763,13 @@ static int validate_read(const SamRead *read,
     assert(ref != NULL);
     if (strcmp(read->ref, ref))
     {
-        PyErr_SetString(PyExc_ValueError,
+        PyErr_SetString(RelateError,
                         "Reference name does not match name of SAM file");
         return -1;
     }
     if (read->mapq < min_mapq)
     {
-        PyErr_SetString(PyExc_ValueError,
+        PyErr_SetString(RelateError,
                         "Mapping quality is insufficient");
         return -1;
     }
@@ -791,7 +791,7 @@ static int validate_pair(const SamRead *read1,
     // Mates 1 and 2 must have the same name.
     if (strcmp(read1->name, read2->name))
     {
-        PyErr_SetString(PyExc_ValueError,
+        PyErr_SetString(RelateError,
                         "Mates 1 and 2 have different names");
         return -1;
     }
@@ -799,7 +799,7 @@ static int validate_pair(const SamRead *read1,
     // Both mates must be paired-end.
     if (!(read1->paired && read2->paired))
     {
-        PyErr_SetString(PyExc_ValueError,
+        PyErr_SetString(RelateError,
                         "Mates 1 and 2 are not both paired-end");
         return -1;
     }
@@ -807,7 +807,7 @@ static int validate_pair(const SamRead *read1,
     // Mates 1 and 2 must be marked as first and second, respectively.
     if (!(read1->first && read2->second))
     {
-        PyErr_SetString(PyExc_ValueError,
+        PyErr_SetString(RelateError,
                         "Mates 1 and 2 are not marked as first and second");
         return -1;
     }
@@ -816,7 +816,7 @@ static int validate_pair(const SamRead *read1,
     // marked as reversed and the other as not reversed).
     if (read1->reverse == read2->reverse)
     {
-        PyErr_SetString(PyExc_ValueError,
+        PyErr_SetString(RelateError,
                         "Mates 1 and 2 aligned in the same orientation");
         return -1;
     }
@@ -1169,7 +1169,6 @@ static int try_move_indel(Indel *indel,
     assert(pod_index < read->pods.num_pods);
     IndelPod *pod = &(read->pods.pods[pod_index]);
     assert(indel_in_pod(indel, pod));
-    size_t label = indel->label;
 
     // Calculate the positions to which to move the indel.
     size_t swap_lateral, next_lateral3, next_opposite;
@@ -1226,7 +1225,6 @@ static int try_move_indel(Indel *indel,
             // The insertion moves to the same side as it is marked on.
             // Move the insertion.
             move_indels(pod, indel->label, next_opposite, next_lateral3);
-            assert(indel->label == label);
             assert(get_lateral(indel->lateral3, insert3) != init_lateral);
             
             if (need_mark_ins_adj(rel_indel, pod, init_lateral, insert3))
@@ -1263,7 +1261,6 @@ static int try_move_indel(Indel *indel,
             
             // Move the insertion.
             move_indels(pod, indel->label, next_opposite, next_lateral3);
-            assert(indel->label == label);
             assert(get_lateral(indel->lateral3, insert3) != init_lateral);
 
             if (need_mark_ins_adj(rel_opp_, pod, init_lateral, insert3))
@@ -1345,7 +1342,6 @@ static int try_move_indel(Indel *indel,
         read->rels[indel->opposite] |= rel_indel;
         // Move the deletion.
         move_indels(pod, indel->label, next_opposite, next_lateral3);
-        assert(indel->label == label);
         // Mark the position to which the deletion moved.
         read->rels[next_opposite] |= DELET;
     }
@@ -1355,6 +1351,7 @@ static int try_move_indel(Indel *indel,
 }
 
 
+/* Recursive algorithm to mark all ambiguous indels. */
 static void find_ambindels_recurse(SamRead *read,
                                    const char *rels_seq,
                                    size_t read_end5,
@@ -1483,6 +1480,7 @@ static void find_ambindels_recurse(SamRead *read,
 }
 
 
+/* Find and mark all ambiguous insertions and deletions. */
 static void find_ambindels(SamRead *read,
                            const char *rels_seq,
                            size_t read_end5,
@@ -1490,28 +1488,37 @@ static void find_ambindels(SamRead *read,
                            unsigned char min_qual,
                            int insert3)
 {
-    if (read->pods.num_pods > 0)
+    if (read->pods.num_pods == 0)
     {
-        assert(read->pods.pods != NULL);
-        for (int move5to3 = 0; move5to3 <= 1; move5to3++)
+        // Nothing to do.
+        return;
+    }
+    assert(read->pods.pods != NULL);
+    
+    // This algorithm works in two stages:
+    // 1. Move every indel as far as possible in the 5' direction
+    //    (move5to3 == 0) and leave them there for the next stage.
+    // 2. Move every indel as far as possible in the 3' direction
+    //    (move5to3 == 1) using backtracking to make sure that all
+    //    possible movements are considered.
+    for (int move5to3 = 0; move5to3 <= 1; move5to3++)
+    {
+        // Sort all of the pods.
+        sort_pods(&(read->pods), move5to3);
+        // In each pod, sort the indels.
+        for (size_t p = 0; p < read->pods.num_pods; p++)
         {
-            // Sort all of the pods.
-            sort_pods(&(read->pods), move5to3);
-            // In each pod, sort the indels.
-            for (size_t p = 0; p < read->pods.num_pods; p++)
-            {
-                sort_pod(&(read->pods.pods[p]), move5to3);
-            }
-            find_ambindels_recurse(read,
-                                   rels_seq,
-                                   read_end5,
-                                   read_end3,
-                                   min_qual,
-                                   insert3,
-                                   move5to3,
-                                   read->pods.num_pods - 1,
-                                   0);
+            sort_pod(&(read->pods.pods[p]), move5to3);
         }
+        find_ambindels_recurse(read,
+                               rels_seq,
+                               read_end5,
+                               read_end3,
+                               min_qual,
+                               insert3,
+                               move5to3,
+                               read->pods.num_pods - 1,
+                               0);
     }
 }
 
@@ -1542,7 +1549,7 @@ static int calc_rels_line(SamRead *read,
     assert(line != NULL);
     if (!(*line))
     {
-        PyErr_SetString(PyExc_ValueError,
+        PyErr_SetString(RelateError,
                         "Got an empty line to parse as a SAM read");
         return -1;
     }
@@ -1599,7 +1606,7 @@ static int calc_rels_line(SamRead *read,
                 if (cigar_op_stop_pos > read->num_rels)
                 {
                     PyErr_SetString(
-                        PyExc_ValueError,
+                        RelateError,
                         "A match extended out of the reference"
                     );
                     return -1;
@@ -1607,7 +1614,7 @@ static int calc_rels_line(SamRead *read,
                 if (read_pos + cigar.len > read->len)
                 {
                     PyErr_SetString(
-                        PyExc_ValueError,
+                        RelateError,
                         "A match extended out of the read"
                     );
                     return -1;
@@ -1629,7 +1636,7 @@ static int calc_rels_line(SamRead *read,
                 if (cigar_op_stop_pos > read->num_rels)
                 {
                     PyErr_SetString(
-                        PyExc_ValueError,
+                        RelateError,
                         "An operation extended out of the reference"
                     );
                     return -1;
@@ -1637,7 +1644,7 @@ static int calc_rels_line(SamRead *read,
                 if (read_pos + cigar.len > read->len)
                 {
                     PyErr_SetString(
-                        PyExc_ValueError,
+                        RelateError,
                         "An operation extended out of the read"
                     );
                     return -1;
@@ -1659,7 +1666,7 @@ static int calc_rels_line(SamRead *read,
                 if (cigar_op_stop_pos > read->num_rels)
                 {
                     PyErr_SetString(
-                        PyExc_ValueError,
+                        RelateError,
                         "A deletion extended out of the reference"
                     );
                     return -1;
@@ -1667,7 +1674,7 @@ static int calc_rels_line(SamRead *read,
                 if (rels_pos == 0)
                 {
                     PyErr_SetString(
-                        PyExc_ValueError,
+                        RelateError,
                         "A deletion occured at the beginning of the reference"
                     );
                     return -1;
@@ -1675,7 +1682,7 @@ static int calc_rels_line(SamRead *read,
                 if (read_pos == 0)
                 {
                     PyErr_SetString(
-                        PyExc_ValueError,
+                        RelateError,
                         "A deletion occured at the beginning of the read"
                     );
                     return -1;
@@ -1683,7 +1690,7 @@ static int calc_rels_line(SamRead *read,
                 if (read_pos >= read->len)
                 {
                     PyErr_SetString(
-                        PyExc_ValueError,
+                        RelateError,
                         "A deletion occured at the end of the read"
                     );
                     return -1;
@@ -1705,7 +1712,7 @@ static int calc_rels_line(SamRead *read,
                 if (cigar_op_stop_pos > read->len)
                 {
                     PyErr_SetString(
-                        PyExc_ValueError,
+                        RelateError,
                         "An insertion extended out of the read"
                     );
                     return -1;
@@ -1713,7 +1720,7 @@ static int calc_rels_line(SamRead *read,
                 if (read_pos == 0)
                 {
                     PyErr_SetString(
-                        PyExc_ValueError,
+                        RelateError,
                         "An insertion occured at the beginning of the read"
                     );
                     return -1;
@@ -1721,7 +1728,7 @@ static int calc_rels_line(SamRead *read,
                 if (rels_pos == 0)
                 {
                     PyErr_SetString(
-                        PyExc_ValueError,
+                        RelateError,
                         "An insertion occured at the beginning of the reference"
                     );
                     return -1;
@@ -1729,7 +1736,7 @@ static int calc_rels_line(SamRead *read,
                 if (rels_pos >= read->num_rels)
                 {
                     PyErr_SetString(
-                        PyExc_ValueError,
+                        RelateError,
                         "An insertion occured at the end of the reference"
                     );
                     return -1;
@@ -1752,7 +1759,7 @@ static int calc_rels_line(SamRead *read,
                 if (cigar_op_stop_pos > read->len)
                 {
                     PyErr_SetString(
-                        PyExc_ValueError,
+                        RelateError,
                         "A soft clip extended out of the read"
                     );
                     return -1;
@@ -1763,7 +1770,7 @@ static int calc_rels_line(SamRead *read,
                     if (read_end5 != 1)
                     {
                         PyErr_SetString(
-                            PyExc_ValueError,
+                            RelateError,
                             "The read contained > 1 soft clip at the beginning"
                         );
                         return -1;
@@ -1778,7 +1785,7 @@ static int calc_rels_line(SamRead *read,
                     if (cigar_op_stop_pos != read->len)
                     {
                         PyErr_SetString(
-                            PyExc_ValueError,
+                            RelateError,
                             "The read contained a soft clip in the middle"
                         );
                         return -1;
@@ -1786,14 +1793,13 @@ static int calc_rels_line(SamRead *read,
                     if (read_end3 != read->len)
                     {
                         PyErr_SetString(
-                            PyExc_ValueError,
+                            RelateError,
                             "The read contained > 1 soft clip at the end"
                         );
                         return -1;
                     }
                     // Clip bases from the 3' end of the read.
                     assert(read_end3 == read_pos + cigar.len);
-                    assert(read_pos > 0);
                     read_end3 = read_pos;
                 }
                 read_pos = cigar_op_stop_pos;
@@ -1802,8 +1808,8 @@ static int calc_rels_line(SamRead *read,
             default:
                 // The CIGAR operation was not recognized.
                 PyErr_SetString(
-                    PyExc_ValueError,
-                    "The CIGAR string contained an unknown type of operation"
+                    RelateError,
+                    "The CIGAR string contained an unsupported operation"
                 );
                 return -1;
         }
@@ -1819,7 +1825,7 @@ static int calc_rels_line(SamRead *read,
     // consumed the read equals the length of the read.
     if (read_pos != read->len)
     {
-        PyErr_SetString(PyExc_ValueError,
+        PyErr_SetString(RelateError,
                         "The number of read bases consumed by the CIGAR "
                         "string differed from the length of the read");
         return -1;
@@ -1853,7 +1859,7 @@ static int calc_rels_line(SamRead *read,
         }
     }
     
-    if (ambindel && read->pods.num_pods > 0)
+    if (ambindel)
     {
         // Find and mark ambiguous insertions and deletions.
         find_ambindels(read,

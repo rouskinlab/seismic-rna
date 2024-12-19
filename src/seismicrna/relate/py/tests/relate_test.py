@@ -8,9 +8,11 @@ from seismicrna.core.seq import DNA
 from seismicrna.relate.aux.iterread import iter_alignments
 from seismicrna.relate.py.cigar import CIG_ALIGN, CIG_DELET, CIG_SCLIP
 from seismicrna.relate.py.encode import encode_relate
-from seismicrna.relate.py.relate import (calc_rels_lines as calc_rels_lines_py,
+from seismicrna.relate.py.relate import (RelateError as RelateErrorPy,
+                                         calc_rels_lines as calc_rels_lines_py,
                                          _merge_mates)
-from seismicrna.relate.c.relate import calc_rels_lines as calc_rels_lines_c
+from seismicrna.relate.c.relate import (RelateError as RelateErrorC,
+                                        calc_rels_lines as calc_rels_lines_c)
 
 
 def as_sam(name: str,
@@ -73,7 +75,8 @@ def as_sam(name: str,
         raise ValueError(f"Invalid next 5' mapping position: {pnext}")
     if not len(read) == len(qual):
         raise ValueError(
-            f"Lengths of read ({len(read)}) and qual ({len(qual)}) disagree")
+            f"Lengths of read ({len(read)}) and qual ({len(qual)}) disagree"
+        )
     return SAM_DELIM.join(map(str, (name, flag, ref, end5, mapq, cigar, rnext,
                                     pnext, tlen, read, f"{qual}\n")))
 
@@ -130,6 +133,61 @@ class TestCalcRels1Line(ut.TestCase):
                                      clip_end3)
         self.assertEqual(result_py, result_c)
         return result_c
+
+    def relate_error(self,
+                     error_py: str,
+                     error_c: str,
+                     ref: str,
+                     refseq: DNA,
+                     read: DNA,
+                     qual: str,
+                     cigar: str,
+                     end5: int,
+                     ambindel: bool,
+                     insert3: bool,
+                     clip_end5: int,
+                     clip_end3: int,
+                     paired: bool = False):
+        line1 = as_sam("read",
+                       99,
+                       ref,
+                       end5,
+                       opt_min_mapq.default,
+                       cigar,
+                       "=",
+                       1,
+                       len(read),
+                       read,
+                       qual)
+        line2 = line1 if paired else ""
+        self.assertRaisesRegex(RelateErrorPy,
+                               error_py,
+                               calc_rels_lines_py,
+                               line1,
+                               line2,
+                               ref,
+                               str(refseq),
+                               0,
+                               ord(OK_QUAL),
+                               insert3,
+                               ambindel,
+                               False,
+                               clip_end5,
+                               clip_end3)
+        self.assertRaisesRegex(RelateErrorC,
+                               error_c,
+                               calc_rels_lines_c,
+                               line1,
+                               line2,
+                               ref,
+                               str(refseq),
+                               0,
+                               ord(OK_QUAL),
+                               insert3,
+                               ambindel,
+                               False,
+                               clip_end5,
+                               clip_end3)
 
     def iter_cases_insert3(self, refseq: DNA, max_ins: int, insert3: bool):
         """ Iterate through every test case. """
@@ -207,8 +265,8 @@ class TestCalcRels1Line(ut.TestCase):
                                           dict())
                                 self.assertEqual(result, expect)
 
-    @ut.skip("C version does not yet handle entirely soft-clipped reads")
     def test_soft_clips(self):
+        ref = "ref"
         reflen = 10
         refseq = DNA.random(reflen)
         for readlen in range(1, reflen + 1):
@@ -227,30 +285,55 @@ class TestCalcRels1Line(ut.TestCase):
                                    DNA(""))
                         qual = OK_QUAL * readlen
                         cigar = "".join([cigar_s5, cigar_m, cigar_s3])
-                        for clip5 in range(3):
-                            for clip3 in range(3):
-                                with self.subTest(reflen=reflen,
-                                                  readlen=readlen,
-                                                  soft5=soft5,
-                                                  soft3=soft3,
-                                                  end5=end5,
-                                                  clip5=clip5,
-                                                  clip3=clip3):
-                                    end5_expect = min(end5 + clip5, reflen + 1)
-                                    end3_expect = max(end3 - clip3, 0)
-                                    result = self.relate("ref",
-                                                         refseq,
-                                                         read,
-                                                         qual,
-                                                         cigar,
-                                                         end5,
-                                                         True,
-                                                         True,
-                                                         clip5,
-                                                         clip3)
-                                    expect = (([end5_expect], [end3_expect]),
-                                              dict())
-                                    self.assertEqual(result, expect)
+                        if soft5 + soft3 < readlen:
+                            for clip5 in range(3):
+                                for clip3 in range(3):
+                                    with self.subTest(reflen=reflen,
+                                                      readlen=readlen,
+                                                      soft5=soft5,
+                                                      soft3=soft3,
+                                                      end5=end5,
+                                                      clip5=clip5,
+                                                      clip3=clip3):
+                                        end5_expect = min(end5 + clip5,
+                                                          reflen + 1)
+                                        end3_expect = max(end3 - clip3, 0)
+                                        result = self.relate(ref,
+                                                             refseq,
+                                                             read,
+                                                             qual,
+                                                             cigar,
+                                                             end5,
+                                                             True,
+                                                             True,
+                                                             clip5,
+                                                             clip3)
+                                        expect = (([end5_expect],
+                                                   [end3_expect]),
+                                                  dict())
+                                        self.assertEqual(result, expect)
+                        else:
+                            with self.subTest(reflen=reflen,
+                                              readlen=readlen,
+                                              soft5=soft5,
+                                              soft3=soft3,
+                                              end5=end5):
+                                self.relate_error(
+                                    (f"CIGAR string {repr(cigar)} consumed "
+                                     f"0 bases in the reference"),
+                                    ("CIGAR string consumed "
+                                     "0 bases in the reference"),
+                                    ref,
+                                    refseq,
+                                    read,
+                                    qual,
+                                    cigar,
+                                    end5,
+                                    True,
+                                    True,
+                                    0,
+                                    0
+                                )
 
     def test_ambig_delet_low_qual(self):
         """ Test ambiguous deletions with all low-quality positions. """
@@ -314,6 +397,9 @@ class TestCalcRels1Line(ut.TestCase):
                                                 )
                                         expect = ([read5], [read3]), rels
                                         self.assertEqual(result, expect)
+
+    def test_examples(self):
+        """ Test some hand-picked examples. """
 
 
 class TestMergeMates(ut.TestCase):
@@ -420,7 +506,7 @@ class TestMergeMates(ut.TestCase):
                     else:
                         error = pos1
                     self.assertRaisesRegex(
-                        ValueError,
+                        RelateErrorPy,
                         f"Cannot merge non-covered position {error}",
                         _merge_mates,
                         end51, end31, rels1,
