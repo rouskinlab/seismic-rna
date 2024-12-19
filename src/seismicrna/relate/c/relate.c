@@ -359,6 +359,39 @@ static int add_indel(IndelPodArray *pods,
 }
 
 
+/* Check whether the given Indel belongs to the given IndelPod. */
+static int indel_in_pod(const Indel *indel, const IndelPod *pod)
+{
+    assert(indel != NULL);
+    assert(pod != NULL);
+
+    if (indel < pod->indels)
+    {
+        // The indel's address is outside of the pod's indel array on
+        // the small side.
+        return 0;
+    }
+
+    // Use pointer arithmetic to find the distance between the addresses
+    // of the indel and of the pod's array of indels.
+    size_t distance = indel - pod->indels;
+    if (distance >= pod->num_indels)
+    {
+        // The indel's address is outside of the pod's indel array on
+        // the large side.
+        // The indel must also be outside of the entire chunk of memory
+        // allocated to the pod.
+        assert(distance >= pod->capacity);
+        return 0;
+    }
+
+    // Verify other attributes.
+    assert(indel->insert == pod->insert);
+    assert(indel->label < pod->num_indels);
+    return 1;
+}
+
+
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -894,8 +927,7 @@ its pod through which the moving indel tunnels. */
 static void move_indels(IndelPod *pod,
                         size_t label,
                         size_t opposite,
-                        size_t lateral3,
-                        int move5to3)
+                        size_t lateral3)
 {
     // Locate the indel with the given label.
     Indel *indel = NULL;
@@ -937,9 +969,6 @@ static void move_indels(IndelPod *pod,
 
     // Move the given indel.
     move_indel(indel, opposite, lateral3);
-
-    // Re-sort the indels in the pod so they stay in positional order.
-    sort_pod(pod, move5to3);
 }
 
 
@@ -955,7 +984,6 @@ static inline int pod_has_opposite(const IndelPod *pod, size_t opposite)
 }
 
 
-/* Calculate the positions for moving an indel. */
 static void calc_positions(size_t *swap_lateral,
                            size_t *next_lateral3,
                            size_t *next_opposite,
@@ -963,29 +991,36 @@ static void calc_positions(size_t *swap_lateral,
                            const Indel *indel,
                            int move5to3)
 {
-    // Both of these attributes must be > 0 or else they will overflow
-    // if increment = -1.
-    assert(indel->opposite > 0);
-    assert(indel->lateral3 > 0);
+    assert(swap_lateral != NULL);
+    assert(next_lateral3 != NULL);
+    assert(next_opposite != NULL);
+    assert(indel_in_pod(indel, pod));
 
     // Find the position within the indel's own sequence with which to
     // try to swap the indel.
     *swap_lateral = get_lateral(indel->lateral3, move5to3);
 
     // Determine the direction in which to move the indel.
-    size_t increment = move5to3 ? 1 : -1;
+    int direction = move5to3 ? 1 : -1;
+
+    if (direction < 0)
+    {
+        // These attributes must be > 0 or else they will overflow.
+        assert(indel->opposite > 0);
+        assert(indel->lateral3 > 0);
+    }
 
     // If the indel moves, then its position within its own sequence
     // will change.
-    *next_lateral3 = indel->lateral3 + increment;
+    *next_lateral3 = indel->lateral3 + direction;
 
     // Find the position within the opposite sequence to which to try
     // to move the indel.
-    *next_opposite = indel->opposite + increment;
+    *next_opposite = indel->opposite + direction;
     while (pod_has_opposite(pod, *next_opposite))
     {
         assert(*next_opposite > 0);
-        *next_opposite += increment;
+        *next_opposite += direction;
     }
 }
 
@@ -1039,21 +1074,82 @@ static void calc_rels_del(unsigned char *rel_del,
                           size_t next_opposite,
                           size_t opposite)
 {
+    assert(rel_del != NULL);
+    assert(rel_opp != NULL);
+    assert(rels_seq != NULL);
+    assert(read_seq != NULL);
+    assert(read_quals != NULL);
     // Read base and its quality with which the deletion will swap.
     char read_base = read_seq[swap_lateral];
     char read_qual = read_quals[swap_lateral];
-    // Encode the relationship for the base that is currently deleted
-    // from the read, which would move opposite the read base.
+    // Relationship for the base that is currently deleted from the 
+    // read, which would move opposite the read base.
     *rel_del = encode_relate(rels_seq[opposite],
                              read_base,
                              read_qual,
                              min_qual);
-    // Encode the relationship for the base that is currently opposite
-    // the read base, which would become a deletion after the move.
+    // Relationship for the base that is currently opposite the read
+    // base, which would become a deletion after the move.
     *rel_opp = encode_relate(rels_seq[next_opposite],
                              read_base,
                              read_qual,
                              min_qual);
+}
+
+
+/* Calculate relationships for a insertion. */
+static void calc_rels_ins(unsigned char *rel_ins,
+                          unsigned char *rel_opp,
+                          const char *rels_seq,
+                          const char *read_seq,
+                          const char *read_quals,
+                          unsigned char min_qual,
+                          size_t swap_lateral,
+                          size_t next_opposite,
+                          size_t opposite)
+{
+    assert(rel_ins != NULL);
+    assert(rel_opp != NULL);
+    assert(rels_seq != NULL);
+    assert(read_seq != NULL);
+    assert(read_quals != NULL);
+    // Reference base with which the insertion will swap.
+    char ref_base = rels_seq[swap_lateral];
+    // Relationship for the base that is currently inserted into the
+    // read, which would move opposite the reference base.
+    *rel_ins = encode_relate(ref_base,
+                             read_seq[opposite],
+                             read_quals[opposite],
+                             min_qual);
+    // Relationship for the base that is currently opposite the 
+    // reference base, which would become an insertion after the move.
+    *rel_opp = encode_relate(ref_base,
+                             read_seq[next_opposite],
+                             read_quals[next_opposite],
+                             min_qual);
+}
+
+
+/* Determine if the position adjacent to an insertion must be marked. */
+static int need_mark_ins_adj(unsigned char rel,
+                             IndelPod *pod,
+                             size_t init_lateral,
+                             int insert3)
+{
+    assert(pod != NULL);
+    // The position must be marked if the relationship is not a match.
+    if (rel != MATCH)
+        {return 1;}
+    // If it is a match, then it must be marked as such unless any
+    // insertion is still adjacent to it on the side opposite the
+    // insertion that just moved (because then it would count as an
+    // insertion, not as a match).
+    for (size_t i = 0; i < pod->num_indels; i++)
+    {
+        if (get_lateral(pod->indels[i].lateral3, insert3) == init_lateral)
+            {return 0;}
+    }
+    return 1;
 }
 
 
@@ -1068,36 +1164,156 @@ static int try_move_indel(Indel *indel,
                           int move5to3,
                           size_t pod_index)
 {
-    // Find the pod.
+    // Select the pod.
+    assert(read != NULL);
     assert(pod_index < read->pods.num_pods);
     IndelPod *pod = &(read->pods.pods[pod_index]);
-    // Verify the indel belongs to the pod using pointer arithmetic.
-    assert(indel >= pod->indels
-           &&
-           (size_t)(indel - pod->indels) < pod->num_indels);
-    assert(indel->insert == pod->insert);
+    assert(indel_in_pod(indel, pod));
+    size_t label = indel->label;
+
+    // Calculate the positions to which to move the indel.
+    size_t swap_lateral, next_lateral3, next_opposite;
+    calc_positions(&swap_lateral,
+                   &next_lateral3,
+                   &next_opposite,
+                   pod,
+                   indel,
+                   move5to3);
 
     // Choose the method based on the type of indel.
-    unsigned char rel_indel, rel_opp;
     if (indel->insert)
     {
-        // FIXME
-        return 0;
+        // The indel is an insertion.
+        // Stop if the next position would be the first or last position
+        // in the non-soft-clipped region of the read.
+        // Both read_end5 and read_end3 are 1-indexed, but next_opposite
+        // is 0-indexed.
+        assert(read_end5 >= 1);
+        assert(read_end3 >= 1);
+        assert(read_end3 <= read->len);
+        if (next_opposite < read_end5 || next_opposite >= read_end3 - 1)
+            {return 0;}
+        // Stop if the indel would collide with another pod.
+        if (check_collisions(&(read->pods),
+                             pod_index,
+                             next_lateral3))
+            {return 0;}
+        
+        // Calculate what the relationships would be after the move.
+        unsigned char rel_indel, rel_opp;
+        calc_rels_ins(&rel_indel,
+                      &rel_opp,
+                      rels_seq,
+                      read->seq,
+                      read->quals,
+                      min_qual,
+                      swap_lateral,
+                      next_opposite,
+                      indel->opposite);
+        // Stop if the relationships before and after the move are not
+        // consistent with each other.
+        if (!consistent_rels(rel_indel, rel_opp))
+            {return 0;}
+        
+        // Initial lateral position of the insertion.
+        size_t init_lateral = get_lateral(indel->lateral3, insert3);
+
+        // Relationship code for insertions.
+        unsigned char ins_rel = get_ins_rel(insert3);
+
+        if (move5to3 == insert3)
+        {
+            // The insertion moves to the same side as it is marked on.
+            // Move the insertion.
+            move_indels(pod, indel->label, next_opposite, next_lateral3);
+            assert(indel->label == label);
+            assert(get_lateral(indel->lateral3, insert3) != init_lateral);
+            
+            if (need_mark_ins_adj(rel_indel, pod, init_lateral, insert3))
+            {
+                // Mark the position with which the insertion swapped.
+                read->rels[get_lateral(indel->lateral3, !insert3)] |= rel_indel;
+            }
+
+            // Mark the position to which the insertion moved.
+            read->rels[get_lateral(indel->lateral3, insert3)] |= ins_rel;
+        }
+        else
+        {
+            // The insertion moves to the side opposite that on which it
+            // is marked.
+            // The position away from which it moved 
+            size_t swap_lateral_, next_lateral3_, next_opposite_;
+            calc_positions(&swap_lateral_,
+                           &next_lateral3_,
+                           &next_opposite_,
+                           pod,
+                           indel,
+                           insert3);
+            unsigned char rel_indel_, rel_opp_;
+            calc_rels_ins(&rel_indel_,
+                          &rel_opp_,
+                          rels_seq,
+                          read->seq,
+                          read->quals,
+                          min_qual,
+                          swap_lateral_,
+                          next_opposite_,
+                          indel->opposite);
+            
+            // Move the insertion.
+            move_indels(pod, indel->label, next_opposite, next_lateral3);
+            assert(indel->label == label);
+            assert(get_lateral(indel->lateral3, insert3) != init_lateral);
+
+            if (need_mark_ins_adj(rel_opp_, pod, init_lateral, insert3))
+            {
+                // Mark the position that was adjacent to the insertion
+                // before it moved.
+                read->rels[init_lateral] |= rel_opp_;
+                //printf("marked swap\n\n");
+            }
+
+            /*
+            printf("Moved insertion marked on opposite side\n");
+            printf("%zu, %zu, %i, %i\n\n",
+                   indel->lateral3,
+                   get_lateral(indel->lateral3, insert3),
+                   rel_indel,
+                   insert3);
+            
+            printf("b rels");
+            for (size_t r = 0; r < read->num_rels; r++)
+            {
+                printf(" %i", read->rels[r]);
+            }
+            printf("\n");
+            */
+
+            // Mark the position to which the insertion moved.
+            size_t curr_lateral = get_lateral(indel->lateral3, insert3);
+            read->rels[curr_lateral] |= ins_rel;
+            if (rel_indel != MATCH)
+            {
+                read->rels[curr_lateral] |= rel_indel;
+            }
+
+            /*
+            printf("a rels");
+            for (size_t r = 0; r < read->num_rels; r++)
+            {
+                printf(" %i", read->rels[r]);
+            }
+            printf("\n\n");
+            */
+        }
     }
     else
-    {
-        // Calculate the positions to which to move the deletion.
-        size_t swap_lateral;
-        size_t next_lateral3;
-        size_t next_opposite;
-        calc_positions(&swap_lateral,
-                       &next_lateral3,
-                       &next_opposite,
-                       pod,
-                       indel,
-                       move5to3);
-        
-        // Stop if the next position would be out of bounds.
+    {    
+        // The indel is a deletion.
+        // Stop if the next position would be the first or last position
+        // in the reference.
+        assert(read->num_rels > 0);
         if (next_opposite == 0 || next_opposite >= read->num_rels - 1)
             {return 0;}
         // Stop if the indel would collide with another pod.
@@ -1107,6 +1323,7 @@ static int try_move_indel(Indel *indel,
             {return 0;}
         
         // Calculate what the relationships would be after the move.
+        unsigned char rel_indel, rel_opp;
         calc_rels_del(&rel_indel,
                       &rel_opp,
                       rels_seq,
@@ -1127,13 +1344,14 @@ static int try_move_indel(Indel *indel,
         // deleted from the read.
         read->rels[indel->opposite] |= rel_indel;
         // Move the deletion.
-        move_indels(pod, indel->label, next_opposite, next_lateral3, move5to3);
+        move_indels(pod, indel->label, next_opposite, next_lateral3);
+        assert(indel->label == label);
         // Mark the position to which the deletion moved.
         read->rels[next_opposite] |= DELET;
-
-        // The deletion moved.
-        return 1;
     }
+
+    // The indel moved.
+    return 1;
 }
 
 
@@ -1147,6 +1365,28 @@ static void find_ambindels_recurse(SamRead *read,
                                    size_t pod_index,
                                    size_t indel_index)
 {
+    /*
+    printf("find_ambindels_recurse %i (%zu #%zu)\n",
+           move5to3,
+           pod_index,
+           indel_index);
+    for (size_t p = 0; p < read->pods.num_pods; p++)
+    {
+        IndelPod *pod = &(read->pods.pods[p]);
+        for (size_t i = 0; i < pod->num_indels; i++)
+        {
+            Indel *indel = &(pod->indels[i]);
+            printf("pod <%i> %zu #%zu : (%zu, %zu)\n",
+                   indel->insert,
+                   p,
+                   i,
+                   indel->opposite,
+                   indel->lateral3);
+        }
+    }
+    printf("\n");
+    */
+
     // Select the pod at this index.
     assert(pod_index < read->pods.num_pods);
     IndelPod *pod = &(read->pods.pods[pod_index]);
@@ -1170,6 +1410,10 @@ static void find_ambindels_recurse(SamRead *read,
                        move5to3,
                        pod_index))
     {
+        // Re-sort the indels in the pod so they stay in positional
+        // order following the move.
+        sort_pod(pod, move5to3);
+
         // Try to move the indel at this index another step.
         find_ambindels_recurse(read,
                                rels_seq,
@@ -1180,10 +1424,21 @@ static void find_ambindels_recurse(SamRead *read,
                                move5to3,
                                pod_index,
                                indel_index);
+        
+        // The algorithm works in two stages:
+        // 1. Move every indel as far as possible in the 5' direction
+        //    (move5to3 == 0) and leave them there for the next stage.
+        // 2. Move every indel as far as possible in the 3' direction
+        //    (move5to3 == 1) using backtracking to make sure that all
+        //    possible movements are considered.
+        // Hence, backtracking is only needed when move5to3 == 1.
         if (move5to3)
         {
             // Move the indel back to its initial position.
-            move_indels(pod, label, init_opposite, init_lateral3, move5to3);
+            move_indels(pod, label, init_opposite, init_lateral3);
+            // Re-sort the indels in the pod so they stay in positional
+            // order following the move.
+            sort_pod(pod, move5to3);
         }
     }
 
@@ -1216,6 +1471,15 @@ static void find_ambindels_recurse(SamRead *read,
                                pod_index - 1,
                                0);
     }
+
+    /*
+    printf("R rels");
+    for (size_t r = 0; r < read->num_rels; r++)
+    {
+        printf(" %i", read->rels[r]);
+    }
+    printf("\n\n");
+    */
 }
 
 
@@ -1506,6 +1770,7 @@ static int calc_rels_line(SamRead *read,
                     }
                     // Soft clip bases from the the 5' end of the read.
                     read_end5 += cigar.len;
+                    assert(read_end5 <= read->len + 1);
                 }
                 else
                 {
@@ -1527,7 +1792,9 @@ static int calc_rels_line(SamRead *read,
                         return -1;
                     }
                     // Clip bases from the 3' end of the read.
-                    read_end3 -= cigar.len;
+                    assert(read_end3 == read_pos + cigar.len);
+                    assert(read_pos > 0);
+                    read_end3 = read_pos;
                 }
                 read_pos = cigar_op_stop_pos;
                 break;
@@ -1570,7 +1837,17 @@ static int calc_rels_line(SamRead *read,
                 size_t ins_pos = get_lateral(pod->indels[i].lateral3, insert3);
                 if (ins_pos < read->num_rels)
                 {
-                    read->rels[ins_pos] |= ins_rel;
+                    if (read->rels[ins_pos] == MATCH)
+                    {
+                        // Insertions override matches.
+                        read->rels[ins_pos] = ins_rel;
+                    }
+                    else
+                    {
+                        // Any other type of relationship can be marked
+                        // on the same position as an insertion.
+                        read->rels[ins_pos] |= ins_rel;
+                    }
                 }
             }
         }
