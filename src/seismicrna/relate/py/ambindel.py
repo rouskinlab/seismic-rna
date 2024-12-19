@@ -302,11 +302,9 @@ class IndelPod(ABC):
 
     def add(self, indel: Indel):
         """ Add an indel to the pod, performing validation. """
-        if not isinstance(indel, self.indel_type()):
-            raise TypeError(indel)
+        assert isinstance(indel, self.indel_type())
         for other in self.indels:
-            if indel.opposite == other.opposite:
-                raise ValueError(f"{indel} and {other} have the same position")
+            assert indel.opposite != other.opposite
         self.indels.append(indel)
 
     def sort(self, move5to3: bool):
@@ -386,58 +384,80 @@ def _find_ambindels_recurse(rels: dict[int, int],
                             move5to3: bool,
                             pod_index: int,
                             indel_index: int):
-    if pod_index >= 0:
-        pod = pods[pod_index]
-        if indel_index < len(pod.indels):
+    assert 0 <= pod_index < len(pods)
+    pod = pods[pod_index]
+    assert 0 <= indel_index < len(pod.indels)
+    indel = pod.indels[indel_index]
+    init_opposite = indel.opposite
+    init_lateral3 = indel.lateral3
+    if indel.try_move(rels=rels,
+                      pods=pods,
+                      insert3=insert3,
+                      ref_seq=ref_seq,
+                      read_seq=read_seq,
+                      read_qual=read_qual,
+                      min_qual=min_qual,
+                      ref_end5=ref_end5,
+                      ref_end3=ref_end3,
+                      read_end5=read_end5,
+                      read_end3=read_end3,
+                      move5to3=move5to3):
+        # Re-sort the indels in the pod so that they stay in positional
+        # order following the move.
+        pod.sort(move5to3)
+        # Try to move the indel another step.
+        _find_ambindels_recurse(rels=rels,
+                                pods=pods,
+                                insert3=insert3,
+                                ref_seq=ref_seq,
+                                read_seq=read_seq,
+                                read_qual=read_qual,
+                                min_qual=min_qual,
+                                ref_end5=ref_end5,
+                                ref_end3=ref_end3,
+                                read_end5=read_end5,
+                                read_end3=read_end3,
+                                move5to3=move5to3,
+                                pod_index=pod_index,
+                                indel_index=indel_index)
+        if move5to3:
+            # Move the indel back to its initial position.
+            _move_indels(indel, init_opposite, init_lateral3)
+            # Re-sort the indels in the pod so that they stay in
+            # positional order following the move.
             pod.sort(move5to3)
-            indel = pod.indels[indel_index]
-            init_opposite = indel.opposite
-            init_lateral3 = indel.lateral3
-            if indel.try_move(rels=rels,
-                              pods=pods,
-                              insert3=insert3,
-                              ref_seq=ref_seq,
-                              read_seq=read_seq,
-                              read_qual=read_qual,
-                              min_qual=min_qual,
-                              ref_end5=ref_end5,
-                              ref_end3=ref_end3,
-                              read_end5=read_end5,
-                              read_end3=read_end3,
-                              move5to3=move5to3):
-                # Try to move the indel another step.
-                _find_ambindels_recurse(rels=rels,
-                                        pods=pods,
-                                        insert3=insert3,
-                                        ref_seq=ref_seq,
-                                        read_seq=read_seq,
-                                        read_qual=read_qual,
-                                        min_qual=min_qual,
-                                        ref_end5=ref_end5,
-                                        ref_end3=ref_end3,
-                                        read_end5=read_end5,
-                                        read_end3=read_end3,
-                                        move5to3=move5to3,
-                                        pod_index=pod_index,
-                                        indel_index=indel_index)
-                if move5to3:
-                    # Move the indel back to its initial position.
-                    _move_indels(indel, init_opposite, init_lateral3)
-            # Move the next indel in the pod.
-            _find_ambindels_recurse(rels=rels,
-                                    pods=pods,
-                                    insert3=insert3,
-                                    ref_seq=ref_seq,
-                                    read_seq=read_seq,
-                                    read_qual=read_qual,
-                                    min_qual=min_qual,
-                                    ref_end5=ref_end5,
-                                    ref_end3=ref_end3,
-                                    read_end5=read_end5,
-                                    read_end3=read_end3,
-                                    move5to3=move5to3,
-                                    pod_index=pod_index,
-                                    indel_index=(indel_index + 1))
+    if indel_index + 1 < len(pod.indels):
+        # Move the next indel in the pod.
+        _find_ambindels_recurse(rels=rels,
+                                pods=pods,
+                                insert3=insert3,
+                                ref_seq=ref_seq,
+                                read_seq=read_seq,
+                                read_qual=read_qual,
+                                min_qual=min_qual,
+                                ref_end5=ref_end5,
+                                ref_end3=ref_end3,
+                                read_end5=read_end5,
+                                read_end3=read_end3,
+                                move5to3=move5to3,
+                                pod_index=pod_index,
+                                indel_index=(indel_index + 1))
+    if pod_index > 0:
+        # Move the indels in the previous pod.
+        _find_ambindels_recurse(rels=rels,
+                                pods=pods,
+                                insert3=insert3,
+                                ref_seq=ref_seq,
+                                read_seq=read_seq,
+                                read_qual=read_qual,
+                                min_qual=min_qual,
+                                ref_end5=ref_end5,
+                                ref_end3=ref_end3,
+                                read_end5=read_end5,
+                                read_end3=read_end3,
+                                move5to3=move5to3,
+                                pod_index=(pod_index - 1),
+                                indel_index=0)
 
 
 def find_ambindels(rels: dict[int, int],
@@ -452,22 +472,25 @@ def find_ambindels(rels: dict[int, int],
                    read_end5: int,
                    read_end3: int):
     for move5to3 in [False, True]:
+        # Sort the pods.
         _sort_pods(pods, move5to3)
-        for pod_index in range(len(pods) - 1, -1, -1):
-            _find_ambindels_recurse(rels=rels,
-                                    pods=pods,
-                                    insert3=insert3,
-                                    ref_seq=ref_seq,
-                                    read_seq=read_seq,
-                                    read_qual=read_qual,
-                                    min_qual=min_qual,
-                                    ref_end5=ref_end5,
-                                    ref_end3=ref_end3,
-                                    read_end5=read_end5,
-                                    read_end3=read_end3,
-                                    move5to3=move5to3,
-                                    pod_index=pod_index,
-                                    indel_index=0)
+        # Sort the indels in each pod.
+        for pod in pods:
+            pod.sort(move5to3)
+        _find_ambindels_recurse(rels=rels,
+                                pods=pods,
+                                insert3=insert3,
+                                ref_seq=ref_seq,
+                                read_seq=read_seq,
+                                read_qual=read_qual,
+                                min_qual=min_qual,
+                                ref_end5=ref_end5,
+                                ref_end3=ref_end3,
+                                read_end5=read_end5,
+                                read_end3=read_end3,
+                                move5to3=move5to3,
+                                pod_index=(len(pods) - 1),
+                                indel_index=0)
 
 ########################################################################
 #                                                                      #

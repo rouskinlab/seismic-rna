@@ -93,7 +93,7 @@ class TestCalcRels1Line(ut.TestCase):
                clip_end3: int,
                paired: bool = False):
         """ Generate a SAM line from the given information, and use it
-        to compute a relation vector. """
+        to compute the relationships. """
         line1 = as_sam("read",
                        99,
                        ref,
@@ -129,7 +129,7 @@ class TestCalcRels1Line(ut.TestCase):
                                      clip_end5,
                                      clip_end3)
         self.assertEqual(result_py, result_c)
-        return result_py
+        return result_c
 
     def iter_cases_insert3(self, refseq: DNA, max_ins: int, insert3: bool):
         """ Iterate through every test case. """
@@ -167,13 +167,13 @@ class TestCalcRels1Line(ut.TestCase):
             self.iter_cases_insert3(refseq, max_ins, True)
 
     def test_4nt_2ins(self):
-        self.iter_cases(DNA("AGCT"), 0)
+        self.iter_cases(DNA("AGCT"), 2)
 
     def test_5nt_2ins(self):
-        self.iter_cases(DNA("CAAAT"), 0)
+        self.iter_cases(DNA("CAAAT"), 2)
 
     def test_6nt_2ins(self):
-        self.iter_cases(DNA("GTATAC"), 0)
+        self.iter_cases(DNA("GTATAC"), 2)
 
     def test_all_matches(self):
         for reflen in range(1, 10):
