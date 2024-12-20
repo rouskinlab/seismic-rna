@@ -570,6 +570,15 @@ opt_relate_read_table = Option(
     help="Tabulate relationships per read for relate data"
 )
 
+opt_relate_fast = Option(
+    ("--relate-fast/--relate-slow",),
+    type=bool,
+    default=True,
+    help=("Use a fast (C language) implementation of the relate algorithm; "
+          "the slow (Python) version was the original implementation and is "
+          "still kept as a fallback if the C module fails to load")
+)
+
 # Pool
 
 opt_pool = Option(

@@ -16,14 +16,6 @@ from ..core.task import as_list_of_tuples, dispatch
 from ..core.tmp import get_release_working_dirs, release_to_out
 from ..core.write import need_write
 
-try:
-    from .c.relate import RelateError, calc_rels_lines
-except ImportError:
-    logger.warning("Failed to import C extension module for relate step; "
-                   "defaulting to the Python version, which is much slower")
-    from .py.error import RelateError
-    from .py.relate import calc_rels_lines
-
 
 def relate_records(records: Iterable[tuple[str, str, str]],
                    ref: str,
@@ -34,7 +26,25 @@ def relate_records(records: Iterable[tuple[str, str, str]],
                    ambindel: bool,
                    overhangs: bool,
                    clip_end5: int,
-                   clip_end3: int):
+                   clip_end3: int,
+                   relate_fast: bool):
+    # Load the module.
+    if relate_fast:
+        # Load the C extension module.
+        try:
+            from .c.relate import RelateError, calc_rels_lines
+        except ImportError:
+            logger.warning(
+                "Failed to import the C extension for the relate algorithm; "
+                "defaulting to the Python version, which is much slower"
+            )
+            from .py.error import RelateError
+            from .py.relate import calc_rels_lines
+    else:
+        # Load the Python module.
+        from .py.error import RelateError
+        from .py.relate import calc_rels_lines
+    # Process the records.
     for name, line1, line2 in records:
         try:
             yield name, calc_rels_lines(line1,
