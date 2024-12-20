@@ -81,7 +81,7 @@ def as_sam(name: str,
                                     pnext, tlen, read, f"{qual}\n")))
 
 
-class TestCalcRels1Line(ut.TestCase):
+class TestCalcRelsLinesSingle(ut.TestCase):
 
     def relate(self,
                ref: str,
@@ -189,7 +189,11 @@ class TestCalcRels1Line(ut.TestCase):
                                clip_end5,
                                clip_end3)
 
-    def iter_cases_insert3(self, refseq: DNA, max_ins: int, insert3: bool):
+    def iter_cases_insert3(self,
+                           refseq: DNA,
+                           max_ins: int,
+                           insert3: bool,
+                           test_paired: bool):
         """ Iterate through every test case. """
         for read, qual, cigar, end5, end3, rels in iter_alignments(
                 refseq,
@@ -198,34 +202,40 @@ class TestCalcRels1Line(ut.TestCase):
                 max_ins_len=max_ins,
                 max_ins_bases=max_ins
         ):
-            with self.subTest(refseq=refseq,
-                              insert3=insert3,
-                              read=read,
-                              qual=qual,
-                              cigar=cigar,
-                              end5=end5,
-                              end3=end3,
-                              rels=rels):
-                result = self.relate("ref",
-                                     refseq,
-                                     read,
-                                     qual,
-                                     cigar,
-                                     end5,
-                                     ambindel=True,
-                                     insert3=insert3,
-                                     clip_end5=0,
-                                     clip_end3=0)
-                expect = ([end5], [end3]), rels
-                self.assertEqual(result, expect)
+            for paired in ([False, True] if test_paired else [False]):
+                with self.subTest(refseq=refseq,
+                                  insert3=insert3,
+                                  read=read,
+                                  qual=qual,
+                                  cigar=cigar,
+                                  end5=end5,
+                                  end3=end3,
+                                  rels=rels,
+                                  paired=paired):
+                    result = self.relate("ref",
+                                         refseq,
+                                         read,
+                                         qual,
+                                         cigar,
+                                         end5,
+                                         ambindel=True,
+                                         insert3=insert3,
+                                         clip_end5=0,
+                                         clip_end3=0,
+                                         paired=paired)
+                    if paired:
+                        expect = ([end5, end5], [end3, end3]), rels
+                    else:
+                        expect = ([end5], [end3]), rels
+                    self.assertEqual(result, expect)
 
-    def iter_cases(self, refseq: DNA, max_ins: int):
-        self.iter_cases_insert3(refseq, max_ins, False)
+    def iter_cases(self, refseq: DNA, max_ins: int, test_paired: bool = False):
+        self.iter_cases_insert3(refseq, max_ins, False, test_paired)
         if max_ins > 0:
-            self.iter_cases_insert3(refseq, max_ins, True)
+            self.iter_cases_insert3(refseq, max_ins, True, test_paired)
 
     def test_4nt_2ins(self):
-        self.iter_cases(DNA("AGCT"), 2)
+        self.iter_cases(DNA("AGCT"), 2, test_paired=True)
 
     def test_5nt_2ins(self):
         self.iter_cases(DNA("CAAAT"), 2)
@@ -257,10 +267,10 @@ class TestCalcRels1Line(ut.TestCase):
                                                      qual,
                                                      cigar,
                                                      end5,
-                                                     True,
-                                                     True,
-                                                     clip5,
-                                                     clip3)
+                                                     ambindel=True,
+                                                     insert3=True,
+                                                     clip_end5=clip5,
+                                                     clip_end3=clip3)
                                 expect = (([end5_expect], [end3_expect]),
                                           dict())
                                 self.assertEqual(result, expect)
@@ -304,10 +314,10 @@ class TestCalcRels1Line(ut.TestCase):
                                                              qual,
                                                              cigar,
                                                              end5,
-                                                             True,
-                                                             True,
-                                                             clip5,
-                                                             clip3)
+                                                             ambindel=True,
+                                                             insert3=True,
+                                                             clip_end5=clip5,
+                                                             clip_end3=clip3)
                                         expect = (([end5_expect],
                                                    [end3_expect]),
                                                   dict())
@@ -329,10 +339,10 @@ class TestCalcRels1Line(ut.TestCase):
                                     qual,
                                     cigar,
                                     end5,
-                                    True,
-                                    True,
-                                    0,
-                                    0
+                                    ambindel=True,
+                                    insert3=True,
+                                    clip_end5=0,
+                                    clip_end3=0,
                                 )
 
     def test_ambig_delet_low_qual(self):
@@ -376,10 +386,10 @@ class TestCalcRels1Line(ut.TestCase):
                                                              qual,
                                                              cigar,
                                                              end5,
-                                                             True,
-                                                             True,
-                                                             clip5,
-                                                             clip3)
+                                                             ambindel=True,
+                                                             insert3=True,
+                                                             clip_end5=clip5,
+                                                             clip_end3=clip3)
                                         read5 = min(end5 + clip5, reflen + 1)
                                         read3 = max(end3 - clip3, 0)
                                         positions = list(range(read5,
@@ -398,8 +408,192 @@ class TestCalcRels1Line(ut.TestCase):
                                         expect = ([read5], [read3]), rels
                                         self.assertEqual(result, expect)
 
-    def test_examples(self):
-        """ Test some hand-picked examples. """
+    def test_example_1(self):
+        """ Soft clips in CIGAR plus clip_end5 and clip_end3.
+
+        Seq  GGTATAG
+        Qul  FFFFFFF
+        CGR  SS====S
+        Ref CAATATATC
+        Pos 123456789
+        """
+        result = self.relate(ref="ref",
+                             refseq=DNA("CAATATATC"),
+                             read=DNA("GGTATAG"),
+                             qual="FFFFFFF",
+                             cigar="2S4=1S",
+                             end5=4,
+                             ambindel=True,
+                             insert3=True,
+                             clip_end5=1,
+                             clip_end3=1)
+        expect = (([5], [6]), {})
+        self.assertEqual(result, expect)
+
+    def test_example_2(self):
+        """ Deletions cannot move out of soft-clipped regions.
+
+        Seq  TATA--TAT
+        Qul  FFFF--FFF
+        CGR  SS==DD==S
+        Ref ATATATATATA
+        Pos 123456789ab
+        """
+        # No soft clips.
+        result = self.relate(ref="ref",
+                             refseq=DNA("ATATATATATA"),
+                             read=DNA("TATATAT"),
+                             qual="FFFFFFF",
+                             cigar="4=2D3=",
+                             end5=2,
+                             ambindel=True,
+                             insert3=True,
+                             clip_end5=0,
+                             clip_end3=0)
+        expect = (([2], [10]), {3: 3, 4: 3, 5: 3, 6: 3, 7: 3, 8: 3, 9: 3})
+        self.assertEqual(result, expect)
+        # Soft clips.
+        result = self.relate(ref="ref",
+                             refseq=DNA("ATATATATATA"),
+                             read=DNA("TATATAT"),
+                             qual="FFFFFFF",
+                             cigar="2S2=2D2=1S",
+                             end5=4,
+                             ambindel=True,
+                             insert3=True,
+                             clip_end5=0,
+                             clip_end3=0)
+        expect = (([4], [9]), {5: 3, 6: 3, 7: 3, 8: 3})
+        self.assertEqual(result, expect)
+        # Soft clips and clip_end5/clip_end3.
+        result = self.relate(ref="ref",
+                             refseq=DNA("ATATATATATA"),
+                             read=DNA("TATATAT"),
+                             qual="FFFFFFF",
+                             cigar="2S2=2D2=1S",
+                             end5=4,
+                             ambindel=True,
+                             insert3=True,
+                             clip_end5=1,
+                             clip_end3=1)
+        expect = (([5], [8]), {5: 3, 6: 3, 7: 3, 8: 3})
+        self.assertEqual(result, expect)
+
+    def test_example_3(self):
+        """ Insertions cannot move out of soft-clipped regions.
+
+        Seq  TATATATAT
+        Qul  FFFFFFFFF
+        CGR  SS==II==S
+        Ref ATATA--TATA
+        Pos 12345--6789
+        """
+        # No soft clips.
+        result = self.relate(ref="ref",
+                             refseq=DNA("ATATATATA"),
+                             read=DNA("TATATATAT"),
+                             qual="FFFFFFFFF",
+                             cigar="4=2I3=",
+                             end5=2,
+                             ambindel=True,
+                             insert3=True,
+                             clip_end5=0,
+                             clip_end3=0)
+        expect = (([2], [8]), {3: 9, 4: 9, 5: 9, 6: 9, 7: 9, 8: 9})
+        self.assertEqual(result, expect)
+        # Soft clips.
+        result = self.relate(ref="ref",
+                             refseq=DNA("ATATATATA"),
+                             read=DNA("TATATATAT"),
+                             qual="FFFFFFFFF",
+                             cigar="2S2=2I2=1S",
+                             end5=4,
+                             ambindel=True,
+                             insert3=True,
+                             clip_end5=0,
+                             clip_end3=0)
+        expect = (([4], [7]), {5: 9, 6: 9, 7: 9})
+        self.assertEqual(result, expect)
+        # Soft clips and clip_end5/clip_end3.
+        result = self.relate(ref="ref",
+                             refseq=DNA("ATATATATA"),
+                             read=DNA("TATATATAT"),
+                             qual="FFFFFFFFF",
+                             cigar="2S2=2I2=1S",
+                             end5=4,
+                             ambindel=True,
+                             insert3=True,
+                             clip_end5=1,
+                             clip_end3=1)
+        expect = (([5], [6]), {5: 9, 6: 9})
+        self.assertEqual(result, expect)
+
+
+class TestCalcRelsLinesPaired(ut.TestCase):
+
+    def relate(self,
+               ref: str,
+               refseq: DNA,
+               read1: DNA,
+               qual1: str,
+               cigar1: str,
+               end51: int,
+               read2: DNA,
+               qual2: str,
+               cigar2: str,
+               end52: int,
+               ambindel: bool,
+               insert3: bool,
+               clip_end5: int,
+               clip_end3: int):
+        """ Generate a SAM line from the given information, and use it
+        to compute the relationships. """
+        line1 = as_sam("read",
+                       99,
+                       ref,
+                       end51,
+                       opt_min_mapq.default,
+                       cigar1,
+                       "=",
+                       1,
+                       len(read1),
+                       read1,
+                       qual1)
+        line2 = as_sam("read",
+                       99,
+                       ref,
+                       end52,
+                       opt_min_mapq.default,
+                       cigar2,
+                       "=",
+                       1,
+                       len(read2),
+                       read2,
+                       qual2)
+        result_py = calc_rels_lines_py(line1,
+                                       line2,
+                                       ref,
+                                       str(refseq),
+                                       0,
+                                       ord(OK_QUAL),
+                                       insert3,
+                                       ambindel,
+                                       False,
+                                       clip_end5,
+                                       clip_end3)
+        result_c = calc_rels_lines_c(line1,
+                                     line2,
+                                     ref,
+                                     str(refseq),
+                                     0,
+                                     ord(OK_QUAL),
+                                     insert3,
+                                     ambindel,
+                                     False,
+                                     clip_end5,
+                                     clip_end3)
+        self.assertEqual(result_py, result_c)
+        return result_c
 
 
 class TestMergeMates(ut.TestCase):
