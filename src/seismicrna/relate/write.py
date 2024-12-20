@@ -38,12 +38,10 @@ def relate_records(records: Iterable[tuple[str, str, str]],
                 "Failed to import the C extension for the relate algorithm; "
                 "defaulting to the Python version, which is much slower"
             )
-            from .py.error import RelateError
-            from .py.relate import calc_rels_lines
+            from .py.relate import RelateError, calc_rels_lines
     else:
         # Load the Python module.
-        from .py.error import RelateError
-        from .py.relate import calc_rels_lines
+        from .py.relate import RelateError, calc_rels_lines
     # Process the records.
     for name, line1, line2 in records:
         try:

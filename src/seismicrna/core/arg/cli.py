@@ -575,8 +575,8 @@ opt_relate_fast = Option(
     type=bool,
     default=True,
     help=("Use a fast (C language) implementation of the relate algorithm; "
-          "the slow (Python) version was the original implementation and is "
-          "still kept as a fallback if the C module fails to load")
+          "the slow (Python) version is still avilable as a fallback if the "
+          "C module fails to load, as well as for debugging and benchmarking")
 )
 
 # Pool
