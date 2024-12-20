@@ -10,12 +10,9 @@ src/seismic_rna.egg-info
 # Byte-compiled
 __pycache__/
 
-# C extensions
+# Object code
 *.o
 *.so
-
-# PyCharm
-.idea
 
 # Output files
 out/
@@ -29,5 +26,11 @@ log/
 # macOS
 .DS_Store
 
+# PyCharm
+.idea
+
 # Spyder
-src/seismicrna/.spyproject
+.spyproject
+
+# VS Code
+.vscode
