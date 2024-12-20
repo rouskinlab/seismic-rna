@@ -266,7 +266,7 @@ def _calc_rels_read(read: SamRead,
                     # if so, then add the insertion on top.
                     rels[ins_pos] = rels.get(ins_pos, IRREC) | ins_rel
     # Find and label all relationships that are ambiguous due to indels.
-    if ambindel and pods:
+    if ambindel:
         find_ambindels(rels=rels,
                        pods=pods,
                        insert3=insert3,

@@ -471,6 +471,9 @@ def find_ambindels(rels: dict[int, int],
                    ref_end3: int,
                    read_end5: int,
                    read_end3: int):
+    if not pods:
+        # Nothing to do.
+        return
     for move5to3 in [False, True]:
         # Sort the pods.
         _sort_pods(pods, move5to3)
