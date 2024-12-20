@@ -23,6 +23,8 @@
 
 
 
+static PyObject *RelateError;
+
 static const int DECIMAL = 10;
 
 static const char BASEA = 'A';
@@ -30,7 +32,12 @@ static const char BASEC = 'C';
 static const char BASEG = 'G';
 static const char BASET = 'T';
 
-static PyObject *RelateError;
+
+/* Check whether a character is a standard DNA base (A, C, G, or T). */
+static inline int is_acgt(char base)
+{
+    return (base == BASEA || base == BASEC || base == BASEG || base == BASET);
+}
 
 
 /* Return the smallest of two arguments. */
@@ -77,16 +84,18 @@ static inline unsigned char encode_subs(char base)
 {
     switch (base)
     {
-        case BASET:
-            return SUB_T;
-        case BASEG:
-            return SUB_G;
-        case BASEC:
-            return SUB_C;
         case BASEA:
             return SUB_A;
+        case BASEC:
+            return SUB_C;
+        case BASEG:
+            return SUB_G;
+        case BASET:
+            return SUB_T;
         default:
-            return SUB_N;
+            // This function should only be called with A, C, G, or T.
+            assert(0);
+            return 0;
     }
 }
 
@@ -98,18 +107,16 @@ static inline unsigned char encode_relate(char ref_base,
                                           char read_qual,
                                           unsigned char min_qual)
 {
-    if (read_qual < min_qual) {return ANY_N ^ encode_subs(ref_base);}
-    return (ref_base == read_base) ? MATCH : encode_subs(read_base);
-}
-
-
-/* More efficient version of encode_relate that assumes the base call
-is not a substitution. */
-static inline unsigned char encode_match(char read_base,
-                                         char read_qual,
-                                         unsigned char min_qual)
-{
-    return (read_qual >= min_qual) ? MATCH : (ANY_N ^ encode_subs(read_base));
+    // If the reference base is unknown, then the read base could be a
+    // match or a substitution to any base.
+    if (!is_acgt(ref_base))
+        {return ANY_N;}
+    // If the read base is unknown or low quality, then it could be a
+    // match or substitution to any base but the reference base.
+    if (read_qual < min_qual || !is_acgt(read_base))
+        {return ANY_N ^ encode_subs(ref_base);}
+    // Both reference and read bases are known and high-quality.
+    return (read_base == ref_base) ? MATCH : encode_subs(read_base);
 }
 
 
@@ -971,6 +978,9 @@ static void calc_positions(size_t *swap_lateral,
     assert(swap_lateral != NULL);
     assert(next_lateral3 != NULL);
     assert(next_opposite != NULL);
+    assert(pod != NULL);
+    assert(pod->indels != NULL);
+    assert(indel != NULL);
     assert(indel >= pod->indels
            && (size_t)(indel - pod->indels) < pod->num_indels);
 
@@ -997,7 +1007,11 @@ static void calc_positions(size_t *swap_lateral,
     *next_opposite = indel->opposite + direction;
     while (pod_has_opposite(pod, *next_opposite))
     {
-        assert(*next_opposite > 0);
+        if (direction < 0)
+        {
+            // Must be > 0 or else it will overflow.
+            assert(*next_opposite > 0);
+        }
         *next_opposite += direction;
     }
 }
@@ -1534,37 +1548,8 @@ static int calc_rels_line(SamRead *read,
         // Decide what to do based on the current CIGAR operation.
         switch (*cigar.op)
         {
-    
-            case CIG_MATCH:
-                // The read and reference match.
-                cigar_op_stop_pos = rels_pos + cigar.len;
-                if (cigar_op_stop_pos > read->num_rels)
-                {
-                    PyErr_SetString(
-                        RelateError,
-                        "A match extended out of the reference"
-                    );
-                    return -1;
-                }
-                if (read_pos + cigar.len > read->len)
-                {
-                    PyErr_SetString(
-                        RelateError,
-                        "A match extended out of the read"
-                    );
-                    return -1;
-                }
-                while (rels_pos < cigar_op_stop_pos)
-                {
-                    read->rels[rels_pos] = encode_match(read->seq[read_pos],
-                                                        read->quals[read_pos],
-                                                        min_qual);
-                    rels_pos++;
-                    read_pos++;
-                }
-                break;
-            
             case CIG_ALIGN:
+            case CIG_MATCH:
             case CIG_SUBST:
                 // The read and reference have matches or substitutions.
                 cigar_op_stop_pos = rels_pos + cigar.len;

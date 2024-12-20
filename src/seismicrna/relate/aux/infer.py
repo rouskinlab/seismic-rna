@@ -2,7 +2,7 @@ from typing import Sequence
 
 from .cigarop import CigarOp
 from ..py.cigar import CIG_ALIGN, CIG_MATCH, CIG_SUBST, CIG_DELET, CIG_INSRT
-from ..py.encode import BASE_DECODINGS
+from ..py.encode import SUBS_DECODINGS
 from ...core.ngs import LO_QUAL, HI_QUAL
 from ...core.rel import (MATCH,
                          DELET,
@@ -168,7 +168,7 @@ def infer_read(refseq: DNA,
             # Unambiguous substitution: Add the substituted nucleotide
             # as high quality.
             try:
-                read_base = BASE_DECODINGS[rel]
+                read_base = SUBS_DECODINGS[rel]
             except KeyError:
                 raise ValueError(f"Invalid relation {rel} in {muts}[{pos}]")
             if ref_base == read_base:

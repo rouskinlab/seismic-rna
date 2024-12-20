@@ -285,8 +285,6 @@ def bowtie2_cmd(fq_inp: FastqUnit | None,
         args.append("--no-mixed")
     # Filtering
     args.append("--no-unal")
-    # Formatting
-    args.append("--xeq")
     # Input and output files
     if fq_unal is not None:
         opts_unal = ["--un"]

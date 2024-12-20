@@ -10,10 +10,13 @@ from .cigar import (CIG_ALIGN,
                     CIG_INSRT,
                     CIG_SCLIP,
                     parse_cigar)
-from .encode import encode_match, encode_relate
-from .error import RelateError
+from .encode import encode_relate
 from ...core.ngs import MAX_FLAG
 from ...core.rel import MATCH, DELET, NOCOV, IRREC
+
+
+class RelateError(Exception):
+    """ Any error that occurs during the relate algorithm. """
 
 
 class SamFlag(object):
@@ -107,7 +110,7 @@ def _calc_rels_read(read: SamRead,
         Read from SAM file to be related
     ref_seq: str
         Reference sequence; refseq and muts must have the same length.
-    min_qual: bytes
+    min_qual: str
         ASCII encoding of the minimum Phred score to accept a base call
     ambindel: bool
         Whether to find and label all ambiguous insertions and deletions
@@ -145,22 +148,9 @@ def _calc_rels_read(read: SamRead,
     # Read the CIGAR string one operation at a time.
     for cigar_op, op_length in parse_cigar(read.cigar):
         # Act based on the CIGAR operation and its length.
-        if cigar_op == CIG_MATCH:
-            # The read and reference sequences match over the entire
-            # CIGAR operation.
-            if ref_pos + op_length > ref_length:
-                raise RelateError("CIGAR operation overshot the reference")
-            if read_pos + op_length > len(read.seq):
-                raise RelateError("CIGAR operation overshot the read")
-            for _ in range(op_length):
-                rel = encode_match(read.seq[read_pos],
-                                   read.qual[read_pos],
-                                   min_qual)
-                ref_pos += 1  # 1-indexed now until this iteration ends
-                read_pos += 1  # 1-indexed now until this iteration ends
-                if rel != MATCH:
-                    rels[ref_pos] = rel
-        elif cigar_op == CIG_ALIGN or cigar_op == CIG_SUBST:
+        if (cigar_op == CIG_ALIGN
+                or cigar_op == CIG_MATCH
+                or cigar_op == CIG_SUBST):
             # There are only matches or substitutions over the entire
             # CIGAR operation.
             if ref_pos + op_length > ref_length:

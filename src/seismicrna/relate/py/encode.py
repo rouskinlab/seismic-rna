@@ -1,12 +1,17 @@
-from ...core.rel import MATCH, SUB_A, SUB_C, SUB_G, SUB_T, ANY_N, IRREC
-from ...core.seq import DNA, BASEA, BASEC, BASEG, BASET, BASEN
+from ...core.rel import MATCH, SUB_A, SUB_C, SUB_G, SUB_T, ANY_N
+from ...core.seq import DNA, BASEA, BASEC, BASEG, BASET
+
+# Encode bases as substitutions and vice versa.
+SUBS_ENCODINGS = {BASEA: SUB_A,
+                  BASEC: SUB_C,
+                  BASEG: SUB_G,
+                  BASET: SUB_T}
+SUBS_DECODINGS = {code: base for base, code in SUBS_ENCODINGS.items()}
 
 
-# Map bases to integer encodings and vice versa.
-BASE_ENCODINGS = {BASEA: SUB_A, BASEC: SUB_C, BASEG: SUB_G, BASET: SUB_T,
-                  BASEN: IRREC}
-BASE_DECODINGS = {code: base for base, code in BASE_ENCODINGS.items()
-                  if base != BASEN}
+def is_acgt(base: str):
+    """ Check whether a character is a standard DNA base. """
+    return base == BASEA or base == BASEC or base == BASEG or base == BASET
 
 
 def encode_relate(ref_base: str, read_base: str, read_qual: str, min_qual: str):
@@ -24,23 +29,16 @@ def encode_relate(ref_base: str, read_base: str, read_qual: str, min_qual: str):
     min_qual: str
         Minimum value of `read_qual` to not call the relation ambiguous.
     """
-    if read_qual >= min_qual and read_base != BASEN and ref_base != BASEN:
-        # The base call is unambiguous.
-        if ref_base == read_base:
-            # The read base matches the reference base.
-            return MATCH
-        # The read base differs from the reference base.
-        return BASE_ENCODINGS[read_base]
-    # The base call is ambiguous due to low quality or an N.
-    return ANY_N ^ BASE_ENCODINGS[ref_base]
-
-
-def encode_match(read_base: str, read_qual: str, min_qual: str):
-    """ A more efficient version of `encode_relate` given that the read
-    and reference match at this position. """
-    if read_qual >= min_qual and read_base != BASEN:
-        return MATCH
-    return ANY_N ^ BASE_ENCODINGS[read_base]
+    if not is_acgt(ref_base):
+        # If the reference base is unknown, then the read base could be
+        # a match or a substitution to any base.
+        return ANY_N
+    if read_qual < min_qual or not is_acgt(read_base):
+        # If the read base is unknown or low quality, then it could be
+        # a match or substitution to any base but the reference base.
+        return ANY_N ^ SUBS_ENCODINGS[ref_base]
+    # Both reference and read bases are known and high-quality.
+    return MATCH if ref_base == read_base else SUBS_ENCODINGS[read_base]
 
 ########################################################################
 #                                                                      #
