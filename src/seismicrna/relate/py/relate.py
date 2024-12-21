@@ -23,7 +23,7 @@ class SamFlag(object):
     """ Represents the set of 12 boolean flags for a SAM record. """
 
     # Define __slots__ to improve speed and memory performance.
-    __slots__ = ["flag", "paired", "rev", "first", "second"]
+    __slots__ = ["flag", "paired", "proper", "rev", "first", "second"]
 
     def __init__(self, flag: int):
         """
@@ -40,6 +40,7 @@ class SamFlag(object):
             raise RelateError(f"Invalid flag: {repr(flag)}")
         self.flag = flag
         self.paired = bool(flag & 1)
+        self.proper = bool(flag & 2)
         self.rev = bool(flag & 16)
         self.first = bool(flag & 64)
         self.second = bool(flag & 128)
@@ -292,7 +293,11 @@ def _calc_rels_read(read: SamRead,
     return ref_end5, ref_end3, rels
 
 
-def _validate_read(read: SamRead, ref: str, min_mapq: int):
+def _validate_read(read: SamRead,
+                   ref: str,
+                   min_mapq: int,
+                   paired: bool,
+                   proper: bool):
     if read.ref != ref:
         raise RelateError(f"Read {repr(read.name)} mapped to a reference named "
                           f"{repr(read.ref)} but is in an alignment map file "
@@ -300,6 +305,16 @@ def _validate_read(read: SamRead, ref: str, min_mapq: int):
     if read.mapq < min_mapq:
         raise RelateError(f"Read {repr(read.name)} mapped with quality score "
                           f"{read.mapq}, less than the minimum of {min_mapq}")
+    if read.flag.paired != paired:
+        expect = "paired" if paired else "single"
+        marked = "paired" if read.flag.paired else "single"
+        raise RelateError(f"Read {repr(read.name)} is expected to be "
+                          f"{expect}-end but is marked as {marked}-end")
+    if read.flag.proper != proper:
+        expect = "properly" if proper else "improperly"
+        marked = "properly" if read.flag.proper else "improperly"
+        raise RelateError(f"Read {repr(read.name)} is expected to be "
+                          f"{expect} paired but is marked as {marked} paired")
 
 
 def _validate_pair(read1: SamRead, read2: SamRead):
@@ -340,13 +355,13 @@ def _merge_rels(end5f: int,
     return merged_rels
 
 
-def _merge_mates(end5f: int,
-                 end3f: int,
-                 relsf: dict[int, int],
-                 end5r: int,
-                 end3r: int,
-                 relsr: dict[int, int],
-                 overhangs: bool):
+def merge_mates(end5f: int,
+                end3f: int,
+                relsf: dict[int, int],
+                end5r: int,
+                end3r: int,
+                relsr: dict[int, int],
+                overhangs: bool):
     if not overhangs:
         # The 5' end of the reverse mate cannot extend past the 5' end
         # of the forward mate.
@@ -373,9 +388,12 @@ def calc_rels_lines(line1: str,
                     overhangs: bool,
                     clip_end5: int = 0,
                     clip_end3: int = 0):
+    # Determine if the read is paired-end and properly paired.
+    paired = bool(line2)
+    proper = paired and line1 != line2
     # Generate the relationships for read 1.
     read1 = SamRead(line1)
-    _validate_read(read1, ref, min_mapq)
+    _validate_read(read1, ref, min_mapq, paired, proper)
     end51, end31, rels1 = _calc_rels_read(read1,
                                           refseq,
                                           chr(min_qual),
@@ -383,16 +401,13 @@ def calc_rels_lines(line1: str,
                                           ambindel,
                                           clip_end5,
                                           clip_end3)
-    if line2:
-        if line2 == line1:
-            # This read is paired-end but comprises only one mate, which
-            # can occur only if Bowtie2 is run in mixed mode.
-            ends = [end51, end51], [end31, end31]
-            rels = rels1
-        else:
+    if paired:
+        # The read is paired-end.
+        if proper:
+            # The read is properly paired.
             # Generate the relationships for read 2.
             read2 = SamRead(line2)
-            _validate_read(read2, ref, min_mapq)
+            _validate_read(read2, ref, min_mapq, paired, proper)
             _validate_pair(read1, read2)
             end52, end32, rels2 = _calc_rels_read(read2,
                                                   refseq,
@@ -409,11 +424,17 @@ def calc_rels_lines(line1: str,
                 end5f, end3f, relsf = end52, end32, rels2
                 end5r, end3r, relsr = end51, end31, rels1
             # Merge the relationships and end coordinates.
-            ends, rels = _merge_mates(
+            ends, rels = merge_mates(
                 end5f, end3f, relsf, end5r, end3r, relsr, overhangs,
             )
+        else:
+            # The read is improperly paired (paired-end but comprises
+            # only one mate), which can occur only if Bowtie2 is run in
+            # mixed mode.
+            ends = [end51, end51], [end31, end31]
+            rels = rels1
     else:
-        # The read is single-ended.
+        # The read is single-end.
         ends = [end51], [end31]
         rels = rels1
     return ends, rels

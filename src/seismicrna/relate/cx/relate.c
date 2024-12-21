@@ -393,9 +393,10 @@ static const char CIG_MATCH = '=';
 static const char CIG_SCLIP = 'S';
 static const char CIG_SUBST = 'X';
 static const unsigned long FLAG_PAIRED = 1;
+static const unsigned long FLAG_PROPER = 2;
 static const unsigned long FLAG_REV = 16;
-static const unsigned long FLAG_1ST = 64;
-static const unsigned long FLAG_2ND = 128;
+static const unsigned long FLAG_READ1 = 64;
+static const unsigned long FLAG_READ2 = 128;
 static const unsigned long MAX_FLAG = 4095;  // 4095 = 2^12 - 1
 
 
@@ -467,9 +468,10 @@ typedef struct
     const char *end;      // pointer to address after 3' end of read
     size_t len;           // read length
     int paired;           // whether read is paired
+    int proper;           // whether read is properly paired
     int reverse;          // whether read is reverse complemented
-    int first;            // whether read is the first read
-    int second;           // whether read is the second read
+    int read1;            // whether read is the 1st read
+    int read2;            // whether read is the 2nd read
     size_t num_rels;      // number of relationships
     size_t ref_end5;      // 5' end of the read in the ref (1-indexed)
     size_t ref_end3;      // 3' end of the read in the ref (1-indexed)
@@ -576,9 +578,10 @@ static int parse_sam_line(SamRead *read,
     }
     // Individual flag bits
     read->paired = (read->flag & FLAG_PAIRED) > 0;
+    read->proper = (read->flag & FLAG_PROPER) > 0;
     read->reverse = (read->flag & FLAG_REV) > 0;
-    read->first = (read->flag & FLAG_1ST) > 0;
-    read->second = (read->flag & FLAG_2ND) > 0;
+    read->read1 = (read->flag & FLAG_READ1) > 0;
+    read->read2 = (read->flag & FLAG_READ2) > 0;
 
     // Reference name
     if ((read->ref = strtok_r(NULL, SAM_SEP, &end)) == NULL)
@@ -738,11 +741,15 @@ static int parse_sam_line(SamRead *read,
 file and that its mapping quality is sufficient. */
 static int validate_read(const SamRead *read,
                          const char *ref,
-                         unsigned long min_mapq)
+                         unsigned long min_mapq,
+                         int paired,
+                         int proper)
 {
     assert(read != NULL);
     assert(read->ref != NULL);
     assert(ref != NULL);
+
+    // Validate alignment attributes.
     if (strcmp(read->ref, ref))
     {
         PyErr_SetString(RelateError,
@@ -755,6 +762,43 @@ static int validate_read(const SamRead *read,
                         "Mapping quality is insufficient");
         return -1;
     }
+
+    // Validate paired-end attributes.
+    if (read->paired != paired)
+    {
+        if (paired)
+        {
+            PyErr_SetString(RelateError,
+                            "Lines indicate read should be paired-end, "
+                            "but it is marked as single-end");
+            return -1;
+        }
+        else
+        {
+            PyErr_SetString(RelateError,
+                            "Lines indicate read should be single-end, "
+                            "but it is marked as paired-end");
+            return -1;
+        }
+    }
+    if (read->proper != proper)
+    {
+        if (proper)
+        {
+            PyErr_SetString(RelateError,
+                            "Lines indicate read should be properly paired, "
+                            "but it is marked as improperly paired");
+            return -1;
+        }
+        else
+        {
+            PyErr_SetString(RelateError,
+                            "Lines indicate read should be improperly paired, "
+                            "but it is marked as properly paired");
+            return -1;
+        }
+    }
+
     return 0;
 }
 
@@ -786,16 +830,16 @@ static int validate_pair(const SamRead *read1,
         return -1;
     }
 
-    // Mates 1 and 2 must be marked as first and second, respectively.
-    if (!(read1->first && read2->second))
+    // Mates 1 and 2 must be marked as READ1 and READ2, respectively.
+    if (!(read1->read1 && read2->read2))
     {
         PyErr_SetString(RelateError,
-                        "Mates 1 and 2 are not marked as first and second");
+                        "Mates 1 and 2 are not marked as READ1 and READ2");
         return -1;
     }
 
     // Mates 1 and 2 must be in opposite orientations (i.e. one must be
-    // marked as reversed and the other as not reversed).
+    // marked as REVERSE and the other as not REVERSE).
     if (read1->reverse == read2->reverse)
     {
         PyErr_SetString(RelateError,
@@ -1489,6 +1533,8 @@ static int calc_rels_line(SamRead *read,
                           const char *ref_seq,
                           size_t ref_len,
                           unsigned long min_mapq,
+                          int paired,
+                          int proper,
                           unsigned char min_qual,
                           int insert3,
                           int ambindel,
@@ -1506,7 +1552,7 @@ static int calc_rels_line(SamRead *read,
     }
     if (parse_sam_line(read, line, clip_end5, clip_end3, ref_len))
         {return -1;}
-    if (validate_read(read, ref, min_mapq))
+    if (validate_read(read, ref, min_mapq, paired, proper))
         {return -1;}
 
     // Point to where the read starts in the reference sequence.
@@ -2053,8 +2099,28 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
     init_read(&read1);
     init_read(&read2);
 
-    // Determine the number of mates.
-    Py_ssize_t num_mates = (*line2) ? 2 : 1;
+    // Determine whether the read is paired-end and, if so, whether it
+    // is properly paired.
+    Py_ssize_t num_mates;
+    int paired, proper;
+    if (*line2)
+    {
+        // paired-end
+        num_mates = 2;
+        paired = 1;
+        // The read is properly paired if lines 1 and 2 are different
+        // because the way that SEISMIC-RNA indicates that a read is
+        // paired-end but improperly paired (i.e. has one mate) is by
+        // passing identical lines for reads 1 and 2.
+        proper = strcmp(line1, line2) > 0;
+    }
+    else
+    {
+        // single-end
+        num_mates = 1;
+        paired = 0;
+        proper = 0;
+    }
     
     // Initialize Python objects to return the results.
 
@@ -2089,6 +2155,8 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
                        ref_seq,
                        (size_t)ref_len,
                        min_mapq,
+                       paired,
+                       proper,
                        min_qual,
                        insert3,
                        ambindel,
@@ -2096,12 +2164,12 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
                        clip_end3))
         {return cleanup(&read1, &read2, ends_rels_tuple);}
 
-    if (num_mates > 1)
+    if (paired)
     {
         // The read comprises forward (fwd) and reverse (rev) mates.
         SamRead *fwd_read, *rev_read;
         // Check if line 2 differs from line 1.
-        if (strcmp(line1, line2))
+        if (proper)
         {
             // Calculate relationships for line 2.
             if (calc_rels_line(&read2,
@@ -2110,6 +2178,8 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
                                ref_seq,
                                (size_t)ref_len,
                                min_mapq,
+                               paired,
+                               proper,
                                min_qual,
                                insert3,
                                ambindel,

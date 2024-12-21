@@ -3,16 +3,23 @@ from itertools import chain, product
 
 from seismicrna.core.arg import opt_min_mapq
 from seismicrna.core.ngs import LO_QUAL, OK_QUAL, MAX_FLAG, SAM_DELIM
-from seismicrna.core.rel import DELET, IRREC, MATCH, NOCOV, SUB_G
+from seismicrna.core.rel import (DELET,
+                                 IRREC,
+                                 MATCH,
+                                 NOCOV,
+                                 SUB_A,
+                                 SUB_C,
+                                 SUB_G,
+                                 SUB_T)
 from seismicrna.core.seq import DNA
 from seismicrna.relate.aux.iterread import iter_alignments
 from seismicrna.relate.py.cigar import CIG_ALIGN, CIG_DELET, CIG_SCLIP
 from seismicrna.relate.py.encode import encode_relate
 from seismicrna.relate.py.relate import (RelateError as RelateErrorPy,
                                          calc_rels_lines as calc_rels_lines_py,
-                                         _merge_mates)
-from seismicrna.relate.cx.relate import (RelateError as RelateErrorC,
-                                         calc_rels_lines as calc_rels_lines_c)
+                                         merge_mates)
+from seismicrna.relate.cx.relate import (RelateError as RelateErrorCx,
+                                         calc_rels_lines as calc_rels_lines_cx)
 
 
 def as_sam(name: str,
@@ -98,7 +105,7 @@ class TestCalcRelsLinesSingle(ut.TestCase):
         """ Generate a SAM line from the given information, and use it
         to compute the relationships. """
         line1 = as_sam("read",
-                       99,
+                       int(paired),
                        ref,
                        end5,
                        opt_min_mapq.default,
@@ -120,19 +127,19 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                                        False,
                                        clip_end5,
                                        clip_end3)
-        result_c = calc_rels_lines_c(line1,
-                                     line2,
-                                     ref,
-                                     str(refseq),
-                                     0,
-                                     ord(OK_QUAL),
-                                     insert3,
-                                     ambindel,
-                                     False,
-                                     clip_end5,
-                                     clip_end3)
-        self.assertEqual(result_py, result_c)
-        return result_c
+        result_cx = calc_rels_lines_cx(line1,
+                                       line2,
+                                       ref,
+                                       str(refseq),
+                                       0,
+                                       ord(OK_QUAL),
+                                       insert3,
+                                       ambindel,
+                                       False,
+                                       clip_end5,
+                                       clip_end3)
+        self.assertEqual(result_py, result_cx)
+        return result_cx
 
     def relate_error(self,
                      error_py: str,
@@ -149,7 +156,7 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                      clip_end3: int,
                      paired: bool = False):
         line1 = as_sam("read",
-                       99,
+                       int(paired),
                        ref,
                        end5,
                        opt_min_mapq.default,
@@ -174,9 +181,9 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                                False,
                                clip_end5,
                                clip_end3)
-        self.assertRaisesRegex(RelateErrorC,
+        self.assertRaisesRegex(RelateErrorCx,
                                error_c,
-                               calc_rels_lines_c,
+                               calc_rels_lines_cx,
                                line1,
                                line2,
                                ref,
@@ -542,14 +549,15 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                qual2: str,
                cigar2: str,
                end52: int,
-               ambindel: bool,
-               insert3: bool,
-               clip_end5: int,
-               clip_end3: int):
+               read1rev: bool,
+               ambindel: bool = False,
+               insert3: bool = True,
+               clip_end5: int = 0,
+               clip_end3: int = 0):
         """ Generate a SAM line from the given information, and use it
         to compute the relationships. """
         line1 = as_sam("read",
-                       99,
+                       (83 if read1rev else 99),
                        ref,
                        end51,
                        opt_min_mapq.default,
@@ -560,7 +568,7 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                        read1,
                        qual1)
         line2 = as_sam("read",
-                       99,
+                       (163 if read1rev else 147),
                        ref,
                        end52,
                        opt_min_mapq.default,
@@ -581,25 +589,47 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                                        False,
                                        clip_end5,
                                        clip_end3)
-        result_c = calc_rels_lines_c(line1,
-                                     line2,
-                                     ref,
-                                     str(refseq),
-                                     0,
-                                     ord(OK_QUAL),
-                                     insert3,
-                                     ambindel,
-                                     False,
-                                     clip_end5,
-                                     clip_end3)
-        self.assertEqual(result_py, result_c)
-        return result_c
+        result_cx = calc_rels_lines_cx(line1,
+                                       line2,
+                                       ref,
+                                       str(refseq),
+                                       0,
+                                       ord(OK_QUAL),
+                                       insert3,
+                                       ambindel,
+                                       False,
+                                       clip_end5,
+                                       clip_end3)
+        self.assertEqual(result_py, result_cx)
+        return result_cx
+
+    def test_gap_fr(self):
+        """ Reads are separated by a gap; forward, reverse.
+
+        R1  AGTg
+        R2       tCGT
+        Ref AGTCAACGT
+        Pos 123456789
+        """
+        result = self.relate(ref="ref",
+                             refseq=DNA("AGTCAACGT"),
+                             read1=DNA("AGTG"),
+                             qual1="FFFF",
+                             cigar1="4M",
+                             end51=1,
+                             read2=DNA("TCGT"),
+                             qual2="FFFF",
+                             cigar2="4M",
+                             end52=6,
+                             read1rev=False)
+        expect = (([1, 6], [4, 9]), {4: SUB_G, 6: SUB_T})
+        self.assertEqual(result, expect)
 
 
 class TestMergeMates(ut.TestCase):
 
     def test_empty(self):
-        result = _merge_mates(1, 10, {}, 1, 10, {}, True)
+        result = merge_mates(1, 10, {}, 1, 10, {}, True)
         expect = ([1, 1], [10, 10]), {}
         self.assertEqual(result, expect)
 
@@ -610,9 +640,9 @@ class TestMergeMates(ut.TestCase):
         end32 = 30
         for pos in range(end51, end31 + 1):
             for rel in range(MATCH + 1, NOCOV):
-                result = _merge_mates(end51, end31, {pos: rel},
-                                      end52, end32, {},
-                                      True)
+                result = merge_mates(end51, end31, {pos: rel},
+                                     end52, end32, {},
+                                     True)
                 if end52 <= pos <= end32:
                     # The relationship can be compensated by read 2.
                     if rel & MATCH:
@@ -633,9 +663,9 @@ class TestMergeMates(ut.TestCase):
         end32 = 30
         for pos in range(end52, end32 + 1):
             for rel in range(MATCH + 1, NOCOV):
-                result = _merge_mates(end51, end31, {},
-                                      end52, end32, {pos: rel},
-                                      True)
+                result = merge_mates(end51, end31, {},
+                                     end52, end32, {pos: rel},
+                                     True)
                 if end51 <= pos <= end31:
                     # The relationship can be compensated by read 1.
                     if rel & MATCH:
@@ -662,9 +692,9 @@ class TestMergeMates(ut.TestCase):
                         rels2 = {pos2: rel2}
                         with self.subTest(pos1=pos1, rel1=rel1,
                                           pos2=pos2, rel2=rel2):
-                            result = _merge_mates(end51, end31, rels1,
-                                                  end52, end32, rels2,
-                                                  True)
+                            result = merge_mates(end51, end31, rels1,
+                                                 end52, end32, rels2,
+                                                 True)
                             if pos1 == pos2:
                                 merged = rel1 & rel2
                                 if merged == MATCH:
@@ -702,7 +732,7 @@ class TestMergeMates(ut.TestCase):
                     self.assertRaisesRegex(
                         RelateErrorPy,
                         f"Cannot merge non-covered position {error}",
-                        _merge_mates,
+                        merge_mates,
                         end51, end31, rels1,
                         end52, end32, rels2,
                         True
@@ -715,9 +745,9 @@ class TestMergeMates(ut.TestCase):
             relsf = {pos: SUB_G for pos in range(end5f, end3f + 1)}
             relsr = {pos: SUB_G for pos in range(end5r, end3r + 1)}
             for overhangs in [True, False]:
-                result = _merge_mates(end5f, end3f, relsf,
-                                      end5r, end3r, relsr,
-                                      overhangs)
+                result = merge_mates(end5f, end3f, relsf,
+                                     end5r, end3r, relsr,
+                                     overhangs)
                 if overhangs:
                     ends = [end5f, end5r], [end3f, end3r]
                 else:
