@@ -1233,7 +1233,9 @@ static int try_move_indel(Indel *indel,
         {
             // The insertion moves to the side opposite that on which it
             // is marked.
-            // The position away from which it moved 
+            // Determine the relationship to mark at the position that
+            // is adjacent to the insertion on the side opposite the
+            // direction of movement.
             size_t swap_lateral_, next_lateral3_, next_opposite_;
             calc_positions(&swap_lateral_,
                            &next_lateral3_,

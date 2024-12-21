@@ -27,12 +27,12 @@ def relate_records(records: Iterable[tuple[str, str, str]],
                    overhangs: bool,
                    clip_end5: int,
                    clip_end3: int,
-                   relate_fast: bool):
+                   relate_cx: bool):
     # Load the module.
-    if relate_fast:
+    if relate_cx:
         # Load the C extension module.
         try:
-            from .c.relate import RelateError, calc_rels_lines
+            from .cx.relate import RelateError, calc_rels_lines
         except ImportError:
             logger.warning(
                 "Failed to import the C extension for the relate algorithm; "

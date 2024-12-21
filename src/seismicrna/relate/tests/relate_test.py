@@ -11,8 +11,8 @@ from seismicrna.relate.py.encode import encode_relate
 from seismicrna.relate.py.relate import (RelateError as RelateErrorPy,
                                          calc_rels_lines as calc_rels_lines_py,
                                          _merge_mates)
-from seismicrna.relate.c.relate import (RelateError as RelateErrorC,
-                                        calc_rels_lines as calc_rels_lines_c)
+from seismicrna.relate.cx.relate import (RelateError as RelateErrorC,
+                                         calc_rels_lines as calc_rels_lines_c)
 
 
 def as_sam(name: str,
