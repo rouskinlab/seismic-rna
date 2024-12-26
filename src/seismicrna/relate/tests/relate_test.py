@@ -119,7 +119,9 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                        read,
                        qual)
         line2 = line1 if paired else ""
-        result_py = calc_rels_lines_py(line1,
+        # Test calc_rels_lines_cx first to ensure that it doesn't
+        # corrupt any memory.
+        result_cx = calc_rels_lines_cx(line1,
                                        line2,
                                        ref,
                                        str(refseq),
@@ -130,7 +132,7 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                                        False,
                                        clip_end5,
                                        clip_end3)
-        result_cx = calc_rels_lines_cx(line1,
+        result_py = calc_rels_lines_py(line1,
                                        line2,
                                        ref,
                                        str(refseq),
@@ -174,9 +176,11 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                        qual,
                        validate=False)
         line2 = line1 if paired else ""
-        self.assertRaisesRegex(RelateErrorPy,
-                               error_msg_py if error_msg_py else error_msg,
-                               calc_rels_lines_py,
+        # Test calc_rels_lines_cx first to ensure that it doesn't
+        # corrupt any memory.
+        self.assertRaisesRegex(RelateErrorCx,
+                               error_msg,
+                               calc_rels_lines_cx,
                                line1,
                                line2,
                                sam_ref if sam_ref else ref,
@@ -188,9 +192,9 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                                False,
                                clip_end5,
                                clip_end3)
-        self.assertRaisesRegex(RelateErrorCx,
-                               error_msg,
-                               calc_rels_lines_cx,
+        self.assertRaisesRegex(RelateErrorPy,
+                               error_msg_py if error_msg_py else error_msg,
+                               calc_rels_lines_py,
                                line1,
                                line2,
                                sam_ref if sam_ref else ref,
@@ -231,9 +235,11 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                        qual)
         line1 = SAM_DELIM.join(line1.split(SAM_DELIM)[:num_fields])
         line2 = line1 if paired else ""
-        self.assertRaisesRegex(RelateErrorPy,
+        # Test calc_rels_lines_cx first to ensure that it doesn't
+        # corrupt any memory.
+        self.assertRaisesRegex(RelateErrorCx,
                                error_msg,
-                               calc_rels_lines_py,
+                               calc_rels_lines_cx,
                                line1,
                                line2,
                                ref,
@@ -245,9 +251,9 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                                False,
                                clip_end5,
                                clip_end3)
-        self.assertRaisesRegex(RelateErrorCx,
+        self.assertRaisesRegex(RelateErrorPy,
                                error_msg,
-                               calc_rels_lines_cx,
+                               calc_rels_lines_py,
                                line1,
                                line2,
                                ref,
@@ -367,8 +373,8 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                                     DNA("N") * soft3],
                                    DNA(""))
                         qual = OK_QUAL * readlen
-                        cigar = "".join([cigar_s5, cigar_m, cigar_s3])
-                        if soft5 + soft3 < readlen:
+                        if matches > 0:
+                            cigar = "".join([cigar_s5, cigar_m, cigar_s3])
                             for clip5 in range(3):
                                 for clip3 in range(3):
                                     with self.subTest(reflen=reflen,
@@ -396,13 +402,14 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                                                   dict())
                                         self.assertEqual(result, expect)
                         else:
+                            cigar = f"{soft}{CIG_SCLIP}"
                             with self.subTest(reflen=reflen,
                                               readlen=readlen,
                                               soft5=soft5,
                                               soft3=soft3,
                                               end5=end5):
                                 self.relate_error(
-                                    ("CIGAR string consumed 0 bases "
+                                    ("CIGAR operations consumed 0 bases "
                                      "in the reference"),
                                     ref=ref,
                                     refseq=refseq,

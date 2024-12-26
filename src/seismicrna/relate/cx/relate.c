@@ -213,8 +213,8 @@ static void free_pod(IndelPod *pod)
 {
     assert(pod != NULL);
     free(pod->indels);
+    // printf("free %p\n", pod->indels);
     pod->indels = NULL;
-    // printf("free %p\n", pods->pods[p].indels);
 }
 
 
@@ -454,6 +454,8 @@ static inline int get_next_cigar_op(CigarOp *cigar)
 
 typedef struct
 {
+    // Source attributes
+    char *line;           // buffer to hold line from SAM file
     // Parsed attributes
     const char *name;     // read name
     unsigned long flag;   // bitwise flag
@@ -489,6 +491,7 @@ static void init_read(SamRead *read)
     assert(read != NULL);
     // Initialize all pointer fields to NULL to prevent errors caused
     // by uninitialized pointers.
+    read->line = NULL;
     read->name = NULL;
     read->ref = NULL;
     read->cigar = NULL;
@@ -503,16 +506,18 @@ static void init_read(SamRead *read)
 
 /* Free all of the dynamically allocated memory for a SamRead.
 Do NOT call this function on a SamRead that has not yet been initialized
-with init_read(), or else the uninitialized pointer read->rels will be
-freed, possibly causing an access violation or memory corruption. */
+with init_read(), or else read->line and read->rels will be freed before
+being initialized, possibly causing an access violation or corrupting
+the memory. */
 static void free_read(SamRead *read)
 {
     assert(read != NULL);
-    // Free the relationship array and point it to NULL.
+    free(read->line);
+    // printf("free %p\n", read->line);
+    read->line = NULL;
     free(read->rels);
     // printf("free %p\n", read->rels);
     read->rels = NULL;
-    // Free the read's pods.
     free_pods(&(read->pods));
     // None of the other fields in the SamRead are dynamically allocated
     // memory, so nothing else needs to be done with them.
@@ -593,17 +598,36 @@ Do NOT call this function on a SamRead that has not yet been initialized
 with init_read(), so that in case this function fails and returns -1,
 the SamRead's memory can be freed safely with free_read(). */
 static int parse_sam_line(SamRead *read,
-                          char *line,
+                          const char *line,
+                          size_t line_length,
                           size_t clip_end5,
                           size_t clip_end3,
                           size_t ref_len)
 {
-    assert(read != NULL);
     assert(line != NULL);
+    assert(read != NULL);
+    // If any of these are != NULL, then memory can leak.
+    assert(read->line == NULL);
     assert(read->rels == NULL);
     assert(read->pods.pods == NULL);
+    // Pass line_length to avoid needing to calculate it with strlen.
+    assert(strlen(line) == line_length);
 
-    char *end = line;  // End of the current field.
+    // Allocate (line_length + 1) to include the null terminator.
+    read->line = malloc((line_length + 1) * sizeof(char));
+    if (read->line == NULL)
+    {
+        PyErr_NoMemory();
+        return -1;
+    }
+    // printf("malloc %p\n", read->line);
+
+    // Copy the line into read->line and ensure it was copied correctly.
+    strcpy(read->line, line);
+    assert(read->line[line_length] == '\0');
+    assert(strlen(read->line) == line_length);
+
+    char *end = read->line;  // End of the current field.
     unsigned long temp_ulong;  // Hold parsed numbers before casting.
 
     // Read name
@@ -1621,7 +1645,8 @@ read->rels and read->pods will leak.
 Make SURE to call free_read() eventually, or else memory in pods->rels
 will leak. */
 static int calc_rels_line(SamRead *read,
-                          char *line,
+                          const char *line,
+                          size_t line_length,
                           const char *ref,
                           const char *ref_seq,
                           size_t ref_len,
@@ -1637,7 +1662,7 @@ static int calc_rels_line(SamRead *read,
     // Validate the SAM file line and parse it into a SamRead.
     assert(read != NULL);
     assert(line != NULL);
-    if (parse_sam_line(read, line, clip_end5, clip_end3, ref_len))
+    if (parse_sam_line(read, line, line_length, clip_end5, clip_end3, ref_len))
         {return -1;}
     if (validate_read(read, ref, min_mapq, paired, proper))
         {return -1;}
@@ -2106,8 +2131,10 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
 {
     // Attempt to convert the arguments from the Python function call
     // into C data types. Return NULL upon failure.
-    char *line1;
-    char *line2;
+    const char *line1;
+    Py_ssize_t line1_len;
+    const char *line2;
+    Py_ssize_t line2_len;
     const char *ref;
     const char *ref_seq;
     Py_ssize_t ref_len;
@@ -2119,9 +2146,11 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
     unsigned long clip_end5;
     unsigned long clip_end3;
     if (!PyArg_ParseTuple(args,
-                          "ssss#kbpppkk",
+                          "s#s#ss#kbpppkk",
                           &line1,
+                          &line1_len,
                           &line2,
+                          &line2_len,
                           &ref,
                           &ref_seq,
                           &ref_len,
@@ -2198,6 +2227,7 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
     // Calculate relationships for line 1.
     if (calc_rels_line(&read1,
                        line1,
+                       (size_t)line1_len,
                        ref,
                        ref_seq,
                        (size_t)ref_len,
@@ -2221,6 +2251,7 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
             // Calculate relationships for line 2.
             if (calc_rels_line(&read2,
                                line2,
+                               (size_t)line2_len,
                                ref,
                                ref_seq,
                                (size_t)ref_len,
@@ -2365,7 +2396,7 @@ PyMODINIT_FUNC PyInit_relate(void)
 }
 
 
-int main()
+int main(void)
 {
     // This module must be called via its Python API, not run directly.
     return 0;
