@@ -1,5 +1,6 @@
 import unittest as ut
 from itertools import chain, product
+from typing import Any
 
 from seismicrna.core.arg import opt_min_mapq
 from seismicrna.core.ngs import LO_QUAL, OK_QUAL, MAX_FLAG, SAM_DELIM
@@ -7,19 +8,17 @@ from seismicrna.core.rel import (DELET,
                                  IRREC,
                                  MATCH,
                                  NOCOV,
-                                 SUB_A,
-                                 SUB_C,
                                  SUB_G,
                                  SUB_T)
 from seismicrna.core.seq import DNA
 from seismicrna.relate.aux.iterread import iter_alignments
+from seismicrna.relate.cx.relate import (RelateError as RelateErrorCx,
+                                         calc_rels_lines as calc_rels_lines_cx)
 from seismicrna.relate.py.cigar import CIG_ALIGN, CIG_DELET, CIG_SCLIP
 from seismicrna.relate.py.encode import encode_relate
 from seismicrna.relate.py.relate import (RelateError as RelateErrorPy,
                                          calc_rels_lines as calc_rels_lines_py,
                                          merge_mates)
-from seismicrna.relate.cx.relate import (RelateError as RelateErrorCx,
-                                         calc_rels_lines as calc_rels_lines_cx)
 
 
 def as_sam(name: str,
@@ -32,7 +31,8 @@ def as_sam(name: str,
            pnext: int,
            tlen: int,
            read: DNA,
-           qual: str):
+           qual: str,
+           validate: bool = True):
     """ Return a line in SAM format from the given fields.
 
     Parameters
@@ -60,30 +60,33 @@ def as_sam(name: str,
     qual: str
         Phred quality score string of the base calls. Must be equal in
         length to `read`.
+    validate: bool
+        Check that the fields are valid before assembling the line.
 
     Returns
     -------
     str
         A line in SAM format containing the given fields.
     """
-    if not name:
-        raise ValueError("Read name is empty")
-    if not 0 <= flag <= MAX_FLAG:
-        raise ValueError(f"Invalid SAM flag: {flag}")
-    if not ref:
-        raise ValueError("Reference name is empty")
-    if not end5 >= 1:
-        raise ValueError(f"Invalid 5' mapping position: {end5}")
-    if not cigar:
-        raise ValueError("CIGAR string is empty")
-    if not rnext:
-        raise ValueError("Next reference name is empty")
-    if not pnext >= 0:
-        raise ValueError(f"Invalid next 5' mapping position: {pnext}")
-    if not len(read) == len(qual):
-        raise ValueError(
-            f"Lengths of read ({len(read)}) and qual ({len(qual)}) disagree"
-        )
+    if validate:
+        if not name:
+            raise ValueError("Read name is empty")
+        if not 0 <= flag <= MAX_FLAG:
+            raise ValueError(f"Invalid SAM flag: {flag}")
+        if not ref:
+            raise ValueError("Reference name is empty")
+        if not end5 >= 1:
+            raise ValueError(f"Invalid 5' mapping position: {end5}")
+        if not cigar:
+            raise ValueError("CIGAR string is empty")
+        if not rnext:
+            raise ValueError("Next reference name is empty")
+        if not pnext >= 0:
+            raise ValueError(f"Invalid next 5' mapping position: {pnext}")
+        if not len(read) == len(qual):
+            raise ValueError(
+                f"Lengths of read ({len(read)}) and qual ({len(qual)}) differ"
+            )
     return SAM_DELIM.join(map(str, (name, flag, ref, end5, mapq, cigar, rnext,
                                     pnext, tlen, read, f"{qual}\n")))
 
@@ -108,7 +111,7 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                        int(paired),
                        ref,
                        end5,
-                       opt_min_mapq.default,
+                       ord(OK_QUAL),
                        cigar,
                        "=",
                        1,
@@ -138,23 +141,83 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                                        False,
                                        clip_end5,
                                        clip_end3)
-        self.assertEqual(result_py, result_cx)
+        self.assertEqual(result_cx, result_py)
         return result_cx
 
     def relate_error(self,
-                     error_py: str,
-                     error_c: str,
-                     ref: str,
-                     refseq: DNA,
-                     read: DNA,
-                     qual: str,
-                     cigar: str,
-                     end5: int,
-                     ambindel: bool,
-                     insert3: bool,
-                     clip_end5: int,
-                     clip_end3: int,
+                     error_msg: str,
+                     error_msg_py: str = "",
+                     ref: str = "ref",
+                     refseq: DNA = DNA("ACGT"),
+                     read: DNA = DNA("ACGT"),
+                     qual: str = "FFFF",
+                     cigar: str = "4M",
+                     end5: Any = 1,
+                     sam_ref: str = "",
+                     mapq: Any = None,
+                     flag: Any = None,
+                     ambindel: bool = True,
+                     insert3: bool = True,
+                     clip_end5: int = 0,
+                     clip_end3: int = 0,
                      paired: bool = False):
+        line1 = as_sam("read",
+                       flag if flag is not None else int(paired),
+                       ref,
+                       end5,
+                       mapq if mapq is not None else ord(OK_QUAL),
+                       cigar,
+                       "=",
+                       1,
+                       len(read),
+                       read,
+                       qual,
+                       validate=False)
+        line2 = line1 if paired else ""
+        self.assertRaisesRegex(RelateErrorPy,
+                               error_msg_py if error_msg_py else error_msg,
+                               calc_rels_lines_py,
+                               line1,
+                               line2,
+                               sam_ref if sam_ref else ref,
+                               str(refseq),
+                               ord(OK_QUAL),
+                               ord(OK_QUAL),
+                               insert3,
+                               ambindel,
+                               False,
+                               clip_end5,
+                               clip_end3)
+        self.assertRaisesRegex(RelateErrorCx,
+                               error_msg,
+                               calc_rels_lines_cx,
+                               line1,
+                               line2,
+                               sam_ref if sam_ref else ref,
+                               str(refseq),
+                               ord(OK_QUAL),
+                               ord(OK_QUAL),
+                               insert3,
+                               ambindel,
+                               False,
+                               clip_end5,
+                               clip_end3)
+
+    def relate_truncated(self,
+                         num_fields: int,
+                         error_msg: str,
+                         ref: str = "ref",
+                         refseq: DNA = DNA("ACGT"),
+                         read: DNA = DNA("ACGT"),
+                         qual: str = "FFFF",
+                         cigar: str = "4M",
+                         end5: Any = 1,
+                         ambindel: bool = True,
+                         insert3: bool = True,
+                         clip_end5: int = 0,
+                         clip_end3: int = 0,
+                         paired: bool = False):
+        """ Test errors caused by lines that are too short. """
         line1 = as_sam("read",
                        int(paired),
                        ref,
@@ -166,9 +229,10 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                        len(read),
                        read,
                        qual)
+        line1 = SAM_DELIM.join(line1.split(SAM_DELIM)[:num_fields])
         line2 = line1 if paired else ""
         self.assertRaisesRegex(RelateErrorPy,
-                               error_py,
+                               error_msg,
                                calc_rels_lines_py,
                                line1,
                                line2,
@@ -182,7 +246,7 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                                clip_end5,
                                clip_end3)
         self.assertRaisesRegex(RelateErrorCx,
-                               error_c,
+                               error_msg,
                                calc_rels_lines_cx,
                                line1,
                                line2,
@@ -200,7 +264,7 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                            refseq: DNA,
                            max_ins: int,
                            insert3: bool,
-                           test_paired: bool):
+                           paired: bool):
         """ Iterate through every test case. """
         for read, qual, cigar, end5, end3, rels in iter_alignments(
                 refseq,
@@ -209,40 +273,42 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                 max_ins_len=max_ins,
                 max_ins_bases=max_ins
         ):
-            for paired in ([False, True] if test_paired else [False]):
-                with self.subTest(refseq=refseq,
-                                  insert3=insert3,
-                                  read=read,
-                                  qual=qual,
-                                  cigar=cigar,
-                                  end5=end5,
-                                  end3=end3,
-                                  rels=rels,
-                                  paired=paired):
-                    result = self.relate("ref",
-                                         refseq,
-                                         read,
-                                         qual,
-                                         cigar,
-                                         end5,
-                                         ambindel=True,
-                                         insert3=insert3,
-                                         clip_end5=0,
-                                         clip_end3=0,
-                                         paired=paired)
-                    if paired:
-                        expect = ([end5, end5], [end3, end3]), rels
-                    else:
-                        expect = ([end5], [end3]), rels
-                    self.assertEqual(result, expect)
+            with self.subTest(refseq=refseq,
+                              insert3=insert3,
+                              read=read,
+                              qual=qual,
+                              cigar=cigar,
+                              end5=end5,
+                              end3=end3,
+                              rels=rels,
+                              paired=paired):
+                result = self.relate("ref",
+                                     refseq,
+                                     read,
+                                     qual,
+                                     cigar,
+                                     end5,
+                                     ambindel=True,
+                                     insert3=insert3,
+                                     clip_end5=0,
+                                     clip_end3=0,
+                                     paired=paired)
+                if paired:
+                    expect = ([end5, end5], [end3, end3]), rels
+                else:
+                    expect = ([end5], [end3]), rels
+                self.assertEqual(result, expect)
 
-    def iter_cases(self, refseq: DNA, max_ins: int, test_paired: bool = False):
-        self.iter_cases_insert3(refseq, max_ins, False, test_paired)
+    def iter_cases(self, refseq: DNA, max_ins: int, paired: bool = False):
+        self.iter_cases_insert3(refseq, max_ins, False, paired)
         if max_ins > 0:
-            self.iter_cases_insert3(refseq, max_ins, True, test_paired)
+            self.iter_cases_insert3(refseq, max_ins, True, paired)
 
     def test_4nt_2ins(self):
-        self.iter_cases(DNA("AGCT"), 2, test_paired=True)
+        self.iter_cases(DNA("AGCT"), 2)
+
+    def test_4nt_2ins_paired(self):
+        self.iter_cases(DNA("CTAG"), 2, paired=True)
 
     def test_5nt_2ins(self):
         self.iter_cases(DNA("CAAAT"), 2)
@@ -336,20 +402,14 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                                               soft3=soft3,
                                               end5=end5):
                                 self.relate_error(
-                                    (f"CIGAR string {repr(cigar)} consumed "
-                                     f"0 bases in the reference"),
-                                    ("CIGAR string consumed "
-                                     "0 bases in the reference"),
-                                    ref,
-                                    refseq,
-                                    read,
-                                    qual,
-                                    cigar,
-                                    end5,
-                                    ambindel=True,
-                                    insert3=True,
-                                    clip_end5=0,
-                                    clip_end3=0,
+                                    ("CIGAR string consumed 0 bases "
+                                     "in the reference"),
+                                    ref=ref,
+                                    refseq=refseq,
+                                    read=read,
+                                    qual=qual,
+                                    cigar=cigar,
+                                    end5=end5,
                                 )
 
     def test_ambig_delet_low_qual(self):
@@ -535,6 +595,240 @@ class TestCalcRelsLinesSingle(ut.TestCase):
         expect = (([5], [6]), {5: 9, 6: 9})
         self.assertEqual(result, expect)
 
+    def test_error_name_missing(self):
+        self.relate_truncated(0, "Failed to parse read name")
+
+    def test_error_flag_missing(self):
+        self.relate_truncated(1, "Failed to parse SAM flag")
+
+    def test_error_flag_parse(self):
+        self.relate_error("Failed to parse SAM flag",
+                          flag="1X")
+
+    def test_error_flag_large(self):
+        self.relate_error("SAM flag is too large",
+                          flag=MAX_FLAG + 1)
+
+    def test_error_ref_missing(self):
+        self.relate_truncated(2, "Failed to parse reference name")
+
+    def test_error_pos_missing(self):
+        self.relate_truncated(3, "Failed to parse mapping position")
+
+    def test_error_pos_parse(self):
+        self.relate_error("Failed to parse mapping position",
+                          end5="2Y")
+
+    def test_error_pos_zero(self):
+        self.relate_error("Mapping position is 0",
+                          end5=0)
+
+    def test_error_pos_large(self):
+        self.relate_error("Mapping position exceeds length of reference",
+                          end5=5)
+
+    def test_error_mapq_missing(self):
+        self.relate_truncated(4, "Failed to parse mapping quality")
+
+    def test_error_mapq(self):
+        self.relate_error("Failed to parse mapping quality",
+                          mapq="3Z")
+
+    def test_error_cigar_missing(self):
+        self.relate_truncated(5, "Failed to parse CIGAR string")
+
+    def test_error_cigar_empty(self):
+        self.relate_error("Failed to parse CIGAR string",
+                          cigar="")
+
+    def test_error_read_missing(self):
+        self.relate_truncated(9, "Failed to parse read sequence")
+
+    def test_error_qual_missing(self):
+        self.relate_truncated(10, "Failed to parse read quality")
+
+    def test_error_read_qual_diff(self):
+        self.relate_error("Read sequence and quality strings differ in length",
+                          qual="FFFFF")
+
+    def test_error_ref_mismatch(self):
+        self.relate_error("Reference name does not match name of SAM file",
+                          sam_ref="other")
+
+    def test_error_mapq_insufficient(self):
+        self.relate_error("Mapping quality is insufficient",
+                          mapq=ord(OK_QUAL) - 1)
+
+    def test_error_line_paired_flag_unpaired(self):
+        self.relate_error("Lines indicate read should be paired-end, "
+                          "but it is marked as single-end",
+                          paired=True,
+                          flag=0)
+
+    def test_error_line_unpaired_flag_paired(self):
+        self.relate_error("Lines indicate read should be single-end, "
+                          "but it is marked as paired-end",
+                          paired=False,
+                          flag=1)
+
+    def test_error_line_improper_flag_proper(self):
+        self.relate_error("Lines indicate read should be improperly paired, "
+                          "but it is marked as properly paired",
+                          paired=False,
+                          flag=2)
+        self.relate_error("Lines indicate read should be improperly paired, "
+                          "but it is marked as properly paired",
+                          paired=True,
+                          flag=3)
+
+    def test_error_cigar_parse(self):
+        self.relate_error("Invalid CIGAR operation",
+                          error_msg_py="Invalid CIGAR string",
+                          cigar="M4M")
+        self.relate_error("Invalid CIGAR operation",
+                          error_msg_py="CIGAR operation has length 0",
+                          cigar="0M")
+        self.relate_error("Unsupported CIGAR operation",
+                          error_msg_py="Invalid CIGAR string",
+                          cigar="4A")
+
+    def test_error_cigar_consecutive(self):
+        for op in "M=XDIS":
+            self.relate_error("Identical consecutive CIGAR operations",
+                              cigar=f"1{op}2{op}")
+
+    def test_error_cigar_del_ins_adjacent(self):
+        self.relate_error("Adjacent insertion and deletion",
+                          cigar="1D1I3M")
+        self.relate_error("Adjacent insertion and deletion",
+                          cigar="1I1D3M")
+        self.relate_error("Adjacent insertion and deletion",
+                          cigar="1M1D1I2M")
+        self.relate_error("Adjacent insertion and deletion",
+                          cigar="2M1I1D1M")
+        self.relate_error("Adjacent insertion and deletion",
+                          cigar="3M1D1I")
+        self.relate_error("Adjacent insertion and deletion",
+                          cigar="3M1I1D")
+
+    def test_error_cigar_op_ref_zero(self):
+        self.relate_error("CIGAR operations consumed 0 bases in the reference",
+                          cigar="4S")
+
+    def test_error_cigar_op_ref_long(self):
+        for cigar in ["5M", "5=", "5X", "5D", "2M1D2M"]:
+            self.relate_error("CIGAR operations extended out of the reference",
+                              cigar=cigar)
+
+    def test_error_cigar_op_read_diff(self):
+        for cigar in ["3M", "5M", "5=", "5X", "2M1I2M", "2M1D1M"]:
+            self.relate_error("CIGAR operations consumed a number of read "
+                              "bases different from the read length",
+                              refseq=DNA("ACGTA"),
+                              cigar=cigar)
+
+    def test_error_cigar_del_first_rel(self):
+        self.relate_error("A deletion was the first relationship",
+                          refseq=DNA("TACGT"),
+                          end5=1,
+                          cigar="1D4M")
+        self.relate_error("A deletion was the first relationship",
+                          refseq=DNA("GTACGT"),
+                          end5=2,
+                          cigar="1D4M")
+        self.relate_error("A deletion was the first relationship",
+                          refseq=DNA("TACGT"),
+                          end5=1,
+                          cigar="1D1S3M")
+        self.relate_error("A deletion was the first relationship",
+                          refseq=DNA("TACGT"),
+                          end5=1,
+                          cigar="1S1D3M")
+        self.relate_error("A deletion was the first relationship",
+                          refseq=DNA("GTACG"),
+                          end5=2,
+                          cigar="2S1D2M")
+
+    def test_error_cigar_del_last_rel(self):
+        self.relate_error("A deletion was the last relationship",
+                          refseq=DNA("ACGTAC"),
+                          end5=1,
+                          cigar="4M1D")
+        self.relate_error("A deletion was the last relationship",
+                          refseq=DNA("TACGTA"),
+                          end5=2,
+                          cigar="4M1D")
+        self.relate_error("A deletion was the last relationship",
+                          refseq=DNA("ACGTA"),
+                          end5=1,
+                          cigar="3M1D1S")
+        self.relate_error("A deletion was the last relationship",
+                          refseq=DNA("TACGT"),
+                          end5=2,
+                          cigar="2M1D2S")
+
+    def test_error_cigar_ins_first_rel(self):
+        self.relate_error("An insertion was the first relationship",
+                          refseq=DNA("TAC"),
+                          end5=1,
+                          cigar="1I3M")
+        self.relate_error("An insertion was the first relationship",
+                          refseq=DNA("GTAC"),
+                          end5=2,
+                          cigar="1I3M")
+        self.relate_error("An insertion was the first relationship",
+                          refseq=DNA("GT"),
+                          end5=1,
+                          cigar="1I1S2M")
+        self.relate_error("An insertion was the first relationship",
+                          refseq=DNA("GT"),
+                          end5=1,
+                          cigar="1S1I2M")
+        self.relate_error("An insertion was the first relationship",
+                          refseq=DNA("TA"),
+                          end5=2,
+                          cigar="2S1I1M")
+
+    def test_error_cigar_ins_last_rel(self):
+        self.relate_error("An insertion was the last relationship",
+                          refseq=DNA("ACG"),
+                          end5=1,
+                          cigar="3M1I")
+        self.relate_error("An insertion was the last relationship",
+                          refseq=DNA("TACG"),
+                          end5=2,
+                          cigar="3M1I")
+        self.relate_error("An insertion was the last relationship",
+                          refseq=DNA("AC"),
+                          end5=1,
+                          cigar="2M1I1S")
+        self.relate_error("An insertion was the last relationship",
+                          refseq=DNA("TA"),
+                          end5=2,
+                          cigar="1M1I2S")
+
+    def test_error_cigar_soft_clips(self):
+        self.relate_error("A soft clip occurred in the middle",
+                          refseq=DNA("AGT"),
+                          end5=1,
+                          cigar="1M1S2M")
+        self.relate_error("A soft clip occurred in the middle",
+                          refseq=DNA("TAGT"),
+                          end5=2,
+                          cigar="1M1S2M")
+        self.relate_error("A soft clip occurred in the middle",
+                          refseq=DNA("TACT"),
+                          end5=2,
+                          cigar="2M1S1M")
+        self.relate_error("A soft clip occurred in the middle",
+                          refseq=DNA("ACG"),
+                          end5=1,
+                          cigar="2M1S1I")
+        self.relate_error("A soft clip occurred in the middle",
+                          refseq=DNA("ACGT"),
+                          end5=1,
+                          cigar="3M1S1D")
+
 
 class TestCalcRelsLinesPaired(ut.TestCase):
 
@@ -549,11 +843,11 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                qual2: str,
                cigar2: str,
                end52: int,
-               read1rev: bool,
                ambindel: bool = False,
                insert3: bool = True,
                clip_end5: int = 0,
-               clip_end3: int = 0):
+               clip_end3: int = 0,
+               read1rev: bool = False):
         """ Generate a SAM line from the given information, and use it
         to compute the relationships. """
         line1 = as_sam("read",
@@ -586,7 +880,7 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                                        ord(OK_QUAL),
                                        insert3,
                                        ambindel,
-                                       False,
+                                       True,
                                        clip_end5,
                                        clip_end3)
         result_cx = calc_rels_lines_cx(line1,
@@ -597,11 +891,27 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                                        ord(OK_QUAL),
                                        insert3,
                                        ambindel,
-                                       False,
+                                       True,
                                        clip_end5,
                                        clip_end3)
         self.assertEqual(result_py, result_cx)
         return result_cx
+
+    def evaluate(self,
+                 expect_ends1: tuple[int, int],
+                 expect_ends2: tuple[int, int],
+                 expect_rels: dict[int, int],
+                 *args,
+                 **kwargs):
+        end51, end31 = expect_ends1
+        end52, end32 = expect_ends2
+        for read1rev in [False, True]:
+            result = self.relate(*args, **kwargs, read1rev=read1rev)
+            if read1rev:
+                expect = ([end52, end51], [end32, end31]), expect_rels
+            else:
+                expect = ([end51, end52], [end31, end32]), expect_rels
+            self.assertEqual(result, expect)
 
     def test_gap_fr(self):
         """ Reads are separated by a gap; forward, reverse.
@@ -611,19 +921,19 @@ class TestCalcRelsLinesPaired(ut.TestCase):
         Ref AGTCAACGT
         Pos 123456789
         """
-        result = self.relate(ref="ref",
-                             refseq=DNA("AGTCAACGT"),
-                             read1=DNA("AGTG"),
-                             qual1="FFFF",
-                             cigar1="4M",
-                             end51=1,
-                             read2=DNA("TCGT"),
-                             qual2="FFFF",
-                             cigar2="4M",
-                             end52=6,
-                             read1rev=False)
-        expect = (([1, 6], [4, 9]), {4: SUB_G, 6: SUB_T})
-        self.assertEqual(result, expect)
+        self.evaluate((1, 4),
+                      (6, 9),
+                      {4: SUB_G, 6: SUB_T},
+                      ref="ref",
+                      refseq=DNA("AGTCAACGT"),
+                      read1=DNA("AGTG"),
+                      qual1="FFFF",
+                      cigar1="4M",
+                      end51=1,
+                      read2=DNA("TCGT"),
+                      qual2="FFFF",
+                      cigar2="4M",
+                      end52=6)
 
 
 class TestMergeMates(ut.TestCase):

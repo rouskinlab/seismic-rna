@@ -442,8 +442,7 @@ static inline int get_next_cigar_op(CigarOp *cigar)
         // yet been reached, which is an error.
         if (*cigar->op)
         {
-            PyErr_SetString(RelateError,
-                            "Failed to parse a CIGAR operation");
+            PyErr_SetString(RelateError, "Invalid CIGAR operation");
             return -1;
         }
         // Point cigar->op to NULL to signify reaching the end.
@@ -520,21 +519,71 @@ static void free_read(SamRead *read)
 }
 
 
-/* Parse str into an unsigned integer ulong. */
+/* Return the next SAM field in the string, or NULL on failure. */
+static char *next_sam_field(char **end)
+{
+    assert(end != NULL);
+    if (*end == NULL)
+    {
+        // The previous field was the last one possible, hence this one
+        // is invalid.
+        return NULL;
+    }
+    if (**end == *SAM_SEP)
+    {
+        // The previous field ended on the field separator, which means
+        // that the current field is an empty string, which is invalid.
+        return NULL;
+    }
+    // Return the beginning of the next field and advance *end to the 
+    // end of the next field.
+    // If the return value is NULL, it indicates that strtok_r() failed
+    // to find the start and end positions of the next field, which is
+    // an error (but this function already signals failure with NULL).
+    // Note that *end is now allowed to be NULL, which means that this
+    // field is the last in the string (which is valid in this case);
+    // however, calling next_sam_field() on the same string one more
+    // time will produce an error because there will be no next field.
+    
+    return strtok_r(NULL, SAM_SEP, end);
+}
+
+
+/* Parse str (null-terminated) into an unsigned integer ulong. */
 static int parse_ulong(unsigned long *ulong, const char *str)
 {
-    // Neither ulong nor str may be NULL.
     assert(ulong != NULL);
-    assert(str != NULL);
+    if (str == NULL)
+    {
+        // This conditional is included so that this function can be
+        // called using parse_ulong(&ulong, parse_sam_field(&end));
+        // parse_sam_field returns NULL if it fails, so this function
+        // needs to handle (str == NULL) by propagating that error.
+        PyErr_SetString(RelateError, "(Got NULL string to parse as ulong)");
+        return -1;
+    }
+
     // Parse str as a base-10 integer; store its numeric value in ulong.
     char *endptr;
     *ulong = strtoul(str, &endptr, DECIMAL);
-    // Check if the parse failed to process any characters.
+    assert(endptr != NULL);
+
+    // Check if the parse processed any characters.
     if (endptr == str)
     {
-        PyErr_SetString(RelateError, "Failed to parse unsigned integer");
+        assert(*ulong == 0);  // strtoul returns 0 on failure
+        PyErr_SetString(RelateError, "(Parsed zero characters as ulong)");
         return -1;
     }
+    // Check if all of the field was parsed; if so, then endptr will
+    // point to the null terminator ('\0') at the end of str.
+    if (*endptr)
+    {
+        PyErr_SetString(RelateError,
+                        "(Failed to parse all characters as ulong)");
+        return -1;
+    }
+
     return 0;
 }
 
@@ -544,7 +593,7 @@ Do NOT call this function on a SamRead that has not yet been initialized
 with init_read(), so that in case this function fails and returns -1,
 the SamRead's memory can be freed safely with free_read(). */
 static int parse_sam_line(SamRead *read,
-                          const char *line,
+                          char *line,
                           size_t clip_end5,
                           size_t clip_end3,
                           size_t ref_len)
@@ -554,18 +603,18 @@ static int parse_sam_line(SamRead *read,
     assert(read->rels == NULL);
     assert(read->pods.pods == NULL);
 
-    char *end = (char *)line;  // End of the current field.
+    char *end = line;  // End of the current field.
     unsigned long temp_ulong;  // Hold parsed numbers before casting.
 
     // Read name
-    if ((read->name = strtok_r(NULL, SAM_SEP, &end)) == NULL)
+    if ((read->name = next_sam_field(&end)) == NULL)
     {
         PyErr_SetString(RelateError, "Failed to parse read name");
         return -1;
     }
 
     // Bitwise flag
-    if (parse_ulong(&temp_ulong, strtok_r(NULL, SAM_SEP, &end)))
+    if (parse_ulong(&temp_ulong, next_sam_field(&end)))
     {
         PyErr_SetString(RelateError, "Failed to parse SAM flag");
         return -1;
@@ -584,14 +633,14 @@ static int parse_sam_line(SamRead *read,
     read->read2 = (read->flag & FLAG_READ2) > 0;
 
     // Reference name
-    if ((read->ref = strtok_r(NULL, SAM_SEP, &end)) == NULL)
+    if ((read->ref = next_sam_field(&end)) == NULL)
     {
         PyErr_SetString(RelateError, "Failed to parse reference name");
         return -1;
     }
 
     // Mapping position
-    if (parse_ulong(&temp_ulong, strtok_r(NULL, SAM_SEP, &end)))
+    if (parse_ulong(&temp_ulong, next_sam_field(&end)))
     {
         PyErr_SetString(RelateError, "Failed to parse mapping position");
         return -1;
@@ -599,8 +648,7 @@ static int parse_sam_line(SamRead *read,
     read->pos = (size_t)temp_ulong;
     if (read->pos == 0)
     {
-        PyErr_SetString(RelateError,
-                        "Mapping position is 0");
+        PyErr_SetString(RelateError, "Mapping position is 0");
         return -1;
     }
     if (read->pos > ref_len)
@@ -611,7 +659,7 @@ static int parse_sam_line(SamRead *read,
     }
 
     // Mapping quality
-    if (parse_ulong(&temp_ulong, strtok_r(NULL, SAM_SEP, &end)))
+    if (parse_ulong(&temp_ulong, next_sam_field(&end)))
     {
         PyErr_SetString(RelateError, "Failed to parse mapping quality");
         return -1;
@@ -619,35 +667,35 @@ static int parse_sam_line(SamRead *read,
     read->mapq = temp_ulong;
 
     // CIGAR string
-    if ((read->cigar = strtok_r(NULL, SAM_SEP, &end)) == NULL)
+    if ((read->cigar = next_sam_field(&end)) == NULL)
     {
         PyErr_SetString(RelateError, "Failed to parse CIGAR string");
         return -1;
     }
 
     // Next reference (ignored)
-    if (strtok_r(NULL, SAM_SEP, &end) == NULL)
+    if (next_sam_field(&end) == NULL)
     {
         PyErr_SetString(RelateError, "Failed to parse next reference name");
         return -1;
     }
 
     // Next position (ignored)
-    if (strtok_r(NULL, SAM_SEP, &end) == NULL)
+    if (next_sam_field(&end) == NULL)
     {
         PyErr_SetString(RelateError, "Failed to parse next mapping position");
         return -1;
     }
 
     // Template length (ignored)
-    if (strtok_r(NULL, SAM_SEP, &end) == NULL)
+    if (next_sam_field(&end) == NULL)
     {
         PyErr_SetString(RelateError, "Failed to parse template length");
         return -1;
     }
 
     // Read sequence
-    if ((read->seq = strtok_r(NULL, SAM_SEP, &end)) == NULL)
+    if ((read->seq = next_sam_field(&end)) == NULL)
     {
         PyErr_SetString(RelateError, "Failed to parse read sequence");
         return -1;
@@ -660,13 +708,17 @@ static int parse_sam_line(SamRead *read,
     // ^read->seq
     //     ^read->end (= 4 + read->seq)
     //      ^end      (= 5 + read->seq)
+    // It is possible here for end to be NULL, if the line ended at the
+    // read sequence (with the quality string missing). If so, (end - 1)
+    // will overflow, but that's okay because this function will catch
+    // the error and return -1 when it tries to parse the read quality.
     read->end = end - 1;
 
     // Read length (using pointer arithmetic)
     read->len = read->end - read->seq;
 
     // Read quality
-    if ((read->quals = strtok_r(NULL, SAM_SEP, &end)) == NULL)
+    if ((read->quals = next_sam_field(&end)) == NULL)
     {
         PyErr_SetString(RelateError, "Failed to parse read quality");
         return -1;
@@ -677,12 +729,13 @@ static int parse_sam_line(SamRead *read,
     if (end != NULL && read->len != (size_t)((end - 1) - read->quals))
     {
         PyErr_SetString(RelateError,
-                        "Sequence and quality strings differ in length");
+                        "Read sequence and quality strings differ in length");
         return -1;
     }
 
-    // Number of reference bases that the read consumes.
+    // Number of reference and read bases consumed by the CIGAR string.
     read->num_rels = 0;
+    size_t num_read_bases = 0;
     // Initialize the CIGAR operation.
     CigarOp cigar;
     init_cigar(&cigar, read->cigar);
@@ -692,29 +745,73 @@ static int parse_sam_line(SamRead *read,
     // Read the entire CIGAR string one operation at a time.
     while (cigar.op != NULL)
     {
+        char op = *cigar.op;
         // Decide what to do based on the current CIGAR operation.
-        switch (*cigar.op)
+        switch (op)
         {
             case CIG_ALIGN:
             case CIG_MATCH:
             case CIG_SUBST:
+                // These operations consume the reference and read.
+                read->num_rels += cigar.len;
+                num_read_bases += cigar.len;
+                break;
             case CIG_DELET:
-                // These operations consume the reference.
+                // These operations consume only the reference.
                 read->num_rels += cigar.len;
                 break;
-            default:
-                // Other operations do not.
+            case CIG_INSRT:
+            case CIG_SCLIP:
+                // These operations consume only the read.
+                num_read_bases += cigar.len;
                 break;
+            default:
+                // Other operations are not supported.
+                PyErr_SetString(RelateError,
+                                "Unsupported CIGAR operation");
+                return -1;
         }
         // Read the next CIGAR operation; catch errors.
         if (get_next_cigar_op(&cigar))
             {return -1;}
+        if (cigar.op != NULL)
+        {
+            if (*cigar.op == op)
+            {
+                PyErr_SetString(RelateError,
+                                "Identical consecutive CIGAR operations");
+                return -1;
+            }
+            if ((*cigar.op == CIG_DELET && op == CIG_INSRT)
+                ||
+                (*cigar.op == CIG_INSRT && op == CIG_DELET))
+            {
+                PyErr_SetString(RelateError,
+                                "Adjacent insertion and deletion");
+                return -1;
+            }
+        }
     }
-    // The number of reference bases consumed must be > 0.
+    // The number of reference bases consumed must be > 0 but not extend
+    // out of the reference sequence.
     if (read->num_rels == 0)
     {
         PyErr_SetString(RelateError,
-                        "CIGAR string consumed 0 bases in the reference");
+                        "CIGAR operations consumed 0 bases in the reference");
+        return -1;
+    }
+    if (read->num_rels + (read->pos - 1) > ref_len)
+    {
+        PyErr_SetString(RelateError,
+                        "CIGAR operations extended out of the reference");
+        return -1;
+    }
+    // The number of read bases consumed must equal the read length.
+    if (num_read_bases != read->len)
+    {
+        PyErr_SetString(RelateError,
+                        "CIGAR operations consumed a number of read bases "
+                        "different from the read length");
         return -1;
     }
 
@@ -1204,8 +1301,11 @@ static int try_move_indel(Indel *indel,
     assert(read != NULL);
     assert(pod_index < read->pods.num_pods);
     IndelPod *pod = &(read->pods.pods[pod_index]);
-    assert(indel >= pod->indels
+    assert(indel != NULL
+           && indel >= pod->indels
            && (size_t)(indel - pod->indels) < pod->num_indels);
+    assert(insert3 == 0 || insert3 == 1);
+    assert(move5to3 == 0 || move5to3 == 1);
     
     // Calculate the positions to which to move the indel.
     size_t swap_lateral, next_lateral3, next_opposite;
@@ -1359,7 +1459,10 @@ static int try_move_indel(Indel *indel,
         read->rels[next_opposite] |= DELET;
     }
 
-    // The indel moved.
+    // Re-sort the indels in the pod so they stay in positional
+    // order following the move.
+    sort_pod(pod, move5to3);
+    // Signify that the indel moved.
     return 1;
 }
 
@@ -1398,10 +1501,6 @@ static void find_ambindels_recurse(SamRead *read,
                        move5to3,
                        pod_index))
     {
-        // Re-sort the indels in the pod so they stay in positional
-        // order following the move.
-        sort_pod(pod, move5to3);
-
         // Try to move the indel at this index another step.
         find_ambindels_recurse(read,
                                rels_seq,
@@ -1413,19 +1512,13 @@ static void find_ambindels_recurse(SamRead *read,
                                pod_index,
                                indel_index);
         
-        // The algorithm works in two stages:
-        // 1. Move every indel as far as possible in the 5' direction
-        //    (move5to3 == 0) and leave them there for the next stage.
-        // 2. Move every indel as far as possible in the 3' direction
-        //    (move5to3 == 1) using backtracking to make sure that all
-        //    possible movements are considered.
-        // Hence, backtracking is only needed when move5to3 == 1.
+        // Backtracking is only needed when moving from 5' to 3'.
         if (move5to3)
         {
             // Move the indel back to its initial position.
             move_indels(pod, label, init_opposite, init_lateral3);
             // Re-sort the indels in the pod so they stay in positional
-            // order following the move.
+            // order after moving back to their initial positions.
             sort_pod(pod, move5to3);
         }
     }
@@ -1528,7 +1621,7 @@ read->rels and read->pods will leak.
 Make SURE to call free_read() eventually, or else memory in pods->rels
 will leak. */
 static int calc_rels_line(SamRead *read,
-                          const char *line,
+                          char *line,
                           const char *ref,
                           const char *ref_seq,
                           size_t ref_len,
@@ -1544,12 +1637,6 @@ static int calc_rels_line(SamRead *read,
     // Validate the SAM file line and parse it into a SamRead.
     assert(read != NULL);
     assert(line != NULL);
-    if (!(*line))
-    {
-        PyErr_SetString(RelateError,
-                        "Got an empty line to parse as a SAM read");
-        return -1;
-    }
     if (parse_sam_line(read, line, clip_end5, clip_end3, ref_len))
         {return -1;}
     if (validate_read(read, ref, min_mapq, paired, proper))
@@ -1577,47 +1664,37 @@ static int calc_rels_line(SamRead *read,
     // Positions in the relationship array and read (0-indexed).
     size_t rels_pos = 0;
     size_t read_pos = 0;
+    size_t next_rels_pos;
+    size_t next_read_pos;
     // 5' and 3' ends of the read, in the read coordinates (1-indexed).
     size_t read_end5 = 1;
     size_t read_end3 = read->len;
-    // CIGAR operation stopping point.
-    size_t cigar_op_stop_pos;
     
     // Initialize the CIGAR operation.
     CigarOp cigar;
     init_cigar(&cigar, read->cigar);
 
-    // Read the first operation from the CIGAR string; catch errors.
-    if (get_next_cigar_op(&cigar)) {return -1;}
+    // Read the first operation from the pre-validated CIGAR string.
+    assert(!get_next_cigar_op(&cigar));
 
     // Read the entire CIGAR string one operation at a time.
     while (cigar.op != NULL)
     {
+        assert(rels_pos <= read->num_rels);
+        assert(read_pos <= read->len);
         // Decide what to do based on the current CIGAR operation.
-        switch (*cigar.op)
+        char op = *cigar.op;
+        switch (op)
         {
             case CIG_ALIGN:
             case CIG_MATCH:
             case CIG_SUBST:
-                // The read and reference have matches or substitutions.
-                cigar_op_stop_pos = rels_pos + cigar.len;
-                if (cigar_op_stop_pos > read->num_rels)
-                {
-                    PyErr_SetString(
-                        RelateError,
-                        "An operation extended out of the reference"
-                    );
-                    return -1;
-                }
-                if (read_pos + cigar.len > read->len)
-                {
-                    PyErr_SetString(
-                        RelateError,
-                        "An operation extended out of the read"
-                    );
-                    return -1;
-                }
-                while (rels_pos < cigar_op_stop_pos)
+                // The read has matches or substitutions.
+                next_rels_pos = rels_pos + cigar.len;
+                assert(next_rels_pos <= read->num_rels);
+                next_read_pos = read_pos + cigar.len;
+                assert(next_read_pos <= read->len);
+                while (rels_pos < next_rels_pos)
                 {
                     read->rels[rels_pos] = encode_relate(rels_seq[rels_pos],
                                                          read->seq[read_pos],
@@ -1629,41 +1706,36 @@ static int calc_rels_line(SamRead *read,
                 break;
             
             case CIG_DELET:
-                // A portion of the reference is deleted from the read.
-                cigar_op_stop_pos = rels_pos + cigar.len;
-                if (cigar_op_stop_pos > read->num_rels)
-                {
-                    PyErr_SetString(
-                        RelateError,
-                        "A deletion extended out of the reference"
-                    );
-                    return -1;
-                }
+                // Bases in the reference are deleted from the read.
+                next_rels_pos = rels_pos + cigar.len;
+                assert(next_rels_pos <= read->num_rels);
+                // A deletion cannot occur first.
                 if (rels_pos == 0)
                 {
-                    PyErr_SetString(
-                        RelateError,
-                        "A deletion occured at the beginning of the reference"
-                    );
+                    PyErr_SetString(RelateError,
+                                    "A deletion was the first relationship");
                     return -1;
                 }
-                if (read_pos == 0)
+                // If rels_pos > 0, then the only way for read_pos == 0
+                // would be for the previous operation to have also been
+                // a deletion, so an error about identical consecutive
+                // CIGAR operations would have been raised already.
+                assert(read_pos > 0);
+                // A deletion cannot occur last.
+                if (next_rels_pos == read->num_rels)
                 {
-                    PyErr_SetString(
-                        RelateError,
-                        "A deletion occured at the beginning of the read"
-                    );
+                    PyErr_SetString(RelateError,
+                                    "A deletion was the last relationship");
                     return -1;
                 }
-                if (read_pos >= read->len)
-                {
-                    PyErr_SetString(
-                        RelateError,
-                        "A deletion occured at the end of the read"
-                    );
-                    return -1;
-                }
-                while (rels_pos < cigar_op_stop_pos)
+                // If next_rels_pos < read->num_rels, then the only way
+                // for read_pos == read->len would be for all future
+                // operations also to be deletions, so an error about
+                // identical consecutive CIGAR operations would have
+                // been raised already.
+                assert(read_pos < read->len);
+                // Record the deletion(s).
+                while (rels_pos < next_rels_pos)
                 {
                     // Mark the deletion in the array of relationships.
                     read->rels[rels_pos] = DELET;
@@ -1675,41 +1747,48 @@ static int calc_rels_line(SamRead *read,
                 break;
             
             case CIG_INSRT:
-                // The read contains an insertion.
-                cigar_op_stop_pos = read_pos + cigar.len;
-                if (cigar_op_stop_pos > read->len)
-                {
-                    PyErr_SetString(
-                        RelateError,
-                        "An insertion extended out of the read"
-                    );
-                    return -1;
-                }
-                if (read_pos == 0)
-                {
-                    PyErr_SetString(
-                        RelateError,
-                        "An insertion occured at the beginning of the read"
-                    );
-                    return -1;
-                }
+                // Bases are inserted into the read.
+                next_read_pos = read_pos + cigar.len;
+                assert(next_read_pos <= read->len);
                 if (rels_pos == 0)
                 {
-                    PyErr_SetString(
-                        RelateError,
-                        "An insertion occured at the beginning of the reference"
-                    );
+                    PyErr_SetString(RelateError,
+                                    "An insertion was the first relationship");
                     return -1;
                 }
-                if (rels_pos >= read->num_rels)
+                // If rels_pos > 0, then the only way for read_pos == 0
+                // would be for the previous operation to have been a
+                // deletion, so an error would have already been raised
+                // by the deletion with read_pos == 0.
+                assert(read_pos > 0);
+                if (rels_pos == read->num_rels)
                 {
-                    PyErr_SetString(
-                        RelateError,
-                        "An insertion occured at the end of the reference"
-                    );
+                    PyErr_SetString(RelateError,
+                                    "An insertion was the last relationship");
                     return -1;
                 }
-                while (read_pos < cigar_op_stop_pos)
+                // If rels_pos < read->num_rels, then the only way for
+                // next_read_pos == read->len would be for all future
+                // operations to be deletions, so an error would have
+                // already been raised about insertions and deletions
+                // being adjacent.
+                assert(next_read_pos < read->len);
+                // Record one insertion for each inserted base. Every
+                // mutation needs a position in the relationship array.
+                // But since an inserted base is (by definition) absent
+                // from the reference, it does not correspond with one
+                // position but lies between two positions. Either could
+                // be used as the insertion's position; this algorithm
+                // uses the 3' position. For example, if two bases are
+                // inserted between reference positions 45 and 46, then
+                // both inserted bases will be assigned to position 46.
+                // Using the 3' position makes the math simpler than it
+                // would be if using the 5' position because inserted
+                // bases lie between the previous and subsequent CIGAR
+                // operations, and ref_pos is the position immediately
+                // 3' of the previous operation, so ref_pos is naturally
+                // the position 3' of the insertion.
+                while (read_pos < next_read_pos)
                 {
                     // Add an insertion to the record of indels.
                     if (add_indel(&(read->pods), INSERTION, read_pos, rels_pos))
@@ -1721,28 +1800,23 @@ static int calc_rels_line(SamRead *read,
             case CIG_SCLIP:
                 // Bases were soft-clipped from the 5' or 3' end of the
                 // read during alignment. Like insertions, they consume
-                // the read but not the reference; however, they are not
-                // mutations and so do not need to be marked.
-                cigar_op_stop_pos = read_pos + cigar.len;
-                if (cigar_op_stop_pos > read->len)
-                {
-                    PyErr_SetString(
-                        RelateError,
-                        "A soft clip extended out of the read"
-                    );
-                    return -1;
-                }
+                // the read but not the reference; however, as they are
+                // not mutations, they do not need to be marked.
+                next_read_pos = read_pos + cigar.len;
+                assert(next_read_pos <= read->len);
                 if (read_pos == 0)
                 {
                     // This is the 5' soft clip.
-                    if (read_end5 != 1)
-                    {
-                        PyErr_SetString(
-                            RelateError,
-                            "The read contained > 1 soft clip at the beginning"
-                        );
-                        return -1;
-                    }
+                    // If read_pos == 0, then the only way that rels_pos
+                    // could be > 0 is if there were deletions (and no
+                    // other types of operations) before this one, but
+                    // in that case the deletion would have raised an
+                    // error already for being the first relationship.
+                    assert(rels_pos == 0);
+                    // If no previous consumed the reference or read
+                    // (including soft clips), then this must be the
+                    // only operation that can move read_end5.
+                    assert(read_end5 == 1);
                     // Soft clip bases from the the 5' end of the read.
                     read_end5 += cigar.len;
                     assert(read_end5 <= read->len + 1);
@@ -1750,54 +1824,40 @@ static int calc_rels_line(SamRead *read,
                 else
                 {
                     // This is the 3' soft clip.
-                    if (cigar_op_stop_pos != read->len)
+                    // Check if any operations after this one consume
+                    // the reference or read.
+                    if (rels_pos < read->num_rels || next_read_pos < read->len)
                     {
-                        PyErr_SetString(
-                            RelateError,
-                            "The read contained a soft clip in the middle"
-                        );
+                        PyErr_SetString(RelateError,
+                                        "A soft clip occurred in the middle");
                         return -1;
                     }
-                    if (read_end3 != read->len)
-                    {
-                        PyErr_SetString(
-                            RelateError,
-                            "The read contained > 1 soft clip at the end"
-                        );
-                        return -1;
-                    }
+                    // If no more operations consume the reference or
+                    // read (including soft clips), then this must be
+                    // the only operation that can move read_end3.
+                    assert(read_end3 == read->len);
                     // Clip bases from the 3' end of the read.
                     assert(read_end3 == read_pos + cigar.len);
-                    read_end3 = read_pos;
+                    read_end3 = read_pos;  // equivalent to -= cigar.len
                 }
-                read_pos = cigar_op_stop_pos;
+                read_pos = next_read_pos;
                 break;
             
             default:
-                // The CIGAR operation was not recognized.
-                PyErr_SetString(
-                    RelateError,
-                    "The CIGAR string contained an unsupported operation"
-                );
-                return -1;
+                // The CIGAR string was already validated to contain no
+                // other operations, so the default should never happen.
+                assert(0);
         }
 
-        // Read the next operation from the CIGAR string; catch errors.
-        if (get_next_cigar_op(&cigar)) {return -1;}
+        // Read the next operation from the pre-validated CIGAR string.
+        assert(!get_next_cigar_op(&cigar));
+        assert(cigar.op == NULL || *cigar.op != op);
     }
 
-    // The sum of the lengths of all CIGAR operations that consumed the
-    // reference must equal the length of the relationships.
+    // After reading all CIGAR operations, the positions in the read and
+    // relationship array must have advanced to the last positions.
     assert(rels_pos == read->num_rels);
-    // Verify that the sum of the lengths of all CIGAR operations that
-    // consumed the read equals the length of the read.
-    if (read_pos != read->len)
-    {
-        PyErr_SetString(RelateError,
-                        "The number of read bases consumed by the CIGAR "
-                        "string differed from the length of the read");
-        return -1;
-    }
+    assert(read_pos == read->len);
 
     // Add insertions to rels.
     const unsigned char ins_rel = get_ins_rel(insert3);
@@ -1840,19 +1900,6 @@ static int calc_rels_line(SamRead *read,
 
     return 0;
 }
-
-
-
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-//                                                                            //
-// Python Datatype Conversion                                                 //
-//                                                                            //
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-
 
 
 static int set_rel(PyObject *rels_dict, size_t pos, unsigned char rel)
@@ -2059,8 +2106,8 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
 {
     // Attempt to convert the arguments from the Python function call
     // into C data types. Return NULL upon failure.
-    const char *line1;
-    const char *line2;
+    char *line1;
+    char *line2;
     const char *ref;
     const char *ref_seq;
     Py_ssize_t ref_len;

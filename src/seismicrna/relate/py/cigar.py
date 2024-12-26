@@ -1,5 +1,6 @@
 import re
 
+from .error import RelateError
 
 # CIGAR string operation codes
 CIG_ALIGN = "M"  # alignment match
@@ -43,7 +44,7 @@ def parse_cigar(cigar_string: str):
     """
     # Length-0 CIGAR strings are forbidden.
     if not cigar_string:
-        raise ValueError("CIGAR string is empty")
+        raise RelateError("CIGAR string is empty")
     # If the CIGAR string has any invalid bytes (e.g. an unrecognized
     # operation byte, an operation longer than 1 byte, a length that is
     # not a positive integer, or any extraneous characters), then the
@@ -56,22 +57,30 @@ def parse_cigar(cigar_string: str):
     num_chars_matched = 0
     # Find every operation in the CIGAR string that matches the regular
     # expression.
+    prev_operation = ""
     for match in CIG_PATTERN.finditer(cigar_string):
         length_str, operation = match.groups()
+        # Consecutive CIGAR operations cannot be of the same type.
+        if prev_operation:
+            if operation == prev_operation:
+                raise RelateError("Identical consecutive CIGAR operations")
+            if {operation, prev_operation} == {CIG_DELET, CIG_INSRT}:
+                raise RelateError("Adjacent insertion and deletion")
         # Convert the length field from str to int and verify that it
         # is a positive integer.
         if (length_int := int(length_str)) < 1:
-            raise ValueError("length of CIGAR operation must be ≥ 1")
+            raise RelateError("CIGAR operation has length 0")
         # Add the total number of characters in the current operation to
         # the total number of characters matched from the CIGAR string.
         num_chars_matched += len(length_str) + len(operation)
         # Note that the fields are yielded as (operation, length), but
         # in the CIGAR string itself, the order is (length, operation).
         yield operation, length_int
+        prev_operation = operation
     # Confirm that all bytes in the CIGAR string were matched by the
     # regular expression.
     if num_chars_matched != len(cigar_string):
-        raise ValueError(f"Invalid CIGAR string: {repr(cigar_string)}")
+        raise RelateError("Invalid CIGAR string")
 
 
 def op_consumes_ref(op: str):
@@ -80,7 +89,7 @@ def op_consumes_ref(op: str):
         return True
     if op == CIG_INSRT or op == CIG_SCLIP:
         return False
-    raise ValueError(f"Invalid CIGAR operation: {repr(op)}")
+    raise RelateError("Unsupported CIGAR operation")
 
 
 def op_consumes_read(op: str):
@@ -93,7 +102,7 @@ def op_consumes_read(op: str):
             or op == CIG_INSRT
             or op == CIG_SCLIP):
         return True
-    raise ValueError(f"Invalid CIGAR operation: {repr(op)}")
+    raise RelateError("Unsupported CIGAR operation")
 
 ########################################################################
 #                                                                      #
