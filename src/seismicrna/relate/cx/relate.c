@@ -148,7 +148,7 @@ static inline unsigned char get_ins_rel(int insert3)
 
 static inline size_t calc_lateral5(size_t lateral3)
 {
-    assert(lateral3 > 0);
+    assert(lateral3 >= 1);
     return lateral3 - 1;
 }
 
@@ -457,16 +457,16 @@ typedef struct
     // Source attributes
     char *line;           // buffer to hold line from SAM file
     // Parsed attributes
-    const char *name;     // read name
+    char *name;           // read name
     unsigned long flag;   // bitwise flag
-    const char *ref;      // reference name
+    char *ref;            // reference name
     size_t pos;           // mapping position in the ref (1-indexed)
     unsigned long mapq;   // mapping quality
-    const char *cigar;    // CIGAR string
-    const char *seq;      // read sequence
-    const char *quals;    // read quality scores
+    char *cigar;          // CIGAR string
+    char *seq;            // read sequence
+    char *quals;          // read quality scores
     // Calculated attributes
-    const char *end;      // pointer to address after 3' end of read
+    char *end;            // pointer to address after 3' end of read
     size_t len;           // read length
     int paired;           // whether read is paired
     int proper;           // whether read is properly paired
@@ -610,11 +610,13 @@ static int parse_sam_line(SamRead *read,
     assert(read->line == NULL);
     assert(read->rels == NULL);
     assert(read->pods.pods == NULL);
-    // Pass line_length to avoid needing to calculate it with strlen.
+    // Passing line_length as an argument avoids needing to calculate it
+    // with strlen, but will cause bugs if line_length != strlen(line).
     assert(strlen(line) == line_length);
 
-    // Allocate (line_length + 1) to include the null terminator.
-    read->line = malloc((line_length + 1) * sizeof(char));
+    // Allocate (line_length + 1) chars to include the null terminator.
+    size_t line_size = (line_length + 1) * sizeof(char);
+    read->line = malloc(line_size);
     if (read->line == NULL)
     {
         PyErr_NoMemory();
@@ -623,7 +625,7 @@ static int parse_sam_line(SamRead *read,
     // printf("malloc %p\n", read->line);
 
     // Copy the line into read->line and ensure it was copied correctly.
-    strcpy(read->line, line);
+    memcpy(read->line, line, line_size);
     assert(read->line[line_length] == '\0');
     assert(strlen(read->line) == line_length);
 
@@ -650,11 +652,11 @@ static int parse_sam_line(SamRead *read,
         return -1;
     }
     // Individual flag bits
-    read->paired = (read->flag & FLAG_PAIRED) > 0;
-    read->proper = (read->flag & FLAG_PROPER) > 0;
-    read->reverse = (read->flag & FLAG_REV) > 0;
-    read->read1 = (read->flag & FLAG_READ1) > 0;
-    read->read2 = (read->flag & FLAG_READ2) > 0;
+    read->paired = (read->flag & FLAG_PAIRED) != 0;
+    read->proper = (read->flag & FLAG_PROPER) != 0;
+    read->reverse = (read->flag & FLAG_REV) != 0;
+    read->read1 = (read->flag & FLAG_READ1) != 0;
+    read->read2 = (read->flag & FLAG_READ2) != 0;
 
     // Reference name
     if ((read->ref = next_sam_field(&end)) == NULL)
@@ -816,7 +818,7 @@ static int parse_sam_line(SamRead *read,
             }
         }
     }
-    // The number of reference bases consumed must be > 0 but not extend
+    // The number of reference bases consumed must be ≥ 1 but not extend
     // out of the reference sequence.
     if (read->num_rels == 0)
     {
@@ -847,8 +849,9 @@ static int parse_sam_line(SamRead *read,
     // Reference position at which the 3' end of the read is located,
     // which is the mapping position plus one less than the number of
     // reference bases consumed, minus the 3' clip (down to a minimum
-    // of 0). Because read->num_rels must be > 0, subtracting 1 will
+    // of 0). Because read->num_rels must be ≥ 1, subtracting 1 will
     // not yield a negative number and cause overflow.
+    assert(read->num_rels >= 1);
     size_t ref_end3 = read->pos + (read->num_rels - 1);
     // Also to avoid overflow, subtract clip_end3 only after confirming
     // that the difference would not be negative.
@@ -1156,11 +1159,11 @@ static void calc_positions(size_t *swap_lateral,
     // Determine the direction in which to move the indel.
     int direction = move5to3 ? 1 : -1;
 
-    if (direction < 0)
+    if (direction == -1)
     {
-        // These attributes must be > 0 or else they will overflow.
-        assert(indel->opposite > 0);
-        assert(indel->lateral3 > 0);
+        // These attributes must be ≥ 1 or else they will overflow.
+        assert(indel->opposite >= 1);
+        assert(indel->lateral3 >= 1);
     }
 
     // If the indel moves, then its position within its own sequence
@@ -1172,10 +1175,10 @@ static void calc_positions(size_t *swap_lateral,
     *next_opposite = indel->opposite + direction;
     while (pod_has_opposite(pod, *next_opposite))
     {
-        if (direction < 0)
+        if (direction == -1)
         {
-            // Must be > 0 or else it will overflow.
-            assert(*next_opposite > 0);
+            // Must be ≥ 1 or else it will overflow.
+            assert(*next_opposite >= 1);
         }
         *next_opposite += direction;
     }
@@ -1194,7 +1197,7 @@ static inline int check_collisions(const IndelPodArray *pods,
         // Confirm the next pod has a different type of indel.
         assert(next_pod->insert != pods->pods[pod_index].insert);
         // Every pod must contain at least 1 indel.
-        assert(next_pod->num_indels > 0);
+        assert(next_pod->num_indels >= 1);
         // In the next pod, check the first indel, which is the one that
         // is closest to the current indel and could collide with it.
         Indel *next_indel = &(next_pod->indels[0]);
@@ -1289,7 +1292,7 @@ static void calc_rels_ins(unsigned char *rel_ins,
 
 /* Determine if the position adjacent to an insertion must be marked. */
 static int need_mark_ins_adj(unsigned char rel,
-                             IndelPod *pod,
+                             const IndelPod *pod,
                              size_t init_lateral,
                              int insert3)
 {
@@ -1447,7 +1450,7 @@ static int try_move_indel(Indel *indel,
         // The indel is a deletion.
         // Stop if the next position would be the first or last position
         // in the reference.
-        assert(read->num_rels > 0);
+        assert(read->num_rels >= 1);
         if (next_opposite == 0 || next_opposite >= read->num_rels - 1)
             {return 0;}
         // Stop if the indel would collide with another pod.
@@ -1486,6 +1489,7 @@ static int try_move_indel(Indel *indel,
     // Re-sort the indels in the pod so they stay in positional
     // order following the move.
     sort_pod(pod, move5to3);
+
     // Signify that the indel moved.
     return 1;
 }
@@ -1668,8 +1672,9 @@ static int calc_rels_line(SamRead *read,
         {return -1;}
 
     // Point to where the read starts in the reference sequence.
-    // Because read->pos is guaranteed to be > 0, subtracting 1 will not
+    // Because read->pos is guaranteed to be ≥ 1, subtracting 1 will not
     // yield a negative number and cause overflow.
+    assert(read->pos >= 1);
     const char *rels_seq = ref_seq + (read->pos - 1);
 
     // Allocate memory for the relationships. The relationships will be
@@ -1677,7 +1682,7 @@ static int calc_rels_line(SamRead *read,
     // allocated must equal the number of reference bases consumed by
     // the CIGAR string, not the number after clipping.
     assert(read->rels == NULL);  // If != NULL, then memory will leak.
-    assert(read->num_rels > 0);
+    assert(read->num_rels >= 1);
     read->rels = malloc(read->num_rels * sizeof(unsigned char));
     if (read->rels == NULL)
     {
@@ -1979,7 +1984,7 @@ static inline int put_rel_in_dict(PyObject *rels_dict,
 
 
 static int put_rels_in_dict(PyObject *rels_dict,
-                            unsigned char *rels,
+                            const unsigned char *rels,
                             size_t read_pos,
                             size_t end5,
                             size_t end3)
@@ -1987,7 +1992,7 @@ static int put_rels_in_dict(PyObject *rels_dict,
     // Validate the arguments; positions are 1-indexed, and only end3
     // is allowed to be 0.
     assert(rels != NULL);
-    assert(read_pos > 0);
+    assert(read_pos >= 1);
     assert(end5 >= read_pos);
 
     for (size_t pos = end5; pos <= end3; pos++)
@@ -2010,9 +2015,9 @@ static int put_2_rels_in_dict(PyObject *rels_dict,
                               const SamRead *rev_read)
 {
     // Validate the arguments; positions are 1-indexed and the 5' ends
-    // must be > 0.
-    assert(fwd_read->ref_end5 > 0);
-    assert(rev_read->ref_end5 > 0);
+    // must be ≥ 1.
+    assert(fwd_read->ref_end5 >= 1);
+    assert(rev_read->ref_end5 >= 1);
 
     // Find the region where both reads 1 and 2 overlap.
     // All positions are 1-indexed.
@@ -2190,7 +2195,7 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
         // because the way that SEISMIC-RNA indicates that a read is
         // paired-end but improperly paired (i.e. has one mate) is by
         // passing identical lines for reads 1 and 2.
-        proper = strcmp(line1, line2) > 0;
+        proper = strcmp(line1, line2) != 0;
     }
     else
     {
