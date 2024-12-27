@@ -1700,8 +1700,9 @@ static int calc_rels_line(SamRead *read,
     init_cigar(&cigar, read->cigar);
 
     // Read the first operation from the pre-validated CIGAR string.
-    assert(!get_next_cigar_op(&cigar));
-
+    if (get_next_cigar_op(&cigar))
+        {assert(0);}
+    
     // Read the entire CIGAR string one operation at a time.
     while (cigar.op != NULL)
     {
@@ -1875,7 +1876,8 @@ static int calc_rels_line(SamRead *read,
         }
 
         // Read the next operation from the pre-validated CIGAR string.
-        assert(!get_next_cigar_op(&cigar));
+        if (get_next_cigar_op(&cigar))
+            {assert(0);}
         assert(cigar.op == NULL || *cigar.op != op);
     }
 
@@ -2364,7 +2366,7 @@ static PyMethodDef RelateMethods[] = {
 static struct PyModuleDef relatemodule = {
     PyModuleDef_HEAD_INIT,
     "relate",      // module name
-    NULL,          // TODO documentation
+    NULL,          // module documentation
     -1,            // module state
     RelateMethods  // method table
 };
