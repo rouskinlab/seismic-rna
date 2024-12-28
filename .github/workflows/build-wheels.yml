@@ -58,5 +58,5 @@ jobs:
         run: |
           cibuildwheel --output-dir dist
         env:
-          CIBW_PLATFORM: ${{ matrix.platform }}
+          CIBW_PLATFORM: ${{ matrix.platform == 'ubuntu-latest' && 'linux' || matrix.platform == 'macos-latest' && 'macos' }}
 
