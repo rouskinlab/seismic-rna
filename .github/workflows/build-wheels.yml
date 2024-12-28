@@ -24,7 +24,7 @@ jobs:
     runs-on: ${{ matrix.platform }}
     strategy:
       matrix:
-        platform: [ubuntu, macos]
+        platform: [ubuntu-latest, macos-latest]
 
     steps:
       - name: Check out code
