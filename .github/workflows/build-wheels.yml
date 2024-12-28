@@ -9,7 +9,7 @@ on:
       - src/seismicrna/**
       - pyproject.toml
       - environment.yml
-      - .github/workflows/install-test.yml
+      - .github/workflows/build-wheels.yml
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -24,7 +24,7 @@ jobs:
     runs-on: ${{ matrix.platform }}
     strategy:
       matrix:
-        platform: [ubuntu-latest, macos-latest]
+        platform: [ubuntu, macos]
 
     steps:
       - name: Check out code
