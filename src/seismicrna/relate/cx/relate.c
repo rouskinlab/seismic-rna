@@ -1,13 +1,8 @@
 // Required for Python <=3.12, before #include <Python.h>
 #define PY_SSIZE_T_CLEAN
-// Required for integration with Python
+// Required for integration with Python; also includes other required
+// header files such as <stdlib.h> and <string.h>.
 #include <Python.h>
-
-// Standard C library
-#include <inttypes.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 
 
