@@ -1,6 +1,6 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+build-backend = "mesonpy"
+requires = ["meson-python>=0.15.0"]
 
 [project]
 name = "seismic-rna"
@@ -35,24 +35,13 @@ dependencies = [
 ]
 dynamic = ["version"]
 
-[tool.hatch.build.targets.sdist]
-exclude = [
-  "/.github",
-  "/docs",
-]
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/seismicrna"]
-extensions = [
-    {module = "seismicrna.relate.cx.relate", sources = ["src/seismicrna/relate/cx/relate.c"]}
-]
-
-[tool.hatch.version]
-path = "src/seismicrna/core/version.py"
-
 [project.scripts]
 seismic = "seismicrna.main:cli"
 
 [project.urls]
 "Homepage" = "https://github.com/rouskinlab/seismic-rna"
 "Bug Tracker" = "https://github.com/rouskinlab/seismic-rna/issues"
+
+[tool.mesonpy]
+build-dir = "build"
+
