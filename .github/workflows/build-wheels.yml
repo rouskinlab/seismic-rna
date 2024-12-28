@@ -21,19 +21,33 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.platform }}
     strategy:
       matrix:
-        platform: [linux, macos, windows]
+        platform: [ubuntu-latest, macos-latest]
 
     steps:
       - name: Check out code
         uses: actions/checkout@v3
 
-      - name: Set up Python
+      - name: Set up Python (Linux)
+        if: matrix.platform == 'ubuntu-latest'
         uses: actions/setup-python@v4
         with:
-          python-version: 3.12
+          python-version: 3.9
+
+      - name: Install pyenv (macOS only)
+        if: matrix.platform == 'macos-latest'
+        run: |
+          brew update
+          brew install pyenv
+          echo 'eval "$(pyenv init --path)"' >> ~/.zshrc
+          echo 'eval "$(pyenv init -)"' >> ~/.zshrc
+          source ~/.zshrc
+          pyenv install 3.10
+          pyenv install 3.11
+          pyenv install 3.12
+          pyenv global 3.10 3.11 3.12
 
       - name: Install cibuildwheel
         run: |
@@ -45,9 +59,4 @@ jobs:
           cibuildwheel --output-dir dist
         env:
           CIBW_PLATFORM: ${{ matrix.platform }}
-          # Skip versions of Python that SEISMIC-RNA does not support.
-          CIBW_SKIP: "cp39-*"
-          # Build universal wheels (Indel + ARM) for macOS.
-          CIBW_ARCHS_MACOS: universal2
-
 
