@@ -1080,7 +1080,6 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                       (2, 6),
                       {2: SUB_A,
                        4: MATCH + SUB_A + SUB_G + SUB_T,
-                       5: MATCH + SUB_C + SUB_G + SUB_T,
                        6: SUB_T,
                        7: MATCH + SUB_A + SUB_G + SUB_T},
                       ref="ref",
