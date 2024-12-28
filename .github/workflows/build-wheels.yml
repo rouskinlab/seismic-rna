@@ -1,4 +1,4 @@
-name: Install SEISMIC-RNA and run its test suite
+name: Build Wheels
 
 on:
   # Runs on pushes targeting the main branch
@@ -20,26 +20,34 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  install-test:
+  build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        # Ensure the workflow runs with bash (on GitHub Actions, Conda only works with bash)
-        shell: bash -el {0}
+    strategy:
+      matrix:
+        platform: [linux, macos, windows]
+
     steps:
-      - name: Checkout this GitHub repository
-        uses: actions/checkout@v4
-      - name: Set up Miniconda
-        uses: conda-incubator/setup-miniconda@v3
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          activate-environment: seismic
-          environment-file: environment.yml
-          condarc-file: condarc.yml
           python-version: 3.12
-      - name: Install SEISMIC-RNA from source
+
+      - name: Install cibuildwheel
         run: |
-          pip install .
-      - name: Run the test suite
+          python -m pip install --upgrade pip
+          pip install cibuildwheel
+
+      - name: Build wheels
         run: |
-          echo "Running tests for $(seismic --version)"
-          bash test.sh
+          cibuildwheel --output-dir dist
+        env:
+          CIBW_PLATFORM: ${{ matrix.platform }}
+          # Skip versions of Python that SEISMIC-RNA does not support.
+          CIBW_SKIP: "cp39-*"
+          # Build universal wheels (Indel + ARM) for macOS.
+          CIBW_ARCHS_MACOS: universal2
+
+
