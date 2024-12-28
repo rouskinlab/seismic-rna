@@ -2,18 +2,21 @@ import unittest as ut
 from itertools import chain, product
 from typing import Any
 
-from seismicrna.core.arg import opt_min_mapq
+from seismicrna.relate.cx.relate import (RelateError as RelateErrorCx,
+                                         calc_rels_lines as calc_rels_lines_cx)
+
 from seismicrna.core.ngs import LO_QUAL, OK_QUAL, MAX_FLAG, SAM_DELIM
 from seismicrna.core.rel import (DELET,
                                  IRREC,
                                  MATCH,
                                  NOCOV,
+                                 SUB_A,
+                                 SUB_C,
                                  SUB_G,
-                                 SUB_T)
+                                 SUB_T,
+                                 ANY_N)
 from seismicrna.core.seq import DNA
 from seismicrna.relate.aux.iterread import iter_alignments
-from seismicrna.relate.cx.relate import (RelateError as RelateErrorCx,
-                                         calc_rels_lines as calc_rels_lines_cx)
 from seismicrna.relate.py.cigar import CIG_ALIGN, CIG_DELET, CIG_SCLIP
 from seismicrna.relate.py.encode import encode_relate
 from seismicrna.relate.py.relate import (RelateError as RelateErrorPy,
@@ -119,8 +122,6 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                        read,
                        qual)
         line2 = line1 if paired else ""
-        # Test calc_rels_lines_cx first to ensure that it doesn't
-        # corrupt any memory.
         result_cx = calc_rels_lines_cx(line1,
                                        line2,
                                        ref,
@@ -132,6 +133,8 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                                        False,
                                        clip_end5,
                                        clip_end3)
+        # Test calc_rels_lines_py second to ensure calc_rels_lines_cx
+        # didn't corrupt any memory.
         result_py = calc_rels_lines_py(line1,
                                        line2,
                                        ref,
@@ -176,8 +179,6 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                        qual,
                        validate=False)
         line2 = line1 if paired else ""
-        # Test calc_rels_lines_cx first to ensure that it doesn't
-        # corrupt any memory.
         self.assertRaisesRegex(RelateErrorCx,
                                error_msg,
                                calc_rels_lines_cx,
@@ -192,6 +193,8 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                                False,
                                clip_end5,
                                clip_end3)
+        # Test calc_rels_lines_py second to ensure calc_rels_lines_cx
+        # didn't corrupt any memory.
         self.assertRaisesRegex(RelateErrorPy,
                                error_msg_py if error_msg_py else error_msg,
                                calc_rels_lines_py,
@@ -226,7 +229,7 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                        int(paired),
                        ref,
                        end5,
-                       opt_min_mapq.default,
+                       ord(OK_QUAL),
                        cigar,
                        "=",
                        1,
@@ -235,8 +238,6 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                        qual)
         line1 = SAM_DELIM.join(line1.split(SAM_DELIM)[:num_fields])
         line2 = line1 if paired else ""
-        # Test calc_rels_lines_cx first to ensure that it doesn't
-        # corrupt any memory.
         self.assertRaisesRegex(RelateErrorCx,
                                error_msg,
                                calc_rels_lines_cx,
@@ -251,6 +252,8 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                                False,
                                clip_end5,
                                clip_end3)
+        # Test calc_rels_lines_py second to ensure calc_rels_lines_cx
+        # didn't corrupt any memory.
         self.assertRaisesRegex(RelateErrorPy,
                                error_msg,
                                calc_rels_lines_py,
@@ -482,6 +485,49 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                                         expect = ([read5], [read3]), rels
                                         self.assertEqual(result, expect)
 
+    def test_n_ref(self):
+        """ Reference contains a non-ACGT base. """
+        for n in "ACGTN":
+            result = self.relate(ref="ref",
+                                 refseq=DNA("N"),
+                                 read=DNA(n),
+                                 qual="F",
+                                 cigar="1M",
+                                 end5=1,
+                                 ambindel=True,
+                                 insert3=True,
+                                 clip_end5=0,
+                                 clip_end3=0)
+            expect = (([1], [1]), {1: ANY_N})
+            self.assertEqual(result, expect)
+
+    def test_n_read(self):
+        """ Read contains a non-ACGT base and reference is ACGT. """
+        for n, sub in {"A": SUB_A, "C": SUB_C, "G": SUB_G, "T": SUB_T}.items():
+            result = self.relate(ref="ref",
+                                 refseq=DNA(n),
+                                 read=DNA("N"),
+                                 qual="F",
+                                 cigar="1M",
+                                 end5=1,
+                                 ambindel=True,
+                                 insert3=True,
+                                 clip_end5=0,
+                                 clip_end3=0)
+            expect = (([1], [1]), {1: ANY_N - sub})
+            self.assertEqual(result, expect)
+            # Test it is equivalent to the read having low quality.
+            self.assertEqual(result, self.relate(ref="ref",
+                                                 refseq=DNA(n),
+                                                 read=DNA(n),
+                                                 qual="!",
+                                                 cigar="1M",
+                                                 end5=1,
+                                                 ambindel=True,
+                                                 insert3=True,
+                                                 clip_end5=0,
+                                                 clip_end3=0))
+
     def test_example_1(self):
         """ Soft clips in CIGAR plus clip_end5 and clip_end3.
 
@@ -704,7 +750,7 @@ class TestCalcRelsLinesSingle(ut.TestCase):
             self.relate_error("Identical consecutive CIGAR operations",
                               cigar=f"1{op}2{op}")
 
-    def test_error_cigar_del_ins_adjacent(self):
+    def test_error_cigar_adj_ins_del(self):
         self.relate_error("Adjacent insertion and deletion",
                           cigar="1D1I3M")
         self.relate_error("Adjacent insertion and deletion",
@@ -850,7 +896,7 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                qual2: str,
                cigar2: str,
                end52: int,
-               ambindel: bool = False,
+               ambindel: bool = True,
                insert3: bool = True,
                clip_end5: int = 0,
                clip_end3: int = 0,
@@ -861,7 +907,7 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                        (83 if read1rev else 99),
                        ref,
                        end51,
-                       opt_min_mapq.default,
+                       ord(OK_QUAL),
                        cigar1,
                        "=",
                        1,
@@ -872,14 +918,14 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                        (163 if read1rev else 147),
                        ref,
                        end52,
-                       opt_min_mapq.default,
+                       ord(OK_QUAL),
                        cigar2,
                        "=",
                        1,
                        len(read2),
                        read2,
                        qual2)
-        result_py = calc_rels_lines_py(line1,
+        result_cx = calc_rels_lines_cx(line1,
                                        line2,
                                        ref,
                                        str(refseq),
@@ -890,7 +936,9 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                                        True,
                                        clip_end5,
                                        clip_end3)
-        result_cx = calc_rels_lines_cx(line1,
+        # Test calc_rels_lines_py second to ensure calc_rels_lines_cx
+        # didn't corrupt any memory.
+        result_py = calc_rels_lines_py(line1,
                                        line2,
                                        ref,
                                        str(refseq),
@@ -908,23 +956,52 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                  expect_ends1: tuple[int, int],
                  expect_ends2: tuple[int, int],
                  expect_rels: dict[int, int],
-                 *args,
-                 **kwargs):
-        end51, end31 = expect_ends1
-        end52, end32 = expect_ends2
-        for read1rev in [False, True]:
-            result = self.relate(*args, **kwargs, read1rev=read1rev)
-            if read1rev:
-                expect = ([end52, end51], [end32, end31]), expect_rels
-            else:
-                expect = ([end51, end52], [end31, end32]), expect_rels
-            self.assertEqual(result, expect)
+                 ref: str,
+                 refseq: DNA,
+                 read1: DNA,
+                 qual1: str,
+                 cigar1: str,
+                 end51: int,
+                 read2: DNA,
+                 qual2: str,
+                 cigar2: str,
+                 end52: int):
+        for swap_reads in [False, True]:
+            if swap_reads:
+                expect_ends1, expect_ends2 = expect_ends2, expect_ends1
+                read1, read2 = read2, read1
+                qual1, qual2 = qual2, qual1
+                cigar1, cigar2 = cigar2, cigar1
+                end51, end52 = end52, end51
+            exp_end51, exp_end31 = expect_ends1
+            exp_end52, exp_end32 = expect_ends2
+            for read1_rev in [False, True]:
+                result = self.relate(ref=ref,
+                                     refseq=refseq,
+                                     read1=read1,
+                                     qual1=qual1,
+                                     cigar1=cigar1,
+                                     end51=end51,
+                                     read2=read2,
+                                     qual2=qual2,
+                                     cigar2=cigar2,
+                                     end52=end52,
+                                     read1rev=read1_rev)
+                if read1_rev:
+                    expect = (([exp_end52, exp_end51],
+                               [exp_end32, exp_end31]),
+                              expect_rels)
+                else:
+                    expect = (([exp_end51, exp_end52],
+                               [exp_end31, exp_end32]),
+                              expect_rels)
+                self.assertEqual(result, expect)
 
-    def test_gap_fr(self):
-        """ Reads are separated by a gap; forward, reverse.
+    def test_gap(self):
+        """ Reads are separated by a gap.
 
-        R1  AGTg
-        R2       tCGT
+        R1  AGTG
+        R2       TCGT
         Ref AGTCAACGT
         Pos 123456789
         """
@@ -941,6 +1018,269 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                       qual2="FFFF",
                       cigar2="4M",
                       end52=6)
+
+    def test_abut(self):
+        """ Reads abut.
+
+        R1   GTGC
+        R2       TCGT
+        Ref AGTCAACGT
+        Pos 123456789
+        """
+        self.evaluate((2, 5),
+                      (6, 9),
+                      {4: SUB_G, 5: SUB_C, 6: SUB_T},
+                      ref="ref",
+                      refseq=DNA("AGTCAACGT"),
+                      read1=DNA("GTGC"),
+                      qual1="FFFF",
+                      cigar1="4M",
+                      end51=2,
+                      read2=DNA("TCGT"),
+                      qual2="FFFF",
+                      cigar2="4M",
+                      end52=6)
+
+    def test_staggered(self):
+        """ Reads overlap in a staggered manner.
+
+        R1  aGTGgtA
+        R2    AGATGc
+        Ref AGTCAACGT
+        Pos 123456789
+        """
+        self.evaluate((1, 7),
+                      (3, 8),
+                      {1: MATCH + SUB_C + SUB_G + SUB_T,
+                       3: IRREC,
+                       4: SUB_G,
+                       6: SUB_T,
+                       7: IRREC,
+                       8: MATCH + SUB_A + SUB_C + SUB_T},
+                      ref="ref",
+                      refseq=DNA("AGTCAACGT"),
+                      read1=DNA("aGTGgtA"),
+                      qual1="!FFF!!F",
+                      cigar1="7M",
+                      end51=1,
+                      read2=DNA("AGATGc"),
+                      qual2="FFFFF!",
+                      cigar2="6M",
+                      end52=3)
+
+    def test_contain_flush5(self):
+        """ One read contains the other, with 5' ends flush.
+
+        R1   ATcAggG
+        R2   gTcaT
+        Ref AGTCAACGT
+        Pos 123456789
+        """
+        self.evaluate((2, 8),
+                      (2, 6),
+                      {2: SUB_A,
+                       4: MATCH + SUB_A + SUB_G + SUB_T,
+                       5: MATCH + SUB_C + SUB_G + SUB_T,
+                       6: SUB_T,
+                       7: MATCH + SUB_A + SUB_G + SUB_T},
+                      ref="ref",
+                      refseq=DNA("AGTCAACGT"),
+                      read1=DNA("ATcAggG"),
+                      qual1="FF!F!!F",
+                      cigar1="7M",
+                      end51=2,
+                      read2=DNA("gTcaT"),
+                      qual2="!F!!F",
+                      cigar2="5M",
+                      end52=2)
+
+    def test_contain_flush53(self):
+        """ Both reads start and end at the same positions.
+
+        R1    tc-ACG
+        R2    gGATCG
+        Ref AGTCAACGT
+        Pos 123456789
+        """
+        self.evaluate((3, 8),
+                      (3, 8),
+                      {3: MATCH + SUB_A + SUB_C + SUB_G,
+                       4: SUB_G,
+                       6: IRREC},
+                      ref="ref",
+                      refseq=DNA("AGTCAACGT"),
+                      read1=DNA("tcACG"),
+                      qual1="!!FFF",
+                      cigar1="2M1D3M",
+                      end51=3,
+                      read2=DNA("gGATCG"),
+                      qual2="!FFFFF",
+                      cigar2="6M",
+                      end52=3)
+
+    def test_contain_flush3(self):
+        """ One read contains the other, with 3' ends flush.
+
+        R1     TAtCa
+        R2   CggAtCc
+        Ref AGTCAACGT
+        Pos 123456789
+        """
+        self.evaluate((4, 8),
+                      (2, 8),
+                      {2: SUB_C,
+                       3: MATCH + SUB_A + SUB_C + SUB_G,
+                       4: SUB_T,
+                       6: MATCH + SUB_C + SUB_G + SUB_T,
+                       8: MATCH + SUB_A + SUB_C + SUB_T},
+                      ref="ref",
+                      refseq=DNA("AGTCAACGT"),
+                      read1=DNA("TAtCa"),
+                      qual1="FF!F!",
+                      cigar1="5M",
+                      end51=4,
+                      read2=DNA("CggAtCc"),
+                      qual2="F!!F!F!",
+                      cigar2="7M",
+                      end52=2)
+
+    def test_contain(self):
+        """ One read contains the other, with neither end flush.
+
+        R1    TgcAT
+        R2   gtaAACG
+        Ref AGTCAACGT
+        Pos 123456789
+        """
+        self.evaluate((3, 7),
+                      (2, 8),
+                      {2: MATCH + SUB_A + SUB_C + SUB_T,
+                       4: MATCH + SUB_A + SUB_G + SUB_T,
+                       7: IRREC},
+                      ref="ref",
+                      refseq=DNA("AGTCAACGT"),
+                      read1=DNA("TgcAT"),
+                      qual1="F!!FF",
+                      cigar1="5M",
+                      end51=3,
+                      read2=DNA("gtaAACG"),
+                      qual2="!!!FFFF",
+                      cigar2="7M",
+                      end52=2)
+
+    def relate_error(self,
+                     error_msg: str,
+                     ref: str = "ref",
+                     refseq: DNA = DNA("ACGT"),
+                     name1: str = "read",
+                     ref1: str = "ref",
+                     cigar1: str = "4M",
+                     flag1: int = 83,
+                     end51: int = 1,
+                     read1: DNA = DNA("ACGT"),
+                     qual1: str = "FFFF",
+                     name2: str = "read",
+                     ref2: str = "ref",
+                     flag2: int = 163,
+                     end52: int = 1,
+                     cigar2: str = "4M",
+                     read2: DNA = DNA("ACGT"),
+                     qual2: str = "FFFF",
+                     ambindel: bool = True,
+                     insert3: bool = True,
+                     clip_end5: int = 0,
+                     clip_end3: int = 0):
+        line1 = as_sam(name1,
+                       flag1,
+                       ref1,
+                       end51,
+                       ord(OK_QUAL),
+                       cigar1,
+                       ref2,
+                       1,
+                       len(read1),
+                       read1,
+                       qual1)
+        line2 = as_sam(name2,
+                       flag2,
+                       ref2,
+                       end52,
+                       ord(OK_QUAL),
+                       cigar2,
+                       ref1,
+                       1,
+                       len(read2),
+                       read2,
+                       qual2)
+        self.assertRaisesRegex(RelateErrorCx,
+                               error_msg,
+                               calc_rels_lines_cx,
+                               line1,
+                               line2,
+                               ref,
+                               str(refseq),
+                               0,
+                               ord(OK_QUAL),
+                               insert3,
+                               ambindel,
+                               True,
+                               clip_end5,
+                               clip_end3)
+        # Test calc_rels_lines_py second to ensure calc_rels_lines_cx
+        # didn't corrupt any memory.
+        self.assertRaisesRegex(RelateErrorPy,
+                               error_msg,
+                               calc_rels_lines_py,
+                               line1,
+                               line2,
+                               ref,
+                               str(refseq),
+                               0,
+                               ord(OK_QUAL),
+                               insert3,
+                               ambindel,
+                               True,
+                               clip_end5,
+                               clip_end3)
+
+    def test_diff_names(self):
+        self.relate_error("Mates 1 and 2 have different names",
+                          name1="mate1",
+                          name2="mate2")
+
+    def test_unpaired(self):
+        self.relate_error("Lines indicate read should be paired-end, "
+                          "but it is marked as single-end",
+                          flag1=83 ^ 1)
+        self.relate_error("Lines indicate read should be paired-end, "
+                          "but it is marked as single-end",
+                          flag2=163 ^ 1)
+
+    def test_improper(self):
+        self.relate_error("Lines indicate read should be properly paired, "
+                          "but it is marked as improperly paired",
+                          flag1=83 ^ 2)
+        self.relate_error("Lines indicate read should be properly paired, "
+                          "but it is marked as improperly paired",
+                          flag1=163 ^ 2)
+
+    def test_read_marks(self):
+        self.relate_error("Mate 1 is not marked as READ1",
+                          flag1=83 ^ 64)
+        self.relate_error("Mate 1 is not marked as READ1",
+                          flag1=83 ^ 128)
+        self.relate_error("Mate 2 is not marked as READ2",
+                          flag2=163 ^ 128)
+        self.relate_error("Mate 2 is not marked as READ2",
+                          flag2=163 ^ 64)
+
+    def test_read_orientation(self):
+        self.relate_error("Mates 1 and 2 aligned in the same orientation",
+                          flag1=83 ^ 16,
+                          flag2=163)
+        self.relate_error("Mates 1 and 2 aligned in the same orientation",
+                          flag1=83,
+                          flag2=163 ^ 16)
 
 
 class TestMergeMates(ut.TestCase):

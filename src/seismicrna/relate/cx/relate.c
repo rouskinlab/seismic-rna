@@ -941,24 +941,19 @@ static int validate_pair(const SamRead *read1,
     // Mates 1 and 2 must have the same name.
     if (strcmp(read1->name, read2->name))
     {
-        PyErr_SetString(RelateError,
-                        "Mates 1 and 2 have different names");
-        return -1;
-    }
-
-    // Both mates must be paired-end.
-    if (!(read1->paired && read2->paired))
-    {
-        PyErr_SetString(RelateError,
-                        "Mates 1 and 2 are not both paired-end");
+        PyErr_SetString(RelateError, "Mates 1 and 2 have different names");
         return -1;
     }
 
     // Mates 1 and 2 must be marked as READ1 and READ2, respectively.
-    if (!(read1->read1 && read2->read2))
+    if (!(read1->read1) || read1->read2)
     {
-        PyErr_SetString(RelateError,
-                        "Mates 1 and 2 are not marked as READ1 and READ2");
+        PyErr_SetString(RelateError, "Mate 1 is not marked as READ1");
+        return -1;
+    }
+    if (!(read2->read2) || read2->read1)
+    {
+        PyErr_SetString(RelateError, "Mate 2 is not marked as READ2");
         return -1;
     }
 

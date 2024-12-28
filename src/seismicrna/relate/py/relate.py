@@ -20,7 +20,7 @@ class SamFlag(object):
     """ Represents the set of 12 boolean flags for a SAM record. """
 
     # Define __slots__ to improve speed and memory performance.
-    __slots__ = ["flag", "paired", "proper", "rev", "first", "second"]
+    __slots__ = ["flag", "paired", "proper", "rev", "read1", "read2"]
 
     def __init__(self, flag: int):
         """
@@ -39,8 +39,8 @@ class SamFlag(object):
         self.paired = bool(flag & 1)
         self.proper = bool(flag & 2)
         self.rev = bool(flag & 16)
-        self.first = bool(flag & 64)
-        self.second = bool(flag & 128)
+        self.read1 = bool(flag & 64)
+        self.read2 = bool(flag & 128)
 
     def __repr__(self):
         return f"{type(self).__name__}({self.flag})"
@@ -387,22 +387,14 @@ def _validate_read(read: SamRead,
 
 def _validate_pair(read1: SamRead, read2: SamRead):
     """ Ensure that reads 1 and 2 are compatible mates. """
-    if not read1.flag.paired:
-        raise RelateError(f"Read 1 ({read1.name}) was not paired, "
-                          f"but read 2 ({read2.name}) was given")
-    if not read2.flag.paired:
-        raise RelateError(f"Read 2 ({read2.name}) was not paired, "
-                          f"but read 1 ({read1.name}) was given")
     if read1.name != read2.name:
-        raise RelateError(f"Got different names for reads "
-                          f"1 ({read1.name}) and 2 ({read2.name})")
-    if not (read1.flag.first and read2.flag.second):
-        raise RelateError(f"Read {repr(read1.name)} had mate 1 "
-                          f"labeled {2 - read1.flag.first} and mate 2 "
-                          f"labeled {1 + read2.flag.second}")
+        raise RelateError("Mates 1 and 2 have different names")
+    if not read1.flag.read1 or read1.flag.read2:
+        raise RelateError("Mate 1 is not marked as READ1")
+    if not read2.flag.read2 or read2.flag.read1:
+        raise RelateError("Mate 2 is not marked as READ2")
     if read1.flag.rev == read2.flag.rev:
-        raise RelateError(f"Read {repr(read1.name)} had "
-                          "mates 1 and 2 facing the same way")
+        raise RelateError("Mates 1 and 2 aligned in the same orientation")
 
 
 def _merge_rels(end5f: int,
