@@ -2171,6 +2171,10 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
     assert(ref != NULL);
     assert(ref_seq != NULL);
 
+    // The length arguments of lines 1/2 must equal the real lengths.
+    assert(strlen(line1) == (size_t)line1_len);
+    assert(strlen(line2) == (size_t)line2_len);
+
     // Declare two SamReads to hold the results and initialize them to
     // prevent any errors caused by uninitialized pointers.
     SamRead read1, read2;
@@ -2183,18 +2187,20 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
     int paired, proper;
     if (*line2)
     {
-        // paired-end
+        // Paired-end
+        assert(line2_len > 0);
         num_mates = 2;
         paired = 1;
         // The read is properly paired if lines 1 and 2 are different
         // because the way that SEISMIC-RNA indicates that a read is
         // paired-end but improperly paired (i.e. has one mate) is by
         // passing identical lines for reads 1 and 2.
-        proper = strcmp(line1, line2) != 0;
+        proper = (line1_len != line2_len) || (strcmp(line1, line2) != 0);
     }
     else
     {
-        // single-end
+        // Single-end
+        assert(line2_len == 0);
         num_mates = 1;
         paired = 0;
         proper = 0;
