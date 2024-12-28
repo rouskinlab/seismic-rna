@@ -44,7 +44,7 @@ exclude = [
 [tool.hatch.build.targets.wheel]
 packages = ["src/seismicrna"]
 extensions = [
-    {module = "seismicrna.relate.c.relate", sources = ["src/seismicrna/relate/c/relate.c"]}
+    {module = "seismicrna.relate.cx.relate", sources = ["src/seismicrna/relate/cx/relate.c"]}
 ]
 
 [tool.hatch.version]
