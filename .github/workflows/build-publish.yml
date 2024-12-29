@@ -11,13 +11,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-publish:
+  build:
     runs-on: ${{ matrix.platform }}
-    # This environment is used for publishing on PyPI
-    environment: publish-pypi
-    permissions:
-      # IMPORTANT: this permission is mandatory for Trusted Publishing
-      id-token: write
     strategy:
       matrix:
         platform: [ubuntu-latest, macos-latest]
@@ -26,13 +21,13 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
 
-      - name: Set up Python (Linux)
-        if: matrix.platform == 'ubuntu-latest'
+      - name: Set up Python (not macOS)
+        if: matrix.platform != 'macos-latest'
         uses: actions/setup-python@v4
         with:
           python-version: 3.13
 
-      - name: Install pyenv (macOS)
+      - name: Install pyenv (only macOS)
         if: matrix.platform == 'macos-latest'
         run: |
           brew update
@@ -55,7 +50,39 @@ jobs:
           cibuildwheel --output-dir dist
         env:
           CIBW_PLATFORM: ${{ matrix.platform == 'ubuntu-latest' && 'linux' || matrix.platform == 'macos-latest' && 'macos' }}
-      
+
+      - name: Upload wheels as artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheels-${{ matrix.platform }}
+          path: dist-${{ matrix.platform }}
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: build
+    # This environment is used for publishing on PyPI
+    environment: publish-pypi
+    permissions:
+      # IMPORTANT: this permission is mandatory for Trusted Publishing
+      id-token: write
+
+    steps:
+      - name: Download Linux wheels
+        uses: actions/download-artifact@v3
+        with:
+          name: wheels-ubuntu-latest
+          path: dist-ubuntu-latest
+
+      - name: Download macOS wheels
+        uses: actions/download-artifact@v3
+        with:
+          name: wheels-macos-latest
+          path: dist-macos-latest
+
+      - name: Merge wheels
+        run: |
+          mkdir -p dist
+          mv dist-*-latest/* dist/
+
       - name: Publish on PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-

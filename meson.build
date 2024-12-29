@@ -1,4 +1,4 @@
-project('seismic-rna', 'c', version: '0.22.2')
+project('seismic-rna', 'c', version: '0.22.3')
 python = import('python').find_installation(pure: false)
 
 # Install Python package files.
