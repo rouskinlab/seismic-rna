@@ -30,7 +30,7 @@ jobs:
 
       - name: Build source distribution (sdist)
         run: |
-          python -m build --sdist --outdir dist
+          python -m build --sdist --outdir dist-sdist
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
@@ -74,7 +74,7 @@ jobs:
 
       - name: Build wheels
         run: |
-          cibuildwheel --output-dir dist
+          cibuildwheel --output-dir dist-${{ matrix.platform }}
         env:
           CIBW_PLATFORM: ${{ matrix.platform == 'ubuntu-latest' && 'linux' || matrix.platform == 'macos-latest' && 'macos' }}
 
