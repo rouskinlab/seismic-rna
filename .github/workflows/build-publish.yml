@@ -51,10 +51,15 @@ jobs:
         env:
           CIBW_PLATFORM: ${{ matrix.platform == 'ubuntu-latest' && 'linux' || matrix.platform == 'macos-latest' && 'macos' }}
 
-      - name: Upload wheels as artifacts
+      - name: Build source distribution (sdist)
+        if: matrix.platform == 'ubuntu-latest'  # Only generate sdist once
+        run: |
+          python -m build --sdist --outdir dist
+
+      - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: wheels-${{ matrix.platform }}
+          name: builds-${{ matrix.platform }}
           path: dist-${{ matrix.platform }}
 
   publish:
@@ -70,13 +75,13 @@ jobs:
       - name: Download Linux wheels
         uses: actions/download-artifact@v3
         with:
-          name: wheels-ubuntu-latest
+          name: builds-ubuntu-latest
           path: dist-ubuntu-latest
 
       - name: Download macOS wheels
         uses: actions/download-artifact@v3
         with:
-          name: wheels-macos-latest
+          name: builds-macos-latest
           path: dist-macos-latest
 
       - name: Merge wheels
