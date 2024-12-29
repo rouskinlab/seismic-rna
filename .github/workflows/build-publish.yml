@@ -1,4 +1,4 @@
-name: Build and Publish Project
+name: Build and Publish Project on PyPI
 
 on:
   release:
@@ -11,8 +11,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
+  build-publish:
     runs-on: ${{ matrix.platform }}
+    # This environment is used for publishing on PyPI
+    environment: publish-pypi
+    permissions:
+      # IMPORTANT: this permission is mandatory for Trusted Publishing
+      id-token: write
     strategy:
       matrix:
         platform: [ubuntu-latest, macos-latest]
@@ -50,4 +55,7 @@ jobs:
           cibuildwheel --output-dir dist
         env:
           CIBW_PLATFORM: ${{ matrix.platform == 'ubuntu-latest' && 'linux' || matrix.platform == 'macos-latest' && 'macos' }}
+      
+      - name: Publish on PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
 
