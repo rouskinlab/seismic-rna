@@ -1,16 +1,7 @@
-name: Build Wheels
+name: Build and Publish Project
 
 on:
-  # Runs on pushes targeting the main branch
-  push:
-    branches:
-      - main
-    paths:
-      - src/seismicrna/**
-      - pyproject.toml
-      - environment.yml
-      - .github/workflows/build-wheels.yml
-  # Allows you to run this workflow manually from the Actions tab
+  release:
   workflow_dispatch:
 
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
@@ -36,7 +27,7 @@ jobs:
         with:
           python-version: 3.13
 
-      - name: Install pyenv (macOS only)
+      - name: Install pyenv (macOS)
         if: matrix.platform == 'macos-latest'
         run: |
           brew update
