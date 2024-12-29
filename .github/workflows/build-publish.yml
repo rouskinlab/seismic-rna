@@ -117,7 +117,7 @@ jobs:
       - name: Merge wheels
         run: |
           mkdir -p dist
-          mv dist-*-latest/* dist/
+          mv dist-sdist/* dist-ubuntu-latest/* dist-macos-latest/* dist/
 
       - name: Publish on PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
