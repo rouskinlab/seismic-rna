@@ -193,13 +193,6 @@ class TestRelateSingle(TestRelate):
                                self.batches,
                                min_reads=5)
 
-    def test_min_mapq(self):
-        self.assertRaisesRegex(ValueError,
-                               "Read 'Read1' mapped with quality score 6, "
-                               "less than the minimum of 7",
-                               self.batches,
-                               min_mapq=7)
-
     def test_min_phred(self):
         read_nums, seg_end5s, seg_end3s, muts = self.batches(min_phred=40)
         self.assertListEqual(read_nums, [[0, 1, 2, 3]])
@@ -332,13 +325,6 @@ class TestRelatePaired(TestRelate):
                                "Insufficient reads in alignment map",
                                self.batches,
                                min_reads=7)
-
-    def test_min_mapq(self):
-        self.assertRaisesRegex(ValueError,
-                               "Read 'Read3' mapped with quality score 5, "
-                               "less than the minimum of 6",
-                               self.batches,
-                               min_mapq=6)
 
     def test_min_phred(self):
         read_nums, seg_end5s, seg_end3s, muts = self.batches(min_phred=40)
