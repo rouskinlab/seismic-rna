@@ -57,6 +57,7 @@ SEISMIC-RNA is released on three platforms:
 
 \begin{enumerate}
     \item Make sure you have committed and pushed everything you want to release to the GitHub repository; importantly, make sure that the version number defined in the source code (\verb|src/seismicrna/core/version.py|) is up-to-date.
+    \item Make sure the test suite ran successfully. The test suite runs automatically each time updates to the source code are pushed to the main branch. On GitHub, under the ``Actions" tab, click on ``Install SEISMIC-RNA and run its test suite" in the sidebar and make sure that this workflow ran after the most recent modification to the code and that it completed successfully (green checkmark). If any errors occurred, fix them before releasing.
     \item Open the repository in a web browser, find the ``Releases" panel on the right sidebar, and click ``Create a new release".
     \item On the new page that opens, you will need to write information about the release.
     \item Select ``Choose a tag" and in the box labeled ``Find or create a new tag" type the version number of the new release prefaced by a ``v", e.g. ``v2.7.18". Make sure the new tag is exactly a ``v" followed by the version number, or else releasing on Conda will not work.
@@ -65,46 +66,34 @@ SEISMIC-RNA is released on three platforms:
     \item Move the cursor to the bottom of the text box and click ``Generate release notes" to add a summary of all commits, pull requests, etc. associated with this release.
     \item If this is a pre-release, check the box ``Set as a pre-release" at the bottom.
     \item Click ``Publish release" when you are finished.
-    \item You can edit or delete the release afterwards if it contains a significant mistake.
+    \item Publishing the release will trigger the GitHub Actions script \verb|build-publish.yml|, which will automatically release the code on PyPI. See below for details.
 \end{enumerate}
 
 
 \subsection{Releasing on PyPI}
 
+The SEISMIC-RNA repository on GitHub includes a GitHub Actions script \verb|build-publish.yml| that builds and publishes a new version of SEISMIC-RNA on PyPI every time a new release is created on GitHub. This script exists to ensure that releases on GitHub are synced with those on PyPI, and to reduce the amount of manual effort (and potential for error) required to release a new version. The latter aim became more important when SEISMIC-RNA began including C extension modules, which require compilation and thus a separate wheel file for each platform and version of Python.
+
 \subsubsection{The first time you release on PyPI}
 
 \begin{enumerate}
+    \item On the GitHub repository for SEISMIC-RNA (\url{https://github.com/rouskinlab/seismic-rna}), navigate to \verb|.github/workflows|.
+    \item Confirm that there is a workflow script called \verb|build-publish.yml|, which runs every time a new release is created on GitHub (or when run manually) and executes all steps needed to publish on PyPI.
     \item Create an account on PyPI and obtain permission to modify the SEISMIC-RNA project (\url{https://pypi.org/project/seismic-rna}).
-    \item Install \verb|build| (to build the package) and \verb|twine| (to upload the package):
-        \begin{verbatim}
-pip install build
-pip install twine
-        \end{verbatim}
+    \item Log into your account and open SEISMIC-RNA in PyPI.
+    \item Click on ``Manage project" and then on "Publishing".
+    \item SEISMIC-RNA should be set up to use Trusted Publisher Management (for details, see \url{https://docs.pypi.org/trusted-publishers}). Under ``Manage current publishers" check that GitHub is listed as a publisher with the Repository set to \verb|rouskinlab/seismic-rna|, the Workflow set to \verb|build-publish.yml|, and the Environment name set to \verb|publish-pypi|. If not, add a new publisher with this information.
 \end{enumerate}
 
 
 \subsubsection{Every time you release on PyPI}
 
 \begin{enumerate}
-    \item Make sure \verb|build| and \verb|twine| are up to date:
-        \begin{verbatim}
-pip install -U build
-pip install -U twine
-        \end{verbatim}
-    \item Make sure the code, including the version in \verb|src/seismicrna/core/version.py|, is correct. You CANNOT edit a PyPI release after it has been uploaded, nor can you delete it and upload a revision with the same version number.
-    \item Ensure that all unit tests succeed by running \verb|seismic test|. Do not release the code if any tests fail.
-    \item Navigate to the main directory \verb|seismic-rna|; if it already contains a directory called \verb|dist|, then delete \verb|dist|.
-    \item Build the package:
-        \begin{verbatim}
-python -m build
-        \end{verbatim}
-    \item The source (\verb|.tar.gz|) and wheel (\verb|.whl|) files for the package will appear in the new directory \verb|dist|. Make sure the version number of each file is correct.
-    \item Upload the package to PyPI:
-        \begin{verbatim}
-python -m twine upload dist/*
-        \end{verbatim}
-        Enter your PyPI API token to authenticate when prompted.
-    \item Navigate to the SEISMIC-RNA releases page (\url{https://pypi.org/project/seismic-rna/#history}) to confirm that the version was uploaded successfully. The new version will be installable with \verb|pip install seismic-rna| within several minutes.
+    \item Release a new version on GitHub following the steps above. Make sure that all tests pass by checking that the workflow ``Install SEISMIC-RNA and run its test suite" completes with no errors (green checkmark).
+    \item Once a new version is released on GitHub, the workflow ``Build and Publish Project on PyPI" (in the script \verb|build-publish.yml|) should run automatically. This workflow builds the source distribution and builds wheels for Linux and macOS.
+    \item If any build fails (red X), then fix the errors and re-run this workflow manually by clicking ``Re-run all jobs".
+    \item If all builds succeed, then (as a security measure) the final release must be approved by one of the repository owners (currently \verb|matthewfallan| or \verb|justinaruda|). The repository owners should approve the release only after confirming that all tests have passed and that the code appears functional.
+    \item Upon approval, the release will be published on PyPI using Trusted Publisher Management. The new version can then be installed using pip.
 \end{enumerate}
 
 
@@ -122,12 +111,11 @@ Refer to these instructions (and their links) if you need to troubleshoot this w
     \item Create a new Conda environment and install the Bioconda developer tools by typing \verb|conda create -n bioconda -c conda-forge -c bioconda bioconda-utils|.
 \end{enumerate}
 
-
+ 
 \subsubsection{Every time you release on Bioconda}
 
 \begin{enumerate}
     \item Release this version of the software on GitHub (see above). Make sure to give it the tag ``v" followed by the version number, otherwise building the metadata file for Conda will fail.
-    \item Create the Conda recipe files by navigating to the main directory \verb|seismic-rna| and typing \verb|python make_conda_recipe.py|. This will create or update the Conda recipe files \verb|build.sh| and \verb|meta.yaml| in the directory \verb|conda|.
     \item Navigate to the directory into which you cloned the Bioconda Recipes repository and bring it up-to-date with the \verb|master| branch by typing
         \begin{verbatim}
 git checkout master
@@ -135,7 +123,8 @@ git pull upstream master
 git push origin master
         \end{verbatim}
     \item Create a new branch for the new version, e.g. called \verb|seismic-rna_v2.7.18|, by typing \verb|git checkout -b seismic-rna_v2.7.18|.
-    \item Copy \verb|build.sh| and \verb|meta.yaml| from \verb|seismic-rna/conda| (in your SEISMIC-RNA repository) to \verb|recipes/seismic-rna| (in your Bioconda Recipes repository).
+    \item Create the Conda recipe files by navigating to the main directory \verb|seismic-rna| and typing \verb|python make_conda_recipe.py|. This will create or update the Conda recipe files \verb|build.sh| and \verb|meta.yaml| in the directory \verb|seismic-rna/conda|. It will also copy them automatically to \verb|recipes/seismic-rna| (in your Bioconda Recipes repository).
+    \item Navigate back to your Bioconda Recipes repository and confirm that the latest versions of \verb|build.sh| and \verb|meta.yaml| were copied into it.
     \item Activate your \verb|bioconda| environment by typing \verb|conda activate bioconda|.
     \item Lint your updates by typing \verb|bioconda-utils lint --packages seismic-rna| and confirm that it prints an OK message, not ``Errors were found".
     \item Test building the package typing \verb|bioconda-utils build --packages seismic-rna| and confirm that it prints an OK message, not ``Errors were found".
