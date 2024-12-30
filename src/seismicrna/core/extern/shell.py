@@ -19,6 +19,7 @@ RNASTRUCTURE_FOLD_SMP_CMD = "Fold-smp"
 JAVA_CMD = "java"
 JAR_CMD = "-jar"
 
+
 def args_to_cmd(args: list[Any]):
     """ Join a list of arguments into a command with shlex. """
     return shlex.join(map(str, args))
@@ -96,7 +97,8 @@ def iopaths(has_ipath: bool = True, has_opath: bool = True):
 class ShellCommand(object):
     """ Command that can be run in the shell. """
 
-    def __init__(self, action: str,
+    def __init__(self,
+                 action: str,
                  mkcmd: Callable[[Any, Any, Any], str],
                  parse: Callable[[CompletedProcess], Any] | None = None,
                  ipath: bool = True,
