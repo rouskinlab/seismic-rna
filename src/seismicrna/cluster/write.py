@@ -155,7 +155,7 @@ def cluster(mask_report_file: Path, *,
                                       cmd=path.CMD_CLUST_DIR,
                                       sample=dataset.sample,
                                       ref=dataset.ref,
-                                      reg=dataset.reg)
+                                      reg=dataset.region.name)
         if dataset.min_mut_gap != 3:
             logger.warning("For clustering, it is highly recommended to use "
                            "the observer bias correction with min_mut_gap=3, "

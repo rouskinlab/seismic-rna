@@ -4,10 +4,10 @@ from functools import cached_property
 from .batch import MaskMutsBatch, apply_mask
 from .io import MaskBatchIO
 from .report import MaskReport
-from ..core.data import (ArrowDataset,
-                         LoadedDataset,
+from ..core.data import (LoadedDataset,
                          LoadFunction,
                          MergedUnbiasDataset,
+                         MultistepDataset,
                          UnbiasDataset)
 from ..core.join import (BATCH_NUM,
                          READ_NUMS,
@@ -21,9 +21,14 @@ from ..core.report import (CountMutsF,
                            CountRefsF,
                            MinMutGapF,
                            PosKeptF,
+                           RefF,
+                           RegF,
+                           End5F,
+                           End3F,
                            QuickUnbiasF,
                            QuickUnbiasThreshF,
                            JoinedClustersF)
+from ..core.seq import Region
 from ..relate.batch import RelateBatch
 from ..relate.data import load_relate_dataset
 
@@ -62,7 +67,7 @@ class MaskReadDataset(LoadedDataset, UnbiasDataset):
                           self.report.get_field(CountRefsF))
 
 
-class MaskMutsDataset(ArrowDataset, UnbiasDataset):
+class MaskMutsDataset(MultistepDataset, UnbiasDataset):
     """ Chain mutation data with masked reads. """
 
     MASK_NAME = "mask"
@@ -93,8 +98,11 @@ class MaskMutsDataset(ArrowDataset, UnbiasDataset):
 
     @cached_property
     def region(self):
-        # Mask the positions that were not kept.
-        region = super().region
+        region = Region(ref=self.report.get_field(RefF),
+                        seq=self.refseq,
+                        name=self.report.get_field(RegF),
+                        end5=self.report.get_field(End5F),
+                        end3=self.report.get_field(End3F))
         region.add_mask(self.MASK_NAME,
                         getattr(self.data2, "pos_kept"),
                         complement=True)

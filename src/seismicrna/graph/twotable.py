@@ -8,15 +8,16 @@ from typing import Any, Callable, Iterable
 import pandas as pd
 
 from .base import (LINKER,
-                   GraphRunner,
-                   GraphWriter,
                    cgroup_table,
                    get_action_name,
                    make_tracks,
                    make_title_action_sample,
-                   make_path_subject,
-                   load_pos_tables)
+                   make_path_subject)
 from .rel import OneRelGraph
+from .table import (TableGraph,
+                    TableGraphRunner,
+                    TableGraphWriter,
+                    load_pos_tables)
 from ..cluster.table import ClusterTable
 from ..core.arg import opt_comppair, opt_compself, opt_out_dir
 from ..core.logs import logger
@@ -29,7 +30,7 @@ ROW_NAME = "Row"
 COL_NAME = "Column"
 
 
-class TwoTableGraph(OneRelGraph, ABC):
+class TwoTableGraph(TableGraph, OneRelGraph, ABC):
     """ Graph of two Tables. """
 
     def __init__(self, *,
@@ -152,11 +153,11 @@ class TwoTableGraph(OneRelGraph, ABC):
 
     @cached_property
     def row_tracks(self):
-        return make_tracks(self.table2.header, self.k2, self.clust2)
+        return make_tracks(self.table2, self.k2, self.clust2)
 
     @cached_property
     def col_tracks(self):
-        return make_tracks(self.table1.header, self.k1, self.clust1)
+        return make_tracks(self.table1, self.k1, self.clust1)
 
 
 class TwoTableMergedGraph(TwoTableGraph, ABC):
@@ -200,7 +201,7 @@ class TwoTableMergedGraph(TwoTableGraph, ABC):
                 yield (row, col), trace
 
 
-class TwoTableWriter(GraphWriter, ABC):
+class TwoTableWriter(TableGraphWriter, ABC):
     """ Write the proper types of graphs for two given tables. """
 
     @classmethod
@@ -259,7 +260,7 @@ def iter_table_pairs(tables: Iterable[Table]):
         yield from combinations(tables, 2)
 
 
-class TwoTableRunner(GraphRunner, ABC):
+class TwoTableRunner(TableGraphRunner, ABC):
 
     @classmethod
     @abstractmethod

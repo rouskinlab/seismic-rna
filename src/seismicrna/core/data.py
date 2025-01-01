@@ -6,24 +6,21 @@ from typing import Any, Callable, Iterable
 
 from . import path
 from .batch import MutsBatch, RegionMutsBatch, ReadBatch, list_batch_nums
-from .io import MutsBatchIO, ReadBatchIO, RefseqIO
+from .io import MutsBatchIO, ReadBatchIO
 from .logs import logger
 from .rel import RelPattern
 from .report import (DATETIME_FORMAT,
                      SampleF,
                      RefF,
                      RegF,
-                     End5F,
-                     End3F,
                      TimeEndedF,
                      NumBatchF,
                      ChecksumsF,
-                     RefseqChecksumF,
                      PooledSamplesF,
                      JoinedRegionsF,
                      Report,
                      BatchedReport)
-from .seq import FULL_NAME, DNA, Region, hyphenate_ends, unite
+from .seq import DNA, Region, unite
 
 
 class Dataset(ABC):
@@ -59,21 +56,6 @@ class Dataset(ABC):
     def ref(self) -> str:
         """ Name of the reference. """
         return self.report.get_field(RefF)
-
-    @property
-    @abstractmethod
-    def end5(self) -> int:
-        """ 5' end of the region. """
-
-    @property
-    @abstractmethod
-    def end3(self) -> int:
-        """ 3' end of the region. """
-
-    @property
-    @abstractmethod
-    def reg(self) -> str:
-        """ Name of the region. """
 
     @property
     @abstractmethod
@@ -174,24 +156,19 @@ class MutsDataset(RegionDataset, ABC):
 
     @abstractmethod
     def get_batch(self, batch_num: int) -> RegionMutsBatch:
-        """ Get a specific batch of data. """
+        pass
 
     def get_batch_count_all(self, batch_num: int, **kwargs):
         """ Calculate the counts for a specific batch of data. """
         return self.get_batch(batch_num).count_all(**kwargs)
 
-
-class NarrowDataset(RegionDataset, ABC):
-    """ Dataset with one region, in contrast to a WideDataset that
-    combines one or more regions. """
-
-    @cached_property
-    def region(self):
-        return Region(ref=self.ref,
-                      seq=self.refseq,
-                      end5=self.end5,
-                      end3=self.end3,
-                      name=self.reg)
+    def iter_batches(self):
+        # Reimplement this method (already implemented by Dataset) for
+        # the sole purpose of enabling type linters to determine that
+        # MutsDataset.iter_batches() yields RegionMutsBatch objects
+        # instead of plain ReadBatch objects.
+        for batch_num in self.batch_nums:
+            yield self.get_batch(batch_num)
 
 
 class LoadFunction(object):
@@ -282,18 +259,6 @@ class LoadedDataset(Dataset, ABC):
         """ Name of the type of batch. """
         return cls.get_batch_type().btype()
 
-    @cached_property
-    def end5(self):
-        return self.report.get_field(End5F)
-
-    @cached_property
-    def end3(self):
-        return self.report.get_field(End3F)
-
-    @cached_property
-    def reg(self):
-        return self.report.get_field(RegF)
-
     @property
     def timestamp(self):
         return self.report.get_field(TimeEndedF)
@@ -327,43 +292,6 @@ class LoadedDataset(Dataset, ABC):
         return batch
 
 
-class LoadedMutsDataset(LoadedDataset, MutsDataset, NarrowDataset, ABC):
-
-    @cached_property
-    def refseq(self):
-        return RefseqIO.load(
-            RefseqIO.build_path(top=self.top,
-                                sample=self.sample,
-                                ref=self.ref),
-            checksum=self.report.get_field(RefseqChecksumF)
-        ).refseq
-
-    @cached_property
-    def end5(self):
-        try:
-            # Find the 5' end in the report, if it has this field.
-            return super().end5
-        except AttributeError:
-            return 1
-
-    @cached_property
-    def end3(self):
-        try:
-            # Find the 3' end in the report, if it has this field.
-            return super().end3
-        except AttributeError:
-            return self.reflen
-
-    @cached_property
-    def reg(self):
-        try:
-            # Find the region name in the report, if it has this field.
-            return super().reg
-        except AttributeError:
-            return (FULL_NAME if self.end5 == 1 and self.end3 == self.reflen
-                    else hyphenate_ends(self.end5, self.end3))
-
-
 class MergedDataset(Dataset, ABC):
     """ Dataset made by merging one or more constituent datasets. """
 
@@ -383,17 +311,26 @@ class MergedDataset(Dataset, ABC):
                              for dataset in self.datasets
                              for dataset_dir in dataset.data_dirs]
 
-    def _list_dataset_attr(self, name: str):
+    def _list_dataset_attr(self, name: str, *subnames: str):
         """ Get a list of an attribute for each dataset. """
-        return [getattr(dataset, name) for dataset in self.datasets]
+        values = list()
+        for dataset in self.datasets:
+            value = getattr(dataset, name)
+            for subname in subnames:
+                value = getattr(value, subname)
+            values.append(value)
+        return values
 
-    def _get_common_attr(self, name: str):
+    def _get_common_attr(self, name: str, *subnames):
         """ Get a common attribute among datasets. """
-        attrs = list(set(self._list_dataset_attr(name)))
-        if len(attrs) != 1:
+        values = list()
+        for value in self._list_dataset_attr(name, *subnames):
+            if value not in values:
+                values.append(value)
+        if len(values) != 1:
             raise ValueError(f"{type(self).__name__} expected exactly 1 value "
-                             f"for attribute {repr(name)}, but got {attrs}")
-        return attrs[0]
+                             f"for attribute {name}, but got {values}")
+        return values[0]
 
     @cached_property
     def pattern(self):
@@ -456,18 +393,6 @@ class TallDataset(MergedDataset, ABC):
         return self._list_dataset_attr("sample")
 
     @cached_property
-    def end5(self):
-        return self._get_common_attr("end5")
-
-    @cached_property
-    def end3(self):
-        return self._get_common_attr("end3")
-
-    @cached_property
-    def reg(self):
-        return self._get_common_attr("reg")
-
-    @cached_property
     def nums_batches(self) -> list[int]:
         """ Number of batches in each dataset in the pool. """
         return self._list_dataset_attr("num_batches")
@@ -500,14 +425,6 @@ class TallDataset(MergedDataset, ABC):
         return batch
 
 
-class TallMutsDataset(TallDataset,
-                      MutsDataset,
-                      MergedRegionDataset,
-                      NarrowDataset,
-                      ABC):
-    """ TallDataset with mutational data. """
-
-
 class WideDataset(MergedRegionDataset, ABC):
     """ Dataset made by horizontally joining other datasets from one or
     more regions of the same reference sequence. """
@@ -536,9 +453,9 @@ class WideDataset(MergedRegionDataset, ABC):
         return self._get_common_attr("num_batches")
 
     @cached_property
-    def regs(self):
+    def region_names(self):
         """ Names of all joined regions. """
-        return self._list_dataset_attr("reg")
+        return self._list_dataset_attr("region", "name")
 
     @cached_property
     def region(self):
@@ -546,25 +463,13 @@ class WideDataset(MergedRegionDataset, ABC):
                      name=self.report.get_field(RegF),
                      refseq=self.refseq)
 
-    @property
-    def reg(self):
-        return self.region.name
-
-    @cached_property
-    def end5(self):
-        return self.region.end5
-
-    @cached_property
-    def end3(self):
-        return self.region.end3
-
     @abstractmethod
     def _join(self, batches: Iterable[tuple[str, ReadBatch]]) -> ReadBatch:
         """ Join corresponding batches of data. """
 
     def get_batch(self, batch_num: int):
         # Join the batch with that number from every dataset.
-        return self._join((dataset.reg, dataset.get_batch(batch_num))
+        return self._join((dataset.region.name, dataset.get_batch(batch_num))
                           for dataset in self.datasets)
 
 
@@ -644,18 +549,6 @@ class MultistepDataset(MutsDataset, ABC):
         return self.data1.refseq
 
     @property
-    def end5(self):
-        return self.data2.end5
-
-    @property
-    def end3(self):
-        return self.data2.end3
-
-    @property
-    def reg(self):
-        return self.data2.reg
-
-    @property
     def timestamp(self):
         return self.data2.timestamp
 
@@ -674,11 +567,6 @@ class MultistepDataset(MutsDataset, ABC):
     def get_batch(self, batch_num: int):
         return self._integrate(self.data1.get_batch(batch_num),
                                self.data2.get_batch(batch_num))
-
-
-class ArrowDataset(MultistepDataset, NarrowDataset, ABC):
-    """ Dataset made by integrating two datasets from different steps of
-    the workflow, with one region. """
 
 
 def load_datasets(input_path: Iterable[str | Path],

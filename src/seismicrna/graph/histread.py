@@ -2,7 +2,7 @@ import os
 
 from click import command
 
-from .base import GraphWriter, ReadGraphRunner
+from .table import TableGraphWriter, ReadGraphRunner
 from .histrel import RelHistogramGraph, RelHistogramWriter, RelHistogramRunner
 
 COMMAND = __name__.split(os.path.extsep)[-1]
@@ -23,7 +23,7 @@ class ReadHistogramGraph(RelHistogramGraph):
         return "Number of reads"
 
 
-class ReadHistogramWriter(RelHistogramWriter, GraphWriter):
+class ReadHistogramWriter(RelHistogramWriter, TableGraphWriter):
 
     @classmethod
     def get_graph_type(cls):

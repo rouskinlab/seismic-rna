@@ -8,11 +8,11 @@ from .batch import ClusterMutsBatch
 from .io import ClusterBatchIO
 from .report import ClusterReport
 from ..core.batch import MutsBatch
-from ..core.data import (ArrowDataset,
-                         Dataset,
+from ..core.data import (Dataset,
                          LoadedDataset,
                          LoadFunction,
                          MergedUnbiasDataset,
+                         MultistepDataset,
                          UnbiasDataset)
 from ..core.header import (NUM_CLUSTS_NAME,
                            ClustHeader,
@@ -69,7 +69,7 @@ class ClusterReadDataset(ClusterDataset, LoadedDataset):
         return None
 
 
-class ClusterMutsDataset(ClusterDataset, ArrowDataset, UnbiasDataset):
+class ClusterMutsDataset(ClusterDataset, MultistepDataset, UnbiasDataset):
     """ Merge cluster responsibilities with mutation data. """
 
     @classmethod
@@ -151,8 +151,8 @@ class JoinClusterMutsDataset(ClusterDataset,
         self._joined_clusts = self.report.get_field(JoinedClustersF)
         if self._joined_clusts is None:
             raise TypeError(f"{self} requires clusters, but got None")
-        if sorted(self._joined_clusts) != sorted(self.regs):
-            raise ValueError(f"{self} expected clusters for {self.regs}, "
+        if sorted(self._joined_clusts) != sorted(self.region_names):
+            raise ValueError(f"{self} expected clusters for {self.region_names}, "
                              f"but got {self._joined_clusts}")
 
     @cached_property

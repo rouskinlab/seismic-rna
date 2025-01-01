@@ -1,12 +1,12 @@
 from abc import ABC
 from functools import cached_property
 
-from .base import GraphBase, GraphRunner
+from .table import TableGraph, TableGraphRunner
 from ..core.arg import opt_window, opt_winmin
 from ..core.seq import POS_NAME
 
 
-class RollingGraph(GraphBase, ABC):
+class RollingGraph(TableGraph, ABC):
 
     def __init__(self, *, window: int, winmin: int, **kwargs):
         super().__init__(**kwargs)
@@ -30,7 +30,7 @@ class RollingGraph(GraphBase, ABC):
         )
 
 
-class RollingRunner(GraphRunner, ABC):
+class RollingRunner(TableGraphRunner, ABC):
 
     @classmethod
     def var_params(cls):

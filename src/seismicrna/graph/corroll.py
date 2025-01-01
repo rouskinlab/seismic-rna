@@ -4,7 +4,7 @@ from functools import cached_property, partial
 from click import command
 from plotly import graph_objects as go
 
-from .base import GraphWriter, PosGraphRunner
+from .table import TableGraphWriter, PosGraphRunner
 from .roll import RollingGraph, RollingRunner
 from .trace import iter_seq_line_traces
 from .twotable import TwoTableMergedGraph, TwoTableRunner, TwoTableWriter
@@ -56,7 +56,7 @@ class RollingCorrelationGraph(TwoTableMergedGraph, RollingGraph):
         fig.update_yaxes(gridcolor="#d0d0d0")
 
 
-class RollingCorrelationWriter(TwoTableWriter, GraphWriter):
+class RollingCorrelationWriter(TwoTableWriter, TableGraphWriter):
 
     @classmethod
     def get_graph_type(cls):

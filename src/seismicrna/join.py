@@ -142,10 +142,10 @@ def run(input_path: tuple[str, ...], *,
             # Check whether the dataset was joined.
             if isinstance(dataset, JoinMutsDataset):
                 # If so, then use all joined regions.
-                regs = dataset.regs
+                regs = dataset.region_names
             else:
                 # Otherwise, use just the region of the dataset.
-                regs = [dataset.reg]
+                regs = [dataset.region.name]
             joins[(dataset.top,
                    dataset.sample,
                    dataset.ref,

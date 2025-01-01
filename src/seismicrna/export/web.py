@@ -95,8 +95,8 @@ def get_reg_metadata(top: Path,
                                                     reg=reg))
     positions = (dataset.region.range_int if all_pos
                  else dataset.region.unmasked_int)
-    reg_metadata = {REG_END5: dataset.end5,
-                    REG_END3: dataset.end3,
+    reg_metadata = {REG_END5: dataset.region.end5,
+                    REG_END3: dataset.region.end3,
                     REG_POS: positions.tolist()}
     return format_metadata(reg_metadata)
 

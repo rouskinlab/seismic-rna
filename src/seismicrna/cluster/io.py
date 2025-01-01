@@ -64,7 +64,7 @@ class ClusterBatchWriter(object):
                                      columns=ClustHeader(ks=[]).index)
             batch_file = ClusterBatchIO(sample=self.dataset.sample,
                                         ref=self.dataset.ref,
-                                        reg=self.dataset.reg,
+                                        reg=self.dataset.region.name,
                                         batch=mask_batch.batch,
                                         resps=resps)
             _, checksum = batch_file.save(self.top,

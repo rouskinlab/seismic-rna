@@ -2,14 +2,15 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 from itertools import chain
 from pathlib import Path
-from typing import Any, Callable, Generator, Iterable
+from typing import Generator, Iterable
 
 import pandas as pd
 from click import Argument, Option
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
-from ..cluster.table import ClusterTable, ClusterPositionTableLoader
+from ..cluster.data import ClusterDataset, ClusterMutsDataset
+from ..cluster.table import ClusterTable
 from ..core import path
 from ..core.arg import (NO_GROUP,
                         GROUP_BY_K,
@@ -26,16 +27,15 @@ from ..core.arg import (NO_GROUP,
                         opt_png,
                         opt_force,
                         opt_max_procs)
-from ..core.header import Header, format_clust_names
+from ..core.data import Dataset
+from ..core.header import format_clust_names, make_header
 from ..core.seq import DNA
-from ..core.table import Table, PositionTable
+from ..core.table import Table
 from ..core.write import need_write
-from ..mask.table import (MaskTable,
-                          MaskPositionTableLoader,
-                          MaskReadTableLoader)
-from ..relate.table import (RelateTable,
-                            RelatePositionTableLoader,
-                            RelateReadTableLoader)
+from ..mask.data import MaskMutsDataset
+from ..mask.table import MaskTable
+from ..relate.data import RelateDataset
+from ..relate.table import RelateTable
 
 # Define actions.
 ACTION_REL = "all"
@@ -46,16 +46,25 @@ ACTION_CLUST = "clustered"
 LINKER = "__and__"
 
 
-def make_tracks(header: Header, k: int | None, clust: int | None):
+def make_tracks(data: Dataset | Table, k: int | None, clust: int | None):
     """ Make an index for the rows or columns of a graph. """
-    if not header.clustered():
-        # If there are no clusters, then no clusters must be selected.
-        if k or clust:
-            raise ValueError(f"Cannot select ks or clusters from {header}")
-        return header.clusts
-    # If there are any relationship names in the index, then drop them
-    # and then select the k(s) and cluster(s) for the index.
-    return header.get_clust_header().select(k=k, clust=clust).to_list()
+    if isinstance(data, Dataset):
+        if isinstance(data, ClusterDataset):
+            if not data.ks:
+                raise ValueError(f"{data} has no clusters")
+            return make_header(ks=data.ks).select(k=k, clust=clust).to_list()
+        return None
+    if isinstance(data, Table):
+        header = data.header
+        if not header.clustered():
+            # If no clusters exist, then no clusters can be selected.
+            if k or clust:
+                raise ValueError(f"Cannot select ks or clusters from {header}")
+            return header.clusts
+        # If there are any relationship names in the index, then drop
+        # them and then select the k(s) and cluster(s) for the index.
+        return header.get_clust_header().select(k=k, clust=clust).to_list()
+    raise TypeError(data)
 
 
 def _track_count(tracks: list[tuple[int, int]] | None):
@@ -68,14 +77,14 @@ def _track_titles(tracks: list[tuple[int, int]] | None):
             else None)
 
 
-def get_action_name(table: Table):
-    if isinstance(table, RelateTable):
+def get_action_name(data: Dataset | Table):
+    if isinstance(data, (RelateDataset, RelateTable)):
         return ACTION_REL
-    if isinstance(table, MaskTable):
+    if isinstance(data, (MaskMutsDataset, MaskTable)):
         return ACTION_MASK
-    if isinstance(table, ClusterTable):
+    if isinstance(data, (ClusterMutsDataset, ClusterTable)):
         return ACTION_CLUST
-    raise TypeError(f"Invalid table type: {type(table).__name__}")
+    raise TypeError(data)
 
 
 def make_title_action_sample(action: str, sample: str):
@@ -129,6 +138,7 @@ class Annotation(object):
 
 
 class GraphBase(ABC):
+    """ Base class for all types of graphs. """
 
     @classmethod
     @abstractmethod
@@ -149,34 +159,10 @@ class GraphBase(ABC):
                 path.RegSeg,
                 path.GraphSeg)
 
-    def __init__(self, *,
-                 use_ratio: bool,
-                 quantile: float):
-        """
-        Parameters
-        ----------
-        use_ratio: bool
-            Use the ratio of the number of times the relationship occurs
-            to the number of occurrances of another kind of relationship
-            (which is Covered for Covered and Informative; Informative
-            for all other relationships), rather than the raw count.
-        quantile: float
-            If `use_ratio` is True, then normalize the ratios to this
-            quantile and then winsorize them to the interval [0, 1].
-            Passing 0.0 disables normalization and winsorization.
-        """
-        self.use_ratio = use_ratio
-        self.quantile = quantile
-
     @property
     @abstractmethod
-    def codestring(self):
+    def codestring(self) -> str:
         """ String of the relationship code(s). """
-
-    @property
-    def data_kind(self):
-        """ Kind of data being used: either "ratio" or "count". """
-        return "ratio" if self.use_ratio else "count"
 
     @property
     @abstractmethod
@@ -209,23 +195,19 @@ class GraphBase(ABC):
         """ Sequence of the region from which the data come. """
 
     @cached_property
+    @abstractmethod
     def details(self) -> list[str]:
         """ Additional details about the graph. """
-        return ([f"quantile = {round(self.quantile, 3)}"] if self.use_ratio
-                else list())
 
     @property
     @abstractmethod
-    def path_subject(self):
+    def path_subject(self) -> str:
         """ Subject of the graph. """
 
-    @property
-    def predicate(self):
+    @cached_property
+    @abstractmethod
+    def predicate(self) -> str:
         """ Predicate of the graph. """
-        fields = [self.codestring, self.data_kind]
-        if self.use_ratio:
-            fields.append(f"q{round(self.quantile * 100.)}")
-        return "-".join(fields)
 
     @cached_property
     def graph_filename(self):
@@ -258,20 +240,8 @@ class GraphBase(ABC):
         return "/".join(self.rel_names)
 
     @cached_property
-    def _fetch_kwargs(self) -> dict[str, Any]:
-        """ Keyword arguments for self._fetch_data. """
-        return dict(rel=self.rel_names)
-
-    def _fetch_data(self, table: PositionTable, **kwargs):
-        """ Fetch data from the table. """
-        kwargs = self._fetch_kwargs | kwargs
-        return (table.fetch_ratio(quantile=self.quantile, **kwargs)
-                if self.use_ratio
-                else table.fetch_count(**kwargs))
-
-    @cached_property
     @abstractmethod
-    def data(self) -> pd.DataFrame:
+    def data(self) -> pd.Series | pd.DataFrame:
         """ Data of the graph. """
 
     @abstractmethod
@@ -430,13 +400,9 @@ class GraphBase(ABC):
         return files
 
     @cached_property
-    def _title_main(self):
+    @abstractmethod
+    def _title_main(self) -> list[str]:
         """ Main part of the title, as a list. """
-        return [f"{self.what()} of {self.data_kind}s "
-                f"of {self.relationships} bases "
-                f"in {self.title_action_sample} "
-                f"over reference {repr(self.ref)} "
-                f"region {repr(self.reg)}"]
 
     @cached_property
     def _title_details(self):
@@ -450,14 +416,11 @@ class GraphBase(ABC):
 
 
 class GraphWriter(ABC):
-    """ Write the proper graph(s) for the table(s). """
-
-    def __init__(self, *tables: Table):
-        self.tables = list(tables)
+    """ Write the proper type(s) of graph. """
 
     @abstractmethod
     def iter_graphs(self, *args, **kwargs) -> Generator[GraphBase, None, None]:
-        """ Yield every graph for the table. """
+        """ Yield every graph. """
 
     def write(self,
               *args,
@@ -468,7 +431,7 @@ class GraphWriter(ABC):
               png: bool,
               force: bool,
               **kwargs):
-        """ Generate and write every graph for the table. """
+        """ Generate and write every type of graph. """
         return list(chain(graph.write(csv=csv,
                                       html=html,
                                       svg=svg,
@@ -476,23 +439,6 @@ class GraphWriter(ABC):
                                       png=png,
                                       force=force)
                           for graph in self.iter_graphs(*args, **kwargs)))
-
-
-def load_pos_tables(input_paths: Iterable[str | Path]):
-    """ Load position tables. """
-    paths = list(input_paths)
-    for table_type in [RelatePositionTableLoader,
-                       MaskPositionTableLoader,
-                       ClusterPositionTableLoader]:
-        yield from table_type.load_tables(paths)
-
-
-def load_read_tables(input_paths: Iterable[str | Path]):
-    """ Load read tables. """
-    paths = list(input_paths)
-    for table_type in [RelateReadTableLoader,
-                       MaskReadTableLoader]:
-        yield from table_type.load_tables(paths)
 
 
 class GraphRunner(ABC):
@@ -536,17 +482,6 @@ class GraphRunner(ABC):
 
     @classmethod
     @abstractmethod
-    def get_table_loader(cls) -> Callable[[tuple[str, ...]], Generator]:
-        """ Function to find and filter table files. """
-
-    @classmethod
-    def list_table_files(cls, input_path: tuple[str, ...]):
-        """ Find, filter, and list all table files from input files. """
-        finder = cls.get_table_loader()
-        return list(finder(input_path))
-
-    @classmethod
-    @abstractmethod
     def run(cls,
             input_path: tuple[str, ...], *,
             rels: tuple[str, ...],
@@ -562,20 +497,6 @@ class GraphRunner(ABC):
             max_procs: int,
             **kwargs) -> list[Path]:
         """ Run graphing. """
-
-
-class PosGraphRunner(GraphRunner, ABC):
-
-    @classmethod
-    def get_table_loader(cls):
-        return load_pos_tables
-
-
-class ReadGraphRunner(GraphRunner, ABC):
-
-    @classmethod
-    def get_table_loader(cls):
-        return load_read_tables
 
 ########################################################################
 #                                                                      #

@@ -3,7 +3,7 @@ from abc import ABC
 import numpy as np
 import pandas as pd
 
-from .base import GraphBase, GraphRunner
+from .table import TableGraph, TableGraphRunner
 from ..core.arg import opt_hist_bins, opt_hist_margin
 
 
@@ -47,7 +47,7 @@ def get_edges_index(edges: np.ndarray, use_ratio: bool):
     return pd.Index(counts, name=COUNT_NAME)
 
 
-class HistogramGraph(GraphBase, ABC):
+class HistogramGraph(TableGraph, ABC):
     """ Generic histogram. """
 
     def __init__(self, *, hist_bins: int, hist_margin: float, **kwargs):
@@ -98,7 +98,7 @@ class HistogramGraph(GraphBase, ABC):
         return np.linspace(lower, upper, num_bins + 1)
 
 
-class HistogramRunner(GraphRunner, ABC):
+class HistogramRunner(TableGraphRunner, ABC):
 
     @classmethod
     def var_params(cls):

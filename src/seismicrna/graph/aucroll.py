@@ -5,7 +5,7 @@ import pandas as pd
 from click import command
 from plotly import graph_objects as go
 
-from .base import GraphWriter, PosGraphRunner
+from .table import TableGraphWriter, PosGraphRunner
 from .onestruct import (StructOneTableGraph,
                         StructOneTableRunner,
                         StructOneTableWriter)
@@ -60,7 +60,7 @@ class RollingAUCGraph(StructOneTableGraph, RollingGraph):
         fig.update_yaxes(gridcolor="#d0d0d0")
 
 
-class RollingAUCWriter(StructOneTableWriter, GraphWriter):
+class RollingAUCWriter(StructOneTableWriter, TableGraphWriter):
 
     def get_graph(self, rels_group: str, **kwargs):
         return RollingAUCGraph(table=self.table, rel=rels_group, **kwargs)

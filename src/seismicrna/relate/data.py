@@ -4,13 +4,16 @@ from .batch import RelateBatch
 from .io import ReadNamesBatchIO, RelateBatchIO
 from .report import RelateReport, PoolReport
 from ..core.data import (LoadedDataset,
-                         LoadedMutsDataset,
+                         MergedRegionDataset,
+                         MutsDataset,
                          LoadFunction,
-                         TallDataset,
-                         TallMutsDataset)
+                         TallDataset)
+from ..core.io import RefseqIO
+from ..core.report import RefseqChecksumF
+from ..core.seq import FULL_NAME, Region
 
 
-class RelateDataset(LoadedMutsDataset):
+class RelateDataset(LoadedDataset, MutsDataset):
     """ Dataset of mutations from the Relate step. """
 
     @classmethod
@@ -20,6 +23,23 @@ class RelateDataset(LoadedMutsDataset):
     @classmethod
     def get_report_type(cls):
         return RelateReport
+
+    @cached_property
+    def refseq(self):
+        return RefseqIO.load(
+            RefseqIO.build_path(top=self.top,
+                                sample=self.sample,
+                                ref=self.ref),
+            checksum=self.report.get_field(RefseqChecksumF)
+        ).refseq
+
+    @cached_property
+    def region(self):
+        return Region(ref=self.ref,
+                      seq=self.refseq,
+                      end5=1,
+                      end3=len(self.refseq),
+                      name=FULL_NAME)
 
     @property
     def pattern(self):
@@ -42,7 +62,9 @@ class RelateDataset(LoadedMutsDataset):
                            sanitize=False)
 
 
-class PoolDataset(TallMutsDataset):
+class PoolDataset(TallDataset,
+                  MutsDataset,
+                  MergedRegionDataset):
     """ Load pooled batches of relationships. """
 
     @classmethod
@@ -52,6 +74,10 @@ class PoolDataset(TallMutsDataset):
     @classmethod
     def get_dataset_load_func(cls):
         return load_relate_dataset
+
+    @cached_property
+    def region(self):
+        return self._get_common_attr("region")
 
 
 class ReadNamesDataset(LoadedDataset):

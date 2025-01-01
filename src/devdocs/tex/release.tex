@@ -81,7 +81,7 @@ The SEISMIC-RNA repository on GitHub includes a GitHub Actions script \verb|buil
     \item Confirm that there is a workflow script called \verb|build-publish.yml|, which runs every time a new release is created on GitHub (or when run manually) and executes all steps needed to publish on PyPI.
     \item Create an account on PyPI and obtain permission to modify the SEISMIC-RNA project (\url{https://pypi.org/project/seismic-rna}).
     \item Log into your account and open SEISMIC-RNA in PyPI.
-    \item Click on ``Manage project" and then on "Publishing".
+    \item Click on ``Manage project" and then on ``Publishing".
     \item SEISMIC-RNA should be set up to use Trusted Publisher Management (for details, see \url{https://docs.pypi.org/trusted-publishers}). Under ``Manage current publishers" check that GitHub is listed as a publisher with the Repository set to \verb|rouskinlab/seismic-rna|, the Workflow set to \verb|build-publish.yml|, and the Environment name set to \verb|publish-pypi|. If not, add a new publisher with this information.
 \end{enumerate}
 

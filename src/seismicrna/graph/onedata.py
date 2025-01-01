@@ -1,46 +1,36 @@
-import os
+from abc import ABC, abstractmethod
+from functools import cached_property
 
-from click import command
-
-from .table import TableGraphWriter, PosGraphRunner
-from .histrel import RelHistogramGraph, RelHistogramWriter, RelHistogramRunner
-
-COMMAND = __name__.split(os.path.extsep)[-1]
+from .base import GraphBase, make_path_subject, make_title_action_sample
 
 
-class PosHistogramGraph(RelHistogramGraph):
+class OneDataGraph(GraphBase, ABC):
+    """ Graph of data from one Table. """
 
-    @classmethod
-    def graph_kind(cls):
-        return COMMAND
+    def __init__(self, *,
+                 k: int | None,
+                 clust: int | None,
+                 **kwargs):
+        super().__init__(**kwargs)
+        self.k = k
+        self.clust = clust
 
-    @classmethod
-    def what(cls):
-        return "Histogram per position"
+    @cached_property
+    @abstractmethod
+    def action(self) -> str:
+        """ Action that generated the data. """
 
     @property
-    def y_title(self):
-        return "Number of positions"
+    def col_tracks(self):
+        return None
 
+    @cached_property
+    def path_subject(self):
+        return make_path_subject(self.action, self.k, self.clust)
 
-class PosHistogramWriter(RelHistogramWriter, TableGraphWriter):
-
-    @classmethod
-    def get_graph_type(cls):
-        return PosHistogramGraph
-
-
-class PosHistogramRunner(RelHistogramRunner, PosGraphRunner):
-
-    @classmethod
-    def get_writer_type(cls):
-        return PosHistogramWriter
-
-
-@command(COMMAND, params=PosHistogramRunner.params())
-def cli(*args, **kwargs):
-    """ Histogram of relationship(s) per position. """
-    return PosHistogramRunner.run(*args, **kwargs)
+    @cached_property
+    def title_action_sample(self):
+        return make_title_action_sample(self.action, self.sample)
 
 ########################################################################
 #                                                                      #

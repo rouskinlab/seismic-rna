@@ -128,13 +128,13 @@ class StructOneTableWriter(OneTableWriter, ABC):
         # Add the regions from the given coordinates/primers.
         ref_regions = RefRegions([(self.table.ref, self.table.refseq)],
                                  regs_file=(Path(fold_regions_file)
-                                             if fold_regions_file
-                                             else None),
+                                            if fold_regions_file
+                                            else None),
                                  coords=fold_coords,
                                  primers=fold_primers,
                                  default_full=fold_full)
         fold_regs = [region.name
-                      for region in ref_regions.list(self.table.ref)]
+                     for region in ref_regions.list(self.table.ref)]
         if not fold_regs:
             # Add the table's region if no other regions were defined.
             fold_regs.append(self.table.reg)

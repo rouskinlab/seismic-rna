@@ -15,7 +15,7 @@ from ..core.seq import FIELD_REF, POS_NAME
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write
 from ..core.table import MUTAT_REL, PositionTable
-from ..graph.base import load_pos_tables
+from ..graph.table import load_pos_tables
 
 
 def find_pos(table: PositionTable,

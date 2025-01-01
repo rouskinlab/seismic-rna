@@ -5,7 +5,7 @@ from typing import Callable
 import pandas as pd
 from plotly import graph_objects as go
 
-from .base import GraphWriter, PosGraphRunner
+from .table import TableGraphWriter, PosGraphRunner
 from .onetable import OneTableGraph, OneTableRunner, OneTableWriter
 from .rel import OneRelGraph
 from .roll import RollingGraph, RollingRunner
@@ -52,7 +52,7 @@ class RollingStatGraph(OneTableGraph, OneRelGraph, RollingGraph, ABC):
         fig.update_yaxes(gridcolor="#d0d0d0")
 
 
-class RollingStatWriter(OneTableWriter, GraphWriter, ABC):
+class RollingStatWriter(OneTableWriter, TableGraphWriter, ABC):
 
     @classmethod
     @abstractmethod

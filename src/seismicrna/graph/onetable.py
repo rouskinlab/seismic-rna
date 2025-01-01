@@ -2,30 +2,23 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 from itertools import chain
 
-from .base import (GraphBase,
-                   GraphRunner,
-                   GraphWriter,
-                   cgroup_table,
+from .base import (cgroup_table,
                    get_action_name,
-                   make_tracks,
-                   make_path_subject,
-                   make_title_action_sample)
+                   make_tracks)
+from .onedata import OneDataGraph
+from .table import TableGraph, TableGraphRunner, TableGraphWriter
 from ..core.table import Table, PositionTable
 from ..core.task import dispatch
 
 
-class OneTableGraph(GraphBase, ABC):
+class OneTableGraph(TableGraph, OneDataGraph, ABC):
     """ Graph of data from one Table. """
 
     def __init__(self, *,
                  table: Table | PositionTable,
-                 k: int | None,
-                 clust: int | None,
                  **kwargs):
         super().__init__(**kwargs)
         self.table = table
-        self.k = k
-        self.clust = clust
 
     @property
     def top(self):
@@ -49,27 +42,14 @@ class OneTableGraph(GraphBase, ABC):
 
     @cached_property
     def action(self):
-        """ Action that generated the data. """
         return get_action_name(self.table)
 
     @cached_property
     def row_tracks(self):
-        return make_tracks(self.table.header, self.k, self.clust)
-
-    @property
-    def col_tracks(self):
-        return None
-
-    @cached_property
-    def path_subject(self):
-        return make_path_subject(self.action, self.k, self.clust)
-
-    @cached_property
-    def title_action_sample(self):
-        return make_title_action_sample(self.action, self.sample)
+        return make_tracks(self.table, self.k, self.clust)
 
 
-class OneTableWriter(GraphWriter, ABC):
+class OneTableWriter(TableGraphWriter, ABC):
 
     def __init__(self, table: Table):
         super().__init__(table)
@@ -92,7 +72,7 @@ class OneTableWriter(GraphWriter, ABC):
                 yield self.get_graph(rels_group, **kwargs | cparams)
 
 
-class OneTableRunner(GraphRunner, ABC):
+class OneTableRunner(TableGraphRunner, ABC):
 
     @classmethod
     def run(cls,
