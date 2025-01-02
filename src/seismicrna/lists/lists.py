@@ -12,7 +12,7 @@ def get_list_path(table: Table):
 
 ########################################################################
 #                                                                      #
-# © Copyright 2024, the Rouskin Lab.                                   #
+# © Copyright 2022-2025, the Rouskin Lab.                              #
 #                                                                      #
 # This file is part of SEISMIC-RNA.                                    #
 #                                                                      #

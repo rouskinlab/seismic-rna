@@ -77,7 +77,7 @@ def calc_signal_noise(mus: np.ndarray | pd.Series | pd.DataFrame,
 
 ########################################################################
 #                                                                      #
-# © Copyright 2024, the Rouskin Lab.                                   #
+# © Copyright 2022-2025, the Rouskin Lab.                              #
 #                                                                      #
 # This file is part of SEISMIC-RNA.                                    #
 #                                                                      #

@@ -42,7 +42,7 @@ def encode_relate(ref_base: str, read_base: str, read_qual: str, min_qual: str):
 
 ########################################################################
 #                                                                      #
-# © Copyright 2024, the Rouskin Lab.                                   #
+# © Copyright 2022-2025, the Rouskin Lab.                              #
 #                                                                      #
 # This file is part of SEISMIC-RNA.                                    #
 #                                                                      #

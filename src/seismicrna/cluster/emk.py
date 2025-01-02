@@ -300,7 +300,7 @@ def calc_mean_pearson(run1: EMRun, run2: EMRun):
 
 ########################################################################
 #                                                                      #
-# © Copyright 2024, the Rouskin Lab.                                   #
+# © Copyright 2022-2025, the Rouskin Lab.                              #
 #                                                                      #
 # This file is part of SEISMIC-RNA.                                    #
 #                                                                      #

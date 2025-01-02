@@ -213,7 +213,7 @@ def get_pairwise_position_trace(data: pd.Series, end5: int, end3: int):
 
 ########################################################################
 #                                                                      #
-# © Copyright 2024, the Rouskin Lab.                                   #
+# © Copyright 2022-2025, the Rouskin Lab.                              #
 #                                                                      #
 # This file is part of SEISMIC-RNA.                                    #
 #                                                                      #
