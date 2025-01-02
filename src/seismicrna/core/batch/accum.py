@@ -21,7 +21,7 @@ def accumulate_counts(batch_counts: Iterable[tuple[Any, Any, Any, Any]],
                       count_read: bool = True,
                       validate: bool = True):
     """ """
-    logger.routine(f"Began accumulating patterns {patterns} in {batch_counts}")
+    logger.routine(f"Began accumulating patterns {patterns}")
     header = make_header(rels=list(patterns), ks=ks)
     end_counts_index = pd.MultiIndex.from_arrays([np.array([], dtype=int)
                                                   for _ in END_COORDS],
@@ -51,13 +51,6 @@ def accumulate_counts(batch_counts: Iterable[tuple[Any, Any, Any, Any]],
                      if count_pos else None)
     # Initialize the counts per read.
     count_per_batch_read = list() if count_read else None
-    logger.detail(
-        "\n".join(["Initialized accumulated",
-                   f"num_reads = {num_reads}",
-                   f"end_counts = {end_counts}",
-                   f"count_per_pos = {count_per_pos}",
-                   f"count_per_batch_read = {count_per_batch_read}"])
-    )
     # Accumulate the counts from the batches.
     for (i, (num_reads_i,
              end_counts_i,
@@ -120,13 +113,6 @@ def accumulate_counts(batch_counts: Iterable[tuple[Any, Any, Any, Any]],
                     f"and header ({rel_header.index})"
                 )
             count_per_batch_read.append(count_per_read_i)
-        logger.detail(
-            "\n".join([f"After batch {i}, accumulated",
-                       f"num_reads = {num_reads}",
-                       f"end_counts = {end_counts}",
-                       f"count_per_pos = {count_per_pos}",
-                       f"count_per_batch_read = {count_per_batch_read}"])
-        )
     # Concatenate the per-read counts for the batches.
     if count_per_batch_read:
         count_per_read = pd.concat(count_per_batch_read, axis=0)
@@ -134,7 +120,7 @@ def accumulate_counts(batch_counts: Iterable[tuple[Any, Any, Any, Any]],
         count_per_read = pd.DataFrame(columns=rel_header.index, dtype=dtype)
     else:
         count_per_read = None
-    logger.routine(f"Ended accumulating patterns {patterns} in {batch_counts}")
+    logger.routine(f"Ended accumulating patterns {patterns}")
     return num_reads, end_counts, count_per_pos, count_per_read
 
 

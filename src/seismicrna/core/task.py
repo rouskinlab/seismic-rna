@@ -87,7 +87,7 @@ class Task(object):
         except Exception as error:
             logger.error(error)
         else:
-            logger.task(f"Ended task {task}:\n{result}\n")
+            logger.task(f"Ended task {task}\n")
             return result
         finally:
             if close_file_stream and logger.file_stream is not None:
