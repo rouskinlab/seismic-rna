@@ -9,7 +9,7 @@ from click import Argument, Option
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
-from ..cluster.data import ClusterDataset, ClusterMutsDataset
+from ..cluster.data import ClusterMutsDataset
 from ..cluster.table import ClusterTable
 from ..core import path
 from ..core.arg import (NO_GROUP,
@@ -26,7 +26,7 @@ from ..core.arg import (NO_GROUP,
                         opt_force,
                         opt_max_procs)
 from ..core.data import Dataset, MutsDataset
-from ..core.header import format_clust_names, list_ks_clusts
+from ..core.header import NO_KS, NO_CLUSTS, format_clust_names, list_ks_clusts
 from ..core.seq import DNA
 from ..core.table import Table
 from ..core.write import need_write
@@ -47,7 +47,7 @@ LINKER = "__and__"
 def list_ks(source: Dataset | Table):
     """ List the numbers of clusters for a source of data. """
     if isinstance(source, Dataset):
-        return source.ks if isinstance(source, ClusterDataset) else None
+        return getattr(source, "ks", NO_KS)
     if isinstance(source, Table):
         return source.header.ks
     raise TypeError(source)
@@ -56,21 +56,18 @@ def list_ks(source: Dataset | Table):
 def list_clusts(source: Dataset | Table):
     """ List the clusters for a source of data. """
     ks = list_ks(source)
-    return list_ks_clusts(ks) if ks is not None else None
+    if ks == NO_KS:
+        return NO_CLUSTS
+    return list_ks_clusts(ks)
 
 
 def make_tracks(source: Dataset | Table, k: int | None, clust: int | None):
     """ Make an index for the rows or columns of a graph. """
     clusts = list_clusts(source)
-    if k is not None or clust is not None:
-        if clusts is None:
-            raise ValueError(f"Cannot select k={k} and clust={clust} "
-                             f"for {source} with no clusters")
-        clusts = [
-            (k_, clust_) for k_, clust_ in clusts
-            if ((k is None or k_ == k) and (clust is None or clust_ == clust))
-        ]
-    return clusts
+    if k is None and clust is None:
+        return clusts
+    return [(k_, clust_) for k_, clust_ in clusts
+            if ((k is None or k_ == k) and (clust is None or clust_ == clust))]
 
 
 def _track_count(tracks: list[tuple[int, int]] | None):
@@ -113,16 +110,10 @@ def make_path_subject(action: str, k: int | None, clust: int | None):
 def cgroup_table(source: Dataset | Table, cgroup: str):
     if cgroup == NO_GROUP:
         # One file per cluster, with no subplots.
-        clusts = list_clusts(source)
-        if clusts is None:
-            return cgroup_table(source, GROUP_ALL)
-        return [dict(k=k, clust=clust) for k, clust in clusts]
+        return [dict(k=k, clust=clust) for k, clust in list_clusts(source)]
     elif cgroup == GROUP_BY_K:
         # One file per k, with one subplot per cluster.
-        ks = list_ks(source)
-        if ks is None:
-            return cgroup_table(source, GROUP_ALL)
-        return [dict(k=k, clust=None) for k in sorted(ks)]
+        return [dict(k=k, clust=None) for k in sorted(list_ks(source))]
     elif cgroup == GROUP_ALL:
         # One file, with one subplot per cluster.
         return [dict(k=None, clust=None)]

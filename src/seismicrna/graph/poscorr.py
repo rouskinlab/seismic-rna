@@ -10,7 +10,7 @@ from .base import get_action_name, make_tracks
 from .onedataset import OneDatasetGraph, OneDatasetWriter, OneDatasetRunner
 from .rel import OneRelGraph
 from .trace import get_pairwise_position_trace
-from ..core.header import NUM_CLUSTS_NAME, CLUST_NAME
+from ..core.header import NO_CLUSTS, NUM_CLUSTS_NAME, CLUST_NAME
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -91,7 +91,14 @@ class PositionCorrelationGraph(OneDatasetGraph, OneRelGraph):
             names=[POSITION_A, POSITION_B]
         )
         # Initialize the confusion matrix.
-        if self.row_tracks is not None:
+        if self.row_tracks == NO_CLUSTS:
+            # The dataset has no clusters.
+            clusters = None
+            n = 0
+            a_accum = pd.Series(0, positions)
+            b_accum = pd.Series(0, positions)
+            ab_accum = pd.Series(0, positions)
+        else:
             # The dataset has clusters.
             clusters = pd.MultiIndex.from_tuples(self.row_tracks,
                                                  names=[NUM_CLUSTS_NAME,
@@ -100,13 +107,6 @@ class PositionCorrelationGraph(OneDatasetGraph, OneRelGraph):
             a_accum = pd.DataFrame(0., positions, clusters)
             b_accum = pd.DataFrame(0., positions, clusters)
             ab_accum = pd.DataFrame(0., positions, clusters)
-        else:
-            # The dataset has no clusters.
-            clusters = None
-            n = 0
-            a_accum = pd.Series(0, positions)
-            b_accum = pd.Series(0, positions)
-            ab_accum = pd.Series(0, positions)
         # Fill the confusion matrix, accumulating over the batches.
         for batch in self.dataset.iter_batches():
             reads_per_pos = {

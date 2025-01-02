@@ -274,11 +274,11 @@ class TestRelHeader(ut.TestCase):
 
     def test_ks(self):
         header = RelHeader(rels=list("qwerty"))
-        self.assertIsNone(header.ks)
+        self.assertListEqual(header.ks, [0])
 
     def test_clusts(self):
         header = RelHeader(rels=list("qwerty"))
-        self.assertIsNone(header.clusts)
+        self.assertListEqual(header.clusts, [(0, 0)])
 
     def test_names(self):
         header = RelHeader(rels=list("qwerty"))

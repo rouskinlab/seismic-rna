@@ -12,7 +12,7 @@ def parse_join_clusts_file(file: str | Path):
     header = parse_header(clusts_df.index)
     # Verify the index: use type() is not rather than isinstance() so
     # that subclasses of ClustHeader will yield False, not True.
-    if header.ks is None:
+    if not isinstance(header, ClustHeader):
         raise TypeError(f"Expected first {n_cols} of {file} to be a valid "
                         f"cluster header, but got {header}")
     # Rearrange the DataFrame into a dict.
