@@ -19,9 +19,6 @@ CLUSTER_PREFIX = "cluster"
 # Header selection keys
 K_CLUST_KEY = "k_clust_list"
 
-# Clusters for non-clustered headers
-NO_CLUSTS = [(0, 0)]
-
 
 def validate_k_clust(k: int, clust: int):
     """ Validate a pair of k and cluster numbers.
@@ -237,12 +234,12 @@ class Header(ABC):
 
     @property
     @abstractmethod
-    def ks(self) -> list[int]:
+    def ks(self) -> list[int] | None:
         """ Numbers of clusters. """
 
     @cached_property
     @abstractmethod
-    def clusts(self) -> list[tuple[int, int]]:
+    def clusts(self) -> list[tuple[int, int]] | None:
         """ Tracks of data: clusters for clustered data, otherwise one
         track of the average. """
 
@@ -387,11 +384,11 @@ class RelHeader(Header):
 
     @property
     def ks(self):
-        return [0]
+        return None
 
     @property
     def clusts(self):
-        return NO_CLUSTS
+        return None
 
     @cached_property
     def signature(self):

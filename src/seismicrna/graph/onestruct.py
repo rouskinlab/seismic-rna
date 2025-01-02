@@ -14,7 +14,7 @@ from ..core.arg import (opt_struct_file,
 from ..core.logs import logger
 from ..core.rna import RNAState, from_ct
 from ..core.seq import DNA, RefRegions
-from ..fold.main import find_foldable_tables
+from ..fold.main import load_foldable_tables
 
 
 class StructOneTableGraph(OneTableGraph, OneRelGraph, ABC):
@@ -157,8 +157,8 @@ class StructOneTableWriter(OneTableWriter, ABC):
 class StructOneTableRunner(OneTableRunner, ABC):
 
     @classmethod
-    def get_table_loader(cls):
-        return find_foldable_tables
+    def get_input_loader(cls):
+        return load_foldable_tables
 
     @classmethod
     def var_params(cls):

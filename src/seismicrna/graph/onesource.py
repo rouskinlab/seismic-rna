@@ -4,8 +4,8 @@ from functools import cached_property
 from .base import GraphBase, make_path_subject, make_title_action_sample
 
 
-class OneDataGraph(GraphBase, ABC):
-    """ Graph of data from one Table. """
+class OneSourceGraph(GraphBase, ABC):
+    """ Graph of data from one source of data (Dataset or Table). """
 
     def __init__(self, *,
                  k: int | None,

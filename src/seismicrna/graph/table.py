@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Callable, Generator, Iterable
+from typing import Any, Generator, Iterable
 
 from .base import GraphBase, GraphRunner, GraphWriter
 from ..cluster.table import ClusterPositionTableLoader
+from ..core.arg import opt_use_ratio, opt_quantile
 from ..core.table import Table, PositionTable
 from ..mask.table import MaskPositionTableLoader, MaskReadTableLoader
 from ..relate.table import RelatePositionTableLoader, RelateReadTableLoader
@@ -75,8 +76,10 @@ class TableGraphWriter(GraphWriter, ABC):
         self.tables = list(tables)
 
     @abstractmethod
-    def iter_graphs(self, *args, **kwargs) -> Generator[TableGraph, None, None]:
-        """ Yield every graph. """
+    def iter_graphs(self,
+                    *args,
+                    **kwargs) -> Generator[TableGraph, None, None]:
+        pass
 
 
 def load_pos_tables(input_paths: Iterable[str | Path]):
@@ -101,29 +104,23 @@ class TableGraphRunner(GraphRunner, ABC):
     @classmethod
     @abstractmethod
     def get_writer_type(cls) -> type[TableGraphWriter]:
-        """ Type of GraphWriter. """
+        pass
 
     @classmethod
-    @abstractmethod
-    def get_table_loader(cls) -> Callable[[tuple[str, ...]], Generator]:
-        """ Function to find and filter table files. """
-
-    @classmethod
-    def list_table_files(cls, input_path: tuple[str, ...]):
-        """ Find, filter, and list all table files from input files. """
-        finder = cls.get_table_loader()
-        return list(finder(input_path))
+    def var_params(cls):
+        return [opt_use_ratio,
+                opt_quantile]
 
 
 class PosGraphRunner(TableGraphRunner, ABC):
 
     @classmethod
-    def get_table_loader(cls):
+    def get_input_loader(cls):
         return load_pos_tables
 
 
 class ReadGraphRunner(TableGraphRunner, ABC):
 
     @classmethod
-    def get_table_loader(cls):
+    def get_input_loader(cls):
         return load_read_tables

@@ -5,13 +5,13 @@ from itertools import chain
 from .base import (cgroup_table,
                    get_action_name,
                    make_tracks)
-from .onedata import OneDataGraph
+from .onesource import OneSourceGraph
 from .table import TableGraph, TableGraphRunner, TableGraphWriter
 from ..core.table import Table, PositionTable
 from ..core.task import dispatch
 
 
-class OneTableGraph(TableGraph, OneDataGraph, ABC):
+class OneTableGraph(TableGraph, OneSourceGraph, ABC):
     """ Graph of data from one Table. """
 
     def __init__(self, *,
@@ -82,7 +82,7 @@ class OneTableRunner(TableGraphRunner, ABC):
         # Generate a table writer for each table.
         writer_type = cls.get_writer_type()
         writers = [writer_type(table_file)
-                   for table_file in cls.list_table_files(input_path)]
+                   for table_file in cls.list_input_files(input_path)]
         return list(chain(*dispatch([writer.write for writer in writers],
                                     max_procs,
                                     pass_n_procs=False,

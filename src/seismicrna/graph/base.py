@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 from itertools import chain
 from pathlib import Path
-from typing import Generator, Iterable
+from typing import Callable, Generator, Iterable
 
 import pandas as pd
 from click import Argument, Option
@@ -17,8 +17,6 @@ from ..core.arg import (NO_GROUP,
                         GROUP_ALL,
                         arg_input_path,
                         opt_rels,
-                        opt_use_ratio,
-                        opt_quantile,
                         opt_cgroup,
                         opt_csv,
                         opt_html,
@@ -27,8 +25,8 @@ from ..core.arg import (NO_GROUP,
                         opt_png,
                         opt_force,
                         opt_max_procs)
-from ..core.data import Dataset
-from ..core.header import format_clust_names, make_header
+from ..core.data import Dataset, MutsDataset
+from ..core.header import format_clust_names, list_ks_clusts
 from ..core.seq import DNA
 from ..core.table import Table
 from ..core.write import need_write
@@ -46,25 +44,33 @@ ACTION_CLUST = "clustered"
 LINKER = "__and__"
 
 
-def make_tracks(data: Dataset | Table, k: int | None, clust: int | None):
+def list_ks(source: Dataset | Table):
+    """ List the numbers of clusters for a source of data. """
+    if isinstance(source, Dataset):
+        return source.ks if isinstance(source, ClusterDataset) else None
+    if isinstance(source, Table):
+        return source.header.ks
+    raise TypeError(source)
+
+
+def list_clusts(source: Dataset | Table):
+    """ List the clusters for a source of data. """
+    ks = list_ks(source)
+    return list_ks_clusts(ks) if ks is not None else None
+
+
+def make_tracks(source: Dataset | Table, k: int | None, clust: int | None):
     """ Make an index for the rows or columns of a graph. """
-    if isinstance(data, Dataset):
-        if isinstance(data, ClusterDataset):
-            if not data.ks:
-                raise ValueError(f"{data} has no clusters")
-            return make_header(ks=data.ks).select(k=k, clust=clust).to_list()
-        return None
-    if isinstance(data, Table):
-        header = data.header
-        if not header.clustered():
-            # If no clusters exist, then no clusters can be selected.
-            if k or clust:
-                raise ValueError(f"Cannot select ks or clusters from {header}")
-            return header.clusts
-        # If there are any relationship names in the index, then drop
-        # them and then select the k(s) and cluster(s) for the index.
-        return header.get_clust_header().select(k=k, clust=clust).to_list()
-    raise TypeError(data)
+    clusts = list_clusts(source)
+    if k is not None or clust is not None:
+        if clusts is None:
+            raise ValueError(f"Cannot select k={k} and clust={clust} "
+                             f"for {source} with no clusters")
+        clusts = [
+            (k_, clust_) for k_, clust_ in clusts
+            if ((k is None or k_ == k) and (clust is None or clust_ == clust))
+        ]
+    return clusts
 
 
 def _track_count(tracks: list[tuple[int, int]] | None):
@@ -77,14 +83,14 @@ def _track_titles(tracks: list[tuple[int, int]] | None):
             else None)
 
 
-def get_action_name(data: Dataset | Table):
-    if isinstance(data, (RelateDataset, RelateTable)):
+def get_action_name(source: MutsDataset | Table):
+    if isinstance(source, (RelateDataset, RelateTable)):
         return ACTION_REL
-    if isinstance(data, (MaskMutsDataset, MaskTable)):
+    if isinstance(source, (MaskMutsDataset, MaskTable)):
         return ACTION_MASK
-    if isinstance(data, (ClusterMutsDataset, ClusterTable)):
+    if isinstance(source, (ClusterMutsDataset, ClusterTable)):
         return ACTION_CLUST
-    raise TypeError(data)
+    raise TypeError(source)
 
 
 def make_title_action_sample(action: str, sample: str):
@@ -104,15 +110,19 @@ def make_path_subject(action: str, k: int | None, clust: int | None):
     raise ValueError(f"Invalid action: {repr(action)}")
 
 
-def cgroup_table(table: Table, cgroup: str):
+def cgroup_table(source: Dataset | Table, cgroup: str):
     if cgroup == NO_GROUP:
         # One file per cluster, with no subplots.
-        return [dict(k=k, clust=clust)
-                for k, clust in table.header.clusts]
+        clusts = list_clusts(source)
+        if clusts is None:
+            return cgroup_table(source, GROUP_ALL)
+        return [dict(k=k, clust=clust) for k, clust in clusts]
     elif cgroup == GROUP_BY_K:
         # One file per k, with one subplot per cluster.
-        return [dict(k=k, clust=None)
-                for k in sorted(table.header.ks)]
+        ks = list_ks(source)
+        if ks is None:
+            return cgroup_table(source, GROUP_ALL)
+        return [dict(k=k, clust=None) for k in sorted(ks)]
     elif cgroup == GROUP_ALL:
         # One file, with one subplot per cluster.
         return [dict(k=None, clust=None)]
@@ -449,12 +459,21 @@ class GraphRunner(ABC):
         """ Type of GraphWriter. """
 
     @classmethod
+    @abstractmethod
+    def get_input_loader(cls) -> Callable[[tuple[str, ...]], Generator]:
+        """ Function to load input files. """
+
+    @classmethod
+    def list_input_files(cls, input_path: tuple[str, ...]):
+        """ Find, filter, and list all table files from input files. """
+        finder = cls.get_input_loader()
+        return list(finder(input_path))
+
+    @classmethod
     def universal_input_params(cls):
         """ Universal parameters controlling the input data. """
         return [arg_input_path,
-                opt_rels,
-                opt_use_ratio,
-                opt_quantile]
+                opt_rels]
 
     @classmethod
     def universal_output_params(cls):

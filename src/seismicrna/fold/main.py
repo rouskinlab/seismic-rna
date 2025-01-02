@@ -40,8 +40,8 @@ from ..mask.table import MaskPositionTableLoader
 DEFAULT_QUANTILE = 0.95
 
 
-def find_foldable_tables(input_path: Iterable[str | Path]):
-    """ Find tables that can be folded. """
+def load_foldable_tables(input_path: Iterable[str | Path]):
+    """ Load tables that can be folded. """
     paths = list(input_path)
     for table_type in [MaskPositionTableLoader, ClusterPositionTableLoader]:
         yield from table_type.load_tables(paths)
@@ -146,7 +146,7 @@ def run(input_path: tuple[str, ...], *,
                        f"setting quantile to {DEFAULT_QUANTILE}")
         quantile = DEFAULT_QUANTILE
     # List the tables.
-    tables = list(find_foldable_tables(input_path))
+    tables = list(load_foldable_tables(input_path))
     # Get the regions to fold for every reference sequence.
     ref_seqs = RefSeqs()
     for table in tables:

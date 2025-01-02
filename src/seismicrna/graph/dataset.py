@@ -1,15 +1,14 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import Callable, Generator
+from pathlib import Path
+from typing import Generator, Iterable
 
-from .base import (GraphBase,
-                   GraphRunner,
-                   GraphWriter,
-                   get_action_name,
-                   make_path_subject,
-                   make_title_action_sample)
-from .onedata import OneDataGraph
+from .base import GraphBase, GraphRunner, GraphWriter
+from ..cluster.data import load_cluster_dataset
+from ..core import path
 from ..core.data import MutsDataset
+from ..mask.data import load_mask_dataset
+from ..relate.data import load_relate_dataset
 
 
 class DatasetGraph(GraphBase, ABC):
@@ -56,21 +55,6 @@ class DatasetGraph(GraphBase, ABC):
         return self.codestring
 
 
-class OneDatasetGraph(DatasetGraph, OneDataGraph, ABC):
-
-    @cached_property
-    def action(self):
-        return get_action_name(self.dataset)
-
-    @cached_property
-    def path_subject(self):
-        return make_path_subject(self.action, self.k, self.clust)
-
-    @cached_property
-    def title_action_sample(self):
-        return make_title_action_sample(self.action, self.sample)
-
-
 class DatasetGraphWriter(GraphWriter, ABC):
 
     def __init__(self, *datasets: MutsDataset):
@@ -80,7 +64,16 @@ class DatasetGraphWriter(GraphWriter, ABC):
     def iter_graphs(self,
                     *args,
                     **kwargs) -> Generator[DatasetGraph, None, None]:
-        """ Yield every graph. """
+        pass
+
+
+def load_datasets(input_path: Iterable[str | Path]):
+    for load_func in (load_relate_dataset,
+                      load_mask_dataset,
+                      load_cluster_dataset):
+        yield from map(load_func,
+                       path.find_files_chain(input_path,
+                                             load_func.report_path_seg_types))
 
 
 class DatasetGraphRunner(GraphRunner, ABC):
@@ -88,15 +81,8 @@ class DatasetGraphRunner(GraphRunner, ABC):
     @classmethod
     @abstractmethod
     def get_writer_type(cls) -> type[DatasetGraphWriter]:
-        """ Type of GraphWriter. """
+        pass
 
     @classmethod
-    @abstractmethod
-    def get_table_loader(cls) -> Callable[[tuple[str, ...]], Generator]:
-        """ Function to find and filter table files. """
-
-    @classmethod
-    def list_table_files(cls, input_path: tuple[str, ...]):
-        """ Find, filter, and list all table files from input files. """
-        finder = cls.get_table_loader()
-        return list(finder(input_path))
+    def get_input_loader(cls):
+        return load_datasets

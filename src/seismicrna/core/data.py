@@ -156,6 +156,10 @@ class MutsDataset(RegionDataset, ABC):
 
     @abstractmethod
     def get_batch(self, batch_num: int) -> RegionMutsBatch:
+        # Redeclare this method (already declared by Dataset) for the
+        # sole purpose of enabling type linters to determine that
+        # MutsDataset.get_batch() returns a RegionMutsBatch object
+        # instead of plain ReadBatch objects.
         pass
 
     def get_batch_count_all(self, batch_num: int, **kwargs):
@@ -175,14 +179,14 @@ class LoadFunction(object):
     """ Function to load a dataset. """
 
     def __init__(self, data_type: type[Dataset], /, *more_types: type[Dataset]):
-        self._dataset_types = [data_type] + list(more_types)
+        self.dataset_types = [data_type] + list(more_types)
 
     def _dataset_type_consensus(self,
                                 method: Callable[[type[Dataset]], Any],
                                 what: str):
         """ Get the consensus value among all types of dataset. """
-        value0 = method(self._dataset_types[0])
-        for dataset_type in self._dataset_types[1:]:
+        value0 = method(self.dataset_types[0])
+        for dataset_type in self.dataset_types[1:]:
             if (value1 := method(dataset_type)) != value0:
                 raise ValueError(f"{self} expected exactly one {what}, "
                                  f"but got {value0} ≠ {value1}")
@@ -204,21 +208,16 @@ class LoadFunction(object):
             "automatic path fields of the report type"
         )
 
-    @property
-    def dataset_types(self):
-        """ Types of datasets that this function can load. """
-        return self._dataset_types
-
     def is_dataset_type(self, dataset: Dataset):
         """ Whether the dataset is one of the loadable types. """
         return any(isinstance(dataset, dataset_type)
-                   for dataset_type in self._dataset_types)
+                   for dataset_type in self.dataset_types)
 
     def __call__(self, report_file: Path, **kwargs):
         """ Load a dataset from the report file. """
         # Try to load the report file using each type of dataset.
         errors = dict()
-        for dataset_type in self._dataset_types:
+        for dataset_type in self.dataset_types:
             try:
                 # Return the first dataset type that works.
                 return dataset_type(report_file, **kwargs)
@@ -237,7 +236,7 @@ class LoadFunction(object):
 
     def __str__(self):
         names = ", ".join(dataset_type.__name__
-                          for dataset_type in self._dataset_types)
+                          for dataset_type in self.dataset_types)
         return f"{type(self).__name__}({names})"
 
 
