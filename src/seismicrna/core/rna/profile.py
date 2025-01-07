@@ -73,7 +73,7 @@ class RNAProfile(RNARegion):
             Path fields.
         """
         return {path.TOP: top,
-                path.CMD: path.CMD_FOLD_DIR,
+                path.CMD: path.FOLD_STEP,
                 path.SAMP: self.sample,
                 path.REF: self.ref,
                 path.REG: self.reg}

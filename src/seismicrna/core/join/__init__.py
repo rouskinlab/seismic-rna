@@ -1,5 +1,5 @@
 from .cluster import *
-from .data import *
+from .dataset import *
 from .report import *
 
 ########################################################################

@@ -56,6 +56,7 @@ def accumulate_counts(batch_counts: Iterable[tuple[Any, Any, Any, Any]],
              end_counts_i,
              count_per_pos_i,
              count_per_read_i)) in enumerate(batch_counts):
+        logger.detail(f"Began adding counts for batch {i}")
         if not isinstance(num_reads_i, type(num_reads)):
             raise TypeError(
                 f"num_reads_i must be {type(num_reads).__name__}, "
@@ -113,6 +114,7 @@ def accumulate_counts(batch_counts: Iterable[tuple[Any, Any, Any, Any]],
                     f"and header ({rel_header.index})"
                 )
             count_per_batch_read.append(count_per_read_i)
+        logger.detail(f"Ended adding counts for batch {i}")
     # Concatenate the per-read counts for the batches.
     if count_per_batch_read:
         count_per_read = pd.concat(count_per_batch_read, axis=0)

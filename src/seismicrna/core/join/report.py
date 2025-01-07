@@ -27,7 +27,7 @@ class JoinMaskReport(Report, RegIO):
 
     @classmethod
     def auto_fields(cls):
-        return {**super().auto_fields(), path.CMD: path.CMD_MASK_DIR}
+        return {**super().auto_fields(), path.CMD: path.MASK_STEP}
 
 
 class JoinClusterReport(Report, RegIO):
@@ -50,7 +50,7 @@ class JoinClusterReport(Report, RegIO):
 
     @classmethod
     def auto_fields(cls):
-        return {**super().auto_fields(), path.CMD: path.CMD_CLUST_DIR}
+        return {**super().auto_fields(), path.CMD: path.CLUSTER_STEP}
 
 ########################################################################
 #                                                                      #

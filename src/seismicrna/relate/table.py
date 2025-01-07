@@ -5,7 +5,7 @@ from typing import Iterable
 
 import pandas as pd
 
-from .data import load_relate_dataset
+from .dataset import load_relate_dataset
 from .report import RelateReport
 from ..core import path
 from ..core.header import RelHeader, parse_header
@@ -13,8 +13,9 @@ from ..core.logs import logger
 from ..core.seq import FULL_NAME, DNA, Region
 from ..core.table import (Table,
                           Tabulator,
-                          DatasetTabulator,
+                          BatchTabulator,
                           CountTabulator,
+                          DatasetTabulator,
                           PositionTable,
                           PositionTableWriter,
                           ReadTable,
@@ -22,7 +23,7 @@ from ..core.table import (Table,
                           RelTypeTable)
 
 
-class AvgTable(RelTypeTable, ABC):
+class AverageTable(RelTypeTable, ABC):
     """ Average over an ensemble of RNA structures. """
 
     @classmethod
@@ -53,11 +54,11 @@ class FullReadTable(FullTable, ReadTable, ABC):
         return path.REF_DIR_SEGS + (path.ReadTableSeg,)
 
 
-class RelateTable(AvgTable, ABC):
+class RelateTable(AverageTable, ABC):
 
     @classmethod
     def kind(cls):
-        return path.CMD_REL_DIR
+        return path.RELATE_STEP
 
 
 class RelatePositionTable(RelateTable, FullPositionTable, ABC):
@@ -91,10 +92,16 @@ class FullTabulator(Tabulator, ABC):
     def get_null_value(cls):
         return 0
 
-    def __init__(self, *, ref: str, refseq: DNA, **kwargs):
+    def __init__(self, *,
+                 ref: str,
+                 refseq: DNA,
+                 count_ends: bool = False,
+                 **kwargs):
         # For a full tabulator, the full reference sequence must be used
         # as the region.
-        super().__init__(region=Region(ref, refseq), **kwargs)
+        super().__init__(region=Region(ref, refseq),
+                         count_ends=count_ends,
+                         **kwargs)
 
 
 class AverageTabulator(Tabulator, ABC):
@@ -116,12 +123,20 @@ class RelateCountTabulator(CountTabulator, RelateTabulator):
     pass
 
 
+class RelateBatchTabulator(BatchTabulator, RelateTabulator):
+    pass
+
+
 class RelateDatasetTabulator(DatasetTabulator, RelateTabulator):
 
     @classmethod
+    def load_function(cls):
+        return load_relate_dataset
+
+    @classmethod
     @cache
-    def _init_data(cls):
-        return super()._init_data() + cls._list_args(FullTabulator.__init__)
+    def init_kws(cls):
+        return super().init_kws() + cls._list_args(FullTabulator.__init__)
 
 
 class TableLoader(Table, ABC):

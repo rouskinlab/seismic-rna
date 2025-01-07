@@ -6,7 +6,7 @@ import numpy as np
 
 from ..array import locate_elements
 from ..batch import MutsBatch, match_reads_segments
-from ..data import WideMutsDataset
+from ..dataset import WideMutsDataset
 from ..seq import Region
 
 BATCH_NUM = "batch"

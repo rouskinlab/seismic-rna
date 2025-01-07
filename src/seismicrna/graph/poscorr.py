@@ -7,8 +7,7 @@ import pandas as pd
 from click import command
 
 from .base import get_action_name, make_tracks
-from .onedataset import OneDatasetGraph, OneDatasetWriter, OneDatasetRunner
-from .rel import OneRelGraph
+from .dataset import DatasetGraph, DatasetGraphWriter, DatasetGraphRunner
 from .trace import get_pairwise_position_trace
 from ..core.header import NO_CLUSTS, NUM_CLUSTS_NAME, CLUST_NAME
 
@@ -57,7 +56,7 @@ def calc_phi(n: int | float | np.ndarray | pd.Series,
         return (n * a_and_b - a_x_b) / np.sqrt(a_x_b * (n - a) * (n - b))
 
 
-class PositionCorrelationGraph(OneDatasetGraph, OneRelGraph):
+class PositionCorrelationGraph(DatasetGraph):
     """ Phi correlations between pairs of positions. """
 
     @classmethod
@@ -90,45 +89,35 @@ class PositionCorrelationGraph(OneDatasetGraph, OneRelGraph):
             combinations(self.dataset.region.unmasked_int, 2),
             names=[POSITION_A, POSITION_B]
         )
+        clusters = pd.MultiIndex.from_tuples(self.row_tracks,
+                                             names=[NUM_CLUSTS_NAME,
+                                                    CLUST_NAME])
         # Initialize the confusion matrix.
         if self.row_tracks == NO_CLUSTS:
             # The dataset has no clusters.
-            clusters = None
-            n = 0
-            a_accum = pd.Series(0, positions)
-            b_accum = pd.Series(0, positions)
-            ab_accum = pd.Series(0, positions)
+            zero = 0
+            n = zero
         else:
             # The dataset has clusters.
-            clusters = pd.MultiIndex.from_tuples(self.row_tracks,
-                                                 names=[NUM_CLUSTS_NAME,
-                                                        CLUST_NAME])
-            n = pd.Series(0., clusters)
-            a_accum = pd.DataFrame(0., positions, clusters)
-            b_accum = pd.DataFrame(0., positions, clusters)
-            ab_accum = pd.DataFrame(0., positions, clusters)
+            zero = 0.
+            n = pd.Series(zero, clusters)
+        a_accum = pd.DataFrame(zero, positions, clusters)
+        b_accum = pd.DataFrame(zero, positions, clusters)
+        ab_accum = pd.DataFrame(zero, positions, clusters)
         # Fill the confusion matrix, accumulating over the batches.
         for batch in self.dataset.iter_batches():
             reads_per_pos = {
                 pos: batch.read_indexes[reads] for pos, reads
-                in batch.reads_per_pos(self.dataset.pattern).items()
+                in batch.reads_per_pos(self.pattern).items()
             }
             # Count the reads in the batch.
-            if clusters is not None:
-                if not isinstance(batch.read_weights, pd.DataFrame):
-                    raise TypeError(
-                        "batch.read_weights must be a DataFrame, "
-                        f"but got {type(batch.read_weights).__name__}"
-                    )
+            if batch.read_weights is None:
+                n += batch.num_reads
+            elif isinstance(batch.read_weights, pd.DataFrame):
                 for clust in clusters:
                     n += batch.read_weights[clust].sum()
             else:
-                if batch.read_weights is not None:
-                    raise TypeError(
-                        "batch.read_weights must be None, "
-                        f"but got {type(batch.read_weights).__name__}"
-                    )
-                n += batch.num_reads
+                raise TypeError(batch.read_weights)
             # For each pair of positions a and b, count the reads that
             # fit the relationship pattern for positions a and b (ab),
             # only position a (ao), only position b (ob), and neither
@@ -138,7 +127,16 @@ class PositionCorrelationGraph(OneDatasetGraph, OneRelGraph):
                 reads_a = reads_per_pos[pos_a]
                 reads_b = reads_per_pos[pos_b]
                 reads_ab = np.intersect1d(reads_a, reads_b, assume_unique=True)
-                if clusters is not None:
+                if batch.read_weights is None:
+                    # There is only one cluster, and every read has the
+                    # same weight.
+                    a = reads_a.size
+                    b = reads_b.size
+                    ab = reads_ab.size
+                    a_accum.loc[pos_ab] += a
+                    b_accum.loc[pos_ab] += b
+                    ab_accum.loc[pos_ab] += ab
+                elif isinstance(batch.read_weights, pd.DataFrame):
                     # There are multiple clusters, where each read gets
                     # a different weight in each cluster.
                     for clust in clusters:
@@ -150,38 +148,24 @@ class PositionCorrelationGraph(OneDatasetGraph, OneRelGraph):
                         b_accum.loc[pos_ab, clust] += b
                         ab_accum.loc[pos_ab, clust] += ab
                 else:
-                    # There is only one cluster, and every read has the
-                    # same weight.
-                    a = reads_a.size
-                    b = reads_b.size
-                    ab = reads_ab.size
-                    a_accum.loc[pos_ab] += a
-                    b_accum.loc[pos_ab] += b
-                    ab_accum.loc[pos_ab] += ab
+                    raise TypeError(batch.read_weights)
         return calc_phi(n, a_accum, b_accum, ab_accum)
 
     def get_traces(self):
-        if isinstance(self.data, pd.Series):
-            trace = get_pairwise_position_trace(self.data,
+        for row, (_, values) in enumerate(self.data.items(), start=1):
+            trace = get_pairwise_position_trace(values,
                                                 self.dataset.region.end5,
                                                 self.dataset.region.end3)
-            yield (1, 1), trace
-        else:
-            assert isinstance(self.data, pd.DataFrame)
-            for row, (_, values) in enumerate(self.data.items(), start=1):
-                trace = get_pairwise_position_trace(values,
-                                                    self.dataset.region.end5,
-                                                    self.dataset.region.end3)
-                yield (row, 1), trace
+            yield (row, 1), trace
 
 
-class PositionCorrelationWriter(OneDatasetWriter):
+class PositionCorrelationWriter(DatasetGraphWriter):
 
     def get_graph(self, rel, **kwargs):
         return PositionCorrelationGraph(dataset=self.dataset, rel=rel, **kwargs)
 
 
-class PositionCorrelationRunner(OneDatasetRunner):
+class PositionCorrelationRunner(DatasetGraphRunner):
 
     @classmethod
     def get_writer_type(cls):

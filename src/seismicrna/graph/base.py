@@ -2,14 +2,14 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 from itertools import chain
 from pathlib import Path
-from typing import Callable, Generator, Iterable
+from typing import Any, Callable, Generator, Iterable
 
 import pandas as pd
 from click import Argument, Option
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
-from ..cluster.data import ClusterMutsDataset
+from ..cluster.dataset import ClusterDataset
 from ..cluster.table import ClusterTable
 from ..core import path
 from ..core.arg import (NO_GROUP,
@@ -25,14 +25,14 @@ from ..core.arg import (NO_GROUP,
                         opt_png,
                         opt_force,
                         opt_max_procs)
-from ..core.data import Dataset, MutsDataset
+from ..core.dataset import Dataset, MutsDataset
 from ..core.header import NO_KS, NO_CLUSTS, format_clust_names, list_ks_clusts
 from ..core.seq import DNA
 from ..core.table import Table
 from ..core.write import need_write
-from ..mask.data import MaskMutsDataset
+from ..mask.dataset import MaskDataset
 from ..mask.table import MaskTable
-from ..relate.data import RelateDataset
+from ..relate.dataset import RelateDataset
 from ..relate.table import RelateTable
 
 # Define actions.
@@ -44,18 +44,18 @@ ACTION_CLUST = "clustered"
 LINKER = "__and__"
 
 
-def list_ks(source: Dataset | Table):
+def get_ks(source: Dataset | Table):
     """ List the numbers of clusters for a source of data. """
     if isinstance(source, Dataset):
-        return getattr(source, "ks", NO_KS)
+        return source.ks
     if isinstance(source, Table):
         return source.header.ks
     raise TypeError(source)
 
 
-def list_clusts(source: Dataset | Table):
+def get_ks_clusts(source: Dataset | Table):
     """ List the clusters for a source of data. """
-    ks = list_ks(source)
+    ks = get_ks(source)
     if ks == NO_KS:
         return NO_CLUSTS
     return list_ks_clusts(ks)
@@ -63,7 +63,7 @@ def list_clusts(source: Dataset | Table):
 
 def make_tracks(source: Dataset | Table, k: int | None, clust: int | None):
     """ Make an index for the rows or columns of a graph. """
-    clusts = list_clusts(source)
+    clusts = get_ks_clusts(source)
     if k is None and clust is None:
         return clusts
     return [(k_, clust_) for k_, clust_ in clusts
@@ -83,9 +83,9 @@ def _track_titles(tracks: list[tuple[int, int]] | None):
 def get_action_name(source: MutsDataset | Table):
     if isinstance(source, (RelateDataset, RelateTable)):
         return ACTION_REL
-    if isinstance(source, (MaskMutsDataset, MaskTable)):
+    if isinstance(source, (MaskDataset, MaskTable)):
         return ACTION_MASK
-    if isinstance(source, (ClusterMutsDataset, ClusterTable)):
+    if isinstance(source, (ClusterDataset, ClusterTable)):
         return ACTION_CLUST
     raise TypeError(source)
 
@@ -110,10 +110,10 @@ def make_path_subject(action: str, k: int | None, clust: int | None):
 def cgroup_table(source: Dataset | Table, cgroup: str):
     if cgroup == NO_GROUP:
         # One file per cluster, with no subplots.
-        return [dict(k=k, clust=clust) for k, clust in list_clusts(source)]
+        return [dict(k=k, clust=clust) for k, clust in get_ks_clusts(source)]
     elif cgroup == GROUP_BY_K:
         # One file per k, with one subplot per cluster.
-        return [dict(k=k, clust=None) for k in sorted(list_ks(source))]
+        return [dict(k=k, clust=None) for k in sorted(get_ks(source))]
     elif cgroup == GROUP_ALL:
         # One file, with one subplot per cluster.
         return [dict(k=None, clust=None)]
@@ -219,7 +219,7 @@ class GraphBase(ABC):
         """ Path fields. """
         return {path.TOP: self.top,
                 path.SAMP: self.sample,
-                path.CMD: path.CMD_GRAPH_DIR,
+                path.CMD: path.GRAPH_STEP,
                 path.REF: self.ref,
                 path.REG: self.reg,
                 path.GRAPH: self.graph_filename}
@@ -242,7 +242,7 @@ class GraphBase(ABC):
 
     @cached_property
     @abstractmethod
-    def data(self) -> pd.Series | pd.DataFrame:
+    def data(self) -> pd.DataFrame:
         """ Data of the graph. """
 
     @abstractmethod
@@ -419,6 +419,9 @@ class GraphBase(ABC):
 class GraphWriter(ABC):
     """ Write the proper type(s) of graph. """
 
+    def __init__(self, *, rels: list[str]):
+        self.rels = rels
+
     @abstractmethod
     def iter_graphs(self, *args, **kwargs) -> Generator[GraphBase, None, None]:
         """ Yield every graph. """
@@ -451,14 +454,14 @@ class GraphRunner(ABC):
 
     @classmethod
     @abstractmethod
-    def get_input_loader(cls) -> Callable[[tuple[str, ...]], Generator]:
+    def get_input_loader(cls) -> Callable[[tuple[str, ...], Any], Generator]:
         """ Function to load input files. """
 
     @classmethod
-    def list_input_files(cls, input_path: tuple[str, ...]):
-        """ Find, filter, and list all table files from input files. """
-        finder = cls.get_input_loader()
-        return list(finder(input_path))
+    def load_input_files(cls, input_path: tuple[str, ...], **kwargs):
+        """ Find, filter, and load all input files. """
+        load_func = cls.get_input_loader()
+        return list(load_func(input_path, **kwargs))
 
     @classmethod
     def universal_input_params(cls):
@@ -492,20 +495,7 @@ class GraphRunner(ABC):
 
     @classmethod
     @abstractmethod
-    def run(cls,
-            input_path: tuple[str, ...], *,
-            rels: tuple[str, ...],
-            use_ratio: bool,
-            quantile: float,
-            cgroup: str,
-            csv: bool,
-            html: bool,
-            svg: bool,
-            pdf: bool,
-            png: bool,
-            force: bool,
-            max_procs: int,
-            **kwargs) -> list[Path]:
+    def run(cls, *args, **kwargs) -> list[Path]:
         """ Run graphing. """
 
 ########################################################################

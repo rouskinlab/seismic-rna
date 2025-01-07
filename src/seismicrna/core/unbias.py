@@ -335,6 +335,27 @@ def _triu_dot(a: np.ndarray, b: np.ndarray):
     return dot
 
 
+def triu_dot(a: np.ndarray, b: np.ndarray):
+    """ Dot product of `a` and `b` over their first 2 dimensions.
+
+    Parameters
+    ----------
+    a: np.ndarray
+        Array 1.
+    b: np.ndarray
+        Array 2.
+
+    Returns
+    -------
+    np.ndarray
+        Dot product of `a` and `b` over their first 2 dimensions.
+    """
+    find_dims([(SIZE, SIZE, None), (SIZE, SIZE, None)],
+              [a, b],
+              ["a", "b"])
+    return _triu_dot(a, b)
+
+
 @jit()
 def _triu_allclose(a: np.ndarray,
                    b: np.ndarray,
@@ -1515,9 +1536,9 @@ def _calc_p_ends_observed(npos: int,
     npos: int
         Number of positions.
     end5s: np.ndarray
-        5' end coordinates of the reads: 1D array (reads)
+        5' ends (0-indexed) of the reads: 1D array (reads)
     end3s: np.ndarray
-        3' end coordinates of the reads: 1D array (reads)
+        3' ends (0-indexed) of the reads: 1D array (reads)
     weights: np.ndarray
         Number of times each read occurs in each cluster:
         2D array (reads x clusters)
@@ -1548,13 +1569,13 @@ def calc_p_ends_observed(npos: int,
     npos: int
         Number of positions.
     end5s: np.ndarray
-        5' end coordinates of the reads: 1D array (reads)
+        5' ends (0-indexed) of the reads: 1D array (reads)
     end3s: np.ndarray
-        3' end coordinates of the reads: 1D array (reads)
-    weights: np.ndarray | None = None
+        3' ends (0-indexed) of the reads: 1D array (reads)
+    weights: np.ndarray | None
         Number of times each read occurs in each cluster:
         2D array (reads x clusters)
-    check_values: bool = True
+    check_values: bool
         Check that `end5s`, `end3s`, and `weights` are all valid.
 
     Returns
@@ -1606,7 +1627,7 @@ def calc_p_ends_observed(npos: int,
                 f"All weights must be ≥ 0, but got {weights[weights < 0.]}"
             )
     # Call the compiled function.
-    return _calc_p_ends_observed(npos, end5s, end3s, weights)
+    return _triu_norm(_calc_p_ends_observed(npos, end5s, end3s, weights))
 
 
 def calc_n_reads_per_pos(p_ends_observed: np.ndarray,

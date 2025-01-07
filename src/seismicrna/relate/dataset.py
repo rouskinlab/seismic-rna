@@ -1,19 +1,38 @@
+from abc import ABC
 from functools import cached_property
 
 from .batch import RelateBatch
 from .io import ReadNamesBatchIO, RelateBatchIO
 from .report import RelateReport, PoolReport
-from ..core.data import (LoadedDataset,
-                         MergedRegionDataset,
-                         MutsDataset,
-                         LoadFunction,
-                         TallDataset)
+from ..core.dataset import (Dataset,
+                            LoadedDataset,
+                            MergedRegionDataset,
+                            MutsDataset,
+                            LoadFunction,
+                            TallDataset)
+from ..core.header import NO_K, NO_KS
 from ..core.io import RefseqIO
 from ..core.report import RefseqChecksumF
 from ..core.seq import FULL_NAME, Region
 
 
-class RelateDataset(LoadedDataset, MutsDataset):
+class AverageDataset(Dataset, ABC):
+    """ Dataset of population average data. """
+
+    @property
+    def ks(self):
+        return NO_KS
+
+    @property
+    def best_k(self):
+        return NO_K
+
+
+class RelateDataset(AverageDataset, ABC):
+    """ Dataset of relationships. """
+
+
+class RelateMutsDataset(RelateDataset, LoadedDataset, MutsDataset):
     """ Dataset of mutations from the Relate step. """
 
     @classmethod
@@ -62,7 +81,8 @@ class RelateDataset(LoadedDataset, MutsDataset):
                            sanitize=False)
 
 
-class PoolDataset(TallDataset,
+class PoolDataset(RelateDataset,
+                  TallDataset,
                   MutsDataset,
                   MergedRegionDataset):
     """ Load pooled batches of relationships. """
@@ -80,7 +100,14 @@ class PoolDataset(TallDataset,
         return self._get_common_attr("region")
 
 
-class ReadNamesDataset(LoadedDataset):
+class NamesDataset(AverageDataset, ABC):
+
+    @classmethod
+    def kind(cls):
+        return "names"
+
+
+class ReadNamesDataset(NamesDataset, LoadedDataset):
     """ Dataset of read names from the Relate step. """
 
     @classmethod
@@ -96,7 +123,7 @@ class ReadNamesDataset(LoadedDataset):
         return None
 
 
-class PoolReadNamesDataset(TallDataset):
+class PoolReadNamesDataset(NamesDataset, TallDataset):
     """ Pooled Dataset of read names. """
 
     @classmethod
@@ -108,7 +135,7 @@ class PoolReadNamesDataset(TallDataset):
         return load_read_names_dataset
 
 
-load_relate_dataset = LoadFunction(RelateDataset, PoolDataset)
+load_relate_dataset = LoadFunction(RelateMutsDataset, PoolDataset)
 load_read_names_dataset = LoadFunction(ReadNamesDataset, PoolReadNamesDataset)
 
 ########################################################################

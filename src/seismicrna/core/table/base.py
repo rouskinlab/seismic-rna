@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from functools import cached_property
+from functools import cache, cached_property
 from pathlib import Path
 from typing import Any, Generator, Iterable
 
@@ -12,6 +12,7 @@ from ..header import (REL_NAME,
                       Header,
                       parse_header)
 from ..mu import winsorize
+from ..rel import HalfRelPattern, RelPattern
 from ..rna import RNAProfile
 from ..seq import DNA, SEQ_INDEX_NAMES, Region, index_to_pos, index_to_seq
 
@@ -47,6 +48,54 @@ REL_NAMES = {name: code for code, name in REL_CODES.items()}
 
 # Columns of each relation-based table
 TABLE_RELS = list(REL_CODES.values())
+
+
+@cache
+def get_pattern(rel: str):
+    """ Get a RelPattern from the name of its relationship. """
+    if rel == COVER_REL:
+        return RelPattern.allc()
+    if rel == MATCH_REL:
+        return RelPattern.matches()
+    if rel == MUTAT_REL:
+        return RelPattern.muts()
+    if rel == SUBST_REL:
+        yes = HalfRelPattern.from_counts(count_sub=True)
+    elif rel == SUB_A_REL:
+        yes = HalfRelPattern("ca", "ga", "ta")
+    elif rel == SUB_C_REL:
+        yes = HalfRelPattern("ac", "gc", "tc")
+    elif rel == SUB_G_REL:
+        yes = HalfRelPattern("ag", "cg", "tg")
+    elif rel == SUB_T_REL:
+        yes = HalfRelPattern("at", "ct", "gt")
+    elif rel == DELET_REL:
+        yes = HalfRelPattern.from_counts(count_del=True)
+    elif rel == INSRT_REL:
+        yes = HalfRelPattern.from_counts(count_ins=True)
+    else:
+        raise ValueError(rel)
+    return RelPattern(yes, HalfRelPattern.refs())
+
+
+def get_subpattern(rel: str, subpattern: RelPattern | None = None):
+    """ Get a RelPattern, optionally with masking. """
+    if rel == COVER_REL:
+        # Still match everything except the non-covered relationship.
+        return get_pattern(rel)
+    if rel == MATCH_REL and subpattern is not None:
+        # Because select_muts specifies the types of mutations, it must
+        # be inverted before intersecting with matches.
+        subpattern = subpattern.invert()
+    # All other relationships are mutations needing no special handling.
+    return get_pattern(rel).intersect(subpattern)
+
+
+def all_patterns(subpattern: RelPattern | None = None):
+    """ Every RelPattern, keyed by its name. """
+    return {rel: get_subpattern(rel, subpattern)
+            for rel in REL_CODES.values()
+            if rel != INFOR_REL}
 
 
 def get_rel_name(rel_code: str):

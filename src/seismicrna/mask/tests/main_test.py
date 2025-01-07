@@ -12,7 +12,7 @@ from seismicrna.core.io.seq import RefseqIO
 from seismicrna.core.logs import Level, set_config
 from seismicrna.core.seq.region import Region
 from seismicrna.core.seq.xna import DNA
-from seismicrna.mask.data import MaskMutsDataset
+from seismicrna.mask.dataset import MaskMutsDataset
 from seismicrna.mask.main import run as run_mask
 from seismicrna.pool import run as run_pool
 from seismicrna.relate.io import RelateBatchIO, ReadNamesBatchIO

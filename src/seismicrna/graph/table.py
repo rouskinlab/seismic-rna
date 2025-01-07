@@ -72,7 +72,8 @@ class TableGraph(GraphBase, ABC):
 
 class TableGraphWriter(GraphWriter, ABC):
 
-    def __init__(self, *tables: Table):
+    def __init__(self, *tables: Table, **kwargs):
+        super().__init__(**kwargs)
         self.tables = list(tables)
 
     @abstractmethod

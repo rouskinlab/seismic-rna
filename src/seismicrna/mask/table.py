@@ -5,6 +5,7 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
+from .dataset import load_mask_dataset
 from ..core import path
 from ..core.batch import END5_COORD, END3_COORD
 from ..core.header import NUM_CLUSTS_NAME, format_clust_name, validate_ks
@@ -19,6 +20,7 @@ from ..core.table import (COVER_REL,
                           SUBMUTS,
                           Tabulator,
                           BatchTabulator,
+                          CountTabulator,
                           DatasetTabulator,
                           Table,
                           PositionTable,
@@ -29,7 +31,7 @@ from ..core.unbias import (calc_p_ends_observed,
                            calc_p_noclose_given_clust,
                            calc_p_noclose_given_ends_auto,
                            calc_params)
-from ..relate.table import (AvgTable,
+from ..relate.table import (AverageTable,
                             AverageTabulator,
                             PositionTableLoader,
                             ReadTableLoader)
@@ -85,11 +87,11 @@ class PartialReadTable(PartialTable, ReadTable, ABC):
         return path.REG_DIR_SEGS + (path.ReadTableSeg,)
 
 
-class MaskTable(AvgTable, ABC):
+class MaskTable(AverageTable, ABC):
 
     @classmethod
     def kind(cls):
-        return path.CMD_MASK_DIR
+        return path.MASK_STEP
 
 
 class MaskPositionTable(MaskTable, PartialPositionTable, ABC):
@@ -129,16 +131,18 @@ class PartialTabulator(Tabulator, ABC):
                  min_mut_gap: int,
                  quick_unbias: bool,
                  quick_unbias_thresh: float,
+                 count_ends: bool = True,
                  **kwargs):
-        super().__init__(region=region, **kwargs)
+        # Partial tabulators must count 5'/3' ends or else calculating
+        # self.p_ends_given_clust_noclose will fail.
+        if not count_ends:
+            logger.warning(f"count_ends must be True for {type(self.__name__)}")
+        super().__init__(region=region, count_ends=True, **kwargs)
         self.refseq = refseq
         self.pattern = pattern
         self.min_mut_gap = min_mut_gap
         self.quick_unbias = quick_unbias
         self.quick_unbias_thresh = quick_unbias_thresh
-        # Partial tabulators must count 5'/3' ends or else calculating
-        # self.p_ends_given_clust_noclose will fail.
-        self.count_ends = True
 
     @cached_property
     def p_ends_given_clust_noclose(self):
@@ -191,8 +195,8 @@ class PartialDatasetTabulator(DatasetTabulator, PartialTabulator, ABC):
 
     @classmethod
     @cache
-    def _init_data(cls):
-        return super()._init_data() + cls._list_args(PartialTabulator.__init__)
+    def init_kws(cls):
+        return super().init_kws() + cls._list_args(PartialTabulator.__init__)
 
 
 class MaskTabulator(PartialTabulator, AverageTabulator, ABC):
@@ -202,12 +206,19 @@ class MaskTabulator(PartialTabulator, AverageTabulator, ABC):
         return [MaskPositionTableWriter, MaskReadTableWriter]
 
 
-class MaskBatchTabulator(MaskTabulator, BatchTabulator):
+class MaskBatchTabulator(BatchTabulator, MaskTabulator):
     pass
 
 
-class MaskDatasetTabulator(MaskTabulator, PartialDatasetTabulator):
+class MaskCountTabulator(CountTabulator, MaskTabulator):
     pass
+
+
+class MaskDatasetTabulator(PartialDatasetTabulator, MaskTabulator):
+
+    @classmethod
+    def load_function(cls):
+        return load_mask_dataset
 
 
 def _insert_masked(p_mut: pd.Series | pd.DataFrame,

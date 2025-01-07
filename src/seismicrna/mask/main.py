@@ -40,12 +40,12 @@ from ..core.arg import (CMD_MASK,
                         opt_force,
                         optional_path,
                         extra_defaults)
-from ..core.data import load_datasets
+from ..core.dataset import load_datasets
 from ..core.logs import logger
 from ..core.run import run_func
 from ..core.seq import DNA, RefRegions
 from ..core.task import dispatch
-from ..relate.data import load_relate_dataset
+from ..relate.dataset import load_relate_dataset
 
 
 def load_regions(input_path: Iterable[str | Path],

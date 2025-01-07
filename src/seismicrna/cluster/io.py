@@ -8,14 +8,14 @@ from .emk import EMRunsK
 from ..core import path
 from ..core.header import ClustHeader
 from ..core.io import ReadBatchIO, RegIO
-from ..mask.data import MaskMutsDataset
+from ..mask.dataset import MaskMutsDataset
 
 
 class ClusterIO(RegIO, ABC):
 
     @classmethod
     def auto_fields(cls):
-        return super().auto_fields() | {path.CMD: path.CMD_CLUST_DIR}
+        return super().auto_fields() | {path.CMD: path.CLUSTER_STEP}
 
 
 class ClusterBatchIO(ReadBatchIO, ClusterIO, ClusterReadBatch):

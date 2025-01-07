@@ -108,7 +108,7 @@ class AlignReport(Report, ABC):
 
     @classmethod
     def auto_fields(cls):
-        return {**super().auto_fields(), path.CMD: path.CMD_ALIGN_DIR}
+        return {**super().auto_fields(), path.CMD: path.ALIGN_STEP}
 
 
 class AlignSampleReport(AlignReport):

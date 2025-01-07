@@ -73,7 +73,7 @@ class ClusterReport(BatchedReport, ClusterIO):
 
     @classmethod
     def auto_fields(cls):
-        return {**super().auto_fields(), path.CMD: path.CMD_CLUST_DIR}
+        return {**super().auto_fields(), path.CMD: path.CLUSTER_STEP}
 
     @classmethod
     def from_clusters(cls,

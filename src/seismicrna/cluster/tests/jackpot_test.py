@@ -29,7 +29,7 @@ from seismicrna.core.unbias import (CLUSTERS,
                                     calc_p_ends_given_noclose,
                                     calc_p_mut_given_span_noclose)
 from seismicrna.mask import run as run_mask
-from seismicrna.mask.data import MaskMutsDataset
+from seismicrna.mask.dataset import MaskMutsDataset
 from seismicrna.sim.fold import run as run_sim_fold
 from seismicrna.sim.params import run as run_sim_params
 from seismicrna.sim.ref import run as run_sim_ref

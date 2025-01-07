@@ -59,7 +59,7 @@ class StructOneTableGraph(OneTableGraph, OneRelGraph, ABC):
         return path.build(*path.CT_FILE_SEGS,
                           top=self.top,
                           sample=self.sample,
-                          cmd=path.CMD_FOLD_DIR,
+                          cmd=path.FOLD_STEP,
                           ref=self.ref,
                           reg=self.struct_reg,
                           profile=profile,

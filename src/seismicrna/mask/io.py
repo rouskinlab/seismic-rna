@@ -9,7 +9,7 @@ class MaskIO(RegIO, ABC):
 
     @classmethod
     def auto_fields(cls):
-        return super().auto_fields() | {path.CMD: path.CMD_MASK_DIR}
+        return super().auto_fields() | {path.CMD: path.MASK_STEP}
 
 
 class MaskBatchIO(ReadBatchIO, MaskIO, MaskReadBatch):

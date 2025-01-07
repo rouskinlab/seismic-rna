@@ -209,26 +209,25 @@ class TwoTableWriter(TableGraphWriter, ABC):
     def get_graph_type(cls, *args, **kwargs) -> type[TwoTableGraph]:
         """ Type of graph. """
 
-    def __init__(self, table1: Table, table2: Table):
-        super().__init__(table1, table2)
+    def __init__(self, table1: Table, table2: Table, **kwargs):
+        super().__init__(table1, table2, **kwargs)
 
     @cached_property
     def table1(self):
         """ The first table providing the data for the graph(s). """
+        assert len(self.tables) == 2
         return self.tables[0]
 
     @cached_property
     def table2(self):
         """ The second table providing the data for the graph(s). """
+        assert len(self.tables) == 2
         return self.tables[1]
 
-    def iter_graphs(self,
-                    rels: tuple[str, ...],
-                    cgroup: str,
-                    **kwargs):
+    def iter_graphs(self, cgroup: str, **kwargs):
         for cparams1, cparams2 in product(cgroup_table(self.table1, cgroup),
                                           cgroup_table(self.table2, cgroup)):
-            for rel in rels:
+            for rel in self.rels:
                 graph_type = self.get_graph_type()
                 yield graph_type(rel=rel,
                                  table1=self.table1,
@@ -274,6 +273,7 @@ class TwoTableRunner(TableGraphRunner, ABC):
     @classmethod
     def run(cls,
             input_path: tuple[str, ...], *,
+            rels: tuple[str, ...],
             compself: bool,
             comppair: bool,
             max_procs: int,
@@ -289,7 +289,8 @@ class TwoTableRunner(TableGraphRunner, ABC):
             # Compare every pair of two different tables.
             table_pairs.extend(iter_table_pairs(tables))
         # Generate a table writer for each pair of tables.
-        writers = [cls.get_writer_type()(table1, table2)
+        writer_type = cls.get_writer_type()
+        writers = [writer_type(table1, table2, rels=rels)
                    for table1, table2 in table_pairs]
         return list(chain(*dispatch([writer.write for writer in writers],
                                     max_procs,

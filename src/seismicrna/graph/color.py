@@ -8,6 +8,9 @@ from .base import GraphBase
 from ..core.seq import BASEA, BASEC, BASEG, BASET, BASEN
 from ..core.table import REL_CODES
 
+DEFAULT_CODE = "x"
+DEFAULT_NAME = "Default"
+
 
 class ColorMap(ABC):
     """ Color map for a graph. """
@@ -20,11 +23,13 @@ class ColorMap(ABC):
     def _set_colors(self, **kwargs):
         return dict(**kwargs)
 
-    def get(self, item: Hashable, default: Any | None = None):
-        return self._colors.get(item, default)
+    @abstractmethod
+    def get_default_color(self) -> str:
+        """ Default color. """
 
-    def __getitem__(self, item: Hashable):
-        return self._colors[item]
+    def get(self, item: Hashable, default: Any | None = None):
+        return self._colors.get(item, (default if default is not None
+                                       else self.get_default_color()))
 
 
 class SeqColorMap(ColorMap):
@@ -35,6 +40,9 @@ class SeqColorMap(ColorMap):
 
     def _set_colors(self, *, a: str, c: str, g: str, t: str, n: str):
         return {BASEA: a, BASEC: c, BASEG: g, BASET: t, BASEN: n}
+
+    def get_default_color(self):
+        return self._colors[BASEN]
 
 
 class RelColorMap(ColorMap):
@@ -52,7 +60,8 @@ class RelColorMap(ColorMap):
                  a: str,
                  c: str,
                  g: str,
-                 t: str):
+                 t: str,
+                 x: str):
         super().__init__(name,
                          v=v,
                          n=n,
@@ -64,15 +73,19 @@ class RelColorMap(ColorMap):
                          a=a,
                          c=c,
                          g=g,
-                         t=t)
+                         t=t,
+                         x=x)
 
     def _set_colors(self, **kwargs):
-        colors = dict()
+        colors = {DEFAULT_NAME: kwargs.pop(DEFAULT_CODE)}
         for key, field in REL_CODES.items():
             colors[field] = kwargs.pop(key)
         if kwargs:
             raise TypeError(f"Unexpected keyword arguments: {kwargs}")
         return colors
+
+    def get_default_color(self):
+        return self._colors[DEFAULT_NAME]
 
 
 basic = SeqColorMap("basic",
@@ -134,7 +147,8 @@ crayons = RelColorMap("crayons",
                       a="#73FCD6",
                       c="#FFD479",
                       g="#7A81FF",
-                      t="#FF8AD8")
+                      t="#FF8AD8",
+                      x="#AAAAAA")
 hexta = RelColorMap("hexta",
                     v="#FBED94",
                     n="#C05F15",
@@ -146,11 +160,12 @@ hexta = RelColorMap("hexta",
                     a="#C05F15",
                     c="#597DE4",
                     g="#743B4A",
-                    t="#9BD1D0")
+                    t="#9BD1D0",
+                    x="#AAAAAA")
 # The Safe palette was adapted from the R Color Palette Finder:
 # https://r-graph-gallery.com/color-palette-finder
 safe = RelColorMap("safe",
-                   v="#888888",
+                   v="#555555",
                    n="#6699CC",
                    e="#88CCEE",
                    m="#661100",
@@ -160,7 +175,8 @@ safe = RelColorMap("safe",
                    a="#CC6677",
                    c="#332288",
                    g="#DDCC77",
-                   t="#117733")
+                   t="#117733",
+                   x="#AAAAAA")
 
 DEFAULTS: dict[type[ColorMap], ColorMap] = {
     RelColorMap: safe,

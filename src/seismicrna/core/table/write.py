@@ -8,8 +8,7 @@ from typing import Any, Callable, Iterable
 
 import pandas as pd
 
-from .base import (COVER_REL,
-                   DELET_REL,
+from .base import (DELET_REL,
                    INSRT_REL,
                    MATCH_REL,
                    MUTAT_REL,
@@ -23,12 +22,12 @@ from .base import (COVER_REL,
                    Table,
                    PositionTable,
                    ReadTable,
-                   AbundanceTable)
+                   AbundanceTable,
+                   all_patterns)
 from ..batch import accumulate_batches, accumulate_counts
-from ..data import MutsDataset
+from ..dataset import LoadFunction, MutsDataset
 from ..header import Header, make_header
 from ..logs import logger
-from ..rel import RelPattern, HalfRelPattern
 from ..seq import Region
 from ..write import need_write
 
@@ -75,6 +74,7 @@ class Tabulator(ABC):
                  top: Path,
                  sample: str,
                  region: Region,
+                 count_ends: bool,
                  count_pos: bool,
                  count_read: bool,
                  validate: bool = True):
@@ -84,7 +84,7 @@ class Tabulator(ABC):
         self.region = region
         self.pattern = None
         self.ks = None
-        self.count_ends = False
+        self.count_ends = count_ends
         self.count_pos = count_pos
         self.count_read = count_read
         self.validate = validate
@@ -233,14 +233,25 @@ class DatasetTabulator(BatchTabulator, ABC):
     """ Tabulator made from one dataset. """
 
     @classmethod
+    @abstractmethod
+    def load_function(cls) -> LoadFunction:
+        """ LoadFunction for all Dataset types for this Tabulator. """
+
+    @classmethod
+    def dataset_types(cls):
+        """ Types of Dataset this Tabulator can process. """
+        return cls.load_function().dataset_types
+
+    @classmethod
     def _list_args(cls, func: Callable):
-        """ List the positional arguments of a function. """
+        """ List a function's keyword arguments with no defaults. """
         return [name for name, param in signature(func).parameters.items()
-                if param.kind is Parameter.KEYWORD_ONLY]
+                if (param.kind is Parameter.KEYWORD_ONLY
+                    and param.default is param.empty)]
 
     @classmethod
     @cache
-    def _init_data(cls):
+    def init_kws(cls):
         """ Attributes of the dataset to use as keyword arguments in
         super().__init__(). """
         return ["top", "sample", "get_batch_count_all", "num_batches"]
@@ -249,10 +260,13 @@ class DatasetTabulator(BatchTabulator, ABC):
                  dataset: MutsDataset,
                  validate: bool = False,
                  **kwargs):
+        if not isinstance(dataset, self.dataset_types()):
+            raise TypeError(f"Expected dataset to be {self.dataset_types()}, "
+                            f"but got {type(dataset).__name__}")
         # Since the batches come from a Dataset, they do not need to be
         # validated, so make validate False by default.
         super().__init__(**{attr: getattr(dataset, attr)
-                            for attr in self._init_data()},
+                            for attr in self.init_kws()},
                          validate=validate,
                          **kwargs)
 
@@ -314,35 +328,6 @@ class AbundanceTableWriter(TableWriter, AbundanceTable, ABC):
     @cached_property
     def data(self):
         return self.tabulator.data_per_clust
-
-
-def _iter_mut_patterns():
-    """ Yield a HalfRelPattern for each type of mutation. """
-    yield SUBST_REL, HalfRelPattern.from_counts(count_sub=True)
-    yield SUB_A_REL, HalfRelPattern("ca", "ga", "ta")
-    yield SUB_C_REL, HalfRelPattern("ac", "gc", "tc")
-    yield SUB_G_REL, HalfRelPattern("ag", "cg", "tg")
-    yield SUB_T_REL, HalfRelPattern("at", "ct", "gt")
-    yield DELET_REL, HalfRelPattern.from_counts(count_del=True)
-    yield INSRT_REL, HalfRelPattern.from_counts(count_ins=True)
-
-
-def _iter_patterns(mask: RelPattern | None = None):
-    """ Yield a RelPattern for every type of relationship. """
-    # Count everything except for no coverage.
-    yield COVER_REL, RelPattern.allc()
-    # Count matches to the reference sequence.
-    yield MATCH_REL, RelPattern.muts().intersect(mask, invert=True)
-    # Count all types of mutations, relative to reference matches.
-    yield MUTAT_REL, RelPattern.muts().intersect(mask)
-    # Count each type of mutation, relative to reference matches.
-    for mut, pattern in _iter_mut_patterns():
-        yield mut, RelPattern(pattern, HalfRelPattern.refs()).intersect(mask)
-
-
-def all_patterns(mask: RelPattern | None = None):
-    """ Every RelPattern, keyed by its name. """
-    return dict(_iter_patterns(mask))
 
 ########################################################################
 #                                                                      #

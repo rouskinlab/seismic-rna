@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 
 from .batch import apply_mask
-from .data import MaskMutsDataset
+from .dataset import MaskMutsDataset
 from .io import MaskBatchIO
 from .report import MaskReport
 from .table import MaskBatchTabulator, MaskDatasetTabulator
@@ -23,7 +23,7 @@ from ..core.seq import FIELD_REF, POS_NAME, Region, index_to_pos
 from ..core.table import MUTAT_REL, INFOR_REL
 from ..core.tmp import release_to_out
 from ..core.write import need_write
-from ..relate.data import RelateDataset, PoolDataset, load_read_names_dataset
+from ..relate.dataset import RelateMutsDataset, PoolDataset, load_read_names_dataset
 
 
 class Masker(object):
@@ -44,7 +44,7 @@ class Masker(object):
 
     @docdef.auto()
     def __init__(self,
-                 dataset: RelateDataset | PoolDataset,
+                 dataset: RelateMutsDataset | PoolDataset,
                  region: Region,
                  pattern: RelPattern, *,
                  max_mask_iter: int,
@@ -593,7 +593,7 @@ class Masker(object):
         return f"Mask {self.dataset} over {self.region}"
 
 
-def mask_region(dataset: RelateDataset | PoolDataset,
+def mask_region(dataset: RelateMutsDataset | PoolDataset,
                 region: Region,
                 mask_del: bool,
                 mask_ins: bool,

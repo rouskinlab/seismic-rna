@@ -44,7 +44,7 @@ def get_seq_base_scatter_trace(xdata: pd.Series,
                       x=vals.x,
                       y=vals.y,
                       mode="markers",
-                      marker_color=cmap[base],
+                      marker_color=cmap.get(base),
                       hovertext=hovertext,
                       hoverinfo="text")
 
@@ -72,7 +72,7 @@ def get_seq_base_bar_trace(data: pd.Series, cmap: ColorMap, base: str):
     return go.Bar(name=base,
                   x=vals.index,
                   y=vals,
-                  marker_color=cmap[base],
+                  marker_color=cmap.get(base),
                   hovertext=hovertext,
                   hoverinfo="text")
 
@@ -93,7 +93,7 @@ def get_seq_stack_bar_trace(data: pd.Series, rel: str, cmap: ColorMap):
     return go.Bar(name=rel,
                   x=pos,
                   y=data,
-                  marker_color=cmap[rel],
+                  marker_color=cmap.get(rel),
                   hovertext=hovertext,
                   hoverinfo="text")
 
@@ -125,7 +125,7 @@ def get_hist_trace(data: pd.Series, rel: str, cmap: ColorMap):
     return go.Bar(name=rel,
                   x=center,
                   y=data,
-                  marker_color=cmap[rel],
+                  marker_color=cmap.get(rel),
                   hovertext=hovertext,
                   hoverinfo="text")
 

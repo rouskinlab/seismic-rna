@@ -290,6 +290,12 @@ class RelPattern(object):
         """ Fits every mutation. """
         return cls(HalfRelPattern.muts(), HalfRelPattern.refs())
 
+    @classmethod
+    @cache
+    def matches(cls):
+        """ Fits every match. """
+        return cls(HalfRelPattern.refs(), HalfRelPattern.muts())
+
     def __init__(self, yes: HalfRelPattern, nos: HalfRelPattern):
         self.yes = yes
         self.nos = nos
@@ -301,15 +307,12 @@ class RelPattern(object):
         is_nos = self.nos.fits(base, rel)
         return is_yes != is_nos, is_yes
 
-    def intersect(self, other: RelPattern | None, invert: bool = False):
+    def intersect(self, other: RelPattern | None):
         """ Intersect the pattern with another. """
-        if other is not None:
-            yes = self.yes.intersect(other.yes)
-            nos = self.nos.intersect(other.nos)
-        else:
-            yes = self.yes
-            nos = self.nos
-        return self.__class__(nos, yes) if invert else self.__class__(yes, nos)
+        if other is None:
+            return self
+        return self.__class__(self.yes.intersect(other.yes),
+                              self.nos.intersect(other.nos))
 
     def invert(self):
         """ Swap the `yes` and `nos` patterns. """

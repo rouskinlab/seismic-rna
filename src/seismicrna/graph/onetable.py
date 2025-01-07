@@ -51,24 +51,22 @@ class OneTableGraph(TableGraph, OneSourceGraph, ABC):
 
 class OneTableWriter(TableGraphWriter, ABC):
 
-    def __init__(self, table: Table):
-        super().__init__(table)
+    def __init__(self, table: Table, **kwargs):
+        super().__init__(table, **kwargs)
 
     @cached_property
     def table(self):
         """ The table providing the data for the graph(s). """
+        assert len(self.tables) == 1
         return self.tables[0]
 
     @abstractmethod
     def get_graph(self, *args, **kwargs) -> OneTableGraph:
         """ Return a graph instance. """
 
-    def iter_graphs(self,
-                    rels: tuple[str, ...],
-                    cgroup: str,
-                    **kwargs):
+    def iter_graphs(self, cgroup: str, **kwargs):
         for cparams in cgroup_table(self.table, cgroup):
-            for rels_group in rels:
+            for rels_group in self.rels:
                 yield self.get_graph(rels_group, **kwargs | cparams)
 
 
@@ -77,12 +75,13 @@ class OneTableRunner(TableGraphRunner, ABC):
     @classmethod
     def run(cls,
             input_path: tuple[str, ...], *,
+            rels: tuple[str, ...],
             max_procs: int,
             **kwargs):
         # Generate a table writer for each table.
         writer_type = cls.get_writer_type()
-        writers = [writer_type(table_file)
-                   for table_file in cls.list_input_files(input_path)]
+        writers = [writer_type(table_file, rels=rels)
+                   for table_file in cls.load_input_files(input_path)]
         return list(chain(*dispatch([writer.write for writer in writers],
                                     max_procs,
                                     pass_n_procs=False,

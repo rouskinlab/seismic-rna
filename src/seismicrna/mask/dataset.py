@@ -1,14 +1,16 @@
-import numpy as np
+from abc import ABC
 from functools import cached_property
+
+import numpy as np
 
 from .batch import MaskMutsBatch, apply_mask
 from .io import MaskBatchIO
 from .report import MaskReport
-from ..core.data import (LoadedDataset,
-                         LoadFunction,
-                         MergedUnbiasDataset,
-                         MultistepDataset,
-                         UnbiasDataset)
+from ..core.dataset import (LoadedDataset,
+                            LoadFunction,
+                            MergedUnbiasDataset,
+                            MultistepDataset,
+                            UnbiasDataset)
 from ..core.join import (BATCH_NUM,
                          READ_NUMS,
                          SEG_END5S,
@@ -30,11 +32,15 @@ from ..core.report import (CountMutsF,
                            JoinedClustersF)
 from ..core.seq import Region
 from ..relate.batch import RelateBatch
-from ..relate.data import load_relate_dataset
+from ..relate.dataset import AverageDataset, load_relate_dataset
 
 
-class MaskReadDataset(LoadedDataset, UnbiasDataset):
-    """ Load batches of masked relation vectors. """
+class MaskDataset(AverageDataset, ABC):
+    """ Dataset of masked data. """
+
+
+class MaskReadDataset(MaskDataset, LoadedDataset, UnbiasDataset):
+    """ Load batches of masked data. """
 
     @classmethod
     def get_report_type(cls):
@@ -67,7 +73,7 @@ class MaskReadDataset(LoadedDataset, UnbiasDataset):
                           self.report.get_field(CountRefsF))
 
 
-class MaskMutsDataset(MultistepDataset, UnbiasDataset):
+class MaskMutsDataset(MaskDataset, MultistepDataset, UnbiasDataset):
     """ Chain mutation data with masked reads. """
 
     MASK_NAME = "mask"
@@ -121,7 +127,7 @@ class MaskMutsDataset(MultistepDataset, UnbiasDataset):
                           sanitize=False)
 
 
-class JoinMaskMutsDataset(JoinMutsDataset, MergedUnbiasDataset):
+class JoinMaskMutsDataset(MaskDataset, JoinMutsDataset, MergedUnbiasDataset):
 
     @classmethod
     def get_report_type(cls):

@@ -11,7 +11,7 @@ from seismicrna.core.unbias import (_clip,
                                     _triu_cumsum,
                                     _triu_norm,
                                     _triu_mul,
-                                    _triu_dot,
+                                    triu_dot,
                                     _triu_div,
                                     triu_allclose,
                                     calc_p_ends_observed,
@@ -397,13 +397,13 @@ class TestTriuDot(ut.TestCase):
         a = np.array([[2.]])
         b = np.array([[4.]])
         expect = np.array(8.)
-        self.assertTrue(np.array_equal(_triu_dot(a, b), expect))
+        self.assertTrue(np.array_equal(triu_dot(a, b), expect))
 
     def test_1x1x1(self):
         a = np.array([[[2.]]])
         b = np.array([[[4.]]])
         expect = np.array([8.])
-        self.assertTrue(np.array_equal(_triu_dot(a, b), expect))
+        self.assertTrue(np.array_equal(triu_dot(a, b), expect))
 
     def test_2x2(self):
         a = np.array([[2., 3.],
@@ -411,7 +411,7 @@ class TestTriuDot(ut.TestCase):
         b = np.array([[4., 8.],
                       [16., 32.]])
         expect = np.array(256.)
-        self.assertTrue(np.array_equal(_triu_dot(a, b), expect))
+        self.assertTrue(np.array_equal(triu_dot(a, b), expect))
 
     def test_2x2x2(self):
         a = np.array([[[2., 20.], [3., 30.]],
@@ -419,7 +419,7 @@ class TestTriuDot(ut.TestCase):
         b = np.array([[[4., 40.], [8., 80.]],
                       [[16., 160.], [32., 320.]]])
         expect = np.array([256., 25600.])
-        self.assertTrue(np.array_equal(_triu_dot(a, b), expect))
+        self.assertTrue(np.array_equal(triu_dot(a, b), expect))
 
 
 class TestTriuMul(ut.TestCase):
@@ -1513,9 +1513,11 @@ class TestCalcPEndsObserved(ut.TestCase):
                             [0.6, 0.7],
                             [0.7, 0.8],
                             [0.8, 0.9]])
-        expect = np.array([[[0.7, 0.8], [1.0, 1.2], [0.3, 0.4]],
-                           [[0.0, 0.0], [0.5, 0.6], [0.4, 0.5]],
-                           [[0.0, 0.0], [0.0, 0.0], [0.7, 0.9]]])
+        numer = np.array([[[0.7, 0.8], [1.0, 1.2], [0.3, 0.4]],
+                          [[0.0, 0.0], [0.5, 0.6], [0.4, 0.5]],
+                          [[0.0, 0.0], [0.0, 0.0], [0.7, 0.9]]])
+        denom = np.array([3.6, 4.4])
+        expect = numer / denom
         result = calc_p_ends_observed(npos, end5s, end3s, weights)
         self.assertEqual(result.shape, expect.shape)
         self.assertTrue(np.allclose(result, expect))

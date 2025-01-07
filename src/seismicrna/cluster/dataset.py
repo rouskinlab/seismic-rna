@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 from functools import cached_property
 from typing import Any
 
@@ -8,41 +8,31 @@ from .batch import ClusterMutsBatch
 from .io import ClusterBatchIO
 from .report import ClusterReport
 from ..core.batch import MutsBatch
-from ..core.data import (Dataset,
-                         LoadedDataset,
-                         LoadFunction,
-                         MergedUnbiasDataset,
-                         MultistepDataset,
-                         UnbiasDataset)
+from ..core.dataset import (Dataset,
+                            LoadedDataset,
+                            LoadFunction,
+                            MergedUnbiasDataset,
+                            MultistepDataset,
+                            UnbiasDataset)
 from ..core.header import (NUM_CLUSTS_NAME,
                            ClustHeader,
                            list_ks_clusts,
                            validate_ks)
-from ..core.join.data import (BATCH_NUM,
-                              READ_NUMS,
-                              SEG_END5S,
-                              SEG_END3S,
-                              MUTS,
-                              RESPS,
-                              JoinMutsDataset)
+from ..core.join.dataset import (BATCH_NUM,
+                                 READ_NUMS,
+                                 SEG_END5S,
+                                 SEG_END3S,
+                                 MUTS,
+                                 RESPS,
+                                 JoinMutsDataset)
 from ..core.join.report import JoinClusterReport
 from ..core.report import KsWrittenF, BestKF, JoinedClustersF
 from ..mask.batch import MaskMutsBatch
-from ..mask.data import load_mask_dataset
+from ..mask.dataset import load_mask_dataset
 
 
 class ClusterDataset(Dataset, ABC):
-    """ Dataset for clustered data. """
-
-    @cached_property
-    @abstractmethod
-    def ks(self) -> list[int]:
-        """ Numbers of clusters. """
-
-    @cached_property
-    @abstractmethod
-    def best_k(self) -> int:
-        """ Best number of clusters. """
+    """ Dataset of clustered data. """
 
 
 class ClusterReadDataset(ClusterDataset, LoadedDataset):

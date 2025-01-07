@@ -1084,7 +1084,7 @@ class TestParseHeader(ut.TestCase):
 
     def test_invalid_numeric(self):
         self.assertRaisesRegex(ValueError,
-                               "k must be ≥ 1, but got 0",
+                               "Expected index names",
                                parse_header,
                                pd.MultiIndex.from_tuples([("a", "0", "0"),
                                                           ("b", "0", "0")],

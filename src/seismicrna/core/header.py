@@ -20,8 +20,10 @@ CLUSTER_PREFIX = "cluster"
 K_CLUST_KEY = "k_clust_list"
 
 # No-cluster lists
-NO_KS = [0]
-NO_CLUSTS = [(0, 0)]
+NO_K = 0
+NO_KS = [NO_K]
+NO_CLUST = 0, 0
+NO_CLUSTS = [NO_CLUST]
 
 
 def validate_k_clust(k: int, clust: int):
@@ -470,12 +472,12 @@ def make_header(*,
     Header
         Header of the appropriate type.
     """
-    if rels is not None:
-        if ks is not None:
+    if ks is not None and ks != NO_KS:
+        if rels is not None:
             return RelClustHeader(rels=rels, ks=ks)
-        return RelHeader(rels=rels)
-    if ks is not None:
         return ClustHeader(ks=ks)
+    if rels is not None:
+        return RelHeader(rels=rels)
     raise TypeError("Must give rels, ks, or both, but got neither")
 
 

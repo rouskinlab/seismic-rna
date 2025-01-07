@@ -41,7 +41,7 @@ from ..core.seq import DNA, BASEA, BASEC, BASEG, BASET, BASEN
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write, write_mode
 from ..relate.batch import ReadNamesBatch, RelateBatch
-from ..relate.data import ReadNamesDataset, RelateDataset, load_relate_dataset
+from ..relate.dataset import ReadNamesDataset, RelateMutsDataset, load_relate_dataset
 from ..relate.report import RelateReport
 from ..relate.sim import simulate_batches
 
@@ -256,7 +256,7 @@ def from_report(report_file: Path, *,
     """ Simulate a FASTQ file from a Relate report. """
     report = RelateReport.load(report_file)
     sample = report.get_field(SampleF)
-    rdata = RelateDataset(report_file)
+    rdata = RelateMutsDataset(report_file)
     ndata = ReadNamesDataset(report_file)
     sim_dir = _get_common_attr(rdata, ndata, "top")
     region = rdata.region

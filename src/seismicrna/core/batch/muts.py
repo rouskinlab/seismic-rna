@@ -15,7 +15,6 @@ from .count import (calc_count_per_pos,
                     calc_rels_per_read,
                     count_end_coords)
 from .ends import EndCoords, match_reads_segments
-from .index import iter_windows
 from .read import ReadBatch
 from ..array import calc_inverse, find_dims
 from ..header import REL_NAME, make_header
@@ -211,10 +210,6 @@ class RegionMutsBatch(MutsBatch, ABC):
         self.region = region
         super().__init__(region=region, **kwargs)
 
-    def iter_windows(self, size: int):
-        """ Yield the positions in each window of the region. """
-        yield from iter_windows(self.pos_nums, size)
-
     @cached_property
     def pos_index(self):
         """ Index of unmasked positions and bases. """
@@ -298,12 +293,11 @@ class RegionMutsBatch(MutsBatch, ABC):
         # Determine whether the data are clustered.
         header = make_header(rels=list(patterns), ks=ks)
         if header.clustered():
-            dtype = float
+            zero = 0.
             rel_header = header.get_rel_header()
         else:
-            dtype = int
+            zero = 0
             rel_header = header
-        zero = dtype(0)
         # Initialize the counts to 0.
         count_per_pos = (
             pd.DataFrame(zero, self.region.unmasked, header.index)
@@ -327,37 +321,51 @@ class RegionMutsBatch(MutsBatch, ABC):
                 count_per_pos,
                 count_per_read)
 
+    def calc_min_mut_dist(self, pattern: RelPattern):
+        """ For each read, calculate the smallest distance (i.e. the gap
+        plus 1) between any two mutations. """
+        # For each read, initialize the smallest distance between two
+        # mutations to the length of the region, which is 1 more than
+        # the maximum possible distance between two mutations.
+        min_mut_dist = np.full(self.read_nums.size, self.region.length)
+        # Keep track of the last mutated position in each read, with 0
+        # meaning that 0 mutations have yet occurred.
+        last_mut_pos = np.zeros_like(min_mut_dist)
+        # For each position, list the reads with a mutation.
+        reads_per_pos = self.reads_per_pos(pattern)
+        for pos, reads in reads_per_pos.items():
+            if pos < 1:
+                # This algorithm relies on valid positions being ≥ 1,
+                # otherwise last_mut_pos will break.
+                raise ValueError(f"Position must be ≥ 1, but got {pos}")
+            # Indexes of all reads with a mutation at this position.
+            pos_indexes = self.read_indexes[reads]
+            # Indexes of reads with a mutation at this position and at
+            # any previous position.
+            pos_mut_indexes = pos_indexes[last_mut_pos[pos_indexes] > 0]
+            # For reads with a mutation at this position and a previous
+            # position, update the minimum distance between mutations.
+            min_mut_dist[pos_mut_indexes] = np.minimum(
+                pos - last_mut_pos[pos_mut_indexes],
+                min_mut_dist[pos_mut_indexes]
+            )
+            # Update the last mutated position.
+            last_mut_pos[pos_indexes] = pos
+        # Finally, to make it easy to distinguish reads with fewer than
+        # two mutations, set min_mut_dist for all such reads to 0.
+        min_mut_dist[min_mut_dist == self.region.length] = 0
+        return min_mut_dist
+
     def reads_noclose_muts(self, pattern: RelPattern, min_gap: int):
         """ List the reads with no two mutations too close. """
         if min_gap < 0:
             raise ValueError(f"min_gap must be ≥ 0, but got {min_gap}")
         if min_gap == 0:
-            # No reads can have proximal mutations.
+            # No reads can have two mutations too close.
             return self.read_nums
-        # For each position, list the reads with a mutation.
-        reads_per_pos = self.reads_per_pos(pattern)
-        # Track which reads have no proximal mutations.
-        nonprox = np.ones(self.num_reads, dtype=bool)
-        # Count the number of times each read occurs in a window.
-        read_counts = np.zeros_like(nonprox, dtype=self.pos_dtype)
-        # Track which positions are being counted.
-        pos_counted = set()
-        # Iterate over all windows in the region.
-        for _, win_pos in self.iter_windows(min_gap + 1):
-            win_pos_set = set(win_pos)
-            for pos in win_pos_set - pos_counted:
-                # These positions have entered the window: count them.
-                read_counts[self.read_indexes[reads_per_pos[pos]]] += 1
-                pos_counted.add(pos)
-            for pos in pos_counted - win_pos_set:
-                # These positions have exited the window: drop them.
-                read_counts[self.read_indexes[reads_per_pos[pos]]] -= 1
-                pos_counted.remove(pos)
-            if len(pos_counted) > 1:
-                # Check for reads counted more than once in the window,
-                # which means that they have proximal mutations.
-                nonprox &= read_counts <= 1
-        return self.read_nums[nonprox]
+        min_mut_dist = self.calc_min_mut_dist(pattern)
+        return self.read_nums[np.logical_or(min_mut_dist == 0,
+                                            min_mut_dist > min_gap)]
 
     def iter_reads(self,
                    pattern: RelPattern,

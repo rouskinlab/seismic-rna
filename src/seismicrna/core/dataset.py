@@ -59,6 +59,21 @@ class Dataset(ABC):
 
     @property
     @abstractmethod
+    def pattern(self) -> RelPattern | None:
+        """ Pattern of mutations to count. """
+
+    @cached_property
+    @abstractmethod
+    def ks(self) -> list[int]:
+        """ Numbers of clusters. """
+
+    @cached_property
+    @abstractmethod
+    def best_k(self) -> int:
+        """ Best number of clusters. """
+
+    @property
+    @abstractmethod
     def timestamp(self) -> datetime:
         """ Time at which the data were written. """
 
@@ -71,11 +86,6 @@ class Dataset(ABC):
     @abstractmethod
     def data_dirs(self) -> list[Path]:
         """ All directories containing data for the dataset. """
-
-    @property
-    @abstractmethod
-    def pattern(self) -> RelPattern | None:
-        """ Pattern of mutations to count. """
 
     @property
     @abstractmethod
@@ -179,7 +189,7 @@ class LoadFunction(object):
     """ Function to load a dataset. """
 
     def __init__(self, data_type: type[Dataset], /, *more_types: type[Dataset]):
-        self.dataset_types = [data_type] + list(more_types)
+        self.dataset_types = (data_type,) + more_types
 
     def _dataset_type_consensus(self,
                                 method: Callable[[type[Dataset]], Any],

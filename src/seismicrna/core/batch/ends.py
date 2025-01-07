@@ -383,6 +383,11 @@ class EndCoords(object):
         """ 3' end of each read. """
         return find_read_end3s(self.seg_end3s)
 
+    @cached_property
+    def read_lengths(self):
+        """ Length of each read. """
+        return self.read_end3s - self.read_end5s + 1
+
     @property
     def pos_dtype(self):
         """ Data type for positions. """

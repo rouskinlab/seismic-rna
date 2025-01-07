@@ -5,7 +5,7 @@ from typing import Iterable
 
 from click import command
 
-from .cluster.data import load_cluster_dataset
+from .cluster.dataset import load_cluster_dataset
 from .cluster.report import ClusterReport
 from .core.arg import (CMD_JOIN,
                        arg_input_path,
@@ -13,15 +13,15 @@ from .core.arg import (CMD_JOIN,
                        opt_join_clusts,
                        opt_max_procs,
                        opt_force)
-from .core.data import load_datasets
+from .core.dataset import load_datasets
 from .core.join.cluster import parse_join_clusts_file
-from .core.join.data import JoinMutsDataset
+from .core.join.dataset import JoinMutsDataset
 from .core.join.report import JoinMaskReport, JoinClusterReport
 from .core.logs import logger
 from .core.run import run_func
 from .core.task import dispatch
 from .core.write import need_write
-from .mask.data import load_mask_dataset
+from .mask.dataset import load_mask_dataset
 from .mask.report import MaskReport
 
 DEFAULT_JOIN = "joined"

@@ -39,7 +39,7 @@ class FoldReport(Report):
 
     @classmethod
     def auto_fields(cls):
-        return {**super().auto_fields(), path.CMD: path.CMD_FOLD_DIR}
+        return {**super().auto_fields(), path.CMD: path.FOLD_STEP}
 
 ########################################################################
 #                                                                      #

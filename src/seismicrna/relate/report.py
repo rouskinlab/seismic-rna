@@ -83,7 +83,7 @@ class PoolReport(Report, RefIO):
 
     @classmethod
     def auto_fields(cls):
-        return {**super().auto_fields(), path.CMD: path.CMD_REL_DIR}
+        return {**super().auto_fields(), path.CMD: path.RELATE_STEP}
 
 
 @cache

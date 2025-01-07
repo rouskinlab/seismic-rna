@@ -316,8 +316,6 @@ class TestRelPattern(ut.TestCase):
         hrp2 = HalfRelPattern("ac", "at", "ca", "cc", "ga", "gg", "gi", "td")
         self.assertEqual(RelPattern(hrp1, hrp2).intersect(None),
                          RelPattern(hrp1, hrp2))
-        self.assertEqual(RelPattern(hrp1, hrp2).intersect(None, invert=True),
-                         RelPattern(hrp2, hrp1))
 
     def test_intersect_other(self):
         hrp1 = HalfRelPattern("aa", "ac", "ca", "cc", "ga", "gt", "gi", "td")
@@ -329,11 +327,6 @@ class TestRelPattern(ut.TestCase):
         self.assertEqual(
             RelPattern(hrp1, hrp3).intersect(RelPattern(hrp2, hrp4)),
             RelPattern(hrp12, hrp34)
-        )
-        self.assertEqual(
-            RelPattern(hrp1, hrp3).intersect(RelPattern(hrp2, hrp4),
-                                             invert=True),
-            RelPattern(hrp34, hrp12)
         )
 
     def test_invert(self):

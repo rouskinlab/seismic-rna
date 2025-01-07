@@ -63,14 +63,14 @@ def split_xam_file(xam_file: Path,
     result_dir = path.build(*path.CMD_DIR_SEGS,
                             top=out_dir,
                             sample=sample,
-                            cmd=path.CMD_ALIGN_DIR)
+                            cmd=path.ALIGN_STEP)
     if need_write(result_dir, force):
         # Sort and index the XAM file.
         xam_input_dir = tmp_dir.joinpath("input")
         xam_sorted = path.buildpar(*path.XAM_SEGS,
                                    top=xam_input_dir,
                                    sample=sample,
-                                   cmd=path.CMD_ALIGN_DIR,
+                                   cmd=path.ALIGN_STEP,
                                    ref=fasta.stem,
                                    ext=xam_file.suffix)
         run_sort_xam(xam_file, xam_sorted, n_procs=n_procs)
@@ -90,7 +90,7 @@ def split_xam_file(xam_file: Path,
                        path.build(*path.CMD_DIR_SEGS,
                                   top=release_dir,
                                   sample=sample,
-                                  cmd=path.CMD_ALIGN_DIR))
+                                  cmd=path.ALIGN_STEP))
     return result_dir
 
 

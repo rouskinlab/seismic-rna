@@ -10,12 +10,12 @@ from .core.arg import (CMD_POOL,
                        opt_pool,
                        opt_max_procs,
                        opt_force)
-from .core.data import load_datasets
+from .core.dataset import load_datasets
 from .core.logs import logger
 from .core.run import run_func
 from .core.task import dispatch
 from .core.write import need_write
-from .relate.data import PoolDataset, load_relate_dataset
+from .relate.dataset import PoolDataset, load_relate_dataset
 from .relate.report import RelateReport, PoolReport
 
 DEFAULT_POOL = "pooled"

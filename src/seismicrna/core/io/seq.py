@@ -13,7 +13,7 @@ class RefseqIO(RefIO, BrickleIO):
 
     @classmethod
     def auto_fields(cls):
-        return super().auto_fields() | {path.CMD: path.CMD_REL_DIR}
+        return super().auto_fields() | {path.CMD: path.RELATE_STEP}
 
     def __init__(self, *args, refseq: DNA, **kwargs):
         super().__init__(*args, **kwargs)

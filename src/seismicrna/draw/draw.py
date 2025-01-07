@@ -78,8 +78,8 @@ RNARTIST_PATH = os.environ.get("RNARTISTCORE")
 
 TABLES = {AVERAGE_PREFIX: (MaskPositionTable,
                            MaskPositionTableLoader),
-          path.CMD_CLUST_DIR: (ClusterPositionTable,
-                               ClusterPositionTableLoader)}
+          path.CLUSTER_STEP: (ClusterPositionTable,
+                              ClusterPositionTableLoader)}
 
 
 class ColorBlock:
@@ -221,7 +221,7 @@ class RNArtistRun(object):
             Path fields.
         """
         return {path.TOP: top,
-                path.CMD: path.CMD_FOLD_DIR,
+                path.CMD: path.FOLD_STEP,
                 path.SAMP: self.sample,
                 path.REF: self.ref,
                 path.REG: self.reg}

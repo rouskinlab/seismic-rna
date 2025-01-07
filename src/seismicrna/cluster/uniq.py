@@ -10,7 +10,7 @@ from ..core.array import get_length
 from ..core.batch import EndCoords, RegionMutsBatch
 from ..core.rel import RelPattern
 from ..core.seq import Region
-from ..mask.data import MaskMutsDataset
+from ..mask.dataset import MaskMutsDataset
 
 
 class UniqReads(EndCoords):

@@ -13,9 +13,9 @@ from ..core.logs import logger
 from ..core.rna import parse_db_strings
 from ..core.write import need_write, write_mode
 from ..fold.rnastructure import parse_energy
-from ..mask.data import MaskMutsDataset
+from ..mask.dataset import MaskMutsDataset
 from ..mask.report import MaskReport
-from ..relate.data import load_relate_dataset
+from ..relate.dataset import load_relate_dataset
 from ..relate.report import RelateReport
 from ..core.table import (COVER_REL,
                           INFOR_REL,

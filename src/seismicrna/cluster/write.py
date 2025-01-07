@@ -5,7 +5,7 @@ from typing import Iterable
 
 import numpy as np
 
-from .data import ClusterMutsDataset
+from .dataset import ClusterMutsDataset
 from .emk import EMRunsK, find_best_k, sort_runs
 from .em import EMRun
 from .io import ClusterBatchWriter
@@ -23,7 +23,7 @@ from ..core.task import dispatch
 from ..core.tmp import release_to_out
 from ..core.types import get_max_uint
 from ..core.write import need_write
-from ..mask.data import load_mask_dataset
+from ..mask.dataset import load_mask_dataset
 from ..mask.report import MaskReport
 
 SEED_DTYPE = np.uint32
@@ -152,7 +152,7 @@ def cluster(mask_report_file: Path, *,
                                     verify_times=verify_times)
         tmp_clust_dir = path.buildpar(*path.REG_DIR_SEGS,
                                       top=tmp_dir,
-                                      cmd=path.CMD_CLUST_DIR,
+                                      cmd=path.CLUSTER_STEP,
                                       sample=dataset.sample,
                                       ref=dataset.ref,
                                       reg=dataset.region.name)

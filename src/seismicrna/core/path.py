@@ -30,14 +30,15 @@ STR_PATTERN = f"([{STR_CHARS}]+)"
 INT_PATTERN = f"([{INT_CHARS}]+)"
 RE_PATTERNS = {str: STR_PATTERN, int: INT_PATTERN, pathlib.Path: PATH_PATTERN}
 
-# Directories for commands
-CMD_ALIGN_DIR = "align"
-CMD_REL_DIR = "relate"
-CMD_MASK_DIR = "mask"
-CMD_CLUST_DIR = "cluster"
-CMD_LIST_DIR = "list"
-CMD_FOLD_DIR = "fold"
-CMD_GRAPH_DIR = "graph"
+# Names of steps
+ALIGN_STEP = "align"
+RELATE_STEP = "relate"
+NAMES_STEP = "names"
+MASK_STEP = "mask"
+CLUSTER_STEP = "cluster"
+LIST_STEP = "list"
+FOLD_STEP = "fold"
+GRAPH_STEP = "graph"
 
 # Directories for simulation
 
@@ -71,7 +72,7 @@ CLUST_PARAMS_DIR = "parameters"
 CLUST_STATS_DIR = "statistics"
 CLUST_COUNTS_DIR = "read-counts"
 
-TABLES = (CMD_REL_DIR, CMD_MASK_DIR, CMD_CLUST_DIR)
+TABLES = (RELATE_STEP, MASK_STEP, CLUSTER_STEP)
 
 # File extensions
 
@@ -259,19 +260,19 @@ class Field(object):
 # Fields
 TopField = Field(pathlib.Path)
 NameField = Field(str)
-CmdField = Field(str, [CMD_ALIGN_DIR,
-                       CMD_REL_DIR,
-                       CMD_MASK_DIR,
-                       CMD_CLUST_DIR,
-                       CMD_LIST_DIR,
-                       CMD_FOLD_DIR,
-                       CMD_GRAPH_DIR])
+CmdField = Field(str, [ALIGN_STEP,
+                       RELATE_STEP,
+                       MASK_STEP,
+                       CLUSTER_STEP,
+                       LIST_STEP,
+                       FOLD_STEP,
+                       GRAPH_STEP])
 StageField = Field(str, STAGES)
 IntField = Field(int)
 ClustRunResultsField = Field(str, CLUST_PARAMS)
 PosTableField = Field(str, TABLES)
 ReadTableField = Field(str, TABLES)
-AbundanceField = Field(str, [CMD_CLUST_DIR])
+AbundanceField = Field(str, [CLUSTER_STEP])
 
 # File extensions
 TextExt = Field(str, [TXT_EXT], is_ext=True)
@@ -462,36 +463,44 @@ AlignRefRepSeg = Segment("align-ref-rep",
                          frmt="{ref}__align-report{ext}")
 
 # Relate
-RefseqFileSeg = Segment("refseq-file", {EXT: RefseqFileExt}, frmt="refseq{ext}")
-ReadNamesBatSeg = Segment("name-bat",
+RefseqFileSeg = Segment("refseq-file",
+                        {EXT: RefseqFileExt},
+                        frmt="refseq{ext}")
+ReadNamesBatSeg = Segment("names-bat",
                           {BATCH: IntField, EXT: BatchExt},
-                          frmt="names-batch-{batch}{ext}")
-RelateBatSeg = Segment("rel-bat",
+                          frmt=NAMES_STEP + "-batch-{batch}{ext}")
+RelateBatSeg = Segment(f"relate-bat",
                        {BATCH: IntField, EXT: BatchExt},
-                       frmt="relate-batch-{batch}{ext}")
-RelateRepSeg = Segment("rel-rep", {EXT: ReportExt}, frmt="relate-report{ext}")
+                       frmt=RELATE_STEP + "-batch-{batch}{ext}")
+RelateRepSeg = Segment(f"relate-rep",
+                       {EXT: ReportExt},
+                       frmt=RELATE_STEP + "-report{ext}")
 
 # Mask
-MaskBatSeg = Segment("mask-bat",
+MaskBatSeg = Segment(f"{MASK_STEP}-bat",
                      {BATCH: IntField, EXT: BatchExt},
-                     frmt="mask-batch-{batch}{ext}")
-MaskRepSeg = Segment("mask-rep", {EXT: ReportExt}, frmt="mask-report{ext}")
+                     frmt=MASK_STEP + "-batch-{batch}{ext}")
+MaskRepSeg = Segment("mask-rep",
+                     {EXT: ReportExt},
+                     frmt=MASK_STEP + "-report{ext}")
 
 # Cluster
-ClustParamsDirSeg = Segment("clust-run-res-dir",
+ClustParamsDirSeg = Segment(f"cluster-run-res-dir",
                             {},
                             frmt=CLUST_PARAMS_DIR,
                             order=10)
-ClustParamsFileSeg = Segment("clust-run-res",
+ClustParamsFileSeg = Segment(f"cluster-run-res",
                              {TABLE: ClustRunResultsField,
                               NCLUST: IntField,
                               RUN: IntField,
                               EXT: ClustTabExt},
                              frmt="k{k}-r{run}_{table}{ext}")
-ClustBatSeg = Segment("clust-bat",
+ClustBatSeg = Segment("cluster-bat",
                       {BATCH: IntField, EXT: BatchExt},
-                      frmt="cluster-batch-{batch}{ext}")
-ClustRepSeg = Segment("clust-rep", {EXT: ReportExt}, frmt="cluster-report{ext}")
+                      frmt=CLUSTER_STEP + "-batch-{batch}{ext}")
+ClustRepSeg = Segment("cluster-rep",
+                      {EXT: ReportExt},
+                      frmt=CLUSTER_STEP + "-report{ext}")
 
 # Table
 PositionTableSeg = Segment("position-table",

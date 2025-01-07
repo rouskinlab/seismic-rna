@@ -474,13 +474,13 @@ def fq_pipeline(fq_inp: FastqUnit,
     align_dir = path.builddir(*path.CMD_DIR_SEGS,
                               top=out_dir,
                               sample=sample,
-                              cmd=path.CMD_ALIGN_DIR)
+                              cmd=path.ALIGN_STEP)
     # Optionally trim the reads with Fastp, and then align them to the
     # reference sequence with Bowtie2.
     xam_whole = path.buildpar(*path.XAM_STAGE_SEGS,
                               top=tmp_dir,
                               sample=sample,
-                              cmd=path.CMD_ALIGN_DIR,
+                              cmd=path.ALIGN_STEP,
                               stage=path.STAGE_ALIGN_MAP,
                               ref=refset,
                               ext=path.BAM_EXT)

@@ -3,10 +3,12 @@ from functools import cached_property
 
 import pandas as pd
 
-from .data import ClusterMutsDataset
+from .dataset import load_cluster_dataset
 from ..core import path
 from ..core.header import ClustHeader, RelClustHeader, make_header, parse_header
-from ..core.table import (AbundanceTable,
+from ..core.table import (BatchTabulator,
+                          CountTabulator,
+                          AbundanceTable,
                           RelTypeTable,
                           PositionTableWriter,
                           AbundanceTableWriter)
@@ -21,7 +23,7 @@ class ClusterTable(RelTypeTable, ABC):
 
     @classmethod
     def kind(cls):
-        return path.CMD_CLUST_DIR
+        return path.CLUSTER_STEP
 
     @classmethod
     def header_type(cls):
@@ -36,7 +38,7 @@ class ClusterAbundanceTable(AbundanceTable, PartialTable, ABC):
 
     @classmethod
     def kind(cls):
-        return path.CMD_CLUST_DIR
+        return path.CLUSTER_STEP
 
     @classmethod
     def header_type(cls):
@@ -107,10 +109,23 @@ class ClusterTabulator(PartialTabulator, ABC):
         return n_clust
 
 
-class ClusterDatasetTabulator(ClusterTabulator, PartialDatasetTabulator):
+class ClusterBatchTabulator(BatchTabulator, ClusterTabulator):
+    pass
 
-    def __init__(self, *, dataset: ClusterMutsDataset, **kwargs):
-        super().__init__(dataset=dataset, ks=dataset.ks, **kwargs)
+
+class ClusterCountTabulator(CountTabulator, ClusterTabulator):
+    pass
+
+
+class ClusterDatasetTabulator(PartialDatasetTabulator, ClusterTabulator):
+
+    @classmethod
+    def load_function(cls):
+        return load_cluster_dataset
+
+    @classmethod
+    def init_kws(cls):
+        return super().init_kws() + ["ks"]
 
 ########################################################################
 #                                                                      #
