@@ -101,7 +101,6 @@ class StructOneTableGraph(OneTableGraph, OneRelGraph, ABC):
 class StructOneTableWriter(OneTableWriter, ABC):
 
     def iter_graphs(self,
-                    rels: tuple[str, ...],
                     cgroup: str,
                     struct_file: tuple[str, ...] = (),
                     fold_coords: tuple[tuple[str, int, int], ...] = (),
@@ -141,7 +140,7 @@ class StructOneTableWriter(OneTableWriter, ABC):
         # Generate a graph for each cluster, relationship, and region.
         for cparams in cgroup_table(self.table, cgroup):
             kwparams = kwargs | cparams
-            for rels_group in rels:
+            for rels_group in self.rels:
                 for file in struct_files:
                     yield self.get_graph(rels_group,
                                          struct_file=file,
