@@ -503,15 +503,13 @@ class Masker(object):
                           f"{unmasked_curr}")
             logger.routine(f"Ended {self} iteration {self._iter}")
             # Masking has converged if either the same positions were
-            # masked before and after this iteration or no positions
-            # remain unmasked after this iteration.
-            if unmasked_curr.size == 0 or np.array_equal(unmasked_prev,
-                                                         unmasked_curr):
+            # masked before and after this iteration.
+            if np.array_equal(unmasked_prev, unmasked_curr):
                 self._converged = True
                 logger.routine(f"{self} converged on iteration {self._iter}")
             # Create and save the report after the opportunity to set
-            # self._converged to True (so that the report will contain
-            # the correct value) and before returning.
+            # self._converged to True (so that the report will have the
+            # correct value of self._converged) and before returning.
             report = self.create_report()
             report_saved = report.save(self.top, force=self._force_write)
             if self._converged or self._iter >= self.max_iter > 0:
