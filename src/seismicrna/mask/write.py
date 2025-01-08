@@ -12,10 +12,11 @@ from .batch import apply_mask
 from .dataset import MaskMutsDataset
 from .io import MaskBatchIO
 from .report import MaskReport
-from .table import MaskBatchTabulator, MaskDatasetTabulator
+from .table import MaskBatchTabulator
 from ..core import path
 from ..core.arg import docdef
 from ..core.batch import RegionMutsBatch
+from ..core.io import digest_file
 from ..core.logs import logger
 from ..core.rel import RelPattern
 from ..core.report import mask_iter_no_convergence
@@ -532,8 +533,32 @@ class Masker(object):
                                                   relate_data_dir,
                                                   strict=True)
                     tmp_data_dir.parent.mkdir(parents=True, exist_ok=True)
-                    tmp_data_dir.symlink_to(relate_data_dir)
-                    logger.detail(f"Linked {tmp_data_dir} to {relate_data_dir}")
+                    try:
+                        tmp_data_dir.symlink_to(relate_data_dir)
+                        logger.detail(
+                            f"Linked {tmp_data_dir} to {relate_data_dir}"
+                        )
+                    except FileExistsError:
+                        logger.detail(f"{tmp_data_dir} already exists")
+                        # A parallel process may have already symlinked
+                        # the directory; if so, then validate its files.
+                        for relate_file in relate_data_dir.iterdir():
+                            tmp_file = tmp_data_dir.joinpath(relate_file.name)
+                            logger.detail(
+                                f"Comparing {tmp_file} to {relate_file}"
+                            )
+                            try:
+                                tmp_digest = digest_file(tmp_file)
+                            except FileNotFoundError:
+                                raise FileNotFoundError(tmp_file)
+                            if tmp_digest != digest_file(relate_file):
+                                raise OSError(
+                                    f"{relate_data_dir} and {tmp_data_dir} "
+                                    f"contain files with different contents"
+                                )
+                        logger.detail(
+                            f"{tmp_data_dir} matches {relate_data_dir}"
+                        )
             self.dataset = MaskMutsDataset(report_saved)
             self._iter += 1
 

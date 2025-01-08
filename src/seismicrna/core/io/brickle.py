@@ -17,6 +17,11 @@ def digest_data(data: bytes):
     return md5(data).hexdigest()
 
 
+def digest_file(file: Path | str):
+    with open(file, "rb") as f:
+        return digest_data(f.read())
+
+
 def save_brickle(item: Any,
                  file: Path,
                  brotli_level: int = DEFAULT_BROTLI_LEVEL,
@@ -35,7 +40,7 @@ def save_brickle(item: Any,
     return checksum
 
 
-def load_brickle(file: Path,
+def load_brickle(file: Path | str,
                  checksum: str,
                  check_type: None | type | tuple[type, ...] = None):
     """ Unpickle and return an object from a Brotli-compressed file. """
