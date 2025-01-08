@@ -1237,7 +1237,6 @@ opt_mutdist_null = Option(
     help="Include the null distribution of distances between mutations"
 )
 
-
 # CT renumbering
 
 opt_ct_pos_5 = Option(
@@ -1250,11 +1249,11 @@ opt_ct_pos_5 = Option(
 )
 
 opt_inplace = Option(
-    ("--inplace/--newfile",),
+    ("--inplace/--not-inplace",),
     type=bool,
     default=False,
     help="Modify files in-place instead of writing new files "
-         "(WARNING: you cannot recover the original files afterwards)"
+         "(CAUTION: you cannot recover the original files afterwards)"
 )
 
 # Export

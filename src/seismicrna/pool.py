@@ -8,6 +8,9 @@ from click import command
 from .core.arg import (CMD_POOL,
                        arg_input_path,
                        opt_pool,
+                       opt_relate_pos_table,
+                       opt_relate_read_table,
+                       opt_verify_times,
                        opt_max_procs,
                        opt_force)
 from .core.dataset import load_datasets
@@ -17,16 +20,27 @@ from .core.task import dispatch
 from .core.write import need_write
 from .relate.dataset import PoolDataset, load_relate_dataset
 from .relate.report import RelateReport, PoolReport
+from .relate.table import RelateDatasetTabulator
+from .table import tabulate
 
 DEFAULT_POOL = "pooled"
+
+
+def write_report(out_dir: Path, **kwargs):
+    report = PoolReport(ended=datetime.now(), **kwargs)
+    return report.save(out_dir, force=True)
 
 
 def pool_samples(out_dir: Path,
                  name: str,
                  ref: str,
                  samples: Iterable[str], *,
+                 relate_pos_table: bool,
+                 relate_read_table: bool,
+                 verify_times: bool,
+                 n_procs: int,
                  force: bool):
-    """ Combine one or more samples into a pooled sample.
+    """ Pool one or more samples (vertically).
 
     Parameters
     ----------
@@ -38,6 +52,14 @@ def pool_samples(out_dir: Path,
         Name of the reference
     samples: Iterable[str]
         Names of the samples in the pool.
+    relate_pos_table: bool
+        Tabulate relationships per position for relate data.
+    relate_read_table: bool
+        Tabulate relationships per read for relate data
+    verify_times: bool
+        Verify that report files from later steps have later timestamps.
+    n_procs: bool
+        Number of processors to use.
     force: bool
         Force the report to be written, even if it exists.
 
@@ -78,19 +100,33 @@ def pool_samples(out_dir: Path,
                 # The report file does not contain a Pool report.
                 raise TypeError(f"Cannot overwrite {report_file} with "
                                 f"{PoolReport.__name__}: would cause data loss")
-        ended = datetime.now()
-        report = PoolReport(sample=name,
-                            ref=ref,
-                            pooled_samples=samples,
-                            began=began,
-                            ended=ended)
-        report.save(out_dir, force=True)
+        report_kwargs = dict(sample=name,
+                             ref=ref,
+                             pooled_samples=samples,
+                             began=began)
+        # Write the report file with a placeholder time.
+        write_report(out_dir, **report_kwargs)
+        # Tabulate the pooled dataset.
+        dataset = load_relate_dataset(report_file, verify_times=verify_times)
+        tabulate(dataset,
+                 RelateDatasetTabulator,
+                 pos_table=relate_pos_table,
+                 read_table=relate_read_table,
+                 clust_table=False,
+                 n_procs=n_procs,
+                 force=True)
+        # Rewrite the report file with the updated time.
+        write_report(out_dir, **report_kwargs)
     return report_file
 
 
 @run_func(CMD_POOL)
 def run(input_path: tuple[str, ...], *,
         pool: str,
+        # Tabulation
+        relate_pos_table: bool,
+        relate_read_table: bool,
+        verify_times: bool,
         # Parallelization
         max_procs: int,
         # Effort
@@ -113,16 +149,23 @@ def run(input_path: tuple[str, ...], *,
     # Make each pool of samples.
     return dispatch(pool_samples,
                     max_procs=max_procs,
-                    pass_n_procs=False,
+                    pass_n_procs=True,
                     args=[(out_dir, pool, ref, samples)
                           for (out_dir, ref), samples in pools.items()],
-                    kwargs=dict(force=force))
+                    kwargs=dict(relate_pos_table=relate_pos_table,
+                                relate_read_table=relate_read_table,
+                                verify_times=verify_times,
+                                force=force))
 
 
 params = [
     arg_input_path,
     # Pooling
     opt_pool,
+    # Tabulation
+    opt_relate_pos_table,
+    opt_relate_read_table,
+    opt_verify_times,
     # Parallelization
     opt_max_procs,
     # Effort

@@ -28,19 +28,19 @@ from .relate.table import RelateCountTabulator, RelateDatasetTabulator
 
 
 def tabulate(dataset: MutsDataset,
-             tabulator: type[DatasetTabulator],
+             tabulator_type: type[DatasetTabulator],
              pos_table: bool,
              read_table: bool,
              clust_table: bool,
              force: bool,
              n_procs: int):
-    files = tabulator(dataset=dataset,
-                      count_pos=pos_table,
-                      count_read=read_table,
-                      max_procs=n_procs).write_tables(pos=pos_table,
-                                                      read=read_table,
-                                                      clust=clust_table,
-                                                      force=force)
+    files = tabulator_type(dataset=dataset,
+                           count_pos=pos_table,
+                           count_read=read_table,
+                           max_procs=n_procs).write_tables(pos=pos_table,
+                                                           read=read_table,
+                                                           clust=clust_table,
+                                                           force=force)
     return list({file.parent for file in files})
 
 

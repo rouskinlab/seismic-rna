@@ -6,11 +6,16 @@ from typing import Iterable
 from click import command
 
 from .cluster.dataset import load_cluster_dataset
-from .cluster.report import ClusterReport
+from .cluster.table import ClusterDatasetTabulator
 from .core.arg import (CMD_JOIN,
                        arg_input_path,
                        opt_joined,
                        opt_join_clusts,
+                       opt_mask_pos_table,
+                       opt_mask_read_table,
+                       opt_cluster_pos_table,
+                       opt_cluster_abundance_table,
+                       opt_verify_times,
                        opt_max_procs,
                        opt_force)
 from .core.dataset import load_datasets
@@ -23,8 +28,17 @@ from .core.task import dispatch
 from .core.write import need_write
 from .mask.dataset import load_mask_dataset
 from .mask.report import MaskReport
+from .mask.table import MaskDatasetTabulator
+from .table import tabulate
 
 DEFAULT_JOIN = "joined"
+
+
+def write_report(report_type: type[JoinMaskReport | JoinClusterReport],
+                 out_dir: Path,
+                 **kwargs):
+    report = report_type(ended=datetime.now(), **kwargs)
+    return report.save(out_dir, force=True)
 
 
 def join_regions(out_dir: Path,
@@ -34,8 +48,14 @@ def join_regions(out_dir: Path,
                  regs: Iterable[str],
                  clustered: bool, *,
                  clusts: dict[str, dict[int, dict[int, int]]],
+                 mask_pos_table: bool,
+                 mask_read_table: bool,
+                 cluster_pos_table: bool,
+                 cluster_abundance_table: bool,
+                 verify_times: bool,
+                 n_procs: int,
                  force: bool):
-    """ Join one or more regions.
+    """ Join one or more regions (horizontally).
 
     Parameters
     ----------
@@ -55,13 +75,25 @@ def join_regions(out_dir: Path,
         For each region, for each number of clusters, the cluster from
         the original region to use as the cluster in the joined region
         (ignored if `clustered` is False).
+    mask_pos_table: bool
+        Tabulate relationships per position for mask data.
+    mask_read_table: bool
+        Tabulate relationships per read for mask data
+    cluster_pos_table: bool
+        Tabulate relationships per position for cluster data.
+    cluster_abundance_table: bool
+        Tabulate number of reads per cluster for cluster data.
+    verify_times: bool
+        Verify that report files from later steps have later timestamps.
+    n_procs: bool
+        Number of processors to use.
     force: bool
         Force the report to be written, even if it exists.
 
     Returns
     -------
     pathlib.Path
-        Path of the Pool report file.
+        Path of the Join report file.
     """
     began = datetime.now()
     # Deduplicate and sort the regions.
@@ -74,46 +106,55 @@ def join_regions(out_dir: Path,
     report_kwargs = dict(sample=sample,
                          ref=ref,
                          reg=name,
-                         joined_regions=regs)
+                         joined_regions=regs,
+                         began=began)
     # Determine whether the dataset is clustered.
     if clustered:
         report_kwargs |= dict(joined_clusters=clusts)
-        join_type = JoinClusterReport
-        part_type = ClusterReport
+        tabulator_type = ClusterDatasetTabulator
+        pos_table = cluster_pos_table
+        read_table = False
+        clust_table = cluster_abundance_table
     else:
-        join_type = JoinMaskReport
-        part_type = MaskReport
+        tabulator_type = MaskDatasetTabulator
+        pos_table = mask_pos_table
+        read_table = mask_read_table
+        clust_table = False
+    load_function = tabulator_type.load_function()
+    _, dataset_type = load_function.dataset_types
+    report_type = dataset_type.get_report_type()
     # Determine the output report file.
-    report_file = join_type.build_path(top=out_dir,
-                                       sample=sample,
-                                       ref=ref,
-                                       reg=name)
+    report_file = report_type.build_path(top=out_dir,
+                                         sample=sample,
+                                         ref=ref,
+                                         reg=name)
     if need_write(report_file, force):
-        # Because Join report files have the same name as Mask/Cluster
-        # reports, it would be possible to overwrite the latter with a
-        # Join report, rendering their datasets unusable; prevent this.
+        # Because a Join report file has the same name as a Mask/Cluster
+        # report, it would be possible to overwrite the latter with a
+        # Join report, rendering its datasets unusable; prevent this.
         if report_file.is_file():
-            # Check if the report file contains a Mask/Cluster report.
-            try:
-                part_type.load(report_file)
-            except ValueError:
-                # The file does not contain a Mask/Cluster report.
-                pass
-            else:
-                # The file contains a Mask/Cluster report.
-                raise TypeError(f"Overwriting {part_type.__name__} in "
-                                f"{report_file} with {join_type.__name__} "
-                                f"would cause data loss")
             # Check whether the report file contains a Join report.
             try:
-                join_type.load(report_file)
+                report_type.load(report_file)
             except ValueError:
                 # The report file does not contain a Join report.
-                raise TypeError(f"Overwriting {report_file} with "
-                                f"{join_type.__name__} would cause data loss")
-        ended = datetime.now()
-        report = join_type(**report_kwargs, began=began, ended=ended)
-        report.save(out_dir, force=True)
+                raise TypeError(
+                    f"Overwriting {report_file} with {report_type.__name__} "
+                    "would cause data loss"
+                )
+        # Write the report file with a placeholder time.
+        write_report(report_type, out_dir, **report_kwargs)
+        # Tabulate the joined dataset.
+        dataset = load_function(report_file, verify_times=verify_times)
+        tabulate(dataset,
+                 tabulator_type,
+                 pos_table=pos_table,
+                 read_table=read_table,
+                 clust_table=clust_table,
+                 n_procs=n_procs,
+                 force=True)
+        # Rewrite the report file with the updated time.
+        write_report(report_type, out_dir, **report_kwargs)
     return report_file
 
 
@@ -121,6 +162,12 @@ def join_regions(out_dir: Path,
 def run(input_path: tuple[str, ...], *,
         joined: str,
         join_clusts: str | None,
+        # Tabulation
+        mask_pos_table: bool,
+        mask_read_table: bool,
+        cluster_pos_table: bool,
+        cluster_abundance_table: bool,
+        verify_times: bool,
         # Parallelization
         max_procs: int,
         # Effort
@@ -164,14 +211,20 @@ def run(input_path: tuple[str, ...], *,
                                     False)]
                 mask_joins.extend([reg for reg in regs
                                    if reg not in mask_joins])
-    # Make each joined region.
+    # Create each joined region.
     return dispatch(join_regions,
                     max_procs=max_procs,
-                    pass_n_procs=False,
+                    pass_n_procs=True,
                     args=[(out_dir, joined, sample, ref, regs, clustered)
                           for (out_dir, sample, ref, clustered), regs
                           in joins.items()],
-                    kwargs=dict(clusts=clusts, force=force))
+                    kwargs=dict(clusts=clusts,
+                                mask_pos_table=mask_pos_table,
+                                mask_read_table=mask_read_table,
+                                cluster_pos_table=cluster_pos_table,
+                                cluster_abundance_table=cluster_abundance_table,
+                                verify_times=verify_times,
+                                force=force))
 
 
 params = [
@@ -179,6 +232,12 @@ params = [
     # Joining
     opt_joined,
     opt_join_clusts,
+    # Tabulation
+    opt_mask_pos_table,
+    opt_mask_read_table,
+    opt_cluster_pos_table,
+    opt_cluster_abundance_table,
+    opt_verify_times,
     # Parallelization
     opt_max_procs,
     # Effort
