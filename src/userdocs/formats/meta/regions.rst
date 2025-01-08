@@ -11,7 +11,7 @@ Purpose of metadata for regions
 Define and name regions of a reference sequence.
 For references with many regions, it is more convenient, reproducible,
 and traceable to define the regions in a file than on the command line,
-using the option ``--regions-file`` (``-s``).
+using the option ``--regions-file`` (``-i``).
 The regions file additionally permits giving each region a name.
 
 
