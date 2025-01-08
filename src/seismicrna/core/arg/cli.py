@@ -1216,6 +1216,28 @@ opt_graph_aucroll = Option(
     help="Graph rolling areas under receiver operating characteristic curves"
 )
 
+opt_graph_poscorr = Option(
+    ("--graph-poscorr/--no-graph-poscorr",),
+    type=bool,
+    default=False,
+    help="Graph phi correlations between positions"
+)
+
+opt_graph_mutdist = Option(
+    ("--graph-mutdist/--no-graph-mutdist",),
+    type=bool,
+    default=False,
+    help="Graph distances between mutations"
+)
+
+opt_mutdist_null = Option(
+    ("--mutdist-null/--no-mutdist-null",),
+    type=bool,
+    default=True,
+    help="Include the null distribution of distances between mutations"
+)
+
+
 # CT renumbering
 
 opt_ct_pos_5 = Option(

@@ -38,6 +38,9 @@ from .core.arg import (CMD_WORKFLOW,
                        opt_graph_giniroll,
                        opt_graph_roc,
                        opt_graph_aucroll,
+                       opt_graph_poscorr,
+                       opt_graph_mutdist,
+                       opt_mutdist_null,
                        extra_defaults)
 from .core.run import run_func
 from .core.seq import DNA
@@ -53,6 +56,8 @@ from .core.table import (DELET_REL,
 from .graph.aucroll import RollingAUCRunner
 from .graph.giniroll import RollingGiniRunner
 from .graph.histread import ReadHistogramRunner
+from .graph.mutdist import MutationDistanceRunner
+from .graph.poscorr import PositionCorrelationRunner
 from .graph.profile import ProfileRunner
 from .graph.roc import ROCRunner
 
@@ -233,9 +238,11 @@ def run(fasta: str,
         graph_mhist: bool,
         graph_giniroll: bool,
         graph_roc: bool,
-        graph_aucroll: bool):
+        graph_aucroll: bool,
+        graph_poscorr: bool,
+        graph_mutdist: bool,
+        mutdist_null: bool):
     """ Run the entire workflow. """
-    # Demultiplex
     if demult_on:
         for dms, dmi, dmm in demultiplex_mod.run_dm(
                 fasta=fasta,
@@ -258,7 +265,6 @@ def run(fasta: str,
         # Clear the input FASTQ files once the demultiplexed FASTQ files
         # have been generated.
         fastqx = tuple()
-    # Align
     input_path += as_tuple_str(align_mod.run(
         out_dir=out_dir,
         tmp_pfx=tmp_pfx,
@@ -311,7 +317,6 @@ def run(fasta: str,
         f1r2_fwd=f1r2_fwd,
         rev_label=rev_label,
     ))
-    # Relate
     input_path += as_tuple_str(relate_mod.run(
         fasta=fasta,
         input_path=input_path,
@@ -337,7 +342,6 @@ def run(fasta: str,
         force=force,
         keep_tmp=keep_tmp,
     ))
-    # Mask
     input_path += as_tuple_str(mask_mod.run(
         input_path=input_path,
         tmp_pfx=tmp_pfx,
@@ -370,7 +374,6 @@ def run(fasta: str,
         max_procs=max_procs,
         force=force,
     ))
-    # Cluster
     if (cluster
             or min_clusters != opt_min_clusters.default
             or max_clusters != opt_max_clusters.default):
@@ -400,7 +403,6 @@ def run(fasta: str,
             max_procs=max_procs,
             force=force,
         ))
-    # Fold
     if fold:
         input_path += as_tuple_str(fold_mod.run(
             input_path=input_path,
@@ -420,7 +422,6 @@ def run(fasta: str,
             max_procs=max_procs,
             force=force,
         ))
-    # Draw
     if draw:
         draw_mod.run(
             input_path=input_path,
@@ -437,7 +438,6 @@ def run(fasta: str,
             rels += REL_NAMES[MUTAT_REL],
         if graph_tmprof:
             rels += MUTAT_RELS,
-        # Graph mutational profiles.
         ProfileRunner.run(input_path=input_path,
                           rels=(REL_NAMES[MUTAT_REL], MUTAT_RELS),
                           use_ratio=True,
@@ -451,7 +451,6 @@ def run(fasta: str,
                           max_procs=max_procs,
                           force=force)
     if graph_ncov:
-        # Graph information per position.
         ProfileRunner.run(input_path=input_path,
                           rels=(REL_NAMES[INFOR_REL],),
                           use_ratio=False,
@@ -465,7 +464,6 @@ def run(fasta: str,
                           max_procs=max_procs,
                           force=force)
     if graph_mhist:
-        # Graph mutations per read.
         ReadHistogramRunner.run(input_path=input_path,
                                 rels=(REL_NAMES[MUTAT_REL],),
                                 use_ratio=False,
@@ -481,7 +479,6 @@ def run(fasta: str,
                                 max_procs=max_procs,
                                 force=force)
     if graph_giniroll:
-        # Graph Gini coefficient.
         RollingGiniRunner.run(input_path=input_path,
                               rels=(REL_NAMES[MUTAT_REL],),
                               use_ratio=True,
@@ -496,9 +493,34 @@ def run(fasta: str,
                               png=png,
                               max_procs=max_procs,
                               force=force)
+    if graph_poscorr:
+        PositionCorrelationRunner.run(input_path=input_path,
+                                      rels=(REL_NAMES[MUTAT_REL],),
+                                      cgroup=cgroup,
+                                      verify_times=verify_times,
+                                      csv=csv,
+                                      html=html,
+                                      svg=svg,
+                                      pdf=pdf,
+                                      png=png,
+
+                                      max_procs=max_procs,
+                                      force=force)
+    if graph_mutdist:
+        MutationDistanceRunner.run(input_path=input_path,
+                                   rels=(REL_NAMES[MUTAT_REL],),
+                                   cgroup=cgroup,
+                                   verify_times=verify_times,
+                                   mutdist_null=mutdist_null,
+                                   csv=csv,
+                                   html=html,
+                                   svg=svg,
+                                   pdf=pdf,
+                                   png=png,
+                                   max_procs=max_procs,
+                                   force=force)
     if fold:
         if graph_roc:
-            # Graph ROC curves.
             ROCRunner.run(input_path=input_path,
                           rels=(REL_NAMES[MUTAT_REL],),
                           use_ratio=True,
@@ -517,7 +539,6 @@ def run(fasta: str,
                           max_procs=max_procs,
                           force=force)
         if graph_aucroll:
-            # Graph rolling AUC-ROC.
             RollingAUCRunner.run(input_path=input_path,
                                  rels=(REL_NAMES[MUTAT_REL],),
                                  use_ratio=True,
@@ -537,7 +558,6 @@ def run(fasta: str,
                                  png=png,
                                  max_procs=max_procs,
                                  force=force)
-    # Export
     if export:
         export_mod.run(
             input_path=input_path,
@@ -567,7 +587,10 @@ graph_options = [opt_cgroup,
                  opt_graph_mhist,
                  opt_graph_giniroll,
                  opt_graph_roc,
-                 opt_graph_aucroll]
+                 opt_graph_aucroll,
+                 opt_graph_poscorr,
+                 opt_graph_mutdist,
+                 opt_mutdist_null]
 
 params = merge_params([opt_demultiplex],
                       demultiplex_mod.params,

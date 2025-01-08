@@ -10,6 +10,7 @@ from .color import ColorMapGraph, RelColorMap
 from .dataset import DatasetGraph, DatasetGraphWriter, DatasetGraphRunner
 from .hist import COUNT_NAME
 from .trace import get_hist_trace
+from ..core.arg import opt_mutdist_null
 from ..core.header import REL_NAME, make_header
 from ..core.seq import FIELD_END5, FIELD_END3
 from ..core.table import PositionTable, all_patterns
@@ -40,6 +41,10 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
     @classmethod
     def get_cmap_type(cls):
         return RelColorMap
+
+    def __init__(self, *, mutdist_null: bool, **kwargs):
+        super().__init__(**kwargs)
+        self.calc_null = mutdist_null
 
     @cached_property
     def action(self):
@@ -184,44 +189,60 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
     @cached_property
     def g_test(self):
         """ G-test statistic and P-value. """
-        observed = self._real_hist.values
-        expected = self._null_hist.values
-        assert observed.ndim == 2
-        assert observed.shape == expected.shape
-        assert np.allclose(observed.sum(axis=0), expected.sum(axis=0))
-        n, k = observed.shape
-        dof = n - 1
-        if dof >= 1:
-            with np.errstate(divide="ignore", invalid="ignore"):
-                g_stat = 2. * np.where(np.logical_and(observed > 0,
-                                                      expected > 0),
-                                       observed * np.log(observed / expected),
-                                       0.).sum(axis=0)
-            from scipy.stats import chi2
-            p_value = 1. - chi2.cdf(g_stat, dof)
+        if self.calc_null:
+            observed = self._real_hist.values
+            expected = self._null_hist.values
+            assert observed.ndim == 2
+            assert observed.shape == expected.shape
+            assert np.allclose(observed.sum(axis=0), expected.sum(axis=0))
+            n, k = observed.shape
+            dof = n - 1
+            if dof >= 1:
+                with np.errstate(divide="ignore", invalid="ignore"):
+                    g_stat = 2. * np.where(
+                        np.logical_and(observed > 0, expected > 0),
+                        observed * np.log(observed / expected),
+                        0.
+                    ).sum(axis=0)
+                from scipy.stats import chi2
+                p_value = 1. - chi2.cdf(g_stat, dof)
+            else:
+                g_stat = np.zeros(k, dtype=float)
+                p_value = np.ones_like(g_stat)
         else:
-            g_stat = np.zeros(k, dtype=float)
-            p_value = np.ones_like(g_stat)
+            g_stat = np.nan
+            p_value = np.nan
         return (pd.Series(g_stat, index=self._real_hist.columns),
                 pd.Series(p_value, index=self._real_hist.columns))
 
     @cached_property
     def data(self):
-        return pd.concat([self._real_hist, self._null_hist], axis=1)
+        if self.calc_null:
+            return pd.concat([self._real_hist, self._null_hist], axis=1)
+        return self._real_hist
 
     def get_traces(self):
-        for row, ((_, real_values), (_, null_values)) in enumerate(
-                zip(self._real_hist.items(),
-                    self._null_hist.items(),
-                    strict=True),
-                start=1
-        ):
-            yield (row, 1), get_hist_trace(real_values,
-                                           self.rel_name,
-                                           self.cmap)
-            yield (row, 1), get_hist_trace(null_values,
-                                           get_null_name(self.rel_name),
-                                           self.cmap)
+        if self.calc_null:
+            for row, ((_, real_values), (_, null_values)) in enumerate(
+                    zip(self._real_hist.items(),
+                        self._null_hist.items(),
+                        strict=True),
+                    start=1
+            ):
+                yield (row, 1), get_hist_trace(real_values,
+                                               self.rel_name,
+                                               self.cmap)
+                yield (row, 1), get_hist_trace(null_values,
+                                               get_null_name(self.rel_name),
+                                               self.cmap)
+        else:
+            for row, (_, real_values) in enumerate(
+                    self._real_hist.items(),
+                    start=1
+            ):
+                yield (row, 1), get_hist_trace(real_values,
+                                               self.rel_name,
+                                               self.cmap)
 
 
 class MutationDistanceWriter(DatasetGraphWriter):
@@ -237,6 +258,10 @@ class MutationDistanceRunner(DatasetGraphRunner):
     @classmethod
     def get_writer_type(cls):
         return MutationDistanceWriter
+
+    @classmethod
+    def var_params(cls):
+        return super().var_params() + [opt_mutdist_null]
 
 
 @command(COMMAND, params=MutationDistanceRunner.params())
