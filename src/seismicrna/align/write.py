@@ -4,7 +4,7 @@ from pathlib import Path
 from shutil import rmtree
 from typing import Iterable
 
-from .fqunit import FastqUnit
+from .fqunit import FastqUnit, DuplicateAlignmentError
 from .report import AlignRefReport, AlignSampleReport
 from .xamops import (FASTP_PHRED_OUT,
                      run_bowtie2_build,
@@ -779,12 +779,11 @@ def fqs_pipeline(fq_units: list[FastqUnit],
     return xam_dirs
 
 
-def figure_alignments(fq_units: list[FastqUnit], refs: set[str]):
-    """ Every expected alignment of a sample to a reference. """
+def list_alignments(fq_units: list[FastqUnit], refs: set[str]):
+    """ List every expected alignment of a sample to a reference. """
+    logger.routine("Began listing alignments")
     # Map each combination of a sample and reference to a FASTQ unit.
     alignments: dict[tuple[str, str], FastqUnit] = dict()
-    # Keep track of any duplicate sample-reference pairs.
-    duplicates: set[tuple[str, str]] = set()
     for fq_unit in fq_units:
         # Determine which references the FASTQ reads could come from.
         if fq_unit.ref is None:
@@ -794,28 +793,20 @@ def figure_alignments(fq_units: list[FastqUnit], refs: set[str]):
             # The FASTQ contains reads from only one reference.
             # Confirm that the reference actually exists.
             if fq_unit.ref not in refs:
-                logger.error(f"No reference {repr(fq_unit.ref)} for {fq_unit}")
+                logger.error(f"Reference {repr(fq_unit.ref)} does not exist")
                 continue
             fq_refs = {fq_unit.ref}
         # Add each sample-reference pair to the expected alignments.
+        sample = fq_unit.sample
         for ref in fq_refs:
-            sample_ref = fq_unit.sample, ref
-            if sample_ref in duplicates:
-                # Skip the sample-reference pair if it is a duplicate.
-                continue
-            try:
-                # Test if the sample-reference pair is already in the
-                # dict of alignments. If so, then remove it.
-                alignments.pop(sample_ref)
-            except KeyError:
-                # If not, then add the FASTQ to the dict of alignments,
-                # keyed by its sample-reference pair.
-                alignments[sample_ref] = fq_unit
-            else:
-                # If so, then flag it as a duplicate.
-                logger.warning(f"Duplicate sample and reference: {sample_ref}")
-                duplicates.add(sample_ref)
-    # Return a duplicate-free dict of alignments.
+            logger.detail(
+                f"Adding reference {repr(ref)} for sample {repr(sample)}"
+            )
+            sample_ref = sample, ref
+            if sample_ref in alignments:
+                raise DuplicateAlignmentError(sample_ref)
+            alignments[sample_ref] = fq_unit
+    logger.routine("Ended listing alignments")
     return alignments
 
 
@@ -859,12 +850,9 @@ def merge_nondemult_fqs(fq_units: Iterable[FastqUnit]):
     return list(merged.values())
 
 
-def list_fqs_xams(fq_units: list[FastqUnit],
-                  refs: set[str],
+def list_fqs_xams(alignments: dict[tuple[str, str], FastqUnit],
                   out_dir: Path):
     """ List every FASTQ to align and every extant XAM file. """
-    # Determine all possible alignments of a sample and reference.
-    alignments = figure_alignments(fq_units, refs)
     # Determine which alignments need to be or have already been run.
     fqs_missing, xams_extant = check_fqs_xams(alignments, out_dir)
     # Merge entries for each non-demultiplexed FASTQ.
@@ -880,17 +868,19 @@ def align_samples(fq_units: list[FastqUnit],
     """ Run the alignment pipeline and return a tuple of all XAM files
     from the pipeline. """
     if not fq_units:
-        logger.warning("No FASTQ files or pairs of FASTQ files were given")
+        logger.warning("No FASTQ files or valid pairs were given")
         return list()
+    # List the names of all reference sequences.
+    refs = set(parse_fasta(fasta, None))
+    # List all alignments and check for duplicates.
+    alignments = list_alignments(fq_units, refs)
     if force:
         # force all alignments.
         fqs_to_align = fq_units
         xams_extant = set()
     else:
-        # Get the names of all reference sequences.
-        refs = set(parse_fasta(fasta, None))
         # Run only the alignments whose outputs do not yet exist.
-        fqs_to_align, xams_extant = list_fqs_xams(fq_units, refs, out_dir)
+        fqs_to_align, xams_extant = list_fqs_xams(alignments, out_dir)
     if fqs_to_align:
         # Align all FASTQs that need to be aligned.
         xam_dirs_new = set(fqs_pipeline(fqs_to_align,

@@ -1,16 +1,21 @@
 import os
 import shutil
 import unittest as ut
+from itertools import chain
 from pathlib import Path
 
+from seismicrna.align import run as run_align
+from seismicrna.align.fqunit import DuplicateAlignmentError
+from seismicrna.core import path
 from seismicrna.core.arg.cli import opt_out_dir, opt_sim_dir
 from seismicrna.core.logs import Level, get_config, set_config
+from seismicrna.relate import run as run_relate
 from seismicrna.sim.fastq import run as run_sim_fastq
 from seismicrna.sim.fold import run as run_sim_fold
 from seismicrna.sim.params import run as run_sim_params
 from seismicrna.sim.ref import run as run_sim_ref
 from seismicrna.sim.total import run as run_sim_total
-from seismicrna.wf import run as wf_run
+from seismicrna.wf import run as run_wf
 
 STEPS = ["align", "relate", "mask", "cluster", "fold", "graph"]
 
@@ -57,7 +62,7 @@ class TestWorkflow(ut.TestCase):
         fasta = self.SIM_DIR.joinpath("refs", f"{self.REFS}.fa")
         self.assertTrue(fasta.is_file())
         # Process the data with wf.
-        wf_run(fasta=fasta,
+        run_wf(fasta=fasta,
                input_path=(),
                dmfastqx=fastqs,
                cluster=True,
@@ -102,7 +107,7 @@ class TestWorkflow(ut.TestCase):
                 with open(ref) as r:
                     f.write(r.read())
         # Process the data with wf.
-        wf_run(fasta=fasta,
+        run_wf(fasta=fasta,
                input_path=(),
                dmfastqx=(samples_dir,),
                cluster=True,
@@ -114,6 +119,101 @@ class TestWorkflow(ut.TestCase):
             for step in STEPS:
                 step_dir = self.OUT_DIR.joinpath(sample, step)
                 self.assertTrue(step_dir.is_dir())
+
+
+class TestWorkflowTwoOutDirs(ut.TestCase):
+    NUMBERS = [1, 2]
+    SIM_DIR = Path("sim").absolute()
+    OUT_DIR = Path("out").absolute()
+    SIM_DIRS = tuple(Path(f"sim{i}").absolute() for i in NUMBERS)
+    OUT_DIRS = tuple(Path(f"out{i}").absolute() for i in NUMBERS)
+    REFS = "test_refs"
+    REF = "test_ref"
+    SAMPLE = "test_sample"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._config = None
+
+    def setUp(self):
+        self.SIM_DIR.mkdir()
+        self.OUT_DIR.mkdir()
+        for sim_dir, out_dir in zip(self.SIM_DIRS, self.OUT_DIRS, strict=True):
+            sim_dir.mkdir()
+            out_dir.mkdir()
+        self._config = get_config()
+        set_config(verbosity=Level.ERROR,
+                   log_file_path=None,
+                   raise_on_error=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.SIM_DIR)
+        shutil.rmtree(self.OUT_DIR)
+        for sim_dir, out_dir in zip(self.SIM_DIRS, self.OUT_DIRS, strict=True):
+            shutil.rmtree(sim_dir)
+            shutil.rmtree(out_dir)
+        set_config(**self._config._asdict())
+
+    def test_wf_two_out_dirs(self):
+        fasta = run_sim_ref(sim_dir=str(self.SIM_DIR),
+                            ref=self.REF,
+                            refs=self.REFS,
+                            reflen=60)
+        ct_file, = run_sim_fold(fasta, fold_max=1)
+        dmfastqxs = list()
+        for sim_dir, out_dir in zip(self.SIM_DIRS, self.OUT_DIRS, strict=True):
+            ct_file_copy = path.transpath(sim_dir,
+                                          self.SIM_DIR,
+                                          ct_file,
+                                          strict=True)
+            param_dir = ct_file_copy.parent
+            param_dir.mkdir(parents=True)
+            ct_file_copy.hardlink_to(ct_file)
+            run_sim_params(ct_file=[ct_file_copy])
+            dmfastqxs.append(run_sim_fastq(input_path=[],
+                                           param_dir=[param_dir],
+                                           sample=self.SAMPLE,
+                                           read_length=30,
+                                           num_reads=10))
+        min_reads = 1
+        align_kwargs = dict(min_reads=min_reads,
+                            bt2_score_min_loc="L,1,0.5",
+                            min_mapq=0,
+                            fastp_poly_g="yes",
+                            force=True)
+        # Aligning FASTQ files with the same sample and reference.
+        self.assertRaisesRegex(DuplicateAlignmentError,
+                               str((self.SAMPLE, self.REF)),
+                               run_align,
+                               fasta,
+                               dmfastqx=list(chain(*dmfastqxs)),
+                               out_dir=str(self.OUT_DIR),
+                               **align_kwargs)
+        # Aligning them in different output directories.
+        bam_files = list()
+        for dmfastqx, out_dir in zip(dmfastqxs, self.OUT_DIRS, strict=True):
+            bam_dir, = run_align(fasta,
+                                 dmfastqx=dmfastqx,
+                                 out_dir=str(out_dir),
+                                 **align_kwargs)
+            expect = out_dir.joinpath(self.SAMPLE, "align", f"{self.REF}.bam")
+            self.assertTrue(expect.is_file())
+            self.assertEqual(bam_dir, expect.parent)
+            bam_files.append(bam_dir)
+        # Relating BAM files with the same sample and reference.
+        self.assertRaisesRegex(DuplicateAlignmentError,
+                               str((self.SAMPLE, self.REF)),
+                               run_relate,
+                               fasta,
+                               bam_files,
+                               min_reads=min_reads,
+                               out_dir=self.OUT_DIR)
+        # Relating them in different output directories.
+        for bam_file, out_dir in zip(bam_files, self.OUT_DIRS, strict=True):
+            run_relate(fasta,
+                       (bam_file,),
+                       min_reads=min_reads,
+                       out_dir=out_dir)
 
 
 if __name__ == "__main__":

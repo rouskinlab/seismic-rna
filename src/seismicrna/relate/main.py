@@ -3,7 +3,8 @@ from pathlib import Path
 from click import command
 
 from .strands import write_both_strands
-from .write import write_all
+from .write import relate_xam
+from ..align.fqunit import DuplicateAlignmentError
 from ..core import path
 from ..core.arg import (CMD_REL,
                         arg_input_path,
@@ -29,7 +30,23 @@ from ..core.arg import (CMD_REL,
                         opt_max_procs,
                         opt_force,
                         opt_keep_tmp)
+from ..core.logs import logger
 from ..core.run import run_func
+from ..core.task import as_list_of_tuples, dispatch
+
+
+def check_duplicates(xam_files: list[Path]):
+    """ Check if any sample-reference pair occurs more than once. """
+    logger.routine("Began checking for duplicate sample-reference pairs")
+    sample_ref_pairs = set()
+    for xam_file in xam_files:
+        fields = path.parse(xam_file, *path.XAM_SEGS)
+        sample_ref = fields[path.SAMP], fields[path.REF]
+        logger.detail(f"{xam_file}: {sample_ref}")
+        if sample_ref in sample_ref_pairs:
+            raise DuplicateAlignmentError(sample_ref)
+        sample_ref_pairs.add(sample_ref)
+    logger.routine("Ended checking for duplicate sample-reference pairs")
 
 
 @run_func(CMD_REL, with_tmp=True, pass_keep_tmp=True)
@@ -66,28 +83,33 @@ def run(fasta: str,
         write_both_strands(fasta, relate_fasta, rev_label)
     else:
         relate_fasta = fasta
-    return write_all(xam_files=path.find_files_chain(map(Path, input_path),
-                                                     path.XAM_SEGS),
-                     fasta=relate_fasta,
-                     out_dir=Path(out_dir),
-                     tmp_dir=tmp_dir,
-                     min_reads=min_reads,
-                     min_mapq=min_mapq,
-                     phred_enc=phred_enc,
-                     min_phred=min_phred,
-                     insert3=insert3,
-                     ambindel=ambindel,
-                     overhangs=overhangs,
-                     clip_end5=clip_end5,
-                     clip_end3=clip_end3,
-                     batch_size=batch_size,
-                     relate_pos_table=relate_pos_table,
-                     relate_read_table=relate_read_table,
-                     relate_cx=relate_cx,
-                     max_procs=max_procs,
-                     brotli_level=brotli_level,
-                     force=force,
-                     keep_tmp=keep_tmp)
+    # List the input XAM files and check for duplicates.
+    xam_files = list(path.find_files_chain(map(Path, input_path),
+                                           path.XAM_SEGS))
+    check_duplicates(xam_files)
+    return dispatch(relate_xam,
+                    max_procs,
+                    pass_n_procs=True,
+                    args=as_list_of_tuples(xam_files),
+                    kwargs=dict(fasta=relate_fasta,
+                                out_dir=Path(out_dir),
+                                tmp_dir=tmp_dir,
+                                min_reads=min_reads,
+                                min_mapq=min_mapq,
+                                phred_enc=phred_enc,
+                                min_phred=min_phred,
+                                insert3=insert3,
+                                ambindel=ambindel,
+                                overhangs=overhangs,
+                                clip_end5=clip_end5,
+                                clip_end3=clip_end3,
+                                batch_size=batch_size,
+                                relate_pos_table=relate_pos_table,
+                                relate_read_table=relate_read_table,
+                                relate_cx=relate_cx,
+                                brotli_level=brotli_level,
+                                force=force,
+                                keep_tmp=keep_tmp))
 
 
 # Parameters for command line interface

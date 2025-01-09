@@ -60,6 +60,10 @@ def format_phred_arg(phred_enc: int):
     return f"--phred{phred_enc}"
 
 
+class DuplicateAlignmentError(ValueError):
+    """ A sample-reference pair occurred more than once. """
+
+
 class FastqUnit(object):
     """
     Unified interface for the following sets of sequencing reads:
@@ -124,10 +128,6 @@ class FastqUnit(object):
         self.phred_enc = phred_enc
         self.one_ref = one_ref
         self.sample, self.ref, self.exts = self.get_sample_ref_exts()
-        logger.detail(
-            f"Instantiated a {type(self).__name__} with paths={self.paths}, "
-            f"phred_enc={phred_enc}, one_ref={one_ref}"
-        )
 
     @cached_property
     def phred_arg(self):
@@ -172,7 +172,8 @@ class FastqUnit(object):
         n_reads = list({count_fastq_reads(fq) for fq in self.paths.values()})
         if len(n_reads) != 1:
             raise ValueError(
-                f"Expected one unique number of reads, but got {len(n_reads)}")
+                f"Expected one unique number of reads, but got {len(n_reads)}"
+            )
         return n_reads[0]
 
     def get_sample_ref_exts(self):
@@ -223,14 +224,24 @@ class FastqUnit(object):
                     one_ref: bool,
                     fqs: list[Path],
                     key: str):
-        if key not in (cls.KEY_SINGLE, cls.KEY_INTER):
-            raise ValueError(f"Invalid key: '{key}'")
-        segs = path.DMFASTQ_SEGS if one_ref else path.FASTQ_SEGS
+        if key != cls.KEY_SINGLE and key != cls.KEY_INTER:
+            raise ValueError(f"Invalid key: {repr(key)}")
+        if one_ref:
+            segs = path.DMFASTQ_SEGS
+        else:
+            segs = path.FASTQ_SEGS
+        sample_refs = set()
         for fq in path.find_files_chain(fqs, segs):
+            logger.detail(f"Generating {cls} from {fq}")
             try:
-                yield cls(phred_enc=phred_enc, one_ref=one_ref, **{key: fq})
+                fq_unit = cls(phred_enc=phred_enc, one_ref=one_ref, **{key: fq})
             except Exception as error:
                 logger.error(error)
+            else:
+                sample_ref = fq_unit.sample, fq_unit.ref
+                if sample_ref in sample_refs:
+                    raise DuplicateAlignmentError(sample_ref)
+                yield fq_unit
 
     @classmethod
     def _from_mates(cls, /, *,
@@ -249,29 +260,30 @@ class FastqUnit(object):
         fq1s = list(path.find_files_chain(fqs, seg1s))
         fq2s = list(path.find_files_chain(fqs, seg2s))
 
-        # Determine the sample and/or reference name of each file.
-        def by_tag(fqs_: list[Path], segs: list[path.Segment]):
-            tags: dict[tuple[str, str | None], Path] = dict()
+        # Determine the sample and reference name of each file.
+        def find_sample_ref(fqs_: list[Path], segs: list[path.Segment]):
+            sample_refs: dict[tuple[str, str | None], Path] = dict()
             for fq in fqs_:
                 fields = path.parse(fq, *segs)
-                tag_ = fields[path.SAMP], fields.get(path.REF)
-                if tag_ in tags:
-                    logger.warning(f"Duplicate sample and reference: {tag_}")
-                else:
-                    tags[tag_] = fq
-            return tags
+                sample_ref_ = fields[path.SAMP], fields.get(path.REF)
+                if sample_ref_ in sample_refs:
+                    raise DuplicateAlignmentError(sample_ref_)
+                sample_refs[sample_ref_] = fq
+            return sample_refs
 
-        tag1s = by_tag(fq1s, seg1s)
-        tag2s = by_tag(fq2s, seg2s)
+        sample_ref_1s = find_sample_ref(fq1s, seg1s)
+        sample_ref_2s = find_sample_ref(fq2s, seg2s)
         # Check for any mates with only one file.
-        set1s, set2s = set(tag1s), set(tag2s)
+        set1s, set2s = set(sample_ref_1s), set(sample_ref_2s)
         if miss1 := set2s - set1s:
             logger.error(f"Missing FASTQ mate 1 files: {miss1}")
         if miss2 := set1s - set2s:
             logger.error(f"Missing FASTQ mate 2 files: {miss2}")
         # Yield a FASTQ unit for each pair of mated files.
-        for tag in set1s & set2s:
-            fq_args = {cls.KEY_MATE1: tag1s[tag], cls.KEY_MATE2: tag2s[tag]}
+        for sample_ref in set1s & set2s:
+            fq_args = {cls.KEY_MATE1: sample_ref_1s[sample_ref],
+                       cls.KEY_MATE2: sample_ref_2s[sample_ref]}
+            logger.detail(f"Generating {cls} from {list(fq_args.values())}")
             try:
                 yield cls(phred_enc=phred_enc, one_ref=one_ref, **fq_args)
             except Exception as error:
@@ -306,6 +318,7 @@ class FastqUnit(object):
             in which `os.path.listdir` returns file paths.
         """
         # List all FASTQ files.
+        logger.routine(f"Began generating {cls} from files")
         # single-end
         yield from cls._from_files(phred_enc=phred_enc,
                                    one_ref=False,
@@ -334,6 +347,7 @@ class FastqUnit(object):
         yield from cls._from_mates(phred_enc=phred_enc,
                                    one_ref=True,
                                    fqs=fastq_args.get(cls.KEY_DMATED, ()))
+        logger.routine(f"Ended generating {cls} from files")
 
     def __str__(self):
         return " ".join(

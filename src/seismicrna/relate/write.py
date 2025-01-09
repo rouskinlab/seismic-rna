@@ -259,12 +259,12 @@ class RelationWriter(object):
         return f"Relate {self._xam}"
 
 
-def write_one(xam_file: Path, *,
-              fasta: Path,
-              tmp_dir: Path,
-              batch_size: int,
-              n_procs: int,
-              **kwargs):
+def relate_xam(xam_file: Path, *,
+               fasta: Path,
+               tmp_dir: Path,
+               batch_size: int,
+               n_procs: int,
+               **kwargs):
     """ Write the batches of relationships for one XAM file. """
     release_dir, working_dir = get_release_working_dirs(tmp_dir)
     ref = path.parse(xam_file, *path.XAM_SEGS)[path.REF]
@@ -274,16 +274,6 @@ def write_one(xam_file: Path, *,
                                       n_procs=n_procs),
                             get_fasta_seq(fasta, DNA, ref))
     return writer.write(**kwargs, n_procs=n_procs, release_dir=release_dir)
-
-
-def write_all(xam_files: Iterable[Path],
-              max_procs: int,
-              **kwargs):
-    """ Write the batches of relationships for all XAM files. """
-    return dispatch(write_one,
-                    max_procs,
-                    args=as_list_of_tuples(path.deduplicate(xam_files)),
-                    kwargs=kwargs)
 
 ########################################################################
 #                                                                      #
