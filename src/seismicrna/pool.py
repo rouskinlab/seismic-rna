@@ -7,7 +7,7 @@ from click import command
 
 from .core.arg import (CMD_POOL,
                        arg_input_path,
-                       opt_pool,
+                       opt_pooled,
                        opt_relate_pos_table,
                        opt_relate_read_table,
                        opt_verify_times,
@@ -19,11 +19,9 @@ from .core.run import run_func
 from .core.task import dispatch
 from .core.write import need_write
 from .relate.dataset import PoolDataset, load_relate_dataset
-from .relate.report import RelateReport, PoolReport
+from .relate.report import PoolReport
 from .relate.table import RelateDatasetTabulator
 from .table import tabulate
-
-DEFAULT_POOL = "pooled"
 
 
 def write_report(out_dir: Path, **kwargs):
@@ -82,17 +80,6 @@ def pool_samples(out_dir: Path,
         # would be possible to overwrite a Relate report with a Pool
         # report, rendering the Relate dataset unusable; prevent this.
         if report_file.is_file():
-            # Check whether the report file contains a Relate report.
-            try:
-                RelateReport.load(report_file)
-            except ValueError:
-                # The report file does not contain a Relate report.
-                pass
-            else:
-                # The report file contains a Relate report.
-                raise TypeError(f"Cannot overwrite {RelateReport.__name__} "
-                                f"in {report_file} with {PoolReport.__name__}: "
-                                f"would cause data loss")
             # Check whether the report file contains a Pool report.
             try:
                 PoolReport.load(report_file)
@@ -122,7 +109,7 @@ def pool_samples(out_dir: Path,
 
 @run_func(CMD_POOL)
 def run(input_path: tuple[str, ...], *,
-        pool: str,
+        pooled: str,
         # Tabulation
         relate_pos_table: bool,
         relate_read_table: bool,
@@ -132,9 +119,8 @@ def run(input_path: tuple[str, ...], *,
         # Effort
         force: bool) -> list[Path]:
     """ Merge samples (vertically) from the Relate step. """
-    if not pool:
-        # Exit immediately if no pool name was given.
-        return list()
+    if not pooled:
+        raise ValueError("No name for the pooled sample was given via --pooled")
     # Group the datasets by output directory and reference name.
     pools = defaultdict(list)
     for dataset in load_datasets(input_path, load_relate_dataset):
@@ -150,7 +136,7 @@ def run(input_path: tuple[str, ...], *,
     return dispatch(pool_samples,
                     max_procs=max_procs,
                     pass_n_procs=True,
-                    args=[(out_dir, pool, ref, samples)
+                    args=[(out_dir, pooled, ref, samples)
                           for (out_dir, ref), samples in pools.items()],
                     kwargs=dict(relate_pos_table=relate_pos_table,
                                 relate_read_table=relate_read_table,
@@ -161,7 +147,7 @@ def run(input_path: tuple[str, ...], *,
 params = [
     arg_input_path,
     # Pooling
-    opt_pool,
+    opt_pooled,
     # Tabulation
     opt_relate_pos_table,
     opt_relate_read_table,
@@ -174,13 +160,9 @@ params = [
 
 
 @command(CMD_POOL, params=params)
-def cli(*args, pool: str, **kwargs):
+def cli(*args, **kwargs):
     """ Merge samples (vertically) from the Relate step. """
-    if not pool:
-        logger.warning(f"{CMD_POOL} expected a name via --pool, but got "
-                       f"{repr(pool)}; defaulting to {repr(DEFAULT_POOL)}")
-        pool = DEFAULT_POOL
-    return run(*args, pool=pool, **kwargs)
+    return run(*args, **kwargs)
 
 ########################################################################
 #                                                                      #

@@ -581,8 +581,8 @@ opt_relate_cx = Option(
 
 # Pool
 
-opt_pool = Option(
-    ("--pool", "-P"),
+opt_pooled = Option(
+    ("--pooled", "-P"),
     type=str,
     default="",
     help="Pooled sample name"

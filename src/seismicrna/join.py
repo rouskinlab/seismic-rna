@@ -31,8 +31,6 @@ from .mask.report import MaskReport
 from .mask.table import MaskDatasetTabulator
 from .table import tabulate
 
-DEFAULT_JOIN = "joined"
-
 
 def write_report(report_type: type[JoinMaskReport | JoinClusterReport],
                  out_dir: Path,
@@ -174,8 +172,9 @@ def run(input_path: tuple[str, ...], *,
         force: bool) -> list[Path]:
     """ Merge regions (horizontally) from the Mask or Cluster step. """
     if not joined:
-        # Exit immediately if no joined name was given.
-        return list()
+        raise ValueError(
+            "No name for the joined region was given via --joined"
+        )
     if join_clusts is not None:
         clusts = parse_join_clusts_file(join_clusts)
     else:
@@ -246,13 +245,9 @@ params = [
 
 
 @command(CMD_JOIN, params=params)
-def cli(*args, joined: str, **kwargs):
+def cli(*args, **kwargs):
     """ Merge regions (horizontally) from the Mask or Cluster step. """
-    if not joined:
-        logger.warning(f"{CMD_JOIN} expected a name via --joined, but got "
-                       f"{repr(joined)}; defaulting to {repr(DEFAULT_JOIN)}")
-        joined = DEFAULT_JOIN
-    return run(*args, joined=joined, **kwargs)
+    return run(*args, **kwargs)
 
 ########################################################################
 #                                                                      #
