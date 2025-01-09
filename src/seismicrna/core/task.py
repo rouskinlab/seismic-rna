@@ -1,5 +1,6 @@
 from concurrent.futures import Future, ProcessPoolExecutor
-from itertools import chain, filterfalse, repeat
+from inspect import getmodule
+from itertools import filterfalse, repeat
 from typing import Any, Callable, Iterable
 
 from .logs import logger, get_config, set_config
@@ -21,7 +22,6 @@ def calc_pool_size(num_tasks: int, max_procs: int):
         - Number of tasks to run in parallel. Always ≥ 1.
         - Number of processes to run for each task. Always ≥ 1.
     """
-    logger.detail("Began calculating pool size")
     if max_procs < 1:
         logger.warning(f"max_procs must be ≥ 1, but got {max_procs}; "
                        f"defaulting to 1")
@@ -46,17 +46,9 @@ def calc_pool_size(num_tasks: int, max_procs: int):
         # parent and can thus have all processors.
         pool_size = 1
         num_procs_per_task = max_procs
-    logger.detail(f"Ended calculating pool size: {pool_size} "
-                  f"({num_procs_per_task} processors per task)")
+    logger.detail(f"Calculated pool size: {pool_size} "
+                  f"({num_procs_per_task} processor(s) per task)")
     return pool_size, num_procs_per_task
-
-
-def fmt_func_args(func: Callable, *args, **kwargs):
-    """ Format the name and arguments of a function as a string. """
-    fargs = ", ".join(chain(map(repr, args),
-                            (f"{kw}={repr(arg)}"
-                             for kw, arg in kwargs.items())))
-    return f"{func.__name__}({fargs})"
 
 
 class Task(object):
@@ -67,6 +59,10 @@ class Task(object):
     def __init__(self, func: Callable):
         self._func = func
         self._config = get_config()
+
+    @property
+    def name(self):
+        return f"{getmodule(self._func).__name__}.{self._func.__name__}"
 
     def __call__(self, *args, **kwargs):
         """ Call the task's function in a try-except block, return the
@@ -80,14 +76,13 @@ class Task(object):
             close_file_stream = True
         else:
             close_file_stream = False
-        task = fmt_func_args(self._func, *args, **kwargs)
         try:
-            logger.task(f"Began task {task}")
+            logger.task(f"Began {self.name}")
             result = self._func(*args, **kwargs)
         except Exception as error:
             logger.error(error)
         else:
-            logger.task(f"Ended task {task}")
+            logger.task(f"Ended {self.name}")
             return result
         finally:
             if close_file_stream and logger.file_stream is not None:
