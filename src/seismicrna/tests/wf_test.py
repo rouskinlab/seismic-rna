@@ -5,10 +5,11 @@ from itertools import chain
 from pathlib import Path
 
 from seismicrna.align import run as run_align
-from seismicrna.align.fqunit import DuplicateAlignmentError
 from seismicrna.core import path
 from seismicrna.core.arg.cli import opt_out_dir, opt_sim_dir
 from seismicrna.core.logs import Level, get_config, set_config
+from seismicrna.core.ngs import DuplicateSampleReferenceError
+from seismicrna.mask import run as run_mask
 from seismicrna.relate import run as run_relate
 from seismicrna.sim.fastq import run as run_sim_fastq
 from seismicrna.sim.fold import run as run_sim_fold
@@ -182,7 +183,7 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
                             fastp_poly_g="yes",
                             force=True)
         # Aligning FASTQ files with the same sample and reference.
-        self.assertRaisesRegex(DuplicateAlignmentError,
+        self.assertRaisesRegex(DuplicateSampleReferenceError,
                                str((self.SAMPLE, self.REF)),
                                run_align,
                                fasta,
@@ -190,7 +191,7 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
                                out_dir=str(self.OUT_DIR),
                                **align_kwargs)
         # Aligning them in different output directories.
-        bam_files = list()
+        bam_dirs = list()
         for dmfastqx, out_dir in zip(dmfastqxs, self.OUT_DIRS, strict=True):
             bam_dir, = run_align(fasta,
                                  dmfastqx=dmfastqx,
@@ -199,21 +200,42 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
             expect = out_dir.joinpath(self.SAMPLE, "align", f"{self.REF}.bam")
             self.assertTrue(expect.is_file())
             self.assertEqual(bam_dir, expect.parent)
-            bam_files.append(bam_dir)
+            bam_dirs.append(bam_dir)
         # Relating BAM files with the same sample and reference.
-        self.assertRaisesRegex(DuplicateAlignmentError,
+        self.assertRaisesRegex(DuplicateSampleReferenceError,
                                str((self.SAMPLE, self.REF)),
                                run_relate,
                                fasta,
-                               bam_files,
+                               bam_dirs,
                                min_reads=min_reads,
                                out_dir=self.OUT_DIR)
         # Relating them in different output directories.
-        for bam_file, out_dir in zip(bam_files, self.OUT_DIRS, strict=True):
-            run_relate(fasta,
-                       (bam_file,),
-                       min_reads=min_reads,
-                       out_dir=out_dir)
+        relate_dirs = list()
+        for bam_file, out_dir in zip(bam_dirs, self.OUT_DIRS, strict=True):
+            relate_dir, = run_relate(fasta,
+                                     (bam_file,),
+                                     min_reads=min_reads,
+                                     out_dir=out_dir)
+            expect = out_dir.joinpath(self.SAMPLE,
+                                      "relate",
+                                      self.REF,
+                                      "relate-report.json")
+            self.assertTrue(expect.is_file())
+            self.assertEqual(relate_dir, expect.parent)
+            relate_dirs.append(relate_dir)
+        # Masking relate reports with the same sample and reference.
+        mask_dirs = run_mask(relate_dirs,
+                             mask_coords=[(self.REF, 5, 50)],
+                             min_ninfo_pos=1)
+        expects = [out_dir.joinpath(self.SAMPLE,
+                                    "mask",
+                                    self.REF,
+                                    "5-50",
+                                    "mask-report.json")
+                   for out_dir in self.OUT_DIRS]
+        for expect, mask_dir in zip(expects, mask_dirs, strict=True):
+            self.assertTrue(expect.is_file())
+            self.assertEqual(mask_dir, expect.parent)
 
 
 if __name__ == "__main__":

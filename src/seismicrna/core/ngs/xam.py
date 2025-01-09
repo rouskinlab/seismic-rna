@@ -38,6 +38,10 @@ MAX_FLAG = sum([FLAG_PAIRED,
                 FLAG_SUPPLEMENTARY])
 
 
+class DuplicateSampleReferenceError(ValueError):
+    """ A sample-reference pair occurred more than once. """
+
+
 def calc_extra_threads(n_procs: int):
     """ Calculate the number of extra threads to use (option -@). """
     try:

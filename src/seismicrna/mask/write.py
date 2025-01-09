@@ -22,7 +22,7 @@ from ..core.rel import RelPattern
 from ..core.report import mask_iter_no_convergence
 from ..core.seq import FIELD_REF, POS_NAME, Region, index_to_pos
 from ..core.table import MUTAT_REL, INFOR_REL
-from ..core.tmp import release_to_out
+from ..core.tmp import release_to_out, with_tmp_dir
 from ..core.write import need_write
 from ..relate.dataset import RelateMutsDataset, PoolDataset, load_read_names_dataset
 
@@ -616,16 +616,35 @@ class Masker(object):
         return f"Mask {self.dataset} over {self.region}"
 
 
+@with_tmp_dir(pass_keep_tmp=False)
+def _mask_region(dataset: RelateMutsDataset | PoolDataset,
+                 region: Region,
+                 pattern: RelPattern, *,
+                 tmp_dir: Path,
+                 mask_pos_table: bool,
+                 mask_read_table: bool,
+                 n_procs: int,
+                 **kwargs):
+    masker = Masker(dataset,
+                    region,
+                    pattern,
+                    top=tmp_dir,
+                    count_read=mask_read_table,
+                    max_procs=n_procs,
+                    **kwargs)
+    tabulator, report_saved = masker.mask()
+    tabulator.write_tables(pos=mask_pos_table, read=mask_read_table)
+    return release_to_out(dataset.top, tmp_dir, report_saved.parent)
+
+
 def mask_region(dataset: RelateMutsDataset | PoolDataset,
                 region: Region,
                 mask_del: bool,
                 mask_ins: bool,
                 mask_mut: Iterable[str], *,
-                tmp_dir: Path,
+                tmp_pfx: str,
+                keep_tmp: bool,
                 force: bool,
-                mask_pos_table: bool,
-                mask_read_table: bool,
-                n_procs: int,
                 **kwargs):
     """ Mask out certain reads, positions, and relationships. """
     # Check if the report file already exists.
@@ -635,16 +654,12 @@ def mask_region(dataset: RelateMutsDataset | PoolDataset,
                                         reg=region.name)
     if need_write(report_file, force):
         pattern = RelPattern.from_counts(not mask_del, not mask_ins, mask_mut)
-        masker = Masker(dataset,
-                        region,
-                        pattern,
-                        top=tmp_dir,
-                        count_read=mask_read_table,
-                        max_procs=n_procs,
-                        **kwargs)
-        tabulator, report_saved = masker.mask()
-        tabulator.write_tables(pos=mask_pos_table, read=mask_read_table)
-        release_to_out(dataset.top, tmp_dir, report_saved.parent)
+        _mask_region(dataset,
+                     region,
+                     pattern,
+                     tmp_pfx=dataset.top.joinpath(tmp_pfx),
+                     keep_tmp=keep_tmp,
+                     **kwargs)
     return report_file.parent
 
 ########################################################################

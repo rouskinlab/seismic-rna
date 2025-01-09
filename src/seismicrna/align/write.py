@@ -4,7 +4,7 @@ from pathlib import Path
 from shutil import rmtree
 from typing import Iterable
 
-from .fqunit import FastqUnit, DuplicateAlignmentError
+from .fqunit import FastqUnit, DuplicateSampleReferenceError
 from .report import AlignRefReport, AlignSampleReport
 from .xamops import (FASTP_PHRED_OUT,
                      run_bowtie2_build,
@@ -804,7 +804,7 @@ def list_alignments(fq_units: list[FastqUnit], refs: set[str]):
             )
             sample_ref = sample, ref
             if sample_ref in alignments:
-                raise DuplicateAlignmentError(sample_ref)
+                raise DuplicateSampleReferenceError(sample_ref)
             alignments[sample_ref] = fq_unit
     logger.routine("Ended listing alignments")
     return alignments

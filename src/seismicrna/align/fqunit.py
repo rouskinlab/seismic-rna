@@ -10,6 +10,7 @@ from ..core.extern import (GUNZIP_CMD,
                            args_to_cmd,
                            cmds_to_pipe)
 from ..core.logs import logger
+from ..core.ngs import DuplicateSampleReferenceError
 
 FQ_LINES_PER_READ = 4
 PHRED_ENCS = {33, 64}
@@ -58,10 +59,6 @@ def format_phred_arg(phred_enc: int):
         logger.warning(f"Expected phred_enc to be one of {PHRED_ENCS}, "
                        f"but got {phred_enc}, which may cause problems")
     return f"--phred{phred_enc}"
-
-
-class DuplicateAlignmentError(ValueError):
-    """ A sample-reference pair occurred more than once. """
 
 
 class FastqUnit(object):
@@ -240,7 +237,7 @@ class FastqUnit(object):
             else:
                 sample_ref = fq_unit.sample, fq_unit.ref
                 if sample_ref in sample_refs:
-                    raise DuplicateAlignmentError(sample_ref)
+                    raise DuplicateSampleReferenceError(sample_ref)
                 yield fq_unit
 
     @classmethod
@@ -267,7 +264,7 @@ class FastqUnit(object):
                 fields = path.parse(fq, *segs)
                 sample_ref_ = fields[path.SAMP], fields.get(path.REF)
                 if sample_ref_ in sample_refs:
-                    raise DuplicateAlignmentError(sample_ref_)
+                    raise DuplicateSampleReferenceError(sample_ref_)
                 sample_refs[sample_ref_] = fq
             return sample_refs
 

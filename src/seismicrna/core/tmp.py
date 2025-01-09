@@ -93,11 +93,8 @@ def with_tmp_dir(pass_keep_tmp: bool):
                 tmp_dir = randdir(tmp_pfx.parent, prefix=tmp_pfx.name)
                 logger.routine(f"Created temporary directory {tmp_dir}")
                 if pass_keep_tmp:
-                    kwargs = dict(**kwargs, keep_tmp=keep_tmp)
-                logger.detail("; ".join([f"func={func}",
-                                         f"pass_keep_tmp={pass_keep_tmp}",
-                                         f"kwargs={kwargs}"]))
-                return func(*args, **kwargs, tmp_dir=tmp_dir)
+                    kwargs = dict(keep_tmp=keep_tmp, **kwargs)
+                return func(*args, tmp_dir=tmp_dir, **kwargs)
             finally:
                 if tmp_dir is not None and not keep_tmp:
                     try:
@@ -110,12 +107,18 @@ def with_tmp_dir(pass_keep_tmp: bool):
         # Add tmp_pfx and keep_tmp to the signature of the wrapper, and
         # remove tmp_dir (functools.wraps does not do so automatically).
         params = dict(Signature.from_callable(func).parameters)
-        logger.detail(f"Initial parameters: {params}")
         params.pop("tmp_dir")
-        for param in ["tmp_pfx", "keep_tmp"]:
-            if param not in params:
-                params[param] = Parameter(param, Parameter.KEYWORD_ONLY)
-        logger.detail(f"Updated parameters: {params}")
+        for name in ["tmp_pfx", "keep_tmp"]:
+            if name not in params:
+                params[name] = Parameter(name, Parameter.KEYWORD_ONLY)
+        # Ensure the variadic keyword parameter (if it exists) is last.
+        kwargs_name = None
+        for name, param in params.items():
+            if param.kind == param.VAR_KEYWORD:
+                assert kwargs_name is None
+                kwargs_name = name
+        if kwargs_name is not None:
+            params[kwargs_name] = params.pop(kwargs_name)
         wrapper.__signature__ = Signature(parameters=list(params.values()))
         return wrapper
 

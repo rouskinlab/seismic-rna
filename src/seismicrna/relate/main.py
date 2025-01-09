@@ -4,7 +4,6 @@ from click import command
 
 from .strands import write_both_strands
 from .write import relate_xam
-from ..align.fqunit import DuplicateAlignmentError
 from ..core import path
 from ..core.arg import (CMD_REL,
                         arg_input_path,
@@ -31,6 +30,7 @@ from ..core.arg import (CMD_REL,
                         opt_force,
                         opt_keep_tmp)
 from ..core.logs import logger
+from ..core.ngs import DuplicateSampleReferenceError
 from ..core.run import run_func
 from ..core.task import as_list_of_tuples, dispatch
 
@@ -44,7 +44,7 @@ def check_duplicates(xam_files: list[Path]):
         sample_ref = fields[path.SAMP], fields[path.REF]
         logger.detail(f"{xam_file}: {sample_ref}")
         if sample_ref in sample_ref_pairs:
-            raise DuplicateAlignmentError(sample_ref)
+            raise DuplicateSampleReferenceError(sample_ref)
         sample_ref_pairs.add(sample_ref)
     logger.routine("Ended checking for duplicate sample-reference pairs")
 

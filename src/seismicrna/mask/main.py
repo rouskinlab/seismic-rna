@@ -53,7 +53,7 @@ def load_regions(input_path: Iterable[str | Path],
                  primers: Iterable[tuple[str, DNA, DNA]],
                  primer_gap: int,
                  regions_file: Path | None = None):
-    """ Open regions of relate reports. """
+    """ Load regions of relate reports. """
     # Load all datasets, grouped by their reference names.
     datasets = defaultdict(list)
     for dataset in load_datasets(input_path, load_relate_dataset):
@@ -72,9 +72,10 @@ def load_regions(input_path: Iterable[str | Path],
     return datasets, regions
 
 
-@run_func(CMD_MASK, with_tmp=True, extra_defaults=extra_defaults)
+@run_func(CMD_MASK, extra_defaults=extra_defaults)
 def run(input_path: tuple[str, ...], *,
-        tmp_dir: Path,
+        tmp_pfx: str,
+        keep_tmp: bool,
         # Regions
         mask_coords: tuple[tuple[str, int, int], ...],
         mask_primers: tuple[tuple[str, DNA, DNA], ...],
@@ -113,7 +114,6 @@ def run(input_path: tuple[str, ...], *,
         # Effort
         force: bool) -> list[Path]:
     """ Define mutations and regions to filter reads and positions. """
-    # Load all Relate datasets and get the regions for each.
     datasets, regions = load_regions(
         input_path,
         coords=mask_coords,
@@ -121,12 +121,11 @@ def run(input_path: tuple[str, ...], *,
         primer_gap=primer_gap,
         regions_file=optional_path(mask_regions_file)
     )
-    # List the datasets and their regions.
     args = [(dataset, region)
             for ref, ref_datasets in datasets.items()
             for dataset, region in product(ref_datasets, regions.list(ref))]
-    # Define the keyword arguments.
-    kwargs = dict(tmp_dir=tmp_dir,
+    kwargs = dict(tmp_pfx=tmp_pfx,
+                  keep_tmp=keep_tmp,
                   mask_del=mask_del,
                   mask_ins=mask_ins,
                   mask_mut=mask_mut,
