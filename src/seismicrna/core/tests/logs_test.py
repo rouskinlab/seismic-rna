@@ -27,7 +27,7 @@ class TestLoggerClass(ut.TestCase):
 class TestLevels(ut.TestCase):
 
     def test_levels(self):
-        self.assertEqual(Level.SEVERE, -3)
+        self.assertEqual(Level.FATAL, -3)
         self.assertEqual(Level.ERROR, -2)
         self.assertEqual(Level.WARNING, -1)
         self.assertEqual(Level.COMMAND, 0)
@@ -82,7 +82,7 @@ class TestExcInfo(ut.TestCase):
         for verbosity in [Level.COMMAND,
                           Level.WARNING,
                           Level.ERROR,
-                          Level.SEVERE]:
+                          Level.FATAL]:
             set_config(verbosity=verbosity)
             self.assertFalse(exc_info())
         for verbosity in [Level.DETAIL,
@@ -96,7 +96,7 @@ class TestLoggingRaiseOnError(ut.TestCase):
 
     @restore_config
     def test_raise_on_error(self):
-        set_config(verbosity=(Level.SEVERE - 1), raise_on_error=True)
+        set_config(verbosity=(Level.FATAL - 1), raise_on_error=True)
         logger.warning("An error has occurred")
         self.assertRaisesRegex(RuntimeError,
                                "An error has occurred",
@@ -104,7 +104,7 @@ class TestLoggingRaiseOnError(ut.TestCase):
                                "An error has occurred")
         self.assertRaisesRegex(RuntimeError,
                                "A fatal error has occurred",
-                               logger.severe,
+                               logger.fatal,
                                "A fatal error has occurred")
         logger.warning(ZeroDivisionError("Cannot divide by 0"))
         self.assertRaisesRegex(ZeroDivisionError,
@@ -113,17 +113,17 @@ class TestLoggingRaiseOnError(ut.TestCase):
                                ZeroDivisionError("Cannot divide by 0"))
         self.assertRaisesRegex(ZeroDivisionError,
                                "Cannot divide by 0",
-                               logger.severe,
+                               logger.fatal,
                                ZeroDivisionError("Cannot divide by 0"))
 
     @restore_config
     def test_no_raise_on_error(self):
-        set_config(verbosity=(Level.SEVERE - 1), raise_on_error=False)
+        set_config(verbosity=(Level.FATAL - 1), raise_on_error=False)
         # None of these calls should raise an error.
         logger.error("An error has occurred")
-        logger.severe("A fatal error has occurred")
+        logger.fatal("A fatal error has occurred")
         logger.error(ZeroDivisionError("Cannot divide by 0"))
-        logger.severe(ZeroDivisionError("Cannot divide by 0"))
+        logger.fatal(ZeroDivisionError("Cannot divide by 0"))
 
 
 class TestEraseConfig(ut.TestCase):

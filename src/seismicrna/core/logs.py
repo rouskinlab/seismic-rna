@@ -11,7 +11,7 @@ from typing import Callable, Optional, TextIO
 
 class Level(IntEnum):
     """ Level of a logging message. """
-    SEVERE = -3
+    FATAL = -3
     ERROR = -2
     WARNING = -1
     COMMAND = 0
@@ -159,8 +159,8 @@ class AnsiCode(object):
 #       echo -ne "\033[38;5;${i}m  ${i} "
 #   done
 LEVEL_COLORS = {
-    Level.SEVERE: "".join([AnsiCode.format_color(198),
-                           AnsiCode.format(AnsiCode.BOLD)]),
+    Level.FATAL: "".join([AnsiCode.format_color(198),
+                          AnsiCode.format(AnsiCode.BOLD)]),
     Level.ERROR: AnsiCode.format_color(160),
     Level.WARNING: AnsiCode.format_color(214),
     Level.COMMAND: AnsiCode.format_color(28),
@@ -208,8 +208,8 @@ class Logger(object):
         if self.file_stream is not None:
             self.file_stream.log(message)
 
-    def severe(self, content: object):
-        self._log(Level.SEVERE, content)
+    def fatal(self, content: object):
+        self._log(Level.FATAL, content)
 
     def error(self, content: object):
         self._log(Level.ERROR, content)
@@ -306,7 +306,7 @@ def log_exceptions(default: Optional[Callable]):
             try:
                 return func(*args, **kwargs)
             except Exception as error:
-                logger.severe(error)
+                logger.fatal(error)
                 return default() if default is not None else None
 
         return wrapper
