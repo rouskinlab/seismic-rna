@@ -1,8 +1,9 @@
 import os
 import shutil
 import unittest as ut
-from itertools import chain
+from itertools import chain, combinations
 from pathlib import Path
+from typing import Iterable
 
 from seismicrna.align import run as run_align
 from seismicrna.cluster import run as run_cluster
@@ -10,6 +11,7 @@ from seismicrna.core import path
 from seismicrna.core.arg.cli import opt_out_dir, opt_sim_dir
 from seismicrna.core.logs import Level, get_config, set_config
 from seismicrna.core.ngs import DuplicateSampleReferenceError
+from seismicrna.fold import run as run_fold
 from seismicrna.mask import run as run_mask
 from seismicrna.relate import run as run_relate
 from seismicrna.sim.fastq import run as run_sim_fastq
@@ -156,6 +158,13 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
             shutil.rmtree(out_dir)
         set_config(**self._config._asdict())
 
+    def check_no_identical(self, files: Iterable[Path | str], binary: bool):
+        """ Confirm no two files have identical contents. """
+        mode = "rb" if binary else "rt"
+        for file1, file2 in combinations(files, 2):
+            with open(file1, mode) as f1, open(file2, mode) as f2:
+                self.assertNotEqual(f1.read(), f2.read())
+
     def test_wf_two_out_dirs(self):
         fasta = run_sim_ref(sim_dir=str(self.SIM_DIR),
                             ref=self.REF,
@@ -194,16 +203,17 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
                                out_dir=str(self.OUT_DIR),
                                **align_kwargs)
         # Align them in different output directories.
-        bam_dirs = list()
+        bam_files = list()
         for dmfastqx, out_dir in zip(dmfastqxs, self.OUT_DIRS, strict=True):
             bam_dir, = run_align(fasta,
                                  dmfastqx=dmfastqx,
                                  out_dir=str(out_dir),
                                  **align_kwargs)
-            expect = out_dir.joinpath(self.SAMPLE, "align", f"{self.REF}.bam")
-            self.assertTrue(expect.is_file())
-            self.assertEqual(bam_dir, expect.parent)
-            bam_dirs.append(bam_dir)
+            bam_file = out_dir.joinpath(self.SAMPLE, "align", f"{self.REF}.bam")
+            self.assertTrue(bam_file.is_file())
+            self.assertEqual(bam_dir, bam_file.parent)
+            bam_files.append(bam_file)
+        self.check_no_identical(bam_files, True)
         # Relate BAM files with the same sample and reference.
         relate_kwargs = dict(min_reads=min_reads,
                              min_mapq=min_mapq)
@@ -211,49 +221,83 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
                                str((self.SAMPLE, self.REF)),
                                run_relate,
                                fasta,
-                               bam_dirs,
+                               bam_files,
                                out_dir=str(self.OUT_DIR),
                                **relate_kwargs)
         # Relate them in different output directories.
-        relate_dirs = list()
-        for bam_file, out_dir in zip(bam_dirs, self.OUT_DIRS, strict=True):
+        relate_reports = list()
+        for bam_file, out_dir in zip(bam_files, self.OUT_DIRS, strict=True):
             relate_dir, = run_relate(fasta,
-                                     (bam_file,),
+                                     (str(bam_file),),
                                      out_dir=str(out_dir),
                                      **relate_kwargs)
-            expect = out_dir.joinpath(self.SAMPLE,
-                                      "relate",
-                                      self.REF,
-                                      "relate-report.json")
-            self.assertTrue(expect.is_file())
-            self.assertEqual(relate_dir, expect.parent)
-            relate_dirs.append(relate_dir)
+            relate_report = out_dir.joinpath(self.SAMPLE,
+                                             "relate",
+                                             self.REF,
+                                             "relate-report.json")
+            self.assertTrue(relate_report.is_file())
+            self.assertEqual(relate_dir, relate_report.parent)
+            relate_reports.append(relate_report)
+        self.check_no_identical(relate_reports, False)
+
+        # Pool
+
         # Mask relate reports with the same sample and reference.
-        mask_dirs = run_mask(relate_dirs,
+        mask_dirs = run_mask(relate_reports,
                              mask_coords=[(self.REF, 5, 50)],
                              min_ninfo_pos=1)
-        expects = [out_dir.joinpath(self.SAMPLE,
-                                    "mask",
-                                    self.REF,
-                                    "5-50",
-                                    "mask-report.json")
-                   for out_dir in self.OUT_DIRS]
-        for expect, mask_dir in zip(expects, mask_dirs, strict=True):
-            self.assertTrue(expect.is_file())
-            self.assertEqual(mask_dir, expect.parent)
+        mask_reports = [out_dir.joinpath(self.SAMPLE,
+                                         "mask",
+                                         self.REF,
+                                         "5-50",
+                                         "mask-report.json")
+                        for out_dir in self.OUT_DIRS]
+        for mask_report, mask_dir in zip(mask_reports, mask_dirs, strict=True):
+            self.assertTrue(mask_report.is_file())
+            self.assertEqual(mask_dir, mask_report.parent)
+        self.check_no_identical(mask_reports, False)
+
+        # Join mask
+
         # Cluster mask reports with the same sample and reference.
         cluster_dirs = run_cluster(mask_dirs,
                                    max_clusters=1,
                                    jackpot=False)
-        expects = [out_dir.joinpath(self.SAMPLE,
-                                    "cluster",
-                                    self.REF,
-                                    "5-50",
-                                    "cluster-report.json")
-                   for out_dir in self.OUT_DIRS]
-        for expect, cluster_dir in zip(expects, cluster_dirs, strict=True):
-            self.assertTrue(expect.is_file())
-            self.assertEqual(cluster_dir, expect.parent)
+        cluster_reports = [out_dir.joinpath(self.SAMPLE,
+                                            "cluster",
+                                            self.REF,
+                                            "5-50",
+                                            "cluster-report.json")
+                           for out_dir in self.OUT_DIRS]
+        for cluster_report, cluster_dir in zip(cluster_reports,
+                                               cluster_dirs,
+                                               strict=True):
+            self.assertTrue(cluster_report.is_file())
+            self.assertEqual(cluster_dir, cluster_report.parent)
+
+        # Join cluster
+
+        # Fold mask/cluster reports with the same sample and reference.
+        fold_reports = run_fold(mask_dirs + cluster_dirs,
+                                quantile=1.0)
+        expect_fold_reports = list()
+        for region in ["5-50"]:
+            for profile in ["average", "cluster-1-1"]:
+                fold_dirs = [out_dir.joinpath(self.SAMPLE,
+                                              "fold",
+                                              self.REF,
+                                              "full")
+                             for out_dir in self.OUT_DIRS]
+                ct_name = f"{region}__{profile}.ct"
+                self.check_no_identical([fold_dir.joinpath(ct_name)
+                                         for fold_dir in fold_dirs],
+                                        False)
+                report_name = f"{region}__{profile}__fold-report.json"
+                expect_fold_reports.extend([fold_dir.joinpath(report_name)
+                                            for fold_dir in fold_dirs])
+        self.assertListEqual(sorted(fold_reports), sorted(expect_fold_reports))
+        for fold_report in fold_reports:
+            self.assertTrue(fold_report.is_file())
 
 
 if __name__ == "__main__":

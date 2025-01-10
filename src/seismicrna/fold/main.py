@@ -34,6 +34,7 @@ from ..core.rna import RNAProfile, ct_to_db
 from ..core.run import run_func
 from ..core.seq import DNA, RefRegions, RefSeqs, Region
 from ..core.task import as_list_of_tuples, dispatch
+from ..core.tmp import with_tmp_dir
 from ..core.write import need_write
 from ..mask.table import MaskPositionTableLoader
 
@@ -47,6 +48,7 @@ def load_foldable_tables(input_path: Iterable[str | Path]):
         yield from table_type.load_tables(paths)
 
 
+@with_tmp_dir(pass_keep_tmp=False)
 def fold_region(rna: RNAProfile, *,
                 out_dir: Path,
                 tmp_dir: Path,
@@ -115,10 +117,7 @@ def fold_profile(table: MaskPositionTableLoader | ClusterPositionTableLoader,
                                 **kwargs))
 
 
-@run_func(CMD_FOLD,
-          with_tmp=True,
-          pass_keep_tmp=True,
-          extra_defaults=extra_defaults)
+@run_func(CMD_FOLD, extra_defaults=extra_defaults)
 def run(input_path: tuple[str, ...], *,
         fold_coords: tuple[tuple[str, int, int], ...],
         fold_primers: tuple[tuple[str, DNA, DNA], ...],
@@ -131,7 +130,7 @@ def run(input_path: tuple[str, ...], *,
         fold_mfe: bool,
         fold_max: int,
         fold_percent: float,
-        tmp_dir: Path,
+        tmp_pfx: str,
         keep_tmp: bool,
         max_procs: int,
         force: bool):
@@ -168,7 +167,7 @@ def run(input_path: tuple[str, ...], *,
         max_procs,
         pass_n_procs=True,
         args=args,
-        kwargs=dict(tmp_dir=tmp_dir,
+        kwargs=dict(tmp_pfx=tmp_pfx,
                     keep_tmp=keep_tmp,
                     quantile=quantile,
                     fold_temp=fold_temp,

@@ -435,6 +435,14 @@ def fold(rna: RNAProfile, *,
     return ct_out
 
 
+class RNAStructureConnectivityTableTitleLineFormatError(ValueError):
+    """ Error in the format of a CT title line from RNAStructure. """
+
+
+class ConnectivityTableAlreadyRetitledError(RuntimeError):
+    """ A CT file was already retitled. """
+
+
 def parse_rnastructure_ct_title(line: str):
     """ Parse a title in a CT file from RNAstructure, in this format:
 
@@ -461,15 +469,22 @@ def parse_rnastructure_ct_title(line: str):
     if m := re.match(r"\s*([0-9]+)\s+ENERGY = (-?[0-9.]+)\s+(\S+)", line):
         length, energy, ref = m.groups()
     else:
-        # If that failed, then parse the line assuming it does not.
-        if m := re.match(r"\s*([0-9]+)\s+(\S+)", line):
-            length, ref = m.groups()
+        # If that failed, then check if the line was already retitled.
+        try:
+            parse_energy(line)
+        except (ValueError, TypeError):
+            # The line was not retitled: parse it assuming it has no
+            # energy term (which happens if no base pairs exist).
+            if m := re.match(r"\s*([0-9]+)\s+(\S+)", line):
+                length, ref = m.groups()
+            else:
+                # The line violated the basic length-and-title format.
+                raise RNAStructureConnectivityTableTitleLineFormatError(line)
+            logger.warning("CT line contains no energy term (probably because "
+                           f"no base pairs were predicted): {repr(line)}")
+            energy = 0.
         else:
-            # The line violated the basic length-and-title format.
-            raise ValueError(f"Failed to parse CT title line: {repr(line)}")
-        logger.warning("CT line contains no energy term (probably because no "
-                       f"base pairs were predicted): {repr(line)}")
-        energy = 0.
+            raise ConnectivityTableAlreadyRetitledError(line)
     return int(length), float(energy), ref
 
 
