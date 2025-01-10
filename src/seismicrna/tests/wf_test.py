@@ -5,6 +5,7 @@ from itertools import chain
 from pathlib import Path
 
 from seismicrna.align import run as run_align
+from seismicrna.cluster import run as run_cluster
 from seismicrna.core import path
 from seismicrna.core.arg.cli import opt_out_dir, opt_sim_dir
 from seismicrna.core.logs import Level, get_config, set_config
@@ -175,14 +176,16 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
                                            param_dir=[param_dir],
                                            sample=self.SAMPLE,
                                            read_length=30,
-                                           num_reads=10))
+                                           num_reads=2000,
+                                           fq_gzip=False))
+        # Align FASTQ files with the same sample and reference.
         min_reads = 1
+        min_mapq = 10
         align_kwargs = dict(min_reads=min_reads,
+                            min_mapq=min_mapq,
                             bt2_score_min_loc="L,1,0.5",
-                            min_mapq=0,
                             fastp_poly_g="yes",
                             force=True)
-        # Aligning FASTQ files with the same sample and reference.
         self.assertRaisesRegex(DuplicateSampleReferenceError,
                                str((self.SAMPLE, self.REF)),
                                run_align,
@@ -190,7 +193,7 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
                                dmfastqx=list(chain(*dmfastqxs)),
                                out_dir=str(self.OUT_DIR),
                                **align_kwargs)
-        # Aligning them in different output directories.
+        # Align them in different output directories.
         bam_dirs = list()
         for dmfastqx, out_dir in zip(dmfastqxs, self.OUT_DIRS, strict=True):
             bam_dir, = run_align(fasta,
@@ -201,21 +204,23 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
             self.assertTrue(expect.is_file())
             self.assertEqual(bam_dir, expect.parent)
             bam_dirs.append(bam_dir)
-        # Relating BAM files with the same sample and reference.
+        # Relate BAM files with the same sample and reference.
+        relate_kwargs = dict(min_reads=min_reads,
+                             min_mapq=min_mapq)
         self.assertRaisesRegex(DuplicateSampleReferenceError,
                                str((self.SAMPLE, self.REF)),
                                run_relate,
                                fasta,
                                bam_dirs,
-                               min_reads=min_reads,
-                               out_dir=self.OUT_DIR)
-        # Relating them in different output directories.
+                               out_dir=str(self.OUT_DIR),
+                               **relate_kwargs)
+        # Relate them in different output directories.
         relate_dirs = list()
         for bam_file, out_dir in zip(bam_dirs, self.OUT_DIRS, strict=True):
             relate_dir, = run_relate(fasta,
                                      (bam_file,),
-                                     min_reads=min_reads,
-                                     out_dir=out_dir)
+                                     out_dir=str(out_dir),
+                                     **relate_kwargs)
             expect = out_dir.joinpath(self.SAMPLE,
                                       "relate",
                                       self.REF,
@@ -223,7 +228,7 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
             self.assertTrue(expect.is_file())
             self.assertEqual(relate_dir, expect.parent)
             relate_dirs.append(relate_dir)
-        # Masking relate reports with the same sample and reference.
+        # Mask relate reports with the same sample and reference.
         mask_dirs = run_mask(relate_dirs,
                              mask_coords=[(self.REF, 5, 50)],
                              min_ninfo_pos=1)
@@ -236,6 +241,19 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
         for expect, mask_dir in zip(expects, mask_dirs, strict=True):
             self.assertTrue(expect.is_file())
             self.assertEqual(mask_dir, expect.parent)
+        # Cluster mask reports with the same sample and reference.
+        cluster_dirs = run_cluster(mask_dirs,
+                                   max_clusters=1,
+                                   jackpot=False)
+        expects = [out_dir.joinpath(self.SAMPLE,
+                                    "cluster",
+                                    self.REF,
+                                    "5-50",
+                                    "cluster-report.json")
+                   for out_dir in self.OUT_DIRS]
+        for expect, cluster_dir in zip(expects, cluster_dirs, strict=True):
+            self.assertTrue(expect.is_file())
+            self.assertEqual(cluster_dir, expect.parent)
 
 
 if __name__ == "__main__":

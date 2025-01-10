@@ -62,8 +62,8 @@ def load_regions(input_path: Iterable[str | Path],
         except Exception as error:
             logger.error(error)
     # Determine the regions for each reference in the datasets.
-    regions = RefRegions({(loader.ref, loader.refseq)
-                          for loader in chain(*datasets.values())},
+    regions = RefRegions({(dataset.ref, dataset.refseq)
+                          for dataset in chain(*datasets.values())},
                          regs_file=regions_file,
                          coords=coords,
                          primers=primers,
@@ -121,7 +121,6 @@ def run(input_path: tuple[str, ...], *,
         primer_gap=primer_gap,
         regions_file=optional_path(mask_regions_file)
     )
-    # Call the mutations and filter the relation vectors.
     return dispatch(mask_region,
                     max_procs=max_procs,
                     args=[(dataset, region)

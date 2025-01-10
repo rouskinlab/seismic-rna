@@ -973,6 +973,7 @@ class RefRegions(object):
         # For each reference, generate regions from the coordinates.
         self._regions: dict[str, dict[tuple[int, int], Region]] = dict()
         for ref, refseq in RefSeqs(ref_seqs):
+            assert ref not in self._regions
             self._regions[ref] = dict()
             for end5, end3 in ref_coords[ref]:
                 # Add a region for each pair of 5' and 3' coordinates.

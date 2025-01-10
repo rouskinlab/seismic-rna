@@ -618,11 +618,11 @@ class Masker(object):
 
 @with_tmp_dir(pass_keep_tmp=False)
 def mask_region(dataset: RelateMutsDataset | PoolDataset,
-                region: Region,
+                region: Region, *,
+                tmp_dir: Path,
                 mask_del: bool,
                 mask_ins: bool,
-                mask_mut: Iterable[str], *,
-                tmp_dir: Path,
+                mask_mut: Iterable[str],
                 mask_pos_table: bool,
                 mask_read_table: bool,
                 force: bool,

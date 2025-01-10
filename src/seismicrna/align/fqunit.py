@@ -61,6 +61,18 @@ def format_phred_arg(phred_enc: int):
     return f"--phred{phred_enc}"
 
 
+class MissingFastqMate(FileNotFoundError):
+    """ Missing a file in a pair of paired-end FASTQ files. """
+
+
+class MissingFastqMate1(MissingFastqMate):
+    """ Missing mate 1 in a pair of paired-end FASTQ files. """
+
+
+class MissingFastqMate2(MissingFastqMate):
+    """ Missing mate 2 in a pair of paired-end FASTQ files. """
+
+
 class FastqUnit(object):
     """
     Unified interface for the following sets of sequencing reads:
@@ -272,10 +284,10 @@ class FastqUnit(object):
         sample_ref_2s = find_sample_ref(fq2s, seg2s)
         # Check for any mates with only one file.
         set1s, set2s = set(sample_ref_1s), set(sample_ref_2s)
-        if miss1 := set2s - set1s:
-            logger.error(f"Missing FASTQ mate 1 files: {miss1}")
-        if miss2 := set1s - set2s:
-            logger.error(f"Missing FASTQ mate 2 files: {miss2}")
+        if missing1 := set2s - set1s:
+            raise MissingFastqMate1(missing1)
+        if missing2 := set1s - set2s:
+            raise MissingFastqMate2(missing2)
         # Yield a FASTQ unit for each pair of mated files.
         for sample_ref in set1s & set2s:
             fq_args = {cls.KEY_MATE1: sample_ref_1s[sample_ref],

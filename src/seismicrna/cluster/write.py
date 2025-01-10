@@ -20,7 +20,7 @@ from ..core.header import validate_ks
 from ..core.io import recast_file_path
 from ..core.logs import logger
 from ..core.task import dispatch
-from ..core.tmp import release_to_out
+from ..core.tmp import release_to_out, with_tmp_dir
 from ..core.types import get_max_uint
 from ..core.write import need_write
 from ..mask.dataset import load_mask_dataset
@@ -126,6 +126,7 @@ def run_ks(uniq_reads: UniqReads,
     return runs_ks
 
 
+@with_tmp_dir(pass_keep_tmp=False)
 def cluster(mask_report_file: Path, *,
             tmp_dir: Path,
             min_clusters: int,

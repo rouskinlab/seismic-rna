@@ -78,7 +78,7 @@ def get_release_working_dirs(tmp_dir: Path):
 
 
 def with_tmp_dir(pass_keep_tmp: bool):
-    """ Make a temporary directory, then delete it after the run. """
+    """ Make a temporary directory, and delete it after returning. """
 
     def decorator(func: Callable):
 
