@@ -121,39 +121,38 @@ def run(input_path: tuple[str, ...], *,
         primer_gap=primer_gap,
         regions_file=optional_path(mask_regions_file)
     )
-    args = [(dataset, region)
-            for ref, ref_datasets in datasets.items()
-            for dataset, region in product(ref_datasets, regions.list(ref))]
-    kwargs = dict(tmp_pfx=tmp_pfx,
-                  keep_tmp=keep_tmp,
-                  mask_del=mask_del,
-                  mask_ins=mask_ins,
-                  mask_mut=mask_mut,
-                  mask_polya=mask_polya,
-                  mask_gu=mask_gu,
-                  mask_pos=list(mask_pos),
-                  mask_pos_file=optional_path(mask_pos_file),
-                  mask_read=list(mask_read),
-                  mask_read_file=optional_path(mask_read_file),
-                  mask_discontig=mask_discontig,
-                  min_ncov_read=min_ncov_read,
-                  min_finfo_read=min_finfo_read,
-                  max_fmut_read=max_fmut_read,
-                  min_mut_gap=min_mut_gap,
-                  min_ninfo_pos=min_ninfo_pos,
-                  max_fmut_pos=max_fmut_pos,
-                  quick_unbias=quick_unbias,
-                  quick_unbias_thresh=quick_unbias_thresh,
-                  max_mask_iter=max_mask_iter,
-                  mask_pos_table=mask_pos_table,
-                  mask_read_table=mask_read_table,
-                  brotli_level=brotli_level,
-                  force=force)
     # Call the mutations and filter the relation vectors.
     return dispatch(mask_region,
                     max_procs=max_procs,
-                    args=args,
-                    kwargs=kwargs)
+                    args=[(dataset, region)
+                          for ref, ref_datasets in datasets.items()
+                          for dataset, region in product(ref_datasets,
+                                                         regions.list(ref))],
+                    kwargs=dict(tmp_pfx=tmp_pfx,
+                                keep_tmp=keep_tmp,
+                                mask_del=mask_del,
+                                mask_ins=mask_ins,
+                                mask_mut=mask_mut,
+                                mask_polya=mask_polya,
+                                mask_gu=mask_gu,
+                                mask_pos=list(mask_pos),
+                                mask_pos_file=optional_path(mask_pos_file),
+                                mask_read=list(mask_read),
+                                mask_read_file=optional_path(mask_read_file),
+                                mask_discontig=mask_discontig,
+                                min_ncov_read=min_ncov_read,
+                                min_finfo_read=min_finfo_read,
+                                max_fmut_read=max_fmut_read,
+                                min_mut_gap=min_mut_gap,
+                                min_ninfo_pos=min_ninfo_pos,
+                                max_fmut_pos=max_fmut_pos,
+                                quick_unbias=quick_unbias,
+                                quick_unbias_thresh=quick_unbias_thresh,
+                                max_mask_iter=max_mask_iter,
+                                mask_pos_table=mask_pos_table,
+                                mask_read_table=mask_read_table,
+                                brotli_level=brotli_level,
+                                force=force))
 
 
 params = [
