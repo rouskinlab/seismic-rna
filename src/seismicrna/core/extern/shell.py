@@ -20,6 +20,10 @@ JAVA_CMD = "java"
 JAR_CMD = "-jar"
 
 
+class ShellCommandFailedError(RuntimeError):
+    """ A command failed that was run through the shell. """
+
+
 def args_to_cmd(args: list[Any]):
     """ Join a list of arguments into a command with shlex. """
     return shlex.join(map(str, args))
@@ -43,24 +47,21 @@ def cmds_to_subshell(cmds: list[str]):
 def run_cmd(cmd: str, text: bool | None = True):
     """ Run a command via subprocess.run(), with logging. """
     # Log the command with which the process was run.
-    logger.routine(f"Began running command via the shell:\n{cmd}")
+    logger.action(f"Began running shell command:\n{cmd}")
     # Run the process and capture the output.
     process = run(cmd,
                   shell=True,
                   capture_output=text is not None,
                   text=text)
-    # Format a message depending on whether the process succeeded.
-    succeeded = process.returncode == 0
-    if succeeded:
-        status = "SUCCEEDED"
-    else:
-        status = f"FAILED with code {process.returncode}"
-    message = "\n".join([f"Shell command {status}:\n{cmd}\n",
+    failed = process.returncode != 0
+    result = f"FAILED (code {process.returncode})" if failed else "SUCCEEDED"
+    message = "\n".join([f"Shell command {result}:\n{cmd}\n",
                          f"STDOUT:\n{process.stdout}\n",
                          f"STDERR:\n{process.stderr}\n"])
-    if not succeeded:
-        raise RuntimeError(message)
-    logger.routine(message)
+    if failed:
+        raise ShellCommandFailedError(message)
+    logger.detail(message)
+    logger.action("Ended running shell command")
     return process
 
 

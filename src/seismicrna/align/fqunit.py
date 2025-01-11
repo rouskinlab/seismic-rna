@@ -250,6 +250,7 @@ class FastqUnit(object):
                 sample_ref = fq_unit.sample, fq_unit.ref
                 if sample_ref in sample_refs:
                     raise DuplicateSampleReferenceError(sample_ref)
+                logger.detail(f"Generated {cls.__name__} for {sample_ref}")
                 yield fq_unit
 
     @classmethod
@@ -292,11 +293,13 @@ class FastqUnit(object):
         for sample_ref in set1s & set2s:
             fq_args = {cls.KEY_MATE1: sample_ref_1s[sample_ref],
                        cls.KEY_MATE2: sample_ref_2s[sample_ref]}
-            logger.detail(f"Generating {cls} from {list(fq_args.values())}")
             try:
-                yield cls(phred_enc=phred_enc, one_ref=one_ref, **fq_args)
+                fq_unit = cls(phred_enc=phred_enc, one_ref=one_ref, **fq_args)
             except Exception as error:
                 logger.error(error)
+            else:
+                logger.detail(f"Generated {cls.__name__} for {sample_ref}")
+                yield fq_unit
 
     @classmethod
     def from_paths(cls, /, *, phred_enc: int, **fastq_args: list[Path]):
@@ -327,7 +330,7 @@ class FastqUnit(object):
             in which `os.path.listdir` returns file paths.
         """
         # List all FASTQ files.
-        logger.routine(f"Began generating {cls} from files")
+        logger.routine(f"Began generating {cls.__name__} instances")
         # single-end
         yield from cls._from_files(phred_enc=phred_enc,
                                    one_ref=False,
@@ -356,7 +359,7 @@ class FastqUnit(object):
         yield from cls._from_mates(phred_enc=phred_enc,
                                    one_ref=True,
                                    fqs=fastq_args.get(cls.KEY_DMATED, ()))
-        logger.routine(f"Ended generating {cls} from files")
+        logger.routine(f"Ended generating {cls.__name__} instances")
 
     def __str__(self):
         return " ".join(

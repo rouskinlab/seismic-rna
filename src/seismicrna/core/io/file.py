@@ -79,7 +79,7 @@ class FileIO(ABC):
         """ Save the object to a file. """
 
     def __str__(self):
-        return f"{type(self).__name__}: {self.path_field_values()}"
+        return type(self).__name__
 
 
 class RefIO(FileIO, ABC):

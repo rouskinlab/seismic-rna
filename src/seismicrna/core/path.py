@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import pathlib
 import re
+import shutil
 from collections import Counter
 from functools import cache, cached_property, partial, wraps
 from itertools import chain, product
@@ -128,15 +129,19 @@ PARAM_CLUSTS_EXT = f".clusts{CSV_EXT}"
 # Path Exceptions ######################################################
 
 class PathError(Exception):
-    """ Any error involving a path """
+    """ Any error involving a path. """
 
 
 class PathTypeError(PathError, TypeError):
-    """ Use of the wrong type of path or segment """
+    """ Use of the wrong type of path or segment. """
 
 
 class PathValueError(PathError, ValueError):
-    """ Invalid value of a path segment field """
+    """ Invalid value of a path segment field. """
+
+
+class WrongFileExtensionError(PathValueError):
+    """ A file has the wrong extension. """
 
 
 # Path Functions #######################################################
@@ -296,6 +301,20 @@ GraphExt = Field(str, GRAPH_EXTS, is_ext=True)
 WebAppFileExt = Field(str, [JSON_EXT], is_ext=True)
 SvgExt = Field(str, [SVG_EXT], is_ext=True)
 KtsExt = Field(str, [KTS_EXT], is_ext=True)
+
+
+def check_file_extension(file: pathlib.Path,
+                         extensions: Iterable[str] | Field):
+    if isinstance(extensions, Field):
+        if not extensions.is_ext:
+            raise PathValueError(f"{extensions} is not an extension field")
+        extensions = extensions.options
+    elif not isinstance(extensions, (tuple, list, set, dict)):
+        extensions = set(extensions)
+    if file.suffix not in extensions:
+        raise WrongFileExtensionError(
+            f"Extension of {file} is not one of {extensions}"
+        )
 
 
 # Path Segments ########################################################
@@ -644,6 +663,61 @@ class Path(object):
 
 # Path creation routines
 
+
+def mkdir_if_needed(path: pathlib.Path | str,
+                    description: str = "directory"):
+    """ Create a directory and log that event if it does not exist. """
+    if not isinstance(path, pathlib.Path):
+        path = pathlib.Path(path)
+    try:
+        path.mkdir(parents=True)
+    except FileExistsError:
+        if not path.is_dir():
+            # Raise an error if the existing path is not a directory,
+            # e.g. if it is a file.
+            raise NotADirectoryError(path) from None
+        return path
+    logger.action(f"Created {description} {path}")
+    return path
+
+
+def rmdir_if_needed(path: pathlib.Path | str,
+                    rmtree: bool = False,
+                    rmtree_ignore_errors: bool = False,
+                    raise_on_rmtree_error: bool = True,
+                    description: str = "directory"):
+    """ Remove a directory and log that event if it exists. """
+    try:
+        path.rmdir()
+    except FileNotFoundError:
+        # The path does not exist, so there is no need to delete it.
+        # FileNotFoundError is a subclass of OSError, so need to handle
+        # this exception before OSError.
+        return
+    except NotADirectoryError:
+        # Trying to rmdir() something that is not a directory should
+        # always raise an error. NotADirectoryError is a subclass of
+        # OSError, so need to handle this exception before OSError.
+        raise
+    except OSError:
+        # The directory exists but could not be removed for some reason,
+        # probably that it is not empty.
+        if not rmtree:
+            # For safety, remove directories recursively only if given
+            # explicit permission to do so; if not, re-raise the error.
+            raise
+        try:
+            shutil.rmtree(path, ignore_errors=rmtree_ignore_errors)
+        except Exception as error:
+            if raise_on_rmtree_error:
+                raise
+            # If not raising errors, then log a warning but return now
+            # to avoid logging that the directory was removed.
+            logger.warning(error)
+            return
+    logger.action(f"Removed {description} {path}")
+
+
 @cache
 def create_path_type(*segment_types: Segment):
     """ Create and cache a Path instance from the segment types. """
@@ -659,18 +733,14 @@ def build(*segment_types: Segment, **field_values: Any):
 def builddir(*segment_types: Segment, **field_values: Any):
     """ Build the path and create it on the file system as a directory
     if it does not already exist. """
-    path = build(*segment_types, **field_values)
-    path.mkdir(parents=True, exist_ok=True)
-    logger.detail(f"Created directory {path}")
-    return path
+    return mkdir_if_needed(build(*segment_types, **field_values))
 
 
 def buildpar(*segment_types: Segment, **field_values: Any):
     """ Build a path and create its parent directory if it does not
     already exist. """
     path = build(*segment_types, **field_values)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    logger.detail(f"Created directory {path.parent}")
+    mkdir_if_needed(path.parent)
     return path
 
 
@@ -681,10 +751,7 @@ def randdir(parent: str | pathlib.Path | None = None,
     it on the file system. """
     parent = sanitize(parent) if parent is not None else pathlib.Path.cwd()
     path = pathlib.Path(mkdtemp(dir=parent, prefix=prefix, suffix=suffix))
-    logger.detail(f"Created random directory {path} with "
-                  f"parent={repr(parent)}, "
-                  f"prefix={repr(prefix)}, "
-                  f"suffix={repr(suffix)}")
+    logger.action(f"Created directory {path}")
     return path
 
 
@@ -760,7 +827,9 @@ def path_matches(path: str | pathlib.Path, segments: Sequence[Segment]):
 
 
 @deduplicated
-def find_files(path: str | pathlib.Path, segments: Sequence[Segment]):
+def find_files(path: str | pathlib.Path,
+               segments: Sequence[Segment],
+               pre_sanitize: bool = True):
     """ Yield all files that match a sequence of path segments.
     The behavior depends on what `path` is:
 
@@ -775,24 +844,30 @@ def find_files(path: str | pathlib.Path, segments: Sequence[Segment]):
         Path of a file to check or a directory to search recursively.
     segments: Sequence[Segment]
         Sequence(s) of Path segments to check if each file matches.
+    pre_sanitize: bool
+        Whether to sanitize the path before searching it.
 
     Returns
     -------
     Generator[Path, Any, None]
         Paths of files matching the segments.
     """
-    path = sanitize(path, strict=True)
-    if path.is_dir():
-        # Search the directory for files matching the segments.
-        logger.detail(f"Began searching {path} and any of its subdirectories "
-                      f"for files matching {list(map(str, segments))}")
-        yield from chain(*map(partial(find_files, segments=segments),
-                              path.iterdir()))
-    else:
-        # Assume the path is a file; check if it matches the segments.
+    if pre_sanitize:
+        path = sanitize(path, strict=True)
+    if path.is_file():
+        # Check if the file matches the segments.
         if path_matches(path, segments):
             # If so, then yield it.
+            logger.detail(f"Found file {path}")
             yield path
+    else:
+        # Search the directory for files matching the segments.
+        logger.routine(f"Began recursively searching directory {path}")
+        yield from chain(*map(partial(find_files,
+                                      segments=segments,
+                                      pre_sanitize=False),
+                              path.iterdir()))
+        logger.routine(f"Ended recursively searching directory {path}")
 
 
 @deduplicated

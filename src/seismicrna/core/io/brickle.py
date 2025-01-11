@@ -12,6 +12,10 @@ DEFAULT_BROTLI_LEVEL = 10
 PICKLE_PROTOCOL = 5
 
 
+class WrongChecksumError(ValueError):
+    """ A file or piece of data has the wrong checksum. """
+
+
 def digest_data(data: bytes):
     """ Compute the MD5 digest of the data as a hexadecimal number. """
     return md5(data).hexdigest()
@@ -33,7 +37,7 @@ def save_brickle(item: Any,
     logger.detail(f"Compressed {item} using Brotli level {brotli_level}")
     with open(file, write_mode(force, binary=True)) as f:
         f.write(data)
-    logger.detail(f"Wrote Brotli-compressed {item} to {file}")
+    logger.action(f"Wrote {item} to {file}")
     checksum = digest_data(data)
     logger.detail(f"Computed MD5 checksum of {file}: {checksum}")
     logger.routine(f"Ended writing {item} to {file}")
@@ -50,13 +54,13 @@ def load_brickle(file: Path | str,
     if checksum:
         digest = digest_data(data)
         if digest != checksum:
-            raise ValueError(f"Expected checksum of {file} to be {checksum}, "
-                             f"but got {digest}")
+            raise WrongChecksumError(f"Expected checksum of {file} to be "
+                                     f"{checksum}, but got {digest}")
     item = pickle.loads(brotli.decompress(data))
     if check_type is not None and not isinstance(item, check_type):
         raise TypeError(f"Expected to unpickle {check_type}, "
                         f"but got {type(item).__name__}")
-    logger.routine(f"Ended loading {item} from {file}")
+    logger.routine(f"Ended loading {file}")
     return item
 
 ########################################################################

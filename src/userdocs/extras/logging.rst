@@ -7,7 +7,7 @@ All messages are saved to a log file to provide a record of the run.
 You can control which of these messages are also printed to `standard error`_,
 as described in this section.
 
-Logged messages come in seven levels
+Logged messages come in eight levels
 --------------------------------------------------------------------------------
 
 Messages range from fatal errors to details of primary use in troubleshooting:
@@ -15,10 +15,11 @@ Messages range from fatal errors to details of primary use in troubleshooting:
 ======= ========== =============================================================
  Level   Name       Used for
 ======= ========== =============================================================
- 3       DETAIL     Detail about a routine event
- 2       ROUTINE    Routine event
- 1       TASK       Tasks that are run in series or parallel
- 0       COMMAND    The command/step that is currently running
+ 4       DETAIL     Detail about a normal event
+ 3       ROUTINE    Normal internal event (e.g. regular function call)
+ 2       ACTION     Normal external event (e.g. file output or shell command)
+ 1       TASK       Task that can be run in series or parallel
+ 0       STATUS     Current command or step of the workflow
  -1      WARNING    Abnormal event or problem that can be fully recovered
  -2      ERROR      Problem preventing a requested output from being written
  -3      FATAL      Problem preventing all requested outputs from being written
@@ -45,17 +46,19 @@ or more negative (fatal, error, warning, and command).
 The flags ``--verbose`` (``-v``) and ``--quiet`` (``-q``) change the threshold
 level for logging to standard error:
 
-====== =========== ======================================================= ==================================
- Flag   Threshold   Logs to standard error                                  Useful for
-====== =========== ======================================================= ==================================
- -vvv   3           fatal, error, warning, command, task, routine, detail   Troubleshooting
- -vv    2           fatal, error, warning, command, task, routine           Monitoring progress within tasks
- -v     1           fatal, error, warning, command, task                    Monitoring individual tasks
- none   0           fatal, error, warning, command                          Monitoring overall status
- -q     -1          fatal, error, warning                                   Logging only problems
- -qq    -2          fatal, error                                            Logging only errors
- -qqq   -3          fatal                                                   Logging only fatal errors
-====== =========== ======================================================= ==================================
+======= =========== ============================================================== =============================
+ Flag    Threshold   Logs to standard error                                          Useful for
+======= =========== ============================================================== =============================
+ -vvvv   4           fatal, error, warning, status, task, action, routine, detail   Detailed troubleshooting
+ -vvv    3           fatal, error, warning, status, task, action, routine           General troubleshooting
+ -vv     2           fatal, error, warning, status, task, action                    Tracking file operations
+ -v      1           fatal, error, warning, status, task                            Monitoring individual tasks
+         0           fatal, error, warning, status                                  Monitoring overall status
+ -q      -1          fatal, error, warning                                          Focusing on all problems
+ -qq     -2          fatal, error                                                   Focusing on errors
+ -qqq    -3          fatal                                                          Focusing on fatal errors
+ -qqqq   -4                                                                         Silencing all logging
+======= =========== ============================================================== =============================
 
 The flags must come between the command ``seismic`` and the sub-command.
 For example, to run the ``cluster`` step with double-verbose logging::

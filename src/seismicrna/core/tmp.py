@@ -5,7 +5,11 @@ from shutil import rmtree
 from typing import Callable
 
 from .logs import logger
-from .path import randdir, sanitize, transpath
+from .path import (mkdir_if_needed,
+                   rmdir_if_needed,
+                   randdir,
+                   sanitize,
+                   transpath)
 
 PENDING = "release"
 WORKING = "working"
@@ -22,7 +26,7 @@ def release_to_out(out_dir: Path,
     out_path = transpath(out_dir, release_dir, initial_path)
     if initial_path.exists():
         # Ensure the parent directory of the new path exists.
-        out_path.parent.mkdir(parents=True, exist_ok=True)
+        mkdir_if_needed(out_path.parent, "parent directory")
         # If the output path already exists, then first rename it.
         delete_path = randdir(out_path.parent, f"{out_path.name}-")
         try:
@@ -33,12 +37,13 @@ def release_to_out(out_dir: Path,
             logger.detail(f"Output path {out_path} does not yet exist")
         else:
             deleted = True
-            logger.detail(f"Output path {out_path} exists; "
-                          f"moved it to {delete_path} (to be deleted)")
+            logger.action(
+                f"Moved output path {out_path} to {delete_path} (to be deleted)"
+            )
         try:
             # Move the initial path to the output location.
             initial_path.rename(out_path)
-            logger.detail(
+            logger.action(
                 f"Moved initial path {initial_path} to output path {out_path}"
             )
         except Exception:
@@ -46,21 +51,16 @@ def release_to_out(out_dir: Path,
                 # If an error occurred, then restore the original output
                 # path before raising the exception.
                 delete_path.rename(out_path)
-                logger.detail(f"Moved {delete_path} (to be deleted) "
-                              f"back to original output path {out_path}")
+                logger.action(f"Moved {delete_path} (to be deleted) "
+                              f"back to output path {out_path}")
             else:
                 # No original files were moved to the delete directory,
                 # which is therefore still empty. Delete it.
-                delete_path.rmdir()
+                rmdir_if_needed(delete_path)
             raise
         # Once the initial path has been moved to its destination, the
         # original directory can be deleted safely.
-        try:
-            rmtree(delete_path)
-        except Exception as error:
-            logger.warning(error)
-        else:
-            logger.detail(f"Deleted {delete_path}")
+        rmdir_if_needed(delete_path, raise_on_rmtree_error=False)
     else:
         logger.detail(f"Skipped releasing {initial_path} (does not exist)")
     if not out_path.exists():

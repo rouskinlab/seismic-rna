@@ -85,7 +85,7 @@ opt_out_dir = Option(
 opt_tmp_pfx = Option(
     ("--tmp-pfx", "-t"),
     type=Path(file_okay=False),
-    default=os.path.join(".", "tmp-"),
+    default=os.path.join(".", "tmp"),
     help="Write all temporary files to a directory with this prefix"
 )
 

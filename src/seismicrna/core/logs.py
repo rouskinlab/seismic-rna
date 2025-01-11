@@ -14,10 +14,11 @@ class Level(IntEnum):
     FATAL = -3
     ERROR = -2
     WARNING = -1
-    COMMAND = 0
+    STATUS = 0
     TASK = 1
-    ROUTINE = 2
-    DETAIL = 3
+    ACTION = 2
+    ROUTINE = 3
+    DETAIL = 4
 
 
 class Message(object):
@@ -163,10 +164,11 @@ LEVEL_COLORS = {
                           AnsiCode.format(AnsiCode.BOLD)]),
     Level.ERROR: AnsiCode.format_color(160),
     Level.WARNING: AnsiCode.format_color(214),
-    Level.COMMAND: AnsiCode.format_color(28),
-    Level.TASK: AnsiCode.format_color(33),
-    Level.ROUTINE: AnsiCode.format_color(55),
-    Level.DETAIL: AnsiCode.format_color(240),
+    Level.STATUS: AnsiCode.format_color(28),
+    Level.TASK: AnsiCode.format_color(38),
+    Level.ACTION: AnsiCode.format_color(69),
+    Level.ROUTINE: AnsiCode.format_color(147),
+    Level.DETAIL: AnsiCode.format_color(247),
 }
 
 
@@ -217,11 +219,14 @@ class Logger(object):
     def warning(self, content: object):
         self._log(Level.WARNING, content)
 
-    def command(self, content: object):
-        self._log(Level.COMMAND, content)
+    def status(self, content: object):
+        self._log(Level.STATUS, content)
 
     def task(self, content: object):
         self._log(Level.TASK, content)
+
+    def action(self, content: object):
+        self._log(Level.ACTION, content)
 
     def routine(self, content: object):
         self._log(Level.ROUTINE, content)
@@ -234,7 +239,7 @@ logger = Logger()
 
 DEFAULT_COLOR = True
 DEFAULT_RAISE = False
-DEFAULT_VERBOSITY = Level.COMMAND
+DEFAULT_VERBOSITY = Level.STATUS
 FILE_VERBOSITY = Level.DETAIL
 EXC_INFO_VERBOSITY = Level.TASK
 

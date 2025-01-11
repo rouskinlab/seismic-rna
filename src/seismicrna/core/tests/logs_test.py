@@ -30,7 +30,7 @@ class TestLevels(ut.TestCase):
         self.assertEqual(Level.FATAL, -3)
         self.assertEqual(Level.ERROR, -2)
         self.assertEqual(Level.WARNING, -1)
-        self.assertEqual(Level.COMMAND, 0)
+        self.assertEqual(Level.STATUS, 0)
         self.assertEqual(Level.TASK, 1)
         self.assertEqual(Level.ROUTINE, 2)
         self.assertEqual(Level.DETAIL, 3)
@@ -79,7 +79,7 @@ class TestExcInfo(ut.TestCase):
 
     @restore_config
     def test_exc_info(self):
-        for verbosity in [Level.COMMAND,
+        for verbosity in [Level.STATUS,
                           Level.WARNING,
                           Level.ERROR,
                           Level.FATAL]:

@@ -5,14 +5,34 @@ from tempfile import NamedTemporaryFile
 from typing import Iterable
 
 from .xna import XNA
+from .. import path
 from ..logs import logger
-from ..path import STR_CHARS
 from ..write import need_write
 
 # FASTA name line format.
 FASTA_NAME_MARK = ">"
-FASTA_NAME_CHARS = STR_CHARS
+FASTA_NAME_CHARS = path.STR_CHARS
 FASTA_NAME_REGEX = re.compile(f"^{FASTA_NAME_MARK}([{FASTA_NAME_CHARS}]*)")
+
+
+class ReferenceNameError(ValueError):
+    """ Error in the name of a reference sequence. """
+
+
+class BadReferenceNameError(ReferenceNameError):
+    """ A reference name is not valid. """
+
+
+class BadReferenceNameLineError(ReferenceNameError):
+    """ A line that should contain a reference name is not valid. """
+
+
+class DuplicateReferenceNameError(ReferenceNameError):
+    """ A reference name occurs more than once. """
+
+
+class MissingReferenceNameError(ReferenceNameError):
+    """ A reference name was expected to appear but is absent. """
 
 
 def extract_fasta_seqname(line: str):
@@ -25,13 +45,19 @@ def valid_fasta_seqname(line: str) -> str:
     # Confirm that the line matches the pattern for name lines.
     if (name := extract_fasta_seqname(line)) is None:
         # If the pattern failed to match, then the line is misformatted.
-        raise ValueError(f"FASTA name line {repr(line)} is misformatted")
+        raise BadReferenceNameLineError(
+            f"Misformatted FASTA name line {repr(line)}"
+        )
     if not name:
         # If pattern matched, then the name can still be blank.
-        raise ValueError(f"FASTA name line {repr(line)} has a blank name")
+        raise BadReferenceNameLineError(
+            f"Blank FASTA name line {repr(line)}"
+        )
     if name != line[len(FASTA_NAME_MARK):].rstrip():
         # If the name is not blank, then it can have illegal characters.
-        raise ValueError(f"FASTA name line {repr(line)} has illegal characters")
+        raise BadReferenceNameLineError(
+            f"Illegal characters in FASTA name line {repr(line)}"
+        )
     # If none of the above, then the line and the name are valid.
     return name
 
@@ -43,6 +69,8 @@ def format_fasta_name_line(name: str):
 def format_fasta_seq_lines(seq: XNA, wrap: int = 0):
     """ Format a sequence in a FASTA file so that each line has at most
     `wrap` characters, or no limit if `wrap` is ≤ 0. """
+    if not isinstance(seq, XNA):
+        raise TypeError(seq)
     if 0 < wrap < len(seq):
         return "".join(f"{seq[start: start + wrap]}{linesep}"
                        for start in range(0, len(seq), wrap))
@@ -56,15 +84,18 @@ def format_fasta_record(name: str, seq: XNA, wrap: int = 0):
 def parse_fasta(fasta: Path,
                 seq_type: type[XNA] | None,
                 only: Iterable[str] | None = None):
-    if seq_type is not None:
-        logger.routine(f"Began parsing {seq_type.__name__} FASTA file {fasta}")
+    path.check_file_extension(fasta, path.FastaExt)
+    if seq_type is None:
+        item_type = "names of sequence"
+    elif issubclass(seq_type, XNA):
+        item_type = f"{seq_type.__name__} sequence"
     else:
-        logger.routine(f"Began parsing FASTA file {fasta} (name-only mode)")
+        raise ValueError(seq_type)
+    logger.routine(f"Began parsing {item_type}s in FASTA file {fasta}")
     names = set()
     skipped = 0
     if only is not None and not isinstance(only, set):
         only = set(only)
-        logger.detail(f"Parsing only references {sorted(only)}")
     with open(fasta) as f:
         line = f.readline()
         # Read to the end of the file.
@@ -72,7 +103,7 @@ def parse_fasta(fasta: Path,
             # Determine the name of the current reference.
             name = valid_fasta_seqname(line)
             if name in names:
-                raise ValueError(f"Duplicate name {repr(name)} in {fasta}")
+                raise DuplicateReferenceNameError(f"{repr(name)} in {fasta}")
             names.add(name)
             # Advance to the next line to prevent the current line from
             # being read multiple times.
@@ -89,34 +120,33 @@ def parse_fasta(fasta: Path,
                         line = f.readline()
                     seq = seq_type("".join(segments))
                     logger.detail(
-                        f"Read {seq_type.__name__} sequence {repr(name)} "
-                        f"({len(seq)} nt) from {fasta}"
+                        f"Parsed {repr(name)} ({len(seq)} nt {item_type})"
                     )
                     yield name, seq
                 else:
                     # In name-only mode, yield only the reference name.
-                    logger.detail(f"Found reference {repr(name)}")
+                    logger.detail(f"Parsed {repr(name)}")
                     yield name
             else:
-                logger.detail(f"Skipped reference {repr(name)}")
+                logger.detail(f"Skipped {repr(name)}")
                 skipped += 1
             # Skip to the next name line if there is one, otherwise to
             # the end of the file; ignore blank lines.
             while line and not line.startswith(FASTA_NAME_MARK):
                 line = f.readline()
-    logger.routine(f"Ended parsing FASTA file {fasta}: "
-                   f"{len(names)} sequences, {skipped} skipped")
+    logger.detail(f"Parsed {len(names)} {item_type}s in FASTA file {fasta}")
+    logger.detail(f"Skipped {skipped} {item_type}s in FASTA file {fasta}")
+    logger.routine(f"Ended parsing {item_type}s in FASTA file {fasta}")
 
 
 def get_fasta_seq(fasta: Path, seq_type: type[XNA], name: str):
     """ Get one sequence of a given name from a FASTA file. """
-    if not isinstance(seq_type, type) and issubclass(seq_type, XNA):
-        raise TypeError(f"Expected seq_type to be subclass of {XNA.__name__}, "
-                        f"but got {repr(seq_type)}")
     try:
         _, seq = next(iter(parse_fasta(fasta, seq_type, (name,))))
     except StopIteration:
-        raise ValueError(f"Sequence {repr(name)} is not in {fasta}") from None
+        raise MissingReferenceNameError(
+            f"{repr(name)} is not in {fasta}"
+        ) from None
     return seq
 
 
@@ -126,15 +156,16 @@ def write_fasta(fasta: Path,
                 force: bool = False):
     """ Write an iterable of reference names and DNA sequences to a
     FASTA file. """
+    path.check_file_extension(fasta, path.FastaExt)
     if need_write(fasta, force):
-        logger.routine(f"Began writing {fasta}")
+        logger.action(f"Began writing FASTA file {fasta}")
         with NamedTemporaryFile("w",
                                 dir=fasta.parent,
                                 prefix=fasta.stem,
                                 suffix=fasta.suffix,
                                 delete=False) as f:
             tmp_fasta = Path(f.file.name)
-        logger.detail(f"Created temporary FASTA {tmp_fasta}")
+        logger.routine(f"Created temporary FASTA file {tmp_fasta}")
         try:
             # Write the new FASTA in a temporary file.
             with open(tmp_fasta, "w") as f:
@@ -143,26 +174,35 @@ def write_fasta(fasta: Path,
                 for name, seq in refs:
                     # Confirm that the name is not blank.
                     if not name:
-                        raise ValueError(f"Got blank reference name")
+                        raise BadReferenceNameError(f"Blank reference name")
                     # Confirm that the name has no illegal characters.
-                    if illegal := (set(name) - set(FASTA_NAME_CHARS)):
-                        raise ValueError(f"Reference name {repr(name)} has "
-                                         f"illegal characters: {illegal}")
+                    if set(name) - set(FASTA_NAME_CHARS):
+                        raise BadReferenceNameError("Illegal characters "
+                                                    f"in {repr(name)}")
                     if name in names:
-                        raise ValueError(f"Duplicate reference: {repr(name)}")
+                        raise DuplicateReferenceNameError(name)
                     f.write(format_fasta_record(name, seq, wrap))
-                    logger.detail(f"Wrote reference {repr(name)} "
-                                  f"({len(seq)} nt) to {tmp_fasta}")
+                    logger.detail(f"Wrote {repr(name)} ({len(seq)} nt "
+                                  f"{type(seq).__name__} sequence)")
                     names.add(name)
             # Release the FASTA file.
             tmp_fasta.rename(fasta)
-            logger.detail(f"Renamed temporary FASTA {tmp_fasta} to {fasta}")
+            logger.routine(
+                f"Released temporary FASTA file {tmp_fasta} to {fasta}"
+            )
         finally:
             # The temporary FASTA file would have been renamed already
             # if the write operation had succeeded; if not, delete it.
-            tmp_fasta.unlink(missing_ok=True)
-            logger.detail(f"Deleted temporary FASTA {tmp_fasta}")
-        logger.routine(f"Ended writing {fasta}: {len(names)} sequences")
+            try:
+                tmp_fasta.unlink()
+            except FileNotFoundError:
+                pass
+            else:
+                logger.routine(f"Deleted temporary FASTA file {tmp_fasta}")
+        logger.detail(f"Wrote {len(names)} sequence(s) to FASTA file {fasta}")
+        logger.action(f"Ended writing FASTA file {fasta}")
+    else:
+        logger.detail(f"Not overwriting FASTA file {fasta}")
 
 ########################################################################
 #                                                                      #

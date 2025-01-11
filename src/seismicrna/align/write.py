@@ -48,22 +48,18 @@ def write_tmp_ref_files(tmp_dir: Path,
     corresponds to a FASTQ file from demultiplexing. """
     ref_paths: dict[str, tuple[Path, Path]] = dict()
     if refs:
-        logger.routine("Began writing temporary FASTA files of references "
-                       f"{refs} to {tmp_dir}")
+        logger.routine("Began writing temporary FASTA files")
         # Parse the FASTA only if there are any references to write.
         for record in parse_fasta(refset_path, DNA):
             ref, _ = record
             if ref in refs:
-                logger.detail(f"Writing FASTA file of reference {repr(ref)}")
                 # Write the reference sequence to a temporary FASTA file
                 # only if at least one demultiplexed FASTQ file uses it.
-                ref_path = path.build(*path.FASTA_STAGE_SEGS,
-                                      top=tmp_dir,
-                                      stage=path.STAGE_ALIGN_INDEX_DEMULT,
-                                      ref=ref,
-                                      ext=refset_path.suffix)
-                # Create the parent directory.
-                ref_path.parent.mkdir(parents=True, exist_ok=True)
+                ref_path = path.buildpar(*path.FASTA_STAGE_SEGS,
+                                         top=tmp_dir,
+                                         stage=path.STAGE_ALIGN_INDEX_DEMULT,
+                                         ref=ref,
+                                         ext=refset_path.suffix)
                 try:
                     # Write the temporary FASTA file.
                     write_fasta(ref_path, [record])
@@ -80,6 +76,7 @@ def write_tmp_ref_files(tmp_dir: Path,
                     ref_paths[ref] = ref_path, index_prefix
             else:
                 logger.detail(f"Skipped unused reference {repr(ref)}")
+        logger.routine("Ended writing temporary FASTA files")
     missing = sorted(refs - set(ref_paths.keys()))
     if missing:
         # If any references in refs do not have sequences, then log an
@@ -681,8 +678,9 @@ def fqs_pipeline(fq_units: list[FastqUnit],
     # Get the name of the reference for every demultiplexed FASTQ.
     tmp_refs = set(filter(None, (fq_unit.ref for fq_unit in fq_units)))
     if tmp_refs:
-        logger.detail(f"Found {len(tmp_refs)} references among demultiplexed "
-                      f"FASTQ files: {sorted(tmp_refs)}")
+        logger.detail(
+            f"Found {len(tmp_refs)} references among demultiplexed FASTQ files"
+        )
     # Write a temporary FASTA file and Bowtie2 index for each
     # demultiplexed FASTQ.
     tmp_fasta_paths = write_tmp_ref_files(tmp_dir,
@@ -700,7 +698,6 @@ def fqs_pipeline(fq_units: list[FastqUnit],
     iter_args: list[tuple[FastqUnit, Path, Path]] = list()
     # One alignment task will be created for each FASTQ unit.
     for fq_unit in fq_units:
-        logger.detail(f"Preparing to align {fq_unit}")
         if fq_unit.ref is not None:
             logger.detail(f"{fq_unit} contains reads from 1 reference, "
                           f"{repr(fq_unit.ref)}")
@@ -718,7 +715,6 @@ def fqs_pipeline(fq_units: list[FastqUnit],
             # Add these arguments to the lists of arguments that will be
             # passed to fq_pipeline.
             iter_args.append((fq_unit, tmp_fasta, tmp_index))
-            logger.detail(f"Planning to align {fq_unit} to {tmp_fasta}")
         else:
             logger.detail(f"{fq_unit} may contain reads from ≥ 1 reference")
             # If the FASTQ may contain reads from ≥ 1 references,
@@ -730,14 +726,10 @@ def fqs_pipeline(fq_units: list[FastqUnit],
                 refset = path.parse(main_fasta, path.FastaSeg)[path.REF]
                 # Determine the path of the temporary Bowtie 2 index
                 # of the main FASTA file.
-                main_index = path.build(*path.FASTA_INDEX_DIR_STAGE_SEGS,
-                                        top=tmp_dir,
-                                        stage=path.STAGE_ALIGN_INDEX,
-                                        ref=refset)
-                # Make its parent directory if it does not exist.
-                main_index.parent.mkdir(parents=True, exist_ok=True)
-                logger.detail(f"Created directory {main_index.parent} "
-                              f"for Bowtie 2 index of {main_fasta}")
+                main_index = path.buildpar(*path.FASTA_INDEX_DIR_STAGE_SEGS,
+                                           top=tmp_dir,
+                                           stage=path.STAGE_ALIGN_INDEX,
+                                           ref=refset)
                 # Build the Bowtie2 index.
                 try:
                     run_bowtie2_build(main_fasta,
@@ -747,8 +739,9 @@ def fqs_pipeline(fq_units: list[FastqUnit],
                     # the same directory as the new index.
                     fasta_link = main_index.with_suffix(main_fasta.suffix)
                     fasta_link.symlink_to(main_fasta)
-                    logger.detail("Created a temporary symbolic link "
-                                  f"{fasta_link} pointing to {main_fasta}")
+                    logger.detail(
+                        f"Symbolically linked {fasta_link} to {main_fasta}"
+                    )
                     # Add the FASTA link and the Bowtie 2 index to the
                     # set of files to delete after alignment finishes.
                     # Being deleted is the only purpose of fasta_link.
@@ -765,7 +758,6 @@ def fqs_pipeline(fq_units: list[FastqUnit],
             # alignment finishes; but only in the latter case is it
             # added to tmp_fasta_paths.
             iter_args.append((fq_unit, main_fasta, main_index))
-            logger.detail(f"Planning to align {fq_unit} to {main_fasta}")
     # Generate alignment map (XAM) files.
     xam_dirs = dispatch(fq_pipeline,
                         max_procs,
@@ -774,8 +766,8 @@ def fqs_pipeline(fq_units: list[FastqUnit],
                                     tmp_dir=tmp_dir,
                                     keep_tmp=keep_tmp,
                                     **kwargs))
-    # Return the final alignment map (XAM) directories.
     logger.routine(f"Ended running the alignment pipeline")
+    # Return the final alignment map (XAM) directories.
     return xam_dirs
 
 
