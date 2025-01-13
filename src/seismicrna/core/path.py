@@ -661,14 +661,12 @@ class Path(object):
         return self.as_str
 
 
-# Path creation routines
+# mkdir/symlink/rmdir.
 
 
-def mkdir_if_needed(path: pathlib.Path | str,
-                    description: str = "directory"):
+def mkdir_if_needed(path: pathlib.Path | str):
     """ Create a directory and log that event if it does not exist. """
-    if not isinstance(path, pathlib.Path):
-        path = pathlib.Path(path)
+    path = sanitize(path, strict=False)
     try:
         path.mkdir(parents=True)
     except FileExistsError:
@@ -676,24 +674,50 @@ def mkdir_if_needed(path: pathlib.Path | str,
             # Raise an error if the existing path is not a directory,
             # e.g. if it is a file.
             raise NotADirectoryError(path) from None
+        logger.detail(f"Skipped creating directory {path}: already exists")
         return path
-    logger.action(f"Created {description} {path}")
+    logger.action(f"Created directory {path}")
     return path
+
+
+def symlink_if_needed(link_path: pathlib.Path | str,
+                      target_path: pathlib.Path | str):
+    """ Make link_path a link pointing to target_path and log that event
+    if it does not exist. """
+    link_path = pathlib.Path(link_path)
+    target_path = sanitize(target_path, strict=True)
+    try:
+        link_path.symlink_to(target_path)
+    except FileExistsError:
+        # link_path already exists, so make sure it is a symbolic link
+        # that points to target_path.
+        try:
+            readlink = link_path.readlink()
+        except OSError:
+            raise OSError(f"{link_path} is not a symbolic link") from None
+        if readlink != target_path:
+            raise OSError(f"{link_path} is a symbolic link to {readlink}, "
+                          f"not to {target_path}") from None
+        logger.detail(f"Skipped creating symlink {link_path}: already exists")
+        return link_path
+    logger.action(f"Made {link_path} a symbolic link to {target_path}")
+    return link_path
 
 
 def rmdir_if_needed(path: pathlib.Path | str,
                     rmtree: bool = False,
                     rmtree_ignore_errors: bool = False,
-                    raise_on_rmtree_error: bool = True,
-                    description: str = "directory"):
+                    raise_on_rmtree_error: bool = True):
     """ Remove a directory and log that event if it exists. """
+    path = sanitize(path, strict=False)
     try:
         path.rmdir()
     except FileNotFoundError:
         # The path does not exist, so there is no need to delete it.
         # FileNotFoundError is a subclass of OSError, so need to handle
         # this exception before OSError.
-        return
+        logger.detail(f"Skipped removing directory {path}: does not exist")
+        return path
     except NotADirectoryError:
         # Trying to rmdir() something that is not a directory should
         # always raise an error. NotADirectoryError is a subclass of
@@ -714,8 +738,11 @@ def rmdir_if_needed(path: pathlib.Path | str,
             # If not raising errors, then log a warning but return now
             # to avoid logging that the directory was removed.
             logger.warning(error)
-            return
-    logger.action(f"Removed {description} {path}")
+            return path
+    logger.action(f"Removed directory {path}")
+
+
+# Path creation routines
 
 
 @cache

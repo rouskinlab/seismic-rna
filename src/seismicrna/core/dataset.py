@@ -111,6 +111,16 @@ class Dataset(ABC):
         """ Number of reads in the dataset. """
         return sum(batch.num_reads for batch in self.iter_batches())
 
+    def link_data_dirs_to_tmp(self, tmp_dir: Path):
+        """ Make links to a dataset in a temporary directory. """
+        for data_dir in self.data_dirs:
+            tmp_data_dir = path.transpath(tmp_dir,
+                                          self.top,
+                                          data_dir,
+                                          strict=True)
+            path.mkdir_if_needed(tmp_data_dir.parent)
+            path.symlink_if_needed(tmp_data_dir, data_dir)
+
     def __str__(self):
         return f"{type(self).__name__} for sample {repr(self.sample)}"
 

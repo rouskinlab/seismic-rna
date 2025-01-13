@@ -302,7 +302,7 @@ def exc_info():
 
 
 def log_exceptions(default: Optional[Callable]):
-    """ If any exception occurs, catch it and return an empty list. """
+    """ If any exception occurs, catch it and return the default. """
 
     def decorator(func: Callable):
 

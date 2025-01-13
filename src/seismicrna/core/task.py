@@ -46,7 +46,7 @@ def calc_pool_size(num_tasks: int, max_procs: int):
         # parent and can thus have all processors.
         pool_size = 1
         num_procs_per_task = max_procs
-    logger.detail(f"Calculated pool size: {pool_size} "
+    logger.detail(f"Calculated size of process pool: {pool_size} "
                   f"({num_procs_per_task} processor(s) per task)")
     return pool_size, num_procs_per_task
 

@@ -21,8 +21,9 @@ def accumulate_counts(batch_counts: Iterable[tuple[Any, Any, Any, Any]],
                       count_read: bool = True,
                       validate: bool = True):
     """ """
-    logger.routine(f"Began accumulating patterns {patterns}")
-    header = make_header(rels=list(patterns), ks=ks)
+    rels = list(patterns)
+    logger.routine(f"Began accumulating patterns {rels}")
+    header = make_header(rels=rels, ks=ks)
     end_counts_index = pd.MultiIndex.from_arrays([np.array([], dtype=int)
                                                   for _ in END_COORDS],
                                                  names=END_COORDS)
@@ -122,7 +123,7 @@ def accumulate_counts(batch_counts: Iterable[tuple[Any, Any, Any, Any]],
         count_per_read = pd.DataFrame(columns=rel_header.index, dtype=dtype)
     else:
         count_per_read = None
-    logger.routine(f"Ended accumulating patterns {patterns}")
+    logger.routine(f"Ended accumulating patterns {rels}")
     return num_reads, end_counts, count_per_pos, count_per_read
 
 

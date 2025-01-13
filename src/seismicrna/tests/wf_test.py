@@ -12,7 +12,9 @@ from seismicrna.core.arg.cli import opt_out_dir, opt_sim_dir
 from seismicrna.core.logs import Level, get_config, set_config
 from seismicrna.core.ngs import DuplicateSampleReferenceError
 from seismicrna.fold import run as run_fold
+from seismicrna.join import run as run_join
 from seismicrna.mask import run as run_mask
+from seismicrna.pool import run as run_pool
 from seismicrna.relate import run as run_relate
 from seismicrna.sim.fastq import run as run_sim_fastq
 from seismicrna.sim.fold import run as run_sim_fold
@@ -134,6 +136,9 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
     REFS = "test_refs"
     REF = "test_ref"
     SAMPLE = "test_sample"
+    POOLED = "pooled_sample"
+    MJOINED = "mjoined_region"
+    CJOINED = "cjoined_region"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -187,7 +192,7 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
                                            read_length=30,
                                            num_reads=2000,
                                            fq_gzip=False))
-        # Align FASTQ files with the same sample and reference.
+        # Align FASTQ files in the same output directory.
         min_reads = 1
         min_mapq = 10
         align_kwargs = dict(min_reads=min_reads,
@@ -202,7 +207,7 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
                                dmfastqx=list(chain(*dmfastqxs)),
                                out_dir=str(self.OUT_DIR),
                                **align_kwargs)
-        # Align them in different output directories.
+        # Align FASTQ files in different output directories.
         bam_files = list()
         for dmfastqx, out_dir in zip(dmfastqxs, self.OUT_DIRS, strict=True):
             bam_dir, = run_align(fasta,
@@ -214,7 +219,7 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
             self.assertEqual(bam_dir, bam_file.parent)
             bam_files.append(bam_file)
         self.check_no_identical(bam_files, True)
-        # Relate BAM files with the same sample and reference.
+        # Relate BAM files in the same output directory.
         relate_kwargs = dict(min_reads=min_reads,
                              min_mapq=min_mapq)
         self.assertRaisesRegex(DuplicateSampleReferenceError,
@@ -224,7 +229,7 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
                                bam_files,
                                out_dir=str(self.OUT_DIR),
                                **relate_kwargs)
-        # Relate them in different output directories.
+        # Relate BAM files in different output directories.
         relate_reports = list()
         for bam_file, out_dir in zip(bam_files, self.OUT_DIRS, strict=True):
             relate_dir, = run_relate(fasta,
@@ -239,10 +244,17 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
             self.assertEqual(relate_dir, relate_report.parent)
             relate_reports.append(relate_report)
         self.check_no_identical(relate_reports, False)
-
-        # Pool
-
-        # Mask relate reports with the same sample and reference.
+        # Pool relate reports.
+        pool_dirs = run_pool(relate_reports, pooled=self.POOLED)
+        pool_reports = [out_dir.joinpath(self.POOLED,
+                                         "relate",
+                                         self.REF,
+                                         "relate-report.json")
+                        for out_dir in self.OUT_DIRS]
+        for pool_report, pool_dir in zip(pool_reports, pool_dirs, strict=True):
+            self.assertTrue(pool_report.is_file())
+            self.assertEqual(pool_dir, pool_report.parent)
+        # Mask relate reports.
         mask_dirs = run_mask(relate_reports,
                              mask_coords=[(self.REF, 5, 50)],
                              min_ninfo_pos=1)
@@ -256,10 +268,20 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
             self.assertTrue(mask_report.is_file())
             self.assertEqual(mask_dir, mask_report.parent)
         self.check_no_identical(mask_reports, False)
-
-        # Join mask
-
-        # Cluster mask reports with the same sample and reference.
+        # Join mask reports.
+        mjoin_dirs = run_join(mask_reports, joined=self.MJOINED)
+        mjoin_reports = [out_dir.joinpath(self.SAMPLE,
+                                          "mask",
+                                          self.REF,
+                                          self.MJOINED,
+                                          "mask-report.json")
+                         for out_dir in self.OUT_DIRS]
+        for mjoin_report, mjoin_dir in zip(mjoin_reports,
+                                           mjoin_dirs,
+                                           strict=True):
+            self.assertTrue(mjoin_report.is_file())
+            self.assertEqual(mjoin_dir, mjoin_report.parent)
+        # Cluster mask reports.
         cluster_dirs = run_cluster(mask_dirs,
                                    max_clusters=1,
                                    jackpot=False)
@@ -274,10 +296,21 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
                                                strict=True):
             self.assertTrue(cluster_report.is_file())
             self.assertEqual(cluster_dir, cluster_report.parent)
-
-        # Join cluster
-
-        # Fold mask/cluster reports with the same sample and reference.
+        self.check_no_identical(cluster_reports, False)
+        # Join cluster reports.
+        cjoin_dirs = run_join(cluster_reports, joined=self.CJOINED)
+        cjoin_reports = [out_dir.joinpath(self.SAMPLE,
+                                          "cluster",
+                                          self.REF,
+                                          self.CJOINED,
+                                          "cluster-report.json")
+                         for out_dir in self.OUT_DIRS]
+        for cjoin_report, cjoin_dir in zip(cjoin_reports,
+                                           cjoin_dirs,
+                                           strict=True):
+            self.assertTrue(cjoin_report.is_file())
+            self.assertEqual(cjoin_dir, cjoin_report.parent)
+        # Fold mask and cluster reports.
         fold_reports = run_fold(mask_dirs + cluster_dirs,
                                 quantile=1.0)
         expect_fold_reports = list()

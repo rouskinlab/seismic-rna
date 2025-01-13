@@ -16,8 +16,11 @@ from .core.arg import (CMD_JOIN,
                        opt_cluster_pos_table,
                        opt_cluster_abundance_table,
                        opt_verify_times,
+                       opt_tmp_pfx,
+                       opt_keep_tmp,
                        opt_max_procs,
-                       opt_force)
+                       opt_force,
+                       extra_defaults)
 from .core.dataset import load_datasets
 from .core.join.cluster import parse_join_clusts_file
 from .core.join.dataset import JoinMutsDataset
@@ -25,6 +28,7 @@ from .core.join.report import JoinMaskReport, JoinClusterReport
 from .core.logs import logger
 from .core.run import run_func
 from .core.task import dispatch
+from .core.tmp import release_to_out, with_tmp_dir
 from .core.write import need_write
 from .mask.dataset import load_mask_dataset
 from .mask.report import MaskReport
@@ -39,12 +43,14 @@ def write_report(report_type: type[JoinMaskReport | JoinClusterReport],
     return report.save(out_dir, force=True)
 
 
+@with_tmp_dir(pass_keep_tmp=False)
 def join_regions(out_dir: Path,
                  name: str,
                  sample: str,
                  ref: str,
                  regs: Iterable[str],
                  clustered: bool, *,
+                 tmp_dir: Path,
                  clusts: dict[str, dict[int, dict[int, int]]],
                  mask_pos_table: bool,
                  mask_read_table: bool,
@@ -69,6 +75,8 @@ def join_regions(out_dir: Path,
         Names of the regions being joined.
     clustered: bool
         Whether the dataset is clustered.
+    tmp_dir: Path
+        Temporary directory.
     clusts: dict[str, dict[int, dict[int, int]]]
         For each region, for each number of clusters, the cluster from
         the original region to use as the cluster in the joined region
@@ -140,10 +148,20 @@ def join_regions(out_dir: Path,
                     f"Overwriting {report_file} with {report_type.__name__} "
                     "would cause data loss"
                 )
-        # Write the report file with a placeholder time.
-        write_report(report_type, out_dir, **report_kwargs)
+        # To be able to load, the joined dataset must have access to the
+        # original mask/cluster dataset(s) in the temporary directory.
+        for reg in regs:
+            load_function(
+                report_type.build_path(top=out_dir,
+                                       sample=sample,
+                                       ref=ref,
+                                       reg=reg)
+            ).link_data_dirs_to_tmp(tmp_dir)
         # Tabulate the joined dataset.
-        dataset = load_function(report_file, verify_times=verify_times)
+        dataset = load_function(write_report(report_type,
+                                             tmp_dir,
+                                             **report_kwargs),
+                                verify_times=verify_times)
         tabulate(dataset,
                  tabulator_type,
                  pos_table=pos_table,
@@ -152,23 +170,26 @@ def join_regions(out_dir: Path,
                  n_procs=n_procs,
                  force=True)
         # Rewrite the report file with the updated time.
-        write_report(report_type, out_dir, **report_kwargs)
-    return report_file
+        release_to_out(out_dir,
+                       tmp_dir,
+                       write_report(report_type,
+                                    tmp_dir,
+                                    **report_kwargs).parent)
+    return report_file.parent
 
 
-@run_func(CMD_JOIN)
+@run_func(CMD_JOIN, extra_defaults=extra_defaults)
 def run(input_path: tuple[str, ...], *,
         joined: str,
         join_clusts: str | None,
-        # Tabulation
         mask_pos_table: bool,
         mask_read_table: bool,
         cluster_pos_table: bool,
         cluster_abundance_table: bool,
         verify_times: bool,
-        # Parallelization
+        tmp_pfx: str,
+        keep_tmp: bool,
         max_procs: int,
-        # Effort
         force: bool) -> list[Path]:
     """ Merge regions (horizontally) from the Mask or Cluster step. """
     if not joined:
@@ -223,23 +244,23 @@ def run(input_path: tuple[str, ...], *,
                                 cluster_pos_table=cluster_pos_table,
                                 cluster_abundance_table=cluster_abundance_table,
                                 verify_times=verify_times,
+                                tmp_pfx=tmp_pfx,
+                                keep_tmp=keep_tmp,
                                 force=force))
 
 
 params = [
     arg_input_path,
-    # Joining
     opt_joined,
     opt_join_clusts,
-    # Tabulation
     opt_mask_pos_table,
     opt_mask_read_table,
     opt_cluster_pos_table,
     opt_cluster_abundance_table,
     opt_verify_times,
-    # Parallelization
+    opt_tmp_pfx,
+    opt_keep_tmp,
     opt_max_procs,
-    # Effort
     opt_force,
 ]
 

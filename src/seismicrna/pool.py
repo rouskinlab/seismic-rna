@@ -11,15 +11,18 @@ from .core.arg import (CMD_POOL,
                        opt_relate_pos_table,
                        opt_relate_read_table,
                        opt_verify_times,
+                       opt_tmp_pfx,
+                       opt_keep_tmp,
                        opt_max_procs,
                        opt_force)
 from .core.dataset import load_datasets
 from .core.logs import logger
 from .core.run import run_func
 from .core.task import dispatch
+from .core.tmp import release_to_out, with_tmp_dir
 from .core.write import need_write
 from .relate.dataset import PoolDataset, load_relate_dataset
-from .relate.report import PoolReport
+from .relate.report import PoolReport, RelateReport
 from .relate.table import RelateDatasetTabulator
 from .table import tabulate
 
@@ -29,10 +32,12 @@ def write_report(out_dir: Path, **kwargs):
     return report.save(out_dir, force=True)
 
 
+@with_tmp_dir(pass_keep_tmp=False)
 def pool_samples(out_dir: Path,
                  name: str,
                  ref: str,
                  samples: Iterable[str], *,
+                 tmp_dir: Path,
                  relate_pos_table: bool,
                  relate_read_table: bool,
                  verify_times: bool,
@@ -50,6 +55,8 @@ def pool_samples(out_dir: Path,
         Name of the reference
     samples: Iterable[str]
         Names of the samples in the pool.
+    tmp_dir: Path
+        Temporary directory.
     relate_pos_table: bool
         Tabulate relationships per position for relate data.
     relate_read_table: bool
@@ -87,14 +94,21 @@ def pool_samples(out_dir: Path,
                 # The report file does not contain a Pool report.
                 raise TypeError(f"Cannot overwrite {report_file} with "
                                 f"{PoolReport.__name__}: would cause data loss")
+        # To be able to load, the pooled dataset must have access to the
+        # original relate dataset(s) in the temporary directory.
+        for sample in samples:
+            load_relate_dataset(
+                RelateReport.build_path(top=out_dir,
+                                        sample=sample,
+                                        ref=ref)
+            ).link_data_dirs_to_tmp(tmp_dir)
+        # Tabulate the pooled dataset.
         report_kwargs = dict(sample=name,
                              ref=ref,
                              pooled_samples=samples,
                              began=began)
-        # Write the report file with a placeholder time.
-        write_report(out_dir, **report_kwargs)
-        # Tabulate the pooled dataset.
-        dataset = load_relate_dataset(report_file, verify_times=verify_times)
+        dataset = load_relate_dataset(write_report(tmp_dir, **report_kwargs),
+                                      verify_times=verify_times)
         tabulate(dataset,
                  RelateDatasetTabulator,
                  pos_table=relate_pos_table,
@@ -103,20 +117,21 @@ def pool_samples(out_dir: Path,
                  n_procs=n_procs,
                  force=True)
         # Rewrite the report file with the updated time.
-        write_report(out_dir, **report_kwargs)
-    return report_file
+        release_to_out(out_dir,
+                       tmp_dir,
+                       write_report(tmp_dir, **report_kwargs).parent)
+    return report_file.parent
 
 
 @run_func(CMD_POOL)
 def run(input_path: tuple[str, ...], *,
         pooled: str,
-        # Tabulation
         relate_pos_table: bool,
         relate_read_table: bool,
         verify_times: bool,
-        # Parallelization
+        tmp_pfx: str,
+        keep_tmp: bool,
         max_procs: int,
-        # Effort
         force: bool) -> list[Path]:
     """ Merge samples (vertically) from the Relate step. """
     if not pooled:
@@ -141,20 +156,20 @@ def run(input_path: tuple[str, ...], *,
                     kwargs=dict(relate_pos_table=relate_pos_table,
                                 relate_read_table=relate_read_table,
                                 verify_times=verify_times,
+                                tmp_pfx=tmp_pfx,
+                                keep_tmp=keep_tmp,
                                 force=force))
 
 
 params = [
     arg_input_path,
-    # Pooling
     opt_pooled,
-    # Tabulation
     opt_relate_pos_table,
     opt_relate_read_table,
     opt_verify_times,
-    # Parallelization
+    opt_tmp_pfx,
+    opt_keep_tmp,
     opt_max_procs,
-    # Effort
     opt_force,
 ]
 

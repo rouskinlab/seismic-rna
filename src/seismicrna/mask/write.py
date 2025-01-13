@@ -16,7 +16,6 @@ from .table import MaskBatchTabulator
 from ..core import path
 from ..core.arg import docdef
 from ..core.batch import RegionMutsBatch
-from ..core.io import digest_file
 from ..core.logs import logger
 from ..core.rel import RelPattern
 from ..core.report import mask_iter_no_convergence
@@ -488,8 +487,6 @@ class Masker(object):
     def mask(self):
         if self._iter > 0:
             raise ValueError(f"{self} already masked the data")
-        out_dir = self.dataset.top
-        relate_data_dirs = self.dataset.data_dirs
         # Exclude positions based on the parameters.
         self._exclude_positions()
         unmasked_curr = self.pos_kept
@@ -522,41 +519,8 @@ class Masker(object):
             # in order to resume where the previous iteration ended.
             if self._iter == 1:
                 # To be able to load, the nascent mask dataset must have
-                # access to the original relate dataset, which is done
-                # by creating symbolic links to the relate dataset in
-                # the temporary directory.
-                for relate_data_dir in relate_data_dirs:
-                    tmp_data_dir = path.transpath(self.top,
-                                                  out_dir,
-                                                  relate_data_dir,
-                                                  strict=True)
-                    tmp_data_dir.parent.mkdir(parents=True, exist_ok=True)
-                    try:
-                        tmp_data_dir.symlink_to(relate_data_dir)
-                        logger.detail(
-                            f"Linked {tmp_data_dir} to {relate_data_dir}"
-                        )
-                    except FileExistsError:
-                        logger.detail(f"{tmp_data_dir} already exists")
-                        # A parallel process may have already symlinked
-                        # the directory; if so, then validate its files.
-                        for relate_file in relate_data_dir.iterdir():
-                            tmp_file = tmp_data_dir.joinpath(relate_file.name)
-                            logger.detail(
-                                f"Comparing {tmp_file} to {relate_file}"
-                            )
-                            try:
-                                tmp_digest = digest_file(tmp_file)
-                            except FileNotFoundError:
-                                raise FileNotFoundError(tmp_file)
-                            if tmp_digest != digest_file(relate_file):
-                                raise OSError(
-                                    f"{relate_data_dir} and {tmp_data_dir} "
-                                    f"contain files with different contents"
-                                )
-                        logger.detail(
-                            f"{tmp_data_dir} matches {relate_data_dir}"
-                        )
+                # access to the original relate dataset.
+                self.dataset.link_data_dirs_to_tmp(self.top)
             self.dataset = MaskMutsDataset(report_saved)
             self._iter += 1
 

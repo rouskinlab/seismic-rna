@@ -1,7 +1,6 @@
 from functools import wraps
 from inspect import Parameter, Signature
 from pathlib import Path
-from shutil import rmtree
 from typing import Callable
 
 from .logs import logger
@@ -26,7 +25,7 @@ def release_to_out(out_dir: Path,
     out_path = transpath(out_dir, release_dir, initial_path)
     if initial_path.exists():
         # Ensure the parent directory of the new path exists.
-        mkdir_if_needed(out_path.parent, "parent directory")
+        mkdir_if_needed(out_path.parent)
         # If the output path already exists, then first rename it.
         delete_path = randdir(out_path.parent, f"{out_path.name}-")
         try:
@@ -60,7 +59,9 @@ def release_to_out(out_dir: Path,
             raise
         # Once the initial path has been moved to its destination, the
         # original directory can be deleted safely.
-        rmdir_if_needed(delete_path, raise_on_rmtree_error=False)
+        rmdir_if_needed(delete_path,
+                        rmtree=True,
+                        raise_on_rmtree_error=False)
     else:
         logger.detail(f"Skipped releasing {initial_path} (does not exist)")
     if not out_path.exists():
@@ -91,18 +92,14 @@ def with_tmp_dir(pass_keep_tmp: bool):
             try:
                 tmp_pfx = sanitize(tmp_pfx)
                 tmp_dir = randdir(tmp_pfx.parent, prefix=tmp_pfx.name)
-                logger.routine(f"Created temporary directory {tmp_dir}")
                 if pass_keep_tmp:
                     kwargs = dict(keep_tmp=keep_tmp, **kwargs)
                 return func(*args, tmp_dir=tmp_dir, **kwargs)
             finally:
                 if tmp_dir is not None and not keep_tmp:
-                    try:
-                        rmtree(tmp_dir)
-                    except OSError as error:
-                        logger.warning(error)
-                    else:
-                        logger.routine(f"Deleted temporary directory {tmp_dir}")
+                    rmdir_if_needed(tmp_dir,
+                                    rmtree=True,
+                                    raise_on_rmtree_error=False)
 
         # Add tmp_pfx and keep_tmp to the signature of the wrapper, and
         # remove tmp_dir (functools.wraps does not do so automatically).
