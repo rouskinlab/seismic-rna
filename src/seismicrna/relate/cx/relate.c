@@ -20,12 +20,12 @@
 
 static PyObject *RelateError;
 
-static const int DECIMAL = 10;
+#define DECIMAL 10
 
-static const char BASEA = 'A';
-static const char BASEC = 'C';
-static const char BASEG = 'G';
-static const char BASET = 'T';
+#define BASEA 'A'
+#define BASEC 'C'
+#define BASEG 'G'
+#define BASET 'T'
 
 
 /* Check whether a character is a standard DNA base (A, C, G, or T). */
@@ -62,16 +62,16 @@ static inline size_t max(size_t a, size_t b)
 
 
 
-static const unsigned char MATCH = '\x01';
-static const unsigned char DELET = '\x02';
-static const unsigned char INS_5 = '\x04';
-static const unsigned char INS_3 = '\x08';
-static const unsigned char SUB_A = '\x10';
-static const unsigned char SUB_C = '\x20';
-static const unsigned char SUB_G = '\x40';
-static const unsigned char SUB_T = '\x80';
-static const unsigned char SUB_N = SUB_A | SUB_C | SUB_G | SUB_T;
-static const unsigned char ANY_N = SUB_N | MATCH;
+#define MATCH '\x01'
+#define DELET '\x02'
+#define INS_5 '\x04'
+#define INS_3 '\x08'
+#define SUB_A '\x10'
+#define SUB_C '\x20'
+#define SUB_G '\x40'
+#define SUB_T '\x80'
+#define SUB_N (SUB_A | SUB_C | SUB_G | SUB_T)
+#define ANY_N (SUB_N | MATCH)
 
 
 /* Encode a base character as a substitution. */
@@ -128,11 +128,11 @@ static inline unsigned char encode_relate(char ref_base,
 
 
 
-static const int DELETION = 0;
-static const int INSERTION = 1;
-static const size_t INIT_POD_CAPACITY = 8;
-static const size_t INIT_PODS_CAPACITY = 4;
-static const size_t CAPACITY_FACTOR = 2;
+#define DELETION 0
+#define INSERTION 1
+#define INIT_POD_CAPACITY 8
+#define INIT_PODS_CAPACITY 4
+#define CAPACITY_FACTOR 2
 
 
 static inline unsigned char get_ins_rel(int insert3)
@@ -380,19 +380,18 @@ static int add_indel(IndelPodArray *pods,
 
 
 
-static const char *SAM_SEP = "\t\n";
-static const char CIG_ALIGN = 'M';
-static const char CIG_DELET = 'D';
-static const char CIG_INSRT = 'I';
-static const char CIG_MATCH = '=';
-static const char CIG_SCLIP = 'S';
-static const char CIG_SUBST = 'X';
-static const unsigned long FLAG_PAIRED = 1;
-static const unsigned long FLAG_PROPER = 2;
-static const unsigned long FLAG_REV = 16;
-static const unsigned long FLAG_READ1 = 64;
-static const unsigned long FLAG_READ2 = 128;
-static const unsigned long MAX_FLAG = 4095;  // 4095 = 2^12 - 1
+#define CIG_ALIGN 'M'
+#define CIG_DELET 'D'
+#define CIG_INSRT 'I'
+#define CIG_MATCH '='
+#define CIG_SCLIP 'S'
+#define CIG_SUBST 'X'
+#define FLAG_PAIRED 1
+#define FLAG_PROPER 2
+#define FLAG_REV 16
+#define FLAG_READ1 64
+#define FLAG_READ2 128
+#define MAX_FLAG 4095
 
 
 typedef struct
@@ -529,7 +528,7 @@ static char *next_sam_field(char **end)
         // is invalid.
         return NULL;
     }
-    if (**end == *SAM_SEP)
+    if (**end == '\t')
     {
         // The previous field ended on the field separator, which means
         // that the current field is an empty string, which is invalid.
@@ -544,8 +543,7 @@ static char *next_sam_field(char **end)
     // field is the last in the string (which is valid in this case);
     // however, calling next_sam_field() on the same string one more
     // time will produce an error because there will be no next field.
-    
-    return strtok_r(NULL, SAM_SEP, end);
+    return strtok_r(NULL, "\t\n", end);
 }
 
 
