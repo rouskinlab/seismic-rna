@@ -5,7 +5,7 @@ import numpy as np
 
 from .batch import MaskMutsBatch, apply_mask
 from .io import MaskBatchIO
-from .report import MaskReport
+from .report import MaskReport, JoinMaskReport
 from ..core.dataset import (LoadedDataset,
                             LoadFunction,
                             MergedUnbiasDataset,
@@ -16,8 +16,7 @@ from ..core.join import (BATCH_NUM,
                          SEG_END5S,
                          SEG_END3S,
                          MUTS,
-                         JoinMutsDataset,
-                         JoinMaskReport)
+                         JoinMutsDataset)
 from ..core.rel import RelPattern
 from ..core.report import (CountMutsF,
                            CountRefsF,

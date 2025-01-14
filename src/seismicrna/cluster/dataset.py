@@ -6,7 +6,7 @@ import pandas as pd
 
 from .batch import ClusterMutsBatch
 from .io import ClusterBatchIO
-from .report import ClusterReport
+from .report import ClusterReport, JoinClusterReport
 from ..core.batch import MutsBatch
 from ..core.dataset import (Dataset,
                             LoadedDataset,
@@ -18,14 +18,13 @@ from ..core.header import (NUM_CLUSTS_NAME,
                            ClustHeader,
                            list_ks_clusts,
                            validate_ks)
-from ..core.join.dataset import (BATCH_NUM,
-                                 READ_NUMS,
-                                 SEG_END5S,
-                                 SEG_END3S,
-                                 MUTS,
-                                 RESPS,
-                                 JoinMutsDataset)
-from ..core.join.report import JoinClusterReport
+from ..core.join import (BATCH_NUM,
+                         READ_NUMS,
+                         SEG_END5S,
+                         SEG_END3S,
+                         MUTS,
+                         RESPS,
+                         JoinMutsDataset)
 from ..core.report import KsWrittenF, BestKF, JoinedClustersF
 from ..mask.batch import MaskMutsBatch
 from ..mask.dataset import load_mask_dataset

@@ -1,5 +1,6 @@
 from .io import MaskIO, MaskBatchIO
 from ..core import path
+from ..core.join import JoinReport
 from ..core.report import (BatchedReport,
                            SampleF,
                            RefF,
@@ -42,7 +43,8 @@ from ..core.report import (BatchedReport,
                            QuickUnbiasF,
                            QuickUnbiasThreshF,
                            MaxMaskIterF,
-                           NumMaskIterF)
+                           NumMaskIterF,
+                           JoinedRegionsF)
 
 
 class MaskReport(BatchedReport, MaskIO):
@@ -108,6 +110,28 @@ class MaskReport(BatchedReport, MaskIO):
             # Observer bias correction.
             QuickUnbiasF,
             QuickUnbiasThreshF,
+        ] + super().fields()
+
+    @classmethod
+    def auto_fields(cls):
+        return {**super().auto_fields(), path.CMD: path.MASK_STEP}
+
+
+class JoinMaskReport(JoinReport):
+
+    @classmethod
+    def file_seg_type(cls):
+        return path.MaskRepSeg
+
+    @classmethod
+    def fields(cls):
+        return [
+            # Sample and reference.
+            SampleF,
+            RefF,
+            RegF,
+            # Joined data.
+            JoinedRegionsF,
         ] + super().fields()
 
     @classmethod

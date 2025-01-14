@@ -3,6 +3,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Iterable
 
+import pandas as pd
 from click import command
 
 from .cluster.dataset import load_cluster_dataset
@@ -22,9 +23,8 @@ from .core.arg import (CMD_JOIN,
                        opt_force,
                        extra_defaults)
 from .core.dataset import load_datasets
-from .core.join.cluster import parse_join_clusts_file
-from .core.join.dataset import JoinMutsDataset
-from .core.join.report import JoinMaskReport, JoinClusterReport
+from .core.header import ClustHeader, parse_header
+from .core.join import JoinMutsDataset, JoinReport
 from .core.logs import logger
 from .core.run import run_func
 from .core.task import dispatch
@@ -36,7 +36,32 @@ from .mask.table import MaskDatasetTabulator
 from .table import tabulate
 
 
-def write_report(report_type: type[JoinMaskReport | JoinClusterReport],
+def parse_join_clusts_file(file: str | Path):
+    """ Parse a file of joined clusters. """
+    n_cols = len(ClustHeader.level_names())
+    clusts_df = pd.read_csv(file, index_col=list(range(n_cols)))
+    header = parse_header(clusts_df.index)
+    # Verify the index: use type() rather than isinstance() so that
+    # subclasses of ClustHeader will yield False, not True.
+    if type(header) is not ClustHeader:
+        raise TypeError(f"Expected first {n_cols} of {file} to be a valid "
+                        f"cluster header, but got {header}")
+    # Rearrange the DataFrame into a dict.
+    clusts_dict = {reg: {k: dict() for k in header.ks}
+                   for reg in clusts_df.columns}
+    for reg, clusts in clusts_df.items():
+        for (k, clust), reg_clust in clusts.items():
+            if not 1 <= reg_clust <= k:
+                raise ValueError(f"Region {repr(reg)} k {k} got a "
+                                 f"cluster number out of range: {reg_clust}")
+            if reg_clust in clusts_dict[reg][k].values():
+                raise ValueError(f"Region {repr(reg)} k={k} got a "
+                                 f"repeated cluster number: {reg_clust}")
+            clusts_dict[reg][k][clust] = reg_clust
+    return clusts_dict
+
+
+def write_report(report_type: type[JoinReport],
                  out_dir: Path,
                  **kwargs):
     report = report_type(ended=datetime.now(), **kwargs)

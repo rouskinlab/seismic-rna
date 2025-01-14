@@ -4,6 +4,7 @@ from .emk import EMRunsK, find_best_k
 from .io import ClusterIO, ClusterBatchIO
 from .uniq import UniqReads
 from ..core import path
+from ..core.join import JoinReport
 from ..core.report import (BatchedReport,
                            SampleF,
                            RefF,
@@ -27,7 +28,9 @@ from ..core.report import (BatchedReport,
                            ClustConvThreshF,
                            EMKPassingF,
                            BestKF,
-                           KsWrittenF)
+                           KsWrittenF,
+                           JoinedRegionsF,
+                           JoinedClustersF)
 
 
 class ClusterReport(BatchedReport, ClusterIO):
@@ -127,6 +130,29 @@ class ClusterReport(BatchedReport, ClusterIO):
                    ks_written=ks_written,
                    began=began,
                    ended=ended)
+
+
+class JoinClusterReport(JoinReport):
+
+    @classmethod
+    def file_seg_type(cls):
+        return path.ClustRepSeg
+
+    @classmethod
+    def fields(cls):
+        return [
+            # Sample and reference.
+            SampleF,
+            RefF,
+            RegF,
+            # Joined data.
+            JoinedRegionsF,
+            JoinedClustersF,
+        ] + super().fields()
+
+    @classmethod
+    def auto_fields(cls):
+        return {**super().auto_fields(), path.CMD: path.CLUSTER_STEP}
 
 ########################################################################
 #                                                                      #

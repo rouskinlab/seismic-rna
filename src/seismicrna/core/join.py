@@ -4,10 +4,12 @@ from typing import Any, Iterable
 
 import numpy as np
 
-from ..array import locate_elements
-from ..batch import MutsBatch, match_reads_segments
-from ..dataset import WideMutsDataset
-from ..seq import Region
+from .array import locate_elements
+from .batch import MutsBatch, match_reads_segments
+from .dataset import WideMutsDataset
+from .io import RegIO
+from .report import Report
+from .seq import Region
 
 BATCH_NUM = "batch"
 READ_NUMS = "read_nums"
@@ -142,6 +144,10 @@ class JoinMutsDataset(WideMutsDataset, ABC):
             self._join_attrs(attrs, self._get_batch_attrs(batch, reg))
         self._finalize_attrs(attrs)
         return self.get_batch_type()(region=self.region, **attrs)
+
+
+class JoinReport(Report, RegIO, ABC):
+    """ Report for a joined dataset. """
 
 ########################################################################
 #                                                                      #
