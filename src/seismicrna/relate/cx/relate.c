@@ -22,10 +22,10 @@ static PyObject *RelateError;
 
 static const int DECIMAL = 10;
 
-static const char BASEA = 'A';
-static const char BASEC = 'C';
-static const char BASEG = 'G';
-static const char BASET = 'T';
+#define BASEA 'A'
+#define BASEC 'C'
+#define BASEG 'G'
+#define BASET 'T'
 
 
 /* Check whether a character is a standard DNA base (A, C, G, or T). */
@@ -70,8 +70,8 @@ static const unsigned char SUB_A = '\x10';
 static const unsigned char SUB_C = '\x20';
 static const unsigned char SUB_G = '\x40';
 static const unsigned char SUB_T = '\x80';
-static const unsigned char SUB_N = SUB_A | SUB_C | SUB_G | SUB_T;
-static const unsigned char ANY_N = SUB_N | MATCH;
+#define SUB_N SUB_A | SUB_C | SUB_G | SUB_T
+#define ANY_N SUB_N | MATCH
 
 
 /* Encode a base character as a substitution. */
@@ -381,12 +381,12 @@ static int add_indel(IndelPodArray *pods,
 
 
 static const char *SAM_SEP = "\t\n";
-static const char CIG_ALIGN = 'M';
-static const char CIG_DELET = 'D';
-static const char CIG_INSRT = 'I';
-static const char CIG_MATCH = '=';
-static const char CIG_SCLIP = 'S';
-static const char CIG_SUBST = 'X';
+#define CIG_ALIGN 'M'
+#define CIG_DELET 'D'
+#define CIG_INSRT 'I'
+#define CIG_MATCH '='
+#define CIG_SCLIP 'S'
+#define CIG_SUBST 'X'
 static const unsigned long FLAG_PAIRED = 1;
 static const unsigned long FLAG_PROPER = 2;
 static const unsigned long FLAG_REV = 16;
