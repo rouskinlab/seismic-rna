@@ -386,6 +386,7 @@ static int add_indel(IndelPodArray *pods,
 #define CIG_MATCH '='
 #define CIG_SCLIP 'S'
 #define CIG_SUBST 'X'
+
 #define FLAG_PAIRED 1
 #define FLAG_PROPER 2
 #define FLAG_REV 16
@@ -976,6 +977,45 @@ static int validate_pair(const SamRead *read1,
 
 
 
+/* Determine the order of two Indels from 5' to 3'. */
+static inline int comp_indels_5to3(const void *a, const void *b)
+{
+    const Indel *indel1 = (const Indel *)a;
+    const Indel *indel2 = (const Indel *)b;
+    // Two Indels cannot have the same value for opposite.
+    assert(indel1->opposite != indel2->opposite);
+    // Use comparison, not subtraction, because opposite is size_t
+    // (which is unsigned); if the difference is negative, then it will
+    // overflow to a very large positive number.
+    return indel1->opposite > indel2->opposite ? 1 : -1;
+}
+
+
+/* Determine the order of two Indels from 3' to 5'. */
+static inline int comp_indels_3to5(const void *a, const void *b)
+{
+    const Indel *indel1 = (const Indel *)a;
+    const Indel *indel2 = (const Indel *)b;
+    // Two Indels cannot have the same value for opposite.
+    assert(indel1->opposite != indel2->opposite);
+    // Use comparison, not subtraction, because opposite is size_t
+    // (which is unsigned); if the difference is negative, then it will
+    // overflow to a very large positive number.
+    return indel1->opposite < indel2->opposite ? 1 : -1;
+}
+
+
+/* Sort the Indels in an IndelPod, either forward or reverse. */
+static inline void sort_pod(IndelPod *pod, int move5to3)
+{
+    assert(pod != NULL);
+    if (move5to3)
+        {qsort(pod->indels, pod->num_indels, sizeof(Indel), comp_indels_5to3);}
+    else
+        {qsort(pod->indels, pod->num_indels, sizeof(Indel), comp_indels_3to5);}
+}
+
+
 /* Determine the order of two IndelPods from 5' to 3'. */
 static inline int comp_pods_5to3(const void *a, const void *b)
 {
@@ -1015,42 +1055,15 @@ static inline void sort_pods(IndelPodArray *pods, int move5to3)
 }
 
 
-/* Determine the order of two Indels from 5' to 3'. */
-static inline int comp_indels_5to3(const void *a, const void *b)
+/* Sort the IndelPods in an IndelPodArray and the Indels in each pod. */
+static inline void sort_pods_indels(IndelPodArray *pods, int move5to3)
 {
-    const Indel *indel1 = (const Indel *)a;
-    const Indel *indel2 = (const Indel *)b;
-    // Two Indels cannot have the same value for opposite.
-    assert(indel1->opposite != indel2->opposite);
-    // Use comparison, not subtraction, because opposite is size_t
-    // (which is unsigned); if the difference is negative, then it will
-    // overflow to a very large positive number.
-    return indel1->opposite > indel2->opposite ? 1 : -1;
-}
-
-
-/* Determine the order of two Indels from 3' to 5'. */
-static inline int comp_indels_3to5(const void *a, const void *b)
-{
-    const Indel *indel1 = (const Indel *)a;
-    const Indel *indel2 = (const Indel *)b;
-    // Two Indels cannot have the same value for opposite.
-    assert(indel1->opposite != indel2->opposite);
-    // Use comparison, not subtraction, because opposite is size_t
-    // (which is unsigned); if the difference is negative, then it will
-    // overflow to a very large positive number.
-    return indel1->opposite < indel2->opposite ? 1 : -1;
-}
-
-
-/* Sort the Indels in an IndelPod, either forward or reverse. */
-static inline void sort_pod(IndelPod *pod, int move5to3)
-{
-    assert(pod != NULL);
-    if (move5to3)
-        {qsort(pod->indels, pod->num_indels, sizeof(Indel), comp_indels_5to3);}
-    else
-        {qsort(pod->indels, pod->num_indels, sizeof(Indel), comp_indels_3to5);}
+    assert(pods != NULL);
+    sort_pods(pods, move5to3);
+    for (size_t p = 0; p < pods->num_pods; p++)
+    {
+        sort_pod(&(pods->pods[p]), move5to3);
+    }
 }
 
 
@@ -1484,16 +1497,34 @@ static int try_move_indel(Indel *indel,
 
 
 /* Recursive algorithm to mark all ambiguous indels. */
-static void find_ambindels_recurse(SamRead *read,
-                                   const char *rels_seq,
-                                   size_t read_end5,
-                                   size_t read_end3,
-                                   unsigned char min_qual,
-                                   int insert3,
-                                   int move5to3,
-                                   size_t pod_index,
-                                   size_t indel_index)
+static int find_ambindels_recurse(SamRead *read,
+                                  const char *rels_seq,
+                                  size_t read_end5,
+                                  size_t read_end3,
+                                  unsigned char min_qual,
+                                  int insert3,
+                                  unsigned long max_iter,
+                                  unsigned long *num_iter,
+                                  int move5to3,
+                                  int backtrack,
+                                  size_t pod_index,
+                                  size_t indel_index)
 {
+    // Check the number of iterations.
+    assert(num_iter != NULL);
+    if (max_iter > 0)
+    {
+        (*num_iter)++;
+        if (*num_iter > max_iter)
+        {
+            PyErr_SetString(RelateError,
+                            "Exceeded the maximum number of iterations while "
+                            "marking ambiguous indels; if you need this read, "
+                            "then raise the limit using --ambindel-max-iter");
+            return -1;
+        }
+    }
+
     // Select the pod at this index.
     assert(pod_index < read->pods.num_pods);
     IndelPod *pod = &(read->pods.pods[pod_index]);
@@ -1518,18 +1549,21 @@ static void find_ambindels_recurse(SamRead *read,
                        pod_index))
     {
         // Try to move the indel at this index another step.
-        find_ambindels_recurse(read,
-                               rels_seq,
-                               read_end5,
-                               read_end3,
-                               min_qual,
-                               insert3,
-                               move5to3,
-                               pod_index,
-                               indel_index);
-        
-        // Backtracking is only needed when moving from 5' to 3'.
-        if (move5to3)
+        if (find_ambindels_recurse(read,
+                                   rels_seq,
+                                   read_end5,
+                                   read_end3,
+                                   min_qual,
+                                   insert3,
+                                   max_iter,
+                                   num_iter,
+                                   move5to3,
+                                   backtrack,
+                                   pod_index,
+                                   indel_index))
+            {return -1;}
+
+        if (backtrack)
         {
             // Move the indel back to its initial position.
             move_indels(pod, label, init_opposite, init_lateral3);
@@ -1543,74 +1577,112 @@ static void find_ambindels_recurse(SamRead *read,
     if (indel_index + 1 < pod->num_indels)
     {
         // Move the next indel in the pod.
-        find_ambindels_recurse(read,
-                               rels_seq,
-                               read_end5,
-                               read_end3,
-                               min_qual,
-                               insert3,
-                               move5to3,
-                               pod_index,
-                               indel_index + 1);
+        if (find_ambindels_recurse(read,
+                                   rels_seq,
+                                   read_end5,
+                                   read_end3,
+                                   min_qual,
+                                   insert3,
+                                   max_iter,
+                                   num_iter,
+                                   move5to3,
+                                   backtrack,
+                                   pod_index,
+                                   indel_index + 1))
+            {return -1;}
     }
 
-    // Check if there is another pod before the current one.
-    if (pod_index > 0)
-    {
-        // Move the indels in the previous pod.
-        find_ambindels_recurse(read,
-                               rels_seq,
-                               read_end5,
-                               read_end3,
-                               min_qual,
-                               insert3,
-                               move5to3,
-                               pod_index - 1,
-                               0);
-    }
+    return 0;
 }
 
 
 /* Find and mark all ambiguous insertions and deletions. */
-static void find_ambindels(SamRead *read,
-                           const char *rels_seq,
-                           size_t read_end5,
-                           size_t read_end3,
-                           unsigned char min_qual,
-                           int insert3)
+static int find_ambindels(SamRead *read,
+                          const char *rels_seq,
+                          size_t read_end5,
+                          size_t read_end3,
+                          unsigned char min_qual,
+                          int insert3,
+                          unsigned long max_iter)
 {
+    assert(read != NULL);
     if (read->pods.num_pods == 0)
     {
         // Nothing to do.
-        return;
+        return 0;
     }
     assert(read->pods.pods != NULL);
-    
-    // This algorithm works in two stages:
-    // 1. Move every indel as far as possible in the 5' direction
-    //    (move5to3 == 0) and leave them there for the next stage.
-    // 2. Move every indel as far as possible in the 3' direction
-    //    (move5to3 == 1) using backtracking to make sure that all
-    //    possible movements are considered.
-    for (int move5to3 = 0; move5to3 <= 1; move5to3++)
+
+    size_t pod_index;
+    size_t init_pod_index = read->pods.num_pods - 1;
+    unsigned long num_iter;
+
+    // Move the indels in every pod as far 5' as possible.
+    sort_pods_indels(&(read->pods), 0);
+    pod_index = init_pod_index;
+    while (1)
     {
-        // Sort all of the pods.
-        sort_pods(&(read->pods), move5to3);
-        // In each pod, sort the indels.
-        for (size_t p = 0; p < read->pods.num_pods; p++)
-        {
-            sort_pod(&(read->pods.pods[p]), move5to3);
-        }
-        find_ambindels_recurse(read,
-                               rels_seq,
-                               read_end5,
-                               read_end3,
-                               min_qual,
-                               insert3,
-                               move5to3,
-                               read->pods.num_pods - 1,
-                               0);
+        num_iter = 0;
+        if (find_ambindels_recurse(read,
+                                   rels_seq,
+                                   read_end5,
+                                   read_end3,
+                                   min_qual,
+                                   insert3,
+                                   max_iter,
+                                   &num_iter,
+                                   0,
+                                   0,
+                                   pod_index,
+                                   0))
+            {return -1;}
+        if (pod_index == 0)
+            {break;}
+        pod_index--;
     }
+
+    // Find all possible locations of every indel.
+    sort_pods_indels(&(read->pods), 1);
+    pod_index = init_pod_index;
+    while (1)
+    {
+        // Search depth-first exhaustively, with backtracking.
+        num_iter = 0;
+        if (find_ambindels_recurse(read,
+                                   rels_seq,
+                                   read_end5,
+                                   read_end3,
+                                   min_qual,
+                                   insert3,
+                                   max_iter,
+                                   &num_iter,
+                                   1,
+                                   1,
+                                   pod_index,
+                                   0))
+            {return -1;}
+        if (pod_index == 0)
+            {break;}
+        // Move the indels in this pod as far 3' as possible to make
+        // room for the next pod to move 3' (towards this pod).
+        num_iter = 0;
+        if (find_ambindels_recurse(read,
+                                    rels_seq,
+                                    read_end5,
+                                    read_end3,
+                                    min_qual,
+                                    insert3,
+                                    max_iter,
+                                    &num_iter,
+                                    1,
+                                    0,
+                                    pod_index,
+                                    0))
+            {return -1;}
+        pod_index--;
+    }
+
+    return 0;
 }
 
 
@@ -1648,6 +1720,7 @@ static int calc_rels_line(SamRead *read,
                           unsigned char min_qual,
                           int insert3,
                           int ambindel,
+                          unsigned long ambindel_max_iter,
                           size_t clip_end5,
                           size_t clip_end3)
 {
@@ -1910,12 +1983,14 @@ static int calc_rels_line(SamRead *read,
     if (ambindel)
     {
         // Find and mark ambiguous insertions and deletions.
-        find_ambindels(read,
-                       rels_seq,
-                       read_end5,
-                       read_end3,
-                       min_qual,
-                       insert3);
+        if (find_ambindels(read,
+                           rels_seq,
+                           read_end5,
+                           read_end3,
+                           min_qual,
+                           insert3,
+                           ambindel_max_iter))
+            {return -1;}
     }
 
     return 0;
@@ -2137,11 +2212,12 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
     unsigned char min_qual;
     int insert3;
     int ambindel;
+    unsigned long ambindel_max_iter;
     int overhangs;
     unsigned long clip_end5;
     unsigned long clip_end3;
     if (!PyArg_ParseTuple(args,
-                          "s#s#ss#kbpppkk",
+                          "s#s#ss#kbppkpkk",
                           &line1,
                           &line1_len,
                           &line2,
@@ -2153,6 +2229,7 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
                           &min_qual,
                           &insert3,
                           &ambindel,
+                          &ambindel_max_iter,
                           &overhangs,
                           &clip_end5,
                           &clip_end3))
@@ -2238,6 +2315,7 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
                        min_qual,
                        insert3,
                        ambindel,
+                       ambindel_max_iter,
                        clip_end5,
                        clip_end3))
         {return cleanup(&read1, &read2, ends_rels_tuple);}
@@ -2262,6 +2340,7 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
                                min_qual,
                                insert3,
                                ambindel,
+                               ambindel_max_iter,
                                clip_end5,
                                clip_end3))
                 {return cleanup(&read1, &read2, ends_rels_tuple);}

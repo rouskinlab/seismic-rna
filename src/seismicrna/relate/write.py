@@ -24,6 +24,7 @@ def relate_records(records: Iterable[tuple[str, str, str]],
                    min_qual: int,
                    insert3: bool,
                    ambindel: bool,
+                   ambindel_max_iter: int,
                    overhangs: bool,
                    clip_end5: int,
                    clip_end3: int,
@@ -36,7 +37,7 @@ def relate_records(records: Iterable[tuple[str, str, str]],
         except ImportError:
             logger.warning(
                 "Failed to import the C extension for the relate algorithm; "
-                "defaulting to the Python version, which is much slower"
+                "defaulting to the Python implementation, which is much slower"
             )
             from .py.relate import RelateError, calc_rels_lines
     else:
@@ -53,11 +54,12 @@ def relate_records(records: Iterable[tuple[str, str, str]],
                                         min_qual,
                                         insert3,
                                         ambindel,
+                                        ambindel_max_iter,
                                         overhangs,
                                         clip_end5,
                                         clip_end3)
         except RelateError as error:
-            logger.error(error)
+            logger.error(RelateError(f"Read {repr(name)}: {error}"))
 
 
 def generate_batch(batch: int, *,
@@ -179,6 +181,7 @@ class RelationWriter(object):
               phred_enc: int,
               insert3: bool,
               ambindel: bool,
+              ambindel_max_iter: int,
               overhangs: bool,
               clip_end5: int,
               clip_end3: int,
@@ -213,6 +216,7 @@ class RelationWriter(object):
                 phred_enc=phred_enc,
                 insert3=insert3,
                 ambindel=ambindel,
+                ambindel_max_iter=ambindel_max_iter,
                 overhangs=overhangs,
                 clip_end5=clip_end5,
                 clip_end3=clip_end3,
@@ -240,6 +244,7 @@ class RelationWriter(object):
                 phred_enc=phred_enc,
                 insert3=insert3,
                 ambindel=ambindel,
+                ambindel_max_iter=ambindel_max_iter,
                 overhangs=overhangs,
                 clip_end5=clip_end5,
                 clip_end3=clip_end3,
