@@ -32,8 +32,9 @@ class TestLevels(ut.TestCase):
         self.assertEqual(Level.WARNING, -1)
         self.assertEqual(Level.STATUS, 0)
         self.assertEqual(Level.TASK, 1)
-        self.assertEqual(Level.ROUTINE, 2)
-        self.assertEqual(Level.DETAIL, 3)
+        self.assertEqual(Level.ACTION, 2)
+        self.assertEqual(Level.ROUTINE, 3)
+        self.assertEqual(Level.DETAIL, 4)
 
 
 class TestRestoreConfig(ut.TestCase):

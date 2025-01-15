@@ -158,14 +158,14 @@ def write_fasta(fasta: Path,
     FASTA file. """
     path.check_file_extension(fasta, path.FastaExt)
     if need_write(fasta, force):
-        logger.action(f"Began writing FASTA file {fasta}")
+        logger.routine(f"Began writing FASTA file {fasta}")
         with NamedTemporaryFile("w",
                                 dir=fasta.parent,
                                 prefix=fasta.stem,
                                 suffix=fasta.suffix,
                                 delete=False) as f:
             tmp_fasta = Path(f.file.name)
-        logger.routine(f"Created temporary FASTA file {tmp_fasta}")
+        logger.action(f"Created temporary FASTA file {tmp_fasta}")
         try:
             # Write the new FASTA in a temporary file.
             with open(tmp_fasta, "w") as f:
@@ -174,7 +174,7 @@ def write_fasta(fasta: Path,
                 for name, seq in refs:
                     # Confirm that the name is not blank.
                     if not name:
-                        raise BadReferenceNameError(f"Blank reference name")
+                        raise BadReferenceNameError("Blank reference name")
                     # Confirm that the name has no illegal characters.
                     if set(name) - set(FASTA_NAME_CHARS):
                         raise BadReferenceNameError("Illegal characters "
@@ -187,7 +187,7 @@ def write_fasta(fasta: Path,
                     names.add(name)
             # Release the FASTA file.
             tmp_fasta.rename(fasta)
-            logger.routine(
+            logger.action(
                 f"Released temporary FASTA file {tmp_fasta} to {fasta}"
             )
         finally:
@@ -198,11 +198,11 @@ def write_fasta(fasta: Path,
             except FileNotFoundError:
                 pass
             else:
-                logger.routine(f"Deleted temporary FASTA file {tmp_fasta}")
+                logger.action(f"Deleted temporary FASTA file {tmp_fasta}")
         logger.detail(f"Wrote {len(names)} sequence(s) to FASTA file {fasta}")
-        logger.action(f"Ended writing FASTA file {fasta}")
+        logger.routine(f"Ended writing FASTA file {fasta}")
     else:
-        logger.detail(f"Not overwriting FASTA file {fasta}")
+        logger.detail(f"Skipped overwriting FASTA file {fasta}")
 
 ########################################################################
 #                                                                      #
