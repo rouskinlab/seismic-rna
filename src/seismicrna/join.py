@@ -180,7 +180,8 @@ def join_regions(out_dir: Path,
                 report_type.build_path(top=out_dir,
                                        sample=sample,
                                        ref=ref,
-                                       reg=reg)
+                                       reg=reg),
+                verify_times=verify_times
             ).link_data_dirs_to_tmp(tmp_dir)
         # Tabulate the joined dataset.
         dataset = load_function(write_report(report_type,
@@ -230,7 +231,9 @@ def run(input_path: tuple[str, ...], *,
     load_funcs = {False: load_mask_dataset,
                   True: load_cluster_dataset}
     for clustered, load_func in load_funcs.items():
-        for dataset in load_datasets(input_path, load_func):
+        for dataset in load_datasets(input_path,
+                                     load_func,
+                                     verify_times=verify_times):
             # Check whether the dataset was joined.
             if isinstance(dataset, JoinMutsDataset):
                 # If so, then use all joined regions.

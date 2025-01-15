@@ -100,7 +100,8 @@ def pool_samples(out_dir: Path,
             load_relate_dataset(
                 RelateReport.build_path(top=out_dir,
                                         sample=sample,
-                                        ref=ref)
+                                        ref=ref),
+                verify_times=verify_times
             ).link_data_dirs_to_tmp(tmp_dir)
         # Tabulate the pooled dataset.
         report_kwargs = dict(sample=name,
@@ -138,7 +139,9 @@ def run(input_path: tuple[str, ...], *,
         raise ValueError("No name for the pooled sample was given via --pooled")
     # Group the datasets by output directory and reference name.
     pools = defaultdict(list)
-    for dataset in load_datasets(input_path, load_relate_dataset):
+    for dataset in load_datasets(input_path,
+                                 load_relate_dataset,
+                                 verify_times=verify_times):
         # Check whether the dataset was pooled.
         if isinstance(dataset, PoolDataset):
             # If so, then use all samples in the pool.
