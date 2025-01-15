@@ -1,5 +1,7 @@
 import unittest as ut
+from pathlib import Path
 
+from seismicrna.core.path import get_seismicrna_project_dir
 from seismicrna.core.version import (__version__,
                                      MAJOR,
                                      MINOR,
@@ -67,6 +69,18 @@ class TestParseVersion(ut.TestCase):
                                "Malformatted version",
                                parse_version,
                                "8.7.4xyz321b")
+
+
+class TestConsistentVersion(ut.TestCase):
+
+    def test_meson_build(self):
+        project_dir = get_seismicrna_project_dir()
+        if project_dir is not None:
+            meson_build_file = project_dir.joinpath("meson.build")
+            expect = f"project('seismic-rna', 'c', version: '{__version__}')\n"
+            with open(meson_build_file) as f:
+                line = f.readline()
+            self.assertEqual(line, expect)
 
 
 if __name__ == "__main__":

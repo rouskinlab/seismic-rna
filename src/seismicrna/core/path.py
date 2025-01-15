@@ -171,6 +171,48 @@ def sanitize(path: str | pathlib.Path, strict: bool = False):
     return pathlib.Path(path).resolve(strict=strict)
 
 
+@cache
+def get_seismicrna_source_dir():
+    """ SEISMIC-RNA source directory, named seismicrna, containing
+    __init__.py and the top-level modules and subpackages. """
+    seismicrna_src_dir = sanitize(__file__, strict=True).parent.parent
+    try:
+        from seismicrna import __file__ as seismicrna_file
+    except ImportError:
+        seismicrna_file = None
+    if seismicrna_file:
+        seismicrna_parent = sanitize(seismicrna_file).parent
+        if seismicrna_parent != seismicrna_src_dir:
+            raise PathValueError("Inconsistent source directory: "
+                                 f"{seismicrna_src_dir} ≠ {seismicrna_parent}")
+    else:
+        logger.warning("seismicrna is not installed: skipped verifying path")
+    name = "seismicrna"
+    if seismicrna_src_dir.name != name:
+        raise PathValueError(f"Source directory {seismicrna_src_dir} "
+                             f"is not named {repr(name)}")
+    return seismicrna_src_dir
+
+
+@cache
+def get_seismicrna_project_dir():
+    """ SEISMIC-RNA project directory, named seismic-rna, containing
+    src, pyproject.toml, and all other project files. Will exist if the
+    entire SEISMIC-RNA project has been downloaded, e.g. from GitHub,
+    but not if SEISMIC-RNA was only installed using pip or conda. """
+    seismicrna_prj_dir = get_seismicrna_source_dir().parent.parent
+    if not seismicrna_prj_dir.exists():
+        # It is fine if the project directory does not exist because
+        # installing SEISMIC-RNA using pip or conda installs only the
+        # source directory, but not the project directory.
+        return None
+    name = "seismic-rna"
+    if seismicrna_prj_dir.name != name:
+        raise PathValueError(f"Project directory {seismicrna_prj_dir} "
+                             f"is not named {repr(name)}")
+    return seismicrna_prj_dir
+
+
 # Path Fields ##########################################################
 
 # Field validation functions

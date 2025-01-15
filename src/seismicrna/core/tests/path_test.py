@@ -1,8 +1,18 @@
 import unittest as ut
 from shutil import rmtree
 
-from seismicrna.core.path import (randdir,
+from seismicrna.core.path import (get_seismicrna_source_dir,
+                                  randdir,
+                                  sanitize,
                                   symlink_if_needed)
+
+
+class TestGetSeismicRNASourceDir(ut.TestCase):
+
+    def test_get_seismicrna_source_dir(self):
+        seismicrna_source_dir = get_seismicrna_source_dir()
+        self.assertEqual(seismicrna_source_dir,
+                         sanitize(__file__).parent.parent.parent)
 
 
 class TestSymlinkIfNeeded(ut.TestCase):
