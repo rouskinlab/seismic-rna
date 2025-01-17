@@ -300,11 +300,12 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
         # Join cluster reports.
         cjoin_dirs = run_join(cluster_reports, joined=self.CJOINED)
         cjoin_reports = [out_dir.joinpath(self.SAMPLE,
-                                          "cluster",
+                                          step,
                                           self.REF,
                                           self.CJOINED,
-                                          "cluster-report.json")
-                         for out_dir in self.OUT_DIRS]
+                                          f"{step}-report.json")
+                         for out_dir in self.OUT_DIRS
+                         for step in ["cluster", "mask"]]
         for cjoin_report, cjoin_dir in zip(cjoin_reports,
                                            cjoin_dirs,
                                            strict=True):
