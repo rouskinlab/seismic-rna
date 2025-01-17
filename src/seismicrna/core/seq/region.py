@@ -546,8 +546,6 @@ class Region(object):
         if existing is not None:
             p = np.union1d(p, existing)
         self._masks[name] = p
-        # Do not log self._masks[name] due to memory leak.
-        logger.detail(f"Added mask {repr(name)} to {self}")
         # Return self to allow chaining repeated calls to add_mask(),
         # e.g. region.add_mask("a", [1]).add_mask("b", [2], True).
         return self
