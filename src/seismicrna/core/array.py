@@ -231,7 +231,12 @@ def ensure_order(array1: np.ndarray,
         Shared length of `array1` and `array2`.
     """
     length = ensure_same_length(array1, array2, what1, what2)
-    ineq_func, ineq_sign = (np.less, "<") if gt_eq else (np.greater, ">")
+    if gt_eq:
+        ineq_func = np.less
+        ineq_sign = "<"
+    else:
+        ineq_func = np.greater
+        ineq_sign = ">"
     if np.any(is_err := ineq_func(array1, array2)):
         index = pd.Index(np.arange(length)[is_err])
         errors = pd.DataFrame.from_dict(
