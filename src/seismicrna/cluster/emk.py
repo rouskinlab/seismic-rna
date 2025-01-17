@@ -1,4 +1,3 @@
-from itertools import permutations
 from typing import Callable, Iterable
 
 import numpy as np
@@ -255,28 +254,19 @@ def calc_pearson_groups(mus1: np.ndarray, mus2: np.ndarray):
 
 def assign_clusterings(mus1: np.ndarray, mus2: np.ndarray):
     """ Optimally assign clusters from two groups to each other. """
-    # Make a cost matrix for assigning clusters using the RMSD.
+    _, n1 = mus1.shape
+    _, n2 = mus2.shape
+    if n1 != n2:
+        raise ValueError(
+            f"Numbers of clusters in groups 1 ({n1}) and 2 ({n2}) differ"
+        )
     costs = np.square(calc_rmsd_groups(mus1, mus2))
-    n, m = costs.shape
-    if n != m:
-        raise ValueError(f"Got different numbers of clusters in groups 1 ({n}) "
-                         f"and 2 ({m})")
-    # Find the assignment of clusters that gives the minimum cost using
-    # the naive approach of checking every possible pairwise assignment.
-    # While other algorithms (e.g. the Jonker-Volgenant algorithm) solve
-    # the assignment problem in O(n³) time, and this naive approach runs
-    # in O(n!) time, the latter is simpler and still sufficiently fast
-    # when n is no more than about 6, which is almost always true.
-    ns = np.arange(n)
-    best_assignment = ns
-    min_cost = None
-    for cols in permutations(ns):
-        assignment = np.array(cols, dtype=int)
-        cost = np.sum(costs[ns, assignment])
-        if min_cost is None or cost < min_cost:
-            min_cost = cost
-            best_assignment = assignment
-    return best_assignment
+    assert costs.shape == (n1, n2)
+    from scipy.optimize import linear_sum_assignment
+    rows, cols = linear_sum_assignment(costs)
+    assert np.array_equal(rows, np.arange(n1))
+    assert rows.shape == cols.shape
+    return rows, cols
 
 
 def calc_rms_nrmsd(run1: EMRun, run2: EMRun):
@@ -285,8 +275,7 @@ def calc_rms_nrmsd(run1: EMRun, run2: EMRun):
     mus2 = run2.mus.values
     nrmsds = calc_nrmsd_groups(mus1, mus2)
     assignment = assign_clusterings(mus1, mus2)
-    return float(np.sqrt(np.mean([np.square(nrmsds[row, col])
-                                  for row, col in enumerate(assignment)])))
+    return float(np.sqrt(np.mean(np.square(nrmsds[assignment]))))
 
 
 def calc_mean_pearson(run1: EMRun, run2: EMRun):
@@ -295,8 +284,7 @@ def calc_mean_pearson(run1: EMRun, run2: EMRun):
     mus2 = run2.mus.values
     correlations = calc_pearson_groups(mus1, mus2)
     assignment = assign_clusterings(mus1, mus2)
-    return float(np.mean([correlations[row, col]
-                          for row, col in enumerate(assignment)]))
+    return float(np.mean(correlations[assignment]))
 
 ########################################################################
 #                                                                      #
