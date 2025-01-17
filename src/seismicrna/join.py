@@ -196,6 +196,11 @@ def join_regions(out_dir: Path,
                  n_procs=n_procs,
                  force=True)
         # Rewrite the report file with the updated time.
+        if clustered:
+            # Update joined_clusters in case clusts was initially empty,
+            # in which case the dataset would have determined the best
+            # way to join the clusters.
+            report_kwargs |= dict(joined_clusters=dataset.joined_clusts)
         release_to_out(out_dir,
                        tmp_dir,
                        write_report(report_type,

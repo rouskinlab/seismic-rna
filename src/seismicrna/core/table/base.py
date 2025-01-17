@@ -8,9 +8,7 @@ import pandas as pd
 
 from .. import path
 from ..batch import RB_INDEX_NAMES
-from ..header import (REL_NAME,
-                      Header,
-                      parse_header)
+from ..header import REL_NAME, Header, parse_header
 from ..mu import winsorize
 from ..rel import HalfRelPattern, RelPattern
 from ..rna import RNAProfile
