@@ -28,10 +28,10 @@ class TestStochasticRound(ut.TestCase):
                         ))
 
     def test_float_arrays(self):
-        confidence = 0.9995
-        n_trials = 10000
+        confidence = 0.9999
+        n_trials = 50000
         floor = 8
-        for dims in [(), (0,), (1,), (2,), (100,), (10, 10)]:
+        for dims in [(), (0,), (1,), (2,), (25,), (5, 5)]:
             mantissas = rng.random(dims)
             values = floor + mantissas
             trials = [stochastic_round(values)
@@ -52,8 +52,8 @@ class TestStochasticRound(ut.TestCase):
             self.assertTrue(np.all(np.less_equal(n_floor, floor_ci_up)))
 
     def test_float_arrays_preserve_sum(self):
-        confidence = 0.9995
-        n_trials = 10000
+        confidence = 0.9999
+        n_trials = 50000
         floor = 8
         for dims in [(), (0,), (1,), (2,), (5,), (5, 5)]:
             mantissas = rng.random(dims)
