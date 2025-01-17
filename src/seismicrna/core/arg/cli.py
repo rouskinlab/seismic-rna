@@ -878,7 +878,7 @@ opt_em_runs = Option(
     ("--em-runs", "-e"),
     type=int,
     default=12,
-    help="Run EM this many times for each number of clusters (K)"
+    help="Run EM this many times for each number of clusters (K) except K = 1"
 )
 
 opt_min_em_iter = Option(
