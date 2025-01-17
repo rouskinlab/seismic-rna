@@ -46,8 +46,6 @@ def calc_pool_size(num_tasks: int, max_procs: int):
         # parent and can thus have all processors.
         pool_size = 1
         num_procs_per_task = max_procs
-    logger.detail(f"Calculated size of process pool: {pool_size} "
-                  f"({num_procs_per_task} processor(s) per task)")
     return pool_size, num_procs_per_task
 
 
@@ -171,6 +169,10 @@ def dispatch(funcs: list[Callable] | Callable,
     if pass_n_procs:
         # Add the number of processes as a keyword argument.
         kwargs = {**kwargs, "n_procs": n_procs_per_task}
+        logger.detail(f"Calculated size of process pool: {pool_size}, "
+                      f"each with {n_procs_per_task} processor(s)")
+    else:
+        logger.detail(f"Calculated size of process pool: {pool_size}")
     if pool_size > 1:
         # Run the tasks in parallel.
         with ProcessPoolExecutor(max_workers=pool_size) as pool:
