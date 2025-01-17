@@ -88,11 +88,12 @@ def run_ks(uniq_reads: UniqReads,
     # current K is worse than the previous K or raises an error.
     for k in ks:
         try:
+            num_runs = em_runs if k > 1 else 1
             # Cluster em_runs times with different starting points.
-            logger.routine(f"Began {em_runs} run(s) of EM with {k} cluster(s)")
+            logger.routine(f"Began {num_runs} run(s) of EM with {k} cluster(s)")
             runs = run_k(uniq_reads,
                          k,
-                         em_runs=(em_runs if k > 1 else 1),
+                         em_runs=num_runs,
                          em_thresh=(em_thresh if k > 1 else inf),
                          min_iter=(min_iter * k if k > 1 else 2),
                          max_iter=(max_iter * k if k > 1 else 2),
