@@ -645,7 +645,6 @@ class Report(FileIO, ABC):
         """ Convert a dict of raw values (keyed by the titles of their
         fields) into a dict of encoded values (keyed by the keys of
         their fields), from which a new Report is instantiated. """
-        logger.detail(f"Began parsing data for {cls.__name__}")
         if not isinstance(odata, dict):
             raise TypeError(odata)
         # Read every raw value, keyed by the title of its field.
@@ -654,12 +653,11 @@ class Report(FileIO, ABC):
             # Get the field corresponding to the title.
             try:
                 field = lookup_title(title)
-            except ValueError as error:
+            except InvalidReportFieldTitleError as error:
                 logger.warning(error)
             else:
                 # Cast the value to the input type; key it by the field.
                 idata[field.key] = field.iconv(value)
-        logger.detail(f"Ended parsing data for {cls.__name__}")
         # Instantiate and return a new Report from the values.
         return cls(**idata)
 
