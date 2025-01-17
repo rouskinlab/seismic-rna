@@ -5,9 +5,12 @@ import numpy as np
 import pandas as pd
 from scipy.stats import pearsonr, spearmanr
 
-from seismicrna.core.mu import (calc_coeff_determ,
+from seismicrna.core.mu import (DEFAULT_CLIP,
+                                calc_diff_log_odds,
+                                calc_sum_abs_diff_log_odds,
+                                calc_coeff_determ,
                                 calc_pearson,
-                                calc_nrmsd,
+                                calc_norm_rmsd,
                                 calc_spearman,
                                 compare_windows,
                                 get_comp_func,
@@ -17,12 +20,138 @@ from seismicrna.core.seq import DNA, seq_pos_to_index
 rng = np.random.default_rng()
 
 
-class TestCalcNRMSD(ut.TestCase):
+class TestCalcDiffLogOdds(ut.TestCase):
+
+    def test_array0d(self):
+        mus1 = np.array(0.1)
+        mus2 = np.array(0.6)
+        result = calc_diff_log_odds(mus1, mus2)
+        expect = np.array(np.log(74 / 999))
+        self.assertTupleEqual(result.shape, expect.shape)
+        self.assertTrue(np.allclose(result, expect))
+
+    def test_array1d(self):
+        mus1 = np.array([0.6])
+        mus2 = np.array([0.1])
+        result = calc_diff_log_odds(mus1, mus2)
+        expect = np.array([np.log(999 / 74)])
+        self.assertTupleEqual(result.shape, expect.shape)
+        self.assertTrue(np.allclose(result, expect))
+
+    def test_array2d(self):
+        mus1 = np.array([[0.2], [0.4]])
+        mus2 = np.array([[0.3], [0.4]])
+        result = calc_diff_log_odds(mus1, mus2)
+        expect = np.array([[np.log(7 / 12)], [0.0]])
+        self.assertTupleEqual(result.shape, expect.shape)
+        self.assertTrue(np.allclose(result, expect))
+
+    def test_series(self):
+        index = pd.Index([4])
+        mus1 = pd.Series([0.6], index)
+        mus2 = pd.Series([0.1], index)
+        result = calc_diff_log_odds(mus1, mus2)
+        expect = pd.Series([np.log(999 / 74)], index)
+        self.assertTupleEqual(result.shape, expect.shape)
+        self.assertTrue(np.allclose(result, expect))
+        self.assertTrue(result.index.equals(index))
+
+    def test_dataframe(self):
+        index = pd.Index([4, 6])
+        columns = pd.Index([8])
+        mus1 = pd.DataFrame([[0.2], [0.4]], index, columns)
+        mus2 = pd.DataFrame([[0.3], [0.4]], index, columns)
+        result = calc_diff_log_odds(mus1, mus2)
+        expect = pd.DataFrame([[np.log(7 / 12)], [0.0]], index, columns)
+        self.assertTupleEqual(result.shape, expect.shape)
+        self.assertTrue(np.allclose(result, expect))
+        self.assertTrue(result.index.equals(index))
+        self.assertTrue(result.columns.equals(columns))
+
+    def test_both_zeros(self):
+        mus1 = np.array(0.0)
+        mus2 = np.array(0.0)
+        result = calc_diff_log_odds(mus1, mus2)
+        expect = np.array(0.0)
+        self.assertTupleEqual(result.shape, expect.shape)
+        self.assertTrue(np.allclose(result, expect))
+
+    def test_both_ones(self):
+        mus1 = np.array(1.0)
+        mus2 = np.array(1.0)
+        result = calc_diff_log_odds(mus1, mus2)
+        expect = np.array(0.0)
+        self.assertTupleEqual(result.shape, expect.shape)
+        self.assertTrue(np.allclose(result, expect))
+
+    def test_zero_half(self):
+        mus1 = np.array(0.0)
+        mus2 = np.array(0.5)
+        for p_min in [0., DEFAULT_CLIP]:
+            result = calc_diff_log_odds(mus1, mus2, p_min=p_min)
+            with np.errstate(divide="ignore"):
+                expect = np.array(np.log(p_min))
+            self.assertTupleEqual(result.shape, expect.shape)
+            self.assertTrue(np.allclose(result, expect))
+
+    def test_one_half(self):
+        mus1 = np.array(1.0)
+        mus2 = np.array(0.5)
+        for clip in [0., DEFAULT_CLIP]:
+            p_max = 1. - clip
+            result = calc_diff_log_odds(mus1, mus2, p_max=p_max)
+            with np.errstate(divide="ignore"):
+                expect = np.array(-np.log(clip))
+            self.assertTupleEqual(result.shape, expect.shape)
+            self.assertTrue(np.allclose(result, expect))
+
+    def test_zero_one(self):
+        mus1 = np.array(0.0)
+        mus2 = np.array(1.0)
+        result = calc_diff_log_odds(mus1, mus2)
+        expect = np.array(2. * np.log(DEFAULT_CLIP))
+        self.assertTupleEqual(result.shape, expect.shape)
+        self.assertTrue(np.allclose(result, expect))
+
+    def test_no_clip(self):
+        index = pd.Index([2, 4, 6, 8])
+        mus1 = pd.Series([0., 0., 1., 1.], index)
+        mus2 = pd.Series([0., 1., 0., 1.], index)
+        result = calc_diff_log_odds(mus1, mus2, p_min=0., p_max=1.)
+        expect = pd.Series([0., -np.inf, np.inf, 0.], index)
+        self.assertTupleEqual(result.shape, expect.shape)
+        self.assertTrue(np.allclose(result, expect))
+        self.assertTrue(result.index.equals(index))
+
+    def test_invalid_clip(self):
+        mus1 = np.array(0.5)
+        mus2 = np.array(0.5)
+        for p_min, p_max in [(-0.1, 0.9), (0.1, 1.1), (0.6, 0.4)]:
+            self.assertRaisesRegex(ValueError,
+                                   "Must have 0 ≤ p_min ≤ p_max ≤ 1",
+                                   calc_diff_log_odds,
+                                   mus1,
+                                   mus2,
+                                   p_min=p_min,
+                                   p_max=p_max)
+
+
+class TestCalcSumAbsDiffLogOdds(ut.TestCase):
 
     def test_array0d(self):
         self.assertRaisesRegex(ValueError,
                                "A 0-D array has no positional axis",
-                               calc_nrmsd,
+                               calc_sum_abs_diff_log_odds,
+                               rng.random(()),
+                               rng.random(()))
+
+
+class TestCalcNormRMSD(ut.TestCase):
+
+    def test_array0d(self):
+        self.assertRaisesRegex(ValueError,
+                               "A 0-D array has no positional axis",
+                               calc_norm_rmsd,
                                rng.random(()),
                                rng.random(()))
 
@@ -32,7 +161,7 @@ class TestCalcNRMSD(ut.TestCase):
             y = np.zeros(n, dtype=float)
             with warnings.catch_warnings():
                 warnings.filterwarnings("ignore", category=RuntimeWarning)
-                nrmsd = calc_nrmsd(x, y)
+                nrmsd = calc_norm_rmsd(x, y)
             self.assertIsInstance(nrmsd, float)
             self.assertTrue(np.isnan(nrmsd))
 
@@ -41,27 +170,27 @@ class TestCalcNRMSD(ut.TestCase):
             for fy in [0.0001, 0.01, 1.0]:
                 x = fx * np.array([0., 1.])
                 y = fy * np.array([0., 1.])
-                self.assertTrue(np.isclose(calc_nrmsd(x, y), 0.))
+                self.assertTrue(np.isclose(calc_norm_rmsd(x, y), 0.))
                 x = fx * np.array([0., 1.])
                 y = fy * np.array([1., 0.])
-                self.assertTrue(np.isclose(calc_nrmsd(x, y), 1.))
-                self.assertTrue(np.isclose(calc_nrmsd(y, x), 1.))
+                self.assertTrue(np.isclose(calc_norm_rmsd(x, y), 1.))
+                self.assertTrue(np.isclose(calc_norm_rmsd(y, x), 1.))
 
     def test_array1d_examples(self):
         for fx in [0.0001, 0.01, 1.0]:
             for fy in [0.0001, 0.01, 1.0]:
                 x = fx * np.array([1., 0., 0., 0.])
                 y = fy * np.array([0., 0., 1., 0.])
-                self.assertTrue(np.isclose(calc_nrmsd(x, y), 2. ** -0.5))
-                self.assertTrue(np.isclose(calc_nrmsd(y, x), 2. ** -0.5))
+                self.assertTrue(np.isclose(calc_norm_rmsd(x, y), 2. ** -0.5))
+                self.assertTrue(np.isclose(calc_norm_rmsd(y, x), 2. ** -0.5))
                 x = fx * np.array([0.4, 0.1, 0.8])
                 y = fy * np.array([0.3, 0.2, 0.6])
-                self.assertTrue(np.isclose(calc_nrmsd(x, y), 72. ** -0.5))
-                self.assertTrue(np.isclose(calc_nrmsd(y, x), 72. ** -0.5))
+                self.assertTrue(np.isclose(calc_norm_rmsd(x, y), 72. ** -0.5))
+                self.assertTrue(np.isclose(calc_norm_rmsd(y, x), 72. ** -0.5))
                 x = fx * np.array([np.nan, 0.4, 0.1, 0.3, 0.8])
                 y = fy * np.array([0.5, 0.3, 0.2, np.nan, 0.6])
-                self.assertTrue(np.isclose(calc_nrmsd(x, y), 72. ** -0.5))
-                self.assertTrue(np.isclose(calc_nrmsd(y, x), 72. ** -0.5))
+                self.assertTrue(np.isclose(calc_norm_rmsd(x, y), 72. ** -0.5))
+                self.assertTrue(np.isclose(calc_norm_rmsd(y, x), 72. ** -0.5))
 
     def test_array2d(self):
         x = np.array([[0.8, 0.0],
@@ -74,7 +203,7 @@ class TestCalcNRMSD(ut.TestCase):
                       [0.3, 0.0],
                       [np.nan, 0.3],
                       [0.2, 0.0]])
-        nrmsd = calc_nrmsd(x, y)
+        nrmsd = calc_norm_rmsd(x, y)
         self.assertIsInstance(nrmsd, np.ndarray)
         self.assertEqual(nrmsd.shape, (2,))
         self.assertTrue(np.allclose(nrmsd, [72. ** -0.5,
@@ -83,8 +212,8 @@ class TestCalcNRMSD(ut.TestCase):
     def test_series(self):
         x = pd.Series([np.nan, 0.4, 0.1, 0.3, 0.8])
         y = pd.Series([0.5, 0.3, 0.2, np.nan, 0.6])
-        self.assertTrue(np.isclose(calc_nrmsd(x, y), 72. ** -0.5))
-        self.assertTrue(np.isclose(calc_nrmsd(y, x), 72. ** -0.5))
+        self.assertTrue(np.isclose(calc_norm_rmsd(x, y), 72. ** -0.5))
+        self.assertTrue(np.isclose(calc_norm_rmsd(y, x), 72. ** -0.5))
 
     def test_dataframe(self):
         index = pd.Index([2, 4, 5, 7, 9])
@@ -102,7 +231,7 @@ class TestCalcNRMSD(ut.TestCase):
                           [0.0, 0.2]],
                          index=index,
                          columns=["j", "i"])
-        nrmsd = calc_nrmsd(x, y)
+        nrmsd = calc_norm_rmsd(x, y)
         self.assertIsInstance(nrmsd, pd.Series)
         self.assertEqual(nrmsd.shape, (2,))
         self.assertTrue(np.allclose(nrmsd, [72. ** -0.5,
@@ -320,7 +449,7 @@ class TestGetComp(ut.TestCase):
 
     def test_comps(self):
         for key in ["NRMSD", "nrmsd"]:
-            self.assertIs(get_comp_func(key), calc_nrmsd)
+            self.assertIs(get_comp_func(key), calc_norm_rmsd)
             self.assertEqual(get_comp_name(key),
                              "Normalized Root-Mean-Square Deviation")
         for key in ["PCC", "pcc"]:

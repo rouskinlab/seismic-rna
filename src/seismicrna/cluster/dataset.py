@@ -34,6 +34,7 @@ from ..core.join import (BATCH_NUM,
                          MUTS,
                          RESPS,
                          JoinMutsDataset)
+from ..core.mu import calc_sum_abs_diff_log_odds
 from ..core.report import JoinedClustersF, KsWrittenF, BestKF
 from ..core.seq import POS_NAME, BASE_NAME
 from ..core.table import MUTAT_REL
@@ -232,10 +233,8 @@ def _join_regions_k(region_params: dict[str, pd.DataFrame]):
         for cluster1, cluster2 in product(cost_matrix.index,
                                           cost_matrix.columns):
             # Use log odds differences as the costs.
-            cost = np.sum(np.abs(
-                _calc_diff_log_odds(df1.loc[overlap, cluster1],
-                                    df2.loc[overlap, cluster2])
-            ))
+            cost = calc_sum_abs_diff_log_odds(df1.loc[overlap, cluster1],
+                                              df2.loc[overlap, cluster2])
             cost_matrix.loc[cluster1, cluster2] = cost
         assert not np.any(np.isnan(cost_matrix))
         cost_matrices[reg1, reg2] = cost_matrix

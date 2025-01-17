@@ -4,7 +4,7 @@ import numpy as np
 
 from .em import EMRun
 from ..core.logs import logger
-from ..core.mu import calc_rmsd, calc_nrmsd, calc_pearson
+from ..core.mu import calc_sum_abs_diff_log_odds, calc_norm_rmsd, calc_pearson
 
 NOCONV = 0
 
@@ -238,12 +238,12 @@ def _compare_groups(func: Callable, mus1: np.ndarray, mus2: np.ndarray):
 
 def calc_rmsd_groups(mus1: np.ndarray, mus2: np.ndarray):
     """ Calculate the RMSD of each pair of clusters in two groups. """
-    return _compare_groups(calc_rmsd, mus1, mus2)
+    return _compare_groups(calc_sum_abs_diff_log_odds, mus1, mus2)
 
 
 def calc_nrmsd_groups(mus1: np.ndarray, mus2: np.ndarray):
     """ Calculate the NRMSD of each pair of clusters in two groups. """
-    return _compare_groups(calc_nrmsd, mus1, mus2)
+    return _compare_groups(calc_norm_rmsd, mus1, mus2)
 
 
 def calc_pearson_groups(mus1: np.ndarray, mus2: np.ndarray):
@@ -254,17 +254,27 @@ def calc_pearson_groups(mus1: np.ndarray, mus2: np.ndarray):
 
 def assign_clusterings(mus1: np.ndarray, mus2: np.ndarray):
     """ Optimally assign clusters from two groups to each other. """
-    _, n1 = mus1.shape
-    _, n2 = mus2.shape
+    n1, k1 = mus1.shape
+    n2, k2 = mus2.shape
     if n1 != n2:
         raise ValueError(
-            f"Numbers of clusters in groups 1 ({n1}) and 2 ({n2}) differ"
+            f"Numbers of positions in groups 1 ({n1}) and 2 ({n2}) differ"
         )
-    costs = np.square(calc_rmsd_groups(mus1, mus2))
-    assert costs.shape == (n1, n2)
-    from scipy.optimize import linear_sum_assignment
-    rows, cols = linear_sum_assignment(costs)
-    assert np.array_equal(rows, np.arange(n1))
+    if k1 != k2:
+        raise ValueError(
+            f"Numbers of clusters in groups 1 ({k1}) and 2 ({k2}) differ"
+        )
+    if n1 >= 1:
+        costs = np.square(calc_rmsd_groups(mus1, mus2))
+        assert costs.shape == (k1, k2)
+        from scipy.optimize import linear_sum_assignment
+        rows, cols = linear_sum_assignment(costs)
+    else:
+        # If n1 == 0, then the costs matrix will contain NaN, which will
+        # cause linear_sum_assignment to raise an error.
+        rows = np.arange(k1)
+        cols = np.arange(k1)
+    assert np.array_equal(rows, np.arange(k1))
     assert rows.shape == cols.shape
     return rows, cols
 

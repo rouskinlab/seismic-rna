@@ -15,7 +15,7 @@ from .uniq import UniqReads
 from ..core.array import get_length
 from ..core.header import ClustHeader
 from ..core.logs import logger
-from ..core.mu import calc_nrmsd, calc_pearson
+from ..core.mu import calc_norm_rmsd, calc_pearson
 from ..core.unbias import calc_params, calc_params_observed
 
 LOG_LIKE_PRECISION = 3  # number of digits to round the log likelihood
@@ -501,7 +501,7 @@ class EMRun(object):
     @cached_property
     def min_nrmsd(self):
         """ Minimum normalized RMSD among any pair of clusters. """
-        return self._calc_p_mut_pairs(calc_nrmsd, min)
+        return self._calc_p_mut_pairs(calc_norm_rmsd, min)
 
     def __str__(self):
         return f"{type(self).__name__} {self.uniq_reads}, {self.k} cluster(s)"
