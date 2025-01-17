@@ -201,15 +201,12 @@ def get_seismicrna_project_dir():
     entire SEISMIC-RNA project has been downloaded, e.g. from GitHub,
     but not if SEISMIC-RNA was only installed using pip or conda. """
     seismicrna_prj_dir = get_seismicrna_source_dir().parent.parent
-    if not seismicrna_prj_dir.exists():
+    name = "seismic-rna"
+    if seismicrna_prj_dir.name != name:
         # It is fine if the project directory does not exist because
         # installing SEISMIC-RNA using pip or conda installs only the
         # source directory, but not the project directory.
         return None
-    name = "seismic-rna"
-    if seismicrna_prj_dir.name != name:
-        raise PathValueError(f"Project directory {seismicrna_prj_dir} "
-                             f"is not named {repr(name)}")
     return seismicrna_prj_dir
 
 
