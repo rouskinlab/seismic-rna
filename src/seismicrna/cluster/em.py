@@ -24,7 +24,7 @@ LOG_LIKE_PRECISION = 3  # number of digits to round the log likelihood
 def _calc_bic(n_params: int,
               n_data: int,
               log_like: float,
-              min_data_param_ratio: float = 10.):
+              min_data_param_ratio: float = 4.):
     """ Compute the Bayesian Information Criterion (BIC) of a model.
     Typically, the model with the smallest BIC is preferred.
 
@@ -38,7 +38,7 @@ def _calc_bic(n_params: int,
     log_like: float
         Natural logarithm of the likelihood of observing the data given
         the parameters
-    min_data_param_ratio: float = 10.0
+    min_data_param_ratio: float
         In order for the BIC approximation to be valid, the sample size
         must be much larger than the number of estimated parameters.
         Issue a warning if the sample size is less than this ratio times
