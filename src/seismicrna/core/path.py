@@ -716,7 +716,6 @@ def mkdir_if_needed(path: pathlib.Path | str):
             # Raise an error if the existing path is not a directory,
             # e.g. if it is a file.
             raise NotADirectoryError(path) from None
-        logger.detail(f"Skipped creating directory {path}: already exists")
         return path
     logger.action(f"Created directory {path}")
     return path
@@ -740,7 +739,6 @@ def symlink_if_needed(link_path: pathlib.Path | str,
         if readlink != target_path:
             raise OSError(f"{link_path} is a symbolic link to {readlink}, "
                           f"not to {target_path}") from None
-        logger.detail(f"Skipped creating symlink {link_path}: already exists")
         return link_path
     logger.action(f"Made {link_path} a symbolic link to {target_path}")
     return link_path
