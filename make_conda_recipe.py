@@ -236,14 +236,17 @@ def write_metadata():
         "source": {"url": find_github_file(),
                    "sha256": calc_github_file_sha256()},
         "build": {
-            "noarch": "python",
             "number": 0,
             "run_exports": [format_run_exports_pin()]
         },
-        "requirements": {"build": ["python >=3.10",
-                                   "hatch >=1.12"],
+        "requirements": {"host": ["python >=3.10",
+                                  "numpy >=1.26,<1.27",
+                                  "meson-python >=0.15.0",
+                                  "pip"],
+                         "build": ["{{ compiler('c') }}"],
                          "run": list_conda_dependencies()},
-        "test": {"imports": ["seismicrna"]},
+        "test": {"commands": ['seismic --log "" test -vv'],
+                 "imports": ["seismicrna"]},
     }
     yaml_text = format_yaml_text(metadata)
     mkdir_if_needed(find_conda_dir())
