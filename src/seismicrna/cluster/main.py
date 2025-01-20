@@ -132,7 +132,7 @@ params = [
 
 @command(CMD_CLUSTER, params=params)
 def cli(*args, **kwargs):
-    """ Infer alternative structures by clustering reads' mutations. """
+    """ Infer structure ensembles by clustering reads' mutations. """
     return run(*args, **kwargs)
 
 ########################################################################

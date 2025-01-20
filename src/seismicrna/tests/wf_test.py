@@ -33,10 +33,6 @@ class TestWorkflow(ut.TestCase):
     REF = "test_ref"
     SAMPLE = "test_sample"
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._config = None
-
     def setUp(self):
         self.SIM_DIR.mkdir()
         self.OUT_DIR.mkdir()
@@ -139,10 +135,6 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
     POOLED = "pooled_sample"
     MJOINED = "mjoined_region"
     CJOINED = "cjoined_region"
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._config = None
 
     def setUp(self):
         self.SIM_DIR.mkdir()

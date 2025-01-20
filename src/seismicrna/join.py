@@ -264,22 +264,29 @@ def run(input_path: tuple[str, ...], *,
                                     False)]
                 mask_joins.extend([reg for reg in regs
                                    if reg not in mask_joins])
-    # Create each joined region.
-    return dispatch(join_regions,
-                    max_procs=max_procs,
-                    pass_n_procs=True,
-                    args=[(out_dir, joined, sample, ref, regs, clustered)
-                          for (out_dir, sample, ref, clustered), regs
-                          in joins.items()],
-                    kwargs=dict(clusts=clusts,
-                                mask_pos_table=mask_pos_table,
-                                mask_read_table=mask_read_table,
-                                cluster_pos_table=cluster_pos_table,
-                                cluster_abundance_table=cluster_abundance_table,
-                                verify_times=verify_times,
-                                tmp_pfx=tmp_pfx,
-                                keep_tmp=keep_tmp,
-                                force=force))
+    # Join the masked regions first, then the clustered regions, because
+    # the clustered regions require the masked regions.
+    results = list()
+    for use_clustered in [False, True]:
+        args = [(out_dir, joined, sample, ref, regs, clustered)
+                for (out_dir, sample, ref, clustered), regs
+                in joins.items()
+                if clustered == use_clustered]
+        kwargs = dict(clusts=clusts,
+                      mask_pos_table=mask_pos_table,
+                      mask_read_table=mask_read_table,
+                      cluster_pos_table=cluster_pos_table,
+                      cluster_abundance_table=cluster_abundance_table,
+                      verify_times=verify_times,
+                      tmp_pfx=tmp_pfx,
+                      keep_tmp=keep_tmp,
+                      force=force)
+        results.extend(dispatch(join_regions,
+                                max_procs=max_procs,
+                                pass_n_procs=True,
+                                args=args,
+                                kwargs=kwargs))
+    return results
 
 
 params = [

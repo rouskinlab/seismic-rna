@@ -34,6 +34,7 @@ from ..core.join import (BATCH_NUM,
                          MUTS,
                          RESPS,
                          JoinMutsDataset)
+from ..core.logs import logger
 from ..core.mu import calc_sum_abs_diff_log_odds
 from ..core.report import JoinedClustersF, KsWrittenF, BestKF
 from ..core.seq import POS_NAME, BASE_NAME
@@ -169,8 +170,10 @@ def _get_clust_params(dataset: ClusterMutsDataset, max_procs: int = 1):
             count_read=False,
             max_procs=max_procs
         )
-        pos_table = ClusterPositionTableWriter(tabulator)
-        abundance_table = ClusterAbundanceTableWriter(tabulator)
+        if pos_table is None:
+            pos_table = ClusterPositionTableWriter(tabulator)
+        if abundance_table is None:
+            abundance_table = ClusterAbundanceTableWriter(tabulator)
     # Calculate the parameters from the tables.
     mus = pos_table.fetch_ratio(rel=MUTAT_REL).loc[:, MUTAT_REL]
     pis = abundance_table.proportions
@@ -185,23 +188,9 @@ def _get_clust_params(dataset: ClusterMutsDataset, max_procs: int = 1):
     return params
 
 
-def _calc_diff_log_odds(a: np.ndarray | pd.Series | pd.DataFrame,
-                        b: np.ndarray | pd.Series | pd.DataFrame):
-    """ Calculate the log odds difference between probabilities a and b:
-    log(a / (1-a)) - log(b / (1-b))
-
-    Wherever a == b, the log odds difference will be 0 (even if a and b
-    are 0 or 1). Otherwise, if a or b == 0 or 1, the return value will
-    be inf or -inf.
-    """
-    with np.errstate(divide="ignore", invalid="ignore"):
-        return np.where(a != b,
-                        np.log((a * (1. - b)) / (b * (1. - a))),
-                        0.)
-
-
 def _join_regions_k(region_params: dict[str, pd.DataFrame]):
     """ Determine the optimal way to join regions . """
+    logger.routine("Began determining the optimal way to join clusters")
     from scipy.optimize import Bounds, LinearConstraint, milp
     from scipy.sparse import csr_matrix
     # Validate the arguments.
@@ -219,6 +208,7 @@ def _join_regions_k(region_params: dict[str, pd.DataFrame]):
     for df in dfs:
         assert isinstance(df, pd.DataFrame)
         assert df.columns.equals(clusters)
+    logger.detail(f"There are {n} region(s) and {k} cluster(s)")
     # Calculate matrices of the cost of joining each pair of clusters
     # from each pair of regions.
     cost_matrices = dict()
@@ -226,7 +216,12 @@ def _join_regions_k(region_params: dict[str, pd.DataFrame]):
         # Even if the regions share no positions, the intersection of
         # their indexes will still include the proportion (0, "p").
         overlap = df1.index.intersection(df2.index)
+        logger.detail(f"Regions {repr(reg1)} and {repr(reg2)} "
+                      f"share {overlap.size} indices")
         assert overlap.size > 0
+        if overlap.size == 1:
+            logger.warning(f"Regions {repr(reg1)} and {repr(reg2)} share no "
+                           "positions: using cluster proportions alone")
         # Collect the cost of joining each cluster from region 1 with
         # each cluster from region 2.
         cost_matrix = pd.DataFrame(np.nan, clusters, clusters)
@@ -236,6 +231,8 @@ def _join_regions_k(region_params: dict[str, pd.DataFrame]):
             cost = calc_sum_abs_diff_log_odds(df1.loc[overlap, cluster1],
                                               df2.loc[overlap, cluster2])
             cost_matrix.loc[cluster1, cluster2] = cost
+        logger.detail(f"Regions {repr(reg1)} and {repr(reg2)} "
+                      f"have a cost matrix of\n{cost_matrix}")
         assert not np.any(np.isnan(cost_matrix))
         cost_matrices[reg1, reg2] = cost_matrix
     # Build a hypergraph where every hyperedge connects n nodes, one
@@ -251,6 +248,8 @@ def _join_regions_k(region_params: dict[str, pd.DataFrame]):
              in combinations(hyperedge, 2))
          for hyperedge in hyperedges]
     )
+    logger.detail(f"Built a hypergraph with {len(nodes)} node(s) "
+                  f"and {len(hyperedges)} hyperedge(s)")
     # Build a sparse boolean matrix where rows are nodes and columns are
     # edges, with a 1 if the edge contains the node and 0 otherwise.
     matrix_rows = list()
@@ -273,11 +272,17 @@ def _join_regions_k(region_params: dict[str, pd.DataFrame]):
     # Require every possible edge to occur zero or one time.
     integrality = np.ones(len(hyperedges), dtype=bool)
     edge_bounds = Bounds(0, 1)
+    logger.detail("Created mixed-integer linear program: min_x(cx), subject to "
+                  f"Ax = 1, x ∈ {0, 1}; c and x are length {len(hyperedges)}, "
+                  f"and A has dimensions {incidence_matrix.shape}")
     # Find the edges that give the smallest cost.
+    logger.detail("Began solving mixed-integer linear program "
+                  "(this could take a while)")
     result = milp(hyperedge_costs,
                   integrality=integrality,
                   bounds=edge_bounds,
                   constraints=constraints)
+    logger.detail("Ended solving mixed-integer linear program")
     if result.status != 0 or not result.success:
         raise RuntimeError(
             f"Failed to determine optimal way to join regions {region_names} "
@@ -287,7 +292,10 @@ def _join_regions_k(region_params: dict[str, pd.DataFrame]):
     selected_hyperedges = [hyperedge for hyperedge, is_selected
                            in zip(hyperedges, result.x, strict=True)
                            if is_selected]
+    logger.detail(f"Selected {k} hyperedge(s):\n"
+                  + "\n".join(map(str, selected_hyperedges)))
     assert len(selected_hyperedges) == k
+    logger.routine("Ended determining the optimal way to join clusters")
     return selected_hyperedges
 
 
@@ -389,7 +397,7 @@ class JoinClusterMutsDataset(ClusterDataset,
         # Join the cluster memberships taking the mean over all regions.
         # Because there can be more than two regions, accumulate the sum
         # here rather than taking the mean; then in _finalize_attrs(),
-        # normalize to ensure the sum is 1 for each number of clusters.
+        # divide by the sum for each number of clusters.
         attrs[RESPS] = attrs[RESPS].add(add_attrs[RESPS], fill_value=0.)
 
     def _finalize_attrs(self, attrs: dict[str, Any]):

@@ -600,7 +600,7 @@ opt_pooled = Option(
 opt_mask_regions_file = Option(
     ("--mask-regions-file", "-i"),
     type=Path(exists=True, dir_okay=False),
-    help="Mask regions of references from coordinates/primers in a CSV file"
+    help="Select regions of references from coordinates/primers in a CSV file"
 )
 
 opt_mask_coords = Option(
@@ -608,7 +608,7 @@ opt_mask_coords = Option(
     type=(str, int, int),
     multiple=True,
     default=(),
-    help="Mask a region of a reference given its 5' and 3' end coordinates"
+    help="Select a region of a reference given its 5' and 3' end coordinates"
 )
 
 opt_mask_primers = Option(
@@ -616,7 +616,7 @@ opt_mask_primers = Option(
     type=(str, DNA, DNA),
     multiple=True,
     default=(),
-    help="Mask a region of a reference given its forward and reverse primers"
+    help="Select a region of a reference given its forward and reverse primers"
 )
 
 opt_primer_gap = Option(

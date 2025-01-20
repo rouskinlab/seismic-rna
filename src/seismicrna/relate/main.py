@@ -5,7 +5,7 @@ from click import command
 from .strands import write_both_strands
 from .write import relate_xam
 from ..core import path
-from ..core.arg import (CMD_REL,
+from ..core.arg import (CMD_RELATE,
                         arg_input_path,
                         arg_fasta,
                         opt_out_dir,
@@ -50,7 +50,7 @@ def check_duplicates(xam_files: list[Path]):
     logger.routine("Ended checking for duplicate sample-reference pairs")
 
 
-@run_func(CMD_REL, with_tmp=True, pass_keep_tmp=True)
+@run_func(CMD_RELATE, with_tmp=True, pass_keep_tmp=True)
 def run(fasta: str,
         input_path: tuple[str, ...], *,
         out_dir: str,
@@ -152,7 +152,7 @@ params = [
 ]
 
 
-@command(CMD_REL, params=params)
+@command(CMD_RELATE, params=params)
 def cli(**kwargs):
     """ Compute relationships between references and aligned reads. """
     return run(**kwargs)

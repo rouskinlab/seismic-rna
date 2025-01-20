@@ -24,7 +24,7 @@ LOG_LIKE_PRECISION = 3  # number of digits to round the log likelihood
 def _calc_bic(n_params: int,
               n_data: int,
               log_like: float,
-              min_data_param_ratio: float = 4.):
+              min_data_param_ratio: float = 2.):
     """ Compute the Bayesian Information Criterion (BIC) of a model.
     Typically, the model with the smallest BIC is preferred.
 
@@ -458,17 +458,21 @@ class EMRun(object):
     @cached_property
     def _null_jackpot_scores(self):
         """ Jackpotting score of each null model. """
-        return bootstrap_jackpot_scores(self._end5s,
-                                        self._end3s,
-                                        self._counts_per_uniq,
-                                        self._p_mut,
-                                        self._p_ends,
-                                        self._p_clust,
-                                        self.uniq_reads.min_mut_gap,
-                                        self._unmasked,
-                                        self.jackpot_score,
-                                        self._jackpot_conf_level,
-                                        self._max_jackpot_quotient)
+        try:
+            return bootstrap_jackpot_scores(self._end5s,
+                                            self._end3s,
+                                            self._counts_per_uniq,
+                                            self._p_mut,
+                                            self._p_ends,
+                                            self._p_clust,
+                                            self.uniq_reads.min_mut_gap,
+                                            self._unmasked,
+                                            self.jackpot_score,
+                                            self._jackpot_conf_level,
+                                            self._max_jackpot_quotient)
+        except Exception as error:
+            logger.warning(error)
+        return np.array([], dtype=float)
 
     @cached_property
     def jackpot_quotient(self):

@@ -1,27 +1,46 @@
-CMD_DEMULT = "demult"
-CMD_ALIGN = "align"
-CMD_RELATE = "relate"
-CMD_POOL = "pool"
-CMD_MASK = "mask"
-CMD_CLUSTER = "cluster"
-CMD_JOIN = "join"
-CMD_ENSEMBLES = "ensembles"
-CMD_TABLE = "table"
-CMD_FOLD = "fold"
-CMD_GRAPH = "graph"
-CMD_EXPORT = "export"
-CMD_WORKFLOW = "wf"
-CMD_LISTPOS = "listpos"
-CMD_SPLITBAM = "splitbam"
-CMD_CLEANFA = "cleanfa"
-CMD_RENUMCT = "renumct"
-CMD_CT2DB = "ct2db"
-CMD_DB2CT = "db2ct"
-CMD_DRAW = "draw"
-CMD_SIM = "sim"
-CMD_DATAPATH = "datapath"
-CMD_MIGRATE = "migrate"
-CMD_TEST = "test"
+import unittest as ut
+
+from seismicrna.core.logs import Level, get_config, set_config
+from seismicrna.ensembles import calc_windows
+
+
+class TestCalcWindows(ut.TestCase):
+
+    def setUp(self):
+        self._config = get_config()
+        set_config(verbosity=Level.ERROR)
+
+    def tearDown(self):
+        set_config(self._config)
+
+    def test_window_factor_25(self):
+        result = calc_windows(41, 145, 60, 0.25)
+        expect = [(41, 100), (86, 145)]
+        self.assertEqual(result, expect)
+
+    def test_window_factor_75(self):
+        result = calc_windows(41, 145, 60, 0.75)
+        expect = [(41, 100), (56, 115), (71, 130), (86, 145)]
+        self.assertEqual(result, expect)
+
+    def test_window_not_factor(self):
+        result = calc_windows(41, 170, 60, 0.25)
+        expect = [(41, 100), (76, 135), (111, 170)]
+        self.assertEqual(result, expect)
+
+    def test_window_size_larger(self):
+        result = calc_windows(41, 49, 52, 0.9)
+        expect = [(41, 49)]
+        self.assertEqual(result, expect)
+
+    def test_region_size_1(self):
+        result = calc_windows(41, 41, 52, 0.9)
+        expect = [(41, 41)]
+        self.assertEqual(result, expect)
+
+
+if __name__ == "__main__":
+    ut.main()
 
 ########################################################################
 #                                                                      #
