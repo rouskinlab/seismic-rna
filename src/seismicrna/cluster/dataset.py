@@ -149,10 +149,6 @@ def _get_clust_params(dataset: ClusterMutsDataset, max_procs: int = 1):
         abundance_table = None
     # If either table file does not exist, then calculate the tables.
     if pos_table is None or abundance_table is None:
-        def get_batch_count_all(batch_num: int, **kwargs):
-            batch = dataset.get_batch(batch_num)
-            return batch.count_all(**kwargs)
-
         tabulator = ClusterBatchTabulator(
             top=dataset.top,
             sample=dataset.sample,
@@ -164,7 +160,7 @@ def _get_clust_params(dataset: ClusterMutsDataset, max_procs: int = 1):
             quick_unbias_thresh=dataset.quick_unbias_thresh,
             ks=dataset.ks,
             num_batches=dataset.num_batches,
-            get_batch_count_all=get_batch_count_all,
+            get_batch_count_all=dataset.get_batch_count_all,
             count_ends=True,
             count_pos=(pos_table is None),
             count_read=False,
@@ -216,17 +212,13 @@ def _join_regions_k(region_params: dict[str, pd.DataFrame]):
         # Even if the regions share no positions, the intersection of
         # their indexes will still include the proportion (0, "p").
         overlap = df1.index.intersection(df2.index)
-        logger.detail(f"Regions {repr(reg1)} and {repr(reg2)} "
-                      f"share {overlap.size} indices")
         assert overlap.size > 0
-        if overlap.size == 1:
-            logger.warning(f"Regions {repr(reg1)} and {repr(reg2)} share no "
-                           "positions: using cluster proportions alone")
+        logger.detail(f"Regions {repr(reg1)} and {repr(reg2)} "
+                      f"share {overlap.size - 1} position(s)")
         # Collect the cost of joining each cluster from region 1 with
         # each cluster from region 2.
         cost_matrix = pd.DataFrame(np.nan, clusters, clusters)
-        for cluster1, cluster2 in product(cost_matrix.index,
-                                          cost_matrix.columns):
+        for cluster1, cluster2 in product(clusters, repeat=2):
             # Use log odds differences as the costs.
             cost = calc_sum_abs_diff_log_odds(df1.loc[overlap, cluster1],
                                               df2.loc[overlap, cluster2])
@@ -282,19 +274,20 @@ def _join_regions_k(region_params: dict[str, pd.DataFrame]):
                   integrality=integrality,
                   bounds=edge_bounds,
                   constraints=constraints)
-    logger.detail("Ended solving mixed-integer linear program")
     if result.status != 0 or not result.success:
         raise RuntimeError(
             f"Failed to determine optimal way to join regions {region_names} "
             f"with {k} cluster(s)"
         )
+    logger.detail("Ended solving mixed-integer linear program: "
+                  f"minimum total cost is {result.fun}")
     # Return a list of the selected hyperedges.
     selected_hyperedges = [hyperedge for hyperedge, is_selected
                            in zip(hyperedges, result.x, strict=True)
                            if is_selected]
+    assert len(selected_hyperedges) == k
     logger.detail(f"Selected {k} hyperedge(s):\n"
                   + "\n".join(map(str, selected_hyperedges)))
-    assert len(selected_hyperedges) == k
     logger.routine("Ended determining the optimal way to join clusters")
     return selected_hyperedges
 
@@ -325,7 +318,32 @@ class JoinClusterMutsDataset(ClusterDataset,
         # because LoadFunctions find the type of dataset for a report
         # file by checking whether __init__() raises an error, so all
         # fields from the report must be loaded here.
-        self._report_joined_clusts = self.report.get_field(JoinedClustersF)
+        report_joined_clusts = self.report.get_field(JoinedClustersF)
+        assert self.region_names
+        if report_joined_clusts:
+            if sorted(report_joined_clusts) != sorted(self.region_names):
+                raise ValueError(
+                    f"{self} expected clusters for {self.region_names}, "
+                    f"but got {report_joined_clusts}"
+                )
+            self.joined_clusts = report_joined_clusts
+        else:
+            regions_params = {dataset.region.name: _get_clust_params(dataset)
+                              for dataset in self.datasets}
+            # Determine the best way to join each number of clusters.
+            optimal_joined_clusts = {reg: {k: dict() for k in self.ks}
+                                     for reg in regions_params}
+            for k in self.ks:
+                hyperedges = _join_regions_k(
+                    {reg: params.loc[:, k]
+                     for reg, params in regions_params.items()}
+                )
+                for hyperedge in hyperedges:
+                    assert len(hyperedge) >= 1
+                    _, joined_clust = hyperedge[0]
+                    for reg, clust in hyperedge:
+                        optimal_joined_clusts[reg][k][joined_clust] = clust
+            self.joined_clusts = optimal_joined_clusts
 
     @cached_property
     def ks(self):
@@ -339,33 +357,6 @@ class JoinClusterMutsDataset(ClusterDataset,
     def clusts(self):
         """ Index of k and cluster numbers. """
         return list_ks_clusts(self.ks)
-
-    @cached_property
-    def joined_clusts(self):
-        assert self.region_names
-        if self._report_joined_clusts:
-            if sorted(self._report_joined_clusts) != sorted(self.region_names):
-                raise ValueError(
-                    f"{self} expected clusters for {self.region_names}, "
-                    f"but got {self._report_joined_clusts}"
-                )
-            return self._report_joined_clusts
-        regions_params = {dataset.region.name: _get_clust_params(dataset)
-                          for dataset in self.datasets}
-        # Determine the best way to join each number of clusters.
-        joined_clusts = {reg: {k: dict() for k in self.ks}
-                         for reg in regions_params}
-        for k in self.ks:
-            hyperedges = _join_regions_k(
-                {reg: params.loc[:, k]
-                 for reg, params in regions_params.items()}
-            )
-            for hyperedge in hyperedges:
-                assert len(hyperedge) >= 1
-                _, joined_clust = hyperedge[0]
-                for reg, clust in hyperedge:
-                    joined_clusts[reg][k][joined_clust] = clust
-        return joined_clusts
 
     def _reg_cols(self, reg: str):
         """ Get the columns for a region's responsibilities. """
