@@ -296,8 +296,8 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
                                           self.REF,
                                           self.CJOINED,
                                           f"{step}-report.json")
-                         for out_dir in self.OUT_DIRS
-                         for step in ["cluster", "mask"]]
+                         for step in ["mask", "cluster"]
+                         for out_dir in self.OUT_DIRS]
         for cjoin_report, cjoin_dir in zip(cjoin_reports,
                                            cjoin_dirs,
                                            strict=True):
