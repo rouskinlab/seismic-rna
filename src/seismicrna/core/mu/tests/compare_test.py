@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import pearsonr, spearmanr
 
-from seismicrna.core.mu import (DEFAULT_CLIP,
+from seismicrna.core.mu import (DEFAULT_CLIP_LOG_ODDS,
                                 calc_diff_log_odds,
                                 calc_sum_abs_diff_log_odds,
                                 calc_coeff_determ,
@@ -87,21 +87,21 @@ class TestCalcDiffLogOdds(ut.TestCase):
     def test_zero_half(self):
         mus1 = np.array(0.0)
         mus2 = np.array(0.5)
-        for p_min in [0., DEFAULT_CLIP]:
+        for p_min in [0., DEFAULT_CLIP_LOG_ODDS]:
             result = calc_diff_log_odds(mus1, mus2, p_min=p_min)
             with np.errstate(divide="ignore"):
-                expect = np.array(np.log(p_min))
+                expect = np.array(np.log(p_min / (1. - p_min)))
             self.assertTupleEqual(result.shape, expect.shape)
             self.assertTrue(np.allclose(result, expect))
 
     def test_one_half(self):
         mus1 = np.array(1.0)
         mus2 = np.array(0.5)
-        for clip in [0., DEFAULT_CLIP]:
+        for clip in [0., DEFAULT_CLIP_LOG_ODDS]:
             p_max = 1. - clip
             result = calc_diff_log_odds(mus1, mus2, p_max=p_max)
             with np.errstate(divide="ignore"):
-                expect = np.array(-np.log(clip))
+                expect = np.array(-np.log(clip / (1. - clip)))
             self.assertTupleEqual(result.shape, expect.shape)
             self.assertTrue(np.allclose(result, expect))
 
@@ -109,7 +109,8 @@ class TestCalcDiffLogOdds(ut.TestCase):
         mus1 = np.array(0.0)
         mus2 = np.array(1.0)
         result = calc_diff_log_odds(mus1, mus2)
-        expect = np.array(2. * np.log(DEFAULT_CLIP))
+        expect = np.array(2. * np.log(DEFAULT_CLIP_LOG_ODDS
+                                      / (1. - DEFAULT_CLIP_LOG_ODDS)))
         self.assertTupleEqual(result.shape, expect.shape)
         self.assertTrue(np.allclose(result, expect))
 

@@ -1,7 +1,3 @@
-"""
-Pairwise comparisons of mutation rates.
-"""
-
 from typing import Callable
 
 import numpy as np
@@ -13,13 +9,13 @@ from .scale import calc_rms, calc_ranks, normalize_max
 from ..arg import KEY_DETERM, KEY_PEARSON, KEY_NRMSD, KEY_SPEARMAN
 from ..seq import get_shared_index, iter_windows
 
-DEFAULT_CLIP = 1.e-9
+DEFAULT_CLIP_LOG_ODDS = 1.e-3
 
 
 def _calc_diff_log_odds(mus1: float | np.ndarray | pd.Series | pd.DataFrame,
                         mus2: float | np.ndarray | pd.Series | pd.DataFrame,
-                        p_min: float = DEFAULT_CLIP,
-                        p_max: float = (1. - DEFAULT_CLIP)):
+                        p_min: float,
+                        p_max: float):
     assert 0. <= p_min <= p_max <= 1.
     mus1 = np.clip(mus1, p_min, p_max)
     mus2 = np.clip(mus2, p_min, p_max)
@@ -29,8 +25,8 @@ def _calc_diff_log_odds(mus1: float | np.ndarray | pd.Series | pd.DataFrame,
 
 def calc_diff_log_odds(mus1: float | np.ndarray | pd.Series | pd.DataFrame,
                        mus2: float | np.ndarray | pd.Series | pd.DataFrame,
-                       p_min: float = DEFAULT_CLIP,
-                       p_max: float = (1. - DEFAULT_CLIP)):
+                       p_min: float = DEFAULT_CLIP_LOG_ODDS,
+                       p_max: float = (1. - DEFAULT_CLIP_LOG_ODDS)):
     """ Calculate the difference in log odds between mus1 and mus2.
     Assume that mus1 and mus2 are on the same scale (e.g. two clusters
     from the same sample), so perform no scaling or normalization.
@@ -55,7 +51,8 @@ def calc_diff_log_odds(mus1: float | np.ndarray | pd.Series | pd.DataFrame,
     Returns
     -------
     float | np.ndarray | pd.Series | pd.DataFrame
-        Difference in log odds: log(a / (1 - a)) - log(b / (1 - b))
+        Difference in log odds:
+        log(mus1 / (1 - mus1)) - log(mus2 / (1 - mus2))
     """
     if not 0. <= p_min <= p_max <= 1.:
         raise ValueError(f"Must have 0 ≤ p_min ≤ p_max ≤ 1, "
@@ -66,7 +63,7 @@ def calc_diff_log_odds(mus1: float | np.ndarray | pd.Series | pd.DataFrame,
         # will always give a log odds difference of 0, as will two 1s.
         return diff_log_odds
     # If p_min == 0, then two 0s will give a log odds difference of NaN;
-    # if p_max == 0, then two 1s will give a log odds difference of NaN;
+    # if p_max == 1, then two 1s will give a log odds difference of NaN;
     # so equal input values must explicitly return 0.
     indexes = dict()
     result_type = find_highest_type(mus1, mus2, creatable=True)
