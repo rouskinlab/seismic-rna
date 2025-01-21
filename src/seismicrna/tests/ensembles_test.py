@@ -1,10 +1,10 @@
 import unittest as ut
 
 from seismicrna.core.logs import Level, get_config, set_config
-from seismicrna.ensembles import calc_windows
+from seismicrna.ensembles import calc_regions
 
 
-class TestCalcWindows(ut.TestCase):
+class TestCalcRegions(ut.TestCase):
 
     def setUp(self):
         self._config = get_config()
@@ -13,28 +13,28 @@ class TestCalcWindows(ut.TestCase):
     def tearDown(self):
         set_config(self._config)
 
-    def test_window_factor_25(self):
-        result = calc_windows(41, 145, 60, 0.25)
+    def test_region_min_overlap_25(self):
+        result = calc_regions(41, 145, 60, 0.25)
         expect = [(41, 100), (86, 145)]
         self.assertEqual(result, expect)
 
-    def test_window_factor_75(self):
-        result = calc_windows(41, 145, 60, 0.75)
+    def test_region_min_overlap_75(self):
+        result = calc_regions(41, 145, 60, 0.75)
         expect = [(41, 100), (56, 115), (71, 130), (86, 145)]
         self.assertEqual(result, expect)
 
-    def test_window_not_factor(self):
-        result = calc_windows(41, 170, 60, 0.25)
+    def test_region_not_divisible(self):
+        result = calc_regions(41, 170, 60, 0.25)
         expect = [(41, 100), (76, 135), (111, 170)]
         self.assertEqual(result, expect)
 
-    def test_window_size_larger(self):
-        result = calc_windows(41, 49, 52, 0.9)
+    def test_region_length_larger(self):
+        result = calc_regions(41, 49, 52, 0.9)
         expect = [(41, 49)]
         self.assertEqual(result, expect)
 
-    def test_region_size_1(self):
-        result = calc_windows(41, 41, 52, 0.9)
+    def test_total_region_length_1(self):
+        result = calc_regions(41, 41, 52, 0.9)
         expect = [(41, 41)]
         self.assertEqual(result, expect)
 

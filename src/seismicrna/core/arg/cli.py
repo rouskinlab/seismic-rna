@@ -589,7 +589,7 @@ opt_relate_cx = Option(
 # Pool
 
 opt_pooled = Option(
-    ("--pooled", "-P"),
+    ("--pooled", "-p"),
     type=str,
     default="",
     help="Pooled sample name"
@@ -612,7 +612,7 @@ opt_mask_coords = Option(
 )
 
 opt_mask_primers = Option(
-    ("--mask-primers", "-p"),
+    ("--mask-primers", "-P"),
     type=(str, DNA, DNA),
     multiple=True,
     default=(),
@@ -919,16 +919,32 @@ opt_cluster_abundance_table = Option(
 # Join options
 
 opt_joined = Option(
-    ("--joined", "-J"),
+    ("--joined", "-j"),
     type=str,
     default="",
-    help="Joined region name"
+    help="Name of the region formed by joining other regions"
 )
 
 opt_join_clusts = Option(
-    ("--join-clusts", "-j"),
+    ("--join-clusts", "-J"),
     type=Path(dir_okay=False, exists=True),
-    help="Join clusters from this CSV file"
+    help="Specify which clusters to join clusters using this CSV file"
+)
+
+# Ensembles options
+
+opt_region_length = Option(
+    ("--region-length", "-L",),
+    type=int,
+    default=180,
+    help="Make each region this length (nt)",
+)
+
+opt_region_min_overlap = Option(
+    ("--region-min-overlap", "-O"),
+    type=float,
+    default=(2. / 3.),
+    help="Make adjacent regions overlap by at least this fraction of length",
 )
 
 # List options

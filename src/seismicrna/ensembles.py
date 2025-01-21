@@ -16,7 +16,9 @@ from .core.arg import (CMD_ENSEMBLES,
                        CMD_JOIN,
                        merge_params,
                        extra_defaults,
-                       opt_join_clusts)
+                       opt_join_clusts,
+                       opt_region_length,
+                       opt_region_min_overlap)
 from .core.logs import logger
 from .core.report import KsWrittenF, End5F, End3F
 from .core.run import run_func
@@ -31,10 +33,10 @@ def as_tuple_str(items: Iterable):
     return tuple(map(str, items))
 
 
-def calc_windows(total_end5: int,
+def calc_regions(total_end5: int,
                  total_end3: int,
-                 window_size: int,
-                 min_overlap: float):
+                 region_length: int,
+                 region_min_overlap: float):
     if not isinstance(total_end5, int):
         raise TypeError(total_end5)
     if not isinstance(total_end3, int):
@@ -45,63 +47,63 @@ def calc_windows(total_end5: int,
                          f"and total_end3={total_end3}")
     total_length = total_end3 - total_end5 + 1
     assert total_length >= 1
-    if not isinstance(window_size, int):
-        raise TypeError(window_size)
-    if window_size < 1:
-        raise ValueError(f"window_size must be ≥ 1, but got {window_size}")
-    if window_size > total_length:
-        logger.warning(f"Window size ({window_size}) is greater than "
+    if not isinstance(region_length, int):
+        raise TypeError(region_length)
+    if region_length < 1:
+        raise ValueError(f"region_length must be ≥ 1, but got {region_length}")
+    if region_length > total_length:
+        logger.warning(f"region_length ({region_length}) is greater than "
                        f"total length of region ({total_length}): "
-                       f"using window size of {total_length}")
+                       f"using region_length of {total_length}")
         return [(total_end5, total_end3)]
-    assert 1 <= window_size <= total_length <= total_end3
-    if not isinstance(min_overlap, float):
-        raise TypeError(min_overlap)
-    if not 0. < min_overlap < 1.:
-        raise ValueError(
-            f"min_overlap must be > 0 and < 1, but got {min_overlap}"
-        )
-    max_step_size = int(window_size * (1. - min_overlap))
-    assert 0 <= max_step_size < window_size
+    assert 1 <= region_length <= total_length <= total_end3
+    if not isinstance(region_min_overlap, float):
+        raise TypeError(region_min_overlap)
+    if not 0. < region_min_overlap < 1.:
+        raise ValueError("region_min_overlap must be > 0 and < 1, "
+                         f"but got {region_min_overlap}")
+    max_step_size = int(region_length * (1. - region_min_overlap))
+    assert 0 <= max_step_size < region_length
     if max_step_size == 0:
-        raise ValueError(f"Cannot have window_size={window_size} "
-                         f"with min_overlap={min_overlap}")
-    num_windows = 1 + ceil((total_length - window_size) / max_step_size)
-    window_end5s = np.asarray(np.round(np.linspace(total_end5,
-                                                   total_end3 - window_size + 1,
-                                                   num_windows)),
-                              dtype=int)
-    window_end3s = window_end5s + (window_size - 1)
+        raise ValueError(f"Cannot have region_length={region_length} "
+                         f"with region_min_overlap={region_min_overlap}")
+    num_regions = 1 + ceil((total_length - region_length) / max_step_size)
+    region_end5s = np.asarray(
+        np.round(np.linspace(total_end5,
+                             total_end3 - region_length + 1,
+                             num_regions)),
+        dtype=int
+    )
+    region_end3s = region_end5s + (region_length - 1)
     return [(int(end5), int(end3))
-            for end5, end3 in zip(window_end5s, window_end3s, strict=True)]
+            for end5, end3 in zip(region_end5s, region_end3s, strict=True)]
 
 
-def generate_windows(input_path: Iterable[str | Path],
+def generate_regions(input_path: Iterable[str | Path],
                      coords: tuple[tuple[str, int, int], ...],
                      primers: tuple[tuple[str, DNA, DNA], ...],
                      primer_gap: int,
                      regions_file: str | None,
-                     window_size: int,
-                     min_overlap: float):
-    """ For each reference, list the windows over which to mask. """
-    # Load all datasets, grouped by their reference names.
-    _, regions = load_regions(input_path,
-                              coords,
-                              primers,
-                              primer_gap,
-                              regions_file)
-    windows = list()
-    for ref, ref_regions in regions.dict.items():
-        assert len(ref_regions) > 0
-        if len(ref_regions) > 1:
+                     region_length: int,
+                     region_min_overlap: float):
+    """ For each reference, list the regions over which to mask. """
+    _, total_regions = load_regions(input_path,
+                                    coords,
+                                    primers,
+                                    primer_gap,
+                                    regions_file)
+    mask_regions = list()
+    for ref, ref_total_regions in total_regions.dict.items():
+        assert len(ref_total_regions) > 0
+        if len(ref_total_regions) > 1:
             raise DuplicateReferenceNameError(ref)
-        ref_region = ref_regions[0]
-        ref_windows = calc_windows(ref_region.end5,
-                                   ref_region.end3,
-                                   window_size,
-                                   min_overlap)
-        windows.extend((ref, end5, end3) for end5, end3 in ref_windows)
-    return windows
+        ref_total_region = ref_total_regions[0]
+        ref_regions = calc_regions(ref_total_region.end5,
+                                   ref_total_region.end3,
+                                   region_length,
+                                   region_min_overlap)
+        mask_regions.extend((ref, end5, end3) for end5, end3 in ref_regions)
+    return mask_regions
 
 
 RegionInfo = namedtuple("RegionInfo", ["reg", "end5", "end3", "ks"])
@@ -192,24 +194,27 @@ def run(input_path: tuple[str, ...], *,
         cluster_pos_table: bool,
         cluster_abundance_table: bool,
         verify_times: bool,
-        joined: str):
+        # Join options
+        joined: str,
+        region_length: int,
+        region_min_overlap: float):
     """ Infer independent structure ensembles along an entire RNA. """
     if not joined:
         raise ValueError(
             "No prefix for joined regions was given via --joined"
         )
-    mask_windows = generate_windows(input_path,
+    mask_regions = generate_regions(input_path,
                                     coords=mask_coords,
                                     primers=mask_primers,
                                     primer_gap=primer_gap,
                                     regions_file=mask_regions_file,
-                                    window_size=180,
-                                    min_overlap=2 / 3)
+                                    region_length=region_length,
+                                    region_min_overlap=region_min_overlap)
     mask_dirs = mask_mod.run(
         input_path=input_path,
         tmp_pfx=tmp_pfx,
         keep_tmp=keep_tmp,
-        mask_coords=tuple(mask_windows),
+        mask_coords=tuple(mask_regions),
         mask_primers=(),
         primer_gap=0,
         mask_regions_file=None,
@@ -267,7 +272,7 @@ def run(input_path: tuple[str, ...], *,
     )
     logger.status(f"Began {CMD_JOIN}")
     cluster_groups = group_clusters(cluster_dirs)
-    results = list()
+    join_dirs = list()
     for clustered in [False, True]:
         args = list()
         for key, groups in cluster_groups.items():
@@ -284,18 +289,20 @@ def run(input_path: tuple[str, ...], *,
                       tmp_pfx=tmp_pfx,
                       keep_tmp=keep_tmp,
                       force=force)
-        results.extend(dispatch(join_regions,
-                                max_procs=max_procs,
-                                pass_n_procs=True,
-                                args=args,
-                                kwargs=kwargs))
+        join_dirs.extend(dispatch(join_regions,
+                                  max_procs=max_procs,
+                                  pass_n_procs=True,
+                                  args=args,
+                                  kwargs=kwargs))
     logger.status(f"Ended {CMD_JOIN}")
-    return results
+    return join_dirs
 
 
 params = merge_params(mask_mod.params,
                       cluster_mod.params,
                       join_mod.params,
+                      [opt_region_length,
+                       opt_region_min_overlap],
                       exclude=[opt_join_clusts])
 
 
