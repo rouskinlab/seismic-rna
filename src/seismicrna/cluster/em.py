@@ -349,16 +349,16 @@ class EMRun(object):
         ----------
         seed: int | None = None
             Random number generator seed.
-
-        Returns
-        -------
-        EMRun
-            This instance, in order to permit statements such as
-            ``return [em.run() for em in em_clusterings]``
         """
         logger.routine(
             f"Began {self} with {self._min_iter}-{self._max_iter} iterations"
         )
+        # The random number generator must be initialized with a seed
+        # because on some (but not all) platforms, initializing with no
+        # seed would cause every EMRun to have the same random state and
+        # thus the same trajectory, which defeats the purpose of running
+        # multiple trajectories. By giving every EMRun a unique seed,
+        # the runs can be forced to have different trajectories.
         rng = np.random.default_rng(seed)
         # Choose the concentration parameters using a standard uniform
         # distribution so that the reads assigned to each cluster can
