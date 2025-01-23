@@ -15,7 +15,7 @@ from ..core.arg import (opt_ct_file,
                         opt_vmut_unpaired,
                         opt_force,
                         opt_max_procs)
-from ..core.header import RelClustHeader, make_header, list_clusts
+from ..core.header import RelClustHeader, list_clusts, make_header, parse_header
 from ..core.rel import (MATCH,
                         NOCOV,
                         DELET,
@@ -28,7 +28,8 @@ from ..core.rel import (MATCH,
                         ANY_H,
                         ANY_V,
                         ANY_N,
-                        REL_TYPE)
+                        REL_TYPE,
+                        RelPattern)
 from ..core.rna import UNPAIRED, find_enclosing_pairs, from_ct
 from ..core.run import run_func
 from ..core.seq import (BASE_NAME,
@@ -371,6 +372,22 @@ def load_pmut(pmut_file: Path):
         names=pmut.columns.names
     )
     return pmut
+
+
+def calc_pmut_pattern(pmut: pd.DataFrame, pattern: RelPattern):
+    """ Calculate the rate of a given type of mutation. """
+    header = parse_header(pmut.columns)
+    rels = list(map(int, header.get_rel_header().index))
+    # Accumulate the frequencies of all selected mutations.
+    fmut = pd.DataFrame(0., pmut.index, header.get_clust_header().index)
+    for base in DNA.alph():
+        positions = fmut.index[fmut.index.get_level_values(BASE_NAME) == base]
+        for rel in rels:
+            if all(pattern.fits(base, rel)):
+                fmut.loc[positions] += pmut.loc[positions, rel]
+    # Divide the frequency of mutations by the frequency of mutations plus
+    # matches (i.e. informative bases) to calculate the mutation rate.
+    return fmut / (pmut.loc[:, MATCH] + fmut)
 
 
 @run_func(COMMAND)
