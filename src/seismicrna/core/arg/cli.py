@@ -1218,6 +1218,13 @@ opt_graph_mhist = Option(
     help="Graph histograms of mutations per read"
 )
 
+opt_graph_abundance = Option(
+    ("--graph-abundance/--no-graph-abundance",),
+    type=bool,
+    default=True,
+    help="Graph abundance of each cluster"
+)
+
 opt_graph_giniroll = Option(
     ("--graph-giniroll/--no-graph-giniroll",),
     type=bool,

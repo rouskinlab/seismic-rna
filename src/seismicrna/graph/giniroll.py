@@ -4,6 +4,7 @@ from click import command
 
 from .statroll import RollingStatGraph, RollingStatRunner, RollingStatWriter
 from ..core.mu import calc_gini
+from ..core.run import log_command
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -39,6 +40,11 @@ class RollingGiniRunner(RollingStatRunner):
     @classmethod
     def get_writer_type(cls):
         return RollingGiniWriter
+
+    @classmethod
+    @log_command(COMMAND)
+    def run(cls, *args, **kwargs):
+        return super().run(*args, **kwargs)
 
 
 @command(COMMAND, params=RollingGiniRunner.params())

@@ -2,8 +2,10 @@ from abc import ABC
 from functools import cached_property
 from pathlib import Path
 
-from .base import cgroup_table
-from .onetable import OneTableGraph, OneTableRunner, OneTableWriter
+from .cgroup import cgroup_table
+from .onetable import (OneTableRelClusterGroupGraph,
+                       OneTableRelClusterGroupWriter,
+                       OneTableRelClusterGroupRunner)
 from .rel import OneRelGraph
 from ..core import path
 from ..core.arg import (opt_struct_file,
@@ -17,7 +19,7 @@ from ..core.seq import DNA, RefRegions
 from ..fold.main import load_foldable_tables
 
 
-class StructOneTableGraph(OneTableGraph, OneRelGraph, ABC):
+class StructOneTableGraph(OneTableRelClusterGroupGraph, OneRelGraph, ABC):
     """ Graph of data from one Table applied to RNA structure(s). """
 
     def __init__(self, *,
@@ -98,9 +100,10 @@ class StructOneTableGraph(OneTableGraph, OneRelGraph, ABC):
                              "please obtain the file, e.g. using seismic fold")
 
 
-class StructOneTableWriter(OneTableWriter, ABC):
+class StructOneTableWriter(OneTableRelClusterGroupWriter, ABC):
 
-    def iter_graphs(self,
+    def iter_graphs(self, *,
+                    rels: list[str],
                     cgroup: str,
                     struct_file: tuple[str, ...] = (),
                     fold_coords: tuple[tuple[str, int, int], ...] = (),
@@ -140,7 +143,7 @@ class StructOneTableWriter(OneTableWriter, ABC):
         # Generate a graph for each cluster, relationship, and region.
         for cparams in cgroup_table(self.table, cgroup):
             kwparams = kwargs | cparams
-            for rels_group in self.rels:
+            for rels_group in rels:
                 for file in struct_files:
                     yield self.get_graph(rels_group,
                                          struct_file=file,
@@ -153,7 +156,7 @@ class StructOneTableWriter(OneTableWriter, ABC):
                                          **kwparams)
 
 
-class StructOneTableRunner(OneTableRunner, ABC):
+class StructOneTableRunner(OneTableRelClusterGroupRunner, ABC):
 
     @classmethod
     def get_input_loader(cls):

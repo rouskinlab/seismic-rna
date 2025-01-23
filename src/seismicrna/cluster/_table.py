@@ -53,9 +53,8 @@ class ClusterAbundanceTable(AbundanceTable, PartialTable, ABC):
     def _get_header(self):
         return parse_header(self.data.index)
 
-    @property
+    @cached_property
     def proportions(self):
-        """ Proportion of each cluster. """
         return self.data / self.data.groupby(level=NUM_CLUSTS_NAME).sum()
 
 

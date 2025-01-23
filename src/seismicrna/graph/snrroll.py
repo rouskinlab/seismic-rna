@@ -6,6 +6,7 @@ from click import command
 
 from .statroll import RollingStatGraph, RollingStatRunner, RollingStatWriter
 from ..core.mu import calc_signal_noise
+from ..core.run import log_command
 from ..core.seq import BASEA, BASEC, BASE_NAME
 
 COMMAND = __name__.split(os.path.extsep)[-1]
@@ -48,6 +49,11 @@ class RollingSNRRunner(RollingStatRunner):
     @classmethod
     def get_writer_type(cls):
         return RollingSNRWriter
+
+    @classmethod
+    @log_command(COMMAND)
+    def run(cls, *args, **kwargs):
+        return super().run(*args, **kwargs)
 
 
 @command(COMMAND, params=RollingSNRRunner.params())

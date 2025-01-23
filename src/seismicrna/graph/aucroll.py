@@ -5,13 +5,14 @@ import pandas as pd
 from click import command
 from plotly import graph_objects as go
 
-from .table import TableGraphWriter, PosGraphRunner
+from .table import TableWriter, PositionTableRunner
 from .onestruct import (StructOneTableGraph,
                         StructOneTableRunner,
                         StructOneTableWriter)
 from .roc import PROFILE_NAME, rename_columns
 from .roll import RollingGraph, RollingRunner
 from .trace import iter_rolling_auc_traces
+from ..core.run import log_command
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -60,17 +61,22 @@ class RollingAUCGraph(StructOneTableGraph, RollingGraph):
         fig.update_yaxes(gridcolor="#d0d0d0")
 
 
-class RollingAUCWriter(StructOneTableWriter, TableGraphWriter):
+class RollingAUCWriter(StructOneTableWriter, TableWriter):
 
     def get_graph(self, rels_group: str, **kwargs):
         return RollingAUCGraph(table=self.table, rel=rels_group, **kwargs)
 
 
-class RollingAUCRunner(RollingRunner, StructOneTableRunner, PosGraphRunner):
+class RollingAUCRunner(RollingRunner, StructOneTableRunner, PositionTableRunner):
 
     @classmethod
     def get_writer_type(cls):
         return RollingAUCWriter
+
+    @classmethod
+    @log_command(COMMAND)
+    def run(cls, *args, **kwargs):
+        return super().run(*args, **kwargs)
 
 
 @command(COMMAND, params=RollingAUCRunner.params())

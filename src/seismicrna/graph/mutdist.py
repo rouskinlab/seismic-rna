@@ -5,13 +5,13 @@ import numpy as np
 import pandas as pd
 from click import command
 
-from .base import get_action_name, make_tracks
+from .cgroup import make_tracks
 from .color import ColorMapGraph, RelColorMap
-from .dataset import DatasetGraph, DatasetGraphWriter, DatasetGraphRunner
-from .hist import COUNT_NAME
-from .trace import get_hist_trace
+from .dataset import DatasetGraph, DatasetWriter, DatasetRunner
+from .trace import HIST_COUNT_NAME, get_hist_trace
 from ..core.arg import opt_mutdist_null
 from ..core.header import REL_NAME, make_header
+from ..core.run import log_command
 from ..core.seq import FIELD_END5, FIELD_END3
 from ..core.table import PositionTable, all_patterns
 from ..core.unbias import (calc_p_noclose_given_ends_auto,
@@ -46,10 +46,6 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
         super().__init__(**kwargs)
         self.calc_null = mutdist_null
 
-    @cached_property
-    def action(self):
-        return get_action_name(self.dataset)
-
     @property
     def x_title(self):
         return "Smallest distance between two mutations in a read (nt)"
@@ -68,7 +64,7 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
         header = make_header(rels=self.rel_names, ks=self.dataset.ks)
         zero = 0. if header.clustered() else 0
         hists = pd.DataFrame(zero,
-                             pd.RangeIndex(num_bins, name=COUNT_NAME),
+                             pd.RangeIndex(num_bins, name=HIST_COUNT_NAME),
                              header.index)
         batch_counts = list()
         max_read_length = 0
@@ -245,7 +241,7 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
                                                self.cmap)
 
 
-class MutationDistanceWriter(DatasetGraphWriter):
+class MutationDistanceWriter(DatasetWriter):
 
     def get_graph(self, rel, **kwargs):
         return MutationDistanceGraph(dataset=self.dataset,
@@ -253,7 +249,7 @@ class MutationDistanceWriter(DatasetGraphWriter):
                                      **kwargs)
 
 
-class MutationDistanceRunner(DatasetGraphRunner):
+class MutationDistanceRunner(DatasetRunner):
 
     @classmethod
     def get_writer_type(cls):
@@ -262,6 +258,11 @@ class MutationDistanceRunner(DatasetGraphRunner):
     @classmethod
     def var_params(cls):
         return super().var_params() + [opt_mutdist_null]
+
+    @classmethod
+    @log_command(COMMAND)
+    def run(cls, *args, **kwargs):
+        return super().run(*args, **kwargs)
 
 
 @command(COMMAND, params=MutationDistanceRunner.params())

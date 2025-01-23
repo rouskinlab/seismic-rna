@@ -670,6 +670,11 @@ class AbundanceTable(Table, ABC):
     def data(self) -> pd.Series:
         """ Table's data. """
 
+    @cached_property
+    @abstractmethod
+    def proportions(self) -> pd.Series:
+        """ Proportion of each item. """
+
 ########################################################################
 #                                                                      #
 # © Copyright 2022-2025, the Rouskin Lab.                              #

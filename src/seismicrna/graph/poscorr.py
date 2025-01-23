@@ -6,10 +6,11 @@ import numpy as np
 import pandas as pd
 from click import command
 
-from .base import get_action_name, make_tracks
-from .dataset import DatasetGraph, DatasetGraphWriter, DatasetGraphRunner
+from .cgroup import make_tracks
+from .dataset import DatasetGraph, DatasetWriter, DatasetRunner
 from .trace import get_pairwise_position_trace
 from ..core.header import NO_CLUSTS, NUM_CLUSTS_NAME, CLUST_NAME
+from ..core.run import log_command
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -66,10 +67,6 @@ class PositionCorrelationGraph(DatasetGraph):
     @classmethod
     def what(cls):
         return "Phi correlation"
-
-    @cached_property
-    def action(self):
-        return get_action_name(self.dataset)
 
     @property
     def x_title(self):
@@ -159,17 +156,22 @@ class PositionCorrelationGraph(DatasetGraph):
             yield (row, 1), trace
 
 
-class PositionCorrelationWriter(DatasetGraphWriter):
+class PositionCorrelationWriter(DatasetWriter):
 
     def get_graph(self, rel, **kwargs):
         return PositionCorrelationGraph(dataset=self.dataset, rel=rel, **kwargs)
 
 
-class PositionCorrelationRunner(DatasetGraphRunner):
+class PositionCorrelationRunner(DatasetRunner):
 
     @classmethod
     def get_writer_type(cls):
         return PositionCorrelationWriter
+
+    @classmethod
+    @log_command(COMMAND)
+    def run(cls, *args, **kwargs):
+        return super().run(*args, **kwargs)
 
 
 @command(COMMAND, params=PositionCorrelationRunner.params())

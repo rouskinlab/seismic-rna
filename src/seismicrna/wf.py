@@ -35,6 +35,7 @@ from .core.arg import (CMD_WORKFLOW,
                        opt_graph_tmprof,
                        opt_graph_ncov,
                        opt_graph_mhist,
+                       opt_graph_abundance,
                        opt_graph_giniroll,
                        opt_graph_roc,
                        opt_graph_aucroll,
@@ -53,6 +54,7 @@ from .core.table import (DELET_REL,
                          SUB_G_REL,
                          SUB_T_REL,
                          INFOR_REL)
+from .graph.abundance import ClusterAbundanceRunner
 from .graph.aucroll import RollingAUCRunner
 from .graph.giniroll import RollingGiniRunner
 from .graph.histread import ReadHistogramRunner
@@ -237,6 +239,7 @@ def run(fasta: str,
         graph_tmprof: bool,
         graph_ncov: bool,
         graph_mhist: bool,
+        graph_abundance: bool,
         graph_giniroll: bool,
         graph_roc: bool,
         graph_aucroll: bool,
@@ -482,6 +485,16 @@ def run(fasta: str,
                                 png=png,
                                 max_procs=max_procs,
                                 force=force)
+    if graph_abundance:
+        ClusterAbundanceRunner.run(input_path=input_path,
+                                   use_ratio=True,
+                                   csv=csv,
+                                   html=html,
+                                   svg=svg,
+                                   pdf=pdf,
+                                   png=png,
+                                   max_procs=max_procs,
+                                   force=force)
     if graph_giniroll:
         RollingGiniRunner.run(input_path=input_path,
                               rels=(REL_NAMES[MUTAT_REL],),
@@ -507,7 +520,6 @@ def run(fasta: str,
                                       svg=svg,
                                       pdf=pdf,
                                       png=png,
-
                                       max_procs=max_procs,
                                       force=force)
     if graph_mutdist:
@@ -589,6 +601,7 @@ graph_options = [opt_cgroup,
                  opt_graph_tmprof,
                  opt_graph_ncov,
                  opt_graph_mhist,
+                 opt_graph_abundance,
                  opt_graph_giniroll,
                  opt_graph_roc,
                  opt_graph_aucroll,

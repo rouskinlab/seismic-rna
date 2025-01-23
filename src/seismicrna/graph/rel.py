@@ -1,11 +1,31 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from functools import cached_property
 
-from .base import GraphBase
+from .base import BaseGraph, BaseRunner
+from ..core.arg import opt_rels
 from ..core.table import get_rel_name
 
 
-class OneRelGraph(GraphBase, ABC):
+class RelGraph(BaseGraph, ABC):
+    """ Graph of one or more types of relationships. """
+
+    @property
+    @abstractmethod
+    def codestring(self) -> str:
+        """ String of the relationship code(s). """
+
+    @property
+    @abstractmethod
+    def rel_names(self):
+        """ Names of the relationships to graph. """
+
+    @cached_property
+    def relationships(self) -> str:
+        """ Relationships being graphed as a slash-separated string. """
+        return "/".join(self.rel_names)
+
+
+class OneRelGraph(RelGraph, ABC):
     """ Graph of exactly one type of relationship. """
 
     def __init__(self, *, rel: str, **kwargs):
@@ -51,7 +71,7 @@ class OneRelGraph(GraphBase, ABC):
         return [self.rel_name]
 
 
-class MultiRelsGraph(GraphBase, ABC):
+class MultiRelsGraph(RelGraph, ABC):
     """ Graph of one or more relationships. """
 
     def __init__(self, *, rels: str, **kwargs):
@@ -92,6 +112,13 @@ class MultiRelsGraph(GraphBase, ABC):
     @cached_property
     def rel_names(self):
         return list(map(get_rel_name, self.codestring))
+
+
+class RelRunner(BaseRunner, ABC):
+
+    @classmethod
+    def var_params(cls):
+        return super().var_params() + [opt_rels]
 
 ########################################################################
 #                                                                      #

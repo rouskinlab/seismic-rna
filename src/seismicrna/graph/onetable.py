@@ -2,12 +2,17 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 from itertools import chain
 
-from .base import (cgroup_table,
-                   get_action_name,
-                   make_tracks)
-from .onesource import OneSourceGraph
-from .table import TableGraph, TableGraphRunner, TableGraphWriter
-from ..core.table import Table, PositionTable
+from .base import get_action_name
+from .cgroup import (ClusterGroupRunner,
+                     cgroup_table,
+                     make_tracks)
+from .onesource import OneSourceGraph, OneSourceClusterGroupGraph
+from .table import (TableGraph,
+                    TableRunner,
+                    TableWriter,
+                    RelTableGraph,
+                    RelTableRunner)
+from ..core.table import Table, PositionTable, AbundanceTable
 from ..core.task import dispatch
 
 
@@ -15,7 +20,7 @@ class OneTableGraph(TableGraph, OneSourceGraph, ABC):
     """ Graph of data from one Table. """
 
     def __init__(self, *,
-                 table: Table | PositionTable,
+                 table: Table | PositionTable | AbundanceTable,
                  **kwargs):
         super().__init__(**kwargs)
         self.table = table
@@ -44,12 +49,18 @@ class OneTableGraph(TableGraph, OneSourceGraph, ABC):
     def action(self):
         return get_action_name(self.table)
 
+
+class OneTableRelClusterGroupGraph(OneTableGraph,
+                                   RelTableGraph,
+                                   OneSourceClusterGroupGraph,
+                                   ABC):
+
     @cached_property
     def row_tracks(self):
         return make_tracks(self.table, self.k, self.clust)
 
 
-class OneTableWriter(TableGraphWriter, ABC):
+class OneTableWriter(TableWriter, ABC):
 
     def __init__(self, table: Table, **kwargs):
         super().__init__(table, **kwargs)
@@ -64,28 +75,37 @@ class OneTableWriter(TableGraphWriter, ABC):
     def get_graph(self, *args, **kwargs) -> OneTableGraph:
         """ Return a graph instance. """
 
-    def iter_graphs(self, cgroup: str, **kwargs):
+
+class OneTableRelClusterGroupWriter(OneTableWriter, ABC):
+
+    def iter_graphs(self, *, rels: list[str], cgroup: str, **kwargs):
         for cparams in cgroup_table(self.table, cgroup):
-            for rels_group in self.rels:
+            for rels_group in rels:
                 yield self.get_graph(rels_group, **kwargs | cparams)
 
 
-class OneTableRunner(TableGraphRunner, ABC):
+class OneTableRunner(TableRunner, ABC):
 
     @classmethod
     def run(cls,
             input_path: tuple[str, ...], *,
-            rels: tuple[str, ...],
             max_procs: int,
             **kwargs):
         # Generate a table writer for each table.
         writer_type = cls.get_writer_type()
-        writers = [writer_type(table_file, rels=rels)
+        writers = [writer_type(table_file)
                    for table_file in cls.load_input_files(input_path)]
         return list(chain(*dispatch([writer.write for writer in writers],
                                     max_procs,
                                     pass_n_procs=False,
                                     kwargs=kwargs)))
+
+
+class OneTableRelClusterGroupRunner(OneTableRunner,
+                                    RelTableRunner,
+                                    ClusterGroupRunner,
+                                    ABC):
+    pass
 
 ########################################################################
 #                                                                      #

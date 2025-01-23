@@ -3,7 +3,6 @@ import pandas as pd
 from plotly import graph_objects as go
 
 from .color import ColorMap
-from .hist import COUNT_NAME, LOWER_NAME, UPPER_NAME
 from ..core.header import REL_NAME
 from ..core.rna import compute_auc
 from ..core.seq import BASE_NAME, POS_NAME, DNA
@@ -105,19 +104,26 @@ def iter_seqbar_stack_traces(data: pd.DataFrame, cmap: ColorMap):
         yield get_seq_stack_bar_trace(series, rel, cmap)
 
 
+HIST_COUNT_NAME = "Count"
+HIST_LOWER_NAME = "Lower"
+HIST_UPPER_NAME = "Upper"
+
+
 def get_hist_trace(data: pd.Series, rel: str, cmap: ColorMap):
     # Get the edges of the bins.
     if isinstance(data.index, pd.MultiIndex):
-        lower = data.index.get_level_values(LOWER_NAME)
-        upper = data.index.get_level_values(UPPER_NAME)
+        lower = data.index.get_level_values(HIST_LOWER_NAME)
+        upper = data.index.get_level_values(HIST_UPPER_NAME)
         center = (lower + upper) / 2.
         hovertext = [(f"[{round(lo, PRECISION)} - {round(up, PRECISION)}] "
                       f"{rel}: {round(value, PRECISION)}")
                      for lo, up, value in zip(lower, upper, data, strict=True)]
     else:
-        if data.index.name != COUNT_NAME:
-            raise ValueError(f"Expected index to be named {repr(COUNT_NAME)}, "
-                             f"but got {repr(data.index.name)}")
+        if data.index.name != HIST_COUNT_NAME:
+            raise ValueError(
+                f"Expected index to be named {repr(HIST_COUNT_NAME)}, "
+                f"but got {repr(data.index.name)}"
+            )
         center = data.index.values
         hovertext = [f"{count} {rel}: {round(value, PRECISION)}"
                      for count, value in data.items()]
@@ -210,6 +216,18 @@ def get_pairwise_position_trace(data: pd.Series, end5: int, end3: int):
                       y=matrix_index,
                       z=matrix,
                       hoverongaps=False)
+
+
+def iter_stack_bar_traces(data: pd.DataFrame):
+    for column_label, column in data.items():
+        yield go.Bar(name=f"{data.columns.name} {column_label}",
+                     x=data.index,
+                     y=column,
+                     hovertext=[(f"{data.index.name} {index_label}, "
+                                 f"{data.columns.name} {column_label}: "
+                                 f"{round(value, PRECISION)}")
+                                for index_label, value in column.items()],
+                     hoverinfo="text")
 
 ########################################################################
 #                                                                      #

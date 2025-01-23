@@ -1,7 +1,7 @@
 from abc import ABC
 from functools import cached_property
 
-from .table import TableGraph, TableGraphRunner
+from .table import TableGraph, TableRunner
 from ..core.arg import opt_window, opt_winmin
 from ..core.seq import POS_NAME
 
@@ -24,13 +24,11 @@ class RollingGraph(TableGraph, ABC):
 
     @cached_property
     def predicate(self):
-        return "_".join(
-            [super().predicate,
-             "-".join(map(str, [self._size, self._min_count]))]
-        )
+        return super().predicate + ["-".join(map(str, [self._size,
+                                                       self._min_count]))]
 
 
-class RollingRunner(TableGraphRunner, ABC):
+class RollingRunner(TableRunner, ABC):
 
     @classmethod
     def var_params(cls):

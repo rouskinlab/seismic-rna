@@ -5,8 +5,10 @@ from typing import Callable
 import pandas as pd
 from plotly import graph_objects as go
 
-from .table import TableGraphWriter, PosGraphRunner
-from .onetable import OneTableGraph, OneTableRunner, OneTableWriter
+from .table import TableWriter, PositionTableRunner
+from .onetable import (OneTableRelClusterGroupGraph,
+                       OneTableRelClusterGroupRunner,
+                       OneTableRelClusterGroupWriter)
 from .rel import OneRelGraph
 from .roll import RollingGraph, RollingRunner
 from .trace import iter_line_traces
@@ -14,7 +16,10 @@ from ..core.header import format_clust_name
 from ..core.seq import iter_windows
 
 
-class RollingStatGraph(OneTableGraph, OneRelGraph, RollingGraph, ABC):
+class RollingStatGraph(OneTableRelClusterGroupGraph,
+                       OneRelGraph,
+                       RollingGraph,
+                       ABC):
 
     @classmethod
     @abstractmethod
@@ -52,7 +57,7 @@ class RollingStatGraph(OneTableGraph, OneRelGraph, RollingGraph, ABC):
         fig.update_yaxes(gridcolor="#d0d0d0")
 
 
-class RollingStatWriter(OneTableWriter, TableGraphWriter, ABC):
+class RollingStatWriter(OneTableRelClusterGroupWriter, TableWriter, ABC):
 
     @classmethod
     @abstractmethod
@@ -64,7 +69,10 @@ class RollingStatWriter(OneTableWriter, TableGraphWriter, ABC):
         return graph_type(table=self.table, rel=rels_group, **kwargs)
 
 
-class RollingStatRunner(RollingRunner, OneTableRunner, PosGraphRunner, ABC):
+class RollingStatRunner(OneTableRelClusterGroupRunner,
+                        RollingRunner,
+                        PositionTableRunner,
+                        ABC):
     pass
 
 ########################################################################

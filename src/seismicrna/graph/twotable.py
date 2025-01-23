@@ -8,15 +8,18 @@ from typing import Any, Callable, Iterable
 import pandas as pd
 
 from .base import (LINKER,
-                   cgroup_table,
                    get_action_name,
-                   make_tracks,
                    make_title_action_sample,
                    make_path_subject)
-from .rel import OneRelGraph
+from .cgroup import (ClusterGroupGraph,
+                     ClusterGroupRunner,
+                     cgroup_table,
+                     make_tracks)
 from .table import (TableGraph,
-                    TableGraphRunner,
-                    TableGraphWriter,
+                    RelTableGraph,
+                    TableRunner,
+                    RelTableRunner,
+                    TableWriter,
                     load_pos_tables)
 from ..cluster.table import ClusterTable
 from ..core.arg import opt_comppair, opt_compself, opt_out_dir
@@ -30,26 +33,18 @@ ROW_NAME = "Row"
 COL_NAME = "Column"
 
 
-class TwoTableGraph(TableGraph, OneRelGraph, ABC):
+class TwoTableGraph(TableGraph, ABC):
     """ Graph of two Tables. """
 
     def __init__(self, *,
                  out_dir: str | Path,
                  table1: Table | PositionTable,
-                 k1: int | None,
-                 clust1: int | None,
                  table2: Table | PositionTable,
-                 k2: int | None,
-                 clust2: int | None,
                  **kwargs):
         super().__init__(**kwargs)
         self._top = Path(out_dir)
         self.table1 = table1
-        self.k1 = k1
-        self.clust1 = clust1
         self.table2 = table2
-        self.k2 = k2
-        self.clust2 = clust2
 
     def _get_common_attribute(self, name: str):
         """ Get the common attribute for tables 1 and 2. """
@@ -117,6 +112,24 @@ class TwoTableGraph(TableGraph, OneRelGraph, ABC):
                 if self.action_sample1 == self.action_sample2
                 else " vs. ".join([self.action_sample1, self.action_sample2]))
 
+
+class TwoTableRelClusterGroupGraph(TwoTableGraph,
+                                   RelTableGraph,
+                                   ClusterGroupGraph,
+                                   ABC):
+
+    def __init__(self, *,
+                 k1: int | None,
+                 clust1: int | None,
+                 k2: int | None,
+                 clust2: int | None,
+                 **kwargs):
+        super().__init__(**kwargs)
+        self.k1 = k1
+        self.clust1 = clust1
+        self.k2 = k2
+        self.clust2 = clust2
+
     @cached_property
     def path_subject1(self):
         """ Name of subject 1. """
@@ -160,7 +173,7 @@ class TwoTableGraph(TableGraph, OneRelGraph, ABC):
         return make_tracks(self.table1, self.k1, self.clust1)
 
 
-class TwoTableMergedGraph(TwoTableGraph, ABC):
+class TwoTableMergedClusterGroupGraph(TwoTableRelClusterGroupGraph, ABC):
     """ Graph of a pair of datasets over the same sequence in which the
     data series are merged in some fashion into another series, and the
     original data are not graphed directly. """
@@ -201,7 +214,7 @@ class TwoTableMergedGraph(TwoTableGraph, ABC):
                 yield (row, col), trace
 
 
-class TwoTableWriter(TableGraphWriter, ABC):
+class TwoTableWriter(TableWriter, ABC):
     """ Write the proper types of graphs for two given tables. """
 
     @classmethod
@@ -224,10 +237,13 @@ class TwoTableWriter(TableGraphWriter, ABC):
         assert len(self.tables) == 2
         return self.tables[1]
 
-    def iter_graphs(self, cgroup: str, **kwargs):
+
+class TwoTableRelClusterGroupWriter(TwoTableWriter, ABC):
+
+    def iter_graphs(self, *, rels: list[str], cgroup: str, **kwargs):
         for cparams1, cparams2 in product(cgroup_table(self.table1, cgroup),
                                           cgroup_table(self.table2, cgroup)):
-            for rel in self.rels:
+            for rel in rels:
                 graph_type = self.get_graph_type()
                 yield graph_type(rel=rel,
                                  table1=self.table1,
@@ -259,12 +275,12 @@ def iter_table_pairs(tables: Iterable[Table]):
         yield from combinations(tables, 2)
 
 
-class TwoTableRunner(TableGraphRunner, ABC):
+class TwoTableRunner(TableRunner, ABC):
 
     @classmethod
     @abstractmethod
     def get_writer_type(cls) -> type[TwoTableWriter]:
-        """ Type of GraphWriter. """
+        """ Type of Writer. """
 
     @classmethod
     def var_params(cls):
@@ -273,7 +289,6 @@ class TwoTableRunner(TableGraphRunner, ABC):
     @classmethod
     def run(cls,
             input_path: tuple[str, ...], *,
-            rels: tuple[str, ...],
             compself: bool,
             comppair: bool,
             max_procs: int,
@@ -290,12 +305,19 @@ class TwoTableRunner(TableGraphRunner, ABC):
             table_pairs.extend(iter_table_pairs(tables))
         # Generate a table writer for each pair of tables.
         writer_type = cls.get_writer_type()
-        writers = [writer_type(table1, table2, rels=rels)
+        writers = [writer_type(table1, table2)
                    for table1, table2 in table_pairs]
         return list(chain(*dispatch([writer.write for writer in writers],
                                     max_procs,
                                     pass_n_procs=False,
                                     kwargs=kwargs)))
+
+
+class TwoTableRelClusterGroupRunner(TwoTableRunner,
+                                    RelTableRunner,
+                                    ClusterGroupRunner,
+                                    ABC):
+    pass
 
 ########################################################################
 #                                                                      #

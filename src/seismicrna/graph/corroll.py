@@ -4,17 +4,23 @@ from functools import cached_property, partial
 from click import command
 from plotly import graph_objects as go
 
-from .table import TableGraphWriter, PosGraphRunner
+from .rel import OneRelGraph
 from .roll import RollingGraph, RollingRunner
+from .table import PositionTableRunner
 from .trace import iter_seq_line_traces
-from .twotable import TwoTableMergedGraph, TwoTableRunner, TwoTableWriter
+from .twotable import (TwoTableMergedClusterGroupGraph,
+                       TwoTableRelClusterGroupWriter,
+                       TwoTableRelClusterGroupRunner)
 from ..core.arg import opt_metric
 from ..core.mu import compare_windows, get_comp_name
+from ..core.run import log_command
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 
-class RollingCorrelationGraph(TwoTableMergedGraph, RollingGraph):
+class RollingCorrelationGraph(TwoTableMergedClusterGroupGraph,
+                              OneRelGraph,
+                              RollingGraph):
 
     @classmethod
     def graph_kind(cls):
@@ -34,7 +40,7 @@ class RollingCorrelationGraph(TwoTableMergedGraph, RollingGraph):
 
     @cached_property
     def predicate(self):
-        return "_".join([super().predicate, self._metric])
+        return super().predicate + [self._metric]
 
     @cached_property
     def details(self):
@@ -56,14 +62,16 @@ class RollingCorrelationGraph(TwoTableMergedGraph, RollingGraph):
         fig.update_yaxes(gridcolor="#d0d0d0")
 
 
-class RollingCorrelationWriter(TwoTableWriter, TableGraphWriter):
+class RollingCorrelationWriter(TwoTableRelClusterGroupWriter):
 
     @classmethod
     def get_graph_type(cls):
         return RollingCorrelationGraph
 
 
-class RollingCorrelationRunner(RollingRunner, TwoTableRunner, PosGraphRunner):
+class RollingCorrelationRunner(TwoTableRelClusterGroupRunner,
+                               RollingRunner,
+                               PositionTableRunner):
 
     @classmethod
     def var_params(cls):
@@ -72,6 +80,11 @@ class RollingCorrelationRunner(RollingRunner, TwoTableRunner, PosGraphRunner):
     @classmethod
     def get_writer_type(cls):
         return RollingCorrelationWriter
+
+    @classmethod
+    @log_command(COMMAND)
+    def run(cls, *args, **kwargs):
+        return super().run(*args, **kwargs)
 
 
 @command(COMMAND, params=RollingCorrelationRunner.params())

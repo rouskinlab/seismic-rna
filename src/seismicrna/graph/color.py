@@ -4,7 +4,7 @@ from inspect import getmembers
 from sys import modules
 from typing import Any, Hashable
 
-from .base import GraphBase
+from .base import BaseGraph
 from ..core.seq import BASEA, BASEC, BASEG, BASET, BASEN
 from ..core.table import REL_CODES
 
@@ -212,7 +212,7 @@ def get_cmap(cmap_class: type[ColorMap], name: str | None = None):
     return cmaps[name]
 
 
-class ColorMapGraph(GraphBase, ABC):
+class ColorMapGraph(BaseGraph, ABC):
     """ Graph with an explicit color map. """
 
     @classmethod

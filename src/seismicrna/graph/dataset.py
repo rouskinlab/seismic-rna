@@ -2,14 +2,13 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 from itertools import chain
 
-from .base import (GraphRunner,
-                   GraphWriter,
-                   cgroup_table,
+from .base import (BaseWriter,
                    get_action_name,
                    make_path_subject,
                    make_title_action_sample)
-from .onesource import OneSourceGraph
-from .rel import OneRelGraph
+from .cgroup import cgroup_table
+from .onesource import OneSourceClusterGroupGraph
+from .rel import OneRelGraph, RelRunner
 from ..core.arg import opt_verify_times
 from ..core.dataset import MutsDataset
 from ..core.table import get_subpattern
@@ -17,8 +16,8 @@ from ..core.task import dispatch
 from ..table import load_all_datasets
 
 
-class DatasetGraph(OneRelGraph, OneSourceGraph, ABC):
-    """ Graph based on one or more tables. """
+class DatasetGraph(OneRelGraph, OneSourceClusterGroupGraph, ABC):
+    """ Graph based on one Dataset. """
 
     def __init__(self, *, dataset: MutsDataset, **kwargs):
         super().__init__(**kwargs)
@@ -70,7 +69,7 @@ class DatasetGraph(OneRelGraph, OneSourceGraph, ABC):
 
     @cached_property
     def predicate(self):
-        return self.codestring
+        return super().predicate + [self.codestring]
 
     @cached_property
     def pattern(self):
@@ -78,7 +77,7 @@ class DatasetGraph(OneRelGraph, OneSourceGraph, ABC):
         return get_subpattern(self.rel_name, self.dataset.pattern)
 
 
-class DatasetGraphWriter(GraphWriter, ABC):
+class DatasetWriter(BaseWriter, ABC):
 
     def __init__(self, *, dataset: MutsDataset, **kwargs):
         super().__init__(**kwargs)
@@ -88,19 +87,17 @@ class DatasetGraphWriter(GraphWriter, ABC):
     def get_graph(self, *args, **kwargs) -> DatasetGraph:
         """ Return a graph instance. """
 
-    def iter_graphs(self,
-                    cgroup: str,
-                    **kwargs):
+    def iter_graphs(self, *, rels: list[str], cgroup: str, **kwargs):
         for cparams in cgroup_table(self.dataset, cgroup):
-            for rel in self.rels:
+            for rel in rels:
                 yield self.get_graph(rel, **kwargs | cparams)
 
 
-class DatasetGraphRunner(GraphRunner, ABC):
+class DatasetRunner(RelRunner, ABC):
 
     @classmethod
     @abstractmethod
-    def get_writer_type(cls) -> type[DatasetGraphWriter]:
+    def get_writer_type(cls) -> type[DatasetWriter]:
         pass
 
     @classmethod
@@ -114,13 +111,12 @@ class DatasetGraphRunner(GraphRunner, ABC):
     @classmethod
     def run(cls,
             input_path: tuple[str, ...], *,
-            rels: tuple[str, ...],
             verify_times: bool,
             max_procs: int,
             **kwargs):
         # Generate a table writer for each table.
         writer_type = cls.get_writer_type()
-        writers = [writer_type(dataset=dataset, rels=rels) for dataset
+        writers = [writer_type(dataset=dataset) for dataset
                    in cls.load_input_files(input_path,
                                            verify_times=verify_times)]
         return list(chain(*dispatch([writer.write for writer in writers],

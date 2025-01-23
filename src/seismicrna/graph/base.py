@@ -10,14 +10,9 @@ from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
 from ..cluster.dataset import ClusterDataset
-from ..cluster.table import ClusterTable
+from ..cluster.table import ClusterTable, ClusterAbundanceTable
 from ..core import path
-from ..core.arg import (NO_GROUP,
-                        GROUP_BY_K,
-                        GROUP_ALL,
-                        arg_input_path,
-                        opt_rels,
-                        opt_cgroup,
+from ..core.arg import (arg_input_path,
                         opt_csv,
                         opt_html,
                         opt_svg,
@@ -25,8 +20,7 @@ from ..core.arg import (NO_GROUP,
                         opt_png,
                         opt_force,
                         opt_max_procs)
-from ..core.dataset import Dataset, MutsDataset
-from ..core.header import NO_KS, NO_CLUSTS, format_clust_names, list_ks_clusts
+from ..core.dataset import MutsDataset
 from ..core.seq import DNA
 from ..core.table import Table
 from ..core.write import need_write
@@ -44,48 +38,14 @@ ACTION_CLUST = "clustered"
 LINKER = "__and__"
 
 
-def get_ks(source: Dataset | Table):
-    """ List the numbers of clusters for a source of data. """
-    if isinstance(source, Dataset):
-        return source.ks
-    if isinstance(source, Table):
-        return source.header.ks
-    raise TypeError(source)
-
-
-def get_ks_clusts(source: Dataset | Table):
-    """ List the clusters for a source of data. """
-    ks = get_ks(source)
-    if ks == NO_KS:
-        return NO_CLUSTS
-    return list_ks_clusts(ks)
-
-
-def make_tracks(source: Dataset | Table, k: int | None, clust: int | None):
-    """ Make an index for the rows or columns of a graph. """
-    clusts = get_ks_clusts(source)
-    if k is None and clust is None:
-        return clusts
-    return [(k_, clust_) for k_, clust_ in clusts
-            if ((k is None or k_ == k) and (clust is None or clust_ == clust))]
-
-
-def _track_count(tracks: list[tuple[int, int]] | None):
-    return len(tracks) if tracks is not None else 1
-
-
-def _track_titles(tracks: list[tuple[int, int]] | None):
-    return (format_clust_names(tracks, allow_duplicates=False)
-            if tracks is not None
-            else None)
-
-
 def get_action_name(source: MutsDataset | Table):
     if isinstance(source, (RelateDataset, RelateTable)):
         return ACTION_REL
     if isinstance(source, (MaskDataset, MaskTable)):
         return ACTION_MASK
-    if isinstance(source, (ClusterDataset, ClusterTable)):
+    if isinstance(source, (ClusterDataset,
+                           ClusterTable,
+                           ClusterAbundanceTable)):
         return ACTION_CLUST
     raise TypeError(source)
 
@@ -107,19 +67,6 @@ def make_path_subject(action: str, k: int | None, clust: int | None):
     raise ValueError(f"Invalid action: {repr(action)}")
 
 
-def cgroup_table(source: Dataset | Table, cgroup: str):
-    if cgroup == NO_GROUP:
-        # One file per cluster, with no subplots.
-        return [dict(k=k, clust=clust) for k, clust in get_ks_clusts(source)]
-    elif cgroup == GROUP_BY_K:
-        # One file per k, with one subplot per cluster.
-        return [dict(k=k, clust=None) for k in sorted(get_ks(source))]
-    elif cgroup == GROUP_ALL:
-        # One file, with one subplot per cluster.
-        return [dict(k=None, clust=None)]
-    raise ValueError(f"Invalid value for cgroup: {repr(cgroup)}")
-
-
 class Annotation(object):
     """ Text annotation in a graph. """
 
@@ -138,7 +85,7 @@ class Annotation(object):
         self.kwargs = kwargs
 
 
-class GraphBase(ABC):
+class BaseGraph(ABC):
     """ Base class for all types of graphs. """
 
     @classmethod
@@ -159,11 +106,6 @@ class GraphBase(ABC):
                 path.RefSeg,
                 path.RegSeg,
                 path.GraphSeg)
-
-    @property
-    @abstractmethod
-    def codestring(self) -> str:
-        """ String of the relationship code(s). """
 
     @property
     @abstractmethod
@@ -199,6 +141,7 @@ class GraphBase(ABC):
     @abstractmethod
     def details(self) -> list[str]:
         """ Additional details about the graph. """
+        return list()
 
     @property
     @abstractmethod
@@ -207,13 +150,16 @@ class GraphBase(ABC):
 
     @cached_property
     @abstractmethod
-    def predicate(self) -> str:
+    def predicate(self) -> list[str]:
         """ Predicate of the graph. """
+        return list()
 
     @cached_property
     def graph_filename(self):
         """ Name of the graph's output file, without its extension. """
-        return "_".join([self.graph_kind(), self.path_subject, self.predicate])
+        return "_".join(filter(None, [self.graph_kind(),
+                                      self.path_subject,
+                                      "_".join(self.predicate)]))
 
     def get_path_fields(self):
         """ Path fields. """
@@ -230,16 +176,6 @@ class GraphBase(ABC):
                              **self.get_path_fields(),
                              ext=ext)
 
-    @property
-    @abstractmethod
-    def rel_names(self):
-        """ Names of the relationships to graph. """
-
-    @cached_property
-    def relationships(self) -> str:
-        """ Relationships being graphed as a slash-separated string. """
-        return "/".join(self.rel_names)
-
     @cached_property
     @abstractmethod
     def data(self) -> pd.DataFrame:
@@ -248,36 +184,6 @@ class GraphBase(ABC):
     @abstractmethod
     def get_traces(self) -> Iterable[tuple[tuple[int, int], go.Trace]]:
         """ Data traces of the graph. """
-
-    @property
-    @abstractmethod
-    def row_tracks(self) -> list[tuple[int, int]] | None:
-        """ Track for each row of subplots. """
-
-    @property
-    @abstractmethod
-    def col_tracks(self) -> list[tuple[int, int]] | None:
-        """ Track for each column of subplots. """
-
-    @property
-    def nrows(self):
-        """ Number of rows of subplots. """
-        return _track_count(self.row_tracks)
-
-    @property
-    def ncols(self):
-        """ Number of columns of subplots. """
-        return _track_count(self.col_tracks)
-
-    @cached_property
-    def row_titles(self):
-        """ Titles of the rows. """
-        return _track_titles(self.row_tracks)
-
-    @cached_property
-    def col_titles(self):
-        """ Titles of the columns. """
-        return _track_titles(self.col_tracks)
 
     @property
     @abstractmethod
@@ -296,14 +202,8 @@ class GraphBase(ABC):
 
     @property
     def _subplots_params(self):
-        return dict(rows=self.nrows,
-                    cols=self.ncols,
-                    row_titles=self.row_titles,
-                    column_titles=self.col_titles,
-                    x_title=self.x_title,
-                    y_title=self.y_title,
-                    shared_xaxes="all",
-                    shared_yaxes="all")
+        return dict(x_title=self.x_title,
+                    y_title=self.y_title)
 
     def _figure_init(self):
         """ Initialize the figure. """
@@ -404,6 +304,7 @@ class GraphBase(ABC):
     @abstractmethod
     def _title_main(self) -> list[str]:
         """ Main part of the title, as a list. """
+        return list()
 
     @cached_property
     def _title_details(self):
@@ -416,14 +317,11 @@ class GraphBase(ABC):
         return " ".join(self._title_main + self._title_details)
 
 
-class GraphWriter(ABC):
+class BaseWriter(ABC):
     """ Write the proper type(s) of graph. """
 
-    def __init__(self, *, rels: list[str]):
-        self.rels = rels
-
     @abstractmethod
-    def iter_graphs(self, *args, **kwargs) -> Generator[GraphBase, None, None]:
+    def iter_graphs(self, *args, **kwargs) -> Generator[BaseGraph, None, None]:
         """ Yield every graph. """
 
     def write(self,
@@ -445,12 +343,12 @@ class GraphWriter(ABC):
                           for graph in self.iter_graphs(*args, **kwargs)))
 
 
-class GraphRunner(ABC):
+class BaseRunner(ABC):
 
     @classmethod
     @abstractmethod
-    def get_writer_type(cls) -> type[GraphWriter]:
-        """ Type of GraphWriter. """
+    def get_writer_type(cls) -> type[BaseWriter]:
+        """ Type of Writer. """
 
     @classmethod
     @abstractmethod
@@ -466,14 +364,12 @@ class GraphRunner(ABC):
     @classmethod
     def universal_input_params(cls):
         """ Universal parameters controlling the input data. """
-        return [arg_input_path,
-                opt_rels]
+        return [arg_input_path]
 
     @classmethod
     def universal_output_params(cls):
         """ Universal parameters controlling the output graph. """
-        return [opt_cgroup,
-                opt_csv,
+        return [opt_csv,
                 opt_html,
                 opt_svg,
                 opt_pdf,

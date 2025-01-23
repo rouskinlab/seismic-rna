@@ -3,18 +3,20 @@ from functools import cached_property
 from pathlib import Path
 from typing import Any, Generator, Iterable
 
-from .base import GraphBase, GraphRunner, GraphWriter
-from ..cluster.table import ClusterPositionTableLoader
+from .base import BaseGraph, BaseRunner, BaseWriter
+from .rel import RelGraph, RelRunner
+from ..cluster.table import (ClusterPositionTableLoader,
+                             ClusterAbundanceTableLoader)
 from ..core.arg import opt_use_ratio, opt_quantile
 from ..core.table import Table, PositionTable
 from ..mask.table import MaskPositionTableLoader, MaskReadTableLoader
 from ..relate.table import RelatePositionTableLoader, RelateReadTableLoader
 
 
-class TableGraph(GraphBase, ABC):
+class TableGraph(BaseGraph, ABC):
     """ Graph based on one or more tables. """
 
-    def __init__(self, *, use_ratio: bool, quantile: float, **kwargs):
+    def __init__(self, *, use_ratio: bool, **kwargs):
         """
         Parameters
         ----------
@@ -23,19 +25,29 @@ class TableGraph(GraphBase, ABC):
             to the number of occurrances of another kind of relationship
             (which is Covered for Covered and Informative; Informative
             for all other relationships), rather than the raw count.
+        """
+        super().__init__(**kwargs)
+        self.use_ratio = use_ratio
+
+    @property
+    def data_kind(self):
+        """ Kind of data being used: either "ratio" or "count". """
+        return "ratio" if self.use_ratio else "count"
+
+
+class RelTableGraph(TableGraph, RelGraph, ABC):
+
+    def __init__(self, *, quantile: float, **kwargs):
+        """
+        Parameters
+        ----------
         quantile: float
             If `use_ratio` is True, then normalize the ratios to this
             quantile and then winsorize them to the interval [0, 1].
             Passing 0.0 disables normalization and winsorization.
         """
         super().__init__(**kwargs)
-        self.use_ratio = use_ratio
         self.quantile = quantile
-
-    @property
-    def data_kind(self):
-        """ Kind of data being used: either "ratio" or "count". """
-        return "ratio" if self.use_ratio else "count"
 
     @cached_property
     def _fetch_kwargs(self) -> dict[str, Any]:
@@ -59,18 +71,19 @@ class TableGraph(GraphBase, ABC):
 
     @cached_property
     def details(self):
-        return ([f"quantile = {round(self.quantile, 3)}"] if self.use_ratio
-                else list())
+        return super().details + ([f"quantile = {round(self.quantile, 3)}"]
+                                  if self.use_ratio
+                                  else list())
 
     @cached_property
     def predicate(self):
         fields = [self.codestring, self.data_kind]
         if self.use_ratio:
             fields.append(f"q{round(self.quantile * 100.)}")
-        return "-".join(fields)
+        return super().predicate + ["-".join(fields)]
 
 
-class TableGraphWriter(GraphWriter, ABC):
+class TableWriter(BaseWriter, ABC):
 
     def __init__(self, *tables: Table, **kwargs):
         super().__init__(**kwargs)
@@ -100,31 +113,51 @@ def load_read_tables(input_paths: Iterable[str | Path]):
         yield from table_type.load_tables(paths)
 
 
-class TableGraphRunner(GraphRunner, ABC):
+def load_abundance_tables(input_paths: Iterable[str | Path]):
+    """ Load read tables. """
+    paths = list(input_paths)
+    for table_type in [ClusterAbundanceTableLoader]:
+        yield from table_type.load_tables(paths)
+
+
+class TableRunner(BaseRunner, ABC):
 
     @classmethod
     @abstractmethod
-    def get_writer_type(cls) -> type[TableGraphWriter]:
+    def get_writer_type(cls) -> type[TableWriter]:
         pass
 
     @classmethod
     def var_params(cls):
-        return [opt_use_ratio,
-                opt_quantile]
+        return super().var_params() + [opt_use_ratio]
 
 
-class PosGraphRunner(TableGraphRunner, ABC):
+class RelTableRunner(RelRunner, TableRunner, ABC):
+
+    @classmethod
+    def var_params(cls):
+        return super().var_params() + [opt_quantile]
+
+
+class PositionTableRunner(RelTableRunner, ABC):
 
     @classmethod
     def get_input_loader(cls):
         return load_pos_tables
 
 
-class ReadGraphRunner(TableGraphRunner, ABC):
+class ReadTableRunner(RelTableRunner, ABC):
 
     @classmethod
     def get_input_loader(cls):
         return load_read_tables
+
+
+class AbundanceTableRunner(TableRunner, ABC):
+
+    @classmethod
+    def get_input_loader(cls):
+        return load_abundance_tables
 
 ########################################################################
 #                                                                      #

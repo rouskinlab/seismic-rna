@@ -860,7 +860,7 @@ def align_samples(fq_units: list[FastqUnit],
     """ Run the alignment pipeline and return a tuple of all XAM files
     from the pipeline. """
     if not fq_units:
-        logger.warning("No FASTQ files or valid pairs were given")
+        logger.detail("No FASTQ files or pairs of files were given to align")
         return list()
     # List the names of all reference sequences.
     refs = set(parse_fasta(fasta, None))
@@ -880,7 +880,8 @@ def align_samples(fq_units: list[FastqUnit],
                                         out_dir=out_dir,
                                         **kwargs))
     else:
-        logger.warning("All given FASTQ files have already been aligned")
+        logger.warning("All given FASTQ files have already been aligned: "
+                       "use --force to overwrite")
         xam_dirs_new = set()
     # Merge the existing and new XAM paths into a tuple of strings.
     return list({xam.parent for xam in xams_extant} | xam_dirs_new)

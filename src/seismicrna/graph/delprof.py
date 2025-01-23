@@ -4,16 +4,22 @@ import numpy as np
 from click import command
 from plotly import graph_objects as go
 
-from .table import TableGraphWriter, PosGraphRunner
 from .color import ColorMapGraph, SeqColorMap
+from .rel import OneRelGraph
+from .table import PositionTableRunner
 from .trace import iter_seq_base_bar_traces
-from .twotable import TwoTableRunner, TwoTableWriter, TwoTableMergedGraph
+from .twotable import (TwoTableMergedClusterGroupGraph,
+                       TwoTableRelClusterGroupWriter,
+                       TwoTableRelClusterGroupRunner)
+from ..core.run import log_command
 from ..core.seq import POS_NAME
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 
-class DeltaProfileGraph(TwoTableMergedGraph, ColorMapGraph):
+class DeltaProfileGraph(TwoTableMergedClusterGroupGraph,
+                        OneRelGraph,
+                        ColorMapGraph):
 
     @classmethod
     def graph_kind(cls):
@@ -53,18 +59,23 @@ class DeltaProfileGraph(TwoTableMergedGraph, ColorMapGraph):
         fig.update_yaxes(gridcolor="#d0d0d0")
 
 
-class DeltaProfileWriter(TwoTableWriter, TableGraphWriter):
+class DeltaProfileWriter(TwoTableRelClusterGroupWriter):
 
     @classmethod
     def get_graph_type(cls):
         return DeltaProfileGraph
 
 
-class DeltaProfileRunner(TwoTableRunner, PosGraphRunner):
+class DeltaProfileRunner(TwoTableRelClusterGroupRunner, PositionTableRunner):
 
     @classmethod
     def get_writer_type(cls):
         return DeltaProfileWriter
+
+    @classmethod
+    @log_command(COMMAND)
+    def run(cls, *args, **kwargs):
+        return super().run(*args, **kwargs)
 
 
 @command(COMMAND, params=DeltaProfileRunner.params())

@@ -1,6 +1,7 @@
 from click import group
 
-from . import (aucroll,
+from . import (abundance,
+               aucroll,
                corroll,
                delprof,
                giniroll,
@@ -22,7 +23,8 @@ def cli():
 
 
 # Add graph commands to the CLI.
-for module in (aucroll,
+for module in (abundance,
+               aucroll,
                corroll,
                delprof,
                giniroll,

@@ -5,11 +5,12 @@ import numpy as np
 import pandas as pd
 from click import command
 
-from .table import PosGraphRunner, TableGraphWriter
+from .table import PositionTableRunner, TableWriter
 from .onestruct import (StructOneTableGraph,
                         StructOneTableRunner,
                         StructOneTableWriter)
 from .trace import iter_roc_traces
+from ..core.run import log_command
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -126,17 +127,22 @@ class ROCGraph(StructOneTableGraph):
                 yield (row, 1), trace
 
 
-class ROCWriter(StructOneTableWriter, TableGraphWriter):
+class ROCWriter(StructOneTableWriter, TableWriter):
 
     def get_graph(self, rels_group: str, **kwargs):
         return ROCGraph(table=self.table, rel=rels_group, **kwargs)
 
 
-class ROCRunner(StructOneTableRunner, PosGraphRunner):
+class ROCRunner(StructOneTableRunner, PositionTableRunner):
 
     @classmethod
     def get_writer_type(cls):
         return ROCWriter
+
+    @classmethod
+    @log_command(COMMAND)
+    def run(cls, *args, **kwargs):
+        return super().run(*args, **kwargs)
 
 
 @command(COMMAND, params=ROCRunner.params())

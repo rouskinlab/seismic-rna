@@ -5,18 +5,21 @@ from functools import cached_property
 from click import command
 from plotly import graph_objects as go
 
-from .table import TableGraphWriter, PosGraphRunner
 from .color import ColorMapGraph, RelColorMap, SeqColorMap
-from .onetable import OneTableGraph, OneTableRunner, OneTableWriter
+from .onetable import (OneTableRelClusterGroupGraph,
+                       OneTableRelClusterGroupWriter,
+                       OneTableRelClusterGroupRunner)
 from .rel import MultiRelsGraph, OneRelGraph
+from .table import PositionTableRunner
 from .trace import iter_seq_base_bar_traces, iter_seqbar_stack_traces
 from ..core.header import parse_header
+from ..core.run import log_command
 from ..core.seq import POS_NAME
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 
-class ProfileGraph(OneTableGraph, ColorMapGraph, ABC):
+class ProfileGraph(OneTableRelClusterGroupGraph, ColorMapGraph, ABC):
     """ Bar graph of a mutational profile for one table. """
 
     @classmethod
@@ -85,7 +88,7 @@ class MultiRelsProfileGraph(MultiRelsGraph, ProfileGraph):
                 yield (row, 1), trace
 
 
-class ProfileWriter(OneTableWriter, TableGraphWriter):
+class ProfileWriter(OneTableRelClusterGroupWriter):
 
     def get_graph(self, rels_group: str, **kwargs):
         return (OneRelProfileGraph(table=self.table,
@@ -97,11 +100,16 @@ class ProfileWriter(OneTableWriter, TableGraphWriter):
                                            **kwargs))
 
 
-class ProfileRunner(OneTableRunner, PosGraphRunner):
+class ProfileRunner(OneTableRelClusterGroupRunner, PositionTableRunner):
 
     @classmethod
     def get_writer_type(cls):
         return ProfileWriter
+
+    @classmethod
+    @log_command(COMMAND)
+    def run(cls, *args, **kwargs):
+        return super().run(*args, **kwargs)
 
 
 @command(COMMAND, params=ProfileRunner.params())
