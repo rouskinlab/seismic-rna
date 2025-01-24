@@ -263,16 +263,18 @@ def iter_table_pairs(tables: Iterable[Table]):
     for table in tables:
         key = table.ref, table.reg
         if table in table_groups[key]:
-            logger.warning(f"Duplicate table: {table}")
+            logger.warning(f"Duplicate reference and region: {key}")
         else:
             table_groups[key].append(table)
-    # Yield every pair of tables from each group.
-    for (ref, reg), tables in table_groups.items():
-        n_files = len(tables)
+    # Yield every pair of tables from each table group.
+    for (ref, reg), table_group in table_groups.items():
+        n_files = len(table_group)
         n_pairs = n_files * (n_files - 1) // 2
-        logger.detail(f"Found {n_files} table files ({n_pairs} pairs) "
+        logger.detail(f"Found {n_files} table(s) and {n_pairs} pair(s) "
                       f"with reference {repr(ref)} and region {repr(reg)}")
-        yield from combinations(tables, 2)
+        # Sort the tables by sample to ensure the order of combinations
+        # is consistent no matter the order of the "tables" argument.
+        yield from combinations(sorted(table_group, key=lambda t: t.sample), 2)
 
 
 class TwoTableRunner(TableRunner, ABC):
