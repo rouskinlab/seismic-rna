@@ -36,7 +36,7 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
 
     @classmethod
     def what(cls):
-        return "Length of smallest distance"
+        return "Distance between closest"
 
     @classmethod
     def get_cmap_type(cls):
@@ -48,7 +48,7 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
 
     @property
     def x_title(self):
-        return "Smallest distance between two mutations in a read (nt)"
+        return "Distance between closest two mutations in a read (nt)"
 
     @property
     def y_title(self):

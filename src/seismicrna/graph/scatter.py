@@ -103,18 +103,18 @@ class ScatterGraph(TwoTableRelClusterGroupGraph,
         fig.update_yaxes(gridcolor="#d0d0d0")
 
 
-class ScatterPlotWriter(TwoTableRelClusterGroupWriter):
+class ScatterWriter(TwoTableRelClusterGroupWriter):
 
     @classmethod
     def get_graph_type(cls):
         return ScatterGraph
 
 
-class ScatterPlotRunner(TwoTableRelClusterGroupRunner, PositionTableRunner):
+class ScatterRunner(TwoTableRelClusterGroupRunner, PositionTableRunner):
 
     @classmethod
     def get_writer_type(cls):
-        return ScatterPlotWriter
+        return ScatterWriter
 
     @classmethod
     def var_params(cls):
@@ -126,10 +126,10 @@ class ScatterPlotRunner(TwoTableRelClusterGroupRunner, PositionTableRunner):
         return super().run(*args, **kwargs)
 
 
-@command(COMMAND, params=ScatterPlotRunner.params())
+@command(COMMAND, params=ScatterRunner.params())
 def cli(*args, **kwargs):
     """ Scatter plot comparing two profiles. """
-    return ScatterPlotRunner.run(*args, **kwargs)
+    return ScatterRunner.run(*args, **kwargs)
 
 ########################################################################
 #                                                                      #

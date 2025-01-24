@@ -1,21 +1,14 @@
 import os
-from functools import cached_property
-from itertools import combinations
+from abc import ABC
 
 import numpy as np
 import pandas as pd
 from click import command
 
-from .cgroup import make_tracks
-from .dataset import DatasetGraph, DatasetWriter, DatasetRunner
-from .trace import get_pairwise_position_trace
-from ..core.header import NO_CLUSTS, NUM_CLUSTS_NAME, CLUST_NAME
+from .pospair import PositionPairGraph, PositionPairWriter, PositionPairRunner
 from ..core.run import log_command
 
 COMMAND = __name__.split(os.path.extsep)[-1]
-
-POSITION_A = "Position A"
-POSITION_B = "Position B"
 
 
 def calc_phi(n: int | float | np.ndarray | pd.Series,
@@ -57,7 +50,7 @@ def calc_phi(n: int | float | np.ndarray | pd.Series,
         return (n * a_and_b - a_x_b) / np.sqrt(a_x_b * (n - a) * (n - b))
 
 
-class PositionCorrelationGraph(DatasetGraph):
+class PositionCorrelationGraph(PositionPairGraph, ABC):
     """ Phi correlations between pairs of positions. """
 
     @classmethod
@@ -66,103 +59,22 @@ class PositionCorrelationGraph(DatasetGraph):
 
     @classmethod
     def what(cls):
-        return "Phi correlation"
+        return "Phi correlation between"
 
-    @property
-    def x_title(self):
-        return "Position A"
-
-    @property
-    def y_title(self):
-        return "Position B"
-
-    @cached_property
-    def row_tracks(self):
-        return make_tracks(self.dataset, self.k, self.clust)
-
-    @cached_property
-    def data(self):
-        positions = pd.MultiIndex.from_tuples(
-            combinations(self.dataset.region.unmasked_int, 2),
-            names=[POSITION_A, POSITION_B]
-        )
-        clusters = pd.MultiIndex.from_tuples(self.row_tracks,
-                                             names=[NUM_CLUSTS_NAME,
-                                                    CLUST_NAME])
-        # Initialize the confusion matrix.
-        if self.row_tracks == NO_CLUSTS:
-            # The dataset has no clusters.
-            zero = 0
-            n = zero
-        else:
-            # The dataset has clusters.
-            zero = 0.
-            n = pd.Series(zero, clusters)
-        a_accum = pd.DataFrame(zero, positions, clusters)
-        b_accum = pd.DataFrame(zero, positions, clusters)
-        ab_accum = pd.DataFrame(zero, positions, clusters)
-        # Fill the confusion matrix, accumulating over the batches.
-        for batch in self.dataset.iter_batches():
-            reads_per_pos = {
-                pos: batch.read_indexes[reads] for pos, reads
-                in batch.reads_per_pos(self.pattern).items()
-            }
-            # Count the reads in the batch.
-            if batch.read_weights is None:
-                n += batch.num_reads
-            elif isinstance(batch.read_weights, pd.DataFrame):
-                for clust in clusters:
-                    n += batch.read_weights[clust].sum()
-            else:
-                raise TypeError(batch.read_weights)
-            # For each pair of positions a and b, count the reads that
-            # fit the relationship pattern for positions a and b (ab),
-            # only position a (ao), only position b (ob), and neither
-            # position (oo).
-            for pos_ab in positions:
-                pos_a, pos_b = pos_ab
-                reads_a = reads_per_pos[pos_a]
-                reads_b = reads_per_pos[pos_b]
-                reads_ab = np.intersect1d(reads_a, reads_b, assume_unique=True)
-                if batch.read_weights is None:
-                    # There is only one cluster, and every read has the
-                    # same weight.
-                    a = reads_a.size
-                    b = reads_b.size
-                    ab = reads_ab.size
-                    a_accum.loc[pos_ab] += a
-                    b_accum.loc[pos_ab] += b
-                    ab_accum.loc[pos_ab] += ab
-                elif isinstance(batch.read_weights, pd.DataFrame):
-                    # There are multiple clusters, where each read gets
-                    # a different weight in each cluster.
-                    for clust in clusters:
-                        weights = batch.read_weights[clust].values
-                        a = weights[reads_a].sum()
-                        b = weights[reads_b].sum()
-                        ab = weights[reads_ab].sum()
-                        a_accum.loc[pos_ab, clust] += a
-                        b_accum.loc[pos_ab, clust] += b
-                        ab_accum.loc[pos_ab, clust] += ab
-                else:
-                    raise TypeError(batch.read_weights)
-        return calc_phi(n, a_accum, b_accum, ab_accum)
-
-    def get_traces(self):
-        for row, (_, values) in enumerate(self.data.items(), start=1):
-            trace = get_pairwise_position_trace(values,
-                                                self.dataset.region.end5,
-                                                self.dataset.region.end3)
-            yield (row, 1), trace
+    @classmethod
+    def _pair_func(cls):
+        """ Function to compare each pair of positions. """
+        return calc_phi
 
 
-class PositionCorrelationWriter(DatasetWriter):
+class PositionCorrelationWriter(PositionPairWriter):
 
-    def get_graph(self, rel, **kwargs):
-        return PositionCorrelationGraph(dataset=self.dataset, rel=rel, **kwargs)
+    @classmethod
+    def graph_type(cls):
+        return PositionCorrelationGraph
 
 
-class PositionCorrelationRunner(DatasetRunner):
+class PositionCorrelationRunner(PositionPairRunner):
 
     @classmethod
     def get_writer_type(cls):

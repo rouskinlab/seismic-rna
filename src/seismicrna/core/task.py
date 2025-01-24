@@ -162,7 +162,7 @@ def dispatch(funcs: list[Callable] | Callable,
         raise ValueError(f"Got {len(funcs)} funcs but {len(args)} args")
     if n_tasks == 0:
         # No tasks to run: return.
-        logger.detail("No tasks were given to dispatch")
+        logger.task("No tasks were given to dispatch")
         return list()
     # Determine how to parallelize each task.
     pool_size, n_procs_per_task = calc_pool_size(n_tasks, max_procs)

@@ -13,7 +13,7 @@ from .twotable import (TwoTableMergedClusterGroupGraph,
                        TwoTableRelClusterGroupRunner)
 from ..core.arg import opt_metric
 from ..core.mu import compare_windows, get_comp_name
-from ..core.run import log_command
+from ..core.run import run_func
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -82,7 +82,7 @@ class RollingCorrelationRunner(TwoTableRelClusterGroupRunner,
         return RollingCorrelationWriter
 
     @classmethod
-    @log_command(COMMAND)
+    @run_func(COMMAND)
     def run(cls, *args, **kwargs):
         return super().run(*args, **kwargs)
 

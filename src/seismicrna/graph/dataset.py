@@ -6,7 +6,7 @@ from .base import (BaseWriter,
                    get_action_name,
                    make_path_subject,
                    make_title_action_sample)
-from .cgroup import cgroup_table
+from .cgroup import ClusterGroupRunner, cgroup_table
 from .onesource import OneSourceClusterGroupGraph
 from .rel import OneRelGraph, RelRunner
 from ..core.arg import opt_verify_times
@@ -57,7 +57,7 @@ class DatasetGraph(OneRelGraph, OneSourceClusterGroupGraph, ABC):
 
     @cached_property
     def _title_main(self):
-        return [f"{self.what()} between "
+        return [f"{self.what()} "
                 f"{self.relationships} bases "
                 f"in {self.title_action_sample} "
                 f"over reference {repr(self.ref)} "
@@ -93,7 +93,7 @@ class DatasetWriter(BaseWriter, ABC):
                 yield self.get_graph(rel, **kwargs | cparams)
 
 
-class DatasetRunner(RelRunner, ABC):
+class DatasetRunner(RelRunner, ClusterGroupRunner, ABC):
 
     @classmethod
     @abstractmethod
@@ -102,7 +102,7 @@ class DatasetRunner(RelRunner, ABC):
 
     @classmethod
     def var_params(cls):
-        return [opt_verify_times]
+        return super().var_params() + [opt_verify_times]
 
     @classmethod
     def get_input_loader(cls):

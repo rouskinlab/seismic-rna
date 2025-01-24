@@ -34,17 +34,17 @@ class TestWorkflow(ut.TestCase):
     SAMPLE = "test_sample"
 
     def setUp(self):
-        self.SIM_DIR.mkdir()
-        self.OUT_DIR.mkdir()
         self._config = get_config()
         set_config(verbosity=Level.ERROR,
                    log_file_path=None,
                    raise_on_error=True)
+        self.SIM_DIR.mkdir()
+        self.OUT_DIR.mkdir()
 
     def tearDown(self):
         shutil.rmtree(self.SIM_DIR)
         shutil.rmtree(self.OUT_DIR)
-        set_config(**self._config._asdict())
+        set_config(*self._config)
 
     def test_wf_sim_20000reads_2clusts(self):
         # Simulate the data to be processed with wf.
@@ -125,8 +125,8 @@ class TestWorkflow(ut.TestCase):
 
 class TestWorkflowTwoOutDirs(ut.TestCase):
     NUMBERS = [1, 2]
-    SIM_DIR = Path("sim").absolute()
-    OUT_DIR = Path("out").absolute()
+    OUT_DIR = Path(opt_out_dir.default).absolute()
+    SIM_DIR = Path(opt_sim_dir.default).absolute()
     SIM_DIRS = tuple(Path(f"sim{i}").absolute() for i in NUMBERS)
     OUT_DIRS = tuple(Path(f"out{i}").absolute() for i in NUMBERS)
     REFS = "test_refs"
@@ -137,15 +137,15 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
     CJOINED = "cjoined_region"
 
     def setUp(self):
+        self._config = get_config()
+        set_config(verbosity=Level.ERROR,
+                   log_file_path=None,
+                   raise_on_error=True)
         self.SIM_DIR.mkdir()
         self.OUT_DIR.mkdir()
         for sim_dir, out_dir in zip(self.SIM_DIRS, self.OUT_DIRS, strict=True):
             sim_dir.mkdir()
             out_dir.mkdir()
-        self._config = get_config()
-        set_config(verbosity=Level.ERROR,
-                   log_file_path=None,
-                   raise_on_error=True)
 
     def tearDown(self):
         shutil.rmtree(self.SIM_DIR)
@@ -153,7 +153,7 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
         for sim_dir, out_dir in zip(self.SIM_DIRS, self.OUT_DIRS, strict=True):
             shutil.rmtree(sim_dir)
             shutil.rmtree(out_dir)
-        set_config(**self._config._asdict())
+        set_config(*self._config)
 
     def check_no_identical(self, files: Iterable[Path | str], binary: bool):
         """ Confirm no two files have identical contents. """
