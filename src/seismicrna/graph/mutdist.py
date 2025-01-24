@@ -135,18 +135,22 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
         return table
 
     @cached_property
+    def loc_clusters(self):
+        return (self.k if self.k is not None else slice(None),
+                self.clust if self.clust is not None else slice(self.clust))
+
+    @cached_property
     def _real_hist(self):
         if self.table.header.clustered():
-            cols = self.rel_name, slice(self.k), slice(self.clust)
+            cols = (self.rel_name,) + self.loc_clusters
             return self.hists.loc[:, cols]
         return self.hists
 
     @cached_property
     def _null_hist(self):
         if self.table.header.clustered():
-            clusters = slice(self.k), slice(self.clust)
-            end_counts = self.tabulator.end_counts.loc[:, clusters]
-            num_reads = self.tabulator.num_reads.loc[clusters].values
+            end_counts = self.tabulator.end_counts.loc[:, self.loc_clusters]
+            num_reads = self.tabulator.num_reads.loc[self.loc_clusters].values
         else:
             end_counts = self.tabulator.end_counts
             num_reads = self.tabulator.num_reads
