@@ -829,14 +829,15 @@ def get_fields_in_seg_types(*segment_types: Segment) -> dict[str, Field]:
     return fields
 
 
-def deduplicate(paths: Iterable[str | pathlib.Path]):
+def deduplicate(paths: Iterable[str | pathlib.Path], warn: bool = True):
     """ Yield the non-redundant paths. """
     total = 0
     seen = set()
     for path in map(sanitize, paths):
         total += 1
         if path in seen:
-            logger.warning(f"Duplicate path: {path}")
+            if warn:
+                logger.warning(f"Duplicate path: {path}")
         else:
             seen.add(path)
             yield path

@@ -29,10 +29,6 @@ from .mask.main import load_regions
 from .mask.report import MaskReport
 
 
-def as_tuple_str(items: Iterable):
-    return tuple(map(str, items))
-
-
 def calc_regions(total_end5: int,
                  total_end3: int,
                  region_length: int,
@@ -247,7 +243,7 @@ def run(input_path: Iterable[str | Path], *,
         force=force,
     )
     cluster_dirs = cluster_mod.run(
-        input_path=as_tuple_str(mask_dirs),
+        input_path=mask_dirs,
         tmp_pfx=tmp_pfx,
         keep_tmp=keep_tmp,
         min_clusters=min_clusters,

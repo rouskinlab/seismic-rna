@@ -283,7 +283,7 @@ def run(fasta: str,
         # Clear the input FASTQ files once the demultiplexed FASTQ files
         # have been generated.
         fastqx = list()
-    input_path += align_mod.run(
+    input_path.extend(align_mod.run(
         out_dir=out_dir,
         tmp_pfx=tmp_pfx,
         keep_tmp=keep_tmp,
@@ -334,8 +334,8 @@ def run(fasta: str,
         sep_strands=sep_strands,
         f1r2_fwd=f1r2_fwd,
         rev_label=rev_label,
-    )
-    input_path += relate_mod.run(
+    ))
+    input_path.extend(relate_mod.run(
         fasta=fasta,
         input_path=input_path,
         out_dir=out_dir,
@@ -360,8 +360,8 @@ def run(fasta: str,
         max_procs=max_procs,
         brotli_level=brotli_level,
         force=force,
-    )
-    input_path += mask_mod.run(
+    ))
+    input_path.extend(mask_mod.run(
         input_path=input_path,
         tmp_pfx=tmp_pfx,
         keep_tmp=keep_tmp,
@@ -393,11 +393,11 @@ def run(fasta: str,
         brotli_level=brotli_level,
         max_procs=max_procs,
         force=force,
-    )
+    ))
     if (cluster
             or min_clusters != opt_min_clusters.default
             or max_clusters != opt_max_clusters.default):
-        input_path += cluster_mod.run(
+        input_path.extend(cluster_mod.run(
             input_path=input_path,
             tmp_pfx=tmp_pfx,
             keep_tmp=keep_tmp,
@@ -423,9 +423,9 @@ def run(fasta: str,
             brotli_level=brotli_level,
             max_procs=max_procs,
             force=force,
-        )
+        ))
     if fold:
-        input_path += fold_mod.run(
+        input_path.extend(fold_mod.run(
             input_path=input_path,
             fold_regions_file=fold_regions_file,
             fold_coords=fold_coords,
@@ -442,7 +442,45 @@ def run(fasta: str,
             keep_tmp=keep_tmp,
             max_procs=max_procs,
             force=force,
-        )
+        ))
+        if graph_roc:
+            ROCRunner.run(input_path=input_path,
+                          rels=[REL_NAMES[MUTAT_REL]],
+                          use_ratio=True,
+                          quantile=0.,
+                          struct_file=struct_file,
+                          fold_regions_file=fold_regions_file,
+                          fold_coords=fold_coords,
+                          fold_primers=fold_primers,
+                          fold_full=fold_full,
+                          cgroup=cgroup,
+                          csv=csv,
+                          html=html,
+                          svg=svg,
+                          pdf=pdf,
+                          png=png,
+                          max_procs=max_procs,
+                          force=force)
+        if graph_aucroll:
+            RollingAUCRunner.run(input_path=input_path,
+                                 rels=[REL_NAMES[MUTAT_REL]],
+                                 use_ratio=True,
+                                 quantile=0.,
+                                 struct_file=struct_file,
+                                 fold_regions_file=fold_regions_file,
+                                 fold_coords=fold_coords,
+                                 fold_primers=fold_primers,
+                                 fold_full=fold_full,
+                                 window=window,
+                                 winmin=winmin,
+                                 cgroup=cgroup,
+                                 csv=csv,
+                                 html=html,
+                                 svg=svg,
+                                 pdf=pdf,
+                                 png=png,
+                                 max_procs=max_procs,
+                                 force=force)
     if draw:
         draw_mod.run(
             input_path=input_path,
@@ -454,13 +492,13 @@ def run(fasta: str,
             force=force,
         )
     if graph_mprof or graph_tmprof:
-        rels = ()
+        rels = list()
         if graph_mprof:
-            rels += REL_NAMES[MUTAT_REL],
+            rels.append(REL_NAMES[MUTAT_REL])
         if graph_tmprof:
-            rels += MUTAT_RELS,
+            rels.append(MUTAT_RELS)
         ProfileRunner.run(input_path=input_path,
-                          rels=(REL_NAMES[MUTAT_REL], MUTAT_RELS),
+                          rels=rels,
                           use_ratio=True,
                           quantile=0.,
                           cgroup=cgroup,
@@ -473,7 +511,7 @@ def run(fasta: str,
                           force=force)
     if graph_ncov:
         ProfileRunner.run(input_path=input_path,
-                          rels=(REL_NAMES[INFOR_REL],),
+                          rels=[REL_NAMES[INFOR_REL]],
                           use_ratio=False,
                           quantile=0.,
                           cgroup=cgroup,
@@ -486,7 +524,7 @@ def run(fasta: str,
                           force=force)
     if graph_mhist:
         ReadHistogramRunner.run(input_path=input_path,
-                                rels=(REL_NAMES[MUTAT_REL],),
+                                rels=[REL_NAMES[MUTAT_REL]],
                                 use_ratio=False,
                                 quantile=0.,
                                 cgroup=cgroup,
@@ -511,7 +549,7 @@ def run(fasta: str,
                                    force=force)
     if graph_giniroll:
         RollingGiniRunner.run(input_path=input_path,
-                              rels=(REL_NAMES[MUTAT_REL],),
+                              rels=[REL_NAMES[MUTAT_REL]],
                               use_ratio=True,
                               quantile=0.,
                               window=window,
@@ -526,7 +564,7 @@ def run(fasta: str,
                               force=force)
     if graph_poscorr:
         PositionCorrelationRunner.run(input_path=input_path,
-                                      rels=(REL_NAMES[MUTAT_REL],),
+                                      rels=[REL_NAMES[MUTAT_REL]],
                                       cgroup=cgroup,
                                       verify_times=verify_times,
                                       csv=csv,
@@ -538,7 +576,7 @@ def run(fasta: str,
                                       force=force)
     if graph_mutdist:
         MutationDistanceRunner.run(input_path=input_path,
-                                   rels=(REL_NAMES[MUTAT_REL],),
+                                   rels=[REL_NAMES[MUTAT_REL]],
                                    cgroup=cgroup,
                                    verify_times=verify_times,
                                    mutdist_null=mutdist_null,
@@ -549,45 +587,6 @@ def run(fasta: str,
                                    png=png,
                                    max_procs=max_procs,
                                    force=force)
-    if fold:
-        if graph_roc:
-            ROCRunner.run(input_path=input_path,
-                          rels=(REL_NAMES[MUTAT_REL],),
-                          use_ratio=True,
-                          quantile=0.,
-                          struct_file=struct_file,
-                          fold_regions_file=fold_regions_file,
-                          fold_coords=fold_coords,
-                          fold_primers=fold_primers,
-                          fold_full=fold_full,
-                          cgroup=cgroup,
-                          csv=csv,
-                          html=html,
-                          svg=svg,
-                          pdf=pdf,
-                          png=png,
-                          max_procs=max_procs,
-                          force=force)
-        if graph_aucroll:
-            RollingAUCRunner.run(input_path=input_path,
-                                 rels=(REL_NAMES[MUTAT_REL],),
-                                 use_ratio=True,
-                                 quantile=0.,
-                                 struct_file=struct_file,
-                                 fold_regions_file=fold_regions_file,
-                                 fold_coords=fold_coords,
-                                 fold_primers=fold_primers,
-                                 fold_full=fold_full,
-                                 window=window,
-                                 winmin=winmin,
-                                 cgroup=cgroup,
-                                 csv=csv,
-                                 html=html,
-                                 svg=svg,
-                                 pdf=pdf,
-                                 png=png,
-                                 max_procs=max_procs,
-                                 force=force)
     if export:
         export_mod.run(
             input_path=input_path,

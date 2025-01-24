@@ -23,10 +23,6 @@ from ..core.seq import DNA
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 
-def as_tuple_str(items: Iterable):
-    return tuple(map(str, items))
-
-
 @run_func(COMMAND,
           default=None,
           extra_defaults=extra_defaults)
@@ -73,7 +69,7 @@ def run(*,
         reflen=reflen,
         force=force)
     )
-    ct_file = as_tuple_str(fold_mod.run(
+    ct_file = fold_mod.run(
         fasta=fasta,
         sim_dir=sim_dir,
         tmp_pfx=tmp_pfx,
@@ -89,7 +85,7 @@ def run(*,
         fold_percent=fold_percent,
         keep_tmp=keep_tmp,
         force=force,
-        max_procs=max_procs)
+        max_procs=max_procs
     )
     params_mod.run(
         ct_file=ct_file,
@@ -105,10 +101,9 @@ def run(*,
         force=force,
         max_procs=max_procs
     )
-    param_dir = as_tuple_str(path.deduplicate(map(os.path.dirname, ct_file)))
     return fastq_mod.run(
         input_path=(),
-        param_dir=param_dir,
+        param_dir=path.deduplicate(f.parent for f in ct_file),
         profile_name=profile_name,
         sample=sample,
         paired_end=paired_end,
