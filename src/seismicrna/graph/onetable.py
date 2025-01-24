@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
 from itertools import chain
+from pathlib import Path
+from typing import Iterable
 
 from .base import get_action_name
 from .cgroup import (ClusterGroupRunner,
@@ -88,7 +90,7 @@ class OneTableRunner(TableRunner, ABC):
 
     @classmethod
     def run(cls,
-            input_path: tuple[str, ...], *,
+            input_path: Iterable[str | Path], *,
             max_procs: int,
             **kwargs):
         # Generate a table writer for each table.

@@ -1,6 +1,7 @@
 from abc import ABC
 from functools import cached_property
 from pathlib import Path
+from typing import Iterable
 
 from .cgroup import cgroup_table
 from .onetable import (OneTableRelClusterGroupGraph,
@@ -105,9 +106,9 @@ class StructOneTableWriter(OneTableRelClusterGroupWriter, ABC):
     def iter_graphs(self, *,
                     rels: list[str],
                     cgroup: str,
-                    struct_file: tuple[str, ...] = (),
-                    fold_coords: tuple[tuple[str, int, int], ...] = (),
-                    fold_primers: tuple[tuple[str, DNA, DNA], ...] = (),
+                    struct_file: Iterable[str | Path] = (),
+                    fold_coords: Iterable[tuple[str, int, int]] = (),
+                    fold_primers: Iterable[tuple[str, DNA, DNA]] = (),
                     fold_regions_file: str | None = None,
                     fold_full: bool = opt_fold_full.default,
                     **kwargs):

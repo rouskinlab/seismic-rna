@@ -352,11 +352,11 @@ class BaseRunner(ABC):
 
     @classmethod
     @abstractmethod
-    def get_input_loader(cls) -> Callable[[tuple[str, ...], Any], Generator]:
+    def get_input_loader(cls) -> Callable[[Iterable, Any], Generator]:
         """ Function to load input files. """
 
     @classmethod
-    def load_input_files(cls, input_path: tuple[str, ...], **kwargs):
+    def load_input_files(cls, input_path: Iterable[str | Path], **kwargs):
         """ Find, filter, and load all input files. """
         load_func = cls.get_input_loader()
         return list(load_func(input_path, **kwargs))

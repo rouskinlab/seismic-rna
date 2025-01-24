@@ -125,7 +125,7 @@ def pool_samples(out_dir: Path,
 
 
 @run_func(CMD_POOL)
-def run(input_path: tuple[str, ...], *,
+def run(input_path: Iterable[str | Path], *,
         pooled: str,
         relate_pos_table: bool,
         relate_read_table: bool,

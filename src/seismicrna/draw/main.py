@@ -16,7 +16,7 @@ from ..core.extern import require_env_var
 
 
 @run_func(CMD_DRAW, with_tmp=True, pass_keep_tmp=True)
-def run(input_path: tuple[str, ...], *,
+def run(input_path: Iterable[str | Path], *,
         struct_num: Iterable[int],
         color: bool,
         force: bool,

@@ -1,5 +1,6 @@
 from collections import defaultdict
 from pathlib import Path
+from typing import Iterable
 
 from click import command
 
@@ -18,7 +19,7 @@ from ..core.task import dispatch
 
 @run_func(CMD_RENUMCT)
 def run(*,
-        ct_pos_5: tuple[tuple[str, int], ...],
+        ct_pos_5: Iterable[tuple[str, int]],
         inplace: bool,
         out_dir: str,
         force: bool,

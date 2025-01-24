@@ -1,5 +1,6 @@
 from collections import defaultdict
 from pathlib import Path
+from typing import Iterable
 
 from click import command
 
@@ -19,7 +20,7 @@ from ..mask.table import MaskPositionTableLoader, MaskReadTableLoader
 
 
 @run_func(CMD_EXPORT)
-def run(input_path: tuple[str, ...], *,
+def run(input_path: Iterable[str | Path], *,
         samples_meta: str,
         refs_meta: str,
         all_pos: bool,

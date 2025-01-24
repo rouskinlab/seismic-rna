@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Iterable
 
 from click import command
@@ -71,15 +72,11 @@ MUTAT_RELS = "".join(REL_NAMES[code] for code in [SUB_A_REL,
                                                   INSRT_REL])
 
 
-def as_tuple_str(items: Iterable):
-    return tuple(map(str, items))
-
-
 @run_func(CMD_WORKFLOW,
           default=None,
           extra_defaults=extra_defaults)
 def run(fasta: str,
-        input_path: tuple[str, ...], *,
+        input_path: Iterable[str | Path], *,
         # General options
         out_dir: str,
         tmp_pfx: str,
@@ -88,9 +85,9 @@ def run(fasta: str,
         force: bool,
         max_procs: int,
         # FASTQ options
-        fastqz: tuple[str, ...],
-        fastqy: tuple[str, ...],
-        fastqx: tuple[str, ...],
+        fastqz: Iterable[str | Path],
+        fastqy: Iterable[str | Path],
+        fastqx: Iterable[str | Path],
         phred_enc: int,
         # Demultiplexing options
         demulti_overwrite: bool,
@@ -102,9 +99,9 @@ def run(fasta: str,
         barcode_start: int,
         barcode_end: int,
         # Align options
-        dmfastqz: tuple[str, ...],
-        dmfastqy: tuple[str, ...],
-        dmfastqx: tuple[str, ...],
+        dmfastqz: Iterable[str | Path],
+        dmfastqy: Iterable[str | Path],
+        dmfastqx: Iterable[str | Path],
         fastp: bool,
         fastp_5: bool,
         fastp_3: bool,
@@ -155,18 +152,18 @@ def run(fasta: str,
         relate_read_table: bool,
         relate_cx: bool,
         # Mask options
-        mask_coords: tuple[tuple[str, int, int], ...],
-        mask_primers: tuple[tuple[str, DNA, DNA], ...],
+        mask_coords: Iterable[tuple[str, int, int]],
+        mask_primers: Iterable[tuple[str, DNA, DNA]],
         primer_gap: int,
         mask_regions_file: str | None,
         mask_del: bool,
         mask_ins: bool,
-        mask_mut: tuple[str, ...],
+        mask_mut: Iterable[str],
         mask_polya: int,
         mask_gu: bool,
-        mask_pos: tuple[tuple[str, int], ...],
+        mask_pos: Iterable[tuple[str, int]],
         mask_pos_file: str | None,
-        mask_read: tuple[str, ...],
+        mask_read: Iterable[str],
         mask_read_file: str | None,
         mask_discontig: bool,
         min_ncov_read: int,
@@ -203,8 +200,8 @@ def run(fasta: str,
         verify_times: bool,
         # Fold options
         fold: bool,
-        fold_coords: tuple[tuple[str, int, int], ...],
-        fold_primers: tuple[tuple[str, DNA, DNA], ...],
+        fold_coords: Iterable[tuple[str, int, int]],
+        fold_primers: Iterable[tuple[str, DNA, DNA]],
         fold_regions_file: str | None,
         fold_full: bool,
         quantile: float,
@@ -216,7 +213,7 @@ def run(fasta: str,
         fold_percent: float,
         # Draw options,
         draw: bool,
-        struct_num: tuple[int, ...],
+        struct_num: Iterable[int],
         color: bool,
         # Export options,
         export: bool,
@@ -227,7 +224,7 @@ def run(fasta: str,
         cgroup: str,
         hist_bins: int,
         hist_margin: float,
-        struct_file: tuple[str, ...],
+        struct_file: Iterable[str | Path],
         window: int,
         winmin: int,
         csv: bool,
@@ -247,8 +244,25 @@ def run(fasta: str,
         graph_mutdist: bool,
         mutdist_null: bool):
     """ Run the entire workflow. """
+    # Ensure that each iterable argument is a list rather than an
+    # exhaustible generator.
+    input_path = list(input_path)
+    fastqx = list(fastqx)
+    fastqy = list(fastqy)
+    fastqz = list(fastqz)
+    dmfastqx = list(dmfastqx)
+    dmfastqy = list(dmfastqy)
+    dmfastqz = list(dmfastqz)
+    mask_coords = list(mask_coords)
+    mask_primers = list(mask_primers)
+    mask_pos = list(mask_pos)
+    mask_read = list(mask_read)
+    fold_coords = list(fold_coords)
+    fold_primers = list(fold_primers)
+    struct_num = list(struct_num)
+    struct_file = list(struct_file)
     if demult_on:
-        for dms, dmi, dmm in demultiplex_mod.run_dm(
+        for dmz, dmy, dmx in demultiplex_mod.run_dm(
                 fasta=fasta,
                 refs_meta=refs_meta,
                 out_dir=out_dir,
@@ -263,13 +277,13 @@ def run(fasta: str,
                 barcode_start=barcode_start,
                 barcode_end=barcode_end,
                 phred_enc=phred_enc):
-            dmfastqz = dmfastqz + dms
-            dmfastqy = dmfastqy + dmi
-            dmfastqx = dmfastqx + dmm
+            dmfastqz = dmfastqz + dmz
+            dmfastqy = dmfastqy + dmy
+            dmfastqx = dmfastqx + dmx
         # Clear the input FASTQ files once the demultiplexed FASTQ files
         # have been generated.
-        fastqx = tuple()
-    input_path += as_tuple_str(align_mod.run(
+        fastqx = list()
+    input_path += align_mod.run(
         out_dir=out_dir,
         tmp_pfx=tmp_pfx,
         keep_tmp=keep_tmp,
@@ -320,8 +334,8 @@ def run(fasta: str,
         sep_strands=sep_strands,
         f1r2_fwd=f1r2_fwd,
         rev_label=rev_label,
-    ))
-    input_path += as_tuple_str(relate_mod.run(
+    )
+    input_path += relate_mod.run(
         fasta=fasta,
         input_path=input_path,
         out_dir=out_dir,
@@ -346,8 +360,8 @@ def run(fasta: str,
         max_procs=max_procs,
         brotli_level=brotli_level,
         force=force,
-    ))
-    input_path += as_tuple_str(mask_mod.run(
+    )
+    input_path += mask_mod.run(
         input_path=input_path,
         tmp_pfx=tmp_pfx,
         keep_tmp=keep_tmp,
@@ -379,11 +393,11 @@ def run(fasta: str,
         brotli_level=brotli_level,
         max_procs=max_procs,
         force=force,
-    ))
+    )
     if (cluster
             or min_clusters != opt_min_clusters.default
             or max_clusters != opt_max_clusters.default):
-        input_path += as_tuple_str(cluster_mod.run(
+        input_path += cluster_mod.run(
             input_path=input_path,
             tmp_pfx=tmp_pfx,
             keep_tmp=keep_tmp,
@@ -409,9 +423,9 @@ def run(fasta: str,
             brotli_level=brotli_level,
             max_procs=max_procs,
             force=force,
-        ))
+        )
     if fold:
-        input_path += as_tuple_str(fold_mod.run(
+        input_path += fold_mod.run(
             input_path=input_path,
             fold_regions_file=fold_regions_file,
             fold_coords=fold_coords,
@@ -428,7 +442,7 @@ def run(fasta: str,
             keep_tmp=keep_tmp,
             max_procs=max_procs,
             force=force,
-        ))
+        )
     if draw:
         draw_mod.run(
             input_path=input_path,

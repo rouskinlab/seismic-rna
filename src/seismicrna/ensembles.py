@@ -80,8 +80,8 @@ def calc_regions(total_end5: int,
 
 
 def generate_regions(input_path: Iterable[str | Path],
-                     coords: tuple[tuple[str, int, int], ...],
-                     primers: tuple[tuple[str, DNA, DNA], ...],
+                     coords: Iterable[tuple[str, int, int]],
+                     primers: Iterable[tuple[str, DNA, DNA]],
                      primer_gap: int,
                      regions_file: str | None,
                      region_length: int,
@@ -141,7 +141,7 @@ def group_clusters(cluster_dirs: Iterable[Path]):
 
 
 @run_func(CMD_ENSEMBLES, extra_defaults=extra_defaults)
-def run(input_path: tuple[str, ...], *,
+def run(input_path: Iterable[str | Path], *,
         # General options
         tmp_pfx: str,
         keep_tmp: bool,
@@ -149,18 +149,18 @@ def run(input_path: tuple[str, ...], *,
         force: bool,
         max_procs: int,
         # Mask options
-        mask_coords: tuple[tuple[str, int, int], ...],
-        mask_primers: tuple[tuple[str, DNA, DNA], ...],
+        mask_coords: Iterable[tuple[str, int, int]],
+        mask_primers: Iterable[tuple[str, DNA, DNA]],
         primer_gap: int,
         mask_regions_file: str | None,
         mask_del: bool,
         mask_ins: bool,
-        mask_mut: tuple[str, ...],
+        mask_mut: Iterable[str],
         mask_polya: int,
         mask_gu: bool,
-        mask_pos: tuple[tuple[str, int], ...],
+        mask_pos: Iterable[tuple[str, int]],
         mask_pos_file: str | None,
-        mask_read: tuple[str, ...],
+        mask_read: Iterable[str],
         mask_read_file: str | None,
         mask_discontig: bool,
         min_ncov_read: int,
@@ -203,6 +203,9 @@ def run(input_path: tuple[str, ...], *,
         raise ValueError(
             "No prefix for joined regions was given via --joined"
         )
+    # Since input_path is used twice, ensure it is not an exhaustible
+    # generator.
+    input_path = list(input_path)
     mask_regions = generate_regions(input_path,
                                     coords=mask_coords,
                                     primers=mask_primers,

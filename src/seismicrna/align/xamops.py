@@ -319,7 +319,7 @@ def parse_bowtie2(process: CompletedProcess):
         return len(spaces) // indentation, item, int(n_item)
 
     n_reads = dict()
-    names: tuple[str, ...] = tuple()
+    names = list()
     lines = iter(process.stderr.split(linesep))
     # Read through the lines until one matches the first pattern.
     try:
@@ -334,7 +334,7 @@ def parse_bowtie2(process: CompletedProcess):
             # and the number of times it occurs.
             level, name, count = parse_match(match)
             # Key for dictionary.
-            names = names[: level] + (name,)
+            names = names[:level] + [name]
             key = ", ".join(names)
             # Check if the key was encountered previously.
             if (prev := n_reads.get(key)) is None:

@@ -48,7 +48,7 @@ class TestWorkflow(ut.TestCase):
 
     def test_wf_sim_20000reads_2clusts(self):
         # Simulate the data to be processed with wf.
-        fastqs = run_sim_total(sim_dir=str(self.SIM_DIR),
+        fastqs = run_sim_total(sim_dir=self.SIM_DIR,
                                sample=self.SAMPLE,
                                ref=self.REF,
                                refs=self.REFS,

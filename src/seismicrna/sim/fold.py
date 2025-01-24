@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Iterable
 
 from click import command
 
@@ -103,8 +104,8 @@ def fold_region(region: Region, *,
 def run(fasta: str, *,
         sim_dir: str,
         profile_name: str,
-        fold_coords: tuple[tuple[str, int, int], ...],
-        fold_primers: tuple[tuple[str, DNA, DNA], ...],
+        fold_coords: Iterable[tuple[str, int, int]],
+        fold_primers: Iterable[tuple[str, DNA, DNA]],
         fold_regions_file: str | None,
         fold_constraint: str | None,
         fold_temp: float,

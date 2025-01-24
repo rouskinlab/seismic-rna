@@ -789,7 +789,7 @@ class BatchedReport(Report, ABC):
 
     @classmethod
     @abstractmethod
-    def _batch_types(cls) -> tuple[type[ReadBatchIO], ...]:
+    def _batch_types(cls) -> list[type[ReadBatchIO]]:
         """ Type(s) of batch(es) for the report. """
 
     @classmethod

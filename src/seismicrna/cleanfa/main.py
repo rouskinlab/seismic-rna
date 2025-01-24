@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import Iterable
+
 from click import command
 
 from .cleanfa import clean_fasta
@@ -13,7 +16,7 @@ from ..core.task import dispatch
 
 
 @run_func(CMD_CLEANFA)
-def run(input_path: tuple[str, ...], *,
+def run(input_path: Iterable[str | Path], *,
         inplace: bool,
         out_dir: str,
         force: bool,

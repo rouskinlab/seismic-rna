@@ -1,7 +1,7 @@
 from functools import wraps
 from inspect import Parameter, Signature
 from textwrap import dedent
-from typing import Any, Callable
+from typing import Any, Callable, Iterable
 
 from . import cli
 from .default import cli_defaults, cli_opts
@@ -19,7 +19,7 @@ cli_docstrs = {option.name: option.help for option in cli_opts.values()}
 
 def get_param_default(param: Parameter,
                       defaults: dict[str, Any],
-                      exclude_defaults: tuple[str, ...]):
+                      exclude_defaults: Iterable[str]):
     """ Return the parameter, possibly with a new default value. """
     if param.name in exclude_defaults:
         return param
@@ -33,8 +33,11 @@ def get_param_default(param: Parameter,
 
 
 def param_defaults(defaults: dict[str, Any],
-                   exclude_defaults: tuple[str, ...]):
+                   exclude_defaults: Iterable[str] = ()):
     """ Give the keyword argments of a function default values. """
+    # Since exclude_defaults can be used multiple times, ensure it is
+    # not an exhaustible generator.
+    exclude_defaults = set(exclude_defaults)
 
     def decorator(func: Callable):
         # List all the parameters of the function, replacing the default
@@ -67,7 +70,7 @@ def param_defaults(defaults: dict[str, Any],
 
 
 def auto_defaults(extra_defaults: dict[str, Any] | None = None,
-                  exclude_defaults: tuple[str, ...] = ()):
+                  exclude_defaults: Iterable[str] = ()):
     """ Call `paramdef` and automatically infer default values from
     the CLI and API. Extra defaults (if needed) may be given as keyword
     arguments. """
@@ -172,7 +175,7 @@ def auto_docstrs(extra_docstrs: dict[str, str] | None = None,
 
 def auto(*,
          extra_defaults: dict[str, Any] | None = None,
-         exclude_defaults: tuple[str, ...] = (),
+         exclude_defaults: Iterable[str] = (),
          extra_docstrs: dict[str, str] | None = None,
          return_docstr: str = ""):
     """ Combine `auto_defaults` and `auto_docstrs`, in that order. """

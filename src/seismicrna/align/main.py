@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Iterable
 
 from click import command
 
@@ -71,12 +72,12 @@ from ..core.run import run_func
           extra_defaults=extra_defaults)
 def run(fasta: str, *,
         # Inputs
-        fastqz: tuple[str, ...],
-        fastqy: tuple[str, ...],
-        fastqx: tuple[str, ...],
-        dmfastqz: tuple[str, ...],
-        dmfastqy: tuple[str, ...],
-        dmfastqx: tuple[str, ...],
+        fastqz: Iterable[str | Path],
+        fastqy: Iterable[str | Path],
+        fastqx: Iterable[str | Path],
+        dmfastqz: Iterable[str | Path],
+        dmfastqy: Iterable[str | Path],
+        dmfastqx: Iterable[str | Path],
         phred_enc: int,
         # Outputs
         out_dir: str,

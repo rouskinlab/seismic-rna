@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Iterable
 
 from click import command
 
@@ -97,7 +98,7 @@ def split_xam_file(xam_file: Path,
 @run_func(CMD_SPLITBAM, with_tmp=True, pass_keep_tmp=True)
 def run(fasta: str, *,
         # Inputs
-        input_path: tuple[str, ...],
+        input_path: Iterable[str | Path],
         phred_enc: int,
         # Outputs
         out_dir: str,

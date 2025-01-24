@@ -118,9 +118,9 @@ def fold_profile(table: MaskPositionTableLoader | ClusterPositionTableLoader,
 
 
 @run_func(CMD_FOLD, extra_defaults=extra_defaults)
-def run(input_path: tuple[str, ...], *,
-        fold_coords: tuple[tuple[str, int, int], ...],
-        fold_primers: tuple[tuple[str, DNA, DNA], ...],
+def run(input_path: Iterable[str | Path], *,
+        fold_coords: Iterable[tuple[str, int, int]],
+        fold_primers: Iterable[tuple[str, DNA, DNA]],
         fold_regions_file: str | None,
         fold_full: bool,
         quantile: float,

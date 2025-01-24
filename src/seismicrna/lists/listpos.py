@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Iterable
 
 import pandas as pd
 from click import command
@@ -49,7 +50,7 @@ def list_pos(table: PositionTable, force: bool, **kwargs):
 
 
 @run_func(CMD_LISTPOS)
-def run(input_path: tuple[str, ...], *,
+def run(input_path: Iterable[str | Path], *,
         max_fmut_pos,
         complement: bool,
         force: bool,

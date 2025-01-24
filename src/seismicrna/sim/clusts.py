@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Iterable
 
 import numpy as np
 import pandas as pd
@@ -79,7 +80,7 @@ def load_pclust(pclust_file: Path):
 
 @run_func(COMMAND)
 def run(*,
-        ct_file: tuple[str, ...],
+        ct_file: Iterable[str | Path],
         clust_conc: float,
         force: bool,
         max_procs: int):

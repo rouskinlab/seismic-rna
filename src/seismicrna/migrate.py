@@ -1,5 +1,6 @@
 import gzip
 from pathlib import Path
+from typing import Iterable
 
 from click import command
 
@@ -245,7 +246,7 @@ def migrate_out_dir(out_dir: Path, n_procs: int):
 
 
 @run_func(CMD_MIGRATE)
-def run(input_path: tuple[str, ...], *,
+def run(input_path: Iterable[str | Path], *,
         max_procs: int) -> list[Path]:
     """ Migrate output directories from v0.21 to v0.22 """
     return dispatch(migrate_out_dir,

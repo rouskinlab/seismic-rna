@@ -2,6 +2,7 @@ from functools import cached_property
 from itertools import chain
 from pathlib import Path
 from subprocess import CompletedProcess
+from typing import Iterable
 
 from ..core import path
 from ..core.extern import (GUNZIP_CMD,
@@ -231,7 +232,7 @@ class FastqUnit(object):
     def _from_files(cls, /, *,
                     phred_enc: int,
                     one_ref: bool,
-                    fqs: list[Path],
+                    fqs: Iterable[str | Path],
                     key: str):
         if key != cls.KEY_SINGLE and key != cls.KEY_INTER:
             raise ValueError(f"Invalid key: {repr(key)}")
@@ -302,7 +303,7 @@ class FastqUnit(object):
                 yield fq_unit
 
     @classmethod
-    def from_paths(cls, /, *, phred_enc: int, **fastq_args: list[Path]):
+    def from_paths(cls, /, *, phred_enc: int, **fastq_args: Iterable[str | Path]):
         """
         Yield a FastqUnit for each FASTQ file (or each pair of mate 1
         and mate 2 FASTQ files) whose paths are given as strings.
@@ -312,13 +313,13 @@ class FastqUnit(object):
         phred_enc: int
             ASCII offset for encoding Phred scores
         fastq_args: list[Path]
-            FASTQ files, given as lists of paths:
-            - fastqz: FASTQ files of single-end reads
-            - fastqy: FASTQ files of interleaved paired-end reads
-            - fastqx: mated FASTQ files of paired-end reads
-            - dmfastqz: demultiplexed FASTQ files of single-end reads
-            - dmfastqy: demultiplexed FASTQ files of interleaved paired-end reads
-            - dmfastqx: demultiplexed mated FASTQ files of paired-end reads
+            FASTQ files, given as iterables of paths:
+            - fastqz: single-end
+            - fastqy: interleaved paired-end
+            - fastqx: mated paired-end
+            - dmfastqz: demultiplexed single-end
+            - dmfastqy: demultiplexed interleaved paired-end
+            - dmfastqx: demultiplexed mated paired-end
 
         Yield
         -----

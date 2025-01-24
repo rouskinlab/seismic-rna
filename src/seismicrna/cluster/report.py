@@ -41,7 +41,7 @@ class ClusterReport(BatchedReport, ClusterIO):
 
     @classmethod
     def _batch_types(cls):
-        return ClusterBatchIO,
+        return [ClusterBatchIO]
 
     @classmethod
     def fields(cls):

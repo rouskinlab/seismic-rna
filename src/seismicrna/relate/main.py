@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Iterable
 
 from click import command
 
@@ -52,7 +53,7 @@ def check_duplicates(xam_files: list[Path]):
 
 @run_func(CMD_RELATE, with_tmp=True, pass_keep_tmp=True)
 def run(fasta: str,
-        input_path: tuple[str, ...], *,
+        input_path: Iterable[str | Path], *,
         out_dir: str,
         tmp_dir: Path,
         min_reads: int,
@@ -86,8 +87,7 @@ def run(fasta: str,
     else:
         relate_fasta = fasta
     # List the input XAM files and check for duplicates.
-    xam_files = list(path.find_files_chain(map(Path, input_path),
-                                           path.XAM_SEGS))
+    xam_files = list(path.find_files_chain(input_path, path.XAM_SEGS))
     check_duplicates(xam_files)
     return dispatch(relate_xam,
                     max_procs,

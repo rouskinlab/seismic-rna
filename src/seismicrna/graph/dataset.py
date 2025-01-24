@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
 from itertools import chain
+from pathlib import Path
+from typing import Iterable
 
 from .base import (BaseWriter,
                    get_action_name,
@@ -110,7 +112,7 @@ class DatasetRunner(RelRunner, ClusterGroupRunner, ABC):
 
     @classmethod
     def run(cls,
-            input_path: tuple[str, ...], *,
+            input_path: Iterable[str | Path], *,
             verify_times: bool,
             max_procs: int,
             **kwargs):

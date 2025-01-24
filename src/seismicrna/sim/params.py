@@ -1,4 +1,6 @@
 import os
+from pathlib import Path
+from typing import Iterable
 
 from click import command
 
@@ -13,9 +15,9 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 
 @run_func(COMMAND)
 def run(*,
-        ct_file: tuple[str, ...],
-        pmut_paired: tuple[tuple[str, float], ...],
-        pmut_unpaired: tuple[tuple[str, float], ...],
+        ct_file: Iterable[str | Path],
+        pmut_paired: Iterable[tuple[str, float]],
+        pmut_unpaired: Iterable[tuple[str, float]],
         vmut_paired: float,
         vmut_unpaired: float,
         center_fmean: float,
@@ -26,6 +28,9 @@ def run(*,
         force: bool,
         max_procs: int):
     """ Simulate parameter files. """
+    # Since ct_file is used three times, ensure it is not an exhaustible
+    # generator.
+    ct_file = list(ct_file)
     muts_mod.run(ct_file=ct_file,
                  pmut_paired=pmut_paired,
                  pmut_unpaired=pmut_unpaired,

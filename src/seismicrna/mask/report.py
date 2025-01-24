@@ -55,7 +55,7 @@ class MaskReport(BatchedReport, MaskIO):
 
     @classmethod
     def _batch_types(cls):
-        return MaskBatchIO,
+        return [MaskBatchIO]
 
     @classmethod
     def fields(cls):

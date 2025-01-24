@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import Iterable
+
 from click import command
 
 from .io import ct_to_db, db_to_ct
@@ -12,7 +15,7 @@ from ..task import as_list_of_tuples, dispatch
 
 
 @run_func(CMD_CT2DB)
-def run_ct_to_db(input_path: tuple[str, ...], *,
+def run_ct_to_db(input_path: Iterable[str | Path], *,
                  force: bool,
                  max_procs: int):
     """ Convert connectivity table (CT) to dot-bracket (DB) files. """
@@ -25,7 +28,7 @@ def run_ct_to_db(input_path: tuple[str, ...], *,
 
 
 @run_func(CMD_DB2CT)
-def run_db_to_ct(input_path: tuple[str, ...], *,
+def run_db_to_ct(input_path: Iterable[str | Path], *,
                  force: bool,
                  max_procs: int):
     """ Convert dot-bracket (DB) to connectivity table (CT) files. """

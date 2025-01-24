@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Iterable
 
 from click import command
 
@@ -69,7 +70,7 @@ def from_param_dir(param_dir: Path,
 
 @run_func(COMMAND, with_tmp=True)
 def run(*,
-        param_dir: tuple[str, ...],
+        param_dir: Iterable[str | Path],
         profile_name: str,
         sample: str,
         paired_end: bool,

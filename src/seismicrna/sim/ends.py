@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Iterable
 
 import numpy as np
 import pandas as pd
@@ -227,7 +228,7 @@ def load_pends(pends_file: Path):
 
 @run_func(COMMAND)
 def run(*,
-        ct_file: tuple[str, ...],
+        ct_file: Iterable[str | Path],
         center_fmean: float,
         center_fvar: float,
         length_fmean: float,

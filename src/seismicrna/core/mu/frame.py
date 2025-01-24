@@ -1,6 +1,6 @@
 from functools import wraps
 from numbers import Number
-from typing import Callable
+from typing import Callable, Iterable
 
 import numpy as np
 import pandas as pd
@@ -51,14 +51,14 @@ def find_highest_type(*values: np.ndarray | pd.Series | pd.DataFrame,
 
 
 def reframe(values: Number | np.ndarray | pd.Series | pd.DataFrame,
-            axes: None | tuple[int | np.ndarray | pd.Index, ...] = None):
+            axes: Iterable[int | np.ndarray | pd.Index] | None = None):
     """ Place the values in an array object with the given axes.
 
     Parameters
     ----------
     values: Number | numpy.ndarray | pandas.Series | pandas.DataFrame
         Value(s) to place in a new array-like object.
-    axes: None | tuple[int | numpy.ndarray | pandas.Index, ...] = None
+    axes: tuple[int | numpy.ndarray | pandas.Index, ...] | None
         Axes of the new array-like object, specified as follows:
 
         - If None, then return just the values as a NumPy array.

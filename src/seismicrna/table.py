@@ -89,7 +89,7 @@ def get_dataset_flags(dataset: MutsDataset,
 
 
 @run_func(CMD_TABLE)
-def run(input_path: tuple[str, ...], *,
+def run(input_path: Iterable[str | Path], *,
         relate_pos_table: bool,
         relate_read_table: bool,
         mask_pos_table: bool,

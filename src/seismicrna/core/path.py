@@ -254,7 +254,7 @@ class Field(object):
                  options: Iterable = (),
                  is_ext: bool = False):
         self.dtype = dtype
-        self.options = tuple(options)
+        self.options = list(options)
         if not all(isinstance(option, self.dtype) for option in self.options):
             raise PathTypeError("All options of a field must be of its type")
         self.is_ext = is_ext
@@ -407,10 +407,10 @@ class Segment(object):
         return self.field_types.get(EXT)
 
     @cached_property
-    def exts(self) -> tuple[str, ...]:
+    def exts(self) -> list[str]:
         """ Valid file extensions of the segment. """
         if self.ext_type is None:
-            return tuple()
+            return list()
         if not self.ext_type.options:
             raise ValueError(f"{self} extension {self.ext_type} has no options")
         return self.ext_type.options

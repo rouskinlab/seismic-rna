@@ -1,7 +1,7 @@
 import os
 from itertools import chain
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 import numpy as np
 import pandas as pd
@@ -292,14 +292,14 @@ def sim_pmut(positions: pd.Index,
     return pmut
 
 
-def _make_pmut_means_kwargs(pmut: tuple[tuple[str, float], ...]):
+def _make_pmut_means_kwargs(pmut: Iterable[tuple[str, float]]):
     """ Make keyword arguments for `make_pmut_means`. """
     return {f"p{mut}": p for mut, p in pmut}
 
 
 def run_struct(ct_file: Path,
-               pmut_paired: tuple[tuple[str, float], ...],
-               pmut_unpaired: tuple[tuple[str, float], ...],
+               pmut_paired: Iterable[tuple[str, float]],
+               pmut_unpaired: Iterable[tuple[str, float]],
                vmut_paired: float,
                vmut_unpaired: float,
                force: bool):
@@ -392,9 +392,9 @@ def calc_pmut_pattern(pmut: pd.DataFrame, pattern: RelPattern):
 
 @run_func(COMMAND)
 def run(*,
-        ct_file: tuple[str, ...],
-        pmut_paired: tuple[tuple[str, float], ...],
-        pmut_unpaired: tuple[tuple[str, float], ...],
+        ct_file: Iterable[str | Path],
+        pmut_paired: Iterable[tuple[str, float]],
+        pmut_unpaired: Iterable[tuple[str, float]],
         vmut_paired: float,
         vmut_unpaired: float,
         force: bool,

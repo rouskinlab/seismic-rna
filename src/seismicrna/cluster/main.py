@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Iterable
 
 from click import command
 
@@ -36,7 +37,7 @@ from ..mask.dataset import load_mask_dataset
 
 
 @run_func(CMD_CLUSTER)
-def run(input_path: tuple[str, ...], *,
+def run(input_path: Iterable[str | Path], *,
         tmp_pfx: str,
         keep_tmp: bool,
         min_clusters: int,

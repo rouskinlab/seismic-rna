@@ -210,7 +210,7 @@ def join_regions(out_dir: Path,
 
 
 @run_func(CMD_JOIN, extra_defaults=extra_defaults)
-def run(input_path: tuple[str, ...], *,
+def run(input_path: Iterable[str | Path], *,
         joined: str,
         join_clusts: str | None,
         mask_pos_table: bool,

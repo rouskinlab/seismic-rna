@@ -52,7 +52,7 @@ class RelateReport(BatchedRefseqReport, RelateIO):
 
     @classmethod
     def _batch_types(cls):
-        return ReadNamesBatchIO, RelateBatchIO
+        return [ReadNamesBatchIO, RelateBatchIO]
 
     def refseq_file(self, top: Path):
         return refseq_file_path(top,

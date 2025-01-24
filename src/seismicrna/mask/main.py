@@ -73,24 +73,24 @@ def load_regions(input_path: Iterable[str | Path],
 
 
 @run_func(CMD_MASK, extra_defaults=extra_defaults)
-def run(input_path: tuple[str, ...], *,
+def run(input_path: Iterable[str | Path], *,
         tmp_pfx: str,
         keep_tmp: bool,
         # Regions
-        mask_coords: tuple[tuple[str, int, int], ...],
-        mask_primers: tuple[tuple[str, DNA, DNA], ...],
+        mask_coords: Iterable[tuple[str, int, int]],
+        mask_primers: Iterable[tuple[str, DNA, DNA]],
         primer_gap: int,
         mask_regions_file: str | None,
         # Mutation counting
         mask_del: bool,
         mask_ins: bool,
-        mask_mut: tuple[str, ...],
+        mask_mut: Iterable[str],
         # Filtering
         mask_polya: int,
         mask_gu: bool,
-        mask_pos: tuple[tuple[str, int], ...],
+        mask_pos: Iterable[tuple[str, int]],
         mask_pos_file: str | None,
-        mask_read: tuple[str, ...],
+        mask_read: Iterable[str],
         mask_read_file: str | None,
         mask_discontig: bool,
         min_ninfo_pos: int,

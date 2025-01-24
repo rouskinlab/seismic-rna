@@ -288,7 +288,7 @@ class TwoTableRunner(TableRunner, ABC):
 
     @classmethod
     def run(cls,
-            input_path: tuple[str, ...], *,
+            input_path: Iterable[str | Path], *,
             compself: bool,
             comppair: bool,
             max_procs: int,

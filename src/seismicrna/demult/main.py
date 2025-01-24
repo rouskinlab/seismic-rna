@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Iterable
 
 from click import command
 
@@ -31,7 +32,7 @@ def run_dm(fasta: str,
            refs_meta: str,
            out_dir: str,
            tmp_dir: Path,
-           fastqx: tuple[str, ...],
+           fastqx: Iterable[str | Path],
            phred_enc: int,
            barcode_start: int,
            barcode_end: int,
@@ -42,7 +43,7 @@ def run_dm(fasta: str,
            demulti_overwrite: bool,
            keep_tmp: bool):
     """ Split multiplexed FASTQ files by their barcodes. """
-    fq_units = list(FastqUnit.from_paths(fastqx=list(map(Path, fastqx)),
+    fq_units = list(FastqUnit.from_paths(fastqx=fastqx,
                                          phred_enc=phred_enc))
     return [demultiplex_run(refs_file_csv=refs_meta,
                             overwrite=demulti_overwrite,

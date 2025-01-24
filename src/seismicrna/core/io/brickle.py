@@ -44,9 +44,7 @@ def save_brickle(item: Any,
     return checksum
 
 
-def load_brickle(file: Path | str,
-                 checksum: str,
-                 check_type: None | type | tuple[type, ...] = None):
+def load_brickle(file: Path | str, data_type: type, checksum: str):
     """ Unpickle and return an object from a Brotli-compressed file. """
     logger.routine(f"Began loading {file}")
     with open(file, "rb") as f:
@@ -57,8 +55,8 @@ def load_brickle(file: Path | str,
             raise WrongChecksumError(f"Expected checksum of {file} to be "
                                      f"{checksum}, but got {digest}")
     item = pickle.loads(brotli.decompress(data))
-    if check_type is not None and not isinstance(item, check_type):
-        raise TypeError(f"Expected to unpickle {check_type}, "
+    if not isinstance(item, data_type):
+        raise TypeError(f"Expected to unpickle {data_type}, "
                         f"but got {type(item).__name__}")
     logger.routine(f"Ended loading {file}")
     return item

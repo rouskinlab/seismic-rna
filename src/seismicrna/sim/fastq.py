@@ -311,8 +311,8 @@ def from_param_dir(param_dir: Path, *,
 
 @run_func(COMMAND)
 def run(*,
-        input_path: tuple[str, ...],
-        param_dir: tuple[str, ...],
+        input_path: Iterable[str | Path],
+        param_dir: Iterable[str | Path],
         profile_name: str,
         sample: str,
         paired_end: bool,
