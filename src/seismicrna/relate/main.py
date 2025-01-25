@@ -52,9 +52,9 @@ def check_duplicates(xam_files: list[Path]):
 
 
 @run_func(CMD_RELATE, with_tmp=True, pass_keep_tmp=True)
-def run(fasta: str,
+def run(fasta: str | Path,
         input_path: Iterable[str | Path], *,
-        out_dir: str,
+        out_dir: str | Path,
         tmp_dir: Path,
         min_reads: int,
         min_mapq: int,

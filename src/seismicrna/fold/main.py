@@ -130,7 +130,7 @@ def run(input_path: Iterable[str | Path], *,
         fold_mfe: bool,
         fold_max: int,
         fold_percent: float,
-        tmp_pfx: str,
+        tmp_pfx: str | Path,
         keep_tmp: bool,
         max_procs: int,
         force: bool):

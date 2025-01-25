@@ -21,7 +21,7 @@ from ..core.task import dispatch
 def run(*,
         ct_pos_5: Iterable[tuple[str, int]],
         inplace: bool,
-        out_dir: str,
+        out_dir: str | Path,
         force: bool,
         max_procs: int):
     """ Renumber connectivity table (CT) files given a 5' position. """

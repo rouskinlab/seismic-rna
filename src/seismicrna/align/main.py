@@ -70,7 +70,7 @@ from ..core.run import run_func
           with_tmp=True,
           pass_keep_tmp=True,
           extra_defaults=extra_defaults)
-def run(fasta: str, *,
+def run(fasta: str | Path, *,
         # Inputs
         fastqz: Iterable[str | Path],
         fastqy: Iterable[str | Path],
@@ -80,7 +80,7 @@ def run(fasta: str, *,
         dmfastqx: Iterable[str | Path],
         phred_enc: int,
         # Outputs
-        out_dir: str,
+        out_dir: str | Path,
         tmp_dir: Path,
         keep_tmp: bool,
         # Fastp

@@ -5,14 +5,14 @@
 
 set -eu -o pipefail
 
-# Run the tests and capture the results.
+# Run the tests; log the stderr to the console and the $RESULTS file.
 RESULTS=test-results.txt
-seismic test 2> $RESULTS
+seismic -q test -vv 2>&1 | tee $RESULTS
 cat $RESULTS
 echo
 
 # Check whether all the tests succeeded.
-STATUS=$(tail -n 3 $RESULTS | head -n 1)
+STATUS=$(tail -n 1 $RESULTS)
 echo "STATUS=$STATUS"
 if [ "$STATUS" == "OK" ];
 then

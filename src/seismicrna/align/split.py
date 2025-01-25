@@ -96,12 +96,12 @@ def split_xam_file(xam_file: Path,
 
 
 @run_func(CMD_SPLITBAM, with_tmp=True, pass_keep_tmp=True)
-def run(fasta: str, *,
+def run(fasta: str | Path, *,
         # Inputs
         input_path: Iterable[str | Path],
         phred_enc: int,
         # Outputs
-        out_dir: str,
+        out_dir: str | Path,
         tmp_dir: Path,
         keep_tmp: bool,
         # Bowtie2

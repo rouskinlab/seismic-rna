@@ -139,7 +139,7 @@ def group_clusters(cluster_dirs: Iterable[Path]):
 @run_func(CMD_ENSEMBLES, extra_defaults=extra_defaults)
 def run(input_path: Iterable[str | Path], *,
         # General options
-        tmp_pfx: str,
+        tmp_pfx: str | Path,
         keep_tmp: bool,
         brotli_level: int,
         force: bool,

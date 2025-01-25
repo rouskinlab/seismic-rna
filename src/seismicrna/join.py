@@ -218,7 +218,7 @@ def run(input_path: Iterable[str | Path], *,
         cluster_pos_table: bool,
         cluster_abundance_table: bool,
         verify_times: bool,
-        tmp_pfx: str,
+        tmp_pfx: str | Path,
         keep_tmp: bool,
         max_procs: int,
         force: bool) -> list[Path]:

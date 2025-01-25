@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import Iterable
 
 from click import command
@@ -27,8 +28,8 @@ COMMAND = __name__.split(os.path.extsep)[-1]
           default=None,
           extra_defaults=extra_defaults)
 def run(*,
-        sim_dir: str,
-        tmp_pfx: str,
+        sim_dir: str | Path,
+        tmp_pfx: str | Path,
         sample: str,
         refs: str,
         ref: str,

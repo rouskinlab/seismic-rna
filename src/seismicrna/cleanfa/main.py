@@ -18,7 +18,7 @@ from ..core.task import dispatch
 @run_func(CMD_CLEANFA)
 def run(input_path: Iterable[str | Path], *,
         inplace: bool,
-        out_dir: str,
+        out_dir: str | Path,
         force: bool,
         max_procs: int):
     """ Clean the names and sequences in FASTA files. """

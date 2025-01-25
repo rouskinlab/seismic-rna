@@ -130,7 +130,7 @@ def run(input_path: Iterable[str | Path], *,
         relate_pos_table: bool,
         relate_read_table: bool,
         verify_times: bool,
-        tmp_pfx: str,
+        tmp_pfx: str | Path,
         keep_tmp: bool,
         max_procs: int,
         force: bool) -> list[Path]:

@@ -573,7 +573,7 @@ opt_relate_pos_table = Option(
 opt_relate_read_table = Option(
     ("--relate-read-table/--no-relate-read-table",),
     type=bool,
-    default=True,
+    default=False,
     help="Tabulate relationships per read for relate data"
 )
 

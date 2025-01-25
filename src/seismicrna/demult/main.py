@@ -28,9 +28,9 @@ from ..core.run import run_func
           with_tmp=True,
           pass_keep_tmp=True,
           extra_defaults=extra_defaults)
-def run_dm(fasta: str,
+def run_dm(fasta: str | Path,
            refs_meta: str,
-           out_dir: str,
+           out_dir: str | Path,
            tmp_dir: Path,
            fastqx: Iterable[str | Path],
            phred_enc: int,

@@ -38,7 +38,7 @@ from ..mask.dataset import load_mask_dataset
 
 @run_func(CMD_CLUSTER)
 def run(input_path: Iterable[str | Path], *,
-        tmp_pfx: str,
+        tmp_pfx: str | Path,
         keep_tmp: bool,
         min_clusters: int,
         max_clusters: int,

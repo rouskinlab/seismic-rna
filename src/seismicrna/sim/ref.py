@@ -27,7 +27,7 @@ def get_fasta_path(top: Path, ref: str):
 
 @run_func(COMMAND, default=Path)
 def run(*,
-        sim_dir: str,
+        sim_dir: str | Path,
         refs: str,
         ref: str,
         reflen: int,

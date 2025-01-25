@@ -74,7 +74,7 @@ def load_regions(input_path: Iterable[str | Path],
 
 @run_func(CMD_MASK, extra_defaults=extra_defaults)
 def run(input_path: Iterable[str | Path], *,
-        tmp_pfx: str,
+        tmp_pfx: str | Path,
         keep_tmp: bool,
         # Regions
         mask_coords: Iterable[tuple[str, int, int]],
