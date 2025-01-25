@@ -66,7 +66,7 @@ class TestWorkflow(ut.TestCase):
     def setUp(self):
         self.maxDiff = 10000
         self._config = get_config()
-        set_config(verbosity=Level.DETAIL,
+        set_config(verbosity=Level.ERROR,
                    log_file_path=None,
                    raise_on_error=True)
         self.SIM_DIR.mkdir()
@@ -307,8 +307,8 @@ class TestWorkflow(ut.TestCase):
 
 class TestWorkflowTwoOutDirs(ut.TestCase):
     NUMBERS = [1, 2]
-    OUT_DIR = Path("test-out").absolute()
     SIM_DIR = Path("test-sim").absolute()
+    OUT_DIR = Path("test-out").absolute()
     SIM_DIRS = tuple(Path(f"test-sim{i}").absolute() for i in NUMBERS)
     OUT_DIRS = tuple(Path(f"test-out{i}").absolute() for i in NUMBERS)
     REFS = "test_refs"
@@ -349,7 +349,7 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
                             ref=self.REF,
                             refs=self.REFS,
                             reflen=60)
-        ct_file, = run_sim_fold(fasta, fold_max=1)
+        ct_file, = run_sim_fold(fasta, sim_dir=self.SIM_DIR, fold_max=1)
         dmfastqxs = list()
         for sim_dir, out_dir in zip(self.SIM_DIRS, self.OUT_DIRS, strict=True):
             ct_file_copy = path.transpath(sim_dir,
@@ -379,14 +379,14 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
                                run_align,
                                fasta,
                                dmfastqx=list(chain(*dmfastqxs)),
-                               out_dir=str(self.OUT_DIR),
+                               out_dir=self.OUT_DIR,
                                **align_kwargs)
         # Align FASTQ files in different output directories.
         bam_files = list()
         for dmfastqx, out_dir in zip(dmfastqxs, self.OUT_DIRS, strict=True):
             bam_dir, = run_align(fasta,
                                  dmfastqx=dmfastqx,
-                                 out_dir=str(out_dir),
+                                 out_dir=out_dir,
                                  **align_kwargs)
             bam_file = out_dir.joinpath(self.SAMPLE, "align", f"{self.REF}.bam")
             self.assertTrue(bam_file.is_file())

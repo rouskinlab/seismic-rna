@@ -1279,7 +1279,7 @@ opt_ct_pos_5 = Option(
 )
 
 opt_inplace = Option(
-    ("--inplace/--not-inplace",),
+    ("--inplace/--no-inplace",),
     type=bool,
     default=False,
     help="Modify files in-place instead of writing new files "
