@@ -8,11 +8,8 @@
 # -- Project information -----------------------------------------------------
 
 project = "seismic-rna"
-project_copyright = "2024, the Rouskin Lab"
+project_copyright = "2022-2025, the Rouskin Lab"
 author = "Matthew Allan, Yves Martin, Scott Grote, Alberic de Lajarte, and Justin Aruda"
-
-# The full version, including alpha/beta/rc tags
-# release = "28.02.2023"
 
 # -- General configuration ---------------------------------------------------
 
