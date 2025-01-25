@@ -10,7 +10,7 @@ from .onetable import OneTableGraph, OneTableWriter, OneTableRunner
 from .table import AbundanceTableRunner
 from .trace import iter_stack_bar_traces
 from ..core.header import NUM_CLUSTS_NAME, CLUST_NAME
-from ..core.run import log_command
+from ..core.run import run_func
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -101,7 +101,7 @@ class ClusterAbundanceRunner(OneTableRunner, AbundanceTableRunner):
         return ClusterAbundanceWriter
     
     @classmethod
-    @log_command(COMMAND)
+    @run_func(COMMAND, )
     def run(cls, *args, **kwargs):
         return super().run(*args, **kwargs)
 
@@ -110,24 +110,3 @@ class ClusterAbundanceRunner(OneTableRunner, AbundanceTableRunner):
 def cli(*args, **kwargs):
     """ Abundance of each cluster. """
     return ClusterAbundanceRunner.run(*args, **kwargs)
-
-########################################################################
-#                                                                      #
-# © Copyright 2022-2025, the Rouskin Lab.                              #
-#                                                                      #
-# This file is part of SEISMIC-RNA.                                    #
-#                                                                      #
-# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
-# it under the terms of the GNU General Public License as published by #
-# the Free Software Foundation; either version 3 of the License, or    #
-# (at your option) any later version.                                  #
-#                                                                      #
-# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
-# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
-# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
-# Public License for more details.                                     #
-#                                                                      #
-# You should have received a copy of the GNU General Public License    #
-# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
-#                                                                      #
-########################################################################
