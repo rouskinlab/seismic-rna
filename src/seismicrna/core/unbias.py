@@ -1068,7 +1068,7 @@ def calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
                                    init_p_mut_given_span,
                                    f_tol=f_tol,
                                    x_rtol=x_rtol))
-    except NoConvergence as error:
+    except (NoConvergence, ValueError) as error:
         logger.warning(error)
         return init_p_mut_given_span
 
