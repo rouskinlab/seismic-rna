@@ -13,8 +13,7 @@ echo
 
 # Check whether all the tests succeeded.
 STATUS=$(tail -n 1 $RESULTS)
-echo "STATUS=$STATUS"
-if [ "$STATUS" == "OK" ];
+if [[ $STATUS == OK* ]];
 then
 	  EXIT=0
 else
@@ -29,4 +28,6 @@ then
 fi
 
 # Exit 0 if all tests succeeded, otherwise exit 1.
+echo "Exiting test suite with status $EXIT"
 exit $EXIT
+
