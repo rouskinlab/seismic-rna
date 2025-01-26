@@ -936,8 +936,9 @@ opt_join_clusts = Option(
 opt_region_length = Option(
     ("--region-length", "-L",),
     type=int,
-    default=180,
-    help="Make each region this length (nt)",
+    default=0,
+    help="Make each region this length (if 0, then calculate the length over "
+         "which the average read has 2 mutations)",
 )
 
 opt_region_min_overlap = Option(

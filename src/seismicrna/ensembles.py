@@ -19,7 +19,12 @@ from .core.arg import (CMD_ENSEMBLES,
                        opt_join_clusts,
                        opt_region_length,
                        opt_region_min_overlap)
+from .core.dataset import MutsDataset
+from .core.error import (IncompatibleValuesError,
+                         InconsistentValueError,
+                         OutOfBoundsError)
 from .core.logs import logger
+from .core.rel import RelPattern
 from .core.report import KsWrittenF, End5F, End3F
 from .core.run import run_func
 from .core.seq import DNA, DuplicateReferenceNameError
@@ -38,15 +43,17 @@ def calc_regions(total_end5: int,
     if not isinstance(total_end3, int):
         raise TypeError(total_end3)
     if not 1 <= total_end5 <= total_end3:
-        raise ValueError("Must have 1 ≤ total_end5 ≤ total_end3, "
-                         f"but got total_end5={total_end5} "
-                         f"and total_end3={total_end3}")
+        raise IncompatibleValuesError("Must have 1 ≤ total_end5 ≤ total_end3, "
+                                      f"but got total_end5={total_end5} "
+                                      f"and total_end3={total_end3}")
     total_length = total_end3 - total_end5 + 1
     assert total_length >= 1
     if not isinstance(region_length, int):
         raise TypeError(region_length)
     if region_length < 1:
-        raise ValueError(f"region_length must be ≥ 1, but got {region_length}")
+        raise OutOfBoundsError(
+            f"region_length must be ≥ 1, but got {region_length}"
+        )
     if region_length > total_length:
         logger.warning(f"region_length ({region_length}) is greater than "
                        f"total length of region ({total_length}): "
@@ -56,13 +63,15 @@ def calc_regions(total_end5: int,
     if not isinstance(region_min_overlap, float):
         raise TypeError(region_min_overlap)
     if not 0. < region_min_overlap < 1.:
-        raise ValueError("region_min_overlap must be > 0 and < 1, "
-                         f"but got {region_min_overlap}")
+        raise OutOfBoundsError("region_min_overlap must be > 0 and < 1, "
+                               f"but got {region_min_overlap}")
     max_step_size = int(region_length * (1. - region_min_overlap))
     assert 0 <= max_step_size < region_length
     if max_step_size == 0:
-        raise ValueError(f"Cannot have region_length={region_length} "
-                         f"with region_min_overlap={region_min_overlap}")
+        raise IncompatibleValuesError(
+            f"Cannot have region_length={region_length} "
+            f"with region_min_overlap={region_min_overlap}"
+        )
     num_regions = 1 + ceil((total_length - region_length) / max_step_size)
     region_end5s = np.asarray(
         np.round(np.linspace(total_end5,
@@ -75,28 +84,92 @@ def calc_regions(total_end5: int,
             for end5, end3 in zip(region_end5s, region_end3s, strict=True)]
 
 
+class CalcRefRegionLengthError(ValueError):
+    """ Error when calculating mutation densities. """
+
+
+def calc_ref_region_length(datasets: Iterable[MutsDataset], pattern: RelPattern):
+    logger.routine("Began calculating optimal region length")
+    ref = None
+    total_muts = 0
+    total_lengths = 0
+    for dataset in datasets:
+        if ref is None:
+            ref = dataset.ref
+        elif dataset.ref != ref:
+            raise InconsistentValueError(
+                f"Got multiple references: {repr(ref)} ≠ {repr(dataset.ref)}"
+            )
+        for batch in dataset.iter_batches():
+            info, fits = batch.count_per_pos(pattern)
+            batch_muts = int(fits.sum())
+            batch_lengths = int(batch.read_lengths.sum())
+            total_muts += batch_muts
+            total_lengths += batch_lengths
+            logger.detail(
+                f"Reference {repr(ref)} batch {batch.batch} has "
+                f"{batch.num_reads} reads with {batch_muts} mutations "
+                f"among {batch_lengths} total bases"
+            )
+    logger.detail(f"Reference {repr(ref)} has {total_muts} mutations "
+                  f"among {total_lengths} total bases")
+    if total_lengths == 0:
+        raise CalcRefRegionLengthError(
+            f"Got 0 base calls for reference {repr(ref)}"
+        )
+    if total_muts == 0.:
+        raise CalcRefRegionLengthError(
+            f"Got 0 mutations for reference {repr(ref)}"
+        )
+    # The length of a read expected to contain 2 mutations equals 2
+    # divided by the density of mutations (the number of mutations
+    # divided by the number of base calls).
+    region_length = int(np.ceil(2. * total_lengths / total_muts))
+    logger.routine(f"Ended calculating optimal region length: {region_length}")
+    return region_length
+
+
 def generate_regions(input_path: Iterable[str | Path],
                      coords: Iterable[tuple[str, int, int]],
                      primers: Iterable[tuple[str, DNA, DNA]],
                      primer_gap: int,
                      regions_file: str | None,
                      region_length: int,
-                     region_min_overlap: float):
+                     region_min_overlap: float,
+                     mask_del: bool,
+                     mask_ins: bool,
+                     mask_mut: list[str]):
     """ For each reference, list the regions over which to mask. """
-    _, total_regions = load_regions(input_path,
-                                    coords,
-                                    primers,
-                                    primer_gap,
-                                    regions_file)
+    pattern = RelPattern.from_counts(not mask_del, not mask_ins, mask_mut)
+    datasets, total_regions = load_regions(input_path,
+                                           coords,
+                                           primers,
+                                           primer_gap,
+                                           regions_file)
     mask_regions = list()
     for ref, ref_total_regions in total_regions.dict.items():
+        # Get the region for this reference.
         assert len(ref_total_regions) > 0
         if len(ref_total_regions) > 1:
             raise DuplicateReferenceNameError(ref)
         ref_total_region = ref_total_regions[0]
+        if region_length > 0:
+            # Use a prespecified region length.
+            ref_region_length = region_length
+        else:
+            # Set the region length to the smallest length such that
+            # half of reads are expected to have at least 2 mutations.
+            try:
+                assert datasets.get(ref)
+                ref_region_length = calc_ref_region_length(datasets[ref],
+                                                           pattern)
+            except CalcRefRegionLengthError as error:
+                logger.warning(error)
+                ref_region_length = region_length
+        # Calculate and add the regions for this reference.
         ref_regions = calc_regions(ref_total_region.end5,
                                    ref_total_region.end3,
-                                   region_length,
+                                   ref_region_length,
                                    region_min_overlap)
         mask_regions.extend((ref, end5, end3) for end5, end3 in ref_regions)
     return mask_regions
@@ -199,16 +272,19 @@ def run(input_path: Iterable[str | Path], *,
         raise ValueError(
             "No prefix for joined regions was given via --joined"
         )
-    # Since input_path is used twice, ensure it is not an exhaustible
-    # generator.
+    # Ensure iterable parameters are not exhaustible generators.
     input_path = list(input_path)
+    mask_mut = list(mask_mut)
     mask_regions = generate_regions(input_path,
                                     coords=mask_coords,
                                     primers=mask_primers,
                                     primer_gap=primer_gap,
                                     regions_file=mask_regions_file,
                                     region_length=region_length,
-                                    region_min_overlap=region_min_overlap)
+                                    region_min_overlap=region_min_overlap,
+                                    mask_del=mask_del,
+                                    mask_ins=mask_ins,
+                                    mask_mut=mask_mut)
     mask_dirs = mask_mod.run(
         input_path=input_path,
         tmp_pfx=tmp_pfx,

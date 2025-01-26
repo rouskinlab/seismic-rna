@@ -8,6 +8,7 @@ from numba import jit
 from .ends import END_COORDS, merge_read_ends, sort_segment_ends
 from .index import count_base_types, iter_base_types
 from ..array import find_dims, get_length
+from ..logs import logger
 from ..rel import MATCH, NOCOV, RelPattern
 from ..seq import DNA, POS_NAME
 
@@ -132,8 +133,10 @@ def calc_coverage(pos_index: pd.Index,
                   seg_end3s: np.ndarray,
                   read_weights: pd.DataFrame | None = None):
     """ Number of positions covered by each read. """
+    logger.routine("Began calculating coverage per position and per read")
     # Find the positions in use.
     positions = pos_index.get_level_values(POS_NAME).values
+    logger.detail(f"There are {positions.size} position(s) in use")
     if positions.size == 0:
         # If there are no positions in use, return empty arrays.
         cover_per_pos = (pd.DataFrame(0., pos_index, read_weights.columns)
@@ -141,6 +144,7 @@ def calc_coverage(pos_index: pd.Index,
                          else pd.Series(0., pos_index))
         cover_per_read = pd.DataFrame.from_dict({base: pd.Series(0, read_nums)
                                                  for base in DNA.alph()})
+        logger.routine("Ended calculating coverage per position and per read")
         return cover_per_pos, cover_per_read
     if positions.size > 1 and np.diff(positions).min() <= 0:
         raise ValueError("positions must increase monotonically, "
@@ -200,6 +204,7 @@ def calc_coverage(pos_index: pd.Index,
                          index=read_nums)
          for base in DNA.alph()},
     )
+    logger.routine("Ended calculating coverage per position and per read")
     return cover_per_pos, cover_per_read
 
 
