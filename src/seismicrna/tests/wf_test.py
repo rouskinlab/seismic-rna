@@ -137,6 +137,7 @@ class TestWorkflow(ut.TestCase):
                out_dir=self.OUT_DIR,
                dmfastqx=[samples_dir],
                batch_size=batch_size,
+               brotli_level=0,
                mask_coords=[(ref, end5, end3)
                             for ref, ref_coords in refs_coords.items()
                             for end5, end3 in ref_coords],
