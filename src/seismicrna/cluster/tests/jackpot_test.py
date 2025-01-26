@@ -11,8 +11,7 @@ from seismicrna.cluster.jackpot import (calc_semi_g_anomaly,
                                         _sim_clusters,
                                         _sim_reads)
 from seismicrna.cluster.uniq import UniqReads
-from seismicrna.core.arg.cli import (opt_sim_dir,
-                                     opt_max_em_iter,
+from seismicrna.core.arg.cli import (opt_max_em_iter,
                                      opt_em_thresh,
                                      opt_jackpot_conf_level,
                                      opt_max_jackpot_quotient)
@@ -245,7 +244,7 @@ class TestCalcSemiGAnomaly(ut.TestCase):
 
 
 class TestBootstrapJackpotScores(ut.TestCase):
-    SIM_DIR = Path(opt_sim_dir.default).absolute()
+    SIM_DIR = Path("test_sim").absolute()
     REFS = "test_refs"
     REF = "test_ref"
     SAMPLE = "test_sample"
@@ -264,7 +263,7 @@ class TestBootstrapJackpotScores(ut.TestCase):
     def tearDown(self):
         if self.SIM_DIR.exists():
             shutil.rmtree(self.SIM_DIR)
-        set_config(**self._config._asdict())
+        set_config(*self._config)
 
     def sim_jackpot_quotient(self):
         """ Simulate a dataset and return its jackpotting quotient. """
@@ -273,9 +272,12 @@ class TestBootstrapJackpotScores(ut.TestCase):
         n_clusts = 2
         min_mut_gap = 3
         # Simulate "ideal" data with no low-quality bases or deletions.
-        run_sim_ref(refs=self.REFS, ref=self.REF, reflen=n_pos)
+        run_sim_ref(refs=self.REFS,
+                    ref=self.REF,
+                    reflen=n_pos,
+                    sim_dir=self.SIM_DIR)
         fasta = self.SIM_DIR.joinpath("refs", f"{self.REFS}.fa")
-        run_sim_fold(fasta, fold_max=n_clusts)
+        run_sim_fold(fasta, fold_max=n_clusts, sim_dir=self.SIM_DIR)
         param_dir = self.SIM_DIR.joinpath("params", self.REF, "full")
         ct_file = param_dir.joinpath("simulated.ct")
         pmut = [("loq", 0.),
@@ -299,18 +301,18 @@ class TestBootstrapJackpotScores(ut.TestCase):
                                 ("cm", 0.1),
                                 ("gm", 0.005),
                                 ("tm", 0.005)]
-        run_sim_params(ct_file=(ct_file,),
+        run_sim_params(ct_file=[ct_file],
                        pmut_paired=pmut_paired,
                        pmut_unpaired=pmut_unpaired,
                        center_fmean=0.5,
                        length_fmean=0.5,
                        clust_conc=2.)
-        relate_report_file, = run_sim_relate(param_dir=(param_dir,),
+        relate_report_file, = run_sim_relate(param_dir=[param_dir],
                                              sample=self.SAMPLE,
                                              min_mut_gap=min_mut_gap,
                                              num_reads=n_reads)
         # Mask the data.
-        mask_dir, = run_mask((relate_report_file,),
+        mask_dir, = run_mask([relate_report_file],
                              mask_polya=0,
                              mask_del=False,
                              mask_ins=False,
