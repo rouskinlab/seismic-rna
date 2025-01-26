@@ -279,7 +279,7 @@ class Header(ABC):
         """ Select and return items from the header as an Index. """
         index = self.index
         selected = np.ones(index.size, dtype=bool)
-        # Handle combinations of order and clust specified in a list of tuples.
+        # Handle combinations of k and clust in a list of tuples.
         if value := kwargs.pop(K_CLUST_KEY, None):
             if not isinstance(value, list):
                 raise TypeError(f"{K_CLUST_KEY} must be a list of tuples")
