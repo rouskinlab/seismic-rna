@@ -1,7 +1,23 @@
+import shutil
 import unittest as ut
+from itertools import product
+from pathlib import Path
 
+import numpy as np
+
+from seismicrna.cluster.dataset import JoinClusterMutsDataset
+from seismicrna.core.arg.cli import opt_sim_dir
 from seismicrna.core.logs import Level, get_config, set_config
-from seismicrna.ensembles import calc_regions
+from seismicrna.core.rna.convert import db_to_ct
+from seismicrna.core.seq.fasta import write_fasta
+from seismicrna.core.seq.region import FULL_NAME
+from seismicrna.core.seq.xna import DNA
+from seismicrna.ensembles import (calc_regions,
+                                  run as run_ensembles)
+from seismicrna.sim.params import run as sim_params
+from seismicrna.sim.relate import run as sim_relate
+
+rng = np.random.default_rng()
 
 
 class TestCalcRegions(ut.TestCase):
@@ -39,26 +55,196 @@ class TestCalcRegions(ut.TestCase):
         self.assertEqual(result, expect)
 
 
+class TestEnsembles(ut.TestCase):
+    SIM_DIR = Path(opt_sim_dir.default).absolute()
+    SAMPLE = "test_sample"
+    REFS = "test_refs"
+    REF = "test_ref"
+    PROFILE = "ensembles"
+
+    # Folding modules of the reference sequence (each 60 nt).
+    MODULES = [
+        ("TGACGAACAACGTGTTTGTGAACCATATAGGTAAACGCTGAATGCGTTCGCGCGGAGGGT",
+         ["..(((((((...)))))))..(((......((.(((((.....))))).))......)))",
+          "...(((...(((((((((((.(((.....)))...))).))))))))))).((.....))"]),
+        ("TTTGCAGGAAGATGGTCAACTCTACACCTAGTTTTTACCAGTCCACAAGAGTTTGAACTG",
+         [".(((..(((...((((.((..(((....)))..)).)))).))).))).(((....)))."]),
+        ("GTGCCTTAACCTGAGTACGCCCATATCATGGGAGACATTACAACTCAAATTCTAGGTGTG",
+         ["..((((.....(((((...(((((...)))))..........)))))......))))...",
+          "((((.(((...)))))))...((((((.((((..................))))))))))"]),
+    ]
+
+    def setUp(self):
+        self._config = get_config()
+        set_config(verbosity=Level.ERROR,
+                   log_file_path=None,
+                   raise_on_error=True)
+        self.SIM_DIR.mkdir()
+
+    def tearDown(self):
+        shutil.rmtree(self.SIM_DIR)
+        set_config(**self._config._asdict())
+
+    @classmethod
+    def sim_data(cls, module_nums: list[int], read_length: int):
+        # Assemble and write the reference sequence.
+        modules = dict(cls.MODULES[m] for m in module_nums)
+        refseq = DNA("".join(modules.keys()))
+        refs_dir = cls.SIM_DIR.joinpath("refs")
+        refs_dir.mkdir()
+        fasta = refs_dir.joinpath(f"{cls.REFS}.fa")
+        write_fasta(fasta, [(cls.REF, refseq)])
+        # Assemble and write the secondary structures.
+        structures = list(map("".join, product(*modules.values())))
+        param_dir = cls.SIM_DIR.joinpath("params", cls.REF, FULL_NAME)
+        param_dir.mkdir(parents=True)
+        db_file = param_dir.joinpath(f"{cls.PROFILE}.db")
+        with open(db_file, "x") as f:
+            for i, struct in enumerate(structures):
+                if i == 0:
+                    f.write(f">structure0\n{refseq.tr()}\n{structures[0]}\n")
+                else:
+                    f.write(f">structure{i}\n{structures[i]}\n")
+        ct_file = db_to_ct(db_file)
+        # Simulate data.
+        sim_params(ct_file=[ct_file],
+                   # Make pmut_unpaired for A and C large (17%) so that
+                   # most reads get at least two mutations despite being
+                   # short and are thus useful for clustering.
+                   pmut_unpaired=[("am", 1 / 6), ("cm", 1 / 6)],
+                   # Make all reads the same length.
+                   length_fmean=(read_length / len(refseq)),
+                   length_fvar=0.,
+                   # Make clust_conc very large so that the proportion
+                   # of each cluster is approximately equal, which makes
+                   # clustering easier.
+                   clust_conc=1000.)
+        relate_dirs = sim_relate(param_dir=[param_dir],
+                                 sample=cls.SAMPLE,
+                                 profile_name=cls.PROFILE,
+                                 num_reads=200000,
+                                 paired_end=False,
+                                 brotli_level=0)
+        return relate_dirs
+
+    def run_ensembles(self,
+                      relate_dirs: list[Path],
+                      region_length: int,
+                      region_min_overlap: float,
+                      expect_ks: list[int],
+                      expect_regions: list[list[str]]):
+        joined = f"ensembles-{region_length}_"
+        join_dirs = run_ensembles(relate_dirs,
+                                  joined=joined,
+                                  region_length=region_length,
+                                  region_min_overlap=region_min_overlap,
+                                  mask_pos_table=False,
+                                  mask_read_table=False,
+                                  cluster_pos_table=False,
+                                  cluster_abundance_table=False,
+                                  jackpot=False,
+                                  brotli_level=0)
+        cluster_dirs = sorted(d for d in join_dirs
+                              if d.parent.parent.name == "cluster")
+        expect_dirs = [self.SIM_DIR.joinpath("samples",
+                                             self.SAMPLE,
+                                             "cluster",
+                                             self.REF,
+                                             f"{joined}{i}")
+                       for i in range(1, len(expect_ks) + 1)]
+        self.assertListEqual(cluster_dirs,
+                             list(expect_dirs))
+        for expect_dir, expect_k, expect_regs in zip(expect_dirs,
+                                                     expect_ks,
+                                                     expect_regions,
+                                                     strict=True):
+            report_file = expect_dir.joinpath("cluster-report.json")
+            dataset = JoinClusterMutsDataset(report_file)
+            self.assertListEqual(dataset.ks, [expect_k])
+            self.assertListEqual(sorted(dataset.region_names),
+                                 sorted(expect_regs))
+
+    @ut.skip
+    def test_modules012_read180(self):
+        relate_dirs = self.sim_data([0, 1, 2], 180)
+        # The regions are 1-60, 21-80, 41-100, 61-120, 81-140, 101-160,
+        # and 121-180.
+        # Regions 1-60, 21-80, and 41-100 overlap module 1 (1-60) and
+        # should form 2 structures.
+        # Region 61-120 coincides exactly with module 2 and should form
+        # 1 structure.
+        # Regions 81-140, 101-160, and 121-180 overlap module 3 (121-180)
+        # and should form 2 structures.
+        self.run_ensembles(relate_dirs, 60, (2 / 3),
+                           [2, 1, 2],
+                           [["1-60", "21-80", "41-100"],
+                            ["61-120"],
+                            ["81-140", "101-160", "121-180"]])
+        # The regions are 1-90, 31-120, 61-150, and 91-180.
+        # Every region includes a part of module 1 (1-60) and module 2
+        # (121-180), but not both, so every region forms 2 structures.
+        self.run_ensembles(relate_dirs, 90, (2 / 3),
+                           [2],
+                           [["1-90", "31-120", "61-150", "91-180"]])
+        # The regions are 1-120, 31-150, and 61-180.
+        # Regions 1-120 and 61-180 includes module 1 (1-60) and module 3
+        # (91-180), respectively, which each form 2 structures
+        # Region 31-150
+        # which both form 2 structures, so the entire RNA can form 4.
+        self.run_ensembles(relate_dirs, 120, 0.75,
+                           [2, 4, 2],
+                           [["1-120"],
+                            ["31-150"],
+                            ["61-180"]])
+        # The only region is 1-180.
+        # This region includes module 1 (1-60) and module 2 (121-180),
+        # which both form 2 structures, so the entire RNA can form 4.
+        self.run_ensembles(relate_dirs, 180, 0.5,
+                           [4],
+                           [["1-180"]])
+
+    def test_modules012_read120(self):
+        # Similar to test_modules012_read180 but with 120 nt reads.
+        relate_dirs = self.sim_data([0, 1, 2], 120)
+        self.run_ensembles(relate_dirs, 60, (2 / 3),
+                           [2, 1, 2],
+                           [["1-60", "21-80", "41-100"],
+                            ["61-120"],
+                            ["81-140", "101-160", "121-180"]])
+        self.run_ensembles(relate_dirs, 90, (2 / 3),
+                           [2],
+                           [["1-90", "31-120", "61-150", "91-180"]])
+        self.run_ensembles(relate_dirs, 120, 0.75,
+                           [2, 4, 2],
+                           [["1-120"],
+                            ["31-150"],
+                            ["61-180"]])
+        self.run_ensembles(relate_dirs, 180, 0.5,
+                           [4],
+                           [["1-180"]])
+
+    @ut.skip
+    def test_modules012_read60(self):
+        # Similar to test_modules012_read180 but with 60 nt reads.
+        relate_dirs = self.sim_data([0, 1, 2], 60)
+        self.run_ensembles(relate_dirs, 60, (2 / 3),
+                           [2, 1, 2],
+                           [["1-60", "21-80", "41-100"],
+                            ["61-120"],
+                            ["81-140", "101-160", "121-180"]])
+        self.run_ensembles(relate_dirs, 90, (2 / 3),
+                           [2],
+                           [["1-90", "31-120", "61-150", "91-180"]])
+        # With 60 nt reads, the reads are not long enough to provide
+        # information on both modules 1 and 3 simultaneously, so the
+        # algorithm cannot tell that together they form 4 clusters.
+        self.run_ensembles(relate_dirs, 120, 0.75,
+                           [2],
+                           [["1-120", "31-150", "61-180"]])
+        self.run_ensembles(relate_dirs, 180, 0.5,
+                           [2],
+                           [["1-180"]])
+
+
 if __name__ == "__main__":
     ut.main()
-
-########################################################################
-#                                                                      #
-# © Copyright 2022-2025, the Rouskin Lab.                              #
-#                                                                      #
-# This file is part of SEISMIC-RNA.                                    #
-#                                                                      #
-# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
-# it under the terms of the GNU General Public License as published by #
-# the Free Software Foundation; either version 3 of the License, or    #
-# (at your option) any later version.                                  #
-#                                                                      #
-# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
-# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
-# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
-# Public License for more details.                                     #
-#                                                                      #
-# You should have received a copy of the GNU General Public License    #
-# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
-#                                                                      #
-########################################################################
