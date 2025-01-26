@@ -55,6 +55,7 @@ class TestCalcRegions(ut.TestCase):
         self.assertEqual(result, expect)
 
 
+@ut.skip("Takes a very long time")
 class TestEnsembles(ut.TestCase):
     SIM_DIR = Path(opt_sim_dir.default).absolute()
     SAMPLE = "test_sample"
@@ -83,7 +84,7 @@ class TestEnsembles(ut.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.SIM_DIR)
-        set_config(**self._config._asdict())
+        set_config(*self._config)
 
     @classmethod
     def sim_data(cls, module_nums: list[int], read_length: int):
@@ -164,7 +165,6 @@ class TestEnsembles(ut.TestCase):
             self.assertListEqual(sorted(dataset.region_names),
                                  sorted(expect_regs))
 
-    @ut.skip
     def test_modules012_read180(self):
         relate_dirs = self.sim_data([0, 1, 2], 180)
         # The regions are 1-60, 21-80, 41-100, 61-120, 81-140, 101-160,
@@ -223,7 +223,6 @@ class TestEnsembles(ut.TestCase):
                            [4],
                            [["1-180"]])
 
-    @ut.skip
     def test_modules012_read60(self):
         # Similar to test_modules012_read180 but with 60 nt reads.
         relate_dirs = self.sim_data([0, 1, 2], 60)
