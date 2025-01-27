@@ -28,6 +28,7 @@ def _update_checksums(current_checksums: dict[str, list[str]],
 def simulate_batch(sample: str,
                    ref: str,
                    batch: int,
+                   write_read_names: bool,
                    pmut: pd.DataFrame,
                    uniq_end5s: np.ndarray,
                    uniq_end3s: np.ndarray,
@@ -51,12 +52,15 @@ def simulate_batch(sample: str,
                                           p_rev=p_rev,
                                           min_mut_gap=min_mut_gap,
                                           num_reads=num_reads)
-    names_batch = ReadNamesBatchIO.simulate(sample=sample,
-                                            ref=ref,
-                                            batch=batch,
-                                            num_reads=relate_batch.num_reads,
-                                            formatter=formatter)
-    return relate_batch, names_batch
+    if write_read_names:
+        name_batch = ReadNamesBatchIO.simulate(sample=sample,
+                                               ref=ref,
+                                               batch=batch,
+                                               num_reads=relate_batch.num_reads,
+                                               formatter=formatter)
+    else:
+        name_batch = None
+    return relate_batch, name_batch
 
 
 def simulate_cluster(first_batch: int,
@@ -109,6 +113,7 @@ def simulate_relate(*,
                     refseq: DNA,
                     batch_size: int,
                     num_reads: int,
+                    write_read_names: bool,
                     pmut: pd.DataFrame,
                     uniq_end5s: np.ndarray,
                     uniq_end3s: np.ndarray,
@@ -129,30 +134,42 @@ def simulate_relate(*,
                                               brotli_level=brotli_level,
                                               force=True)
         # Simulate and write the batches.
-        checksums = {RelateBatchIO.btype(): list(),
-                     ReadNamesBatchIO.btype(): list()}
-        n_batches = 0
+        checksums = {RelateBatchIO.btype(): list()}
+        if write_read_names:
+            checksums[ReadNamesBatchIO.btype()] = list()
         read_count = 0
-        for rbatch, nbatch in simulate_batches(sample=sample,
-                                               ref=ref,
-                                               batch_size=batch_size,
-                                               num_reads=num_reads,
-                                               pmut=pmut,
-                                               uniq_end5s=uniq_end5s,
-                                               uniq_end3s=uniq_end3s,
-                                               pends=pends,
-                                               pclust=pclust,
-                                               **kwargs):
-            _, rcheck = rbatch.save(tmp_dir,
-                                    brotli_level=brotli_level,
-                                    force=True)
-            _, ncheck = nbatch.save(tmp_dir,
-                                    brotli_level=brotli_level,
-                                    force=True)
-            checksums[RelateBatchIO.btype()].append(rcheck)
-            checksums[ReadNamesBatchIO.btype()].append(ncheck)
-            n_batches += 1
-            read_count += rbatch.num_reads
+        for relate_batch, name_batch in simulate_batches(
+                sample=sample,
+                ref=ref,
+                batch_size=batch_size,
+                num_reads=num_reads,
+                write_read_names=write_read_names,
+                pmut=pmut,
+                uniq_end5s=uniq_end5s,
+                uniq_end3s=uniq_end3s,
+                pends=pends,
+                pclust=pclust,
+                **kwargs
+        ):
+            _, relate_checksum = relate_batch.save(tmp_dir,
+                                                   brotli_level=brotli_level,
+                                                   force=True)
+            checksums[RelateBatchIO.btype()].append(relate_checksum)
+            if write_read_names:
+                assert isinstance(name_batch, ReadNamesBatchIO)
+                _, name_checksum = name_batch.save(tmp_dir,
+                                                   brotli_level=brotli_level,
+                                                   force=True)
+                checksums[ReadNamesBatchIO.btype()].append(name_checksum)
+            else:
+                assert name_batch is None
+            read_count += relate_batch.num_reads
+        if write_read_names:
+            assert ReadNamesBatchIO.btype() in checksums
+            assert (len(checksums[ReadNamesBatchIO.btype()])
+                    == len(checksums[RelateBatchIO.btype()]))
+        else:
+            assert ReadNamesBatchIO.btype() not in checksums
         ended = datetime.now()
         # Write the report.
         report = RelateReport(sample=sample,
@@ -168,7 +185,7 @@ def simulate_relate(*,
                               min_reads=0,
                               n_reads_xam=0,
                               n_reads_rel=read_count,
-                              n_batches=n_batches,
+                              n_batches=len(checksums[RelateBatchIO.btype()]),
                               checksums=checksums,
                               refseq_checksum=refseq_checksum,
                               began=began,

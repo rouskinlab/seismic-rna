@@ -29,11 +29,15 @@ from seismicrna.sim.ref import run as run_sim_ref
 from seismicrna.wf import run as run_wf
 
 
-def list_step_dir_contents(parent_dir: Path, step: str, num_batches: int):
+def list_step_dir_contents(parent_dir: Path,
+                           step: str,
+                           num_batches: int,
+                           write_read_names: bool = True):
     files = [f"{step}-report.json", f"{step}-position-table.csv"]
     if step == "relate":
         files.append("refseq.brickle")
-        files.extend(f"names-batch-{i}.brickle" for i in range(num_batches))
+        if write_read_names:
+            files.extend(f"names-batch-{i}.brickle" for i in range(num_batches))
     elif step == "mask":
         files.append(f"{step}-read-table.csv.gz")
     elif step == "cluster":
@@ -138,6 +142,7 @@ class TestWorkflow(ut.TestCase):
                dmfastqx=[samples_dir],
                batch_size=batch_size,
                brotli_level=0,
+               write_read_names=True,
                mask_coords=[(ref, end5, end3)
                             for ref, ref_coords in refs_coords.items()
                             for end5, end3 in ref_coords],

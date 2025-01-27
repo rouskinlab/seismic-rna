@@ -296,6 +296,7 @@ def from_param_dir(param_dir: Path, *,
                                read_length=read_length,
                                p_rev=p_rev,
                                batch_size=opt_batch_size.default,
+                               write_read_names=True,
                                **kwargs)
     return generate_fastq(sim_dir.joinpath(path.SIM_SAMPLES_DIR),
                           sample,

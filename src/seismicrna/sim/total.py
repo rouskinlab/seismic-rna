@@ -16,6 +16,7 @@ from ..core.arg import (arg_fasta,
                         opt_brotli_level,
                         opt_ct_file,
                         opt_param_dir,
+                        opt_write_read_names,
                         merge_params,
                         extra_defaults)
 from ..core.run import run_func
@@ -128,7 +129,8 @@ params = merge_params(fastq_mod.params,
                                opt_batch_size,
                                opt_brotli_level,
                                opt_ct_file,
-                               opt_param_dir])
+                               opt_param_dir,
+                               opt_write_read_names])
 
 
 @command(COMMAND, params=params)
