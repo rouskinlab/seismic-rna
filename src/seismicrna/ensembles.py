@@ -91,11 +91,14 @@ class CalcRefRegionLengthError(ValueError):
     """ Error when calculating mutation densities. """
 
 
-def calc_ref_region_length(datasets: Iterable[MutsDataset], pattern: RelPattern):
+def calc_ref_region_length(datasets: Iterable[MutsDataset],
+                           pattern: RelPattern,
+                           mask_discontig: bool,
+                           min_mut_gap: int):
     logger.routine("Began calculating optimal region length")
     ref = None
     total_muts = 0
-    total_lengths = 0
+    total_cover = 0
     for dataset in datasets:
         if ref is None:
             ref = dataset.ref
@@ -104,19 +107,38 @@ def calc_ref_region_length(datasets: Iterable[MutsDataset], pattern: RelPattern)
                 f"Got multiple references: {repr(ref)} ≠ {repr(dataset.ref)}"
             )
         for batch in dataset.iter_batches():
-            info, fits = batch.count_per_pos(pattern)
-            batch_muts = int(fits.sum())
-            batch_lengths = int(batch.read_lengths.sum())
+            description = f"Reference {repr(ref)} batch {batch.batch}"
+            # Ignore reads that are discontiguous or have two mutations
+            # too close.
+            logger.detail(f"{description} has {batch.num_reads} reads")
+            use_reads = np.ones(batch.num_reads, dtype=bool)
+            if mask_discontig:
+                logger.detail(f"Dropped {batch.num_discontiguous} "
+                              f"discontiguous reads from {description}")
+                use_reads = np.logical_and(use_reads, batch.contiguous)
+            if min_mut_gap > 0:
+                min_mut_dist = batch.calc_min_mut_dist(pattern)
+                valid_mut_dist = np.logical_or(min_mut_dist == 0,
+                                               min_mut_dist > min_mut_gap)
+                num_invalid_mut_dist = np.count_nonzero(
+                    np.logical_and(use_reads, ~valid_mut_dist)
+                )
+                logger.detail(f"Dropped {num_invalid_mut_dist} reads with two "
+                              f"mutations too close from {description}")
+                use_reads = np.logical_and(use_reads, valid_mut_dist)
+            logger.detail(f"Using {np.count_nonzero(use_reads)} reads "
+                          f"in {description}")
+            # Count the covered and mutated positions among all reads.
+            _, muts = batch.count_per_read(pattern)
+            batch_muts = int(muts.values[use_reads].sum())
+            batch_cover = int(batch.cover_per_read.values[use_reads].sum())
             total_muts += batch_muts
-            total_lengths += batch_lengths
-            logger.detail(
-                f"Reference {repr(ref)} batch {batch.batch} has "
-                f"{batch.num_reads} reads with {batch_muts} mutations "
-                f"among {batch_lengths} total bases"
-            )
+            total_cover += batch_cover
+            logger.detail(f"{description} has {batch_muts} mutations "
+                          f"among {batch_cover} total bases")
     logger.detail(f"Reference {repr(ref)} has {total_muts} mutations "
-                  f"among {total_lengths} total bases")
-    if total_lengths == 0:
+                  f"among {total_cover} total bases")
+    if total_cover == 0:
         raise CalcRefRegionLengthError(
             f"Got 0 base calls for reference {repr(ref)}"
         )
@@ -126,8 +148,8 @@ def calc_ref_region_length(datasets: Iterable[MutsDataset], pattern: RelPattern)
         )
     # The length of a read expected to contain 2 mutations equals 2
     # divided by the density of mutations (the number of mutations
-    # divided by the number of base calls).
-    region_length = int(np.ceil(2. * total_lengths / total_muts))
+    # divided by the number of base calls). Make sure it is ≥ 1.
+    region_length = max(int(np.ceil(2. * total_cover / total_muts)), 1)
     logger.routine(f"Ended calculating optimal region length: {region_length}")
     return region_length
 
@@ -141,7 +163,9 @@ def generate_regions(input_path: Iterable[str | Path],
                      region_min_overlap: float,
                      mask_del: bool,
                      mask_ins: bool,
-                     mask_mut: list[str]):
+                     mask_mut: list[str],
+                     mask_discontig: bool,
+                     min_mut_gap: int):
     """ For each reference, list the regions over which to mask. """
     pattern = RelPattern.from_counts(not mask_del, not mask_ins, mask_mut)
     datasets, total_regions = load_regions(input_path,
@@ -165,7 +189,9 @@ def generate_regions(input_path: Iterable[str | Path],
             try:
                 assert datasets.get(ref)
                 ref_region_length = calc_ref_region_length(datasets[ref],
-                                                           pattern)
+                                                           pattern,
+                                                           mask_discontig,
+                                                           min_mut_gap)
             except CalcRefRegionLengthError as error:
                 logger.warning(error)
                 ref_region_length = region_length
@@ -386,7 +412,9 @@ def run(input_path: Iterable[str | Path], *,
                                     region_min_overlap=region_min_overlap,
                                     mask_del=mask_del,
                                     mask_ins=mask_ins,
-                                    mask_mut=mask_mut)
+                                    mask_mut=mask_mut,
+                                    mask_discontig=mask_discontig,
+                                    min_mut_gap=min_mut_gap)
     mask_dirs = mask_mod.run(
         input_path=input_path,
         tmp_pfx=tmp_pfx,

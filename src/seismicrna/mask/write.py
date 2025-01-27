@@ -496,8 +496,7 @@ class Masker(object):
             unmasked_prev = unmasked_curr
             tabulator = self._mask_iteration()
             unmasked_curr = self.pos_kept
-            logger.detail(f"{self} kept {unmasked_curr.size} position(s): "
-                          f"{unmasked_curr}")
+            logger.detail(f"{self} kept {unmasked_curr.size} position(s)")
             logger.routine(f"Ended {self} iteration {self._iter}")
             # Masking has converged if either the same positions were
             # masked before and after this iteration.
