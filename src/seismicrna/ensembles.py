@@ -191,7 +191,7 @@ class RegionInfo(object):
         self.reg = reg
         self.end5 = end5
         self.end3 = end3
-        self.ks = tuple(sorted(ks))
+        self.ks = sorted(ks)
         self.report_file = report_file
         self.verify_times = verify_times
         self.max_procs = max_procs
@@ -209,7 +209,7 @@ class RegionInfo(object):
         )
 
     def __str__(self):
-        return f"Region {repr(self.reg)} {self.ks}"
+        return f"Region {repr(self.reg)} with Ks {self.ks}"
 
     def __repr__(self):
         return str(self)

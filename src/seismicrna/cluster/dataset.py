@@ -214,7 +214,7 @@ def _join_regions_k(region_params: dict[str, pd.DataFrame]):
         overlap = df1.index.intersection(df2.index)
         assert overlap.size > 0
         logger.detail(f"Regions {repr(reg1)} and {repr(reg2)} "
-                      f"share {overlap.size - 1} parameter(s)")
+                      f"share {overlap.size} parameter(s)")
         # Collect the cost of joining each cluster from region 1 with
         # each cluster from region 2.
         cost_matrix = pd.DataFrame(np.nan, clusters, clusters)

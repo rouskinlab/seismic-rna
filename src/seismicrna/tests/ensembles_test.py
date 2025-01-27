@@ -133,7 +133,8 @@ class TestEnsembles(ut.TestCase):
                       region_length: int,
                       region_min_overlap: float,
                       expect_ks: list[int],
-                      expect_regions: list[list[str]]):
+                      expect_regions: list[list[str]],
+                      **kwargs):
         joined = f"ensembles-{region_length}_"
         join_dirs = run_ensembles(relate_dirs,
                                   joined=joined,
@@ -146,7 +147,8 @@ class TestEnsembles(ut.TestCase):
                                   cluster_pos_table=True,
                                   cluster_abundance_table=True,
                                   jackpot=False,
-                                  brotli_level=0)
+                                  brotli_level=0,
+                                  **kwargs)
         cluster_dirs = sorted(d for d in join_dirs
                               if d.parent.parent.name == "cluster")
         expect_dirs = [self.SIM_DIR.joinpath("samples",
@@ -171,11 +173,11 @@ class TestEnsembles(ut.TestCase):
         relate_dirs = self.sim_data([0, 1, 2], 180)
         # The regions are 1-60, 21-80, 41-100, 61-120, 81-140, 101-160,
         # and 121-180.
-        # Regions 1-60, 21-80, and 41-100 overlap module 1 (1-60) and
+        # Regions 1-60, 21-80, and 41-100 overlap module 0 (1-60) and
         # should form 2 structures.
-        # Region 61-120 coincides exactly with module 2 and should form
+        # Region 61-120 coincides exactly with module 1 and should form
         # 1 structure.
-        # Regions 81-140, 101-160, and 121-180 overlap module 3 (121-180)
+        # Regions 81-140, 101-160, and 121-180 overlap module 2 (121-180)
         # and should form 2 structures.
         self.run_ensembles(relate_dirs, 60, (2 / 3),
                            [2, 1, 2],
@@ -183,24 +185,24 @@ class TestEnsembles(ut.TestCase):
                             ["61-120"],
                             ["81-140", "101-160", "121-180"]])
         # The regions are 1-90, 31-120, 61-150, and 91-180.
-        # Every region includes a part of module 1 (1-60) and module 2
+        # Every region includes a part of module 0 (1-60) and module 1
         # (121-180), but not both, so every region forms 2 structures.
         self.run_ensembles(relate_dirs, 90, (2 / 3),
                            [2],
                            [["1-90", "31-120", "61-150", "91-180"]])
         # The regions are 1-120, 31-150, and 61-180.
-        # Regions 1-120 and 61-180 includes module 1 (1-60) and module 3
-        # (91-180), respectively, which each form 2 structures
-        # Region 31-150
-        # which both form 2 structures, so the entire RNA can form 4.
+        # Regions 1-120 and 61-180 include module 0 (1-60) and module 2
+        # (121-180), respectively, which each form 2 structures.
+        # Region 31-150 overlaps both modules 0 and 2, so it can form
+        # 2 x 2 = 4 structures.
         self.run_ensembles(relate_dirs, 120, 0.75,
                            [2, 4, 2],
                            [["1-120"],
                             ["31-150"],
                             ["61-180"]])
         # The only region is 1-180.
-        # This region includes module 1 (1-60) and module 2 (121-180),
-        # which both form 2 structures, so the entire RNA can form 4.
+        # This region includes module 0 (1-60) and module 2 (121-180),
+        # which each form 2 structures, so the entire RNA can form 4.
         self.run_ensembles(relate_dirs, 180, 0.5,
                            [4],
                            [["1-180"]])
@@ -237,7 +239,7 @@ class TestEnsembles(ut.TestCase):
                            [2],
                            [["1-90", "31-120", "61-150", "91-180"]])
         # With 60 nt reads, the reads are not long enough to provide
-        # information on both modules 1 and 3 simultaneously, so the
+        # information on both modules 0 and 2 simultaneously, so the
         # algorithm cannot tell that together they form 4 clusters.
         self.run_ensembles(relate_dirs, 120, 0.75,
                            [2],
@@ -245,6 +247,43 @@ class TestEnsembles(ut.TestCase):
         self.run_ensembles(relate_dirs, 180, 0.5,
                            [2],
                            [["1-180"]])
+
+    def test_modules02_read60(self):
+        relate_dirs = self.sim_data([0, 2], 60)
+        # The regions are 1-60, 31-90, and 61-120.
+        # Region 1-60 coincides exactly with module 0 and should form
+        # 2 structures.
+        # Region 31-90 overlaps module 0 (1-60) and module 2 (61-120),
+        # which each form 2 structures, so this region can form 2 x 2
+        # = 4 structures.
+        # Region 61-120 coincides exactly with module 2 and should form
+        # 2 structures.
+        self.run_ensembles(relate_dirs, 60, 0.5,
+                           [2, 4, 2],
+                           [["1-60"],
+                            ["31-90"],
+                            ["61-120"]],
+                           max_mean_fold_change=1.01)
+        # Now rerun while limiting every region to at most 2 clusters.
+        # The regions should not be joined together because region 31-90
+        # with 2 clusters will not be sufficiently similar to 1-60 or to
+        # 61-120 to be able to join with them.
+        self.run_ensembles(relate_dirs, 60, 0.5,
+                           [2, 2, 2],
+                           [["1-60"],
+                            ["31-90"],
+                            ["61-120"]],
+                           max_mean_fold_change=1.01,
+                           max_clusters=2,
+                           force=True)
+        # Now rerun while tolerating larger differences between clusters
+        # and confirm that all three regions are now joined.
+        self.run_ensembles(relate_dirs, 60, 0.5,
+                           [2],
+                           [["1-60", "31-90", "61-120"]],
+                           max_mean_fold_change=30.0,
+                           max_clusters=2,
+                           force=True)
 
 
 if __name__ == "__main__":
