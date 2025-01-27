@@ -1,5 +1,5 @@
-from collections import defaultdict, namedtuple
-from itertools import groupby
+from collections import defaultdict
+from functools import cached_property
 from math import ceil
 from pathlib import Path
 from typing import Iterable
@@ -10,6 +10,8 @@ from click import command
 from . import (mask as mask_mod,
                cluster as cluster_mod,
                join as join_mod)
+from .cluster.dataset import ClusterMutsDataset, get_clust_params
+from .cluster.emk import calc_geomean_fold_odds
 from .cluster.report import ClusterReport
 from .core import path
 from .core.arg import (CMD_ENSEMBLES,
@@ -18,7 +20,8 @@ from .core.arg import (CMD_ENSEMBLES,
                        extra_defaults,
                        opt_join_clusts,
                        opt_region_length,
-                       opt_region_min_overlap)
+                       opt_region_min_overlap,
+                       opt_max_mean_fold_change)
 from .core.dataset import MutsDataset
 from .core.error import (IncompatibleValuesError,
                          InconsistentValueError,
@@ -175,17 +178,55 @@ def generate_regions(input_path: Iterable[str | Path],
     return mask_regions
 
 
-RegionInfo = namedtuple("RegionInfo", ["reg", "end5", "end3", "ks"])
+class RegionInfo(object):
+
+    def __init__(self,
+                 reg: str,
+                 end5: int,
+                 end3: int,
+                 ks: Iterable[int],
+                 report_file: Path,
+                 verify_times: bool,
+                 max_procs: int):
+        self.reg = reg
+        self.end5 = end5
+        self.end3 = end3
+        self.ks = tuple(sorted(ks))
+        self.report_file = report_file
+        self.verify_times = verify_times
+        self.max_procs = max_procs
+
+    @property
+    def ends(self):
+        return self.end5, self.end3
+
+    @cached_property
+    def clust_params(self):
+        return get_clust_params(
+            ClusterMutsDataset(self.report_file,
+                               verify_times=self.verify_times),
+            max_procs=self.max_procs
+        )
+
+    def __str__(self):
+        return f"Region {repr(self.reg)} {self.ks}"
+
+    def __repr__(self):
+        return str(self)
 
 
-def group_clusters(cluster_dirs: Iterable[Path]):
+def group_clusters(cluster_dirs: Iterable[Path],
+                   max_mean_fold_change,
+                   verify_times: bool,
+                   max_procs: int):
+    logger.routine("Began grouping regions")
     # List the fields and 5'/3' ends of each clustered dataset.
-    clusters = defaultdict(list)
+    regs_info = defaultdict(list)
     for cluster_dir in cluster_dirs:
         path_fields = path.parse(cluster_dir, *path.REG_DIR_SEGS)
         report_file = ClusterReport.build_path(**path_fields)
         report = ClusterReport.load(report_file)
-        ks = tuple(sorted(report.get_field(KsWrittenF)))
+        ks = report.get_field(KsWrittenF)
         if ks:
             mask_report = MaskReport.load(MaskReport.build_path(
                 **(path_fields | {path.CMD: path.MASK_STEP})
@@ -197,16 +238,76 @@ def group_clusters(cluster_dirs: Iterable[Path]):
             reg = path_fields[path.REG]
             end5 = mask_report.get_field(End5F)
             end3 = mask_report.get_field(End3F)
-            clusters[key].append(RegionInfo(reg, end5, end3, ks))
+            reg_info = RegionInfo(reg,
+                                  end5,
+                                  end3,
+                                  ks,
+                                  report_file,
+                                  verify_times,
+                                  max_procs)
+            regs_info[key].append(reg_info)
+            logger.detail(f"Found reference {repr(ref)} {reg_info} "
+                          f"for sample {repr(sample)} in {top}")
         else:
             logger.warning(f"Skipped {report_file} with no clusters written")
-    # Group the consecutive regions with the same number of clusters.
-    for key in clusters:
-        clusters[key].sort(key=lambda info: (info.end5, info.end3))
-    return {key: [[info.reg for info in group]
-                  for ks, group in groupby(clusters[key],
-                                           key=lambda info: info.ks)]
-            for key in clusters}
+    # Group the consecutive regions with the same number of clusters
+    # if the clusters are similar enough.
+    groups = defaultdict(list)
+    # Use list(regs_info) because the values of regs_info will change;
+    # list(regs_info) does not mutate an object being iterated over.
+    for key in list(regs_info):
+        # Sort by 5' and 3' ends to ensure regions are joined in order.
+        regs_info[key].sort(key=lambda reg_info_: reg_info_.ends)
+        top, sample, ref = key
+        logger.detail(f"Grouping regions of reference {repr(ref)} "
+                      f"sample {repr(sample)} in {top}: {regs_info[key]}")
+        # Add the first region to the first group.
+        assert regs_info[key]
+        reg_info = regs_info[key][0]
+        groups[key].append([reg_info])
+        logger.detail(f"Added {reg_info} to group {len(groups[key])} of {key}")
+        for i in range(1, len(regs_info[key])):
+            prev_reg_info = reg_info
+            reg_info = regs_info[key][i]
+            # Compare the numbers of clusters in the current and the
+            # previous regions.
+            if reg_info.ks == prev_reg_info.ks:
+                # The regions have the same numbers of clusters, so
+                # check if the cluster parameters are similar enough.
+                # Even if the regions share no positions, their
+                # indexes will both include the proportion (0, "p").
+                overlap = reg_info.clust_params.index.intersection(
+                    prev_reg_info.clust_params.index
+                )
+                assert overlap.size > 0
+                logger.detail(f"{prev_reg_info} and {reg_info} share "
+                              f"{overlap.size} parameter(s)")
+                # Calculate the difference between the clusters.
+                mean_fold_change = calc_geomean_fold_odds(
+                    reg_info.clust_params.loc[overlap].values,
+                    prev_reg_info.clust_params.loc[overlap].values
+                )
+                logger.detail(f"{prev_reg_info} and {reg_info} have a mean "
+                              f"fold change in log odds of {mean_fold_change}")
+                if mean_fold_change <= max_mean_fold_change:
+                    # The clusters are similar enough, so put them in
+                    # the same group.
+                    groups[key][-1].append(reg_info)
+                else:
+                    # The clusters are not similar enough, so put the
+                    # regions in different groups.
+                    groups[key].append([reg_info])
+            else:
+                # The regions have different numbers of clusters, so
+                # put them in different groups.
+                groups[key].append([reg_info])
+            logger.detail(
+                f"Added {reg_info} to group {len(groups[key])} of {key}"
+            )
+    logger.routine("Ended grouping regions")
+    return {key: [[reg_info.reg for reg_info in key_group]
+                  for key_group in key_groups]
+            for key, key_groups in groups.items()}
 
 
 @run_func(CMD_ENSEMBLES, extra_defaults=extra_defaults)
@@ -266,7 +367,8 @@ def run(input_path: Iterable[str | Path], *,
         # Join options
         joined: str,
         region_length: int,
-        region_min_overlap: float):
+        region_min_overlap: float,
+        max_mean_fold_change: float):
     """ Infer independent structure ensembles along an entire RNA. """
     if not joined:
         raise ValueError(
@@ -346,7 +448,10 @@ def run(input_path: Iterable[str | Path], *,
         force=force,
     )
     logger.status(f"Began {CMD_JOIN}")
-    cluster_groups = group_clusters(cluster_dirs)
+    cluster_groups = group_clusters(cluster_dirs,
+                                    max_mean_fold_change=max_mean_fold_change,
+                                    verify_times=verify_times,
+                                    max_procs=max_procs)
     join_dirs = list()
     for clustered in [False, True]:
         args = list()
@@ -377,7 +482,8 @@ params = merge_params(mask_mod.params,
                       cluster_mod.params,
                       join_mod.params,
                       [opt_region_length,
-                       opt_region_min_overlap],
+                       opt_region_min_overlap,
+                       opt_max_mean_fold_change],
                       exclude=[opt_join_clusts])
 
 

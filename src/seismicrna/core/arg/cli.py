@@ -948,6 +948,15 @@ opt_region_min_overlap = Option(
     help="Make adjacent regions overlap by at least this fraction of length",
 )
 
+opt_max_mean_fold_change = Option(
+    ("--max-mean-fold-change",),
+    type=float,
+    default=1.5,
+    help="Do not join regions with the same numbers of clusters if the mean "
+         "absolute fold change in the odds of their mutation rates and "
+         "proportions exceeds this threshold"
+)
+
 # List options
 
 opt_complement = Option(

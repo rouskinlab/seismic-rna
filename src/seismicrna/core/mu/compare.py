@@ -102,6 +102,29 @@ def calc_sum_abs_diff_log_odds(mus1: np.ndarray | pd.Series | pd.DataFrame,
 
 
 @auto_removes_nan
+def calc_mean_abs_diff_log_odds(mus1: np.ndarray | pd.Series | pd.DataFrame,
+                                mus2: np.ndarray | pd.Series | pd.DataFrame):
+    """ Calculate the mean of absolute differences in log odds between
+    mus1 and mus2. See calc_diff_log_odds for details.
+
+    Parameters
+    ----------
+    mus1: np.ndarray | pd.Series | pd.DataFrame
+        First group of mutation rates; can contain multiple sets as the
+        columns of a multidimensional array or DataFrame.
+    mus2: np.ndarray | pd.Series | pd.DataFrame
+        Second group of mutation rates; can contain multiple sets as the
+        columns of a multidimensional array or DataFrame.
+
+    Returns
+    -------
+    float | np.ndarray | pd.Series
+        Mean of absolute differences in log odds
+    """
+    return np.mean(np.abs(calc_diff_log_odds(mus1, mus2)), axis=0)
+
+
+@auto_removes_nan
 def calc_raw_rmsd(mus1: np.ndarray | pd.Series | pd.DataFrame,
                   mus2: np.ndarray | pd.Series | pd.DataFrame):
     """ Calculate the root-mean-square difference (RMSD) of two groups

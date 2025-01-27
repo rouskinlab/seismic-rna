@@ -4,7 +4,10 @@ import numpy as np
 
 from .em import EMRun
 from ..core.logs import logger
-from ..core.mu import calc_sum_abs_diff_log_odds, calc_norm_rmsd, calc_pearson
+from ..core.mu import (calc_sum_abs_diff_log_odds,
+                       calc_mean_abs_diff_log_odds,
+                       calc_norm_rmsd,
+                       calc_pearson)
 
 NOCONV = 0
 
@@ -86,11 +89,15 @@ class EMRunsK(object):
         # Maximum correlation between any two clusters in each run.
         self.max_pearsons = np.array([run.max_pearson for run in runs])
         # NRMSD between each run and the best run.
-        self.nrmsds_vs_best = np.array([calc_rms_nrmsd(run, self.best)
-                                        for run in runs])
+        self.nrmsds_vs_best = np.array(
+            [calc_rms_nrmsd(run.mus.values, self.best.mus.values)
+             for run in runs]
+        )
         # Correlation between each run and the best run.
-        self.pearsons_vs_best = np.array([calc_mean_pearson(run, self.best)
-                                          for run in runs])
+        self.pearsons_vs_best = np.array(
+            [calc_mean_pearson(run.mus.values, self.best.mus.values)
+             for run in runs]
+        )
 
     def run_passing(self, allow_underclustered: bool = False):
         """ Whether each run passed the filters. """
@@ -236,22 +243,6 @@ def _compare_groups(func: Callable, mus1: np.ndarray, mus2: np.ndarray):
                      for cluster1 in range(n1)]).reshape((n1, n2))
 
 
-def calc_rmsd_groups(mus1: np.ndarray, mus2: np.ndarray):
-    """ Calculate the RMSD of each pair of clusters in two groups. """
-    return _compare_groups(calc_sum_abs_diff_log_odds, mus1, mus2)
-
-
-def calc_nrmsd_groups(mus1: np.ndarray, mus2: np.ndarray):
-    """ Calculate the NRMSD of each pair of clusters in two groups. """
-    return _compare_groups(calc_norm_rmsd, mus1, mus2)
-
-
-def calc_pearson_groups(mus1: np.ndarray, mus2: np.ndarray):
-    """ Calculate the Pearson correlation of each pair of clusters in
-    two groups. """
-    return _compare_groups(calc_pearson, mus1, mus2)
-
-
 def assign_clusterings(mus1: np.ndarray, mus2: np.ndarray):
     """ Optimally assign clusters from two groups to each other. """
     n1, k1 = mus1.shape
@@ -265,7 +256,7 @@ def assign_clusterings(mus1: np.ndarray, mus2: np.ndarray):
             f"Numbers of clusters in groups 1 ({k1}) and 2 ({k2}) differ"
         )
     if n1 >= 1:
-        costs = np.square(calc_rmsd_groups(mus1, mus2))
+        costs = _compare_groups(calc_sum_abs_diff_log_odds, mus1, mus2)
         assert costs.shape == (k1, k2)
         from scipy.optimize import linear_sum_assignment
         rows, cols = linear_sum_assignment(costs)
@@ -279,19 +270,24 @@ def assign_clusterings(mus1: np.ndarray, mus2: np.ndarray):
     return rows, cols
 
 
-def calc_rms_nrmsd(run1: EMRun, run2: EMRun):
-    """ Compute the root-mean-square NRMSD between the clusters. """
-    mus1 = run1.mus.values
-    mus2 = run2.mus.values
-    nrmsds = calc_nrmsd_groups(mus1, mus2)
+def calc_geomean_fold_odds(mus1: np.ndarray, mus2: np.ndarray):
+    """ Calculate the geometric mean of the fold-change in odds. """
     assignment = assign_clusterings(mus1, mus2)
+    mean_abs_diff_log_odds = _compare_groups(calc_mean_abs_diff_log_odds,
+                                             mus1,
+                                             mus2)
+    return float(np.exp(np.mean(mean_abs_diff_log_odds[assignment])))
+
+
+def calc_rms_nrmsd(mus1: np.ndarray, mus2: np.ndarray):
+    """ Calculate the root-mean-square NRMSD between the clusters. """
+    assignment = assign_clusterings(mus1, mus2)
+    nrmsds = _compare_groups(calc_norm_rmsd, mus1, mus2)
     return float(np.sqrt(np.mean(np.square(nrmsds[assignment]))))
 
 
-def calc_mean_pearson(run1: EMRun, run2: EMRun):
-    """ Compute the mean Pearson correlation between the clusters. """
-    mus1 = run1.mus.values
-    mus2 = run2.mus.values
-    correlations = calc_pearson_groups(mus1, mus2)
+def calc_mean_pearson(mus1: np.ndarray, mus2: np.ndarray):
+    """ Calculate the mean Pearson correlation between the clusters. """
     assignment = assign_clusterings(mus1, mus2)
+    correlations = _compare_groups(calc_pearson, mus1, mus2)
     return float(np.mean(correlations[assignment]))

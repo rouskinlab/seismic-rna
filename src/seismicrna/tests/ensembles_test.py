@@ -141,8 +141,10 @@ class TestEnsembles(ut.TestCase):
                                   region_min_overlap=region_min_overlap,
                                   mask_pos_table=False,
                                   mask_read_table=False,
-                                  cluster_pos_table=False,
-                                  cluster_abundance_table=False,
+                                  # Calculating the cluster tables here
+                                  # makes group_clusters() run faster.
+                                  cluster_pos_table=True,
+                                  cluster_abundance_table=True,
                                   jackpot=False,
                                   brotli_level=0)
         cluster_dirs = sorted(d for d in join_dirs
