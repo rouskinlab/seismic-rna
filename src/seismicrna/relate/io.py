@@ -50,7 +50,8 @@ def from_reads(reads: Iterable[tuple[str,
                sample: str,
                ref: str,
                refseq: DNA,
-               batch: int):
+               batch: int,
+               write_read_names: bool):
     """ Accumulate reads into relation vectors. """
     # Initialize empty data.
     names = list()
@@ -81,14 +82,17 @@ def from_reads(reads: Iterable[tuple[str,
     if seg_end3s.ndim < 2:
         seg_end3s = seg_end3s[:, np.newaxis]
     # Assemble and return the batches.
-    name_batch = ReadNamesBatchIO(sample=sample,
-                                  ref=ref,
-                                  batch=batch,
-                                  names=names)
-    rel_batch = RelateBatchIO(sample=sample,
-                              batch=batch,
-                              region=Region(ref, refseq),
-                              seg_end5s=seg_end5s,
-                              seg_end3s=seg_end3s,
-                              muts=muts)
-    return name_batch, rel_batch
+    relate_batch = RelateBatchIO(sample=sample,
+                                 batch=batch,
+                                 region=Region(ref, refseq),
+                                 seg_end5s=seg_end5s,
+                                 seg_end3s=seg_end3s,
+                                 muts=muts)
+    if write_read_names:
+        name_batch = ReadNamesBatchIO(sample=sample,
+                                      ref=ref,
+                                      batch=batch,
+                                      names=names)
+    else:
+        name_batch = None
+    return relate_batch, name_batch

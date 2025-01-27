@@ -563,6 +563,14 @@ opt_f1r2_fwd = Option(
           "to be forward-stranded")
 )
 
+opt_write_read_names = Option(
+    ("--write-read-names/--no-write-read-names",),
+    type=bool,
+    default=False,
+    help="Write the name of each read in a second set of batches (necessary "
+         "for the options --mask-read or --mask-read-file)"
+)
+
 opt_relate_pos_table = Option(
     ("--relate-pos-table/--no-relate-pos-table",),
     type=bool,

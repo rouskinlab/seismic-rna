@@ -69,30 +69,35 @@ def generate_batch(batch: int, *,
                    brotli_level: int,
                    count_pos: bool,
                    count_read: bool,
+                   write_read_names: bool,
                    **kwargs):
-    """ Compute relation vectors for every SAM record in one batch,
-    write the vectors to a batch file, and return its MD5 checksum
-    and the number of vectors. """
-    logger.routine("Began computing read-reference relationships "
-                   f"for batch {batch} of {xam_view}")
-    names, relvecs = from_reads(relate_records(xam_view.iter_records(batch),
-                                               ref=xam_view.ref,
-                                               refseq=str(refseq),
-                                               **kwargs),
-                                xam_view.sample,
-                                xam_view.ref,
-                                refseq,
-                                batch)
-    logger.routine("Ended computing read-reference relationships "
-                   f"for batch {batch} of {xam_view}")
-    _, relv_check = relvecs.save(top, brotli_level)
-    _, name_check = names.save(top, brotli_level)
-    return (relvecs.count_all(all_patterns(),
-                              count_pos=count_pos,
-                              count_read=count_read,
-                              count_ends=False),
-            relv_check,
-            name_check)
+    """ Compute relationships for every SAM record in one batch. """
+    logger.routine(f"Began calculating batch {batch} of {xam_view}")
+    relate_batch, name_batch = from_reads(
+        relate_records(xam_view.iter_records(batch),
+                       ref=xam_view.ref,
+                       refseq=str(refseq),
+                       **kwargs),
+        xam_view.sample,
+        xam_view.ref,
+        refseq,
+        batch,
+        write_read_names
+    )
+    logger.routine(f"Ended calculating batch {batch} of {xam_view}")
+    _, relate_checksum = relate_batch.save(top, brotli_level)
+    if write_read_names:
+        assert isinstance(name_batch, ReadNamesBatchIO)
+        _, name_checksum = name_batch.save(top, brotli_level)
+    else:
+        assert name_batch is None
+        name_checksum = None
+    return (relate_batch.count_all(all_patterns(),
+                                   count_pos=count_pos,
+                                   count_read=count_read,
+                                   count_ends=False),
+            relate_checksum,
+            name_checksum)
 
 
 class RelationWriter(object):
@@ -129,47 +134,52 @@ class RelationWriter(object):
 
     def _generate_batches(self, *,
                           top: Path,
+                          write_read_names: bool,
                           keep_tmp: bool,
                           phred_enc: int,
                           min_phred: int,
                           n_procs: int,
                           **kwargs):
-        """ Compute a relation vector for every record in a XAM file,
-        split among one or more batches. For each batch, write a matrix
-        of the vectors to one batch file, and compute its checksum. """
-        logger.routine(f"Began generating batches for {self}")
+        """ Compute the relationships for every read in a XAM file,
+        split among one or more batches. """
+        logger.routine(f"Began generating batches for {self._xam}")
         try:
-            # Collect the keyword arguments.
             kwargs = dict(xam_view=self._xam,
                           top=top,
                           refseq=self.refseq,
                           min_qual=ord(encode_phred(min_phred, phred_enc)),
+                          write_read_names=write_read_names,
                           **kwargs)
-            # Generate and write relation vectors for each batch.
-            num_batches = len(self._xam.indexes)
             results = dispatch(generate_batch,
                                n_procs,
                                pass_n_procs=False,
+                               raise_on_error=True,
                                args=as_list_of_tuples(self._xam.indexes),
                                kwargs=kwargs)
             if results:
-                batch_counts, relv_checks, name_checks = map(list,
-                                                             zip(*results,
-                                                                 strict=True))
+                (batch_counts,
+                 relate_checksums,
+                 name_checksums) = map(list, zip(*results, strict=True))
             else:
                 batch_counts = list()
-                relv_checks = list()
-                name_checks = list()
-            if len(batch_counts) != num_batches:
-                raise ValueError(f"Expected {num_batches} batch(es), "
-                                 f"but generated {len(batch_counts)}")
-            checksums = {RelateBatchIO.btype(): relv_checks,
-                         ReadNamesBatchIO.btype(): name_checks}
-            logger.routine(f"Ended generating batches {num_batches} for {self}")
-            return batch_counts, num_batches, checksums
+                relate_checksums = list()
+                name_checksums = list()
+            assert (len(self._xam.indexes)
+                    == len(batch_counts)
+                    == len(relate_checksums)
+                    == len(name_checksums))
+            checksums = {RelateBatchIO.btype(): relate_checksums}
+            if write_read_names:
+                assert all(name_checksums)
+                checksums[ReadNamesBatchIO.btype()] = name_checksums
+            else:
+                assert not any(name_checksums)
+            logger.routine(f"Ended generating batches for {self._xam}")
+            return batch_counts, checksums
         finally:
             if not keep_tmp:
-                # Delete the temporary SAM file before exiting.
+                # Delete the temporary SAM file (which can be massive)
+                # before exiting.
                 self._xam.delete_tmp_sam()
 
     def write(self, *,
@@ -191,9 +201,7 @@ class RelationWriter(object):
               force: bool,
               n_procs: int,
               **kwargs):
-        """ Compute a relation vector for every record in a BAM file,
-        write the vectors into one or more batch files, compute their
-        checksums, and write a report summarizing the results. """
+        """ Compute relationships for every record in a XAM file. """
         report_file = RelateReport.build_path(top=out_dir,
                                               sample=self.sample,
                                               ref=self.ref)
@@ -206,9 +214,7 @@ class RelationWriter(object):
             # Write the reference sequence to a file.
             refseq_checksum = self._write_refseq(release_dir, brotli_level)
             # Compute relationships and time how long it takes.
-            (batch_counts,
-             n_batches,
-             checks) = self._generate_batches(
+            batch_counts, checks = self._generate_batches(
                 top=release_dir,
                 brotli_level=brotli_level,
                 min_mapq=min_mapq,
@@ -251,7 +257,7 @@ class RelationWriter(object):
                 min_reads=min_reads,
                 n_reads_xam=self.num_reads,
                 n_reads_rel=tabulator.num_reads,
-                n_batches=n_batches,
+                n_batches=len(batch_counts),
                 checksums=checks,
                 refseq_checksum=refseq_checksum,
                 began=began,

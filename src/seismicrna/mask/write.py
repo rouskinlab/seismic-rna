@@ -16,6 +16,8 @@ from .table import MaskBatchTabulator
 from ..core import path
 from ..core.arg import docdef
 from ..core.batch import RegionMutsBatch
+from ..core.dataset import MissingBatchTypeError
+from ..core.error import IncompatibleValuesError
 from ..core.logs import logger
 from ..core.rel import RelPattern
 from ..core.report import mask_iter_no_convergence
@@ -237,7 +239,13 @@ class Masker(object):
             logger.detail(f"{self} skipped pre-excluding reads in {batch}")
             return batch
         # Load the names of the reads in this batch.
-        names_batch = self.read_names_dataset.get_batch(batch.batch)
+        try:
+            names_batch = self.read_names_dataset.get_batch(batch.batch)
+        except MissingBatchTypeError:
+            raise IncompatibleValuesError(
+                "Reads can be excluded with --mask-read or --mask-read-file "
+                "only if relate was run using the option --write-read-names"
+            ) from None
         if names_batch.num_reads != batch.num_reads:
             raise ValueError(f"Expected {batch.num_reads} read names,"
                              f"but got {names_batch.num_reads}")

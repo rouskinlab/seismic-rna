@@ -23,6 +23,23 @@ from .report import (DATETIME_FORMAT,
 from .seq import DNA, Region, unite
 
 
+class ReversedTimeStampError(RuntimeError):
+    """ A dataset has a timestamp that is earlier than a dataset that
+    should have been written before it. """
+
+
+class MissingBatchError(RuntimeError):
+    """ A dataset does not have a batch of a given type and number. """
+
+
+class MissingBatchTypeError(MissingBatchError):
+    """ A dataset does not have a batch of a given type. """
+
+
+class FailedToLoadDatasetError(RuntimeError):
+    """ A batch failed to load. """
+
+
 class Dataset(ABC):
     """ Dataset comprising batches of data. """
 
@@ -122,7 +139,7 @@ class Dataset(ABC):
             path.symlink_if_needed(tmp_data_dir, data_dir)
 
     def __str__(self):
-        return f"{type(self).__name__} for sample {repr(self.sample)}"
+        return f"{type(self).__name__} in {self.report_file}"
 
 
 class UnbiasDataset(Dataset, ABC):
@@ -207,9 +224,7 @@ class LoadFunction(object):
         """ Get the consensus value among all types of dataset. """
         value0 = method(self.dataset_types[0])
         for dataset_type in self.dataset_types[1:]:
-            if (value1 := method(dataset_type)) != value0:
-                raise ValueError(f"{self} expected exactly one {what}, "
-                                 f"but got {value0} ≠ {value1}")
+            assert method(dataset_type) == value0
         return value0
 
     @cached_property
@@ -242,17 +257,24 @@ class LoadFunction(object):
                 # Return the first dataset type that works.
                 return dataset_type(report_file, **kwargs)
             except FileNotFoundError:
-                # Re-raise FileNotFoundError because, if the report file
+                # Re-raise FileNotFoundError because if the report file
                 # does not exist, then no dataset type can load it.
                 raise
+            except ReversedTimeStampError:
+                # Re-raise ReversedTimeStampError because if the report
+                # file's timestamp is earlier than that of one of its
+                # constituents, then no dataset type can load it.
+                raise
             except Exception as error:
-                # If a type fails for any reason but FileNotFoundError,
-                # then record the error silently.
+                # If a type fails for any other reason, then record the
+                # error silently.
                 errors[dataset_type.__name__] = error
         # If all dataset types failed, then raise an error.
         errmsg = "\n".join(f"{type_name}: {error}"
                            for type_name, error in errors.items())
-        raise RuntimeError(f"{self} failed to load {report_file}:\n{errmsg}")
+        raise FailedToLoadDatasetError(
+            f"{self} failed to load {report_file}:\n{errmsg}"
+        )
 
     def __str__(self):
         names = ", ".join(dataset_type.__name__
@@ -298,16 +320,22 @@ class LoadedDataset(Dataset, ABC):
 
     def get_batch_checksum(self, batch: int):
         """ Get the checksum of a specific batch from the report. """
-        return self.report.get_field(ChecksumsF)[self.get_btype_name()][batch]
+        checksums = self.report.get_field(ChecksumsF)
+        try:
+            return checksums[self.get_btype_name()][batch]
+        except KeyError:
+            # Report does not have checksums for this type of batch.
+            raise MissingBatchTypeError(self.get_batch_type())
+        except IndexError:
+            # Report does not have a checksum for this batch number.
+            raise MissingBatchError(batch)
 
     def get_batch(self, batch_num: int) -> ReadBatchIO | MutsBatchIO:
         batch = self.get_batch_type().load(
             self.get_batch_path(batch_num),
             checksum=self.get_batch_checksum(batch_num)
         )
-        if batch.batch != batch_num:
-            raise ValueError(f"Expected batch to have number {batch_num}, "
-                             f"but got {batch.batch}")
+        assert batch.batch == batch_num
         return batch
 
 
@@ -550,13 +578,13 @@ class MultistepDataset(MutsDataset, ABC):
         super().__init__(dataset2_report_file, **kwargs)
         data1 = self.load_dataset1(dataset2_report_file, self.verify_times)
         data2 = self.load_dataset2(dataset2_report_file, self.verify_times)
-        if self.verify_times and data1.timestamp > data2.timestamp:
-            raise ValueError(
-                f"To make a {type(self).__name__}, the {type(data1).__name__} "
-                f"must have been written before the {type(data2).__name__}, "
-                f"but the timestamps in their report files are "
-                f"{data1.timestamp.strftime(DATETIME_FORMAT)} and "
-                f"{data2.timestamp.strftime(DATETIME_FORMAT)}, respectively. "
+        time1 = data1.timestamp
+        time2 = data2.timestamp
+        if self.verify_times and time1 > time2:
+            raise ReversedTimeStampError(
+                f"{data2} was presumably made from {data1}, but its report "
+                f"file was written earlier: {time2.strftime(DATETIME_FORMAT)} "
+                f"compared to {time1.strftime(DATETIME_FORMAT)}. "
                 f"If you are sure this inconsistency is not a problem, "
                 f"then you can suppress this error using --no-verify-times"
             )
