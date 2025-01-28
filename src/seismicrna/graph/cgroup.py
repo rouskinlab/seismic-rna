@@ -7,7 +7,11 @@ from ..core.arg import (NO_GROUP,
                         GROUP_ALL,
                         opt_cgroup)
 from ..core.dataset import Dataset
-from ..core.header import NO_KS, NO_CLUSTS, format_clust_names, list_ks_clusts
+from ..core.header import (NO_KS,
+                           NO_CLUSTS,
+                           format_clust_names,
+                           list_ks_clusts,
+                           K_CLUST_KEY)
 from ..core.table import Table
 
 
@@ -28,13 +32,28 @@ def get_ks_clusts(source: Dataset | Table):
     return list_ks_clusts(ks)
 
 
-def make_tracks(source: Dataset | Table, k: int | None, clust: int | None):
+def make_tracks(source: Dataset | Table,
+                k: int | None,
+                clust: int | None,
+                **kwargs):
     """ Make an index for the rows or columns of a graph. """
     clusts = get_ks_clusts(source)
+
     if k is None and clust is None:
-        return clusts
-    return [(k_, clust_) for k_, clust_ in clusts
+        tracks = clusts
+    tracks = [(k_, clust_) for k_, clust_ in clusts
             if ((k is None or k_ == k) and (clust is None or clust_ == clust))]
+    if value := kwargs.pop(K_CLUST_KEY, None):
+        assert isinstance(value, list),\
+        f"{K_CLUST_KEY} must be a list of tuples."
+        selected = set(tracks)
+        combo_selected = set(value)
+        if tracks == clusts:
+            selected &= combo_selected
+        else:
+            selected |= combo_selected
+        tracks = sorted(list(selected))
+    return tracks
 
 
 def _track_count(tracks: list[tuple[int, int]] | None):
