@@ -23,7 +23,7 @@ def run(input_path: Iterable[str | Path], *,
         max_procs: int,
         tmp_dir: Path,
         keep_tmp: bool) -> list[Path]:
-    """ Draw RNA structure diagrams with reactivities using RNArtistCore. """
+    """ Draw RNA structures with reactivities using RNArtistCore. """
     require_env_var("RNARTISTCORE", CMD_DRAW)
     # Generate the positional arguments for draw.
     args = as_list_of_tuples(path.find_files_chain(input_path, [path.FoldRepSeg]))
@@ -51,5 +51,5 @@ params = [
 
 @command(CMD_DRAW, params=params)
 def cli(*args, **kwargs):
-    """ Clean the names and sequences in FASTA files. """
+    """ Draw RNA structures with reactivities using RNArtistCore. """
     return run(*args, **kwargs)
