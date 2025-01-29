@@ -41,8 +41,9 @@ def make_tracks(source: Dataset | Table,
 
     if k is None and clust is None:
         tracks = clusts
-    tracks = [(k_, clust_) for k_, clust_ in clusts
-            if ((k is None or k_ == k) and (clust is None or clust_ == clust))]
+    else:
+        tracks = [(k_, clust_) for k_, clust_ in clusts
+                if ((k is None or k_ == k) and (clust is None or clust_ == clust))]
     if value := kwargs.pop(K_CLUST_KEY, None):
         assert isinstance(value, list),\
         f"{K_CLUST_KEY} must be a list of tuples."
