@@ -3,6 +3,7 @@ from functools import cached_property
 
 from .base import BaseGraph, make_path_subject, make_title_action_sample
 from .cgroup import ClusterGroupGraph
+from ..core.header import K_CLUST_KEY
 
 
 class OneSourceGraph(BaseGraph, ABC):
@@ -28,6 +29,7 @@ class OneSourceClusterGroupGraph(OneSourceGraph, ClusterGroupGraph, ABC):
                  k: int | None,
                  clust: int | None,
                  **kwargs):
+        self.k_clust_list = kwargs.pop(K_CLUST_KEY, None)
         super().__init__(**kwargs)
         self.k = k
         self.clust = clust
