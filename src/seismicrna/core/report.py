@@ -50,7 +50,6 @@ from .arg import (opt_phred_enc,
                   opt_min_mapq,
                   opt_insert3,
                   opt_ambindel,
-                  opt_ambindel_max_iter,
                   opt_overhangs,
                   opt_clip_end5,
                   opt_clip_end3,
@@ -354,7 +353,6 @@ RefseqChecksumF = Field("refseq_checksum",
                         str)
 Insert3F = OptionField(opt_insert3)
 AmbindelF = OptionField(opt_ambindel)
-AmbindelMaxIterF = OptionField(opt_ambindel_max_iter)
 OverhangsF = OptionField(opt_overhangs)
 MinPhredF = OptionField(opt_min_phred)
 ClipEnd5F = OptionField(opt_clip_end5)

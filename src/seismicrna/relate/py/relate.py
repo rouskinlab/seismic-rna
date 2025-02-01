@@ -121,7 +121,7 @@ def _add_indel(pods: list[IndelPod],
                opposite: int,
                lateral3: int):
     if not pods or not isinstance(pods[-1], pod_type):
-        pods.append(pod_type(len(pods)))
+        pods.append(pod_type())
     pod = pods[-1]
     indel_type = pod.indel_type()
     return indel_type(opposite, lateral3, pod)
@@ -132,7 +132,6 @@ def _calc_rels_read(read: SamRead,
                     min_qual: str,
                     insert3: bool,
                     ambindel: bool,
-                    ambindel_max_iter: int,
                     clip_end5: int,
                     clip_end3: int):
     """
@@ -148,8 +147,6 @@ def _calc_rels_read(read: SamRead,
         ASCII encoding of the minimum Phred score to accept a base call
     ambindel: bool
         Whether to find and label all ambiguous insertions and deletions
-    ambindel_max_iter: int
-        Maximum number of iterations for finding ambiguous indels
     insert3: bool
         Whether to mark an insertion on the base immediately 3' (True)
         or 5' (False) of the insertion.
@@ -350,8 +347,7 @@ def _calc_rels_read(read: SamRead,
                        ref_end5=read.pos,
                        ref_end3=ref_pos,
                        read_end5=read_end5,
-                       read_end3=read_end3,
-                       max_iter=ambindel_max_iter)
+                       read_end3=read_end3)
 
     # Clip bases from the 5' and 3' ends of the read.
     if clip_end5 < 0:
@@ -449,7 +445,6 @@ def calc_rels_lines(line1: str,
                     min_qual: int,
                     insert3: bool,
                     ambindel: bool,
-                    ambindel_max_iter: int,
                     overhangs: bool,
                     clip_end5: int = 0,
                     clip_end3: int = 0):
@@ -464,7 +459,6 @@ def calc_rels_lines(line1: str,
                                           chr(min_qual),
                                           insert3,
                                           ambindel,
-                                          ambindel_max_iter,
                                           clip_end5,
                                           clip_end3)
     if paired:
@@ -480,7 +474,6 @@ def calc_rels_lines(line1: str,
                                                   chr(min_qual),
                                                   insert3,
                                                   ambindel,
-                                                  ambindel_max_iter,
                                                   clip_end5,
                                                   clip_end3)
             # Determine which read (1 or 2) faces forward and reverse.

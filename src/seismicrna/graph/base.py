@@ -316,6 +316,10 @@ class BaseGraph(ABC):
         """ Title of the graph. """
         return " ".join(self._title_main + self._title_details)
 
+    def __str__(self):
+        return (f"{type(self).__name__} of sample {repr(self.sample)} "
+                f"reference {repr(self.ref)} region {repr(self.reg)}")
+
 
 class BaseWriter(ABC):
     """ Write the proper type(s) of graph. """

@@ -499,13 +499,6 @@ opt_ambindel = Option(
     help="Mark all ambiguous insertions and deletions (indels)"
 )
 
-opt_ambindel_max_iter = Option(
-    ("--ambindel-max-iter",),
-    type=int,
-    default=10_000_000,
-    help="Stop ambiguous indels after this many iterations (0 for no limit)"
-)
-
 opt_insert3 = Option(
     ("--insert3/--insert5",),
     type=bool,

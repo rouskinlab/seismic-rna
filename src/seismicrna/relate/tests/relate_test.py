@@ -1,3 +1,4 @@
+import time
 import unittest as ut
 from itertools import chain, product
 from typing import Any
@@ -105,7 +106,6 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                end5: int,
                insert3: bool,
                ambindel: bool,
-               ambindel_max_iter: int,
                clip_end5: int,
                clip_end3: int,
                paired: bool = False):
@@ -131,7 +131,6 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                                        ord(OK_QUAL),
                                        insert3,
                                        ambindel,
-                                       ambindel_max_iter,
                                        False,
                                        clip_end5,
                                        clip_end3)
@@ -145,7 +144,6 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                                        ord(OK_QUAL),
                                        insert3,
                                        ambindel,
-                                       ambindel_max_iter,
                                        False,
                                        clip_end5,
                                        clip_end3)
@@ -165,7 +163,6 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                      mapq: Any = None,
                      flag: Any = None,
                      ambindel: bool = True,
-                     ambindel_max_iter: int = 1000,
                      insert3: bool = True,
                      clip_end5: int = 0,
                      clip_end3: int = 0,
@@ -194,7 +191,6 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                                ord(OK_QUAL),
                                insert3,
                                ambindel,
-                               ambindel_max_iter,
                                False,
                                clip_end5,
                                clip_end3)
@@ -211,7 +207,6 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                                ord(OK_QUAL),
                                insert3,
                                ambindel,
-                               ambindel_max_iter,
                                False,
                                clip_end5,
                                clip_end3)
@@ -226,7 +221,6 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                          cigar: str = "4M",
                          end5: Any = 1,
                          ambindel: bool = True,
-                         ambindel_max_iter: int = 1000,
                          insert3: bool = True,
                          clip_end5: int = 0,
                          clip_end3: int = 0,
@@ -256,7 +250,6 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                                ord(OK_QUAL),
                                insert3,
                                ambindel,
-                               ambindel_max_iter,
                                False,
                                clip_end5,
                                clip_end3)
@@ -273,7 +266,6 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                                ord(OK_QUAL),
                                insert3,
                                ambindel,
-                               ambindel_max_iter,
                                False,
                                clip_end5,
                                clip_end3)
@@ -307,7 +299,6 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                                      cigar,
                                      end5,
                                      ambindel=True,
-                                     ambindel_max_iter=1000,
                                      insert3=insert3,
                                      clip_end5=0,
                                      clip_end3=0,
@@ -330,10 +321,18 @@ class TestCalcRelsLinesSingle(ut.TestCase):
         self.iter_cases(DNA("CTAG"), 2, paired=True)
 
     def test_5nt_2ins(self):
-        self.iter_cases(DNA("CAAAT"), 2)
+        self.iter_cases(DNA("CTTTG"), 2)
 
     def test_6nt_2ins(self):
-        self.iter_cases(DNA("GTATAC"), 2)
+        self.iter_cases(DNA("TGAGAC"), 2)
+
+    @ut.skip("Takes too long")
+    def test_7nt_0ins(self):
+        self.iter_cases(DNA("GAACACT"), 0)
+
+    @ut.skip("Takes too long")
+    def test_8nt_0ins(self):
+        self.iter_cases(DNA("TACACGGT"), 0)
 
     def test_all_matches(self):
         for reflen in range(1, 10):
@@ -360,7 +359,6 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                                                      cigar,
                                                      end5,
                                                      ambindel=True,
-                                                     ambindel_max_iter=1000,
                                                      insert3=True,
                                                      clip_end5=clip5,
                                                      clip_end3=clip3)
@@ -409,7 +407,6 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                                             cigar,
                                             end5,
                                             ambindel=True,
-                                            ambindel_max_iter=1000,
                                             insert3=True,
                                             clip_end5=clip5,
                                             clip_end3=clip3
@@ -479,7 +476,6 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                                             cigar,
                                             end5,
                                             ambindel=True,
-                                            ambindel_max_iter=1000,
                                             insert3=True,
                                             clip_end5=clip5,
                                             clip_end3=clip3
@@ -512,7 +508,6 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                                  cigar="1M",
                                  end5=1,
                                  ambindel=True,
-                                 ambindel_max_iter=1000,
                                  insert3=True,
                                  clip_end5=0,
                                  clip_end3=0)
@@ -529,7 +524,6 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                                  cigar="1M",
                                  end5=1,
                                  ambindel=True,
-                                 ambindel_max_iter=1000,
                                  insert3=True,
                                  clip_end5=0,
                                  clip_end3=0)
@@ -543,7 +537,6 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                                                  cigar="1M",
                                                  end5=1,
                                                  ambindel=True,
-                                                 ambindel_max_iter=1000,
                                                  insert3=True,
                                                  clip_end5=0,
                                                  clip_end3=0))
@@ -564,7 +557,6 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                              cigar="2S4=1S",
                              end5=4,
                              ambindel=True,
-                             ambindel_max_iter=1000,
                              insert3=True,
                              clip_end5=1,
                              clip_end3=1)
@@ -588,7 +580,6 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                              cigar="4=2D3=",
                              end5=2,
                              ambindel=True,
-                             ambindel_max_iter=1000,
                              insert3=True,
                              clip_end5=0,
                              clip_end3=0)
@@ -602,7 +593,6 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                              cigar="2S2=2D2=1S",
                              end5=4,
                              ambindel=True,
-                             ambindel_max_iter=1000,
                              insert3=True,
                              clip_end5=0,
                              clip_end3=0)
@@ -616,7 +606,6 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                              cigar="2S2=2D2=1S",
                              end5=4,
                              ambindel=True,
-                             ambindel_max_iter=1000,
                              insert3=True,
                              clip_end5=1,
                              clip_end3=1)
@@ -640,7 +629,6 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                              cigar="4=2I3=",
                              end5=2,
                              ambindel=True,
-                             ambindel_max_iter=1000,
                              insert3=True,
                              clip_end5=0,
                              clip_end3=0)
@@ -654,7 +642,6 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                              cigar="2S2=2I2=1S",
                              end5=4,
                              ambindel=True,
-                             ambindel_max_iter=1000,
                              insert3=True,
                              clip_end5=0,
                              clip_end3=0)
@@ -668,14 +655,13 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                              cigar="2S2=2I2=1S",
                              end5=4,
                              ambindel=True,
-                             ambindel_max_iter=1000,
                              insert3=True,
                              clip_end5=1,
                              clip_end3=1)
         expect = (([5], [6]), {5: 9, 6: 9})
         self.assertEqual(result, expect)
 
-    def test_deep_recursion(self):
+    def test_long_ambindels(self):
         ref = "MAT2A_IVT"
         refseq = DNA(
             "TAGAGATTGTGAAGAAGAATTTCGATCTCCGCCCTGGGGTCATTGTCAGGTAAAGATGGTAAAGCC"
@@ -722,17 +708,124 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                 "9-9999999-----9-I-I-IIIIIII")
         cigar = "133M3D4M7D3M1D11M"
         end5 = 939
-        self.relate_error("Exceeded the maximum number of iterations while "
-                          "marking ambiguous indels; if you need this read, "
-                          "then raise the limit using --ambindel-max-iter",
-                          ref=ref,
-                          refseq=refseq,
-                          read=read,
-                          qual=qual,
-                          cigar=cigar,
-                          end5=end5,
-                          clip_end5=4,
-                          clip_end3=4)
+        began = time.time()
+        result = self.relate(ref=ref,
+                             refseq=refseq,
+                             read=read,
+                             qual=qual,
+                             cigar=cigar,
+                             end5=end5,
+                             ambindel=True,
+                             insert3=True,
+                             clip_end5=4,
+                             clip_end3=4)
+        ended = time.time()
+        expect = (([943], [1096]),
+                  {944: 113, 
+                   950: 225,
+                   953: 177,
+                   957: 177,
+                   959: 113,
+                   961: 177,
+                   962: 177,
+                   969: 225,
+                   970: 113,
+                   971: 113,
+                   973: 113,
+                   975: 113,
+                   976: 209,
+                   978: 209, 
+                   984: 177,
+                   986: 113,
+                   987: 113,
+                   997: 113,
+                   998: 113,
+                   1000: 113,
+                   1001: 225, 
+                   1006: 225, 
+                   1007: 113,
+                   1008: 113,
+                   1009: 113,
+                   1010: 225, 
+                   1011: 177,
+                   1013: 177,
+                   1016: 209,
+                   1017: 225,
+                   1020: 3,
+                   1021: 3,
+                   1022: 115,
+                   1023: 179,
+                   1024: 227,
+                   1025: 115,
+                   1026: 211,
+                   1027: 211,
+                   1028: 227,
+                   1029: 115,
+                   1030: 179,
+                   1031: 115,
+                   1032: 227,
+                   1033: 227,
+                   1034: 211,
+                   1035: 115,
+                   1036: 179,
+                   1037: 211,
+                   1038: 211,
+                   1039: 115,
+                   1040: 227,
+                   1041: 179,
+                   1042: 227,
+                   1043: 227,
+                   1044: 227,
+                   1045: 211,
+                   1046: 227,
+                   1047: 227,
+                   1048: 211,
+                   1049: 227,
+                   1050: 211,
+                   1051: 115,
+                   1052: 179,
+                   1053: 115,
+                   1054: 227,
+                   1055: 179,
+                   1056: 115,
+                   1057: 227,
+                   1058: 227,
+                   1059: 227,
+                   1060: 115,
+                   1061: 227,
+                   1062: 227,
+                   1063: 115,
+                   1064: 179,
+                   1065: 211,
+                   1066: 115,
+                   1067: 115,
+                   1068: 115,
+                   1069: 179,
+                   1070: 227,
+                   1071: 227,
+                   1072: 227,
+                   1073: 115,
+                   1074: 115,
+                   1075: 179,
+                   1076: 227,
+                   1077: 227,
+                   1078: 211,
+                   1079: 211,
+                   1080: 115,
+                   1081: 115,
+                   1082: 115,
+                   1083: 179,
+                   1084: 115,
+                   1085: 179,
+                   1086: 211,
+                   1087: 211,
+                   1088: 211,
+                   1089: 115,
+                   1091: 113,
+                   1093: 225})
+        self.assertEqual(result, expect)
+        # Make sure it didn't take too long to calculate.
+        self.assertLessEqual(ended - began, 0.1)
 
     def test_error_name_missing(self):
         self.relate_truncated(0, "Failed to parse read name")
@@ -983,7 +1076,6 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                cigar2: str,
                end52: int,
                ambindel: bool = True,
-               ambindel_max_iter: int = 1000,
                insert3: bool = True,
                clip_end5: int = 0,
                clip_end3: int = 0,
@@ -1020,7 +1112,6 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                                        ord(OK_QUAL),
                                        insert3,
                                        ambindel,
-                                       ambindel_max_iter,
                                        True,
                                        clip_end5,
                                        clip_end3)
@@ -1034,7 +1125,6 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                                        ord(OK_QUAL),
                                        insert3,
                                        ambindel,
-                                       ambindel_max_iter,
                                        True,
                                        clip_end5,
                                        clip_end3)
@@ -1276,7 +1366,6 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                      qual2: str = "FFFF",
                      insert3: bool = True,
                      ambindel: bool = True,
-                     ambindel_max_iter: int = 1000,
                      clip_end5: int = 0,
                      clip_end3: int = 0):
         line1 = as_sam(name1,
@@ -1312,7 +1401,6 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                                ord(OK_QUAL),
                                insert3,
                                ambindel,
-                               ambindel_max_iter,
                                True,
                                clip_end5,
                                clip_end3)
@@ -1329,7 +1417,6 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                                ord(OK_QUAL),
                                insert3,
                                ambindel,
-                               ambindel_max_iter,
                                True,
                                clip_end5,
                                clip_end3)

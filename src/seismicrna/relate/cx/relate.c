@@ -165,7 +165,6 @@ typedef struct
 
 typedef struct
 {
-    size_t order;
     int insert;
     Indel *indels;
     size_t capacity;
@@ -178,10 +177,9 @@ Do NOT call this function more than once on an IndelPod without first
 calling free_pod(), or else memory in pod->indels will leak.
 Make SURE to call free_pod() eventually, or else memory in pod->indels
 will leak. */
-static int init_pod(IndelPod *pod, size_t order, int insert)
+static int init_pod(IndelPod *pod, int insert)
 {
     assert(pod != NULL);
-    pod->order = order;
     pod->insert = insert;
     // Assume that the pod is being initialized because an indel needs
     // to go into the pod, so initialize with the capacity to hold up to
@@ -199,11 +197,10 @@ static int init_pod(IndelPod *pod, size_t order, int insert)
 }
 
 
-/* Initialize an IndelPod.
+/* Free the dynamically allocated memory for an IndelPod.
 Do NOT call this function on an IndelPod that has not been initialized
-with init_pods(), or else the behavior is undefined and could free
-random memory, possibly triggering an access violation or corrupting the
-memory. */
+with init_pod(), or else the behavior is undefined and could free random
+memory, possibly triggering an access violation or corrupting memory. */
 static void free_pod(IndelPod *pod)
 {
     assert(pod != NULL);
@@ -290,7 +287,8 @@ static int add_indel(IndelPodArray *pods,
 
         // Initialize the first pod in the new array.
         pod = pods->pods;
-        if (init_pod(pod, 0, insert)) {return -1;}
+        if (init_pod(pod, insert))
+            {return -1;}
         // Increment num_pods only if init_pod succeeds because, if it
         // fails, then pod->indels is NULL, so free_pods() would try to
         // free() a NULL pointer if num_pods were already incremented.
@@ -325,7 +323,8 @@ static int add_indel(IndelPodArray *pods,
 
             // Initialize the new pod.
             pod = &(pods->pods[pods->num_pods]);
-            if (init_pod(pod, pods->num_pods, insert)) {return -1;}
+            if (init_pod(pod, insert))
+                {return -1;}
             // Increment num_pods only if init_pod succeeds because, if
             // it fails, then pod->indels is NULL, so free_pods() would
             // try to free() a NULL pointer if num_pods were already
@@ -977,8 +976,25 @@ static int validate_pair(const SamRead *read1,
 
 
 
+/* Determine the index of an Indel with the given label. */
+size_t find_indel_index(IndelPod *pod, size_t label)
+{
+    assert(pod != NULL);
+    assert(pod->num_indels >= 1);
+    for (size_t indel_index = 0; indel_index < pod->num_indels; indel_index++)
+    {
+        if (pod->indels[indel_index].label == label)
+        {
+            return indel_index;
+        }
+    }
+    // In this algorithm, the label must always exist.
+    assert(0);
+}
+
+
 /* Determine the order of two Indels from 5' to 3'. */
-static inline int comp_indels_5to3(const void *a, const void *b)
+static inline int comp_indels(const void *a, const void *b)
 {
     const Indel *indel1 = (const Indel *)a;
     const Indel *indel2 = (const Indel *)b;
@@ -991,79 +1007,11 @@ static inline int comp_indels_5to3(const void *a, const void *b)
 }
 
 
-/* Determine the order of two Indels from 3' to 5'. */
-static inline int comp_indels_3to5(const void *a, const void *b)
-{
-    const Indel *indel1 = (const Indel *)a;
-    const Indel *indel2 = (const Indel *)b;
-    // Two Indels cannot have the same value for opposite.
-    assert(indel1->opposite != indel2->opposite);
-    // Use comparison, not subtraction, because opposite is size_t
-    // (which is unsigned); if the difference is negative, then it will
-    // overflow to a very large positive number.
-    return indel1->opposite < indel2->opposite ? 1 : -1;
-}
-
-
 /* Sort the Indels in an IndelPod, either forward or reverse. */
-static inline void sort_pod(IndelPod *pod, int move5to3)
+static inline void sort_pod(IndelPod *pod)
 {
     assert(pod != NULL);
-    if (move5to3)
-        {qsort(pod->indels, pod->num_indels, sizeof(Indel), comp_indels_5to3);}
-    else
-        {qsort(pod->indels, pod->num_indels, sizeof(Indel), comp_indels_3to5);}
-}
-
-
-/* Determine the order of two IndelPods from 5' to 3'. */
-static inline int comp_pods_5to3(const void *a, const void *b)
-{
-    const IndelPod *pod1 = (const IndelPod *)a;
-    const IndelPod *pod2 = (const IndelPod *)b;
-    // Two IndelPods cannot have the same value for order.
-    assert(pod1->order != pod2->order);
-    // Use comparison, not subtraction (i.e. pod1->order - pod2->order),
-    // because order is size_t (which is unsigned); if the difference is
-    // negative, then it will overflow to a very large positive number.
-    return pod1->order > pod2->order ? 1 : -1;
-}
-
-
-/* Determine the order of two IndelPods from 3' to 5'. */
-static inline int comp_pods_3to5(const void *a, const void *b)
-{
-    const IndelPod *pod1 = (const IndelPod *)a;
-    const IndelPod *pod2 = (const IndelPod *)b;
-    // Two IndelPods cannot have the same value for order.
-    assert(pod1->order != pod2->order);
-    // Use comparison, not subtraction (i.e. pod1->order - pod2->order),
-    // because order is size_t (which is unsigned); if the difference is
-    // negative, then it will overflow to a very large positive number.
-    return pod1->order < pod2->order ? 1 : -1;
-}
-
-
-/* Sort the IndelPods in an IndelPodArray, either forward or reverse. */
-static inline void sort_pods(IndelPodArray *pods, int move5to3)
-{
-    assert(pods != NULL);
-    if (move5to3)
-        {qsort(pods->pods, pods->num_pods, sizeof(IndelPod), comp_pods_5to3);}
-    else
-        {qsort(pods->pods, pods->num_pods, sizeof(IndelPod), comp_pods_3to5);}
-}
-
-
-/* Sort the IndelPods in an IndelPodArray and the Indels in each pod. */
-static inline void sort_pods_indels(IndelPodArray *pods, int move5to3)
-{
-    assert(pods != NULL);
-    sort_pods(pods, move5to3);
-    for (size_t p = 0; p < pods->num_pods; p++)
-    {
-        sort_pod(&(pods->pods[p]), move5to3);
-    }
+    qsort(pod->indels, pod->num_indels, sizeof(Indel), comp_indels);
 }
 
 
@@ -1082,24 +1030,17 @@ static void move_indels(IndelPod *pod,
                         size_t opposite,
                         size_t lateral3)
 {
+    assert(pod != NULL);
     // Locate the indel with the given label.
-    Indel *indel = NULL;
-    size_t i = 0;
-    while (indel == NULL && i < pod->num_indels)
-    {
-        if (pod->indels[i].label == label)
-        {
-            indel = &(pod->indels[i]);
-        }
-        i++;
-    }
+    Indel *indel = &(pod->indels[find_indel_index(pod, label)]);
     assert(indel != NULL);
     assert(indel->insert == pod->insert);
     assert(indel->opposite != opposite);
 
     // Move every other indel in the pod that lies between the given
     // indel and the position to which the given indel should be moved.
-    for (i = 0; i < pod->num_indels; i++)
+    int tunneled = 0;
+    for (size_t i = 0; i < pod->num_indels; i++)
     {
         Indel *other = &(pod->indels[i]);
         if (other != indel)
@@ -1116,12 +1057,20 @@ static void move_indels(IndelPod *pod,
             {
                 // If so, then move it.
                 move_indel(other, other->opposite, lateral3);
+                tunneled = 1;
             }
         }
     }
 
     // Move the given indel.
     move_indel(indel, opposite, lateral3);
+
+    if (tunneled)
+    {
+        // If the indel tunneled through any others, then the indels are
+        // no longer in order and must be sorted.
+        sort_pod(pod);
+    }
 }
 
 
@@ -1189,25 +1138,42 @@ static void calc_positions(size_t *swap_lateral,
 /* Check whether the indel would collide with another pod. */
 static inline int check_collisions(const IndelPodArray *pods,
                                    size_t pod_index,
-                                   size_t next_lateral3)
+                                   size_t next_lateral3,
+                                   int move5to3)
 {
-    size_t next_pod_index = pod_index + 1;
-    if (next_pod_index < pods->num_pods)
+    // Determine which pod is next and could collide with the given pod.
+    size_t next_pod_index;
+    if (move5to3)
     {
-        IndelPod *next_pod = &(pods->pods[next_pod_index]);
-        // Confirm the next pod has a different type of indel.
-        assert(next_pod->insert != pods->pods[pod_index].insert);
-        // Every pod must contain at least 1 indel.
-        assert(next_pod->num_indels >= 1);
-        // In the next pod, check the first indel, which is the one that
-        // is closest to the current indel and could collide with it.
-        Indel *next_indel = &(next_pod->indels[0]);
-        return (next_indel->opposite == next_lateral3
-                ||
-                next_indel->opposite == calc_lateral5(next_lateral3));
+        next_pod_index = pod_index + 1;
+        if (next_pod_index == pods->num_pods)
+            {return 0;}
     }
-    // There is no next pod with which to collide.
-    return 0;
+    else
+    {
+        if (pod_index == 0)
+            {return 0;}
+        next_pod_index = pod_index - 1;
+    }
+    assert(next_pod_index < pods->num_pods);
+    IndelPod *next_pod = &(pods->pods[next_pod_index]);
+    assert(next_pod->insert != pods->pods[pod_index].insert);
+    assert(next_pod->num_indels >= 1);
+    // In the next pod, check the indel that is closest to the current
+    // indel and could collide with it.
+    size_t indel_index;
+    if (move5to3)
+    {
+        indel_index = 0;
+    }
+    else
+    {
+        indel_index = next_pod->num_indels - 1;
+    }
+    Indel *next_indel = &(next_pod->indels[indel_index]);
+    return (next_indel->opposite == next_lateral3
+            ||
+            next_indel->opposite == calc_lateral5(next_lateral3));
 }
 
 
@@ -1216,9 +1182,11 @@ static inline int consistent_rels(char rel1, char rel2)
 {
     // Two relationships are consistent if they have one or more primary
     // relationships (bits) in common.
-    if (rel1 & rel2) {return 1;}
+    if (rel1 & rel2)
+        {return 1;}
     // They are also consistent if they are both substitutions.
-    if ((rel1 & SUB_N) && (rel2 & SUB_N)) {return 1;}
+    if ((rel1 & SUB_N) && (rel2 & SUB_N))
+        {return 1;}
     // Otherwise, they are inconsistent.
     return 0;
 }
@@ -1360,7 +1328,8 @@ static int try_move_indel(Indel *indel,
         // Stop if the indel would collide with another pod.
         if (check_collisions(&(read->pods),
                              pod_index,
-                             next_lateral3))
+                             next_lateral3,
+                             move5to3))
             {return 0;}
         
         // Calculate what the relationships would be after the move.
@@ -1457,7 +1426,8 @@ static int try_move_indel(Indel *indel,
         // Stop if the indel would collide with another pod.
         if (check_collisions(&(read->pods),
                              pod_index,
-                             next_lateral3))
+                             next_lateral3,
+                             move5to3))
             {return 0;}
         
         // Calculate what the relationships would be after the move.
@@ -1487,202 +1457,94 @@ static int try_move_indel(Indel *indel,
         read->rels[next_opposite] |= DELET;
     }
 
-    // Re-sort the indels in the pod so they stay in positional
-    // order following the move.
-    sort_pod(pod, move5to3);
-
     // Signify that the indel moved.
     return 1;
 }
 
 
-/* Recursive algorithm to mark all ambiguous indels. */
-static int find_ambindels_recurse(SamRead *read,
-                                  const char *rels_seq,
-                                  size_t read_end5,
-                                  size_t read_end3,
-                                  unsigned char min_qual,
-                                  int insert3,
-                                  unsigned long max_iter,
-                                  unsigned long *num_iter,
-                                  int move5to3,
-                                  int backtrack,
-                                  size_t pod_index,
-                                  size_t indel_index)
-{
-    // Check the number of iterations.
-    assert(num_iter != NULL);
-    if (max_iter > 0)
-    {
-        (*num_iter)++;
-        if (*num_iter > max_iter)
-        {
-            PyErr_SetString(RelateError,
-                            "Exceeded the maximum number of iterations while "
-                            "marking ambiguous indels; if you need this read, "
-                            "then raise the limit using --ambindel-max-iter");
-            return -1;
-        }
-    }
-
-    // Select the pod at this index.
-    assert(pod_index < read->pods.num_pods);
-    IndelPod *pod = &(read->pods.pods[pod_index]);
-    // Select the indel at this index.
-    assert(indel_index < pod->num_indels);
-    Indel *indel = &(pod->indels[indel_index]);
-
-    // Record the initial attributes of the indel.
-    size_t label = indel->label;
-    size_t init_opposite = indel->opposite;
-    size_t init_lateral3 = indel->lateral3;
-
-    // Try to move the indel.
-    if (try_move_indel(indel,
-                       read,
-                       rels_seq,
-                       read_end5,
-                       read_end3,
-                       min_qual,
-                       insert3,
-                       move5to3,
-                       pod_index))
-    {
-        // Try to move the indel at this index another step.
-        if (find_ambindels_recurse(read,
-                                   rels_seq,
-                                   read_end5,
-                                   read_end3,
-                                   min_qual,
-                                   insert3,
-                                   max_iter,
-                                   num_iter,
-                                   move5to3,
-                                   backtrack,
-                                   pod_index,
-                                   indel_index))
-            {return -1;}
-
-        if (backtrack)
-        {
-            // Move the indel back to its initial position.
-            move_indels(pod, label, init_opposite, init_lateral3);
-            // Re-sort the indels in the pod so they stay in positional
-            // order after moving back to their initial positions.
-            sort_pod(pod, move5to3);
-        }
-    }
-
-    // Check if the pod contains another indel after the current one.
-    if (indel_index + 1 < pod->num_indels)
-    {
-        // Move the next indel in the pod.
-        if (find_ambindels_recurse(read,
-                                   rels_seq,
-                                   read_end5,
-                                   read_end3,
-                                   min_qual,
-                                   insert3,
-                                   max_iter,
-                                   num_iter,
-                                   move5to3,
-                                   backtrack,
-                                   pod_index,
-                                   indel_index + 1))
-            {return -1;}
-    }
-
-    return 0;
-}
-
-
 /* Find and mark all ambiguous insertions and deletions. */
-static int find_ambindels(SamRead *read,
+static void find_ambindels(SamRead *read,
                           const char *rels_seq,
                           size_t read_end5,
                           size_t read_end3,
                           unsigned char min_qual,
-                          int insert3,
-                          unsigned long max_iter)
+                          int insert3)
 {
     assert(read != NULL);
     if (read->pods.num_pods == 0)
     {
         // Nothing to do.
-        return 0;
+        return;
     }
     assert(read->pods.pods != NULL);
+    assert(rels_seq != NULL);
 
     size_t pod_index;
-    size_t init_pod_index = read->pods.num_pods - 1;
-    unsigned long num_iter;
+    IndelPod *pod;
+    size_t indel_index;
+    Indel *indel;
 
     // Move the indels in every pod as far 5' as possible.
-    sort_pods_indels(&(read->pods), 0);
-    pod_index = init_pod_index;
-    while (1)
+    pod_index = 0;
+    while (pod_index < read->pods.num_pods)
     {
-        num_iter = 0;
-        if (find_ambindels_recurse(read,
-                                   rels_seq,
-                                   read_end5,
-                                   read_end3,
-                                   min_qual,
-                                   insert3,
-                                   max_iter,
-                                   &num_iter,
-                                   0,
-                                   0,
-                                   pod_index,
-                                   0))
-            {return -1;}
-        if (pod_index == 0)
-            {break;}
-        pod_index--;
+        pod = &(read->pods.pods[pod_index]);
+        assert(pod->num_indels >= 1);
+        indel_index = pod->num_indels - 1;
+        while (1)
+        {
+            indel = &(pod->indels[indel_index]);
+            if (!try_move_indel(indel,
+                                read,
+                                rels_seq,
+                                read_end5,
+                                read_end3,
+                                min_qual,
+                                insert3,
+                                0,
+                                pod_index))
+                if (indel_index >= 1)
+                    {indel_index--;}
+                else
+                    {break;}
+        }
+        pod_index++;
     }
 
-    // Find all possible locations of every indel.
-    sort_pods_indels(&(read->pods), 1);
-    pod_index = init_pod_index;
-    while (1)
+    // Move the indels in every pod as far 3' as possible.
+    size_t label;
+    pod_index = read->pods.num_pods;
+    while (pod_index >= 1)
     {
-        // Search depth-first exhaustively, with backtracking.
-        num_iter = 0;
-        if (find_ambindels_recurse(read,
-                                   rels_seq,
-                                   read_end5,
-                                   read_end3,
-                                   min_qual,
-                                   insert3,
-                                   max_iter,
-                                   &num_iter,
-                                   1,
-                                   1,
-                                   pod_index,
-                                   0))
-            {return -1;}
-        if (pod_index == 0)
-            {break;}
-        // Move the indels in this pod as far 3' as possible to make
-        // room for the next pod to move 3' (towards this pod).
-        num_iter = 0;
-        if (find_ambindels_recurse(read,
-                                    rels_seq,
-                                    read_end5,
-                                    read_end3,
-                                    min_qual,
-                                    insert3,
-                                    max_iter,
-                                    &num_iter,
-                                    1,
-                                    0,
-                                    pod_index,
-                                    0))
-            {return -1;}
         pod_index--;
+        pod = &(read->pods.pods[pod_index]);
+        assert(pod->num_indels >= 1);
+        indel_index = pod->num_indels - 1;
+        while (1)
+        {
+            indel = &(pod->indels[indel_index]);
+            label = indel->label;
+            if (try_move_indel(indel,
+                                read,
+                                rels_seq,
+                                read_end5,
+                                read_end3,
+                                min_qual,
+                                insert3,
+                                1,
+                                pod_index))
+            {
+                indel_index = find_indel_index(pod, label);
+            }
+            else
+            {
+                if (indel_index >= 1)
+                    {indel_index--;}
+                else
+                    {break;}
+            }
+        }
     }
-
-    return 0;
 }
 
 
@@ -1720,7 +1582,6 @@ static int calc_rels_line(SamRead *read,
                           unsigned char min_qual,
                           int insert3,
                           int ambindel,
-                          unsigned long ambindel_max_iter,
                           size_t clip_end5,
                           size_t clip_end3)
 {
@@ -1983,14 +1844,12 @@ static int calc_rels_line(SamRead *read,
     if (ambindel)
     {
         // Find and mark ambiguous insertions and deletions.
-        if (find_ambindels(read,
-                           rels_seq,
-                           read_end5,
-                           read_end3,
-                           min_qual,
-                           insert3,
-                           ambindel_max_iter))
-            {return -1;}
+        find_ambindels(read,
+                       rels_seq,
+                       read_end5,
+                       read_end3,
+                       min_qual,
+                       insert3);
     }
 
     return 0;
@@ -2040,7 +1899,8 @@ static inline int put_rel_in_dict(PyObject *rels_dict,
         // It is impossible for any relationship within the region to be
         // non-covered (255, or 2^8 - 1).
         assert(rel != 255);
-        if (set_rel(rels_dict, pos, rel)) {return -1;}
+        if (set_rel(rels_dict, pos, rel))
+            {return -1;}
     }
     return 0;
 }
@@ -2067,7 +1927,8 @@ static int put_rels_in_dict(PyObject *rels_dict,
         // It is impossible for any relationship within the region to be
         // irreconcilable (0) for one read: only between two reads.
         assert(rel != 0);
-        if (put_rel_in_dict(rels_dict, pos, rel)) {return -1;}
+        if (put_rel_in_dict(rels_dict, pos, rel))
+            {return -1;}
     }
     return 0;
 }
@@ -2154,8 +2015,10 @@ static int put_2_rels_in_dict(PyObject *rels_dict,
 static int put_end_in_list(PyObject *ends_list, Py_ssize_t index, size_t end)
 {
     PyObject *py_end = PyLong_FromSize_t(end);
-    if (py_end == NULL) {return -1;}
-    if (PyList_SetItem(ends_list, index, py_end)) {return -1;}
+    if (py_end == NULL)
+        {return -1;}
+    if (PyList_SetItem(ends_list, index, py_end))
+        {return -1;}
     return 0;
 }
 
@@ -2212,12 +2075,11 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
     unsigned char min_qual;
     int insert3;
     int ambindel;
-    unsigned long ambindel_max_iter;
     int overhangs;
     unsigned long clip_end5;
     unsigned long clip_end3;
     if (!PyArg_ParseTuple(args,
-                          "s#s#ss#kbppkpkk",
+                          "s#s#ss#kbpppkk",
                           &line1,
                           &line1_len,
                           &line2,
@@ -2229,7 +2091,6 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
                           &min_qual,
                           &insert3,
                           &ambindel,
-                          &ambindel_max_iter,
                           &overhangs,
                           &clip_end5,
                           &clip_end3))
@@ -2315,7 +2176,6 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
                        min_qual,
                        insert3,
                        ambindel,
-                       ambindel_max_iter,
                        clip_end5,
                        clip_end3))
         {return cleanup(&read1, &read2, ends_rels_tuple);}
@@ -2340,7 +2200,6 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
                                min_qual,
                                insert3,
                                ambindel,
-                               ambindel_max_iter,
                                clip_end5,
                                clip_end3))
                 {return cleanup(&read1, &read2, ends_rels_tuple);}
@@ -2456,7 +2315,8 @@ PyMODINIT_FUNC PyInit_relate(void)
     // Initialize the module and ensure it exists.
     PyObject *module;
     module = PyModule_Create(&relatemodule);
-    if (module == NULL) {return NULL;}
+    if (module == NULL)
+        {return NULL;}
 
     // Define a new type of Python exception.
     RelateError = PyErr_NewException("relate.RelateError", NULL, NULL);
@@ -2473,11 +2333,4 @@ PyMODINIT_FUNC PyInit_relate(void)
 
     // Initializing the module succeeded.
     return module;
-}
-
-
-int main(void)
-{
-    // This module must be called via its Python API, not run directly.
-    return 0;
 }
