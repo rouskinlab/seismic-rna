@@ -11,6 +11,7 @@ from .dataset import DatasetGraph, DatasetWriter, DatasetRunner
 from .trace import HIST_COUNT_NAME, get_hist_trace
 from ..core.arg import opt_mutdist_null
 from ..core.header import REL_NAME, make_header
+from ..core.logs import logger
 from ..core.run import log_command
 from ..core.seq import FIELD_END5, FIELD_END3
 from ..core.table import PositionTable, all_patterns
@@ -48,7 +49,7 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
 
     @property
     def x_title(self):
-        return "Distance between closest two mutations in a read (nt)"
+        return "Distance (nt)"
 
     @property
     def y_title(self):
@@ -60,6 +61,7 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
 
     @cached_property
     def _data(self):
+        logger.routine(f"Began calculating real histogram for {self}")
         num_bins = self.dataset.region.length
         header = make_header(rels=self.rel_names, ks=self.dataset.ks)
         zero = 0. if header.clustered() else 0
@@ -83,8 +85,7 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
             min_mut_dist = batch.calc_min_mut_dist(self.pattern)
             if header.clustered():
                 if not isinstance(batch.read_weights, pd.DataFrame):
-                    raise TypeError("batch.read_weights must be DataFrame, "
-                                    f"but got {batch.read_weights}")
+                    raise TypeError(batch.read_weights)
                 for (k, clust), weights in batch.read_weights.items():
                     col = (self.rel_name, k, clust)
                     hists.loc[:, col] += np.bincount(min_mut_dist,
@@ -92,8 +93,7 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
                                                      minlength=num_bins)
             else:
                 if batch.read_weights is not None:
-                    raise TypeError("batch.read_weights must be None, "
-                                    f"but got {batch.read_weights}")
+                    raise TypeError(batch.read_weights)
                 hists.loc[:, self.rel_name] += np.bincount(min_mut_dist,
                                                            minlength=num_bins)
         # Calculate the mutation rates and 5'/3' ends.
@@ -107,6 +107,7 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
                                    count_pos=True,
                                    count_read=False,
                                    **kwargs)
+        logger.routine(f"Ended calculating real histogram for {self}")
         return hists, tabulator, max_read_length
 
     @property
@@ -148,6 +149,7 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
 
     @cached_property
     def _null_hist(self):
+        logger.routine(f"Began calculating null histogram for {self}")
         if self.table.header.clustered():
             end_counts = self.tabulator.end_counts.loc[:, self.loc_clusters]
             num_reads = self.tabulator.num_reads.loc[self.loc_clusters].values
@@ -168,9 +170,13 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
                                   self._real_hist.columns.size),
                                  dtype=float)
         p_noclose_gap[0] = 1.
+        logger.detail("Calculating null fraction of reads in which every pair "
+                      "of mutations would have at least N bases between them, "
+                      f"from N = 1 to {self.max_read_length - 1}")
         for gap in range(1, self.max_read_length):
             p_noclose_ends = calc_p_noclose_given_ends_auto(p_mut.values, gap)
             p_noclose_gap[gap] = triu_dot(p_noclose_ends, p_ends)
+            logger.detail(f"N = {gap}: {p_noclose_gap[gap]}")
         # For every possible distance, calculate the fraction of reads
         # where the closest two mutations have exactly that distance,
         # and for 0 the fraction of reads with fewer than two mutations.
@@ -180,6 +186,7 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
         assert np.all(p_dist >= 0.)
         assert np.allclose(p_dist.sum(axis=0), 1.)
         # Multiply by the number of reads to obtain the histogram.
+        logger.routine(f"Ended calculating null histogram for {self}")
         return pd.DataFrame(
             p_dist * num_reads,
             index=self._real_hist.index,
