@@ -6,6 +6,7 @@ import plotly.express as px
 from .emk import EMRunsK, NOCONV
 from .names import JACKPOT_QUOTIENT
 from ..core.header import NUM_CLUSTS_NAME
+from ..core.logs import logger
 
 EM_RUN_NAME = "Run"
 K_RUN_NAMES = [NUM_CLUSTS_NAME, EM_RUN_NAME]
@@ -79,8 +80,11 @@ def graph_attrs(table: pd.DataFrame, to_dir: Path):
     for key, attr in ATTRS.items():
         if key == RUN_PASSING:
             continue
-        fig = graph_attr(table[attr], passing_text)
-        fig.write_image(to_dir.joinpath(f"{key}.pdf"))
+        try:
+            fig = graph_attr(table[attr], passing_text)
+            fig.write_image(to_dir.joinpath(f"{key}.pdf"))
+        except Exception as error:
+            logger.error(error)
 
 
 def write_summaries(ks: list[EMRunsK], to_dir: Path):
