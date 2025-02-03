@@ -26,7 +26,7 @@ class TestCalcDiffLogOdds(ut.TestCase):
         mus1 = np.array(0.1)
         mus2 = np.array(0.6)
         result = calc_diff_log_odds(mus1, mus2)
-        expect = np.array(np.log(74 / 999))
+        expect = np.array(np.log(2 / 27))
         self.assertTupleEqual(result.shape, expect.shape)
         self.assertTrue(np.allclose(result, expect))
 
@@ -34,7 +34,7 @@ class TestCalcDiffLogOdds(ut.TestCase):
         mus1 = np.array([0.6])
         mus2 = np.array([0.1])
         result = calc_diff_log_odds(mus1, mus2)
-        expect = np.array([np.log(999 / 74)])
+        expect = np.array([np.log(27 / 2)])
         self.assertTupleEqual(result.shape, expect.shape)
         self.assertTrue(np.allclose(result, expect))
 
@@ -51,7 +51,7 @@ class TestCalcDiffLogOdds(ut.TestCase):
         mus1 = pd.Series([0.6], index)
         mus2 = pd.Series([0.1], index)
         result = calc_diff_log_odds(mus1, mus2)
-        expect = pd.Series([np.log(999 / 74)], index)
+        expect = pd.Series([np.log(27 / 2)], index)
         self.assertTupleEqual(result.shape, expect.shape)
         self.assertTrue(np.allclose(result, expect))
         self.assertTrue(result.index.equals(index))
@@ -145,6 +145,44 @@ class TestCalcSumAbsDiffLogOdds(ut.TestCase):
                                calc_sum_abs_diff_log_odds,
                                rng.random(()),
                                rng.random(()))
+
+    def test_array1d(self):
+        mus1 = np.array([0.6, 0.3])
+        mus2 = np.array([0.1, 0.8])
+        result = calc_sum_abs_diff_log_odds(mus1, mus2)
+        expect = np.log(27 / 2) + np.log(28 / 3)
+        self.assertIsInstance(result, float)
+        self.assertTrue(np.isclose(result, expect))
+        mus1 = np.array([0.4, 0.6, 0.3])
+        mus2 = np.array([0.5, 0.1, 0.8])
+        result = calc_sum_abs_diff_log_odds(mus1, mus2)
+        expect = np.log(3 / 2) + np.log(27 / 2) + np.log(28 / 3)
+        self.assertIsInstance(result, float)
+        self.assertTrue(np.isclose(result, expect))
+
+
+class TestCalcMeanAbsFoldChangeOdds(ut.TestCase):
+
+    def test_array0d(self):
+        self.assertRaisesRegex(ValueError,
+                               "A 0-D array has no positional axis",
+                               calc_mean_abs_fold_change_odds,
+                               rng.random(()),
+                               rng.random(()))
+
+    def test_array1d(self):
+        mus1 = np.array([0.6, 0.3])
+        mus2 = np.array([0.1, 0.8])
+        result = calc_mean_abs_fold_change_odds(mus1, mus2)
+        expect = np.sqrt((27 / 2) * (28 / 3))
+        self.assertIsInstance(result, float)
+        self.assertTrue(np.isclose(result, expect))
+        mus1 = np.array([0.4, 0.6, 0.3])
+        mus2 = np.array([0.5, 0.1, 0.8])
+        result = calc_mean_abs_fold_change_odds(mus1, mus2)
+        expect = np.cbrt((3 / 2) * (27 / 2) * (28 / 3))
+        self.assertIsInstance(result, float)
+        self.assertTrue(np.isclose(result, expect))
 
 
 class TestCalcPearson(ut.TestCase):
