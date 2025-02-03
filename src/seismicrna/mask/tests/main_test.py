@@ -464,4 +464,4 @@ class TestMaskSingle1Sample1Batch(TestMaskSingle,
 
 
 if __name__ == "__main__":
-    ut.main()
+    ut.main(verbosity=2)
