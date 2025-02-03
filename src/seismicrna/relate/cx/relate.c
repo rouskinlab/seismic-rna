@@ -1464,12 +1464,13 @@ static int try_move_indel(Indel *indel,
 
 /* Find and mark all ambiguous insertions and deletions. */
 static void find_ambindels(SamRead *read,
-                          const char *rels_seq,
-                          size_t read_end5,
-                          size_t read_end3,
-                          unsigned char min_qual,
-                          int insert3)
+                           const char *rels_seq,
+                           size_t read_end5,
+                           size_t read_end3,
+                           unsigned char min_qual,
+                           int insert3)
 {
+    assert(rels_seq != NULL);
     assert(read != NULL);
     if (read->pods.num_pods == 0)
     {
@@ -1477,19 +1478,38 @@ static void find_ambindels(SamRead *read,
         return;
     }
     assert(read->pods.pods != NULL);
-    assert(rels_seq != NULL);
 
     size_t pod_index;
-    IndelPod *pod;
+    IndelPod *pod = NULL;
     size_t indel_index;
-    Indel *indel;
+    Indel *indel = NULL;
 
-    // Move the indels in every pod as far 5' as possible.
+    // Confirm the indels in each pod are already sorted from 5' to 3'.
+    for (pod_index = 0; pod_index < read->pods.num_pods; pod_index++)
+    {
+        pod = &(read->pods.pods[pod_index]);
+        assert(pod->num_indels > 0);
+        size_t prev_opposite = 0;
+        for (indel_index = 0; indel_index < pod->num_indels; indel_index++)
+        {
+            indel = &(pod->indels[indel_index]);
+            assert(indel->opposite > prev_opposite);
+            prev_opposite = indel->opposite;
+        }
+    }
+
+    // Move indels in every pod as far as possible in the 5' direction.
+    // Work from the most 5' to the most 3' pod so that each pod does
+    // not block the pod to its 3' side from moving in the 5' direction.
+    // Take a fast, direct path without finding all possible positions
+    // that each indel could occupy.
     pod_index = 0;
     while (pod_index < read->pods.num_pods)
     {
         pod = &(read->pods.pods[pod_index]);
         assert(pod->num_indels >= 1);
+        // Start by moving the indel that is at the 3' end of the pod,
+        // allowing it to tunnel through other indels that are 5' of it.
         indel_index = pod->num_indels - 1;
         while (1)
         {
@@ -1503,41 +1523,69 @@ static void find_ambindels(SamRead *read,
                                 insert3,
                                 0,
                                 pod_index))
+            {
+                // The indel at the current index cannot be moved, so
+                // decrease the index (e.g. if the current indel is the
+                // most 3', then switch to the second-most 3' indel).
+                // If this indel is the most 5' in its pod, then stop
+                // because no more indels in this pod can move.
                 if (indel_index >= 1)
                     {indel_index--;}
                 else
                     {break;}
+            }
         }
         pod_index++;
     }
 
-    // Move the indels in every pod as far 3' as possible.
-    size_t label;
+    // Move indels in every pod as far as possible in the 3' direction.
+    // Work from the most 3' to the most 5' pod so that each pod does
+    // not block the pod to its 5' side from moving in the 3' direction.
+    // Take a slower path that finds all possible positions that each
+    // indel could occupy.
     pod_index = read->pods.num_pods;
     while (pod_index >= 1)
     {
         pod_index--;
         pod = &(read->pods.pods[pod_index]);
         assert(pod->num_indels >= 1);
+        // Start by moving the indel that is at the 3' end of the pod.
+        // Since this indel is moving in the 3' direction, and no indels
+        // can be 3' of it, it will not tunnel.
         indel_index = pod->num_indels - 1;
         while (1)
         {
             indel = &(pod->indels[indel_index]);
-            label = indel->label;
+            size_t label = indel->label;
             if (try_move_indel(indel,
-                                read,
-                                rels_seq,
-                                read_end5,
-                                read_end3,
-                                min_qual,
-                                insert3,
-                                1,
-                                pod_index))
+                               read,
+                               rels_seq,
+                               read_end5,
+                               read_end3,
+                               min_qual,
+                               insert3,
+                               1,
+                               pod_index))
             {
+                // The indel moved in the 3' direction.
+                // Any indels that are currently on the 3' side of this
+                // indel have already moved as far to the 3' as possible
+                // (since the algorithm started with the most 3' indel).
+                // So only the indel that just moved and indels that are
+                // 5' of that indel still have the potential to move.
+                // Therefore, use the index of the indel that just moved
+                // (which may have tunneled through other indels, so its
+                // index is not necessarily the same before and after
+                // the move; thus, recalculate the index of this indel).
                 indel_index = find_indel_index(pod, label);
             }
             else
             {
+                // The indel at the current index cannot be moved, so
+                // decrease the index (e.g. if the current indel is the
+                // most 3', then switch to the second-most 3' indel).
+                // If this indel is the most 5' in its pod, then stop
+                // because no more indels in this pod can move.
                 if (indel_index >= 1)
                     {indel_index--;}
                 else
