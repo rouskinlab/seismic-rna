@@ -64,16 +64,6 @@ def normalize(mus: np.ndarray | pd.Series | pd.DataFrame, quantile: float):
     return mus / calc_quantile(mus, quantile) if quantile > 0. else mus
 
 
-def normalize_max(mus: np.ndarray | pd.Series | pd.DataFrame):
-    """ Normalize the mutation rates so their maximum becomes 1. """
-    return normalize(mus, 1.0)
-
-
-def normalize_med(mus: np.ndarray | pd.Series | pd.DataFrame):
-    """ Normalize the mutation rates so their median becomes 1. """
-    return normalize(mus, 0.5)
-
-
 @auto_reframe
 def winsorize(mus: np.ndarray | pd.Series | pd.DataFrame, quantile: float):
     """ Normalize and winsorize the mutation rates to a quantile so that
@@ -94,43 +84,6 @@ def winsorize(mus: np.ndarray | pd.Series | pd.DataFrame, quantile: float):
         Normalized and winsorized mutation rates.
     """
     return np.clip(normalize(mus, quantile), 0., 1.)
-
-
-@auto_remove_nan
-def calc_rms(mus: np.ndarray | pd.Series | pd.DataFrame):
-    """ Calculate the root-mean-square mutation rate, ignoring NaNs.
-
-    Parameters
-    ----------
-    mus: np.ndarray | pd.Series | pd.DataFrame
-        Mutation rates. Multiple sets of mutation rates can be given as
-        columns of a multidimensional array or DataFrame.
-
-    Returns
-    -------
-    float | numpy.ndarray | pandas.Series
-        Root-mean-square mutation rate.
-    """
-    return np.sqrt(np.mean(np.square(mus), axis=0))
-
-
-def standardize(mus: np.ndarray | pd.Series | pd.DataFrame):
-    """ Standardize mutation rates so that the root-mean-square mutation
-    rate equals 1. Note that approximately half of the standardized
-    mutation rates will be greater than 1.
-
-    Parameters
-    ----------
-    mus: numpy.ndarray | pandas.Series | pandas.DataFrame
-        Mutation rates. Multiple sets of mutation rates can be given as
-        columns of a multidimensional array or DataFrame.
-
-    Returns
-    -------
-    numpy.ndarray | pandas.Series | pandas.DataFrame
-        Standardized mutation rates.
-    """
-    return mus / calc_rms(mus)
 
 
 @auto_remove_nan

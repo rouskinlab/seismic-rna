@@ -65,12 +65,12 @@ def run_ks(uniq_reads: UniqReads,
            ks: Iterable[int],
            em_runs: int, *,
            try_all_ks: bool,
-           min_nrmsd_run: float,
+           min_mafco_run: float,
            max_pearson_run: float,
            max_jackpot_quotient: float,
            max_loglike_vs_best: float,
            min_pearson_vs_best: float,
-           max_nrmsd_vs_best: float,
+           max_mafco_vs_best: float,
            min_iter: int,
            max_iter: int,
            em_thresh: float,
@@ -108,11 +108,11 @@ def run_ks(uniq_reads: UniqReads,
             # Collect all runs for this number of clusters.
             runs_ks[k] = EMRunsK(runs,
                                  max_pearson_run=max_pearson_run,
-                                 min_nrmsd_run=min_nrmsd_run,
+                                 min_mafco_run=min_mafco_run,
                                  max_jackpot_quotient=max_jackpot_quotient,
                                  max_loglike_vs_best=max_loglike_vs_best,
                                  min_pearson_vs_best=min_pearson_vs_best,
-                                 max_nrmsd_vs_best=max_nrmsd_vs_best)
+                                 max_mafco_vs_best=max_mafco_vs_best)
             logger.detail(runs_ks[k].summarize())
             if not (try_all_ks or k == find_best_k(runs_ks.values(),
                                                    allow_underclustered=True)):

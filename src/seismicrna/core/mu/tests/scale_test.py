@@ -1,5 +1,4 @@
 import unittest as ut
-import warnings
 from itertools import product
 
 import numpy as np
@@ -7,9 +6,7 @@ import pandas as pd
 
 from seismicrna.core.mu import (calc_quantile,
                                 calc_ranks,
-                                calc_rms,
                                 normalize,
-                                standardize,
                                 winsorize)
 
 rng = np.random.default_rng()
@@ -459,121 +456,6 @@ class TestWinsorize(ut.TestCase):
                     self.assertIsInstance(wins, pd.DataFrame)
                     self.assertEqual(wins.shape, (nrow, ncol))
                     self.assertTrue(np.allclose(wins, expect))
-
-
-class TestCalcRMS(ut.TestCase):
-
-    def test_array0d(self):
-        mus = np.array(0.94)
-        self.assertRaisesRegex(ValueError,
-                               "A 0-D array has no positional axis",
-                               calc_rms,
-                               mus)
-
-    def test_array1d(self):
-        mus = np.array([0.2, 0.3, 0.6])
-        rms = calc_rms(mus)
-        self.assertIsInstance(rms, float)
-        self.assertTrue(np.isclose(rms, 0.7 * 3.0 ** -0.5))
-
-    def test_array1d_nan(self):
-        mus = np.array([0.2, 0.3, np.nan, 0.6])
-        rms = calc_rms(mus)
-        self.assertIsInstance(rms, float)
-        self.assertTrue(np.isclose(rms, 0.7 * 3.0 ** -0.5))
-
-    def test_array2d(self):
-        mus = np.array([[0.2, 0.4],
-                        [0.2, 0.7],
-                        [0.1, 0.4]])
-        rms = calc_rms(mus)
-        self.assertIsInstance(rms, np.ndarray)
-        self.assertEqual(rms.shape, (2,))
-        self.assertTrue(np.allclose(rms, [0.3 * 3.0 ** -0.5,
-                                          0.9 * 3.0 ** -0.5]))
-
-    def test_series(self):
-        mus = pd.Series([0.4, 0.8, 0.1])
-        rms = calc_rms(mus)
-        self.assertIsInstance(rms, float)
-        self.assertTrue(np.isclose(rms, 0.9 * 3.0 ** -0.5))
-
-    def test_dataframe(self):
-        mus = pd.DataFrame([[0.2, 0.8],
-                            [0.6, 0.4],
-                            [0.3, 0.1]],
-                           index=[3, 7, 9],
-                           columns=["a", "b"])
-        rms = calc_rms(mus)
-        self.assertIsInstance(rms, pd.Series)
-        self.assertEqual(rms.shape, (2,))
-        self.assertTrue(np.allclose(rms, [0.7 * 3.0 ** -0.5,
-                                          0.9 * 3.0 ** -0.5]))
-        self.assertTrue(rms.index.equals(mus.columns))
-
-
-class TestStandardize(ut.TestCase):
-
-    def test_array0d(self):
-        mus = np.array(0.81)
-        self.assertRaisesRegex(ValueError,
-                               "A 0-D array has no positional axis",
-                               standardize,
-                               mus)
-
-    def test_array1d(self):
-        for length in range(5):
-            mus = rng.random(length)
-            with warnings.catch_warnings():
-                warnings.filterwarnings("ignore",
-                                        "Mean of empty slice",
-                                        RuntimeWarning)
-                with np.errstate(invalid="ignore"):
-                    std = standardize(mus)
-                    self.assertIsInstance(std, np.ndarray)
-                    self.assertEqual(std.shape, (length,))
-                    self.assertTrue(np.allclose(std, mus / calc_rms(mus)))
-
-    def test_array2d(self):
-        for nrow in range(4):
-            for ncol in range(3):
-                mus = rng.random((nrow, ncol))
-                with warnings.catch_warnings():
-                    warnings.filterwarnings("ignore",
-                                            "Mean of empty slice",
-                                            RuntimeWarning)
-                    with np.errstate(invalid="ignore"):
-                        std = standardize(mus)
-                        self.assertIsInstance(std, np.ndarray)
-                        self.assertEqual(std.shape, (nrow, ncol))
-                        self.assertTrue(np.allclose(std, mus / calc_rms(mus)))
-
-    def test_series(self):
-        for length in range(5):
-            mus = pd.Series(rng.random(length))
-            with warnings.catch_warnings():
-                warnings.filterwarnings("ignore",
-                                        "Mean of empty slice",
-                                        RuntimeWarning)
-                with np.errstate(invalid="ignore"):
-                    std = standardize(mus)
-                    self.assertIsInstance(std, pd.Series)
-                    self.assertEqual(std.shape, (length,))
-                    self.assertTrue(np.allclose(std, mus / calc_rms(mus)))
-
-    def test_dataframe(self):
-        for nrow in range(4):
-            for ncol in range(3):
-                mus = pd.DataFrame(rng.random((nrow, ncol)))
-                with warnings.catch_warnings():
-                    warnings.filterwarnings("ignore",
-                                            "Mean of empty slice",
-                                            RuntimeWarning)
-                    with np.errstate(invalid="ignore"):
-                        std = standardize(mus)
-                        self.assertIsInstance(std, pd.DataFrame)
-                        self.assertEqual(std.shape, (nrow, ncol))
-                        self.assertTrue(np.allclose(std, mus / calc_rms(mus)))
 
 
 class TestCalcRanks(ut.TestCase):

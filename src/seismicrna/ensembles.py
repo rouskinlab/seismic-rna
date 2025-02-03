@@ -11,7 +11,7 @@ from . import (mask as mask_mod,
                cluster as cluster_mod,
                join as join_mod)
 from .cluster.dataset import ClusterMutsDataset, get_clust_params
-from .cluster.emk import calc_geomean_fold_odds
+from .cluster.emk import calc_mean_abs_fold_change_odds_clusters
 from .cluster.report import ClusterReport
 from .core import path
 from .core.arg import (CMD_ENSEMBLES,
@@ -21,7 +21,7 @@ from .core.arg import (CMD_ENSEMBLES,
                        opt_join_clusts,
                        opt_region_length,
                        opt_region_min_overlap,
-                       opt_max_mean_fold_change)
+                       opt_max_mafco_join)
 from .core.dataset import MutsDataset
 from .core.error import (IncompatibleValuesError,
                          InconsistentValueError,
@@ -242,7 +242,7 @@ class RegionInfo(object):
 
 
 def group_clusters(cluster_dirs: Iterable[Path],
-                   max_mean_fold_change,
+                   max_mafco_join,
                    verify_times: bool,
                    max_procs: int):
     logger.routine("Began grouping regions")
@@ -309,13 +309,13 @@ def group_clusters(cluster_dirs: Iterable[Path],
                 logger.detail(f"{prev_reg_info} and {reg_info} share "
                               f"{overlap.size} parameter(s)")
                 # Calculate the difference between the clusters.
-                mean_fold_change = calc_geomean_fold_odds(
+                mafco = calc_mean_abs_fold_change_odds_clusters(
                     reg_info.clust_params.loc[overlap].values,
                     prev_reg_info.clust_params.loc[overlap].values
                 )
                 logger.detail(f"{prev_reg_info} and {reg_info} have a mean "
-                              f"fold change in log odds of {mean_fold_change}")
-                if mean_fold_change <= max_mean_fold_change:
+                              f"absolute fold change in odds of {mafco}")
+                if mafco <= max_mafco_join:
                     # The clusters are similar enough, so put them in
                     # the same group.
                     groups[key][-1].append(reg_info)
@@ -380,11 +380,11 @@ def run(input_path: Iterable[str | Path], *,
         min_em_iter: int,
         max_em_iter: int,
         em_thresh: float,
-        min_nrmsd_run: float,
+        min_mafco_run: float,
         max_pearson_run: float,
         max_loglike_vs_best: float,
         min_pearson_vs_best: float,
-        max_nrmsd_vs_best: float,
+        max_mafco_vs_best: float,
         try_all_ks: bool,
         write_all_ks: bool,
         cluster_pos_table: bool,
@@ -394,7 +394,7 @@ def run(input_path: Iterable[str | Path], *,
         joined: str,
         region_length: int,
         region_min_overlap: float,
-        max_mean_fold_change: float):
+        max_mafco_join: float):
     """ Infer independent structure ensembles along an entire RNA. """
     if not joined:
         raise ValueError(
@@ -461,11 +461,11 @@ def run(input_path: Iterable[str | Path], *,
         min_em_iter=min_em_iter,
         max_em_iter=max_em_iter,
         em_thresh=em_thresh,
-        min_nrmsd_run=min_nrmsd_run,
+        min_mafco_run=min_mafco_run,
         max_pearson_run=max_pearson_run,
         max_loglike_vs_best=max_loglike_vs_best,
         min_pearson_vs_best=min_pearson_vs_best,
-        max_nrmsd_vs_best=max_nrmsd_vs_best,
+        max_mafco_vs_best=max_mafco_vs_best,
         try_all_ks=try_all_ks,
         write_all_ks=write_all_ks,
         cluster_pos_table=cluster_pos_table,
@@ -477,7 +477,7 @@ def run(input_path: Iterable[str | Path], *,
     )
     logger.status(f"Began {CMD_JOIN}")
     cluster_groups = group_clusters(cluster_dirs,
-                                    max_mean_fold_change=max_mean_fold_change,
+                                    max_mafco_join=max_mafco_join,
                                     verify_times=verify_times,
                                     max_procs=max_procs)
     join_dirs = list()
@@ -511,7 +511,7 @@ params = merge_params(mask_mod.params,
                       join_mod.params,
                       [opt_region_length,
                        opt_region_min_overlap,
-                       opt_max_mean_fold_change],
+                       opt_max_mafco_join],
                       exclude=[opt_join_clusts])
 
 

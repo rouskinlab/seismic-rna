@@ -1,7 +1,3 @@
-"""
-Calculate trends in mutation rates.
-"""
-
 import numpy as np
 import pandas as pd
 from numba import jit

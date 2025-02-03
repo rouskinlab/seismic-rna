@@ -8,9 +8,9 @@ from scipy.stats import pearsonr, spearmanr
 from seismicrna.core.mu import (DEFAULT_CLIP_LOG_ODDS,
                                 calc_diff_log_odds,
                                 calc_sum_abs_diff_log_odds,
+                                calc_mean_abs_fold_change_odds,
                                 calc_coeff_determ,
                                 calc_pearson,
-                                calc_norm_rmsd,
                                 calc_spearman,
                                 compare_windows,
                                 get_comp_func,
@@ -145,99 +145,6 @@ class TestCalcSumAbsDiffLogOdds(ut.TestCase):
                                calc_sum_abs_diff_log_odds,
                                rng.random(()),
                                rng.random(()))
-
-
-class TestCalcNormRMSD(ut.TestCase):
-
-    def test_array0d(self):
-        self.assertRaisesRegex(ValueError,
-                               "A 0-D array has no positional axis",
-                               calc_norm_rmsd,
-                               rng.random(()),
-                               rng.random(()))
-
-    def test_array1d_allzero(self):
-        for n in range(5):
-            x = np.zeros(n, dtype=float)
-            y = np.zeros(n, dtype=float)
-            with warnings.catch_warnings():
-                warnings.filterwarnings("ignore", category=RuntimeWarning)
-                nrmsd = calc_norm_rmsd(x, y)
-            self.assertIsInstance(nrmsd, float)
-            self.assertTrue(np.isnan(nrmsd))
-
-    def test_array1d_extremes(self):
-        for fx in [0.0001, 0.01, 1.0]:
-            for fy in [0.0001, 0.01, 1.0]:
-                x = fx * np.array([0., 1.])
-                y = fy * np.array([0., 1.])
-                self.assertTrue(np.isclose(calc_norm_rmsd(x, y), 0.))
-                x = fx * np.array([0., 1.])
-                y = fy * np.array([1., 0.])
-                self.assertTrue(np.isclose(calc_norm_rmsd(x, y), 1.))
-                self.assertTrue(np.isclose(calc_norm_rmsd(y, x), 1.))
-
-    def test_array1d_examples(self):
-        for fx in [0.0001, 0.01, 1.0]:
-            for fy in [0.0001, 0.01, 1.0]:
-                x = fx * np.array([1., 0., 0., 0.])
-                y = fy * np.array([0., 0., 1., 0.])
-                self.assertTrue(np.isclose(calc_norm_rmsd(x, y), 2. ** -0.5))
-                self.assertTrue(np.isclose(calc_norm_rmsd(y, x), 2. ** -0.5))
-                x = fx * np.array([0.4, 0.1, 0.8])
-                y = fy * np.array([0.3, 0.2, 0.6])
-                self.assertTrue(np.isclose(calc_norm_rmsd(x, y), 72. ** -0.5))
-                self.assertTrue(np.isclose(calc_norm_rmsd(y, x), 72. ** -0.5))
-                x = fx * np.array([np.nan, 0.4, 0.1, 0.3, 0.8])
-                y = fy * np.array([0.5, 0.3, 0.2, np.nan, 0.6])
-                self.assertTrue(np.isclose(calc_norm_rmsd(x, y), 72. ** -0.5))
-                self.assertTrue(np.isclose(calc_norm_rmsd(y, x), 72. ** -0.5))
-
-    def test_array2d(self):
-        x = np.array([[0.8, 0.0],
-                      [0.9, np.nan],
-                      [0.4, 0.4],
-                      [0.5, 0.6],
-                      [0.1, 0.0]])
-        y = np.array([[0.6, 0.9],
-                      [1.0, 0.2],
-                      [0.3, 0.0],
-                      [np.nan, 0.3],
-                      [0.2, 0.0]])
-        nrmsd = calc_norm_rmsd(x, y)
-        self.assertIsInstance(nrmsd, np.ndarray)
-        self.assertEqual(nrmsd.shape, (2,))
-        self.assertTrue(np.allclose(nrmsd, [72. ** -0.5,
-                                            (2. / 3.) ** 0.5]))
-
-    def test_series(self):
-        x = pd.Series([np.nan, 0.4, 0.1, 0.3, 0.8])
-        y = pd.Series([0.5, 0.3, 0.2, np.nan, 0.6])
-        self.assertTrue(np.isclose(calc_norm_rmsd(x, y), 72. ** -0.5))
-        self.assertTrue(np.isclose(calc_norm_rmsd(y, x), 72. ** -0.5))
-
-    def test_dataframe(self):
-        index = pd.Index([2, 4, 5, 7, 9])
-        x = pd.DataFrame([[0.8, 0.0],
-                          [0.9, np.nan],
-                          [0.4, 0.4],
-                          [0.5, 0.6],
-                          [0.1, 0.0]],
-                         index=index,
-                         columns=["i", "j"])
-        y = pd.DataFrame([[0.9, 0.6],
-                          [0.2, 1.0],
-                          [0.0, 0.3],
-                          [0.3, np.nan],
-                          [0.0, 0.2]],
-                         index=index,
-                         columns=["j", "i"])
-        nrmsd = calc_norm_rmsd(x, y)
-        self.assertIsInstance(nrmsd, pd.Series)
-        self.assertEqual(nrmsd.shape, (2,))
-        self.assertTrue(np.allclose(nrmsd, [72. ** -0.5,
-                                            (2. / 3.) ** 0.5]))
-        self.assertTrue(nrmsd.index.equals(x.columns))
 
 
 class TestCalcPearson(ut.TestCase):
@@ -449,10 +356,10 @@ class TestCalcSpearman(ut.TestCase):
 class TestGetComp(ut.TestCase):
 
     def test_comps(self):
-        for key in ["NRMSD", "nrmsd"]:
-            self.assertIs(get_comp_func(key), calc_norm_rmsd)
+        for key in ["MAFCO", "mafco"]:
+            self.assertIs(get_comp_func(key), calc_mean_abs_fold_change_odds)
             self.assertEqual(get_comp_name(key),
-                             "Normalized Root-Mean-Square Deviation")
+                             "Mean Absolute Fold Change in Odds")
         for key in ["PCC", "pcc"]:
             self.assertIs(get_comp_func(key), calc_pearson)
             self.assertEqual(get_comp_name(key),
@@ -484,13 +391,12 @@ class TestCompareWindows(ut.TestCase):
                     nan5 = min(seqlen, max(0, mc - (1 + size // 2)))
                     nan3 = min(seqlen, max(0, mc - (1 + size) // 2))
                     nval = seqlen - (nan5 + nan3)
-                    for method in ["NRMSD", "PCC", "SCC", "R2"]:
+                    for method in ["MAFCO", "PCC", "SCC", "R2"]:
                         result = compare_windows(mus, mus, method, size, mc)
                         self.assertIsInstance(result, pd.Series)
                         self.assertTrue(result.index.equals(index))
-                        fill = 0. if method.upper() == "NRMSD" else 1.
                         expect = np.hstack([np.full(nan5, np.nan),
-                                            np.full(nval, fill),
+                                            np.full(nval, 1.),
                                             np.full(nan3, np.nan)])
                         self.assertTrue(np.allclose(result,
                                                     expect,

@@ -5,11 +5,11 @@ import pandas as pd
 
 from .nan import auto_removes_nan
 from .frame import find_highest_type
-from .scale import calc_rms, calc_ranks, normalize_max
-from ..arg import KEY_DETERM, KEY_PEARSON, KEY_NRMSD, KEY_SPEARMAN
+from .scale import calc_ranks
+from ..arg import KEY_PEARSON, KEY_SPEARMAN, KEY_DETERM, KEY_MAFCO
 from ..seq import get_shared_index, iter_windows
 
-DEFAULT_CLIP_LOG_ODDS = 1.e-3
+DEFAULT_CLIP_LOG_ODDS = 1.e-4
 
 
 def _calc_diff_log_odds(mus1: float | np.ndarray | pd.Series | pd.DataFrame,
@@ -96,16 +96,17 @@ def calc_sum_abs_diff_log_odds(mus1: np.ndarray | pd.Series | pd.DataFrame,
     Returns
     -------
     float | np.ndarray | pd.Series
-        Sum of absolute differences in log odds
+        Sum of absolute differences in log odds:
+        sum(abs(log(mus1 / (1 - mus1)) - log(mus2 / (1 - mus2))))
     """
     return np.sum(np.abs(calc_diff_log_odds(mus1, mus2)), axis=0)
 
 
 @auto_removes_nan
-def calc_mean_abs_diff_log_odds(mus1: np.ndarray | pd.Series | pd.DataFrame,
-                                mus2: np.ndarray | pd.Series | pd.DataFrame):
-    """ Calculate the mean of absolute differences in log odds between
-    mus1 and mus2. See calc_diff_log_odds for details.
+def calc_mean_abs_fold_change_odds(mus1: np.ndarray | pd.Series | pd.DataFrame,
+                                   mus2: np.ndarray | pd.Series | pd.DataFrame):
+    """ Calculate the geometric mean of the absolute fold-change in odds
+    between mus1 and mus2. See calc_diff_log_odds for details.
 
     Parameters
     ----------
@@ -119,95 +120,10 @@ def calc_mean_abs_diff_log_odds(mus1: np.ndarray | pd.Series | pd.DataFrame,
     Returns
     -------
     float | np.ndarray | pd.Series
-        Mean of absolute differences in log odds
+        Geometric mean of absolute fold-change in odds:
+        exp(mean(abs(log(mus1 / (1 - mus1)) - log(mus2 / (1 - mus2)))))
     """
-    return np.mean(np.abs(calc_diff_log_odds(mus1, mus2)), axis=0)
-
-
-@auto_removes_nan
-def calc_raw_rmsd(mus1: np.ndarray | pd.Series | pd.DataFrame,
-                  mus2: np.ndarray | pd.Series | pd.DataFrame):
-    """ Calculate the root-mean-square difference (RMSD) of two groups
-    of mutation rates, ignoring NaNs. Assume that mus1 and mus2 are on
-    the same scale (e.g. two clusters from the same sample), so perform
-    no scaling or normalization.
-
-    Parameters
-    ----------
-    mus1: np.ndarray | pd.Series | pd.DataFrame
-        First group of mutation rates; can contain multiple sets as the
-        columns of a multidimensional array or DataFrame.
-    mus2: np.ndarray | pd.Series | pd.DataFrame
-        Second group of mutation rates; can contain multiple sets as the
-        columns of a multidimensional array or DataFrame.
-
-    Returns
-    -------
-    float | np.ndarray | pd.Series
-        Root-mean-square deviation (RMSD)
-    """
-    return np.sqrt(np.mean(np.square(mus1 - mus2), axis=0))
-
-
-@auto_removes_nan
-def calc_std_rmsd(mus1: np.ndarray | pd.Series | pd.DataFrame,
-                  mus2: np.ndarray | pd.Series | pd.DataFrame):
-    """ Calculate the standardized root-mean-square difference (RMSD)
-    of two groups of mutation rates, ignoring NaNs. Assume that mus1
-    and mus2 may be on different scales (e.g. different experiments),
-    so scale each to the same root-mean-square value before calculating
-    RMSD, then adjust the RMSD back to the original scale.
-
-    Parameters
-    ----------
-    mus1: np.ndarray | pd.Series | pd.DataFrame
-        First group of mutation rates; can contain multiple sets as the
-        columns of a multidimensional array or DataFrame.
-    mus2: np.ndarray | pd.Series | pd.DataFrame
-        Second group of mutation rates; can contain multiple sets as the
-        columns of a multidimensional array or DataFrame.
-
-    Returns
-    -------
-    float | np.ndarray | pd.Series
-        Standardized root-mean-square deviation (SRMSD)
-    """
-    # Compute the root-mean-square mutation rate for each group.
-    rms1 = calc_rms(mus1)
-    rms2 = calc_rms(mus2)
-    # Standardize the mutation rates so that the root-mean-square of
-    # each group is 1, compute the root-mean-square difference, and
-    # restore the original scale by multiplying by the geometric mean
-    # of the root-mean-square mutation rates.
-    return calc_raw_rmsd(mus1 / rms1, mus2 / rms2) * np.sqrt(rms1 * rms2)
-
-
-@auto_removes_nan
-def calc_norm_rmsd(mus1: np.ndarray | pd.Series | pd.DataFrame,
-                   mus2: np.ndarray | pd.Series | pd.DataFrame):
-    """ Calculate the normalized root-mean-square difference (NRMSD)
-    of two groups of mutation rates, ignoring NaNs. Like calc_std_rmsd,
-    except both groups are initially scaled so that their maxima are 1,
-    which makes it possible to compare the normalized RMSD between two
-    datasets with high mutation rates to that betweeen two datasets with
-    low mutation rates.
-
-    Parameters
-    ----------
-    mus1: np.ndarray | pd.Series | pd.DataFrame
-        First group of mutation rates; can contain multiple sets as the
-        columns of a multidimensional array or DataFrame.
-    mus2: np.ndarray | pd.Series | pd.DataFrame
-        Second group of mutation rates; can contain multiple sets as the
-        columns of a multidimensional array or DataFrame.
-
-    Returns
-    -------
-    float | np.ndarray | pd.Series
-        Normalized root-mean-square deviation (NRMSD)
-    """
-    # Normalize the mutation rates so the maximum of each group is 1.
-    return calc_std_rmsd(normalize_max(mus1), normalize_max(mus2))
+    return np.exp(np.mean(np.abs(calc_diff_log_odds(mus1, mus2)), axis=0))
 
 
 @auto_removes_nan
@@ -295,14 +211,15 @@ def calc_spearman(mus1: np.ndarray | pd.Series | pd.DataFrame,
 def get_comp_method(key: str):
     """ Get a comparison method based on its key. """
     lowerkey = key.lower()
-    if lowerkey == KEY_NRMSD:
-        return calc_norm_rmsd, "Normalized Root-Mean-Square Deviation"
     if lowerkey == KEY_PEARSON:
         return calc_pearson, "Pearson Correlation Coefficient"
     if lowerkey == KEY_SPEARMAN:
         return calc_spearman, "Spearman Correlation Coefficient"
     if lowerkey == KEY_DETERM:
         return calc_coeff_determ, "Coefficient of Determination"
+    if lowerkey == KEY_MAFCO:
+        return (calc_mean_abs_fold_change_odds,
+                "Mean Absolute Fold Change in Odds")
     raise ValueError(f"Invalid method of comparison: {repr(key)}")
 
 
@@ -345,8 +262,7 @@ def compare_windows(mus1: pd.Series,
                     method: str | Callable,
                     size: int,
                     min_count: int = 2):
-    """ Compare two Series via sliding windows.
-    """
+    """ Compare two Series via sliding windows. """
     if isinstance(method, str):
         # If the comparison method is given a string, then fetch the
         # function itself.

@@ -41,11 +41,11 @@ GROUP_BY_K = "k"
 GROUP_ALL = "a"
 GROUP_CLUST_OPTIONS = NO_GROUP, GROUP_BY_K, GROUP_ALL
 
-KEY_NRMSD = "nrmsd"
+KEY_MAFCO = "mafco"
 KEY_PEARSON = "pcc"
 KEY_SPEARMAN = "scc"
 KEY_DETERM = "r2"
-METRIC_KEYS = [KEY_NRMSD,
+METRIC_KEYS = [KEY_MAFCO,
                KEY_PEARSON,
                KEY_SPEARMAN,
                KEY_DETERM]
@@ -847,11 +847,11 @@ opt_max_pearson_run = Option(
     help="Remove runs with two clusters more similar than this correlation"
 )
 
-opt_min_nrmsd_run = Option(
-    ("--min-nrmsd-run",),
+opt_min_mafco_run = Option(
+    ("--min-mafco-run",),
     type=float,
-    default=0.1,
-    help="Remove runs with two clusters different by less than this NRMSD"
+    default=1.5,
+    help="Remove runs with two clusters different by less than this MAFCO"
 )
 
 opt_max_loglike_vs_best = Option(
@@ -868,11 +868,11 @@ opt_min_pearson_vs_best = Option(
     help="Remove Ks where every run has less than this correlation vs. the best"
 )
 
-opt_max_nrmsd_vs_best = Option(
-    ("--max-nrmsd-vs-best",),
+opt_max_mafco_vs_best = Option(
+    ("--max-mafco-vs-best",),
     type=float,
-    default=0.05,
-    help="Remove Ks where every run has more than this NRMSD vs. the best"
+    default=1.1,
+    help="Remove Ks where every run has more than this MAFCO vs. the best"
 )
 
 opt_em_runs = Option(
@@ -949,13 +949,13 @@ opt_region_min_overlap = Option(
     help="Make adjacent regions overlap by at least this fraction of length",
 )
 
-opt_max_mean_fold_change = Option(
-    ("--max-mean-fold-change",),
+opt_max_mafco_join = Option(
+    ("--max-mafco-join",),
     type=float,
     default=1.5,
-    help="Do not join regions with the same numbers of clusters if the mean "
-         "absolute fold change in the odds of their mutation rates and "
-         "proportions exceeds this threshold"
+    help="Join regions with the same numbers of clusters only if the mean "
+         "absolute fold change in odds (MAFCO) of their mutation rates and "
+         "proportions does not exceed this threshold"
 )
 
 # List options
@@ -1130,10 +1130,10 @@ opt_metric = Option(
     type=Choice(METRIC_KEYS, case_sensitive=False),
     default=KEY_PEARSON,
     help=(f"Metric to compare mutation rates: "
-          f"{repr(KEY_NRMSD)} = normalized root-mean-square deviation (NRMSD), "
           f"{repr(KEY_PEARSON)} = Pearson correlation coefficient (r), "
           f"{repr(KEY_SPEARMAN)} = Spearman correlation coefficient (ρ), "
-          f"{repr(KEY_DETERM)} = coefficient of determination (R²)")
+          f"{repr(KEY_DETERM)} = coefficient of determination (R²), "
+          f"{repr(KEY_MAFCO)} = mean absolute fold change in odds (MAFCO)")
 )
 
 opt_struct_file = Option(

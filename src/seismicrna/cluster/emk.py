@@ -5,8 +5,7 @@ import numpy as np
 from .em import EMRun
 from ..core.logs import logger
 from ..core.mu import (calc_sum_abs_diff_log_odds,
-                       calc_mean_abs_diff_log_odds,
-                       calc_norm_rmsd,
+                       calc_mean_abs_fold_change_odds,
                        calc_pearson)
 
 NOCONV = 0
@@ -37,30 +36,30 @@ class EMRunsK(object):
     def __init__(self,
                  runs: list[EMRun],
                  max_pearson_run: float,
-                 min_nrmsd_run: float,
+                 min_mafco_run: float,
                  max_jackpot_quotient: float,
                  max_loglike_vs_best: float,
                  min_pearson_vs_best: float,
-                 max_nrmsd_vs_best: float):
+                 max_mafco_vs_best: float):
         if not runs:
             raise ValueError(f"{self} got no EM runs")
         # Sort the runs from largest to smallest likelihood.
         runs = sort_runs(runs)
         # Flag runs that fail to meet the filters.
         self.max_pearson_run = max_pearson_run
-        self.min_nrmsd_run = min_nrmsd_run
+        self.min_mafco_run = min_mafco_run
         self.max_jackpot_quotient = max_jackpot_quotient
         # Set the criteria for whether this number of clusters passes.
         self.max_loglike_vs_best = max_loglike_vs_best
         self.min_pearson_vs_best = min_pearson_vs_best
-        self.max_nrmsd_vs_best = max_nrmsd_vs_best
+        self.max_mafco_vs_best = max_mafco_vs_best
         # Check whether each run shows signs of being overclustered.
         # To select only the valid runs, use "not" with the opposite of
         # the desired inequality because runs with just one cluster will
         # produce NaN values, which should always compare as True here.
         self.run_not_overclustered = np.array(
             [not (run.max_pearson > max_pearson_run
-                  or run.min_nrmsd < min_nrmsd_run)
+                  or run.min_mafco < min_mafco_run)
              for run in runs]
         )
         # Check whether each run shows signs of being underclustered.
@@ -84,18 +83,20 @@ class EMRunsK(object):
         # Jackpotting quotient of each run.
         self.jackpot_quotients = np.array([run.jackpot_quotient
                                            for run in runs])
-        # Minimum NRMSD between any two clusters in each run.
-        self.min_nrmsds = np.array([run.min_nrmsd for run in runs])
+        # Minimum MAFCO between any two clusters in each run.
+        self.min_mafcos = np.array([run.min_mafco for run in runs])
         # Maximum correlation between any two clusters in each run.
         self.max_pearsons = np.array([run.max_pearson for run in runs])
-        # NRMSD between each run and the best run.
-        self.nrmsds_vs_best = np.array(
-            [calc_rms_nrmsd(run.mus.values, self.best.mus.values)
+        # MAFCO between each run and the best run.
+        self.mafcos_vs_best = np.array(
+            [calc_mean_abs_fold_change_odds_clusters(run.mus.values,
+                                                     self.best.mus.values)
              for run in runs]
         )
         # Correlation between each run and the best run.
         self.pearsons_vs_best = np.array(
-            [calc_mean_pearson(run.mus.values, self.best.mus.values)
+            [calc_mean_pearson_clusters(run.mus.values,
+                                        self.best.mus.values)
              for run in runs]
         )
 
@@ -147,11 +148,11 @@ class EMRunsK(object):
         except ValueError:
             return np.nan
 
-    def nrmsd_vs_best(self, **kwargs):
-        """ Minimum NRMSD between the best run and any other run. """
+    def mafco_vs_best(self, **kwargs):
+        """ Minimum MAFCO between the best run and any other run. """
         try:
             return float(np.min(
-                self.nrmsds_vs_best[self.subopt_indexes(**kwargs)]
+                self.mafcos_vs_best[self.subopt_indexes(**kwargs)]
             ))
         except ValueError:
             return np.nan
@@ -168,7 +169,7 @@ class EMRunsK(object):
         return self.enough_runs_passing(**kwargs) and not (
                 self.loglike_vs_best(**kwargs) > self.max_loglike_vs_best
                 or self.pearson_vs_best(**kwargs) < self.min_pearson_vs_best
-                or self.nrmsd_vs_best(**kwargs) > self.max_nrmsd_vs_best
+                or self.mafco_vs_best(**kwargs) > self.max_mafco_vs_best
         )
 
     def summarize(self, **kwargs):
@@ -176,11 +177,11 @@ class EMRunsK(object):
         lines = [f"EM runs for K={self.k}",
                  "\nPARAMETERS\n"]
         for attr in ["max_pearson_run",
-                     "min_nrmsd_run",
+                     "min_mafco_run",
                      "max_jackpot_quotient",
                      "max_loglike_vs_best",
                      "min_pearson_vs_best",
-                     "max_nrmsd_vs_best"]:
+                     "max_mafco_vs_best"]:
             lines.append(f"{attr} = {getattr(self, attr)}")
         lines.append("\nRUNS\n")
         for attr in ["n_runs_total",
@@ -188,9 +189,9 @@ class EMRunsK(object):
                      "log_likes",
                      "bics",
                      "jackpot_quotients",
-                     "min_nrmsds",
+                     "min_mafcos",
                      "max_pearsons",
-                     "nrmsds_vs_best",
+                     "mafcos_vs_best",
                      "pearsons_vs_best",
                      "run_not_overclustered",
                      "run_not_underclustered"]:
@@ -201,7 +202,7 @@ class EMRunsK(object):
                      "best_index",
                      "loglike_vs_best",
                      "pearson_vs_best",
-                     "nrmsd_vs_best",
+                     "mafco_vs_best",
                      "enough_runs_passing",
                      "passing"]:
             func = getattr(self, attr)
@@ -270,24 +271,15 @@ def assign_clusterings(mus1: np.ndarray, mus2: np.ndarray):
     return rows, cols
 
 
-def calc_geomean_fold_odds(mus1: np.ndarray, mus2: np.ndarray):
-    """ Calculate the geometric mean of the fold-change in odds. """
+def calc_mean_abs_fold_change_odds_clusters(mus1: np.ndarray, mus2: np.ndarray):
+    """ Geometric mean of the MAFCO between the clusters. """
     assignment = assign_clusterings(mus1, mus2)
-    mean_abs_diff_log_odds = _compare_groups(calc_mean_abs_diff_log_odds,
-                                             mus1,
-                                             mus2)
-    return float(np.exp(np.mean(mean_abs_diff_log_odds[assignment])))
+    mafcos = _compare_groups(calc_mean_abs_fold_change_odds, mus1, mus2)
+    return float(np.exp(np.mean(np.log(mafcos[assignment]))))
 
 
-def calc_rms_nrmsd(mus1: np.ndarray, mus2: np.ndarray):
-    """ Calculate the root-mean-square NRMSD between the clusters. """
+def calc_mean_pearson_clusters(mus1: np.ndarray, mus2: np.ndarray):
+    """ Mean Pearson correlation between the clusters. """
     assignment = assign_clusterings(mus1, mus2)
-    nrmsds = _compare_groups(calc_norm_rmsd, mus1, mus2)
-    return float(np.sqrt(np.mean(np.square(nrmsds[assignment]))))
-
-
-def calc_mean_pearson(mus1: np.ndarray, mus2: np.ndarray):
-    """ Calculate the mean Pearson correlation between the clusters. """
-    assignment = assign_clusterings(mus1, mus2)
-    correlations = _compare_groups(calc_pearson, mus1, mus2)
-    return float(np.mean(correlations[assignment]))
+    pearsons = _compare_groups(calc_pearson, mus1, mus2)
+    return float(np.mean(pearsons[assignment]))

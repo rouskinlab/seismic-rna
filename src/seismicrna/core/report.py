@@ -78,10 +78,10 @@ from .arg import (opt_phred_enc,
                   opt_jackpot_conf_level,
                   opt_max_jackpot_quotient,
                   opt_max_pearson_run,
-                  opt_min_nrmsd_run,
+                  opt_min_mafco_run,
                   opt_max_loglike_vs_best,
                   opt_min_pearson_vs_best,
-                  opt_max_nrmsd_vs_best,
+                  opt_max_mafco_vs_best,
                   opt_try_all_ks,
                   opt_write_all_ks,
                   opt_mask_gu,
@@ -488,10 +488,10 @@ JackpotF = OptionField(opt_jackpot)
 JackpotConfLevelF = OptionField(opt_jackpot_conf_level)
 MaxJackpotQuotientF = OptionField(opt_max_jackpot_quotient)
 MaxPearsonRunF = OptionField(opt_max_pearson_run)
-MinNRMSDRunF = OptionField(opt_min_nrmsd_run)
+MinMAFCORunF = OptionField(opt_min_mafco_run)
 MaxLogLikeVsBestF = OptionField(opt_max_loglike_vs_best)
 MinPearsonVsBestF = OptionField(opt_min_pearson_vs_best)
-MaxNRMSDVsBestF = OptionField(opt_max_nrmsd_vs_best)
+MaxMAFCOVsBestF = OptionField(opt_max_mafco_vs_best)
 TryAllKsF = OptionField(opt_try_all_ks)
 WriteAllKsF = OptionField(opt_write_all_ks)
 ClustNumRunsF = OptionField(opt_em_runs)

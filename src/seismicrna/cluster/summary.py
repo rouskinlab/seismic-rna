@@ -16,9 +16,9 @@ ATTRS = {
     "log_likes": "Final log likelihood",
     "bics": "Bayesian information criterion",
     "jackpot_quotients": JACKPOT_QUOTIENT,
-    "min_nrmsds": "Minimum normalized RMSD between any two clusters",
+    "min_mafcos": "Minimum MAFCO between any two clusters",
     "max_pearsons": "Maximum Pearson correlation between any two clusters",
-    "nrmsds_vs_best": "Normalized RMSD versus the best run",
+    "mafcos_vs_best": "MAFCO versus the best run",
     "pearsons_vs_best": "Pearson correlation versus the best run",
     "converged": f"Iterations ({NOCONV} if the run did not converge)",
 }
