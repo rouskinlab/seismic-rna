@@ -8,6 +8,7 @@ from typing import Iterable
 from click import Argument, Choice, Option, Parameter, Path
 
 from ..io import DEFAULT_BROTLI_LEVEL
+from ..logs import DEFAULT_EXIT_ON_ERROR
 from ..seq import DNA
 
 # System information
@@ -1486,6 +1487,7 @@ opt_fq_gzip = Option(
 )
 
 # Logging options
+
 opt_verbose = Option(
     ("--verbose", "-v"),
     count=True,
@@ -1514,11 +1516,11 @@ opt_log_color = Option(
     help="Log messages with or without color codes on stdout"
 )
 
-opt_profile = Option(
-    ("--profile",),
-    type=Path(exists=False, dir_okay=False),
-    default="",
-    help="Profile code performance and log results to the given file"
+opt_exit_on_error = Option(
+    ("--exit-on-error/--log-on-error",),
+    type=bool,
+    default=DEFAULT_EXIT_ON_ERROR,
+    help="If an error occurs, whether to log a message or exit SEISMIC-RNA"
 )
 
 

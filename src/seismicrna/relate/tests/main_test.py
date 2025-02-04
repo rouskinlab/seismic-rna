@@ -117,7 +117,7 @@ class TestRelate(ut.TestCase, ABC):
         self._out_dir = path.randdir(prefix="out-")
         self._fasta_file = write_fasta_file(self._out_dir)
         self._sam_file = write_sam_file(self._out_dir, self.get_sam_data())
-        set_config(verbosity=Level.FATAL, raise_on_error=True)
+        set_config(verbosity=Level.FATAL, exit_on_error=True)
 
     def tearDown(self):
         rmtree(self._out_dir)

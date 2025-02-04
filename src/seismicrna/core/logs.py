@@ -21,6 +21,13 @@ class Level(IntEnum):
     DETAIL = 4
 
 
+DEFAULT_COLOR = True
+DEFAULT_EXIT_ON_ERROR = False
+DEFAULT_VERBOSITY = Level.STATUS
+FILE_VERBOSITY = Level.DETAIL
+EXC_INFO_VERBOSITY = Level.TASK
+
+
 class Message(object):
     """ Message with a logging level. """
     __slots__ = ["level", "content"]
@@ -188,20 +195,20 @@ def format_logfile(message: Message):
 
 class Logger(object):
     """ Log messages to the console and to files. """
-    __slots__ = ["console_stream", "file_stream", "raise_on_error"]
+    __slots__ = ["console_stream", "file_stream", "exit_on_error"]
 
     def __init__(self,
                  console_stream: ConsoleStream | None = None,
                  file_stream: FileStream | None = None,
-                 raise_on_error: bool = False):
+                 exit_on_error: bool = DEFAULT_EXIT_ON_ERROR):
         self.console_stream = console_stream
         self.file_stream = file_stream
-        self.raise_on_error = raise_on_error
+        self.exit_on_error = exit_on_error
 
     def _log(self, level: Level, content: object):
         """ Create and log a message to the stream(s). """
         message = Message(level, content)
-        if level <= Level.ERROR and self.raise_on_error:
+        if level <= Level.ERROR and self.exit_on_error:
             if isinstance(content, BaseException):
                 raise content
             raise RuntimeError(str(message))
@@ -237,31 +244,25 @@ class Logger(object):
 
 logger = Logger()
 
-DEFAULT_COLOR = True
-DEFAULT_RAISE = False
-DEFAULT_VERBOSITY = Level.STATUS
-FILE_VERBOSITY = Level.DETAIL
-EXC_INFO_VERBOSITY = Level.TASK
-
 
 LoggerConfig = namedtuple("LoggerConfig",
                           ["verbosity",
                            "log_file_path",
                            "log_color",
-                           "raise_on_error"])
+                           "exit_on_error"])
 
 
 def erase_config():
     """ Erase the existing logger configuration. """
     logger.console_stream = None
     logger.file_stream = None
-    logger.raise_on_error = DEFAULT_RAISE
+    logger.exit_on_error = DEFAULT_EXIT_ON_ERROR
 
 
 def set_config(verbosity: int = 0,
                log_file_path: str | Path | None = None,
                log_color: bool = True,
-               raise_on_error: bool = DEFAULT_RAISE):
+               exit_on_error: bool = DEFAULT_EXIT_ON_ERROR):
     """ Configure the main logger with handlers and verbosity. """
     # Erase any existing configuration.
     erase_config()
@@ -274,7 +275,7 @@ def set_config(verbosity: int = 0,
         logger.file_stream = FileStream(log_file_path,
                                         Filterer(FILE_VERBOSITY),
                                         Formatter(format_logfile))
-    logger.raise_on_error = raise_on_error
+    logger.exit_on_error = exit_on_error
 
 
 def get_config():
@@ -293,7 +294,7 @@ def get_config():
     return LoggerConfig(verbosity=verbosity,
                         log_file_path=log_file_path,
                         log_color=log_color,
-                        raise_on_error=logger.raise_on_error)
+                        exit_on_error=logger.exit_on_error)
 
 
 def exc_info():

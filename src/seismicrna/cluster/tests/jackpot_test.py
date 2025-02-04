@@ -258,7 +258,7 @@ class TestBootstrapJackpotScores(ut.TestCase):
         self._config = get_config()
         set_config(verbosity=Level.ERROR,
                    log_file_path=None,
-                   raise_on_error=True)
+                   exit_on_error=True)
 
     def tearDown(self):
         if self.SIM_DIR.exists():

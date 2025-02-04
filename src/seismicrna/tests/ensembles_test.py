@@ -79,7 +79,7 @@ class TestEnsembles(ut.TestCase):
         self._config = get_config()
         set_config(verbosity=Level.DETAIL,
                    log_file_path=None,
-                   raise_on_error=True)
+                   exit_on_error=True)
         self.SIM_DIR.mkdir()
 
     def tearDown(self):

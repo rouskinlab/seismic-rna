@@ -75,7 +75,7 @@ class TestWorkflow(ut.TestCase):
         self._config = get_config()
         set_config(verbosity=Level.ERROR,
                    log_file_path=None,
-                   raise_on_error=True)
+                   exit_on_error=True)
         self.SIM_DIR.mkdir()
         self.OUT_DIR.mkdir()
 
@@ -359,7 +359,7 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
         self._config = get_config()
         set_config(verbosity=Level.ERROR,
                    log_file_path=None,
-                   raise_on_error=True)
+                   exit_on_error=True)
         self.SIM_DIR.mkdir()
         self.OUT_DIR.mkdir()
         for sim_dir, out_dir in zip(self.SIM_DIRS, self.OUT_DIRS, strict=True):

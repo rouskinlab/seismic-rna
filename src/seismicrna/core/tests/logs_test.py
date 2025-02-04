@@ -96,8 +96,8 @@ class TestExcInfo(ut.TestCase):
 class TestLoggingRaiseOnError(ut.TestCase):
 
     @restore_config
-    def test_raise_on_error(self):
-        set_config(verbosity=(Level.FATAL - 1), raise_on_error=True)
+    def test_exit_on_error(self):
+        set_config(verbosity=(Level.FATAL - 1), exit_on_error=True)
         logger.warning("An error has occurred")
         self.assertRaisesRegex(RuntimeError,
                                "An error has occurred",
@@ -118,8 +118,8 @@ class TestLoggingRaiseOnError(ut.TestCase):
                                ZeroDivisionError("Cannot divide by 0"))
 
     @restore_config
-    def test_no_raise_on_error(self):
-        set_config(verbosity=(Level.FATAL - 1), raise_on_error=False)
+    def test_no_exit_on_error(self):
+        set_config(verbosity=(Level.FATAL - 1), exit_on_error=False)
         # None of these calls should raise an error.
         logger.error("An error has occurred")
         logger.fatal("A fatal error has occurred")
@@ -130,13 +130,13 @@ class TestLoggingRaiseOnError(ut.TestCase):
 class TestEraseConfig(ut.TestCase):
 
     def test_erase_config(self):
-        set_config(verbosity=3, raise_on_error=True)
+        set_config(verbosity=3, exit_on_error=True)
         self.assertEqual(logger.console_stream.filterer.verbosity, 3)
-        self.assertTrue(logger.raise_on_error)
+        self.assertTrue(logger.exit_on_error)
         erase_config()
         self.assertIsNone(logger.console_stream)
         self.assertIsNone(logger.file_stream)
-        self.assertFalse(logger.raise_on_error)
+        self.assertFalse(logger.exit_on_error)
 
 
 class TestSetConfig(ut.TestCase):
@@ -146,9 +146,9 @@ class TestSetConfig(ut.TestCase):
         erase_config()
         self.assertIsNone(logger.console_stream)
         self.assertIsNone(logger.file_stream)
-        self.assertFalse(logger.raise_on_error)
+        self.assertFalse(logger.exit_on_error)
         set_config()
-        self.assertFalse(logger.raise_on_error)
+        self.assertFalse(logger.exit_on_error)
         self.assertEqual(logger.console_stream.filterer.verbosity, 0)
         self.assertIs(logger.console_stream.formatter.formatter,
                       format_console_color)
@@ -200,15 +200,15 @@ class TestSetConfig(ut.TestCase):
     @restore_config
     def test_no_log_color(self):
         set_config(log_color=False)
-        self.assertFalse(logger.raise_on_error)
+        self.assertFalse(logger.exit_on_error)
         self.assertEqual(logger.console_stream.filterer.verbosity, 0)
         self.assertIs(logger.console_stream.formatter.formatter,
                       format_console_plain)
 
     @restore_config
-    def test_raise_on_error(self):
-        set_config(raise_on_error=True)
-        self.assertTrue(logger.raise_on_error)
+    def test_exit_on_error(self):
+        set_config(exit_on_error=True)
+        self.assertTrue(logger.exit_on_error)
 
 
 class TestGetConfig(ut.TestCase):
@@ -219,7 +219,7 @@ class TestGetConfig(ut.TestCase):
         options = {"verbosity": list(Level),
                    "log_file_path": [None, log_file_path],
                    "log_color": [True, False],
-                   "raise_on_error": [False, True]}
+                   "exit_on_error": [False, True]}
         try:
             for choice in product(*options.values()):
                 config = dict(zip(options.keys(), choice, strict=True))

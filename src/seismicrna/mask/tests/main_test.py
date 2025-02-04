@@ -180,7 +180,7 @@ class TestMask(ut.TestCase, ABC):
                                            self.reads_per_batch(),
                                            self.end5s(),
                                            self.end3s())
-        set_config(verbosity=Level.FATAL, raise_on_error=True)
+        set_config(verbosity=Level.FATAL, exit_on_error=True)
 
     def tearDown(self):
         rmtree(self._out_dir)

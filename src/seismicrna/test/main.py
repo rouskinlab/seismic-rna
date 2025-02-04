@@ -15,7 +15,7 @@ def run(verbose: int):
     # Write no log file, suppress warnings, and halt on errors.
     set_config(verbosity=Level.ERROR,
                log_file_path=None,
-               raise_on_error=True)
+               exit_on_error=True)
     # Discover all unit test modules.
     main_dir = dirname(dirname(__file__))
     # The argument top_level_dir=dirname(main_dir) is needed to make

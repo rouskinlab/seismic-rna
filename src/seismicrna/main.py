@@ -1,7 +1,6 @@
-import cProfile
-import os
+from pathlib import Path
 
-from click import Context, group, pass_context, version_option
+from click import group, version_option
 
 from . import (wf,
                demult,
@@ -25,63 +24,44 @@ from . import (wf,
                renumct,
                __version__)
 from .align import split
+from .core import path, rna
+from .core.arg import (opt_exit_on_error,
+                       opt_log,
+                       opt_log_color,
+                       opt_quiet,
+                       opt_verbose)
+from .core.logs import logger, set_config
 from .urls import (cli_docs,
                    cli_github,
                    cli_pypi,
                    cli_conda,
                    cli_biorxiv)
-from .core import rna
-from .core.arg import (opt_log,
-                       opt_log_color,
-                       opt_profile,
-                       opt_quiet,
-                       opt_verbose)
-from .core.logs import logger, set_config
 
 params = [
     opt_verbose,
     opt_quiet,
-    opt_log_color,
     opt_log,
-    opt_profile,
+    opt_log_color,
+    opt_exit_on_error,
 ]
 
 
 # Group for main commands
 @group(params=params, context_settings={"show_default": True})
 @version_option(__version__)
-@pass_context
-def cli(ctx: Context,
-        verbose: int,
+def cli(verbose: int,
         quiet: int,
+        log: str | Path,
         log_color: bool,
-        log: str,
-        profile: str,
-        **kwargs):
+        exit_on_error: bool):
     """ Command line interface of SEISMIC-RNA. """
-    # Configure logging.
     if log:
-        log_file_path = os.path.abspath(log)
-        os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
+        log_file_path = path.sanitize(log)
+        log_file_path.parent.mkdir(parents=True, exist_ok=True)
     else:
         log_file_path = None
-    set_config(verbose - quiet, log_file_path, log_color)
+    set_config(verbose - quiet, log_file_path, log_color, exit_on_error)
     logger.detail(f"This is SEISMIC-RNA version {__version__}")
-    # If no subcommand was given, then run the entire pipeline.
-    if ctx.invoked_subcommand is None:
-        if profile:
-            profile_path = os.path.abspath(profile)
-            # Profile the program as it runs and write results to the
-            # file given in the parameter profile.
-            os.makedirs(os.path.dirname(profile_path), exist_ok=True)
-            cProfile.runctx("wf.run(**kwargs)",
-                            globals=globals(),
-                            locals=locals(),
-                            filename=profile_path,
-                            sort="time")
-        else:
-            # Run without profiling.
-            wf.run(**kwargs)
 
 
 # Add all commands to the main CLI command group.
