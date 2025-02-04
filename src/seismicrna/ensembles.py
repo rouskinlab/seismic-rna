@@ -32,7 +32,7 @@ from .core.report import KsWrittenF, End5F, End3F
 from .core.run import run_func
 from .core.seq import DNA, DuplicateReferenceNameError
 from .core.task import dispatch
-from .join import join_regions
+from .join import joined_mask_report_exists, join_regions
 from .mask.main import load_regions
 from .mask.report import MaskReport
 
@@ -481,13 +481,29 @@ def run(input_path: Iterable[str | Path], *,
                                     verify_times=verify_times,
                                     max_procs=max_procs)
     join_dirs = list()
+    # Join the masked regions first, then the clustered regions, because
+    # the clustered regions require the masked regions.
     for clustered in [False, True]:
         args = list()
         for key, groups in cluster_groups.items():
             top, sample, ref = key
             for group_num, regs in enumerate(groups, start=1):
                 joined_region = f"{joined}{group_num}"
-                args.append((top, joined_region, sample, ref, regs, clustered))
+                if clustered or force or not joined_mask_report_exists(
+                        top,
+                        sample,
+                        ref,
+                        joined_region,
+                        regs
+                ):
+                    # Every cluster dataset (joined or not) needs a mask
+                    # dataset of the same region.
+                    args.append((top,
+                                 joined_region,
+                                 sample,
+                                 ref,
+                                 regs,
+                                 clustered))
         kwargs = dict(clusts=dict(),
                       mask_pos_table=mask_pos_table,
                       mask_read_table=mask_read_table,

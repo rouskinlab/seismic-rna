@@ -23,17 +23,48 @@ from .core.arg import (CMD_JOIN,
                        opt_force,
                        extra_defaults)
 from .core.dataset import load_datasets
+from .core.error import InconsistentValueError
 from .core.header import ClustHeader, parse_header
 from .core.join import JoinMutsDataset, JoinReport
 from .core.logs import logger
+from .core.report import JoinedRegionsF
 from .core.run import run_func
 from .core.task import dispatch
 from .core.tmp import release_to_out, with_tmp_dir
 from .core.write import need_write
 from .mask.dataset import load_mask_dataset
-from .mask.report import MaskReport
+from .mask.report import JoinMaskReport
 from .mask.table import MaskDatasetTabulator
 from .table import tabulate
+
+
+def joined_mask_report_exists(top: Path,
+                              sample: str,
+                              ref: str,
+                              joined: str,
+                              regs: Iterable[str]):
+    """ Return whether a mask report for the joined region exists. """
+    mask_report_file = JoinMaskReport.build_path(top=top,
+                                                 sample=sample,
+                                                 ref=ref,
+                                                 reg=joined)
+    if not mask_report_file.is_file():
+        logger.detail(
+            f"Joined mask report {mask_report_file} does not already exist"
+        )
+        return False
+    mask_report = JoinMaskReport.load(mask_report_file)
+    report_regs = sorted(mask_report.get_field(JoinedRegionsF))
+    cluster_regs = sorted(regs)
+    if report_regs != cluster_regs:
+        raise InconsistentValueError(
+            f"The regions in the mask report file {mask_report_file} "
+            f"are {report_regs}, which differ from the regions that "
+            f"are being joined for the cluster step: {cluster_regs} "
+            "(use --force to suppress this error and overwrite)"
+        )
+    logger.detail(f"Joined mask report {mask_report_file} already exists")
+    return True
 
 
 def parse_join_clusts_file(file: str | Path):
@@ -250,20 +281,17 @@ def run(input_path: Iterable[str | Path], *,
                    dataset.sample,
                    dataset.ref,
                    clustered)].extend(regs)
-            # If clustered, then check if the corresponding Mask dataset
-            # has been joined.
-            mask_report_file = MaskReport.build_path(top=dataset.top,
-                                                     sample=dataset.sample,
-                                                     ref=dataset.ref,
-                                                     reg=joined)
-            if not mask_report_file.is_file():
-                # If not, then also join the Mask dataset.
-                mask_joins = joins[(dataset.top,
-                                    dataset.sample,
-                                    dataset.ref,
-                                    False)]
-                mask_joins.extend([reg for reg in regs
-                                   if reg not in mask_joins])
+            logger.detail(f"Added regions {regs} for {dataset}")
+    # For every joined cluster dataset that does not have a joined mask
+    # dataset, also create the joined mask dataset.
+    for (top, sample, ref, clustered), regs in list(joins.items()):
+        if clustered and (force or not joined_mask_report_exists(top,
+                                                                 sample,
+                                                                 ref,
+                                                                 joined,
+                                                                 regs)):
+            mask_joins = joins[top, sample, ref, False]
+            mask_joins.extend(reg for reg in regs if reg not in mask_joins)
     # Join the masked regions first, then the clustered regions, because
     # the clustered regions require the masked regions.
     results = list()

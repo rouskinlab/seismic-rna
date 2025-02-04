@@ -88,6 +88,7 @@ from .arg import (opt_phred_enc,
                   opt_mask_polya,
                   opt_mask_discontig,
                   opt_min_phred)
+from .error import InconsistentValueError
 from .io import FileIO, ReadBatchIO, RefIO
 from .logs import logger
 from .rel import HalfRelPattern
@@ -669,9 +670,11 @@ class Report(FileIO, ABC):
         top, path_fields = cls.parse_path(file)
         for key, value in report.path_field_values().items():
             if value != path_fields.get(key):
-                raise ValueError(f"Got different values for {repr(key)} "
-                                 f"in path ({repr(path_fields.get(key))}) "
-                                 f"and contents ({repr(value)}) of {file}")
+                raise InconsistentValueError(
+                    f"Got different values for {repr(key)} in path "
+                    f"({repr(path_fields.get(key))}) and contents "
+                    f"({repr(value)}) of {file}"
+                )
         logger.routine(f"Ended loading {cls.__name__} from {file}")
         return report
 
