@@ -12,7 +12,7 @@ from seismicrna.core.run import run_func
 @restore_config
 def run(verbose: int):
     """ Run all unit tests. """
-    # Write no log file, suppress warnings, and halt on errors.
+    # Write no log file, suppress warnings, and exit on errors.
     set_config(verbosity=Level.ERROR,
                log_file_path=None,
                exit_on_error=True)
@@ -26,7 +26,12 @@ def run(verbose: int):
                                      top_level_dir=dirname(main_dir))
     # Run all unit tests.
     runner = ut.TextTestRunner(verbosity=verbose)
-    runner.run(suite)
+    result = runner.run(suite)
+    if not result.wasSuccessful():
+        raise RuntimeError(
+            f"Some tests did not succeed ({len(result.failures)} failures, "
+            f"{len(result.errors)} errors)"
+        )
 
 
 # Parameters for command line interface
@@ -41,4 +46,4 @@ def cli(**kwargs):
 
 if __name__ == "__main__":
     # Run all unit tests by executing this script on the command line.
-    run(verbose=0)
+    run(verbose=2)
