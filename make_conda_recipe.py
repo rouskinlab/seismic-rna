@@ -118,7 +118,7 @@ def list_nonpip_dependencies():
     """ List the dependencies not in the pyproject.toml file. """
     return ["python >=3.10",
             "bowtie2 >=2.5.4",
-            "fastp >=0.23.0",
+            "fastp >=0.24.0dev",
             "rnastructure >=6.4",
             "samtools >=1.20",
             "brotli-python >=1.0",
