@@ -42,4 +42,4 @@ jobs:
       - name: Run the test suite
         run: |
           echo "Running tests for $(seismic --version)"
-          bash test.sh
+          seismic --log "" --exit-on-error test -vv

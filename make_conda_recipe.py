@@ -245,7 +245,7 @@ def write_metadata():
                                   "pip"],
                          "build": ["{{ compiler('c') }}"],
                          "run": list_conda_dependencies()},
-        "test": {"commands": ['seismic --log "" test -vv'],
+        "test": {"commands": ['seismic --log "" --exit-on-error test -vv'],
                  "imports": ["seismicrna"]},
     }
     yaml_text = format_yaml_text(metadata)
