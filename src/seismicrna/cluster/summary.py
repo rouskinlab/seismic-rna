@@ -13,12 +13,12 @@ K_RUN_NAMES = [NUM_CLUSTS_NAME, EM_RUN_NAME]
 RUN_PASSING = "run_passing"
 ATTRS = {
     RUN_PASSING: "Whether the run passed filters",
-    "log_likes": "Final log likelihood",
+    "log_likes": "Log likelihood",
     "bics": "Bayesian information criterion",
     "jackpot_quotients": JACKPOT_QUOTIENT,
-    "min_mafcos": "Minimum MAFCO between any two clusters",
+    "min_marcds": "Minimum MARCD between any two clusters",
     "max_pearsons": "Maximum Pearson correlation between any two clusters",
-    "mafcos_vs_best": "MAFCO versus the best run",
+    "marcds_vs_best": "MARCD versus the best run",
     "pearsons_vs_best": "Pearson correlation versus the best run",
     "converged": f"Iterations ({NOCONV} if the run did not converge)",
 }

@@ -15,10 +15,10 @@ from .uniq import UniqReads
 from ..core.array import get_length
 from ..core.header import ClustHeader
 from ..core.logs import logger
-from ..core.mu import calc_mean_abs_fold_change_odds, calc_pearson
+from ..core.mu import calc_mean_arcsine_distance, calc_pearson
 from ..core.unbias import calc_params, calc_params_observed
 
-LOG_LIKE_PRECISION = 3  # number of digits to round the log likelihood
+LOG_LIKE_PRECISION = 6  # number of digits to round the log likelihood
 
 
 def _calc_bic(n_params: int,
@@ -503,9 +503,9 @@ class EMRun(object):
         return self._calc_p_mut_pairs(calc_pearson, max)
 
     @cached_property
-    def min_mafco(self):
-        """ Minimum MAFCO among any pair of clusters. """
-        return self._calc_p_mut_pairs(calc_mean_abs_fold_change_odds, min)
+    def min_marcd(self):
+        """ Minimum MARCD among any pair of clusters. """
+        return self._calc_p_mut_pairs(calc_mean_arcsine_distance, min)
 
     def __str__(self):
         return f"{type(self).__name__} {self.uniq_reads}, {self.k} cluster(s)"

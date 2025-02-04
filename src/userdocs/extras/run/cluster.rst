@@ -162,10 +162,10 @@ In your cluster report:
   the trajectories converge to the same solution, then that solution is likely
   (but still not necessarily) the global optimum.
   You must check if your trajectories converged to the same solution by checking
-  the fields "MAFCO from Run 0" and "Correlation with Run 0" in the report.
-  If all runs converged to identical solutions, then every MAFCO would be 1 and
+  the fields "MARCD from Run 0" and "Correlation with Run 0" in the report.
+  If all runs converged to identical solutions, then every MARCD would be 1 and
   every Correlation would be 1.
-  Generally, the runs are sufficiently reproducible if runs 1 and 2 have MAFCOs
+  Generally, the runs are sufficiently reproducible if runs 1 and 2 have MARCDs
   less than 1.1 and Correlations greater than 0.975 with respect to run 0.
   If not, then there is insufficient evidence that run 0 is the global optimum
   for that number of clusters, so it would be best to rerun clustering using

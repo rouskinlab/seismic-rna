@@ -77,7 +77,7 @@ class TestEnsembles(ut.TestCase):
 
     def setUp(self):
         self._config = get_config()
-        set_config(verbosity=Level.ERROR,
+        set_config(verbosity=Level.DETAIL,
                    log_file_path=None,
                    raise_on_error=True)
         self.SIM_DIR.mkdir()
@@ -263,7 +263,7 @@ class TestEnsembles(ut.TestCase):
                            [["1-60"],
                             ["31-90"],
                             ["61-120"]],
-                           max_mean_fold_change=1.01)
+                           max_marcd_join=0.0)
         # Now rerun while limiting every region to at most 2 clusters.
         # The regions should not be joined together because region 31-90
         # with 2 clusters will not be sufficiently similar to 1-60 or to
@@ -273,7 +273,7 @@ class TestEnsembles(ut.TestCase):
                            [["1-60"],
                             ["31-90"],
                             ["61-120"]],
-                           max_mean_fold_change=1.01,
+                           max_marcd_join=0.0,
                            max_clusters=2,
                            force=True)
         # Now rerun while tolerating larger differences between clusters
@@ -281,7 +281,7 @@ class TestEnsembles(ut.TestCase):
         self.run_ensembles(relate_dirs, 60, 0.5,
                            [2],
                            [["1-60", "31-90", "61-120"]],
-                           max_mean_fold_change=30.0,
+                           max_marcd_join=1.0,
                            max_clusters=2,
                            force=True)
 

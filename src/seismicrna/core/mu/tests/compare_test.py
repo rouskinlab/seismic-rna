@@ -5,10 +5,9 @@ import numpy as np
 import pandas as pd
 from scipy.stats import pearsonr, spearmanr
 
-from seismicrna.core.mu import (DEFAULT_CLIP_LOG_ODDS,
-                                calc_diff_log_odds,
-                                calc_sum_abs_diff_log_odds,
-                                calc_mean_abs_fold_change_odds,
+from seismicrna.core.mu import (calc_arcsine_distance,
+                                calc_sum_arcsine_distance,
+                                calc_mean_arcsine_distance,
                                 calc_coeff_determ,
                                 calc_pearson,
                                 calc_spearman,
@@ -20,29 +19,29 @@ from seismicrna.core.seq import DNA, seq_pos_to_index
 rng = np.random.default_rng()
 
 
-class TestCalcDiffLogOdds(ut.TestCase):
+class TestCalcArcsineDistance(ut.TestCase):
 
     def test_array0d(self):
         mus1 = np.array(0.1)
         mus2 = np.array(0.6)
-        result = calc_diff_log_odds(mus1, mus2)
-        expect = np.array(np.log(2 / 27))
+        result = calc_arcsine_distance(mus1, mus2)
+        expect = np.array(0.35926145215)
         self.assertTupleEqual(result.shape, expect.shape)
         self.assertTrue(np.allclose(result, expect))
 
     def test_array1d(self):
         mus1 = np.array([0.6])
         mus2 = np.array([0.1])
-        result = calc_diff_log_odds(mus1, mus2)
-        expect = np.array([np.log(27 / 2)])
+        result = calc_arcsine_distance(mus1, mus2)
+        expect = np.array([0.35926145215])
         self.assertTupleEqual(result.shape, expect.shape)
         self.assertTrue(np.allclose(result, expect))
 
     def test_array2d(self):
         mus1 = np.array([[0.2], [0.4]])
         mus2 = np.array([[0.3], [0.4]])
-        result = calc_diff_log_odds(mus1, mus2)
-        expect = np.array([[np.log(7 / 12)], [0.0]])
+        result = calc_arcsine_distance(mus1, mus2)
+        expect = np.array([[0.0738428842647], [0.0]])
         self.assertTupleEqual(result.shape, expect.shape)
         self.assertTrue(np.allclose(result, expect))
 
@@ -50,8 +49,8 @@ class TestCalcDiffLogOdds(ut.TestCase):
         index = pd.Index([4])
         mus1 = pd.Series([0.6], index)
         mus2 = pd.Series([0.1], index)
-        result = calc_diff_log_odds(mus1, mus2)
-        expect = pd.Series([np.log(27 / 2)], index)
+        result = calc_arcsine_distance(mus1, mus2)
+        expect = pd.Series([0.35926145215], index)
         self.assertTupleEqual(result.shape, expect.shape)
         self.assertTrue(np.allclose(result, expect))
         self.assertTrue(result.index.equals(index))
@@ -61,8 +60,8 @@ class TestCalcDiffLogOdds(ut.TestCase):
         columns = pd.Index([8])
         mus1 = pd.DataFrame([[0.2], [0.4]], index, columns)
         mus2 = pd.DataFrame([[0.3], [0.4]], index, columns)
-        result = calc_diff_log_odds(mus1, mus2)
-        expect = pd.DataFrame([[np.log(7 / 12)], [0.0]], index, columns)
+        result = calc_arcsine_distance(mus1, mus2)
+        expect = pd.DataFrame([[0.0738428842647], [0.0]], index, columns)
         self.assertTupleEqual(result.shape, expect.shape)
         self.assertTrue(np.allclose(result, expect))
         self.assertTrue(result.index.equals(index))
@@ -71,7 +70,7 @@ class TestCalcDiffLogOdds(ut.TestCase):
     def test_both_zeros(self):
         mus1 = np.array(0.0)
         mus2 = np.array(0.0)
-        result = calc_diff_log_odds(mus1, mus2)
+        result = calc_arcsine_distance(mus1, mus2)
         expect = np.array(0.0)
         self.assertTupleEqual(result.shape, expect.shape)
         self.assertTrue(np.allclose(result, expect))
@@ -79,7 +78,7 @@ class TestCalcDiffLogOdds(ut.TestCase):
     def test_both_ones(self):
         mus1 = np.array(1.0)
         mus2 = np.array(1.0)
-        result = calc_diff_log_odds(mus1, mus2)
+        result = calc_arcsine_distance(mus1, mus2)
         expect = np.array(0.0)
         self.assertTupleEqual(result.shape, expect.shape)
         self.assertTrue(np.allclose(result, expect))
@@ -87,54 +86,26 @@ class TestCalcDiffLogOdds(ut.TestCase):
     def test_zero_half(self):
         mus1 = np.array(0.0)
         mus2 = np.array(0.5)
-        for p_min in [0., DEFAULT_CLIP_LOG_ODDS]:
-            result = calc_diff_log_odds(mus1, mus2, p_min=p_min)
-            with np.errstate(divide="ignore"):
-                expect = np.array(np.log(p_min / (1. - p_min)))
-            self.assertTupleEqual(result.shape, expect.shape)
-            self.assertTrue(np.allclose(result, expect))
+        result = calc_arcsine_distance(mus1, mus2)
+        expect = np.array(0.5)
+        self.assertTupleEqual(result.shape, expect.shape)
+        self.assertTrue(np.allclose(result, expect))
 
     def test_one_half(self):
         mus1 = np.array(1.0)
         mus2 = np.array(0.5)
-        for clip in [0., DEFAULT_CLIP_LOG_ODDS]:
-            p_max = 1. - clip
-            result = calc_diff_log_odds(mus1, mus2, p_max=p_max)
-            with np.errstate(divide="ignore"):
-                expect = np.array(-np.log(clip / (1. - clip)))
-            self.assertTupleEqual(result.shape, expect.shape)
-            self.assertTrue(np.allclose(result, expect))
+        result = calc_arcsine_distance(mus1, mus2)
+        expect = np.array(0.5)
+        self.assertTupleEqual(result.shape, expect.shape)
+        self.assertTrue(np.allclose(result, expect))
 
     def test_zero_one(self):
         mus1 = np.array(0.0)
         mus2 = np.array(1.0)
-        result = calc_diff_log_odds(mus1, mus2)
-        expect = np.array(2. * np.log(DEFAULT_CLIP_LOG_ODDS
-                                      / (1. - DEFAULT_CLIP_LOG_ODDS)))
+        result = calc_arcsine_distance(mus1, mus2)
+        expect = np.array(1.0)
         self.assertTupleEqual(result.shape, expect.shape)
         self.assertTrue(np.allclose(result, expect))
-
-    def test_no_clip(self):
-        index = pd.Index([2, 4, 6, 8])
-        mus1 = pd.Series([0., 0., 1., 1.], index)
-        mus2 = pd.Series([0., 1., 0., 1.], index)
-        result = calc_diff_log_odds(mus1, mus2, p_min=0., p_max=1.)
-        expect = pd.Series([0., -np.inf, np.inf, 0.], index)
-        self.assertTupleEqual(result.shape, expect.shape)
-        self.assertTrue(np.allclose(result, expect))
-        self.assertTrue(result.index.equals(index))
-
-    def test_invalid_clip(self):
-        mus1 = np.array(0.5)
-        mus2 = np.array(0.5)
-        for p_min, p_max in [(-0.1, 0.9), (0.1, 1.1), (0.6, 0.4)]:
-            self.assertRaisesRegex(ValueError,
-                                   "Must have 0 ≤ p_min ≤ p_max ≤ 1",
-                                   calc_diff_log_odds,
-                                   mus1,
-                                   mus2,
-                                   p_min=p_min,
-                                   p_max=p_max)
 
 
 class TestCalcSumAbsDiffLogOdds(ut.TestCase):
@@ -142,21 +113,15 @@ class TestCalcSumAbsDiffLogOdds(ut.TestCase):
     def test_array0d(self):
         self.assertRaisesRegex(ValueError,
                                "A 0-D array has no positional axis",
-                               calc_sum_abs_diff_log_odds,
+                               calc_sum_arcsine_distance,
                                rng.random(()),
                                rng.random(()))
 
     def test_array1d(self):
-        mus1 = np.array([0.6, 0.3])
-        mus2 = np.array([0.1, 0.8])
-        result = calc_sum_abs_diff_log_odds(mus1, mus2)
-        expect = np.log(27 / 2) + np.log(28 / 3)
-        self.assertIsInstance(result, float)
-        self.assertTrue(np.isclose(result, expect))
         mus1 = np.array([0.4, 0.6, 0.3])
         mus2 = np.array([0.5, 0.1, 0.8])
-        result = calc_sum_abs_diff_log_odds(mus1, mus2)
-        expect = np.log(3 / 2) + np.log(27 / 2) + np.log(28 / 3)
+        result = calc_sum_arcsine_distance(mus1, mus2)
+        expect = np.sum([0.064094216849, 0.35926145215, 0.335822645134])
         self.assertIsInstance(result, float)
         self.assertTrue(np.isclose(result, expect))
 
@@ -166,21 +131,15 @@ class TestCalcMeanAbsFoldChangeOdds(ut.TestCase):
     def test_array0d(self):
         self.assertRaisesRegex(ValueError,
                                "A 0-D array has no positional axis",
-                               calc_mean_abs_fold_change_odds,
+                               calc_mean_arcsine_distance,
                                rng.random(()),
                                rng.random(()))
 
     def test_array1d(self):
-        mus1 = np.array([0.6, 0.3])
-        mus2 = np.array([0.1, 0.8])
-        result = calc_mean_abs_fold_change_odds(mus1, mus2)
-        expect = np.sqrt((27 / 2) * (28 / 3))
-        self.assertIsInstance(result, float)
-        self.assertTrue(np.isclose(result, expect))
         mus1 = np.array([0.4, 0.6, 0.3])
         mus2 = np.array([0.5, 0.1, 0.8])
-        result = calc_mean_abs_fold_change_odds(mus1, mus2)
-        expect = np.cbrt((3 / 2) * (27 / 2) * (28 / 3))
+        result = calc_mean_arcsine_distance(mus1, mus2)
+        expect = np.mean([0.064094216849, 0.35926145215, 0.335822645134])
         self.assertIsInstance(result, float)
         self.assertTrue(np.isclose(result, expect))
 
@@ -394,10 +353,10 @@ class TestCalcSpearman(ut.TestCase):
 class TestGetComp(ut.TestCase):
 
     def test_comps(self):
-        for key in ["MAFCO", "mafco"]:
-            self.assertIs(get_comp_func(key), calc_mean_abs_fold_change_odds)
+        for key in ["MARCD", "marcd"]:
+            self.assertIs(get_comp_func(key), calc_mean_arcsine_distance)
             self.assertEqual(get_comp_name(key),
-                             "Mean Absolute Fold Change in Odds")
+                             "Mean Arcsine Distance")
         for key in ["PCC", "pcc"]:
             self.assertIs(get_comp_func(key), calc_pearson)
             self.assertEqual(get_comp_name(key),
@@ -429,13 +388,15 @@ class TestCompareWindows(ut.TestCase):
                     nan5 = min(seqlen, max(0, mc - (1 + size // 2)))
                     nan3 = min(seqlen, max(0, mc - (1 + size) // 2))
                     nval = seqlen - (nan5 + nan3)
-                    for method in ["MAFCO", "PCC", "SCC", "R2"]:
+                    for method in ["MARCD", "PCC", "SCC", "R2"]:
                         result = compare_windows(mus, mus, method, size, mc)
                         self.assertIsInstance(result, pd.Series)
                         self.assertTrue(result.index.equals(index))
-                        expect = np.hstack([np.full(nan5, np.nan),
-                                            np.full(nval, 1.),
-                                            np.full(nan3, np.nan)])
+                        expect = np.hstack(
+                            [np.full(nan5, np.nan),
+                             np.full(nval, 0. if method == "MARCD" else 1.),
+                             np.full(nan3, np.nan)]
+                        )
                         self.assertTrue(np.allclose(result,
                                                     expect,
                                                     equal_nan=True))

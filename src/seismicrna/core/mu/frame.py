@@ -6,50 +6,6 @@ import numpy as np
 import pandas as pd
 
 
-def find_highest_type(*values: np.ndarray | pd.Series | pd.DataFrame,
-                      creatable: bool = False):
-    """ Find the highest type among the values, in order of priority:
-    1.  DataFrame
-    2.  Series
-    3.  ndarray
-    4.  scalar
-
-    Parameters
-    ----------
-    *values: Number | numpy.ndarray | pandas.Series | pandas.DataFrame
-        Value(s) among which to find the highest type.
-    creatable: bool
-        Whether to return a function that can be called to construct a
-        new object of that type (if False, then just return the type).
-        This distinction only matters for np.ndarray vs. np.array.
-
-    Returns
-    -------
-    type[pd.DataFrame | pd.Series | np.ndarray | float]
-        The highest type among the values.
-    """
-    dataframe = False
-    series = False
-    ndarray = False
-    for value in values:
-        if isinstance(value, pd.DataFrame):
-            dataframe = True
-        elif isinstance(value, pd.Series):
-            series = True
-        elif isinstance(value, np.ndarray):
-            ndarray = True
-        elif not isinstance(value, Number):
-            raise TypeError(f"All values must be numeric, "
-                            f"but got {type(value).__name__}")
-    if dataframe:
-        return pd.DataFrame
-    if series:
-        return pd.Series
-    if ndarray:
-        return np.array if creatable else np.ndarray
-    return float
-
-
 def reframe(values: Number | np.ndarray | pd.Series | pd.DataFrame,
             axes: Iterable[int | np.ndarray | pd.Index] | None = None):
     """ Place the values in an array object with the given axes.

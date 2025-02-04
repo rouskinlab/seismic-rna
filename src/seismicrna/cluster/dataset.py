@@ -35,7 +35,7 @@ from ..core.join import (BATCH_NUM,
                          RESPS,
                          JoinMutsDataset)
 from ..core.logs import logger
-from ..core.mu import calc_sum_abs_diff_log_odds
+from ..core.mu import calc_sum_arcsine_distance
 from ..core.report import JoinedClustersF, KsWrittenF, BestKF
 from ..core.seq import POS_NAME, BASE_NAME
 from ..core.table import MUTAT_REL
@@ -219,9 +219,9 @@ def _join_regions_k(region_params: dict[str, pd.DataFrame]):
         # each cluster from region 2.
         cost_matrix = pd.DataFrame(np.nan, clusters, clusters)
         for cluster1, cluster2 in product(clusters, repeat=2):
-            # Use log odds differences as the costs.
-            cost = calc_sum_abs_diff_log_odds(df1.loc[overlap, cluster1],
-                                              df2.loc[overlap, cluster2])
+            # Use total arcsine distances as the costs.
+            cost = calc_sum_arcsine_distance(df1.loc[overlap, cluster1],
+                                             df2.loc[overlap, cluster2])
             cost_matrix.loc[cluster1, cluster2] = cost
         logger.detail(f"Regions {repr(reg1)} and {repr(reg2)} "
                       f"have a cost matrix of\n{cost_matrix}")
