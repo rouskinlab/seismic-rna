@@ -851,7 +851,7 @@ opt_min_marcd_run = Option(
     ("--min-marcd-run",),
     type=float,
     default=0.0175,
-    help="Remove runs with two clusters different by less than this MARCD"
+    help="Remove runs with two clusters that differ by less than this MARCD"
 )
 
 opt_max_loglike_vs_best = Option(
@@ -952,7 +952,7 @@ opt_region_min_overlap = Option(
 opt_max_marcd_join = Option(
     ("--max-marcd-join",),
     type=float,
-    default=1.5,
+    default=0.0175,
     help="Join regions with the same numbers of clusters only if the mean "
          "arcsine distance (MARCD) of their mutation rates and proportions "
          "does not exceed this threshold"

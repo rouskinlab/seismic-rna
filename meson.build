@@ -1,4 +1,4 @@
-project('seismic-rna', 'c', version: '0.23.0')
+project('seismic-rna', 'c', version: '0.23.1')
 python = import('python').find_installation(pure: false)
 
 # Install Python package files.
@@ -13,4 +13,3 @@ python.extension_module('relate',
                         sources: ['src/seismicrna/relate/cx/relate.c'],
                         subdir: 'seismicrna/relate/cx',
                         install: true)
-
