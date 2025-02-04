@@ -33,7 +33,7 @@ jobs:
           python -m build --sdist --outdir dist-sdist
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: builds-sdist
           path: dist-sdist
@@ -79,7 +79,7 @@ jobs:
           CIBW_PLATFORM: ${{ matrix.platform == 'ubuntu-latest' && 'linux' || matrix.platform == 'macos-latest' && 'macos' }}
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: builds-${{ matrix.platform }}
           path: dist-${{ matrix.platform }}
@@ -97,19 +97,19 @@ jobs:
 
     steps:
       - name: Download source distribution
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: builds-sdist
           path: dist-sdist
 
       - name: Download Linux wheels
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: builds-ubuntu-latest
           path: dist-ubuntu-latest
 
       - name: Download macOS wheels
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: builds-macos-latest
           path: dist-macos-latest
