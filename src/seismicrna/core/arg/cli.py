@@ -1498,13 +1498,13 @@ opt_fq_gzip = Option(
 opt_verbose = Option(
     ("--verbose", "-v"),
     count=True,
-    help="Log more messages (-v, -vv, or -vvv) on stderr"
+    help="Log more messages (-v, -vv, -vvv, -vvvv) on stderr"
 )
 
 opt_quiet = Option(
     ("--quiet", "-q"),
     count=True,
-    help="Log fewer messages (-q, -qq, or -qqq) on stderr"
+    help="Log fewer messages (-q, -qq, -qqq, -qqqq) on stderr"
 )
 
 opt_log = Option(
@@ -1513,14 +1513,14 @@ opt_log = Option(
     default=os.path.join(CWD, "log", datetime.now().strftime(
         "seismic-rna_%Y-%m-%d_%H-%M-%S.log"
     )),
-    help="Log all messages (except profiling) to a file"
+    help="Log all messages to this file"
 )
 
 opt_log_color = Option(
     ("--log-color/--log-plain",),
     type=bool,
     default=True,
-    help="Log messages with or without color codes on stdout"
+    help="Log messages with or without color codes on stderr"
 )
 
 opt_exit_on_error = Option(
