@@ -12,6 +12,7 @@ from ..core.arg import (CMD_SPLITBAM,
                         opt_phred_enc,
                         opt_out_dir,
                         opt_tmp_pfx,
+                        opt_branch,
                         opt_force,
                         opt_keep_tmp,
                         opt_max_procs,
@@ -53,6 +54,7 @@ from ..core.write import need_write
 def split_xam_file(xam_file: Path,
                    out_dir: Path,
                    tmp_dir: Path,
+                   branches: list[str],
                    fasta: Path,
                    phred_enc: int,
                    force: bool,
@@ -61,19 +63,21 @@ def split_xam_file(xam_file: Path,
     # Assume the XAM file is named for the sample.
     sample = xam_file.stem
     # Determine the final output directory.
-    result_dir = path.build(*path.CMD_DIR_SEGS,
-                            top=out_dir,
-                            sample=sample,
-                            cmd=path.ALIGN_STEP)
+    result_dir = path.build(path.CMD_DIR_SEGS,
+                            {path.TOP: out_dir,
+                             path.SAMP: sample,
+                             path.CMD: path.ALIGN_STEP,
+                             path.BRANCHES: branches})
     if need_write(result_dir, force):
         # Sort and index the XAM file.
         xam_input_dir = tmp_dir.joinpath("input")
-        xam_sorted = path.buildpar(*path.XAM_SEGS,
-                                   top=xam_input_dir,
-                                   sample=sample,
-                                   cmd=path.ALIGN_STEP,
-                                   ref=fasta.stem,
-                                   ext=xam_file.suffix)
+        xam_sorted = path.buildpar(path.XAM_SEGS,
+                                   {path.TOP: xam_input_dir,
+                                    path.SAMP: sample,
+                                    path.CMD: path.ALIGN_STEP,
+                                    path.BRANCHES: branches,
+                                    path.REF: fasta.stem,
+                                    path.EXT: xam_file.suffix})
         run_sort_xam(xam_file, xam_sorted, n_procs=n_procs)
         run_index_xam(xam_sorted, n_procs=n_procs)
         # Split the XAM file into one file for each reference.
@@ -84,14 +88,16 @@ def split_xam_file(xam_file: Path,
                          paired=paired,
                          phred_arg=format_phred_arg(phred_enc),
                          top=release_dir,
+                         branches=branches,
                          n_procs=n_procs,
                          **kwargs)
         release_to_out(out_dir,
                        release_dir,
-                       path.build(*path.CMD_DIR_SEGS,
-                                  top=release_dir,
-                                  sample=sample,
-                                  cmd=path.ALIGN_STEP))
+                       path.build(path.CMD_DIR_SEGS,
+                                  {path.TOP: release_dir,
+                                   path.SAMP: sample,
+                                   path.CMD: path.ALIGN_STEP,
+                                   path.BRANCHES: branches}))
     return result_dir
 
 
@@ -104,6 +110,7 @@ def run(fasta: str | Path, *,
         out_dir: str | Path,
         tmp_dir: Path,
         keep_tmp: bool,
+        branch: str,
         # Bowtie2
         bt2_local: bool,
         bt2_discordant: bool,
@@ -145,6 +152,7 @@ def run(fasta: str | Path, *,
                                 out_dir=Path(out_dir),
                                 tmp_dir=tmp_dir,
                                 keep_tmp=keep_tmp,
+                                branches=path.merge_branches(branch, list()),
                                 force=force,
                                 bt2_local=bt2_local,
                                 bt2_discordant=bt2_discordant,
@@ -180,6 +188,7 @@ params = [
     opt_tmp_pfx,
     opt_force,
     opt_keep_tmp,
+    opt_branch,
     # Bowtie2
     opt_bt2_local,
     opt_bt2_discordant,

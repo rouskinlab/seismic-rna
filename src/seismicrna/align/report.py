@@ -121,10 +121,15 @@ class AlignSampleReport(AlignReport):
     def file_seg_type(cls):
         return path.AlignSampleRepSeg
 
-    def __init__(self, ref: str | None = None, **kwargs):
+    def __init__(self, *,
+                 ref: str | None = None,
+                 demultiplexed: bool,
+                 **kwargs):
         if ref is not None:
             raise TypeError(f"Got an unexpected reference name: {repr(ref)}")
-        super().__init__(demultiplexed=False, **kwargs)
+        if demultiplexed:
+            raise ValueError(f"{type(self).__name__} cannot be demultiplexed")
+        super().__init__(demultiplexed=demultiplexed, **kwargs)
 
 
 class AlignRefReport(AlignReport):
@@ -137,7 +142,12 @@ class AlignRefReport(AlignReport):
     def file_seg_type(cls):
         return path.AlignRefRepSeg
 
-    def __init__(self, ref: str, **kwargs):
-        if ref is None:
+    def __init__(self, *,
+                 ref: str,
+                 demultiplexed: bool,
+                 **kwargs):
+        if not isinstance(ref, str):
             raise TypeError(f"Expected a reference name, but got {repr(ref)}")
-        super().__init__(ref=ref, demultiplexed=True, **kwargs)
+        if not demultiplexed:
+            raise ValueError(f"{type(self).__name__} must be demultiplexed")
+        super().__init__(ref=ref, demultiplexed=demultiplexed, **kwargs)

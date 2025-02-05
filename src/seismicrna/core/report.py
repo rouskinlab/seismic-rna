@@ -91,6 +91,7 @@ from .arg import (opt_phred_enc,
 from .error import InconsistentValueError
 from .io import FileIO, ReadBatchIO, RefIO
 from .logs import logger
+from .path import merge_branches
 from .rel import HalfRelPattern
 from .version import __version__
 from .write import need_write, write_mode
@@ -98,7 +99,7 @@ from .write import need_write, write_mode
 
 # Field class
 
-class Field(object):
+class ReportField(object):
     """ Field of a report. """
 
     __slots__ = "key", "title", "dtype", "default", "iconv", "oconv"
@@ -140,7 +141,7 @@ class Field(object):
         return f"{type(self).__name__} {repr(self.title)} ({self.key})"
 
 
-class OptionField(Field):
+class OptionReportField(ReportField):
     """ Field based on a command line option. """
 
     def __init__(self, option: Option, **kwargs):
@@ -264,265 +265,271 @@ def oconv_datetime(dtime: datetime):
 
 
 # General fields
-VersionF = Field("version", "Version of SEISMIC-RNA", str, __version__)
-BranchesF = Field("branches", "Branches", list, list())
-SampleF = Field("sample", "Sample", str)
-RefF = Field("ref", "Reference", str)
-RegF = Field("reg", "Region", str)
-End5F = Field("end5", "Region 5' end", int)
-End3F = Field("end3", "Region 3' end", int)
-MinReadsF = OptionField(opt_min_reads)
-TimeBeganF = Field("began",
-                   "Time began",
-                   datetime,
-                   iconv=iconv_datetime,
-                   oconv=oconv_datetime)
-TimeEndedF = Field("ended",
-                   "Time ended",
-                   datetime,
-                   iconv=iconv_datetime,
-                   oconv=oconv_datetime)
-TimeTakenF = Field("taken",
-                   "Time taken (minutes)",
-                   float,
-                   calc_taken,
-                   oconv=get_oconv_float(TIME_TAKEN_PRECISION))
+VersionF = ReportField("version", "Version of SEISMIC-RNA", str, __version__)
+AncestorsF = ReportField("ancestors", "Ancestor Branches", list)
+BranchF = ReportField("branch", "Branch", str)
+SampleF = ReportField("sample", "Sample", str)
+RefF = ReportField("ref", "Reference", str)
+RegF = ReportField("reg", "Region", str)
+End5F = ReportField("end5", "Region 5' end", int)
+End3F = ReportField("end3", "Region 3' end", int)
+MinReadsF = OptionReportField(opt_min_reads)
+TimeBeganF = ReportField("began",
+                         "Time began",
+                         datetime,
+                         iconv=iconv_datetime,
+                         oconv=oconv_datetime)
+TimeEndedF = ReportField("ended",
+                         "Time ended",
+                         datetime,
+                         iconv=iconv_datetime,
+                         oconv=oconv_datetime)
+TimeTakenF = ReportField("taken",
+                         "Time taken (minutes)",
+                         float,
+                         calc_taken,
+                         oconv=get_oconv_float(TIME_TAKEN_PRECISION))
 
 # Align fields
-IsDemultF = Field("demultiplexed", "Use demultiplexed mode", bool)
-IsPairedEndF = Field("paired_end", "Use paired-end mode", bool)
-PhredEncF = OptionField(opt_phred_enc)
-UseFastpF = OptionField(opt_fastp)
-Fastp5F = OptionField(opt_fastp_5)
-Fastp3F = OptionField(opt_fastp_3)
-FastpWF = OptionField(opt_fastp_w)
-FastpMF = OptionField(opt_fastp_m)
-FastpPolyGF = OptionField(opt_fastp_poly_g)
-FastpPolyGMinLenF = OptionField(opt_fastp_poly_g_min_len)
-FastpPolyXF = OptionField(opt_fastp_poly_x)
-FastpPolyXMinLenF = OptionField(opt_fastp_poly_x_min_len)
-FastpAdapterTrimmingF = OptionField(opt_fastp_adapter_trimming)
-FastpAdapter1F = OptionField(opt_fastp_adapter_1)
-FastpAdapter2F = OptionField(opt_fastp_adapter_2)
-FastpAdapterFastaF = OptionField(opt_fastp_adapter_fasta)
-FastpDetectAdapterForPEF = OptionField(opt_fastp_detect_adapter_for_pe)
-FastpMinLengthF = OptionField(opt_fastp_min_length)
-Bowtie2Local = OptionField(opt_bt2_local)
-Bowtie2Discord = OptionField(opt_bt2_discordant)
-Bowtie2Dovetail = OptionField(opt_bt2_dovetail)
-Bowtie2Contain = OptionField(opt_bt2_contain)
-Bowtie2Mixed = OptionField(opt_bt2_mixed)
-Bowtie2Un = OptionField(opt_bt2_un)
-Bowtie2ScoreMin = Field("bt2_score_min",
-                        "Discard alignments that score below this threshold",
-                        str)
-Bowtie2MinLengthF = OptionField(opt_bt2_i)
-Bowtie2MaxLengthF = OptionField(opt_bt2_x)
-Bowtie2GBarF = OptionField(opt_bt2_gbar)
-Bowtie2SeedLength = OptionField(opt_bt2_l)
-Bowtie2SeedInterval = OptionField(opt_bt2_s)
-Bowtie2ExtTries = OptionField(opt_bt2_d)
-Bowtie2Reseed = OptionField(opt_bt2_r)
-Bowtie2Dpad = OptionField(opt_bt2_dpad)
-Bowtie2Orient = OptionField(opt_bt2_orient)
-MinMapQualF = OptionField(opt_min_mapq)
-SepStrandsF = OptionField(opt_sep_strands)
-F1R2FwdF = OptionField(opt_f1r2_fwd)
-RevLabelF = OptionField(opt_rev_label)
-AlignReadsInitF = Field("align_reads_init", "Number of reads in the FASTQ file(s)", int)
-ReadsTrimF = Field("reads_trim", "Number of reads after trimming", int)
-ReadsAlignF = Field("reads_align",
-                    "Number of reads after alignment",
-                    dict,
-                    iconv=iconv_dict_str_int)
-ReadsDedupF = Field("reads_filter",
-                    "Number of reads after filtering",
-                    dict,
-                    iconv=iconv_dict_str_int)
-ReadsRefsF = Field("reads_refs",
-                   "Number of reads aligned to each reference",
-                   dict,
-                   iconv=iconv_dict_str_int)
+IsDemultF = ReportField("demultiplexed", "Use demultiplexed mode", bool)
+IsPairedEndF = ReportField("paired_end", "Use paired-end mode", bool)
+PhredEncF = OptionReportField(opt_phred_enc)
+UseFastpF = OptionReportField(opt_fastp)
+Fastp5F = OptionReportField(opt_fastp_5)
+Fastp3F = OptionReportField(opt_fastp_3)
+FastpWF = OptionReportField(opt_fastp_w)
+FastpMF = OptionReportField(opt_fastp_m)
+FastpPolyGF = OptionReportField(opt_fastp_poly_g)
+FastpPolyGMinLenF = OptionReportField(opt_fastp_poly_g_min_len)
+FastpPolyXF = OptionReportField(opt_fastp_poly_x)
+FastpPolyXMinLenF = OptionReportField(opt_fastp_poly_x_min_len)
+FastpAdapterTrimmingF = OptionReportField(opt_fastp_adapter_trimming)
+FastpAdapter1F = OptionReportField(opt_fastp_adapter_1)
+FastpAdapter2F = OptionReportField(opt_fastp_adapter_2)
+FastpAdapterFastaF = OptionReportField(opt_fastp_adapter_fasta)
+FastpDetectAdapterForPEF = OptionReportField(opt_fastp_detect_adapter_for_pe)
+FastpMinLengthF = OptionReportField(opt_fastp_min_length)
+Bowtie2Local = OptionReportField(opt_bt2_local)
+Bowtie2Discord = OptionReportField(opt_bt2_discordant)
+Bowtie2Dovetail = OptionReportField(opt_bt2_dovetail)
+Bowtie2Contain = OptionReportField(opt_bt2_contain)
+Bowtie2Mixed = OptionReportField(opt_bt2_mixed)
+Bowtie2Un = OptionReportField(opt_bt2_un)
+Bowtie2ScoreMin = ReportField("bt2_score_min",
+                              "Discard alignments that score below this threshold",
+                              str)
+Bowtie2MinLengthF = OptionReportField(opt_bt2_i)
+Bowtie2MaxLengthF = OptionReportField(opt_bt2_x)
+Bowtie2GBarF = OptionReportField(opt_bt2_gbar)
+Bowtie2SeedLength = OptionReportField(opt_bt2_l)
+Bowtie2SeedInterval = OptionReportField(opt_bt2_s)
+Bowtie2ExtTries = OptionReportField(opt_bt2_d)
+Bowtie2Reseed = OptionReportField(opt_bt2_r)
+Bowtie2Dpad = OptionReportField(opt_bt2_dpad)
+Bowtie2Orient = OptionReportField(opt_bt2_orient)
+MinMapQualF = OptionReportField(opt_min_mapq)
+SepStrandsF = OptionReportField(opt_sep_strands)
+F1R2FwdF = OptionReportField(opt_f1r2_fwd)
+RevLabelF = OptionReportField(opt_rev_label)
+AlignReadsInitF = ReportField("align_reads_init", "Number of reads in the FASTQ file(s)", int)
+ReadsTrimF = ReportField("reads_trim", "Number of reads after trimming", int)
+ReadsAlignF = ReportField("reads_align",
+                          "Number of reads after alignment",
+                          dict,
+                          iconv=iconv_dict_str_int)
+ReadsDedupF = ReportField("reads_filter",
+                          "Number of reads after filtering",
+                          dict,
+                          iconv=iconv_dict_str_int)
+ReadsRefsF = ReportField("reads_refs",
+                         "Number of reads aligned to each reference",
+                         dict,
+                         iconv=iconv_dict_str_int)
 
 # Relate fields
-NumReadsXamF = Field("n_reads_xam", "Number of reads in SAM/BAM/CRAM file", int)
-NumReadsRelF = Field("n_reads_rel", "Number of reads processed by relate", int)
-NumBatchF = Field("n_batches", "Number of batches", int)
-ChecksumsF = Field("checksums", "MD5 checksums of batches", dict)
-RefseqChecksumF = Field("refseq_checksum",
-                        "MD5 checksum of reference sequence",
-                        str)
-Insert3F = OptionField(opt_insert3)
-AmbindelF = OptionField(opt_ambindel)
-OverhangsF = OptionField(opt_overhangs)
-MinPhredF = OptionField(opt_min_phred)
-ClipEnd5F = OptionField(opt_clip_end5)
-ClipEnd3F = OptionField(opt_clip_end3)
+NumReadsXamF = ReportField("n_reads_xam",
+                           "Number of reads in SAM/BAM/CRAM file",
+                           int)
+NumReadsRelF = ReportField("n_reads_rel",
+                           "Number of reads processed by relate",
+                           int)
+NumBatchF = ReportField("n_batches", "Number of batches", int)
+ChecksumsF = ReportField("checksums", "MD5 checksums of batches", dict)
+RefseqChecksumF = ReportField("refseq_checksum",
+                              "MD5 checksum of reference sequence",
+                              str)
+Insert3F = OptionReportField(opt_insert3)
+AmbindelF = OptionReportField(opt_ambindel)
+OverhangsF = OptionReportField(opt_overhangs)
+MinPhredF = OptionReportField(opt_min_phred)
+ClipEnd5F = OptionReportField(opt_clip_end5)
+ClipEnd3F = OptionReportField(opt_clip_end3)
 
 # Pool fields
-PooledSamplesF = Field("pooled_samples", "Pooled samples", list)
+PooledSamplesF = ReportField("pooled_samples", "Pooled samples", list)
 
 # Mask fields
 mask_iter_no_convergence = 0
-CountMutsF = Field("count_muts",
-                   "Count as mutations",
-                   HalfRelPattern,
-                   iconv=HalfRelPattern.from_report_format,
-                   oconv=HalfRelPattern.to_report_format)
-CountRefsF = Field("count_refs",
-                   "Count as matches",
-                   HalfRelPattern,
-                   iconv=HalfRelPattern.from_report_format,
-                   oconv=HalfRelPattern.to_report_format)
-ExclPolyAF = OptionField(opt_mask_polya)
-ExclGUF = OptionField(opt_mask_gu)
-ExclListPosF = Field("mask_pos",
-                     "Mask additional positions from a list",
-                     np.ndarray,
-                     iconv=iconv_array_int,
-                     oconv=get_oconv_list(int))
-MinNInfoPosF = OptionField(opt_min_ninfo_pos)
-MaxFMutPosF = OptionField(opt_max_fmut_pos)
-MinNCovReadF = OptionField(opt_min_ncov_read)
-DiscontigF = OptionField(opt_mask_discontig)
-MinMutGapF = OptionField(opt_min_mut_gap)
-QuickUnbiasF = OptionField(opt_quick_unbias)
-QuickUnbiasThreshF = OptionField(opt_quick_unbias_thresh)
-MinFInfoReadF = OptionField(opt_min_finfo_read)
-MaxFMutReadF = OptionField(opt_max_fmut_read)
-MaxMaskIterF = OptionField(opt_max_mask_iter)
-PosCutPolyAF = Field("pos_polya",
-                     "Positions in stretches of consecutive A bases",
-                     np.ndarray,
-                     iconv=iconv_array_int,
-                     oconv=get_oconv_list(int))
-PosCutGUF = Field("pos_gu",
-                  "Positions with G or U bases",
-                  np.ndarray,
-                  iconv=iconv_array_int,
-                  oconv=get_oconv_list(int))
-PosCutListF = Field("pos_list",
-                    "Positions masked from a list",
-                    np.ndarray,
-                    iconv=iconv_array_int,
-                    oconv=get_oconv_list(int))
-PosCutLoInfoF = Field("pos_min_ninfo",
-                      "Positions with too few informative base calls",
-                      np.ndarray,
-                      iconv=iconv_array_int,
-                      oconv=get_oconv_list(int))
-PosCutHiMutF = Field("pos_max_fmut",
-                     "Positions with too many mutations",
-                     np.ndarray,
-                     iconv=iconv_array_int,
-                     oconv=get_oconv_list(int))
-PosKeptF = Field("pos_kept",
-                 "Positions kept after masking",
-                 np.ndarray,
-                 iconv=iconv_array_int,
-                 oconv=get_oconv_list(int))
-NumPosInitF = Field("n_pos_init",
-                    "Total number of positions in the region",
-                    int)
-NumPosCutPolyAF = Field("n_pos_polya",
-                        "Number of positions in stretches of consecutive A "
-                        "bases",
-                        int)
-NumPosCutGUF = Field("n_pos_gu",
-                     "Number of positions with G or U bases",
-                     int)
-NumPosCutListF = Field("n_pos_list",
-                       "Number of positions masked from a list",
-                       int)
-NumPosCutLoInfoF = Field("n_pos_min_ninfo",
-                         "Number of positions with too few informative base "
-                         "calls",
-                         int)
-NumPosCutHiMutF = Field("n_pos_max_fmut",
-                        "Number of positions with too many mutations",
-                        int)
-NumPosKeptF = Field("n_pos_kept",
-                    "Number of positions kept after masking",
-                    int)
-NumReadsInitF = Field("n_reads_init",
-                      "Total number of reads before masking",
-                      int)
-NumReadCutListF = Field("n_reads_list",
-                        "Number of reads masked from a list",
-                        int)
-NumReadsLoNCovF = Field(
+CountMutsF = ReportField("count_muts",
+                         "Count as mutations",
+                         HalfRelPattern,
+                         iconv=HalfRelPattern.from_report_format,
+                         oconv=HalfRelPattern.to_report_format)
+CountRefsF = ReportField("count_refs",
+                         "Count as matches",
+                         HalfRelPattern,
+                         iconv=HalfRelPattern.from_report_format,
+                         oconv=HalfRelPattern.to_report_format)
+ExclPolyAF = OptionReportField(opt_mask_polya)
+ExclGUF = OptionReportField(opt_mask_gu)
+ExclListPosF = ReportField("mask_pos",
+                           "Mask additional positions from a list",
+                           np.ndarray,
+                           iconv=iconv_array_int,
+                           oconv=get_oconv_list(int))
+MinNInfoPosF = OptionReportField(opt_min_ninfo_pos)
+MaxFMutPosF = OptionReportField(opt_max_fmut_pos)
+MinNCovReadF = OptionReportField(opt_min_ncov_read)
+DiscontigF = OptionReportField(opt_mask_discontig)
+MinMutGapF = OptionReportField(opt_min_mut_gap)
+QuickUnbiasF = OptionReportField(opt_quick_unbias)
+QuickUnbiasThreshF = OptionReportField(opt_quick_unbias_thresh)
+MinFInfoReadF = OptionReportField(opt_min_finfo_read)
+MaxFMutReadF = OptionReportField(opt_max_fmut_read)
+MaxMaskIterF = OptionReportField(opt_max_mask_iter)
+PosCutPolyAF = ReportField("pos_polya",
+                           "Positions in stretches of consecutive A bases",
+                           np.ndarray,
+                           iconv=iconv_array_int,
+                           oconv=get_oconv_list(int))
+PosCutGUF = ReportField("pos_gu",
+                        "Positions with G or U bases",
+                        np.ndarray,
+                        iconv=iconv_array_int,
+                        oconv=get_oconv_list(int))
+PosCutListF = ReportField("pos_list",
+                          "Positions masked from a list",
+                          np.ndarray,
+                          iconv=iconv_array_int,
+                          oconv=get_oconv_list(int))
+PosCutLoInfoF = ReportField("pos_min_ninfo",
+                            "Positions with too few informative base calls",
+                            np.ndarray,
+                            iconv=iconv_array_int,
+                            oconv=get_oconv_list(int))
+PosCutHiMutF = ReportField("pos_max_fmut",
+                           "Positions with too many mutations",
+                           np.ndarray,
+                           iconv=iconv_array_int,
+                           oconv=get_oconv_list(int))
+PosKeptF = ReportField("pos_kept",
+                       "Positions kept after masking",
+                       np.ndarray,
+                       iconv=iconv_array_int,
+                       oconv=get_oconv_list(int))
+NumPosInitF = ReportField("n_pos_init",
+                          "Total number of positions in the region",
+                          int)
+NumPosCutPolyAF = ReportField("n_pos_polya",
+                              "Number of positions in stretches of consecutive "
+                              "A bases",
+                              int)
+NumPosCutGUF = ReportField("n_pos_gu",
+                           "Number of positions with G or U bases",
+                           int)
+NumPosCutListF = ReportField("n_pos_list",
+                             "Number of positions masked from a list",
+                             int)
+NumPosCutLoInfoF = ReportField("n_pos_min_ninfo",
+                               "Number of positions with too few informative "
+                               "base calls",
+                               int)
+NumPosCutHiMutF = ReportField("n_pos_max_fmut",
+                              "Number of positions with too many mutations",
+                              int)
+NumPosKeptF = ReportField("n_pos_kept",
+                          "Number of positions kept after masking",
+                          int)
+NumReadsInitF = ReportField("n_reads_init",
+                            "Total number of reads before masking",
+                            int)
+NumReadCutListF = ReportField("n_reads_list",
+                              "Number of reads masked from a list",
+                              int)
+NumReadsLoNCovF = ReportField(
     "n_reads_min_ncov",
     "Number of reads with too few bases covering the region",
     int
 )
-NumDiscontigF = Field("n_reads_discontig",
-                      "Number of reads with discontiguous mates",
-                      int)
-NumReadsLoInfoF = Field("n_reads_min_finfo",
-                        "Number of reads with too few informative base calls",
-                        int)
-NumReadsHiMutF = Field("n_reads_max_fmut",
-                       "Number of reads with too many mutations",
-                       int)
-NumReadsCloseMutF = Field("n_reads_min_gap",
-                          "Number of reads with two mutations too close",
-                          int)
-NumReadsKeptF = Field("n_reads_kept",
-                      "Number of reads kept after masking",
-                      int)
-NumMaskIterF = Field("n_mask_iter",
-                     f"Number of iterations until convergence "
-                     f"({mask_iter_no_convergence} if not converged)",
-                     int)
+NumDiscontigF = ReportField("n_reads_discontig",
+                            "Number of reads with discontiguous mates",
+                            int)
+NumReadsLoInfoF = ReportField("n_reads_min_finfo",
+                              "Number of reads with too few informative "
+                              "base calls",
+                              int)
+NumReadsHiMutF = ReportField("n_reads_max_fmut",
+                             "Number of reads with too many mutations",
+                             int)
+NumReadsCloseMutF = ReportField("n_reads_min_gap",
+                                "Number of reads with two mutations too close",
+                                int)
+NumReadsKeptF = ReportField("n_reads_kept",
+                            "Number of reads kept after masking",
+                            int)
+NumMaskIterF = ReportField("n_mask_iter",
+                           "Number of iterations until convergence "
+                           f"({mask_iter_no_convergence} if not converged)",
+                           int)
 
 # Cluster fields
 
-NumUniqReadKeptF = Field("n_uniq_reads",
-                         "Number of unique reads",
-                         int)
-MinIterClustF = OptionField(opt_min_em_iter)
-MaxIterClustF = OptionField(opt_max_em_iter)
-ClustConvThreshF = OptionField(opt_em_thresh)
-MinClustsF = OptionField(opt_min_clusters)
-MaxClustsF = OptionField(opt_max_clusters)
-JackpotF = OptionField(opt_jackpot)
-JackpotConfLevelF = OptionField(opt_jackpot_conf_level)
-MaxJackpotQuotientF = OptionField(opt_max_jackpot_quotient)
-MaxPearsonRunF = OptionField(opt_max_pearson_run)
-MinMARCDRunF = OptionField(opt_min_marcd_run)
-MaxLogLikeVsBestF = OptionField(opt_max_loglike_vs_best)
-MinPearsonVsBestF = OptionField(opt_min_pearson_vs_best)
-MaxMARCDVsBestF = OptionField(opt_max_marcd_vs_best)
-TryAllKsF = OptionField(opt_try_all_ks)
-WriteAllKsF = OptionField(opt_write_all_ks)
-ClustNumRunsF = OptionField(opt_em_runs)
-EMKPassingF = Field("em_k_passing",
-                    f"Whether each number of clusters (K) passed filters",
-                    dict,
-                    iconv=iconv_int_keys,
-                    oconv=get_oconv_dict(bool))
-KsWrittenF = Field("ks_written",
-                   "Numbers of clusters written to batches",
-                   list)
-BestKF = Field("best_k", "Best number of clusters", int)
+NumUniqReadKeptF = ReportField("n_uniq_reads",
+                               "Number of unique reads",
+                               int)
+MinIterClustF = OptionReportField(opt_min_em_iter)
+MaxIterClustF = OptionReportField(opt_max_em_iter)
+ClustConvThreshF = OptionReportField(opt_em_thresh)
+MinClustsF = OptionReportField(opt_min_clusters)
+MaxClustsF = OptionReportField(opt_max_clusters)
+JackpotF = OptionReportField(opt_jackpot)
+JackpotConfLevelF = OptionReportField(opt_jackpot_conf_level)
+MaxJackpotQuotientF = OptionReportField(opt_max_jackpot_quotient)
+MaxPearsonRunF = OptionReportField(opt_max_pearson_run)
+MinMARCDRunF = OptionReportField(opt_min_marcd_run)
+MaxLogLikeVsBestF = OptionReportField(opt_max_loglike_vs_best)
+MinPearsonVsBestF = OptionReportField(opt_min_pearson_vs_best)
+MaxMARCDVsBestF = OptionReportField(opt_max_marcd_vs_best)
+TryAllKsF = OptionReportField(opt_try_all_ks)
+WriteAllKsF = OptionReportField(opt_write_all_ks)
+ClustNumRunsF = OptionReportField(opt_em_runs)
+EMKPassingF = ReportField("em_k_passing",
+                          "Whether each number of clusters (K) passed filters",
+                          dict,
+                          iconv=iconv_int_keys,
+                          oconv=get_oconv_dict(bool))
+KsWrittenF = ReportField("ks_written",
+                         "Numbers of clusters written to batches",
+                         list)
+BestKF = ReportField("best_k", "Best number of clusters", int)
 
 # Join fields
 
-JoinedRegionsF = Field("joined_regions", "Joined regions", list)
-JoinedClustersF = Field("joined_clusters",
-                        "Joined clusters",
-                        dict,
-                        iconv=iconv_dict_str_dict_int_dict_int_int)
+JoinedRegionsF = ReportField("joined_regions", "Joined regions", list)
+JoinedClustersF = ReportField("joined_clusters",
+                              "Joined clusters",
+                              dict,
+                              iconv=iconv_dict_str_dict_int_dict_int_int)
 
 # Fold fields
 
-ProfileF = Field("profile", "Profile", str)
-Quantile = OptionField(opt_quantile)
-FoldTempF = OptionField(opt_fold_temp)
-FoldMaxDistF = OptionField(opt_fold_md)
-FoldMinFreeEnergyF = OptionField(opt_fold_mfe)
-FoldMaxStructsF = OptionField(opt_fold_max)
-FoldPercent = OptionField(opt_fold_percent)
+ProfileF = ReportField("profile", "Profile", str)
+Quantile = OptionReportField(opt_quantile)
+FoldTempF = OptionReportField(opt_fold_temp)
+FoldMaxDistF = OptionReportField(opt_fold_md)
+FoldMinFreeEnergyF = OptionReportField(opt_fold_mfe)
+FoldMaxStructsF = OptionReportField(opt_fold_max)
+FoldPercent = OptionReportField(opt_fold_percent)
 
 
 # Field exceptions
@@ -569,11 +576,11 @@ class ReportDoesNotHaveFieldError(ReportFieldAttributeError):
 @cache
 def fields():
     return [member for _, member in getmembers(sys.modules[__name__])
-            if isinstance(member, Field)]
+            if isinstance(member, ReportField)]
 
 
 @cache
-def field_keys() -> dict[str, Field]:
+def field_keys() -> dict[str, ReportField]:
     keys = dict()
     for field in fields():
         if field.key:
@@ -583,7 +590,7 @@ def field_keys() -> dict[str, Field]:
 
 
 @cache
-def field_titles() -> dict[str, Field]:
+def field_titles() -> dict[str, ReportField]:
     titles = dict()
     for field in fields():
         if field.title:
@@ -631,7 +638,12 @@ class Report(FileIO, ABC):
     @abstractmethod
     def fields(cls):
         """ All fields of the report. """
-        return [BranchesF, TimeBeganF, TimeEndedF, TimeTakenF, VersionF]
+        return [BranchF,
+                AncestorsF,
+                TimeBeganF,
+                TimeEndedF,
+                TimeTakenF,
+                VersionF]
 
     @classmethod
     @cache
@@ -680,16 +692,16 @@ class Report(FileIO, ABC):
 
     @classmethod
     def _auto_default_fields(cls):
-        return [BranchesF, TimeTakenF, VersionF]
+        return [TimeTakenF, VersionF]
 
     @classmethod
-    def _auto_init_kwargs(cls, **kwargs):
+    def _auto_init_kwargs(cls):
         """ Automatic keyword arguments for __init__. """
         return {field.key: field.default
-                for field in cls._auto_default_fields()} | kwargs
+                for field in cls._auto_default_fields()}
 
     def __init__(self, **kwargs: Any | Callable[[Report], Any]):
-        kwargs = self._auto_init_kwargs(**kwargs)
+        kwargs = self._auto_init_kwargs() | kwargs
         defaulted = dict()
         for key in self.field_keys():
             # Try to get the value of the field from the report.
@@ -713,17 +725,16 @@ class Report(FileIO, ABC):
             # from a different version of SEISMIC-RNA), then just log a
             # warning and ignore the extra fields (to make different
             # versions compatible).
-            logger.warning(
-                f"Extra fields for {type(self).__name__}: {list(kwargs)}"
-            )
+            logger.warning(f"{type(self).__name__} got extra fields, "
+                           f"which it discarded: {list(kwargs)}")
         if defaulted:
             # If the report file was missing keyword arguments that have
             # default values, AND if parsing the report file succeeded,
             # then warn about the default values.
-            logger.warning(f"Missing fields for {type(self).__name__} "
+            logger.warning(f"{type(self).__name__} is missing fields "
                            f"and using defaults: {defaulted}")
 
-    def get_field(self, field: Field, missing_ok: bool = False):
+    def get_field(self, field: ReportField, missing_ok: bool = False):
         """ Return the value of a field of the report using the field
         instance directly, not its key. """
         try:
@@ -734,6 +745,12 @@ class Report(FileIO, ABC):
             raise ReportDoesNotHaveFieldError(
                 f"{type(self).__name__}.{field.key}"
             ) from None
+
+    @property
+    def branches(self):
+        """ All branches. """
+        return merge_branches(self.get_field(BranchF),
+                              self.get_field(AncestorsF))
 
     def to_dict(self):
         """ Return a dict of raw values of the fields, keyed by the
@@ -806,7 +823,7 @@ class BatchedReport(Report, ABC):
         if btype is None:
             batch_types = list(cls.batch_types().values())
             if (ntypes := len(batch_types)) != 1:
-                raise ValueError(f"btype is optional only if there is exactly "
+                raise ValueError("btype is optional only if there is exactly "
                                  f"one type of batch, but got {ntypes} types")
             return batch_types[0]
         return cls.batch_types()[btype]

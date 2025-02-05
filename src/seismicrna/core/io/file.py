@@ -37,7 +37,7 @@ class FileIO(ABC):
     @classmethod
     def path_fields(cls):
         """ Path fields for the file type. """
-        return path.get_fields_in_seg_types(*cls.seg_types())
+        return path.get_fields_in_seg_types(cls.seg_types())
 
     @classmethod
     def auto_fields(cls) -> dict[str, Any]:
@@ -50,13 +50,12 @@ class FileIO(ABC):
     @classmethod
     def parse_path(cls, file: Path):
         """ Parse a file path to determine the field values. """
-        return path.parse_top_separate(file, *cls.seg_types())
+        return path.parse_top_separate(file, cls.seg_types())
 
     @classmethod
-    def build_path(cls, **path_fields):
+    def build_path(cls, path_fields: dict[str, Any]):
         """ Build the file path from the given field values. """
-        return path.buildpar(*cls.seg_types(),
-                             **(cls.auto_fields() | path_fields))
+        return path.buildpar(cls.seg_types(), (cls.auto_fields() | path_fields))
 
     def path_field_values(self,
                           top: Path | None = None,
@@ -72,7 +71,7 @@ class FileIO(ABC):
 
     def get_path(self, top: Path):
         """ Return the file path. """
-        return self.build_path(**self.path_field_values(top))
+        return self.build_path(self.path_field_values(top))
 
     @abstractmethod
     def save(self, top: Path, **kwargs):
@@ -138,8 +137,7 @@ class BrickleIO(FileIO, ABC):
 
 def recast_file_path(input_path: Path,
                      input_type: type[FileIO],
-                     output_type: type[FileIO],
-                     **override: Any):
+                     output_type: type[FileIO]):
     """ Recast `input_path` from `input_type` to `output_type`.
 
     Parameters
@@ -151,8 +149,6 @@ def recast_file_path(input_path: Path,
     output_type: type[FileIO]
         Type of file to use for fitting the path fields and building a
         new path.
-    **override: Any
-        Override fields in `input_path` (but not `output_type`).
 
     Returns
     -------
@@ -163,4 +159,4 @@ def recast_file_path(input_path: Path,
     return path.cast_path(input_path,
                           input_type.seg_types(),
                           output_type.seg_types(),
-                          **(override | output_type.auto_fields()))
+                          output_type.auto_fields())

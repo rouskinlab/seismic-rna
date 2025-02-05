@@ -97,6 +97,13 @@ opt_keep_tmp = Option(
     help="Keep temporary files after finishing"
 )
 
+opt_branch = Option(
+    ("--branch", "-b"),
+    type=str,
+    default="",
+    help="Create a new branch of the workflow with this name"
+)
+
 # Resource usage options
 
 opt_max_procs = Option(

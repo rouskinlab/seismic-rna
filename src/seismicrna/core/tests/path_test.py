@@ -12,6 +12,25 @@ class TestGetSeismicRNASourceDir(ut.TestCase):
                          sanitize(__file__).parent.parent.parent)
 
 
+class TestMergeBranches(ut.TestCase):
+
+    def test_merge_branches(self):
+        self.assertListEqual(merge_branches("", []),
+                             [])
+        self.assertListEqual(merge_branches("", ["a1"]),
+                             ["a1"])
+        self.assertListEqual(merge_branches("b1", []),
+                             ["b1"])
+        self.assertListEqual(merge_branches("b1", ["a1"]),
+                             ["a1", "b1"])
+        self.assertListEqual(merge_branches("b1", ["a1", "a2"]),
+                             ["a1", "a2", "b1"])
+        self.assertRaisesRegex(PathValueError,
+                               "String cannot be empty",
+                               merge_branches,
+                               "b1", [""])
+
+
 class TestBranchesField(ut.TestCase):
 
     def test_branches_validate(self):

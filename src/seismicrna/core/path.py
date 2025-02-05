@@ -272,7 +272,7 @@ VALIDATE = {int: validate_int,
 
 # Field class
 
-class Field(object):
+class PathField(object):
     __slots__ = ["dtype", "options", "is_ext", "pattern"]
 
     def __init__(self,
@@ -350,52 +350,52 @@ class Field(object):
 
 
 # Fields
-TopField = Field(pathlib.Path)
-NameField = Field(str)
-CmdField = Field(str,
-                 [ALIGN_STEP,
-                  RELATE_STEP,
-                  MASK_STEP,
-                  CLUSTER_STEP,
-                  LIST_STEP,
-                  FOLD_STEP,
-                  GRAPH_STEP],
-                 pattern=CMD_PATTERN)
-BranchesField = Field(list, pattern=BRANCHES_PATTERN)
-StageField = Field(str, STAGES)
-IntField = Field(int)
-ClustRunResultsField = Field(str, CLUST_PARAMS)
-PosTableField = Field(str, TABLES)
-ReadTableField = Field(str, TABLES)
-AbundanceField = Field(str, [CLUSTER_STEP])
+TopField = PathField(pathlib.Path)
+NameField = PathField(str)
+CmdField = PathField(str,
+                     [ALIGN_STEP,
+                      RELATE_STEP,
+                      MASK_STEP,
+                      CLUSTER_STEP,
+                      LIST_STEP,
+                      FOLD_STEP,
+                      GRAPH_STEP],
+                     pattern=CMD_PATTERN)
+BranchesField = PathField(list, pattern=BRANCHES_PATTERN)
+StageField = PathField(str, STAGES)
+IntField = PathField(int)
+ClustRunResultsField = PathField(str, CLUST_PARAMS)
+PosTableField = PathField(str, TABLES)
+ReadTableField = PathField(str, TABLES)
+AbundanceField = PathField(str, [CLUSTER_STEP])
 
 # File extensions
-TextExt = Field(str, [TXT_EXT], is_ext=True)
-ReportExt = Field(str, [JSON_EXT], is_ext=True)
-RefseqFileExt = Field(str, [BROTLI_PICKLE_EXT], is_ext=True)
-BatchExt = Field(str, [BROTLI_PICKLE_EXT], is_ext=True)
-ClustTabExt = Field(str, CSV_EXTS, is_ext=True)
-PosTableExt = Field(str, [CSV_EXT], is_ext=True)
-ReadTableExt = Field(str, [CSVZIP_EXT], is_ext=True)
-AbundanceExt = Field(str, [CSV_EXT], is_ext=True)
-FastaExt = Field(str, FASTA_EXTS, is_ext=True)
-FastaIndexExt = Field(str, BOWTIE2_INDEX_EXTS, is_ext=True)
-FastqExt = Field(str, FQ_EXTS, is_ext=True)
-Fastq1Ext = Field(str, FQ1_EXTS, is_ext=True)
-Fastq2Ext = Field(str, FQ2_EXTS, is_ext=True)
-XamExt = Field(str, XAM_EXTS, is_ext=True)
-ConnectTableExt = Field(str, [CT_EXT], is_ext=True)
-DotBracketExt = Field(str, DOT_EXTS, is_ext=True)
-DmsReactsExt = Field(str, [DMS_EXT], is_ext=True)
-GraphExt = Field(str, GRAPH_EXTS, is_ext=True)
-WebAppFileExt = Field(str, [JSON_EXT], is_ext=True)
-SvgExt = Field(str, [SVG_EXT], is_ext=True)
-KtsExt = Field(str, [KTS_EXT], is_ext=True)
+TextExt = PathField(str, [TXT_EXT], is_ext=True)
+ReportExt = PathField(str, [JSON_EXT], is_ext=True)
+RefseqFileExt = PathField(str, [BROTLI_PICKLE_EXT], is_ext=True)
+BatchExt = PathField(str, [BROTLI_PICKLE_EXT], is_ext=True)
+ClustTabExt = PathField(str, CSV_EXTS, is_ext=True)
+PosTableExt = PathField(str, [CSV_EXT], is_ext=True)
+ReadTableExt = PathField(str, [CSVZIP_EXT], is_ext=True)
+AbundanceExt = PathField(str, [CSV_EXT], is_ext=True)
+FastaExt = PathField(str, FASTA_EXTS, is_ext=True)
+FastaIndexExt = PathField(str, BOWTIE2_INDEX_EXTS, is_ext=True)
+FastqExt = PathField(str, FQ_EXTS, is_ext=True)
+Fastq1Ext = PathField(str, FQ1_EXTS, is_ext=True)
+Fastq2Ext = PathField(str, FQ2_EXTS, is_ext=True)
+XamExt = PathField(str, XAM_EXTS, is_ext=True)
+ConnectTableExt = PathField(str, [CT_EXT], is_ext=True)
+DotBracketExt = PathField(str, DOT_EXTS, is_ext=True)
+DmsReactsExt = PathField(str, [DMS_EXT], is_ext=True)
+GraphExt = PathField(str, GRAPH_EXTS, is_ext=True)
+WebAppFileExt = PathField(str, [JSON_EXT], is_ext=True)
+SvgExt = PathField(str, [SVG_EXT], is_ext=True)
+KtsExt = PathField(str, [KTS_EXT], is_ext=True)
 
 
 def check_file_extension(file: pathlib.Path,
-                         extensions: Iterable[str] | Field):
-    if isinstance(extensions, Field):
+                         extensions: Iterable[str] | PathField):
+    if isinstance(extensions, PathField):
         if not extensions.is_ext:
             raise PathValueError(f"{extensions} is not an extension field")
         extensions = extensions.options
@@ -407,6 +407,14 @@ def check_file_extension(file: pathlib.Path,
         )
 
 
+def merge_branches(branch: str, ancestors: Iterable[str]):
+    branches = list(ancestors)
+    if branch:
+        branches.append(branch)
+    validate_branches(branches)
+    return branches
+
+
 # Path Segments ########################################################
 
 # Segment class
@@ -415,7 +423,7 @@ class Segment(object):
 
     def __init__(self,
                  segment_name: str,
-                 field_types: dict[str, Field], *,
+                 field_types: dict[str, PathField], *,
                  order: int = 0,
                  frmt: str | None = None):
         self.name = segment_name
@@ -601,9 +609,9 @@ ClustParamsDirSeg = Segment(f"cluster-run-res-dir",
                             order=10)
 ClustParamsFileSeg = Segment(f"cluster-run-res",
                              {TABLE: ClustRunResultsField,
-                              NCLUST: IntField,
-                              RUN: IntField,
-                              EXT: ClustTabExt},
+                                  NCLUST: IntField,
+                                  RUN: IntField,
+                                  EXT: ClustTabExt},
                              frmt="k{k}-r{run}_{table}{ext}")
 ClustBatSeg = Segment("cluster-bat",
                       {BATCH: IntField, EXT: BatchExt},
@@ -638,9 +646,11 @@ VarnaColorSeg = Segment("varna-color",
                         frmt="{profile}__varna-color{ext}")
 
 # Draw
-SvgSeg = Segment("svg", {PROFILE: NameField, STRUCT: IntField, EXT: SvgExt},
+SvgSeg = Segment("svg",
+                 {PROFILE: NameField, STRUCT: IntField, EXT: SvgExt},
                  frmt="{profile}-{struct}{ext}")
-KtsSeg = Segment("kts", {PROFILE: NameField, STRUCT: IntField, EXT: KtsExt},
+KtsSeg = Segment("kts",
+                 {PROFILE: NameField, STRUCT: IntField, EXT: KtsExt},
                  frmt="{profile}-{struct}{ext}")
 
 # Graphs
@@ -878,7 +888,7 @@ def randdir(parent: str | pathlib.Path | None = None,
 
 def get_fields_in_seg_types(
         segment_types: Iterable[Segment]
-) -> dict[str, Field]:
+) -> dict[str, PathField]:
     """ Get all fields among the given segment types. """
     fields = {field_name: field
               for segment_type in segment_types
