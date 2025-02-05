@@ -93,14 +93,14 @@ class RNAProfile(RNARegion):
         """
         return path.builddir(*path.REG_DIR_SEGS, **self._get_dir_fields(top))
 
-    def _get_file(self, top: Path, file_seg: path.Segment, **file_fields):
+    def _get_file(self, top: Path, file_seg: path.PathSegment, **file_fields):
         """ Get the path to a file of the RNA.
 
         Parameters
         ----------
         top: pathlib.Path
             Top-level directory.
-        file_seg: path.Segment
+        file_seg: path.PathSegment
             Segment of the file component of the path.
         **file_fields
             Fields for the file segment.

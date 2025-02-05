@@ -20,13 +20,13 @@ class FileIO(ABC):
 
     @classmethod
     @abstractmethod
-    def dir_seg_types(cls) -> tuple[path.Segment, ...]:
+    def dir_seg_types(cls) -> tuple[path.PathSegment, ...]:
         """ Types of the directory segments in the path. """
         return tuple()
 
     @classmethod
     @abstractmethod
-    def file_seg_type(cls) -> path.Segment:
+    def file_seg_type(cls) -> path.PathSegment:
         """ Type of the last segment in the path. """
 
     @classmethod

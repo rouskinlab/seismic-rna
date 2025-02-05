@@ -161,7 +161,7 @@ class Table(ABC):
 
     @classmethod
     @abstractmethod
-    def path_segs(cls) -> tuple[path.Segment, ...]:
+    def path_segs(cls) -> tuple[path.PathSegment, ...]:
         """ Table's path segments. """
 
     @classmethod

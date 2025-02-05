@@ -163,7 +163,7 @@ class FastqUnit(object):
         return parents[0]
 
     @cached_property
-    def seg_types(self) -> dict[str, tuple[path.Segment, ...]]:
+    def seg_types(self) -> dict[str, tuple[path.PathSegment, ...]]:
         if self.one_ref:
             seg_types = {self.KEY_SINGLE: path.DMFASTQ_SEGS,
                          self.KEY_INTER: path.DMFASTQ_SEGS,
@@ -217,7 +217,7 @@ class FastqUnit(object):
         return tuple(chain(*[(self.BOWTIE2_FLAGS[key], fq)
                              for key, fq in self.paths.items()]))
 
-    def to_new(self, *new_segments: path.Segment, **new_fields):
+    def to_new(self, *new_segments: path.PathSegment, **new_fields):
         """ Return a new FASTQ unit with updated path fields. """
         new_paths = dict()
         for key, self_path in self.paths.items():
@@ -272,7 +272,7 @@ class FastqUnit(object):
         fq2s = list(path.find_files_chain(fqs, seg2s))
 
         # Determine the sample and reference name of each file.
-        def find_sample_ref(fqs_: list[Path], segs: list[path.Segment]):
+        def find_sample_ref(fqs_: list[Path], segs: list[path.PathSegment]):
             sample_refs: dict[tuple[str, str | None], Path] = dict()
             for fq in fqs_:
                 fields = path.parse(fq, segs)

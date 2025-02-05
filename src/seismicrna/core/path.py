@@ -419,7 +419,7 @@ def merge_branches(branch: str, ancestors: Iterable[str]):
 
 # Segment class
 
-class Segment(object):
+class PathSegment(object):
 
     def __init__(self,
                  segment_name: str,
@@ -546,120 +546,120 @@ STRUCT = "struct"
 
 # Directory segments
 
-TopSeg = Segment("top-dir", {TOP: TopField}, order=-1)
-StageSeg = Segment("stage-dir", {STAGE: StageField}, order=70)
-SampSeg = Segment("sample-dir", {SAMP: NameField}, order=60)
-CmdSeg = Segment("command-dir",
-                 {CMD: CmdField, BRANCHES: BranchesField},
-                 order=50)
-RefSeg = Segment("ref-dir", {REF: NameField}, order=30)
-RegSeg = Segment("reg-dir", {REG: NameField}, order=20)
+TopSeg = PathSegment("top-dir", {TOP: TopField}, order=-1)
+StageSeg = PathSegment("stage-dir", {STAGE: StageField}, order=70)
+SampSeg = PathSegment("sample-dir", {SAMP: NameField}, order=60)
+CmdSeg = PathSegment("command-dir",
+                     {CMD: CmdField, BRANCHES: BranchesField},
+                     order=50)
+RefSeg = PathSegment("ref-dir", {REF: NameField}, order=30)
+RegSeg = PathSegment("reg-dir", {REG: NameField}, order=20)
 
 # File segments
 
 # FASTA
-FastaSeg = Segment("fasta", {REF: NameField, EXT: FastaExt})
-FastaIndexSeg = Segment("fasta-index", {REF: NameField, EXT: FastaIndexExt})
+FastaSeg = PathSegment("fasta", {REF: NameField, EXT: FastaExt})
+FastaIndexSeg = PathSegment("fasta-index", {REF: NameField, EXT: FastaIndexExt})
 
 # FASTQ
-FastqSeg = Segment("fastq", {SAMP: NameField, EXT: FastqExt})
-Fastq1Seg = Segment("fastq1", {SAMP: NameField, EXT: Fastq1Ext})
-Fastq2Seg = Segment("fastq2", {SAMP: NameField, EXT: Fastq2Ext})
+FastqSeg = PathSegment("fastq", {SAMP: NameField, EXT: FastqExt})
+Fastq1Seg = PathSegment("fastq1", {SAMP: NameField, EXT: Fastq1Ext})
+Fastq2Seg = PathSegment("fastq2", {SAMP: NameField, EXT: Fastq2Ext})
 
 # Demultiplexed FASTQ
-DmFastqSeg = Segment("dm-fastq", {REF: NameField, EXT: FastqExt})
-DmFastq1Seg = Segment("dm-fastq1", {REF: NameField, EXT: Fastq1Ext})
-DmFastq2Seg = Segment("dm-fastq2", {REF: NameField, EXT: Fastq2Ext})
+DmFastqSeg = PathSegment("dm-fastq", {REF: NameField, EXT: FastqExt})
+DmFastq1Seg = PathSegment("dm-fastq1", {REF: NameField, EXT: Fastq1Ext})
+DmFastq2Seg = PathSegment("dm-fastq2", {REF: NameField, EXT: Fastq2Ext})
 
 # Align
-XamSeg = Segment("xam", {REF: NameField, EXT: XamExt})
-AlignSampleRepSeg = Segment("align-samp-rep",
-                            {EXT: ReportExt},
-                            frmt="align-report{ext}")
-AlignRefRepSeg = Segment("align-ref-rep",
-                         {REF: NameField, EXT: ReportExt},
-                         frmt="{ref}__align-report{ext}")
+XamSeg = PathSegment("xam", {REF: NameField, EXT: XamExt})
+AlignSampleRepSeg = PathSegment("align-samp-rep",
+                                {EXT: ReportExt},
+                                frmt="align-report{ext}")
+AlignRefRepSeg = PathSegment("align-ref-rep",
+                             {REF: NameField, EXT: ReportExt},
+                             frmt="{ref}__align-report{ext}")
 
 # Relate
-RefseqFileSeg = Segment("refseq-file",
-                        {EXT: RefseqFileExt},
-                        frmt="refseq{ext}")
-ReadNamesBatSeg = Segment("names-bat",
-                          {BATCH: IntField, EXT: BatchExt},
-                          frmt=NAMES_STEP + "-batch-{batch}{ext}")
-RelateBatSeg = Segment(f"relate-bat",
-                       {BATCH: IntField, EXT: BatchExt},
-                       frmt=RELATE_STEP + "-batch-{batch}{ext}")
-RelateRepSeg = Segment(f"relate-rep",
-                       {EXT: ReportExt},
-                       frmt=RELATE_STEP + "-report{ext}")
+RefseqFileSeg = PathSegment("refseq-file",
+                            {EXT: RefseqFileExt},
+                            frmt="refseq{ext}")
+ReadNamesBatSeg = PathSegment("names-bat",
+                              {BATCH: IntField, EXT: BatchExt},
+                              frmt=NAMES_STEP + "-batch-{batch}{ext}")
+RelateBatSeg = PathSegment(f"relate-bat",
+                           {BATCH: IntField, EXT: BatchExt},
+                           frmt=RELATE_STEP + "-batch-{batch}{ext}")
+RelateRepSeg = PathSegment(f"relate-rep",
+                           {EXT: ReportExt},
+                           frmt=RELATE_STEP + "-report{ext}")
 
 # Mask
-MaskBatSeg = Segment(f"{MASK_STEP}-bat",
-                     {BATCH: IntField, EXT: BatchExt},
-                     frmt=MASK_STEP + "-batch-{batch}{ext}")
-MaskRepSeg = Segment("mask-rep",
-                     {EXT: ReportExt},
-                     frmt=MASK_STEP + "-report{ext}")
+MaskBatSeg = PathSegment(f"{MASK_STEP}-bat",
+                         {BATCH: IntField, EXT: BatchExt},
+                         frmt=MASK_STEP + "-batch-{batch}{ext}")
+MaskRepSeg = PathSegment("mask-rep",
+                         {EXT: ReportExt},
+                         frmt=MASK_STEP + "-report{ext}")
 
 # Cluster
-ClustParamsDirSeg = Segment(f"cluster-run-res-dir",
-                            {},
-                            frmt=CLUST_PARAMS_DIR,
-                            order=10)
-ClustParamsFileSeg = Segment(f"cluster-run-res",
-                             {TABLE: ClustRunResultsField,
+ClustParamsDirSeg = PathSegment(f"cluster-run-res-dir",
+                                {},
+                                frmt=CLUST_PARAMS_DIR,
+                                order=10)
+ClustParamsFileSeg = PathSegment(f"cluster-run-res",
+                                 {TABLE: ClustRunResultsField,
                                   NCLUST: IntField,
                                   RUN: IntField,
                                   EXT: ClustTabExt},
-                             frmt="k{k}-r{run}_{table}{ext}")
-ClustBatSeg = Segment("cluster-bat",
-                      {BATCH: IntField, EXT: BatchExt},
-                      frmt=CLUSTER_STEP + "-batch-{batch}{ext}")
-ClustRepSeg = Segment("cluster-rep",
-                      {EXT: ReportExt},
-                      frmt=CLUSTER_STEP + "-report{ext}")
+                                 frmt="k{k}-r{run}_{table}{ext}")
+ClustBatSeg = PathSegment("cluster-bat",
+                          {BATCH: IntField, EXT: BatchExt},
+                          frmt=CLUSTER_STEP + "-batch-{batch}{ext}")
+ClustRepSeg = PathSegment("cluster-rep",
+                          {EXT: ReportExt},
+                          frmt=CLUSTER_STEP + "-report{ext}")
 
 # Table
-PositionTableSeg = Segment("position-table",
-                           {TABLE: PosTableField, EXT: PosTableExt},
-                           frmt="{table}-position-table{ext}")
-ReadTableSeg = Segment("read-table",
-                       {TABLE: ReadTableField, EXT: ReadTableExt},
-                       frmt="{table}-read-table{ext}")
-AbundanceTableSeg = Segment("abundance-table",
-                            {TABLE: AbundanceField, EXT: AbundanceExt},
-                            frmt="{table}-abundance-table{ext}")
+PositionTableSeg = PathSegment("position-table",
+                               {TABLE: PosTableField, EXT: PosTableExt},
+                               frmt="{table}-position-table{ext}")
+ReadTableSeg = PathSegment("read-table",
+                           {TABLE: ReadTableField, EXT: ReadTableExt},
+                           frmt="{table}-read-table{ext}")
+AbundanceTableSeg = PathSegment("abundance-table",
+                                {TABLE: AbundanceField, EXT: AbundanceExt},
+                                frmt="{table}-abundance-table{ext}")
 
 # Fold
-FoldRepSeg = Segment("fold-rep",
-                     {PROFILE: NameField, EXT: ReportExt},
-                     frmt="{profile}__fold-report{ext}")
-ConnectTableSeg = Segment("rna-ct",
-                          {PROFILE: NameField, EXT: ConnectTableExt})
-DotBracketSeg = Segment("rna-dot",
-                        {PROFILE: NameField, EXT: DotBracketExt})
-DmsReactsSeg = Segment("dms-reacts",
-                       {PROFILE: NameField, EXT: DmsReactsExt})
-VarnaColorSeg = Segment("varna-color",
-                        {PROFILE: NameField, EXT: TextExt},
-                        frmt="{profile}__varna-color{ext}")
+FoldRepSeg = PathSegment("fold-rep",
+                         {PROFILE: NameField, EXT: ReportExt},
+                         frmt="{profile}__fold-report{ext}")
+ConnectTableSeg = PathSegment("rna-ct",
+                              {PROFILE: NameField, EXT: ConnectTableExt})
+DotBracketSeg = PathSegment("rna-dot",
+                            {PROFILE: NameField, EXT: DotBracketExt})
+DmsReactsSeg = PathSegment("dms-reacts",
+                           {PROFILE: NameField, EXT: DmsReactsExt})
+VarnaColorSeg = PathSegment("varna-color",
+                            {PROFILE: NameField, EXT: TextExt},
+                            frmt="{profile}__varna-color{ext}")
 
 # Draw
-SvgSeg = Segment("svg",
-                 {PROFILE: NameField, STRUCT: IntField, EXT: SvgExt},
-                 frmt="{profile}-{struct}{ext}")
-KtsSeg = Segment("kts",
-                 {PROFILE: NameField, STRUCT: IntField, EXT: KtsExt},
-                 frmt="{profile}-{struct}{ext}")
+SvgSeg = PathSegment("svg",
+                     {PROFILE: NameField, STRUCT: IntField, EXT: SvgExt},
+                     frmt="{profile}-{struct}{ext}")
+KtsSeg = PathSegment("kts",
+                     {PROFILE: NameField, STRUCT: IntField, EXT: KtsExt},
+                     frmt="{profile}-{struct}{ext}")
 
 # Graphs
-GraphSeg = Segment("graph", {GRAPH: NameField, EXT: GraphExt})
+GraphSeg = PathSegment("graph", {GRAPH: NameField, EXT: GraphExt})
 
 # Web App Export
-WebAppFileSeg = Segment("webapp",
-                        {SAMP: NameField, EXT: WebAppFileExt},
-                        frmt="{sample}__webapp{ext}")
+WebAppFileSeg = PathSegment("webapp",
+                            {SAMP: NameField, EXT: WebAppFileExt},
+                            frmt="{sample}__webapp{ext}")
 
 # Path segment patterns
 CMD_DIR_SEGS = SampSeg, CmdSeg
@@ -688,7 +688,7 @@ DB_FILE_SEGS = REG_DIR_SEGS + (DotBracketSeg,)
 
 class Path(object):
 
-    def __init__(self, seg_types: Iterable[Segment]):
+    def __init__(self, seg_types: Iterable[PathSegment]):
         # Sort the non-redundant segment types in the path from largest
         # to smallest value of their order attribute.
         self.seg_types = sorted(set(seg_types),
@@ -848,24 +848,24 @@ def rmdir_if_needed(path: pathlib.Path | str,
 # is to cache every type of Path; thus, segment_types must be a hashable
 # sequence, i.e. a tuple.
 @cache
-def create_path_type(segment_types: tuple[Segment, ...]):
+def create_path_type(segment_types: tuple[PathSegment, ...]):
     """ Create and cache a Path instance from the segment types. """
     return Path(segment_types)
 
 
-def build(segment_types: Iterable[Segment], field_values: dict[str, Any]):
+def build(segment_types: Iterable[PathSegment], field_values: dict[str, Any]):
     """ Return a `pathlib.Path` from the segment types and field values.
     """
     return create_path_type(tuple(segment_types)).build(field_values)
 
 
-def builddir(segment_types: Iterable[Segment], field_values: dict[str, Any]):
+def builddir(segment_types: Iterable[PathSegment], field_values: dict[str, Any]):
     """ Build the path and create it on the file system as a directory
     if it does not already exist. """
     return mkdir_if_needed(build(segment_types, field_values))
 
 
-def buildpar(segment_types: Iterable[Segment], field_values: dict[str, Any]):
+def buildpar(segment_types: Iterable[PathSegment], field_values: dict[str, Any]):
     """ Build a path and create its parent directory if it does not
     already exist. """
     path = build(segment_types, field_values)
@@ -887,7 +887,7 @@ def randdir(parent: str | pathlib.Path | None = None,
 # Path parsing routines
 
 def get_fields_in_seg_types(
-        segment_types: Iterable[Segment]
+        segment_types: Iterable[PathSegment]
 ) -> dict[str, PathField]:
     """ Get all fields among the given segment types. """
     fields = {field_name: field
@@ -920,26 +920,26 @@ def deduplicated(func: Callable):
     return wrapper
 
 
-def parse(path: str | pathlib.Path, segment_types: Iterable[Segment]):
+def parse(path: str | pathlib.Path, segment_types: Iterable[PathSegment]):
     """ Return the fields of a path based on the segment types. """
     return create_path_type(tuple(segment_types)).parse(path)
 
 
 def parse_top_separate(path: str | pathlib.Path,
-                       segment_types: Iterable[Segment]):
+                       segment_types: Iterable[PathSegment]):
     """ Return the fields of a path, and the `top` field separately. """
     field_values = parse(path, segment_types)
     return field_values.pop(TOP), field_values
 
 
-def path_matches(path: str | pathlib.Path, segments: Iterable[Segment]):
+def path_matches(path: str | pathlib.Path, segments: Iterable[PathSegment]):
     """ Check if a path matches a sequence of path segments.
 
     Parameters
     ----------
     path: str | pathlib.Path
         Path of the file/directory.
-    segments: Iterable[Segment]
+    segments: Iterable[PathSegment]
         Sequence of path segments to check if the file matches.
 
     Returns
@@ -961,7 +961,7 @@ def path_matches(path: str | pathlib.Path, segments: Iterable[Segment]):
 
 @deduplicated
 def find_files(path: str | pathlib.Path,
-               segments: Sequence[Segment],
+               segments: Sequence[PathSegment],
                pre_sanitize: bool = True):
     """ Yield all files that match a sequence of path segments.
     The behavior depends on what `path` is:
@@ -975,7 +975,7 @@ def find_files(path: str | pathlib.Path,
     ----------
     path: str | pathlib.Path
         Path of a file to check or a directory to search recursively.
-    segments: Sequence[Segment]
+    segments: Sequence[PathSegment]
         Sequence(s) of Path segments to check if each file matches.
     pre_sanitize: bool
         Whether to sanitize the path before searching it.
@@ -1005,7 +1005,7 @@ def find_files(path: str | pathlib.Path,
 
 @deduplicated
 def find_files_chain(paths: Iterable[str | pathlib.Path],
-                     segments: Sequence[Segment]):
+                     segments: Sequence[PathSegment]):
     """ Yield from `find_files` called on every path in `paths`. """
     for path in deduplicate(paths):
         try:
@@ -1018,8 +1018,8 @@ def find_files_chain(paths: Iterable[str | pathlib.Path],
 
 
 def cast_path(input_path: pathlib.Path,
-              input_segments: Sequence[Segment],
-              output_segments: Sequence[Segment],
+              input_segments: Sequence[PathSegment],
+              output_segments: Sequence[PathSegment],
               override: dict[str, Any] | None = None):
     """ Cast `input_path` made of `input_segments` to a new path made of
     `output_segments`.
@@ -1028,9 +1028,9 @@ def cast_path(input_path: pathlib.Path,
     ----------
     input_path: pathlib.Path
         Input path from which to take the path fields.
-    input_segments: Sequence[Segment]
+    input_segments: Sequence[PathSegment]
         Path segments to use to determine the fields in `input_path`.
-    output_segments: Sequence[Segment]
+    output_segments: Sequence[PathSegment]
         Path segments to use to determine the fields in `output_path`.
     override: dict[str, Any] | None
         Override and supplement the fields in `input_path`.
