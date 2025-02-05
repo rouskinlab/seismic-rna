@@ -478,7 +478,7 @@ class Segment(object):
                 return ext
         return
 
-    def build(self, vals: dict):
+    def build(self, vals: dict[str, Any]):
         if not isinstance(vals, dict):
             raise PathTypeError(f"Expected dict, but got {type(vals).__name__}")
         # Verify that a value is given for every field, with no extras.
@@ -678,7 +678,7 @@ DB_FILE_SEGS = REG_DIR_SEGS + (DotBracketSeg,)
 
 class Path(object):
 
-    def __init__(self, *seg_types: Segment):
+    def __init__(self, seg_types: Iterable[Segment]):
         # Sort the non-redundant segment types in the path from largest
         # to smallest value of their order attribute.
         self.seg_types = sorted(set(seg_types),
@@ -692,7 +692,7 @@ class Path(object):
         if max(Counter(segt.order for segt in self.seg_types).values()) > 1:
             raise ValueError(f"Got duplicate order values in {self.seg_types}")
 
-    def build(self, **fields: Any):
+    def build(self, fields: dict[str, Any]):
         """ Return a `pathlib.Path` instance by assembling the given
         `fields` into a full path. """
         # Build the new path one segment at a time.
@@ -707,7 +707,7 @@ class Path(object):
                 raise PathValueError(f"Missing field for {seg_type}: {error}")
             # Generate a string representation of the segment using the
             # values of its fields, and add it to the growing path.
-            segments.append(seg_type.build(**seg_fields))
+            segments.append(seg_type.build(seg_fields))
         # Check whether any fields were given but not used by the path.
         if fields:
             exp = [ft for seg in self.seg_types for ft in seg.field_types]
@@ -834,28 +834,31 @@ def rmdir_if_needed(path: pathlib.Path | str,
 # Path creation routines
 
 
+# The purpose of this function (which just wraps Path(segment_types)
+# is to cache every type of Path; thus, segment_types must be a hashable
+# sequence, i.e. a tuple.
 @cache
-def create_path_type(*segment_types: Segment):
+def create_path_type(segment_types: tuple[Segment, ...]):
     """ Create and cache a Path instance from the segment types. """
-    return Path(*segment_types)
+    return Path(segment_types)
 
 
-def build(*segment_types: Segment, **field_values: Any):
-    """ Return a `pathlib.Path` from the given segment types and
-    field values. """
-    return create_path_type(*segment_types).build(**field_values)
+def build(segment_types: Iterable[Segment], field_values: dict[str, Any]):
+    """ Return a `pathlib.Path` from the segment types and field values.
+    """
+    return create_path_type(tuple(segment_types)).build(field_values)
 
 
-def builddir(*segment_types: Segment, **field_values: Any):
+def builddir(segment_types: Iterable[Segment], field_values: dict[str, Any]):
     """ Build the path and create it on the file system as a directory
     if it does not already exist. """
-    return mkdir_if_needed(build(*segment_types, **field_values))
+    return mkdir_if_needed(build(segment_types, field_values))
 
 
-def buildpar(*segment_types: Segment, **field_values: Any):
+def buildpar(segment_types: Iterable[Segment], field_values: dict[str, Any]):
     """ Build a path and create its parent directory if it does not
     already exist. """
-    path = build(*segment_types, **field_values)
+    path = build(segment_types, field_values)
     mkdir_if_needed(path.parent)
     return path
 
@@ -873,7 +876,9 @@ def randdir(parent: str | pathlib.Path | None = None,
 
 # Path parsing routines
 
-def get_fields_in_seg_types(*segment_types: Segment) -> dict[str, Field]:
+def get_fields_in_seg_types(
+        segment_types: Iterable[Segment]
+) -> dict[str, Field]:
     """ Get all fields among the given segment types. """
     fields = {field_name: field
               for segment_type in segment_types
@@ -905,25 +910,26 @@ def deduplicated(func: Callable):
     return wrapper
 
 
-def parse(path: str | pathlib.Path, /, *segment_types: Segment):
+def parse(path: str | pathlib.Path, segment_types: Iterable[Segment]):
     """ Return the fields of a path based on the segment types. """
-    return create_path_type(*segment_types).parse(path)
+    return create_path_type(tuple(segment_types)).parse(path)
 
 
-def parse_top_separate(path: str | pathlib.Path, /, *segment_types: Segment):
+def parse_top_separate(path: str | pathlib.Path,
+                       segment_types: Iterable[Segment]):
     """ Return the fields of a path, and the `top` field separately. """
-    field_values = parse(path, *segment_types)
+    field_values = parse(path, segment_types)
     return field_values.pop(TOP), field_values
 
 
-def path_matches(path: str | pathlib.Path, segments: Sequence[Segment]):
+def path_matches(path: str | pathlib.Path, segments: Iterable[Segment]):
     """ Check if a path matches a sequence of path segments.
 
     Parameters
     ----------
     path: str | pathlib.Path
         Path of the file/directory.
-    segments: Sequence[Segment]
+    segments: Iterable[Segment]
         Sequence of path segments to check if the file matches.
 
     Returns
@@ -934,7 +940,7 @@ def path_matches(path: str | pathlib.Path, segments: Sequence[Segment]):
     # Parsing the path will succeed if and only if it matches the
     # sequence of path segments.
     try:
-        parse(path, *segments)
+        parse(path, segments)
     except PathError:
         # The path does not match this sequence of path segments.
         return False
@@ -1004,7 +1010,7 @@ def find_files_chain(paths: Iterable[str | pathlib.Path],
 def cast_path(input_path: pathlib.Path,
               input_segments: Sequence[Segment],
               output_segments: Sequence[Segment],
-              **override: Any):
+              override: dict[str, Any] | None = None):
     """ Cast `input_path` made of `input_segments` to a new path made of
     `output_segments`.
 
@@ -1016,7 +1022,7 @@ def cast_path(input_path: pathlib.Path,
         Path segments to use to determine the fields in `input_path`.
     output_segments: Sequence[Segment]
         Path segments to use to determine the fields in `output_path`.
-    **override: Any
+    override: dict[str, Any] | None
         Override and supplement the fields in `input_path`.
 
     Returns
@@ -1025,16 +1031,18 @@ def cast_path(input_path: pathlib.Path,
         Path comprising `output_segments` made of fields in `input_path`
         (as determined by `input_segments`).
     """
+    output_segments = tuple(output_segments)
     # Extract the fields from the input path using the input segments.
-    top, fields = parse_top_separate(input_path, *input_segments)
+    top, fields = parse_top_separate(input_path, input_segments)
     if override:
         # Override and supplement the fields in the input path.
         fields |= override
     # Normalize the fields to comply with the output segments.
     fields = {field_name: fields[field_name]
-              for field_name in get_fields_in_seg_types(*output_segments)}
+              for field_name in get_fields_in_seg_types(output_segments)}
     # Generate a new output path from the normalized fields.
-    output_path = build(*output_segments, top=top, **fields)
+    fields[TOP] = top
+    output_path = build(output_segments, fields)
     return output_path
 
 
@@ -1077,7 +1085,7 @@ def transpath(to_dir: str | pathlib.Path,
 
 
 def transpaths(to_dir: str | pathlib.Path,
-               *paths: str | pathlib.Path,
+               paths: Iterable[str | pathlib.Path],
                strict: bool = False):
     """ Return all paths that would be produced by moving all paths in
     `paths` from their longest common sub-path to `to_dir` (but do not
@@ -1088,7 +1096,7 @@ def transpaths(to_dir: str | pathlib.Path,
     ----------
     to_dir: str | pathlib.Path
         Directory to which to move every path in `path`.
-    *paths: str | pathlib.Path
+    paths: Iterable[str | pathlib.Path]
         Paths to move; can be files or directories. A common sub-path
         must exist among all of these paths.
     strict: bool = False
