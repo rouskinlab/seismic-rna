@@ -258,7 +258,7 @@ def group_clusters(cluster_dirs: Iterable[Path],
                 **(path_fields | {path.CMD: path.MASK_STEP})
             ))
             top = path_fields[path.TOP]
-            sample = path_fields[path.SAMP]
+            sample = path_fields[path.SAMPLE]
             ref = path_fields[path.REF]
             key = top, sample, ref
             reg = path_fields[path.REG]

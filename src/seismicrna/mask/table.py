@@ -42,7 +42,7 @@ class PartialTable(Table, ABC):
     @property
     def path_fields(self):
         return {path.TOP: self.top,
-                path.SAMP: self.sample,
+                path.SAMPLE: self.sample,
                 path.REF: self.ref,
                 path.REG: self.reg}
 

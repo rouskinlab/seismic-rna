@@ -74,7 +74,7 @@ class RNAProfile(RNARegion):
         """
         return {path.TOP: top,
                 path.CMD: path.FOLD_STEP,
-                path.SAMP: self.sample,
+                path.SAMPLE: self.sample,
                 path.REF: self.ref,
                 path.REG: self.reg}
 

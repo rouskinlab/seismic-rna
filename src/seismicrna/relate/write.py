@@ -273,7 +273,7 @@ def relate_xam(xam_file: Path, *,
                **kwargs):
     """ Write the batches of relationships for one XAM file. """
     release_dir, working_dir = get_release_working_dirs(tmp_dir)
-    ref = path.parse(xam_file, *path.XAM_SEGS)[path.REF]
+    ref = path.parse(xam_file, path.XAM_SEGS)[path.REF]
     writer = RelationWriter(XamViewer(xam_file,
                                       working_dir,
                                       batch_size,

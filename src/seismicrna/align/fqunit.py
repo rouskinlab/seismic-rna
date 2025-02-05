@@ -193,7 +193,7 @@ class FastqUnit(object):
         exts: dict[str, str] = dict()
         for key, fq in self.paths.items():
             fq_fields = path.parse(fq, self.seg_types[key])
-            samples.add(fq_fields[path.SAMP])
+            samples.add(fq_fields[path.SAMPLE])
             refs.add(fq_fields.get(path.REF))
             exts[key] = fq_fields[path.EXT]
         if len(samples) > 1:
@@ -205,7 +205,7 @@ class FastqUnit(object):
         return list(samples)[0], list(refs)[0], exts
 
     def fields(self, key: str):
-        fields = {path.SAMP: self.sample}
+        fields = {path.SAMPLE: self.sample}
         if self.ref is not None:
             fields[path.REF] = self.ref
         fields[path.EXT] = self.exts[key]
@@ -276,7 +276,7 @@ class FastqUnit(object):
             sample_refs: dict[tuple[str, str | None], Path] = dict()
             for fq in fqs_:
                 fields = path.parse(fq, segs)
-                sample_ref_ = fields[path.SAMP], fields.get(path.REF)
+                sample_ref_ = fields[path.SAMPLE], fields.get(path.REF)
                 if sample_ref_ in sample_refs:
                     raise DuplicateSampleReferenceError(sample_ref_)
                 sample_refs[sample_ref_] = fq

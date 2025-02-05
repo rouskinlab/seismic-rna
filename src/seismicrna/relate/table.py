@@ -36,7 +36,7 @@ class FullTable(Table, ABC):
     @property
     def path_fields(self):
         return {path.TOP: self.top,
-                path.SAMP: self.sample,
+                path.SAMPLE: self.sample,
                 path.REF: self.ref}
 
 
@@ -161,7 +161,7 @@ class TableLoader(Table, ABC):
     def __init__(self, table_file: Path):
         fields = path.parse(table_file, *self.path_segs())
         self._out_dir = fields[path.TOP]
-        self._sample = fields[path.SAMP]
+        self._sample = fields[path.SAMPLE]
         self._ref = fields[path.REF]
         self._reg = fields.get(path.REG, FULL_NAME)
         if not self.path.with_suffix(table_file.suffix).samefile(table_file):

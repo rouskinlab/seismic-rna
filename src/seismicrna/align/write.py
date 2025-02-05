@@ -250,7 +250,7 @@ def extract_reference(ref: str,
     # Export the reads that align to the given reference.
     xam_ref = path.build(path.XAM_SEGS,
                          {path.TOP: top,
-                          path.SAMP: sample,
+                          path.SAMPLE: sample,
                           path.CMD: path.ALIGN_STEP,
                           path.BRANCHES: branches,
                           path.REF: ref,
@@ -336,7 +336,7 @@ def split_references(xam_whole: Path, *,
                      n_procs: int = 1):
     """ Split a XAM file into one file per reference. """
     logger.routine(f"Began splitting {xam_whole} by reference")
-    sample = path.parse(xam_whole, path.XAM_SEGS)[path.SAMP]
+    sample = path.parse(xam_whole, path.XAM_SEGS)[path.SAMPLE]
     # Guess how many reads mapped to each reference by the index stats.
     refs_counts = run_idxstats(xam_whole)
     # Guess which references received enough reads.
@@ -396,7 +396,7 @@ def split_references(xam_whole: Path, *,
                 logger.error(f"Reference {repr(ref)} is duplicated")
                 xam_ref = path.build(path.XAM_SEGS,
                                      {path.TOP: top,
-                                      path.SAMP: sample,
+                                      path.SAMPLE: sample,
                                       path.CMD: path.ALIGN_STEP,
                                       path.BRANCHES: branches,
                                       path.REF: ref,
@@ -479,14 +479,14 @@ def fq_pipeline(fq_inp: FastqUnit,
     # unaligned reads to have a place to be written.
     align_dir = path.builddir(path.CMD_DIR_SEGS,
                               {path.TOP: out_dir,
-                               path.SAMP: sample,
+                               path.SAMPLE: sample,
                                path.CMD: path.ALIGN_STEP,
                                path.BRANCHES: branches})
     # Optionally trim the reads with Fastp, and then align them to the
     # reference sequence with Bowtie2.
     xam_whole = path.buildpar(path.XAM_STAGE_SEGS,
                               {path.TOP: tmp_dir,
-                               path.SAMP: sample,
+                               path.SAMPLE: sample,
                                path.CMD: path.ALIGN_STEP,
                                path.BRANCHES: branches,
                                path.STAGE: path.STAGE_ALIGN_MAP,
@@ -531,7 +531,7 @@ def fq_pipeline(fq_inp: FastqUnit,
         min_mapq=min_mapq,
         fq_unal=(path.build([path.SampSeg, path.CmdSeg, path.DmFastqSeg],
                             {path.TOP: out_dir,
-                             path.SAMP: sample,
+                             path.SAMPLE: sample,
                              path.CMD: path.ALIGN_STEP,
                              path.BRANCHES: branches,
                              path.REF: (f"{fq_inp.ref}__unaligned"
@@ -828,7 +828,7 @@ def check_fqs_xams(alignments: dict[tuple[str, str], FastqUnit],
                                     {path.TOP: out_dir,
                                      path.CMD: path.ALIGN_STEP,
                                      path.BRANCHES: branches,
-                                     path.SAMP: sample,
+                                     path.SAMPLE: sample,
                                      path.REF: ref,
                                      path.EXT: ext})
             if xam_expect.is_file():

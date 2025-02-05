@@ -54,7 +54,7 @@ from ..core.write import need_write
 def split_xam_file(xam_file: Path,
                    out_dir: Path,
                    tmp_dir: Path,
-                   branches: list[str],
+                   branch: str,
                    fasta: Path,
                    phred_enc: int,
                    force: bool,
@@ -62,10 +62,11 @@ def split_xam_file(xam_file: Path,
                    **kwargs):
     # Assume the XAM file is named for the sample.
     sample = xam_file.stem
+    branches = path.merge_branches(branch, list())
     # Determine the final output directory.
     result_dir = path.build(path.CMD_DIR_SEGS,
                             {path.TOP: out_dir,
-                             path.SAMP: sample,
+                             path.SAMPLE: sample,
                              path.CMD: path.ALIGN_STEP,
                              path.BRANCHES: branches})
     if need_write(result_dir, force):
@@ -73,7 +74,7 @@ def split_xam_file(xam_file: Path,
         xam_input_dir = tmp_dir.joinpath("input")
         xam_sorted = path.buildpar(path.XAM_SEGS,
                                    {path.TOP: xam_input_dir,
-                                    path.SAMP: sample,
+                                    path.SAMPLE: sample,
                                     path.CMD: path.ALIGN_STEP,
                                     path.BRANCHES: branches,
                                     path.REF: fasta.stem,
@@ -95,7 +96,7 @@ def split_xam_file(xam_file: Path,
                        release_dir,
                        path.build(path.CMD_DIR_SEGS,
                                   {path.TOP: release_dir,
-                                   path.SAMP: sample,
+                                   path.SAMPLE: sample,
                                    path.CMD: path.ALIGN_STEP,
                                    path.BRANCHES: branches}))
     return result_dir
@@ -152,7 +153,7 @@ def run(fasta: str | Path, *,
                                 out_dir=Path(out_dir),
                                 tmp_dir=tmp_dir,
                                 keep_tmp=keep_tmp,
-                                branches=path.merge_branches(branch, list()),
+                                branch=branch,
                                 force=force,
                                 bt2_local=bt2_local,
                                 bt2_discordant=bt2_discordant,

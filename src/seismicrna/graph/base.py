@@ -164,7 +164,7 @@ class BaseGraph(ABC):
     def get_path_fields(self):
         """ Path fields. """
         return {path.TOP: self.top,
-                path.SAMP: self.sample,
+                path.SAMPLE: self.sample,
                 path.CMD: path.GRAPH_STEP,
                 path.REF: self.ref,
                 path.REG: self.reg,

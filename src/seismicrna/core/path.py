@@ -532,7 +532,7 @@ TOP = "top"
 STAGE = "stage"
 CMD = "cmd"
 BRANCHES = "branches"
-SAMP = "sample"
+SAMPLE = "sample"
 REF = "ref"
 REG = "reg"
 BATCH = "batch"
@@ -548,7 +548,7 @@ STRUCT = "struct"
 
 TopSeg = PathSegment("top-dir", {TOP: TopField}, order=-1)
 StageSeg = PathSegment("stage-dir", {STAGE: StageField}, order=70)
-SampSeg = PathSegment("sample-dir", {SAMP: NameField}, order=60)
+SampSeg = PathSegment("sample-dir", {SAMPLE: NameField}, order=60)
 CmdSeg = PathSegment("command-dir",
                      {CMD: CmdField, BRANCHES: BranchesField},
                      order=50)
@@ -562,9 +562,9 @@ FastaSeg = PathSegment("fasta", {REF: NameField, EXT: FastaExt})
 FastaIndexSeg = PathSegment("fasta-index", {REF: NameField, EXT: FastaIndexExt})
 
 # FASTQ
-FastqSeg = PathSegment("fastq", {SAMP: NameField, EXT: FastqExt})
-Fastq1Seg = PathSegment("fastq1", {SAMP: NameField, EXT: Fastq1Ext})
-Fastq2Seg = PathSegment("fastq2", {SAMP: NameField, EXT: Fastq2Ext})
+FastqSeg = PathSegment("fastq", {SAMPLE: NameField, EXT: FastqExt})
+Fastq1Seg = PathSegment("fastq1", {SAMPLE: NameField, EXT: Fastq1Ext})
+Fastq2Seg = PathSegment("fastq2", {SAMPLE: NameField, EXT: Fastq2Ext})
 
 # Demultiplexed FASTQ
 DmFastqSeg = PathSegment("dm-fastq", {REF: NameField, EXT: FastqExt})
@@ -658,7 +658,7 @@ GraphSeg = PathSegment("graph", {GRAPH: NameField, EXT: GraphExt})
 
 # Web App Export
 WebAppFileSeg = PathSegment("webapp",
-                            {SAMP: NameField, EXT: WebAppFileExt},
+                            {SAMPLE: NameField, EXT: WebAppFileExt},
                             frmt="{sample}__webapp{ext}")
 
 # Path segment patterns

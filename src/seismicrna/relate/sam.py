@@ -220,7 +220,7 @@ class XamViewer(object):
     @cached_property
     def _sample_ref(self):
         fields = path.parse(self.xam_input, *path.XAM_SEGS)
-        return fields[path.SAMP], fields[path.REF]
+        return fields[path.SAMPLE], fields[path.REF]
 
     @property
     def sample(self):

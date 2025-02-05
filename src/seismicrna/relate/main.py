@@ -11,6 +11,7 @@ from ..core.arg import (CMD_RELATE,
                         arg_fasta,
                         opt_out_dir,
                         opt_tmp_pfx,
+                        opt_branch,
                         opt_min_mapq,
                         opt_min_reads,
                         opt_batch_size,
@@ -43,7 +44,7 @@ def check_duplicates(xam_files: list[Path]):
     sample_ref_pairs = set()
     for xam_file in xam_files:
         fields = path.parse(xam_file, *path.XAM_SEGS)
-        sample_ref = fields[path.SAMP], fields[path.REF]
+        sample_ref = fields[path.SAMPLE], fields[path.REF]
         logger.detail(f"{xam_file}: {sample_ref}")
         if sample_ref in sample_ref_pairs:
             raise DuplicateSampleReferenceError(sample_ref)
@@ -56,6 +57,7 @@ def run(fasta: str | Path,
         input_path: Iterable[str | Path], *,
         out_dir: str | Path,
         tmp_dir: Path,
+        branch: str,
         min_reads: int,
         min_mapq: int,
         phred_enc: int,
@@ -96,6 +98,7 @@ def run(fasta: str | Path,
                     kwargs=dict(fasta=relate_fasta,
                                 out_dir=Path(out_dir),
                                 tmp_dir=tmp_dir,
+                                branch=branch,
                                 min_reads=min_reads,
                                 min_mapq=min_mapq,
                                 phred_enc=phred_enc,
@@ -125,6 +128,7 @@ params = [
     # Output directories
     opt_out_dir,
     opt_tmp_pfx,
+    opt_branch,
     # SAM options
     opt_min_mapq,
     opt_phred_enc,

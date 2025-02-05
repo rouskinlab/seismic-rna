@@ -196,7 +196,7 @@ class RNArtistRun(object):
                  color: bool,
                  n_procs: int):
         self.top, self.fields = FoldReport.parse_path(report)
-        self.sample = self.fields.get(path.SAMP)
+        self.sample = self.fields.get(path.SAMPLE)
         self.ref = self.fields.get(path.REF)
         self.reg = self.fields.get(path.REG)
         self.profile = self.fields.get(path.PROFILE)
@@ -222,7 +222,7 @@ class RNArtistRun(object):
         """
         return {path.TOP: top,
                 path.CMD: path.FOLD_STEP,
-                path.SAMP: self.sample,
+                path.SAMPLE: self.sample,
                 path.REF: self.ref,
                 path.REG: self.reg}
 
