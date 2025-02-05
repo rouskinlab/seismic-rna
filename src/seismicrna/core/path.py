@@ -15,9 +15,11 @@ from .logs import logger
 
 # Constants ############################################################
 
-INP_TEST_DIR = pathlib.Path.cwd().joinpath("test-inp")
-OUT_TEST_DIR = pathlib.Path.cwd().joinpath("test-out")
-TMP_TEST_DIR = pathlib.Path.cwd().joinpath("test-tmp")
+CWD = pathlib.Path.cwd()
+INP_TEST_DIR = CWD.joinpath("test-inp")
+OUT_TEST_DIR = CWD.joinpath("test-out")
+TMP_TEST_DIR = CWD.joinpath("test-tmp")
+BRANCH_SEP = "_"
 
 # Valid/invalid characters in fields
 
@@ -28,8 +30,12 @@ STR_CHARS_SET = frozenset(STR_CHARS)
 INT_CHARS = digits
 PATH_PATTERN = f"([{PATH_CHARS}]+)"
 STR_PATTERN = f"([{STR_CHARS}]+)"
+BRANCHES_PATTERN = f"([{STR_CHARS}]*)"
 INT_PATTERN = f"([{INT_CHARS}]+)"
-RE_PATTERNS = {str: STR_PATTERN, int: INT_PATTERN, pathlib.Path: PATH_PATTERN}
+CMD_PATTERN = f"([{ALPHANUM_CHARS}]+)"
+RE_PATTERNS = {str: STR_PATTERN,
+               int: INT_PATTERN,
+               pathlib.Path: PATH_PATTERN}
 
 # Names of steps
 ALIGN_STEP = "align"
@@ -140,6 +146,14 @@ class PathValueError(PathError, ValueError):
     """ Invalid value of a path segment field. """
 
 
+class PathNotFoundError(PathError, FileNotFoundError):
+    """ Path does not exist but should. """
+
+
+class PathExistsError(PathError, FileExistsError):
+    """ Path exists but should not. """
+
+
 class WrongFileExtensionError(PathValueError):
     """ A file has the wrong extension. """
 
@@ -216,45 +230,60 @@ def get_seismicrna_project_dir():
 
 def validate_str(txt: str):
     if not isinstance(txt, str):
-        raise PathTypeError(
-            f"Expected {str.__name__}, but got {type(txt).__name__}"
-        )
+        raise PathTypeError(f"Expected str, but got {type(txt).__name__}")
     if not txt:
-        raise PathValueError(f"Empty string: {repr(txt)}")
-    if illegal := "".join(sorted(set(txt) - STR_CHARS_SET)):
+        raise PathValueError("String cannot be empty")
+    if illegal := sorted(set(txt) - STR_CHARS_SET):
         raise PathValueError(f"{repr(txt)} has illegal characters: {illegal}")
 
 
 def validate_top(top: pathlib.Path):
     if not isinstance(top, pathlib.Path):
-        raise PathTypeError(
-            f"Expected {Path.__name__}, but got {type(top).__name__}"
-        )
+        raise PathTypeError(top)
     if not top.parent.is_dir():
-        raise PathValueError(f"Not a directory: {top.parent}")
+        raise PathNotFoundError(top.parent)
     if top.is_file():
-        raise PathValueError(f"File exists: {top}")
+        raise PathExistsError(top)
 
 
 def validate_int(num: int):
-    if not isinstance(num, int) or num < 0:
-        raise PathValueError(f"Expected an integer ≥ 0, but got {num}")
+    if not isinstance(num, int):
+        raise PathTypeError(num)
+    if num < 0:
+        raise PathValueError(f"Integer must be ≥ 0, but got {num}")
+
+
+def validate_branches(branches: list[str]):
+    if not isinstance(branches, list):
+        raise PathTypeError(branches)
+    for branch in branches:
+        validate_str(branch)
+        if BRANCH_SEP in branch:
+            raise PathValueError(
+                f"{repr(branch)} contains branch separator {repr(BRANCH_SEP)}"
+            )
 
 
 VALIDATE = {int: validate_int,
             str: validate_str,
-            pathlib.Path: validate_top}
+            pathlib.Path: validate_top,
+            list: validate_branches}
 
 
 # Field class
 
 class Field(object):
+    __slots__ = ["dtype", "options", "is_ext", "pattern"]
+
     def __init__(self,
-                 dtype: type[str | int | pathlib.Path],
+                 dtype: type[str | int | pathlib.Path | list],
                  options: Iterable = (),
-                 is_ext: bool = False):
+                 is_ext: bool = False,
+                 pattern: str = ""):
         self.dtype = dtype
         self.options = list(options)
+        if self.dtype is list and self.options:
+            raise PathValueError("Cannot take options if the data type is list")
         if not all(isinstance(option, self.dtype) for option in self.options):
             raise PathTypeError("All options of a field must be of its type")
         self.is_ext = is_ext
@@ -264,53 +293,75 @@ class Field(object):
                                     f"but got type {repr(self.dtype.__name__)}")
             if not self.options:
                 raise PathValueError("Extension field must have options")
+            if pattern:
+                raise TypeError("Extension field cannot have a pattern")
+            self.pattern = ""
+        else:
+            if not isinstance(pattern, str):
+                raise PathTypeError(
+                    f"Expected str, but got {type(pattern).__name__}"
+                )
+            if pattern:
+                self.pattern = pattern
+            else:
+                try:
+                    self.pattern = RE_PATTERNS[self.dtype]
+                except KeyError:
+                    raise PathTypeError(
+                        f"No default pattern for {self.dtype.__name__}"
+                    ) from None
 
     def validate(self, val: Any):
+        """ Validate a value before turning it into a string. """
         if not isinstance(val, self.dtype):
-            raise PathTypeError(f"Expected {repr(self.dtype.__name__)}, but "
-                                f"got {repr(val)} ({repr(type(val).__name__)})")
+            raise PathTypeError(f"Expected {self.dtype.__name__}, "
+                                f"but got {type(val).__name__}")
         if self.options and val not in self.options:
             raise PathValueError(
                 f"Invalid option {repr(val)}; expected one of {self.options}"
             )
-        VALIDATE[self.dtype](val)
+        validate_func = VALIDATE[self.dtype]
+        validate_func(val)
 
     def build(self, val: Any):
         """ Validate a value and return it as a string. """
         self.validate(val)
+        if self.dtype is list:
+            return "".join(f"{BRANCH_SEP}{x}" for x in val)
         return str(val)
 
     def parse(self, text: str) -> Any:
         """ Parse a value from a string, validate it, and return it. """
+        if not isinstance(text, str):
+            raise PathTypeError(f"Expected str, but got {type(text).__name__}")
         try:
-            val = self.dtype(text)
+            if self.dtype is list:
+                val = list(filter(None, text.split(BRANCH_SEP)))
+            else:
+                val = self.dtype(text)
         except Exception as error:
-            raise PathValueError(
-                f"Failed to interpret {repr(text)} as type "
-                f"{repr(self.dtype.__name__)}: {error}"
-            ) from None
+            raise PathValueError(f"Could not interpret {repr(text)} as type "
+                                 f"{self.dtype.__name__}: {error}") from None
         self.validate(val)
         return val
 
-    @cached_property
-    def as_str(self):
-        # Define the string as a cached property to speed up str(self).
-        return f"{type(self).__name__} <{self.dtype.__name__}>"
-
     def __str__(self):
-        return self.as_str
+        return f"{type(self).__name__} <{self.dtype.__name__}>"
 
 
 # Fields
 TopField = Field(pathlib.Path)
 NameField = Field(str)
-CmdField = Field(str, [ALIGN_STEP,
-                       RELATE_STEP,
-                       MASK_STEP,
-                       CLUSTER_STEP,
-                       LIST_STEP,
-                       FOLD_STEP,
-                       GRAPH_STEP])
+CmdField = Field(str,
+                 [ALIGN_STEP,
+                  RELATE_STEP,
+                  MASK_STEP,
+                  CLUSTER_STEP,
+                  LIST_STEP,
+                  FOLD_STEP,
+                  GRAPH_STEP],
+                 pattern=CMD_PATTERN)
+BranchesField = Field(list, pattern=BRANCHES_PATTERN)
 StageField = Field(str, STAGES)
 IntField = Field(int)
 ClustRunResultsField = Field(str, CLUST_PARAMS)
@@ -362,7 +413,8 @@ def check_file_extension(file: pathlib.Path,
 
 class Segment(object):
 
-    def __init__(self, segment_name: str,
+    def __init__(self,
+                 segment_name: str,
                  field_types: dict[str, Field], *,
                  order: int = 0,
                  frmt: str | None = None):
@@ -396,7 +448,7 @@ class Segment(object):
         # Generate the pattern string using the format string, excluding
         # the extension (if any) because before parsing, it is removed
         # from the end of the string.
-        patterns = {name: "" if field.is_ext else RE_PATTERNS[field.dtype]
+        patterns = {name: field.pattern
                     for name, field in self.field_types.items()}
         self.ptrn = re.compile(self.frmt.format(**patterns))
 
@@ -426,7 +478,9 @@ class Segment(object):
                 return ext
         return
 
-    def build(self, **vals: Any):
+    def build(self, vals: dict):
+        if not isinstance(vals, dict):
+            raise PathTypeError(f"Expected dict, but got {type(vals).__name__}")
         # Verify that a value is given for every field, with no extras.
         if (v := sorted(vals.keys())) != (f := sorted(self.field_types.keys())):
             raise PathValueError(f"{self} expected fields {f}, but got {v}")
@@ -460,13 +514,8 @@ class Segment(object):
         return {name: field.parse(group) for (name, field), group
                 in zip(self.field_types.items(), vals, strict=True)}
 
-    @cached_property
-    def as_str(self):
-        # Define the string as a cached property to speed up str(self).
-        return f"{type(self).__name__} {repr(self.name)}"
-
     def __str__(self):
-        return self.as_str
+        return f"{type(self).__name__} {repr(self.name)}"
 
 
 # Field names
@@ -474,6 +523,7 @@ class Segment(object):
 TOP = "top"
 STAGE = "stage"
 CMD = "cmd"
+BRANCHES = "branches"
 SAMP = "sample"
 REF = "ref"
 REG = "reg"
@@ -491,7 +541,9 @@ STRUCT = "struct"
 TopSeg = Segment("top-dir", {TOP: TopField}, order=-1)
 StageSeg = Segment("stage-dir", {STAGE: StageField}, order=70)
 SampSeg = Segment("sample-dir", {SAMP: NameField}, order=60)
-CmdSeg = Segment("command-dir", {CMD: CmdField}, order=50)
+CmdSeg = Segment("command-dir",
+                 {CMD: CmdField, BRANCHES: BranchesField},
+                 order=50)
 RefSeg = Segment("ref-dir", {REF: NameField}, order=30)
 RegSeg = Segment("reg-dir", {REG: NameField}, order=20)
 

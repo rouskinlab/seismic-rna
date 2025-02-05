@@ -1,10 +1,7 @@
 import unittest as ut
 from shutil import rmtree
 
-from seismicrna.core.path import (get_seismicrna_source_dir,
-                                  randdir,
-                                  sanitize,
-                                  symlink_if_needed)
+from seismicrna.core.path import *
 
 
 class TestGetSeismicRNASourceDir(ut.TestCase):
@@ -13,6 +10,130 @@ class TestGetSeismicRNASourceDir(ut.TestCase):
         seismicrna_source_dir = get_seismicrna_source_dir()
         self.assertEqual(seismicrna_source_dir,
                          sanitize(__file__).parent.parent.parent)
+
+
+class TestBranchesField(ut.TestCase):
+
+    def test_branches_validate(self):
+        self.assertIsNone(BranchesField.validate([]))
+        self.assertIsNone(BranchesField.validate(["branch1"]))
+        self.assertIsNone(BranchesField.validate(["branch1", "branch2"]))
+        self.assertRaisesRegex(PathTypeError,
+                               "Expected list, but got str",
+                               BranchesField.validate,
+                               "branch1")
+        self.assertRaisesRegex(PathTypeError,
+                               "Expected str, but got int",
+                               BranchesField.validate,
+                               [1])
+        self.assertRaisesRegex(PathValueError,
+                               "String cannot be empty",
+                               BranchesField.validate,
+                               [""])
+        self.assertRaisesRegex(PathValueError,
+                               r"'branch 1' has illegal characters: \[' '\]",
+                               BranchesField.validate,
+                               ["branch 1"])
+        self.assertRaisesRegex(PathValueError,
+                               "'branch_1' contains branch separator '_'",
+                               BranchesField.validate,
+                               ["branch_1"])
+
+    def test_branches_build(self):
+        self.assertEqual(BranchesField.build([]),
+                         "")
+        self.assertEqual(BranchesField.build(["branch1"]),
+                         "_branch1")
+        self.assertEqual(BranchesField.build(["branch1", "branch2"]),
+                         "_branch1_branch2")
+        self.assertRaisesRegex(PathTypeError,
+                               "Expected list, but got str",
+                               BranchesField.build,
+                               "branch1")
+        self.assertRaisesRegex(PathValueError,
+                               "String cannot be empty",
+                               BranchesField.build,
+                               ["", "branch2"])
+
+    def test_branches_parse(self):
+        self.assertListEqual(BranchesField.parse(""),
+                             [])
+        self.assertListEqual(BranchesField.parse("branch-1"),
+                             ["branch-1"])
+        self.assertListEqual(BranchesField.parse("_branch-1"),
+                             ["branch-1"])
+        self.assertListEqual(BranchesField.parse("branch-1_"),
+                             ["branch-1"])
+        self.assertListEqual(BranchesField.parse("_branch-1_"),
+                             ["branch-1"])
+        self.assertListEqual(BranchesField.parse("_branch1_branch2"),
+                             ["branch1", "branch2"])
+        self.assertListEqual(BranchesField.parse("_branch1__branch2"),
+                             ["branch1", "branch2"])
+        self.assertListEqual(BranchesField.parse("_branch1__branch2_"),
+                             ["branch1", "branch2"])
+        self.assertListEqual(BranchesField.parse("_branch1___branch2_"),
+                             ["branch1", "branch2"])
+        self.assertRaisesRegex(PathTypeError,
+                               "Expected str, but got list",
+                               BranchesField.parse,
+                               ["branch1"])
+        self.assertRaisesRegex(PathValueError,
+                               r"'branch 2' has illegal characters: \[' '\]",
+                               BranchesField.parse,
+                               "_branch1_branch 2")
+
+
+class TestCmdSeg(ut.TestCase):
+
+    def test_cmdseg_build(self):
+        self.assertEqual(CmdSeg.build({CMD: "align",
+                                       BRANCHES: []}),
+                         "align")
+        self.assertEqual(CmdSeg.build({CMD: "align",
+                                       BRANCHES: ["branch1"]}),
+                         "align_branch1")
+        self.assertEqual(CmdSeg.build({CMD: "align",
+                                       BRANCHES: ["branch1", "branch2"]}),
+                         "align_branch1_branch2")
+        self.assertRaisesRegex(PathValueError,
+                               "String cannot be empty",
+                               CmdSeg.build,
+                               {CMD: "align",
+                                BRANCHES: ["branch1", ""]})
+        self.assertRaisesRegex(PathValueError,
+                               "Invalid option 'benign'",
+                               CmdSeg.build,
+                               {CMD: "benign",
+                                BRANCHES: ["branch1"]})
+
+    def test_cmdseg_parse(self):
+        self.assertEqual(CmdSeg.parse("align"),
+                         {CMD: "align", BRANCHES: []})
+        self.assertEqual(CmdSeg.parse("align_branch1"),
+                         {CMD: "align", BRANCHES: ["branch1"]})
+        self.assertEqual(CmdSeg.parse("align__branch1"),
+                         {CMD: "align", BRANCHES: ["branch1"]})
+        self.assertEqual(CmdSeg.parse("align_branch1_"),
+                         {CMD: "align", BRANCHES: ["branch1"]})
+        self.assertEqual(CmdSeg.parse("align_branch1_branch2"),
+                         {CMD: "align", BRANCHES: ["branch1", "branch2"]})
+        self.assertEqual(CmdSeg.parse("align__branch1_branch2"),
+                         {CMD: "align", BRANCHES: ["branch1", "branch2"]})
+        self.assertEqual(CmdSeg.parse("align_branch1__branch2"),
+                         {CMD: "align", BRANCHES: ["branch1", "branch2"]})
+        self.assertRaisesRegex(PathValueError,
+                               "Could not parse fields in text ''",
+                               CmdSeg.parse,
+                               "")
+        self.assertRaisesRegex(PathValueError,
+                               "Could not parse fields in text '_align'",
+                               CmdSeg.parse,
+                               "_align")
+        self.assertRaisesRegex(PathValueError,
+                               "Invalid option 'alight'",
+                               CmdSeg.parse,
+                               "alight")
 
 
 class TestSymlinkIfNeeded(ut.TestCase):
