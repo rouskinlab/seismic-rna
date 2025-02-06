@@ -18,6 +18,7 @@ from .core.arg import (CMD_POOL,
                        opt_force)
 from .core.error import InconsistentValueError
 from .core.logs import logger
+from .core.report import BranchF, AncestorsF
 from .core.run import run_func
 from .core.task import dispatch
 from .core.tmp import release_to_out, with_tmp_dir
@@ -87,26 +88,28 @@ def pool_samples(out_dir: Path,
                        f"in {out_dir} got duplicate samples: {sample_counts}")
     samples = sorted(sample_counts)
     # Determine the output report file.
-    report_file = PoolReport.build_path({path.TOP: out_dir,
-                                         path.SAMPLE: name,
-                                         path.BRANCHES: branches,
-                                         path.REF: ref})
-    if need_write(report_file, force):
+    pool_report_file = PoolReport.build_path({path.TOP: out_dir,
+                                              path.SAMPLE: name,
+                                              path.BRANCHES: branches,
+                                              path.REF: ref})
+    if need_write(pool_report_file, force):
         # Because Relate and Pool report files have the same name, it
         # would be possible to overwrite a Relate report with a Pool
         # report, rendering the Relate dataset unusable; prevent this.
-        if report_file.is_file():
+        if pool_report_file.is_file():
             # Check whether the report file contains a Pool report.
             try:
-                PoolReport.load(report_file)
+                PoolReport.load(pool_report_file)
             except ValueError:
                 # The report file does not contain a Pool report.
-                raise TypeError(f"Cannot overwrite {report_file} with "
+                raise TypeError(f"Cannot overwrite {pool_report_file} with "
                                 f"{PoolReport.__name__}: would cause data loss")
         # To be able to load, the pooled dataset must have access to the
         # original relate dataset(s) in the temporary directory.
-        branch = None
-        ancestors = None
+        report_kwargs = dict(sample=name,
+                             ref=ref,
+                             pooled_samples=samples,
+                             began=began)
         for sample in samples:
             relate_dataset = load_relate_dataset(
                 RelateReport.build_path({path.TOP: out_dir,
@@ -115,34 +118,31 @@ def pool_samples(out_dir: Path,
                                          path.REF: ref}),
                 verify_times=verify_times
             )
-            # Ensure all reports have the same branch and ancestors;
+            # Ensure all datasets have the same branch and ancestors;
             # it's possible for them to have the same branches but
-            # differ in branch and ancestors.
-            if branch is None:
-                assert ancestors is None
-                branch = relate_dataset.branch
-                ancestors = relate_dataset.ancestors
-            else:
-                assert ancestors is not None
-                if relate_dataset.branch != branch:
+            # different individual branch or ancestors attributes.
+            if BranchF.key in report_kwargs:
+                assert AncestorsF.key in report_kwargs
+                if relate_dataset.branch != report_kwargs[BranchF.key]:
                     raise InconsistentValueError(
                         "Datasets have different values for branch: "
-                        f"{repr(branch)} ≠ {repr(relate_dataset.branch)}"
+                        f"{report_kwargs[BranchF.key]} ≠ "
+                        f"{repr(relate_dataset.branch)}"
                     )
-                assert relate_dataset.ancestors == ancestors
+                assert relate_dataset.ancestors == report_kwargs[AncestorsF.key]
+            else:
+                assert AncestorsF.key not in report_kwargs
+                report_kwargs[BranchF.key] = relate_dataset.branch
+                report_kwargs[AncestorsF.key] = relate_dataset.ancestors
+            # Make links to the files for this dataset in the temporary
+            # directory.
             relate_dataset.link_data_dirs_to_tmp(tmp_dir)
-        if branch is None:
-            assert ancestors is None
+        if BranchF.key not in report_kwargs:
+            assert AncestorsF.key not in report_kwargs
             # Default to these values if there are no samples.
-            branch = ""
-            ancestors = branches
+            report_kwargs[BranchF.key] = ""
+            report_kwargs[AncestorsF.key] = branches
         # Tabulate the pooled dataset.
-        report_kwargs = dict(sample=name,
-                             branch=branch,
-                             ancestors=ancestors,
-                             ref=ref,
-                             pooled_samples=samples,
-                             began=began)
         pool_dataset = load_relate_dataset(write_report(tmp_dir,
                                                         **report_kwargs),
                                            verify_times=verify_times)
@@ -157,7 +157,7 @@ def pool_samples(out_dir: Path,
         release_to_out(out_dir,
                        tmp_dir,
                        write_report(tmp_dir, **report_kwargs).parent)
-    return report_file.parent
+    return pool_report_file.parent
 
 
 @run_func(CMD_POOL)
@@ -173,7 +173,7 @@ def run(input_path: Iterable[str | Path], *,
     """ Merge samples (vertically) from the Relate step. """
     if not pooled:
         raise ValueError("No name for the pooled sample was given via --pooled")
-    # Group the datasets by output directory and reference name.
+    # Group the datasets by output directory, branches, and reference.
     pools = defaultdict(list)
     for dataset in load_relate_dataset.iterate(input_path,
                                                verify_times=verify_times):

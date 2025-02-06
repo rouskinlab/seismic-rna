@@ -8,6 +8,7 @@ from click import command
 
 from .cluster.dataset import load_cluster_dataset
 from .cluster.table import ClusterDatasetTabulator
+from .core import path
 from .core.arg import (CMD_JOIN,
                        arg_input_path,
                        opt_joined,
@@ -26,7 +27,7 @@ from .core.error import InconsistentValueError
 from .core.header import ClustHeader, parse_header
 from .core.join import JoinMutsDataset, JoinReport
 from .core.logs import logger
-from .core.report import JoinedRegionsF
+from .core.report import JoinedRegionsF, BranchF, AncestorsF
 from .core.run import run_func
 from .core.task import dispatch
 from .core.tmp import release_to_out, with_tmp_dir
@@ -39,14 +40,16 @@ from .table import tabulate
 
 def joined_mask_report_exists(top: Path,
                               sample: str,
+                              branches: Iterable[str],
                               ref: str,
                               joined: str,
                               regs: Iterable[str]):
     """ Return whether a mask report for the joined region exists. """
-    mask_report_file = JoinMaskReport.build_path(top=top,
-                                                 sample=sample,
-                                                 ref=ref,
-                                                 reg=joined)
+    mask_report_file = JoinMaskReport.build_path({path.TOP: top,
+                                                  path.SAMPLE: sample,
+                                                  path.BRANCHES: list(branches),
+                                                  path.REF: ref,
+                                                  path.REG: joined})
     if not mask_report_file.is_file():
         logger.detail(
             f"Joined mask report {mask_report_file} does not already exist"
@@ -60,7 +63,7 @@ def joined_mask_report_exists(top: Path,
             f"The regions in the mask report file {mask_report_file} "
             f"are {report_regs}, which differ from the regions that "
             f"are being joined for the cluster step: {cluster_regs} "
-            "(use --force to suppress this error and overwrite)"
+            f"(use --force to overwrite {mask_report_file})"
         )
     logger.detail(f"Joined mask report {mask_report_file} already exists")
     return True
@@ -102,6 +105,7 @@ def write_report(report_type: type[JoinReport],
 def join_regions(out_dir: Path,
                  name: str,
                  sample: str,
+                 branches: Iterable[str],
                  ref: str,
                  regs: Iterable[str],
                  clustered: bool, *,
@@ -122,6 +126,8 @@ def join_regions(out_dir: Path,
         Output directory.
     name: str
         Name of the joined region.
+    branches: Iterable[str]
+        Branches of the datasets being pooled.
     sample: str
         Name of the sample.
     ref: str
@@ -157,6 +163,8 @@ def join_regions(out_dir: Path,
         Path of the Join report file.
     """
     began = datetime.now()
+    # Ensure that branches is not an exhaustible generator.
+    branches = list(branches)
     # Deduplicate and sort the regions.
     reg_counts = Counter(regs)
     if max(reg_counts.values()) > 1:
@@ -185,34 +193,59 @@ def join_regions(out_dir: Path,
     _, dataset_type = load_function.dataset_types
     report_type = dataset_type.get_report_type()
     # Determine the output report file.
-    report_file = report_type.build_path(top=out_dir,
-                                         sample=sample,
-                                         ref=ref,
-                                         reg=name)
-    if need_write(report_file, force):
+    join_report_file = report_type.build_path({path.TOP: out_dir,
+                                               path.SAMPLE: sample,
+                                               path.BRANCHES: branches,
+                                               path.REF: ref,
+                                               path.REG: name})
+    if need_write(join_report_file, force):
         # Because a Join report file has the same name as a Mask/Cluster
         # report, it would be possible to overwrite the latter with a
         # Join report, rendering its datasets unusable; prevent this.
-        if report_file.is_file():
+        if join_report_file.is_file():
             # Check whether the report file contains a Join report.
             try:
-                report_type.load(report_file)
+                report_type.load(join_report_file)
             except ValueError:
                 # The report file does not contain a Join report.
-                raise TypeError(
-                    f"Overwriting {report_file} with {report_type.__name__} "
-                    "would cause data loss"
-                )
+                raise TypeError(f"Overwriting {join_report_file} with "
+                                f"{report_type.__name__} "
+                                "would cause data loss")
         # To be able to load, the joined dataset must have access to the
         # original mask/cluster dataset(s) in the temporary directory.
         for reg in regs:
-            load_function(
-                report_type.build_path(top=out_dir,
-                                       sample=sample,
-                                       ref=ref,
-                                       reg=reg),
+            region_dataset = load_function(
+                report_type.build_path({path.TOP: out_dir,
+                                        path.SAMPLE: sample,
+                                        path.BRANCHES: branches,
+                                        path.REF: ref,
+                                        path.REG: reg}),
                 verify_times=verify_times
-            ).link_data_dirs_to_tmp(tmp_dir)
+            )
+            # Ensure all datasets have the same branch and ancestors;
+            # it's possible for them to have the same branches but
+            # different individual branch or ancestors attributes.
+            if BranchF.key in report_kwargs:
+                assert AncestorsF.key in report_kwargs
+                if region_dataset.branch != report_kwargs[BranchF.key]:
+                    raise InconsistentValueError(
+                        "Datasets have different values for branch: "
+                        f"{report_kwargs[BranchF.key]} ≠ "
+                        f"{repr(region_dataset.branch)}"
+                    )
+                assert region_dataset.ancestors == report_kwargs[AncestorsF.key]
+            else:
+                assert AncestorsF.key not in report_kwargs
+                report_kwargs[BranchF.key] = region_dataset.branch
+                report_kwargs[AncestorsF.key] = region_dataset.ancestors
+            # Make links to the files for this dataset in the temporary
+            # directory.
+            region_dataset.link_data_dirs_to_tmp(tmp_dir)
+        if BranchF.key not in report_kwargs:
+            assert AncestorsF.key not in report_kwargs
+            # Default to these values if there are no samples.
+            report_kwargs[BranchF.key] = ""
+            report_kwargs[AncestorsF.key] = branches
         # Tabulate the joined dataset.
         dataset = load_function(write_report(report_type,
                                              tmp_dir,
@@ -236,7 +269,7 @@ def join_regions(out_dir: Path,
                        write_report(report_type,
                                     tmp_dir,
                                     **report_kwargs).parent)
-    return report_file.parent
+    return join_report_file.parent
 
 
 @run_func(CMD_JOIN, extra_defaults=extra_defaults)
@@ -261,7 +294,8 @@ def run(input_path: Iterable[str | Path], *,
         clusts = parse_join_clusts_file(join_clusts)
     else:
         clusts = dict()
-    # Group the datasets by output directory, sample, and reference.
+    # Group the datasets by output directory, sample, branches, and
+    # reference.
     joins = defaultdict(list)
     load_funcs = {False: load_mask_dataset,
                   True: load_cluster_dataset}
@@ -275,27 +309,30 @@ def run(input_path: Iterable[str | Path], *,
             else:
                 # Otherwise, use just the region of the dataset.
                 regs = [dataset.region.name]
-            joins[(dataset.top,
+            key = (dataset.top,
                    dataset.sample,
+                   tuple(dataset.branches),
                    dataset.ref,
-                   clustered)].extend(regs)
+                   clustered)
+            joins[key].extend(regs)
             logger.detail(f"Added regions {regs} for {dataset}")
     # For every joined cluster dataset that does not have a joined mask
     # dataset, also create the joined mask dataset.
-    for (top, sample, ref, clustered), regs in list(joins.items()):
+    for (top, sample, branches, ref, clustered), regs in list(joins.items()):
         if clustered and (force or not joined_mask_report_exists(top,
                                                                  sample,
+                                                                 branches,
                                                                  ref,
                                                                  joined,
                                                                  regs)):
-            mask_joins = joins[top, sample, ref, False]
+            mask_joins = joins[top, sample, branches, ref, False]
             mask_joins.extend(reg for reg in regs if reg not in mask_joins)
     # Join the masked regions first, then the clustered regions, because
     # the clustered regions require the masked regions.
     results = list()
     for use_clustered in [False, True]:
-        args = [(out_dir, joined, sample, ref, regs, clustered)
-                for (out_dir, sample, ref, clustered), regs
+        args = [(out_dir, joined, sample, branches, ref, regs, clustered)
+                for (out_dir, sample, branches, ref, clustered), regs
                 in joins.items()
                 if clustered == use_clustered]
         kwargs = dict(clusts=clusts,
