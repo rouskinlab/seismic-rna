@@ -256,7 +256,11 @@ class DatasetTabulator(BatchTabulator, ABC):
     def init_kws(cls):
         """ Attributes of the dataset to use as keyword arguments in
         super().__init__(). """
-        return ["top", "sample", "get_batch_count_all", "num_batches"]
+        return ["top",
+                "sample",
+                "branches",
+                "get_batch_count_all",
+                "num_batches"]
 
     def __init__(self, *,
                  dataset: MutsDataset,

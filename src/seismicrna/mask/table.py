@@ -38,19 +38,13 @@ from ..relate.table import (AverageTable,
 
 
 class PartialTable(Table, ABC):
-
-    @property
-    def path_fields(self):
-        return {path.TOP: self.top,
-                path.SAMPLE: self.sample,
-                path.REF: self.ref,
-                path.REG: self.reg}
+    """ Table of filtered reads over a region of the sequence. """
 
 
 class PartialPositionTable(PartialTable, PositionTable, ABC):
 
     @classmethod
-    def path_segs(cls):
+    def get_path_segs(cls):
         return path.REG_DIR_SEGS + (path.PositionTableSeg,)
 
     def _iter_profiles(self, *,
@@ -83,14 +77,14 @@ class PartialPositionTable(PartialTable, PositionTable, ABC):
 class PartialReadTable(PartialTable, ReadTable, ABC):
 
     @classmethod
-    def path_segs(cls):
+    def get_path_segs(cls):
         return path.REG_DIR_SEGS + (path.ReadTableSeg,)
 
 
 class MaskTable(AverageTable, ABC):
 
     @classmethod
-    def kind(cls):
+    def get_kind(cls):
         return path.MASK_STEP
 
 

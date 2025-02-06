@@ -564,22 +564,29 @@ class MultistepDataset(MutsDataset, ABC):
         return cls.get_dataset2_type().get_report_type()
 
     @classmethod
-    def get_dataset1_report_file(cls, dataset2_report_file: Path):
+    def get_dataset1_report_file(cls,
+                                 dataset2_report_file: Path,
+                                 verify_times: bool):
         """ Given the report file for Dataset 2, determine the report
         file for Dataset 1. """
         load_func = cls.get_dataset1_load_func()
+        dataset2 = cls.load_dataset2(dataset2_report_file, verify_times)
         return path.cast_path(
             dataset2_report_file,
             cls.get_report_type().seg_types(),
             load_func.report_path_seg_types,
-            **load_func.report_path_auto_fields
+            # Replace the default fields and branches of report path 2
+            # wich those for report path 1.
+            (load_func.report_path_auto_fields
+             | {path.BRANCHES: dataset2.ancestors})
         )
 
     @classmethod
     def load_dataset1(cls, dataset2_report_file: Path, verify_times: bool):
         """ Load Dataset 1. """
         load_func = cls.get_dataset1_load_func()
-        return load_func(cls.get_dataset1_report_file(dataset2_report_file),
+        return load_func(cls.get_dataset1_report_file(dataset2_report_file,
+                                                      verify_times),
                          verify_times=verify_times)
 
     @classmethod

@@ -9,6 +9,7 @@ from .write import mask_region
 from ..core.arg import (CMD_MASK,
                         arg_input_path,
                         opt_tmp_pfx,
+                        opt_branch,
                         opt_keep_tmp,
                         opt_mask_coords,
                         opt_mask_primers,
@@ -74,6 +75,7 @@ def load_regions(input_path: Iterable[str | Path],
 
 @run_func(CMD_MASK, extra_defaults=extra_defaults)
 def run(input_path: Iterable[str | Path], *,
+        branch: str,
         tmp_pfx: str | Path,
         keep_tmp: bool,
         # Regions
@@ -127,7 +129,8 @@ def run(input_path: Iterable[str | Path], *,
                           for ref, ref_datasets in datasets.items()
                           for dataset, region in product(ref_datasets,
                                                          regions.list(ref))],
-                    kwargs=dict(tmp_pfx=tmp_pfx,
+                    kwargs=dict(branch=branch,
+                                tmp_pfx=tmp_pfx,
                                 keep_tmp=keep_tmp,
                                 mask_del=mask_del,
                                 mask_ins=mask_ins,
@@ -157,6 +160,7 @@ def run(input_path: Iterable[str | Path], *,
 params = [
     # Input/output paths
     arg_input_path,
+    opt_branch,
     opt_tmp_pfx,
     opt_keep_tmp,
     # Regions
