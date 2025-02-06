@@ -27,37 +27,32 @@ class AverageTable(RelTypeTable, ABC):
     """ Average over an ensemble of RNA structures. """
 
     @classmethod
-    def header_type(cls):
+    def get_header_type(cls):
         return RelHeader
 
 
 class FullTable(Table, ABC):
-
-    @property
-    def path_fields(self):
-        return {path.TOP: self.top,
-                path.SAMPLE: self.sample,
-                path.REF: self.ref}
+    """ Table of all reads over the full reference sequence. """
 
 
 class FullPositionTable(FullTable, PositionTable, ABC):
 
     @classmethod
-    def path_segs(cls):
+    def get_path_segs(cls):
         return path.REF_DIR_SEGS + (path.PositionTableSeg,)
 
 
 class FullReadTable(FullTable, ReadTable, ABC):
 
     @classmethod
-    def path_segs(cls):
+    def get_path_segs(cls):
         return path.REF_DIR_SEGS + (path.ReadTableSeg,)
 
 
 class RelateTable(AverageTable, ABC):
 
     @classmethod
-    def kind(cls):
+    def get_kind(cls):
         return path.RELATE_STEP
 
 
@@ -145,8 +140,8 @@ class TableLoader(Table, ABC):
     @classmethod
     def find_tables(cls, paths: Iterable[str | Path]):
         """ Yield files of the tables within the given paths. """
-        for file in path.find_files_chain(paths, cls.path_segs()):
-            if file.name.startswith(cls.kind()):
+        for file in path.find_files_chain(paths, cls.get_path_segs()):
+            if file.name.startswith(cls.get_kind()):
                 yield file
 
     @classmethod
@@ -159,8 +154,9 @@ class TableLoader(Table, ABC):
                 logger.error(error)
 
     def __init__(self, table_file: Path):
-        fields = path.parse(table_file, *self.path_segs())
+        fields = path.parse(table_file, self.get_path_segs())
         self._out_dir = fields[path.TOP]
+        self._branches = fields[path.BRANCHES]
         self._sample = fields[path.SAMPLE]
         self._ref = fields[path.REF]
         self._reg = fields.get(path.REG, FULL_NAME)
@@ -171,6 +167,10 @@ class TableLoader(Table, ABC):
     @property
     def top(self) -> Path:
         return self._out_dir
+
+    @property
+    def branches(self):
+        return self._branches
 
     @property
     def sample(self) -> str:
@@ -187,8 +187,11 @@ class TableLoader(Table, ABC):
     @cached_property
     def refseq(self):
         dataset = load_relate_dataset(RelateReport.build_path(
-            top=self.top, sample=self.sample, ref=self.ref)
-        )
+            {path.TOP: self.top,
+             path.BRANCHES: self.branches,
+             path.SAMPLE: self.sample,
+             path.REF: self.ref}
+        ))
         return dataset.refseq
 
 
@@ -198,8 +201,8 @@ class RelTypeTableLoader(TableLoader, RelTypeTable, ABC):
     @cached_property
     def data(self) -> pd.DataFrame:
         data = pd.read_csv(self.path,
-                           index_col=self.index_cols(),
-                           header=self.header_rows())
+                           index_col=self.get_index_cols(),
+                           header=self.get_header_rows())
         # Any numeric data in the header will be read as strings and
         # must be cast to integers using parse_header.
         header = parse_header(data.columns)

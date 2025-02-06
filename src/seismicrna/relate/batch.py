@@ -14,9 +14,9 @@ from ..core.rel import RelPattern
 from ..core.seq import Region, index_to_pos, index_to_seq
 
 
-def format_read_name(batch: int, read: int):
+def format_read_name(batch_num: int, read_num: int):
     """ Format a read name. """
-    return f"batch-{batch}_read-{read}"
+    return f"batch-{batch_num}_read-{read_num}"
 
 
 class FullReadBatch(ReadBatch, ABC):

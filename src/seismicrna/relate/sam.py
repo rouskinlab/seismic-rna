@@ -210,27 +210,38 @@ class XamViewer(object):
     def __init__(self,
                  xam_input: Path,
                  tmp_dir: Path,
+                 branch: str,
                  batch_size: int,
                  n_procs: int = 1):
         self.xam_input = xam_input
         self.tmp_dir = tmp_dir
+        self.branch = branch
         self.batch_size = batch_size
         self.n_procs = n_procs
 
     @cached_property
-    def _sample_ref(self):
-        fields = path.parse(self.xam_input, *path.XAM_SEGS)
-        return fields[path.SAMPLE], fields[path.REF]
+    def _sample_ref_ancestors(self):
+        fields = path.parse(self.xam_input, path.XAM_SEGS)
+        return fields[path.SAMPLE], fields[path.REF], fields[path.BRANCHES]
 
     @property
     def sample(self):
-        sample, _ = self._sample_ref
+        sample, ref, ancestors = self._sample_ref_ancestors
         return sample
 
     @property
     def ref(self):
-        _, ref = self._sample_ref
+        sample, ref, ancestors = self._sample_ref_ancestors
         return ref
+
+    @property
+    def ancestors(self):
+        sample, ref, ancestors = self._sample_ref_ancestors
+        return ancestors
+
+    @cached_property
+    def branches(self):
+        return path.merge_branches(self.branch, self.ancestors)
 
     @cached_property
     def flagstats(self):
@@ -249,13 +260,14 @@ class XamViewer(object):
     @cached_property
     def tmp_sam_path(self):
         """ Get the path to the temporary SAM file. """
-        return path.build(*path.XAM_STAGE_SEGS,
-                          top=self.tmp_dir,
-                          sample=self.sample,
-                          cmd=path.RELATE_STEP,
-                          stage=path.STAGE_REL_SAMS,
-                          ref=self.ref,
-                          ext=path.SAM_EXT)
+        return path.build(path.XAM_STAGE_SEGS,
+                          {path.TOP: self.tmp_dir,
+                           path.SAMPLE: self.sample,
+                           path.CMD: path.RELATE_STEP,
+                           path.BRANCHES: self.branches,
+                           path.STAGE: path.STAGE_REL_SAMS,
+                           path.REF: self.ref,
+                           path.EXT: path.SAM_EXT})
 
     def create_tmp_sam(self):
         """ Create the temporary SAM file. """

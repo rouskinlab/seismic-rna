@@ -886,14 +886,13 @@ def randdir(parent: str | pathlib.Path | None = None,
 
 # Path parsing routines
 
-def get_fields_in_seg_types(
-        segment_types: Iterable[PathSegment]
-) -> dict[str, PathField]:
+def get_fields_in_seg_types(segment_types: Iterable[PathSegment],
+                            include_top: bool = False) -> dict[str, PathField]:
     """ Get all fields among the given segment types. """
-    fields = {field_name: field
-              for segment_type in segment_types
-              for field_name, field in segment_type.field_types.items()}
-    return fields
+    fields_no_top = {field_name: field
+                     for segment_type in segment_types
+                     for field_name, field in segment_type.field_types.items()}
+    return {TOP: TopField} | fields_no_top if include_top else fields_no_top
 
 
 def deduplicate(paths: Iterable[str | pathlib.Path], warn: bool = True):

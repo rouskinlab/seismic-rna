@@ -10,6 +10,8 @@ from .io import MutsBatchIO, ReadBatchIO
 from .logs import logger
 from .rel import RelPattern
 from .report import (DATETIME_FORMAT,
+                     BranchF,
+                     AncestorsF,
                      SampleF,
                      RefF,
                      RegF,
@@ -64,12 +66,27 @@ class Dataset(ABC):
         top, _ = self.get_report_type().parse_path(self.report_file)
         return top
 
+    @cached_property
+    def ancestors(self) -> list[str]:
+        """ Ancestor branches. """
+        return self.report.get_field(AncestorsF)
+
+    @cached_property
+    def branch(self) -> str:
+        """ Branch of the workflow. """
+        return self.report.get_field(BranchF)
+
     @property
+    def branches(self):
+        """ Branches of the workflow. """
+        return self.report.branches
+
+    @cached_property
     def sample(self) -> str:
         """ Name of the sample. """
         return self.report.get_field(SampleF)
 
-    @property
+    @cached_property
     def ref(self) -> str:
         """ Name of the reference. """
         return self.report.get_field(RefF)
@@ -218,9 +235,7 @@ class LoadFunction(object):
     def __init__(self, data_type: type[Dataset], /, *more_types: type[Dataset]):
         self.dataset_types = (data_type,) + more_types
 
-    def _dataset_type_consensus(self,
-                                method: Callable[[type[Dataset]], Any],
-                                what: str):
+    def _dataset_type_consensus(self, method: Callable[[type[Dataset]], Any]):
         """ Get the consensus value among all types of dataset. """
         value0 = method(self.dataset_types[0])
         for dataset_type in self.dataset_types[1:]:
@@ -231,16 +246,14 @@ class LoadFunction(object):
     def report_path_seg_types(self):
         """ Segment types of the report file path. """
         return self._dataset_type_consensus(
-            lambda dt: dt.get_report_type().seg_types(),
-            "sequence of path segment types"
+            lambda dt: dt.get_report_type().seg_types()
         )
 
     @cached_property
     def report_path_auto_fields(self):
         """ Automatic field values of the report file path. """
         return self._dataset_type_consensus(
-            lambda dt: dt.get_report_type().auto_fields(),
-            "automatic path fields of the report type"
+            lambda dt: dt.get_report_type().auto_fields()
         )
 
     def is_dataset_type(self, dataset: Dataset):
@@ -312,23 +325,27 @@ class LoadedDataset(Dataset, ABC):
     def data_dirs(self):
         return [self.dir]
 
-    def get_batch_path(self, batch: int):
-        """ Get the path to a batch of a specific number. """
-        fields = self.report.path_field_values(self.top,
-                                               self.get_batch_type().auto_fields())
-        return self.get_batch_type().build_path(batch=batch, **fields)
+    @cached_property
+    def report_path_field_values(self):
+        return self.report.path_field_values(self.top,
+                                             self.get_batch_type().auto_fields())
 
-    def get_batch_checksum(self, batch: int):
+    def get_batch_path(self, batch_num: int):
+        """ Get the path to a batch of a specific number. """
+        fields = self.report_path_field_values | {path.BATCH: batch_num}
+        return self.get_batch_type().build_path(fields)
+
+    def get_batch_checksum(self, batch_num: int):
         """ Get the checksum of a specific batch from the report. """
         checksums = self.report.get_field(ChecksumsF)
         try:
-            return checksums[self.get_btype_name()][batch]
+            return checksums[self.get_btype_name()][batch_num]
         except KeyError:
             # Report does not have checksums for this type of batch.
             raise MissingBatchTypeError(self.get_batch_type())
         except IndexError:
             # Report does not have a checksum for this batch number.
-            raise MissingBatchError(batch)
+            raise MissingBatchError(batch_num)
 
     def get_batch(self, batch_num: int) -> ReadBatchIO | MutsBatchIO:
         batch = self.get_batch_type().load(
@@ -426,8 +443,7 @@ class TallDataset(MergedDataset, ABC):
             self.report_file,
             self.get_report_type().seg_types(),
             load_func.report_path_seg_types,
-            **load_func.report_path_auto_fields,
-            sample=sample
+            (load_func.report_path_auto_fields | {path.SAMPLE: sample})
         ) for sample in pooled_samples]
         if not sample_report_files:
             raise ValueError(f"{self} got no datasets")
@@ -487,8 +503,7 @@ class WideDataset(MergedRegionDataset, ABC):
             self.report_file,
             self.get_report_type().seg_types(),
             load_func.report_path_seg_types,
-            **load_func.report_path_auto_fields,
-            reg=reg
+            (load_func.report_path_auto_fields | {path.REG: reg})
         ) for reg in joined_regs]
         if not region_report_files:
             raise ValueError(f"{self} got no datasets")

@@ -1513,7 +1513,7 @@ opt_log = Option(
     default=os.path.join(CWD, "log", datetime.now().strftime(
         "seismic-rna_%Y-%m-%d_%H-%M-%S.log"
     )),
-    help="Log all messages to this file"
+    help="Log all messages to this file ('' to disable)"
 )
 
 opt_log_color = Option(

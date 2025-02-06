@@ -82,7 +82,7 @@ class FileIO(ABC):
 
 
 class RefIO(FileIO, ABC):
-    """ Saved file with a sample, command, and reference. """
+    """ Saved file with a sample, step, branches, and reference. """
 
     @classmethod
     def dir_seg_types(cls):
@@ -90,10 +90,15 @@ class RefIO(FileIO, ABC):
                                           path.CmdSeg,
                                           path.RefSeg)
 
-    def __init__(self, *, sample: str, ref: str, **kwargs):
+    def __init__(self, *,
+                 sample: str,
+                 ref: str,
+                 branches: list[str],
+                 **kwargs):
         super().__init__(**kwargs)
         self.sample = sample
         self.ref = ref
+        self.branches = branches
 
 
 class RegIO(RefIO, ABC):

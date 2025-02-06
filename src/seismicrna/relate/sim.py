@@ -8,6 +8,7 @@ import pandas as pd
 from .batch import format_read_name
 from .io import ReadNamesBatchIO, RelateBatchIO
 from .report import RelateReport
+from ..core import path
 from ..core.io import RefseqIO
 from ..core.seq import DNA
 from ..core.tmp import release_to_out
@@ -108,6 +109,8 @@ def simulate_batches(batch_size: int,
 def simulate_relate(*,
                     out_dir: Path,
                     tmp_dir: Path,
+                    branch: str,
+                    ancestors: list[str],
                     sample: str,
                     ref: str,
                     refseq: DNA,
@@ -123,9 +126,11 @@ def simulate_relate(*,
                     force: bool,
                     **kwargs):
     """ Simulate an entire relate step. """
-    report_file = RelateReport.build_path(top=out_dir,
-                                          sample=sample,
-                                          ref=ref)
+    branches = path.merge_branches(branch, ancestors)
+    report_file = RelateReport.build_path({path.TOP: out_dir,
+                                           path.SAMPLE: sample,
+                                           path.BRANCHES: branches,
+                                           path.REF: ref})
     if need_write(report_file, force):
         began = datetime.now()
         # Write the reference sequence to a file.

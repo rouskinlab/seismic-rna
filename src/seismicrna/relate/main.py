@@ -39,17 +39,20 @@ from ..core.task import as_list_of_tuples, dispatch
 
 
 def check_duplicates(xam_files: list[Path]):
-    """ Check if any sample-reference pair occurs more than once. """
-    logger.routine("Began checking for duplicate sample-reference pairs")
-    sample_ref_pairs = set()
+    """ Check if any combination of sample, reference, and branches
+    occurs more than once. """
+    logger.routine("Began checking for duplicates")
+    combos = set()
     for xam_file in xam_files:
-        fields = path.parse(xam_file, *path.XAM_SEGS)
-        sample_ref = fields[path.SAMPLE], fields[path.REF]
-        logger.detail(f"{xam_file}: {sample_ref}")
-        if sample_ref in sample_ref_pairs:
-            raise DuplicateSampleReferenceError(sample_ref)
-        sample_ref_pairs.add(sample_ref)
-    logger.routine("Ended checking for duplicate sample-reference pairs")
+        fields = path.parse(xam_file, path.XAM_SEGS)
+        combo = (fields[path.SAMPLE],
+                 fields[path.REF],
+                 tuple(fields[path.BRANCHES]))
+        logger.detail(f"{xam_file}: {combo}")
+        if combo in combos:
+            raise DuplicateSampleReferenceError(combo)
+        combos.add(combo)
+    logger.routine("Ended checking for duplicates")
 
 
 @run_func(CMD_RELATE, with_tmp=True, pass_keep_tmp=True)

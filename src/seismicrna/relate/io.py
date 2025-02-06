@@ -46,11 +46,12 @@ class RelateBatchIO(MutsBatchIO, RelateIO, RelateBatch):
 
 def from_reads(reads: Iterable[tuple[str,
                                      tuple[tuple[list[int], list[int]],
-                                           dict[int, int]]]],
+                                           dict[int, int]]]], *,
                sample: str,
                ref: str,
                refseq: DNA,
                batch: int,
+               branches: list[str],
                write_read_names: bool):
     """ Accumulate reads into relation vectors. """
     # Initialize empty data.
@@ -83,6 +84,7 @@ def from_reads(reads: Iterable[tuple[str,
         seg_end3s = seg_end3s[:, np.newaxis]
     # Assemble and return the batches.
     relate_batch = RelateBatchIO(sample=sample,
+                                 branches=branches,
                                  batch=batch,
                                  region=Region(ref, refseq),
                                  seg_end5s=seg_end5s,
@@ -91,6 +93,7 @@ def from_reads(reads: Iterable[tuple[str,
     if write_read_names:
         name_batch = ReadNamesBatchIO(sample=sample,
                                       ref=ref,
+                                      branches=branches,
                                       batch=batch,
                                       names=names)
     else:

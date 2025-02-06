@@ -54,6 +54,7 @@ class RelateReport(BatchedRefseqReport, RelateIO):
 
     def refseq_file(self, top: Path):
         return refseq_file_path(top,
+                                self.branches,
                                 self.get_field(SampleF),
                                 self.get_field(RefF))
 
@@ -96,9 +97,10 @@ def refseq_file_auto_fields():
     return {**RelateReport.auto_fields(), path.EXT: path.BROTLI_PICKLE_EXT}
 
 
-def refseq_file_path(top: Path, sample: str, ref: str):
-    return path.build(*refseq_file_seg_types(),
-                      **refseq_file_auto_fields(),
-                      top=top,
-                      sample=sample,
-                      ref=ref)
+def refseq_file_path(top: Path, branches: list[str], sample: str, ref: str):
+    return path.build(refseq_file_seg_types(),
+                      (refseq_file_auto_fields()
+                       | {path.TOP: top,
+                          path.BRANCHES: branches,
+                          path.SAMPLE: sample,
+                          path.REF: ref}))

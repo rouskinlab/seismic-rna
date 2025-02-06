@@ -4,6 +4,7 @@ from functools import cached_property
 from .batch import RelateBatch
 from .io import ReadNamesBatchIO, RelateBatchIO
 from .report import RelateReport, PoolReport
+from ..core import path
 from ..core.dataset import (Dataset,
                             LoadedDataset,
                             MergedRegionDataset,
@@ -46,9 +47,10 @@ class RelateMutsDataset(RelateDataset, LoadedDataset, MutsDataset):
     @cached_property
     def refseq(self):
         return RefseqIO.load(
-            RefseqIO.build_path(top=self.top,
-                                sample=self.sample,
-                                ref=self.ref),
+            RefseqIO.build_path({path.TOP: self.top,
+                                 path.SAMPLE: self.sample,
+                                 path.BRANCHES: self.branches,
+                                 path.REF: self.ref}),
             checksum=self.report.get_field(RefseqChecksumF)
         ).refseq
 

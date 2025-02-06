@@ -24,11 +24,11 @@ from ..relate.table import TableLoader, PositionTableLoader
 class ClusterTable(RelTypeTable, ABC):
 
     @classmethod
-    def kind(cls):
+    def get_kind(cls):
         return path.CLUSTER_STEP
 
     @classmethod
-    def header_type(cls):
+    def get_header_type(cls):
         return RelClustHeader
 
 
@@ -39,16 +39,16 @@ class ClusterPositionTable(ClusterTable, PartialPositionTable, ABC):
 class ClusterAbundanceTable(AbundanceTable, PartialTable, ABC):
 
     @classmethod
-    def kind(cls):
+    def get_kind(cls):
         return path.CLUSTER_STEP
 
     @classmethod
-    def header_type(cls):
+    def get_header_type(cls):
         return ClustHeader
 
     @classmethod
-    def index_depth(cls):
-        return cls.header_depth()
+    def get_index_depth(cls):
+        return cls.get_header_depth()
 
     def _get_header(self):
         return parse_header(self.data.index)
@@ -76,7 +76,7 @@ class ClusterAbundanceTableLoader(TableLoader, ClusterAbundanceTable):
     @cached_property
     def data(self) -> pd.Series:
         data = pd.read_csv(self.path,
-                           index_col=self.index_cols()).squeeze(axis=1)
+                           index_col=self.get_index_cols()).squeeze(axis=1)
         if not isinstance(data, pd.Series):
             raise ValueError(f"{self} must have one column, but got\n{data}")
         # Any numeric data in the header will be read as strings and

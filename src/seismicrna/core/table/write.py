@@ -72,6 +72,7 @@ class Tabulator(ABC):
 
     def __init__(self, *,
                  top: Path,
+                 branches: list[str],
                  sample: str,
                  region: Region,
                  count_ends: bool,
@@ -79,6 +80,7 @@ class Tabulator(ABC):
                  count_read: bool,
                  validate: bool = True):
         self.top = top
+        self.branches = branches
         self.sample = sample
         self.refseq = region.seq
         self.region = region
@@ -280,6 +282,10 @@ class TableWriter(Table, ABC):
     @property
     def top(self):
         return self.tabulator.top
+
+    @property
+    def branches(self):
+        return self.tabulator.branches
 
     @property
     def sample(self):
