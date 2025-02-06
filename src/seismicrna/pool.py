@@ -5,6 +5,7 @@ from typing import Iterable
 
 from click import command
 
+from .core import path
 from .core.arg import (CMD_POOL,
                        arg_input_path,
                        opt_pooled,
@@ -15,6 +16,7 @@ from .core.arg import (CMD_POOL,
                        opt_keep_tmp,
                        opt_max_procs,
                        opt_force)
+from .core.error import InconsistentValueError
 from .core.logs import logger
 from .core.run import run_func
 from .core.task import dispatch
@@ -34,6 +36,7 @@ def write_report(out_dir: Path, **kwargs):
 @with_tmp_dir(pass_keep_tmp=False)
 def pool_samples(out_dir: Path,
                  name: str,
+                 branches: Iterable[str],
                  ref: str,
                  samples: Iterable[str], *,
                  tmp_dir: Path,
@@ -50,6 +53,8 @@ def pool_samples(out_dir: Path,
         Output directory.
     name: str
         Name of the pool.
+    branches: Iterable[str]
+        Branches of the datasets being pooled.
     ref: str
         Name of the reference
     samples: Iterable[str]
@@ -73,6 +78,8 @@ def pool_samples(out_dir: Path,
         Path of the Pool report file.
     """
     began = datetime.now()
+    # Ensure that branches is not an exhaustible generator.
+    branches = list(branches)
     # Deduplicate and sort the samples.
     sample_counts = Counter(samples)
     if max(sample_counts.values()) > 1:
@@ -80,7 +87,10 @@ def pool_samples(out_dir: Path,
                        f"in {out_dir} got duplicate samples: {sample_counts}")
     samples = sorted(sample_counts)
     # Determine the output report file.
-    report_file = PoolReport.build_path(top=out_dir, sample=name, ref=ref)
+    report_file = PoolReport.build_path({path.TOP: out_dir,
+                                         path.SAMPLE: name,
+                                         path.BRANCHES: branches,
+                                         path.REF: ref})
     if need_write(report_file, force):
         # Because Relate and Pool report files have the same name, it
         # would be possible to overwrite a Relate report with a Pool
@@ -95,21 +105,48 @@ def pool_samples(out_dir: Path,
                                 f"{PoolReport.__name__}: would cause data loss")
         # To be able to load, the pooled dataset must have access to the
         # original relate dataset(s) in the temporary directory.
+        branch = None
+        ancestors = None
         for sample in samples:
-            load_relate_dataset(
-                RelateReport.build_path(top=out_dir,
-                                        sample=sample,
-                                        ref=ref),
+            relate_dataset = load_relate_dataset(
+                RelateReport.build_path({path.TOP: out_dir,
+                                         path.SAMPLE: sample,
+                                         path.BRANCHES: branches,
+                                         path.REF: ref}),
                 verify_times=verify_times
-            ).link_data_dirs_to_tmp(tmp_dir)
+            )
+            # Ensure all reports have the same branch and ancestors;
+            # it's possible for them to have the same branches but
+            # differ in branch and ancestors.
+            if branch is None:
+                assert ancestors is None
+                branch = relate_dataset.branch
+                ancestors = relate_dataset.ancestors
+            else:
+                assert ancestors is not None
+                if relate_dataset.branch != branch:
+                    raise InconsistentValueError(
+                        "Datasets have different values for branch: "
+                        f"{repr(branch)} ≠ {repr(relate_dataset.branch)}"
+                    )
+                assert relate_dataset.ancestors == ancestors
+            relate_dataset.link_data_dirs_to_tmp(tmp_dir)
+        if branch is None:
+            assert ancestors is None
+            # Default to these values if there are no samples.
+            branch = ""
+            ancestors = branches
         # Tabulate the pooled dataset.
         report_kwargs = dict(sample=name,
+                             branch=branch,
+                             ancestors=ancestors,
                              ref=ref,
                              pooled_samples=samples,
                              began=began)
-        dataset = load_relate_dataset(write_report(tmp_dir, **report_kwargs),
-                                      verify_times=verify_times)
-        tabulate(dataset,
+        pool_dataset = load_relate_dataset(write_report(tmp_dir,
+                                                        **report_kwargs),
+                                           verify_times=verify_times)
+        tabulate(pool_dataset,
                  RelateDatasetTabulator,
                  pos_table=relate_pos_table,
                  read_table=relate_read_table,
@@ -147,13 +184,15 @@ def run(input_path: Iterable[str | Path], *,
         else:
             # Otherwise, use just the sample of the dataset.
             samples = [dataset.sample]
-        pools[dataset.top, dataset.ref].extend(samples)
+        key = dataset.top, tuple(dataset.branches), dataset.ref
+        pools[key].extend(samples)
     # Make each pool of samples.
     return dispatch(pool_samples,
                     max_procs=max_procs,
                     pass_n_procs=True,
-                    args=[(out_dir, pooled, ref, samples)
-                          for (out_dir, ref), samples in pools.items()],
+                    args=[(out_dir, pooled, branches, ref, samples)
+                          for (out_dir, branches, ref), samples
+                          in pools.items()],
                     kwargs=dict(relate_pos_table=relate_pos_table,
                                 relate_read_table=relate_read_table,
                                 verify_times=verify_times,
