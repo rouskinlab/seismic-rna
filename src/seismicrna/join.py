@@ -22,7 +22,6 @@ from .core.arg import (CMD_JOIN,
                        opt_max_procs,
                        opt_force,
                        extra_defaults)
-from .core.dataset import load_datasets
 from .core.error import InconsistentValueError
 from .core.header import ClustHeader, parse_header
 from .core.join import JoinMutsDataset, JoinReport
@@ -267,9 +266,8 @@ def run(input_path: Iterable[str | Path], *,
     load_funcs = {False: load_mask_dataset,
                   True: load_cluster_dataset}
     for clustered, load_func in load_funcs.items():
-        for dataset in load_datasets(input_path,
-                                     load_func,
-                                     verify_times=verify_times):
+        for dataset in load_func.iterate(input_path,
+                                         verify_times=verify_times):
             # Check whether the dataset was joined.
             if isinstance(dataset, JoinMutsDataset):
                 # If so, then use all joined regions.

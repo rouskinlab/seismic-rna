@@ -673,7 +673,7 @@ class Report(FileIO, ABC):
         return cls(**idata)
 
     @classmethod
-    def load(cls, file: Path) -> Report:
+    def load(cls, file: str | Path) -> Report:
         logger.routine(f"Began loading {cls.__name__} from {file}")
         with open(file) as f:
             report = cls.from_dict(json.load(f))

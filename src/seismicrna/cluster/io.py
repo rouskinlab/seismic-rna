@@ -31,15 +31,21 @@ class ClusterBatchWriter(object):
                  dataset: MaskMutsDataset,
                  ks: list[EMRunsK],
                  brotli_level: int,
-                 top: Path):
+                 top: Path,
+                 branch: str):
         self.dataset = dataset
         # Filter the numbers of clusters, keeping only those with at
         # least one successful run.
         self.ks = [runs for runs in ks if runs.best is not None]
         self.brotli_level = brotli_level
         self.top = top
+        self.branch = branch
         self.read_nums = dict()
         self.checksums = list()
+
+    @property
+    def branches(self):
+        return path.merge_branches(self.branch, self.dataset.branches)
 
     @property
     def ks_written(self):
@@ -63,6 +69,7 @@ class ClusterBatchWriter(object):
                 resps = pd.DataFrame(index=self.get_read_nums(mask_batch.batch),
                                      columns=ClustHeader(ks=[]).index)
             batch_file = ClusterBatchIO(sample=self.dataset.sample,
+                                        branches=self.branches,
                                         ref=self.dataset.ref,
                                         reg=self.dataset.region.name,
                                         batch=mask_batch.batch,

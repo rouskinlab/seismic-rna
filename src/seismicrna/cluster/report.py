@@ -103,7 +103,9 @@ class ClusterReport(BatchedReport, ClusterIO):
                       began: datetime,
                       ended: datetime):
         """ Create a ClusterReport from EmClustering objects. """
-        return cls(sample=uniq_reads.sample,
+        return cls(branch=uniq_reads.branch,
+                   ancestors=uniq_reads.ancestors,
+                   sample=uniq_reads.sample,
                    ref=uniq_reads.ref,
                    reg=uniq_reads.region.name,
                    n_uniq_reads=uniq_reads.num_uniq,

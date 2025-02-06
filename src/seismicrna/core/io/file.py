@@ -48,7 +48,7 @@ class FileIO(ABC):
             raise ValueError(f"Got no file extensions for {cls.__name__}")
 
     @classmethod
-    def parse_path(cls, file: Path):
+    def parse_path(cls, file: str | Path):
         """ Parse a file path to determine the field values. """
         return path.parse_top_separate(file, cls.seg_types())
 
@@ -58,10 +58,10 @@ class FileIO(ABC):
         return path.buildpar(cls.seg_types(), (cls.auto_fields() | path_fields))
 
     def path_field_values(self,
-                          top: Path | None = None,
+                          top: str | Path | None = None,
                           exclude: Iterable[str] = ()):
         """ Path field values as a dict. """
-        fields = {path.TOP: top} if top else dict()
+        fields = {path.TOP: Path(top)} if top else dict()
         fields.update({field: (getattr(self, field) if hasattr(self, field)
                                else self.auto_fields()[field])
                        for field in self.path_fields()})
@@ -69,7 +69,7 @@ class FileIO(ABC):
             fields.pop(field, None)
         return fields
 
-    def get_path(self, top: Path):
+    def get_path(self, top: str | Path):
         """ Return the file path. """
         return self.build_path(self.path_field_values(top))
 
@@ -138,30 +138,3 @@ class BrickleIO(FileIO, ABC):
 
     def __setstate__(self, state: dict[str, Any]):
         self.__dict__.update(state)
-
-
-def recast_file_path(input_path: Path,
-                     input_type: type[FileIO],
-                     output_type: type[FileIO]):
-    """ Recast `input_path` from `input_type` to `output_type`.
-
-    Parameters
-    ----------
-    input_path: Path
-        Input path from which to take the path fields.
-    input_type: type[FileIO]
-        Type of file to use to determine the fields in `input_path`.
-    output_type: type[FileIO]
-        Type of file to use for fitting the path fields and building a
-        new path.
-
-    Returns
-    -------
-    Path
-        Path for file of `output_type` made from fields in `input_path`
-        (as determined by the file of `input_type`).
-    """
-    return path.cast_path(input_path,
-                          input_type.seg_types(),
-                          output_type.seg_types(),
-                          output_type.auto_fields())

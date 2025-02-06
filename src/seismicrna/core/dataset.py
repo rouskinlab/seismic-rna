@@ -25,7 +25,7 @@ from .report import (DATETIME_FORMAT,
 from .seq import DNA, Region, unite
 
 
-class ReversedTimeStampError(RuntimeError):
+class BadTimeStampError(RuntimeError):
     """ A dataset has a timestamp that is earlier than a dataset that
     should have been written before it. """
 
@@ -50,8 +50,8 @@ class Dataset(ABC):
     def get_report_type(cls) -> type[Report]:
         """ Type of report. """
 
-    def __init__(self, report_file: Path, verify_times: bool = True):
-        self.report_file = report_file
+    def __init__(self, report_file: str | Path, verify_times: bool = True):
+        self.report_file = Path(report_file)
         self.verify_times = verify_times
         # Load the report here so that if the report does not have the
         # expected fields, an error will be raised inside __init__.
@@ -261,7 +261,7 @@ class LoadFunction(object):
         return any(isinstance(dataset, dataset_type)
                    for dataset_type in self.dataset_types)
 
-    def __call__(self, report_file: Path, **kwargs):
+    def __call__(self, report_file: str | Path, **kwargs):
         """ Load a dataset from the report file. """
         # Try to load the report file using each type of dataset.
         errors = dict()
@@ -273,10 +273,10 @@ class LoadFunction(object):
                 # Re-raise FileNotFoundError because if the report file
                 # does not exist, then no dataset type can load it.
                 raise
-            except ReversedTimeStampError:
-                # Re-raise ReversedTimeStampError because if the report
-                # file's timestamp is earlier than that of one of its
-                # constituents, then no dataset type can load it.
+            except BadTimeStampError:
+                # Re-raise BadTimeStampError because if the report file
+                # has a timestamp that is earlier than that of one of
+                # its constituents, then no dataset type can load it.
                 raise
             except Exception as error:
                 # If a type fails for any other reason, then record the
@@ -288,6 +288,15 @@ class LoadFunction(object):
         raise FailedToLoadDatasetError(
             f"{self} failed to load {report_file}:\n{errmsg}"
         )
+
+    def iterate(self, input_path: Iterable[str | Path], **kwargs):
+        """ Yield a Dataset from each report file in `input_path`. """
+        for report_file in path.find_files_chain(input_path,
+                                                 self.report_path_seg_types):
+            try:
+                yield self(report_file, **kwargs)
+            except Exception as error:
+                logger.error(error)
 
     def __str__(self):
         names = ", ".join(dataset_type.__name__
@@ -576,7 +585,7 @@ class MultistepDataset(MutsDataset, ABC):
             cls.get_report_type().seg_types(),
             load_func.report_path_seg_types,
             # Replace the default fields and branches of report path 2
-            # wich those for report path 1.
+            # with those of report path 1.
             (load_func.report_path_auto_fields
              | {path.BRANCHES: dataset2.ancestors})
         )
@@ -603,7 +612,7 @@ class MultistepDataset(MutsDataset, ABC):
         time1 = data1.timestamp
         time2 = data2.timestamp
         if self.verify_times and time1 > time2:
-            raise ReversedTimeStampError(
+            raise BadTimeStampError(
                 f"{data2} was presumably made from {data1}, but its report "
                 f"file was written earlier: {time2.strftime(DATETIME_FORMAT)} "
                 f"compared to {time1.strftime(DATETIME_FORMAT)}. "
@@ -636,23 +645,3 @@ class MultistepDataset(MutsDataset, ABC):
     def get_batch(self, batch_num: int):
         return self._integrate(self.data1.get_batch(batch_num),
                                self.data2.get_batch(batch_num))
-
-
-def load_datasets(input_path: Iterable[str | Path],
-                  load_func: LoadFunction,
-                  **kwargs):
-    """ Yield a Dataset from each report file in `input_path`.
-
-    Parameters
-    ----------
-    input_path: Iterable[str | Path]
-        Input paths to be searched recursively for report files.
-    load_func: LoadFunction
-        Function to load the dataset from each report file.
-    """
-    for report_file in path.find_files_chain(input_path,
-                                             load_func.report_path_seg_types):
-        try:
-            yield load_func(report_file, **kwargs)
-        except Exception as error:
-            logger.error(error)

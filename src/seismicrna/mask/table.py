@@ -233,6 +233,23 @@ def adjust_counts(table_per_pos: pd.DataFrame,
                   quick_unbias_thresh: float):
     """ Adjust the given table of masked/clustered counts per position
     to correct for observer bias. """
+    if not isinstance(table_per_pos, pd.DataFrame):
+        raise TypeError(table_per_pos)
+    action = (f"unbiasing counts (min_mut_gap={min_mut_gap}) "
+              f"of table with {table_per_pos.index.size} positions")
+    if isinstance(n_reads_clust, pd.Series):
+        k = n_reads_clust.size
+        action += f", {k} clusters,"
+        n_rels, rem = divmod(table_per_pos.columns.size, k)
+        if rem:
+            raise ValueError(
+                f"Number of columns in table ({table_per_pos.columns.size}) "
+                f"is not a multiple of number of clusters ({k})"
+            )
+    else:
+        n_rels = table_per_pos.columns.size
+    action += f" and {n_rels} relationships"
+    logger.routine(f"Began {action}")
     # Determine which positions are unmasked.
     unmask = region.unmasked_bool
     # Calculate the fraction of mutations at each position among reads
@@ -356,4 +373,5 @@ def adjust_counts(table_per_pos: pd.DataFrame,
     # Scale every subtype of mutation by this factor.
     for mut in SUBMUTS:
         n_rels.loc[unmask, mut] = scale * table_per_pos.loc[unmask, mut].values
+    logger.routine(f"Ended {action}")
     return n_rels, n_clust

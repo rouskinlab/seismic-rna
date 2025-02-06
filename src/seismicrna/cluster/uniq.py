@@ -8,6 +8,7 @@ import pandas as pd
 from .names import BIT_VECTOR_NAME
 from ..core.array import get_length
 from ..core.batch import EndCoords, RegionMutsBatch
+from ..core.path import merge_branches
 from ..core.rel import RelPattern
 from ..core.seq import Region
 from ..mask.dataset import MaskMutsDataset
@@ -17,7 +18,7 @@ class UniqReads(EndCoords):
     """ Collection of bit vectors of unique reads. """
 
     @classmethod
-    def from_dataset(cls, dataset: MaskMutsDataset, **kwargs):
+    def from_dataset(cls, dataset: MaskMutsDataset, branch: str, **kwargs):
         """ Get unique reads from a dataset. """
         ((seg_end5s, seg_end3s),
          muts_per_pos,
@@ -27,6 +28,8 @@ class UniqReads(EndCoords):
                                           dataset.iter_batches(),
                                           **kwargs)
         return cls(dataset.sample,
+                   branch,
+                   dataset.branches,
                    dataset.region,
                    dataset.min_mut_gap,
                    dataset.quick_unbias,
@@ -38,14 +41,17 @@ class UniqReads(EndCoords):
                    seg_end3s=seg_end3s)
 
     @classmethod
-    def from_dataset_contig(cls, dataset: MaskMutsDataset):
+    def from_dataset_contig(cls, dataset: MaskMutsDataset, branch: str):
         """ Get unique reads from a dataset of contiguous reads. """
         return cls.from_dataset(dataset,
+                                branch,
                                 only_read_ends=True,
                                 require_contiguous=True)
 
     def __init__(self,
                  sample: str,
+                 branch: str,
+                 ancestors: list[str],
                  region: Region,
                  min_mut_gap: int,
                  quick_unbias: bool,
@@ -56,6 +62,8 @@ class UniqReads(EndCoords):
                  **kwargs):
         super().__init__(region=region, **kwargs)
         self.sample = sample
+        self.branch = branch
+        self.ancestors = ancestors
         self.region = region
         self.min_mut_gap = min_mut_gap
         self.quick_unbias = quick_unbias
@@ -67,6 +75,10 @@ class UniqReads(EndCoords):
         self.muts_per_pos = muts_per_pos
         self.batch_to_uniq = batch_to_uniq
         self.counts_per_uniq = counts_per_uniq
+
+    @property
+    def branches(self):
+        return merge_branches(self.branch, self.ancestors)
 
     @property
     def ref(self):
@@ -168,6 +180,8 @@ class UniqReads(EndCoords):
         if not isinstance(other, UniqReads):
             return NotImplemented
         return (self.sample == other.sample
+                and self.branch == other.branch
+                and self.ancestors == other.ancestors
                 and self.region == other.region
                 and self.min_mut_gap == other.min_mut_gap
                 and self.num_batches == other.num_batches

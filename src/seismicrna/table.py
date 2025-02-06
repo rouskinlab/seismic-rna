@@ -17,7 +17,7 @@ from .core.arg import (CMD_TABLE,
                        opt_verify_times,
                        opt_max_procs,
                        opt_force)
-from .core.dataset import Dataset, MutsDataset, load_datasets
+from .core.dataset import Dataset, MutsDataset
 from .core.run import run_func
 from .core.table import DatasetTabulator
 from .core.task import dispatch
@@ -46,18 +46,14 @@ def tabulate(dataset: MutsDataset,
 
 def load_all_datasets(input_path: Iterable[str | Path], verify_times: bool):
     """ Load datasets from all steps of the workflow. """
-    if not isinstance(input_path, (tuple, list)):
+    if not isinstance(input_path, (tuple, list, set, dict)):
         # Make sure input_path is not an iterator that will be exhausted
         # on the first run-through.
         input_path = list(input_path)
-    yield from load_datasets(input_path,
-                             load_relate_dataset)
-    yield from load_datasets(input_path,
-                             load_mask_dataset,
-                             verify_times=verify_times)
-    yield from load_datasets(input_path,
-                             load_cluster_dataset,
-                             verify_times=verify_times)
+    for load_func in [load_relate_dataset,
+                      load_mask_dataset,
+                      load_cluster_dataset]:
+        yield from load_func.iterate(input_path, verify_times=verify_times)
 
 
 def get_tabulator_type(dataset_type: type[Dataset], count: bool = False):

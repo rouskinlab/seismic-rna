@@ -41,7 +41,6 @@ from ..core.arg import (CMD_MASK,
                         opt_force,
                         optional_path,
                         extra_defaults)
-from ..core.dataset import load_datasets
 from ..core.logs import logger
 from ..core.run import run_func
 from ..core.seq import DNA, RefRegions
@@ -57,7 +56,7 @@ def load_regions(input_path: Iterable[str | Path],
     """ Load regions of relate reports. """
     # Load all datasets, grouped by their reference names.
     datasets = defaultdict(list)
-    for dataset in load_datasets(input_path, load_relate_dataset):
+    for dataset in load_relate_dataset.iterate(input_path):
         try:
             datasets[dataset.ref].append(dataset)
         except Exception as error:

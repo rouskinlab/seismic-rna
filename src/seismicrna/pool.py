@@ -15,7 +15,6 @@ from .core.arg import (CMD_POOL,
                        opt_keep_tmp,
                        opt_max_procs,
                        opt_force)
-from .core.dataset import load_datasets
 from .core.logs import logger
 from .core.run import run_func
 from .core.task import dispatch
@@ -139,9 +138,8 @@ def run(input_path: Iterable[str | Path], *,
         raise ValueError("No name for the pooled sample was given via --pooled")
     # Group the datasets by output directory and reference name.
     pools = defaultdict(list)
-    for dataset in load_datasets(input_path,
-                                 load_relate_dataset,
-                                 verify_times=verify_times):
+    for dataset in load_relate_dataset.iterate(input_path,
+                                               verify_times=verify_times):
         # Check whether the dataset was pooled.
         if isinstance(dataset, PoolDataset):
             # If so, then use all samples in the pool.

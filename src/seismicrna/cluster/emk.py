@@ -236,6 +236,10 @@ class EMRunsK(object):
             lines.append(f"{attr} = {func(**kwargs)}")
         return "\n".join(lines)
 
+    def __str__(self):
+        return (f"{type(self).__name__} with {self.k} clusters "
+                f"and {self.n_runs_total} runs")
+
 
 def find_best_k(ks: Iterable[EMRunsK], **kwargs):
     """ Find the best number of clusters. """
