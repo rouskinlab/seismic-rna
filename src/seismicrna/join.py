@@ -23,11 +23,11 @@ from .core.arg import (CMD_JOIN,
                        opt_max_procs,
                        opt_force,
                        extra_defaults)
-from .core.error import InconsistentValueError
+from .core.error import InconsistentValueError, NoDataError
 from .core.header import ClustHeader, parse_header
 from .core.join import JoinMutsDataset, JoinReport
 from .core.logs import logger
-from .core.report import JoinedRegionsF, BranchF, AncestorsF
+from .core.report import JoinedRegionsF, BranchesF
 from .core.run import run_func
 from .core.task import dispatch
 from .core.tmp import release_to_out, with_tmp_dir
@@ -105,7 +105,7 @@ def write_report(report_type: type[JoinReport],
 def join_regions(out_dir: Path,
                  name: str,
                  sample: str,
-                 branches: Iterable[str],
+                 branches_flat: Iterable[str],
                  ref: str,
                  regs: Iterable[str],
                  clustered: bool, *,
@@ -126,7 +126,7 @@ def join_regions(out_dir: Path,
         Output directory.
     name: str
         Name of the joined region.
-    branches: Iterable[str]
+    branches_flat: Iterable[str]
         Branches of the datasets being pooled.
     sample: str
         Name of the sample.
@@ -163,8 +163,7 @@ def join_regions(out_dir: Path,
         Path of the Join report file.
     """
     began = datetime.now()
-    # Ensure that branches is not an exhaustible generator.
-    branches = list(branches)
+    branches_flat = list(branches_flat)
     # Deduplicate and sort the regions.
     reg_counts = Counter(regs)
     if max(reg_counts.values()) > 1:
@@ -195,7 +194,7 @@ def join_regions(out_dir: Path,
     # Determine the output report file.
     join_report_file = report_type.build_path({path.TOP: out_dir,
                                                path.SAMPLE: sample,
-                                               path.BRANCHES: branches,
+                                               path.BRANCHES: branches_flat,
                                                path.REF: ref,
                                                path.REG: name})
     if need_write(join_report_file, force):
@@ -217,35 +216,32 @@ def join_regions(out_dir: Path,
             region_dataset = load_function(
                 report_type.build_path({path.TOP: out_dir,
                                         path.SAMPLE: sample,
-                                        path.BRANCHES: branches,
+                                        path.BRANCHES: branches_flat,
                                         path.REF: ref,
                                         path.REG: reg}),
                 verify_times=verify_times
             )
-            # Ensure all datasets have the same branch and ancestors;
-            # it's possible for them to have the same branches but
-            # different individual branch or ancestors attributes.
-            if BranchF.key in report_kwargs:
-                assert AncestorsF.key in report_kwargs
-                if region_dataset.branch != report_kwargs[BranchF.key]:
+            # Ensure all datasets have the same branches; it's possible
+            # for two datasets to have different branches despite having
+            # the same flattened branches.
+            if BranchesF.key in report_kwargs:
+                if region_dataset.branches != report_kwargs[BranchesF.key]:
                     raise InconsistentValueError(
-                        "Datasets have different values for branch: "
-                        f"{report_kwargs[BranchF.key]} ≠ "
-                        f"{repr(region_dataset.branch)}"
+                        "Cannot join datasets with different branches: "
+                        f"{report_kwargs[BranchesF.key]} ≠ "
+                        f"{region_dataset.branches}"
                     )
-                assert region_dataset.ancestors == report_kwargs[AncestorsF.key]
             else:
-                assert AncestorsF.key not in report_kwargs
-                report_kwargs[BranchF.key] = region_dataset.branch
-                report_kwargs[AncestorsF.key] = region_dataset.ancestors
+                report_kwargs[BranchesF.key] = region_dataset.branches
             # Make links to the files for this dataset in the temporary
             # directory.
             region_dataset.link_data_dirs_to_tmp(tmp_dir)
-        if BranchF.key not in report_kwargs:
-            assert AncestorsF.key not in report_kwargs
-            # Default to these values if there are no samples.
-            report_kwargs[BranchF.key] = ""
-            report_kwargs[AncestorsF.key] = branches
+        if BranchesF.key not in report_kwargs:
+            raise NoDataError(
+                f"No regions were given to make joined region {repr(name)} "
+                f"with sample {repr(sample)}, reference {repr(ref)}, "
+                f"and branches {branches_flat} in {out_dir}"
+            )
         # Tabulate the joined dataset.
         dataset = load_function(write_report(report_type,
                                              tmp_dir,
@@ -309,30 +305,35 @@ def run(input_path: Iterable[str | Path], *,
             else:
                 # Otherwise, use just the region of the dataset.
                 regs = [dataset.region.name]
+            # Flatten the dict of branches because the path preserves
+            # only the flat structure, and this step must group datasets
+            # that will have the same joined path.
+            branches_flat = tuple(path.flatten_branches(dataset.branches))
             key = (dataset.top,
                    dataset.sample,
-                   tuple(dataset.branches),
+                   branches_flat,
                    dataset.ref,
                    clustered)
             joins[key].extend(regs)
             logger.detail(f"Added regions {regs} for {dataset}")
     # For every joined cluster dataset that does not have a joined mask
     # dataset, also create the joined mask dataset.
-    for (top, sample, branches, ref, clustered), regs in list(joins.items()):
+    for ((top, sample, branches_flat, ref, clustered),
+         regs) in list(joins.items()):
         if clustered and (force or not joined_mask_report_exists(top,
                                                                  sample,
-                                                                 branches,
+                                                                 branches_flat,
                                                                  ref,
                                                                  joined,
                                                                  regs)):
-            mask_joins = joins[top, sample, branches, ref, False]
+            mask_joins = joins[top, sample, branches_flat, ref, False]
             mask_joins.extend(reg for reg in regs if reg not in mask_joins)
     # Join the masked regions first, then the clustered regions, because
     # the clustered regions require the masked regions.
     results = list()
     for use_clustered in [False, True]:
-        args = [(out_dir, joined, sample, branches, ref, regs, clustered)
-                for (out_dir, sample, branches, ref, clustered), regs
+        args = [(out_dir, joined, sample, branches_flat, ref, regs, clustered)
+                for (out_dir, sample, branches_flat, ref, clustered), regs
                 in joins.items()
                 if clustered == use_clustered]
         kwargs = dict(clusts=clusts,

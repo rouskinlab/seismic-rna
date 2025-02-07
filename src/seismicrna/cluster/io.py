@@ -45,7 +45,9 @@ class ClusterBatchWriter(object):
 
     @property
     def branches(self):
-        return path.merge_branches(self.branch, self.dataset.branches)
+        return path.add_branch(path.CLUSTER_STEP,
+                               self.branch,
+                               self.dataset.branches)
 
     @property
     def ks_written(self):

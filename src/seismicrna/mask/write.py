@@ -1,7 +1,6 @@
 import json
 from collections import defaultdict
 from datetime import datetime
-from functools import cached_property
 from itertools import chain
 from pathlib import Path
 from typing import Iterable
@@ -123,18 +122,14 @@ class Masker(object):
         self.count_read = count_read
         self.brotli_level = brotli_level
         self.checksums = [""] * dataset.num_batches
-        self.branch = branch
         # After the first iteration, self.dataset will become the new,
-        # masked dataset, which can have different branches, so store
-        # the ancestors here instead of as a property that returns
-        # self.dataset.branches.
-        self.ancestors = dataset.branches
+        # masked dataset, which will also have a branch for the mask
+        # step, so calculate the branches using the original dataset.
+        self.branches = path.add_branch(path.MASK_STEP,
+                                        branch,
+                                        dataset.branches)
         # Parallelization
         self.max_procs = max_procs
-
-    @cached_property
-    def branches(self):
-        return path.merge_branches(self.branch, self.ancestors)
 
     # This property can change: do not cache it.
     @property
@@ -565,8 +560,7 @@ class Masker(object):
     def create_report(self):
         return MaskReport(
             sample=self.dataset.sample,
-            branch=self.branch,
-            ancestors=self.ancestors,
+            branches=self.branches,
             ref=self.dataset.ref,
             reg=self.region.name,
             end5=self.region.end5,
@@ -635,7 +629,7 @@ def mask_region(dataset: RelateMutsDataset | PoolDataset,
                 **kwargs):
     """ Mask out certain reads, positions, and relationships. """
     # Check if the report file already exists.
-    branches = path.merge_branches(branch, dataset.branches)
+    branches = path.add_branch(path.MASK_STEP, branch, dataset.branches)
     report_file = MaskReport.build_path({path.TOP: dataset.top,
                                          path.SAMPLE: dataset.sample,
                                          path.BRANCHES: branches,

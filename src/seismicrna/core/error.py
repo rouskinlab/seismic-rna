@@ -12,3 +12,7 @@ class InconsistentValueError(ValueError):
 
 class OutOfBoundsError(ValueError):
     """ A numeric value is outside its proper bounds. """
+
+
+class NoDataError(RuntimeError):
+    """ Data were required, but none were provided. """

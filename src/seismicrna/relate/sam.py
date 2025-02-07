@@ -220,28 +220,32 @@ class XamViewer(object):
         self.n_procs = n_procs
 
     @cached_property
-    def _sample_ref_ancestors(self):
+    def _sample_ref_ancestors_flat(self):
         fields = path.parse(self.xam_input, path.XAM_SEGS)
         return fields[path.SAMPLE], fields[path.REF], fields[path.BRANCHES]
 
     @property
     def sample(self):
-        sample, ref, ancestors = self._sample_ref_ancestors
+        sample, ref, ancestors_flat = self._sample_ref_ancestors_flat
         return sample
 
     @property
     def ref(self):
-        sample, ref, ancestors = self._sample_ref_ancestors
+        sample, ref, ancestors_flat = self._sample_ref_ancestors_flat
         return ref
 
-    @property
+    @cached_property
     def ancestors(self):
-        sample, ref, ancestors = self._sample_ref_ancestors
-        return ancestors
+        sample, ref, ancestors_flat = self._sample_ref_ancestors_flat
+        if len(ancestors_flat) > 1:
+            raise ValueError(f"{self} must have ≤ 1 ancestor branches, "
+                             f"but got {ancestors_flat}")
+        ancestor = ancestors_flat[0] if ancestors_flat else ""
+        return {path.ALIGN_STEP: ancestor}
 
     @cached_property
     def branches(self):
-        return path.merge_branches(self.branch, self.ancestors)
+        return path.add_branch(path.RELATE_STEP, self.branch, self.ancestors)
 
     @cached_property
     def flagstats(self):
@@ -311,4 +315,4 @@ class XamViewer(object):
         logger.routine(f"Ended iterating records for {self} batch {batch}")
 
     def __str__(self):
-        return f"alignment map {self.xam_input}"
+        return f"Alignment map {self.xam_input}"

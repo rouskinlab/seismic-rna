@@ -91,7 +91,7 @@ from .arg import (opt_phred_enc,
 from .error import InconsistentValueError
 from .io import FileIO, ReadBatchIO, RefIO
 from .logs import logger
-from .path import merge_branches
+from .path import flatten_branches
 from .rel import HalfRelPattern
 from .version import __version__
 from .write import need_write, write_mode
@@ -266,8 +266,7 @@ def oconv_datetime(dtime: datetime):
 
 # General fields
 VersionF = ReportField("version", "Version of SEISMIC-RNA", str, __version__)
-AncestorsF = ReportField("ancestors", "Ancestor Branches", list)
-BranchF = ReportField("branch", "Branch", str)
+BranchesF = ReportField("branches", "Branches", dict)
 SampleF = ReportField("sample", "Sample", str)
 RefF = ReportField("ref", "Reference", str)
 RegF = ReportField("reg", "Region", str)
@@ -638,8 +637,7 @@ class Report(FileIO, ABC):
     @abstractmethod
     def fields(cls):
         """ All fields of the report. """
-        return [BranchF,
-                AncestorsF,
+        return [BranchesF,
                 TimeBeganF,
                 TimeEndedF,
                 TimeTakenF,
@@ -681,6 +679,10 @@ class Report(FileIO, ABC):
         # actual path of the JSON file.
         top, path_fields = cls.parse_path(file)
         for key, value in report.path_field_values().items():
+            if key == BranchesF.key:
+                # The branches in the report must be flattened to match
+                # the value from parsin the path.
+                value = flatten_branches(value)
             if value != path_fields.get(key):
                 raise InconsistentValueError(
                     f"Got different values for {repr(key)} in path "
@@ -745,12 +747,6 @@ class Report(FileIO, ABC):
             raise ReportDoesNotHaveFieldError(
                 f"{type(self).__name__}.{field.key}"
             ) from None
-
-    @property
-    def branches(self):
-        """ All branches. """
-        return merge_branches(self.get_field(BranchF),
-                              self.get_field(AncestorsF))
 
     def to_dict(self):
         """ Return a dict of raw values of the fields, keyed by the
@@ -827,7 +823,3 @@ class BatchedReport(Report, ABC):
                                  f"one type of batch, but got {ntypes} types")
             return batch_types[0]
         return cls.batch_types()[btype]
-
-
-class BatchedRefseqReport(BatchedReport, RefseqReport, ABC):
-    """ Convenience class used as a base for several Report classes. """

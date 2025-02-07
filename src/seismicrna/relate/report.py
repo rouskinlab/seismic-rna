@@ -7,7 +7,8 @@ from .io import RelateIO, ReadNamesBatchIO, RelateBatchIO
 from ..core import path
 from ..core.io import RefIO
 from ..core.report import (Report,
-                           BatchedRefseqReport,
+                           BatchedReport,
+                           RefseqReport,
                            RefF,
                            SampleF,
                            PooledSamplesF,
@@ -26,7 +27,7 @@ from ..core.report import (Report,
 BATCH_INDEX_COL = "Read Name"
 
 
-class RelateReport(BatchedRefseqReport, RelateIO):
+class RelateReport(BatchedReport, RefseqReport, RelateIO):
 
     @classmethod
     def fields(cls):
@@ -97,7 +98,10 @@ def refseq_file_auto_fields():
     return {**RelateReport.auto_fields(), path.EXT: path.BROTLI_PICKLE_EXT}
 
 
-def refseq_file_path(top: Path, branches: list[str], sample: str, ref: str):
+def refseq_file_path(top: Path,
+                     branches: dict[str, str],
+                     sample: str,
+                     ref: str):
     return path.build(refseq_file_seg_types(),
                       (refseq_file_auto_fields()
                        | {path.TOP: top,

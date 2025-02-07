@@ -72,7 +72,7 @@ class Tabulator(ABC):
 
     def __init__(self, *,
                  top: Path,
-                 branches: list[str],
+                 branches: dict[str, str],
                  sample: str,
                  region: Region,
                  count_ends: bool,

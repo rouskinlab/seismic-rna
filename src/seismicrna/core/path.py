@@ -6,7 +6,7 @@ import re
 import shutil
 from collections import Counter
 from functools import cache, cached_property, partial, wraps
-from itertools import chain, product
+from itertools import chain, islice, product
 from string import ascii_letters, digits, printable
 from tempfile import mkdtemp
 from typing import Any, Callable, Iterable, Sequence
@@ -27,6 +27,7 @@ PATH_CHARS = printable
 ALPHANUM_CHARS = ascii_letters + digits
 STR_CHARS = ALPHANUM_CHARS + "_.=+-"
 STR_CHARS_SET = frozenset(STR_CHARS)
+BRANCH_CHARS_SET = frozenset(STR_CHARS_SET - {BRANCH_SEP})
 INT_CHARS = digits
 PATH_PATTERN = f"([{PATH_CHARS}]+)"
 STR_PATTERN = f"([{STR_CHARS}]+)"
@@ -253,21 +254,56 @@ def validate_int(num: int):
         raise PathValueError(f"Integer must be ≥ 0, but got {num}")
 
 
-def validate_branches(branches: list[str]):
-    if not isinstance(branches, list):
+def validate_branch(branch: str):
+    if not isinstance(branch, str):
+        raise PathTypeError(f"Expected str, but got {type(branch).__name__}")
+    if illegal := sorted(set(branch) - BRANCH_CHARS_SET):
+        raise PathValueError(
+            f"{repr(branch)} has illegal characters: {illegal}"
+        )
+
+
+def validate_branches(branches: dict[str, str]):
+    if not isinstance(branches, dict):
         raise PathTypeError(branches)
-    for branch in branches:
-        validate_str(branch)
-        if BRANCH_SEP in branch:
-            raise PathValueError(
-                f"{repr(branch)} contains branch separator {repr(BRANCH_SEP)}"
-            )
+    for step, branch in branches.items():
+        validate_str(step)
+        validate_branch(branch)
+
+
+def get_ancestors(branches: dict[str, str]):
+    """ Get all but the last branch in a dict of branches. """
+    validate_branches(branches)
+    if branches:
+        return dict(islice(branches.items(), len(branches) - 1))
+    return dict()
+
+
+def add_branch(step: str, branch: str, ancestors: dict[str, str]):
+    """ Add a new branch to a dict of branches. """
+    validate_str(step)
+    validate_branch(branch)
+    validate_branches(ancestors)
+    if step in ancestors:
+        raise PathValueError(f"Duplicate step: {repr(step)}")
+    return {**ancestors, step: branch}
+
+
+def flatten_branches(branches: dict[str, str]):
+    validate_branches(branches)
+    return list(filter(None, branches.values()))
+
+
+def validate_branches_flat(branches_flat: list[str]):
+    if not isinstance(branches_flat, list):
+        raise PathTypeError(branches_flat)
+    for branch in branches_flat:
+        validate_branch(branch)
 
 
 VALIDATE = {int: validate_int,
             str: validate_str,
-            pathlib.Path: validate_top,
-            list: validate_branches}
+            pathlib.Path: validate_top}
 
 
 # Field class
@@ -313,21 +349,16 @@ class PathField(object):
 
     def validate(self, val: Any):
         """ Validate a value before turning it into a string. """
-        if not isinstance(val, self.dtype):
-            raise PathTypeError(f"Expected {self.dtype.__name__}, "
-                                f"but got {type(val).__name__}")
+        validate_func = VALIDATE[self.dtype]
+        validate_func(val)
         if self.options and val not in self.options:
             raise PathValueError(
                 f"Invalid option {repr(val)}; expected one of {self.options}"
             )
-        validate_func = VALIDATE[self.dtype]
-        validate_func(val)
 
     def build(self, val: Any):
         """ Validate a value and return it as a string. """
         self.validate(val)
-        if self.dtype is list:
-            return "".join(f"{BRANCH_SEP}{x}" for x in val)
         return str(val)
 
     def parse(self, text: str) -> Any:
@@ -335,10 +366,7 @@ class PathField(object):
         if not isinstance(text, str):
             raise PathTypeError(f"Expected str, but got {type(text).__name__}")
         try:
-            if self.dtype is list:
-                val = list(filter(None, text.split(BRANCH_SEP)))
-            else:
-                val = self.dtype(text)
+            val = self.dtype(text)
         except Exception as error:
             raise PathValueError(f"Could not interpret {repr(text)} as type "
                                  f"{self.dtype.__name__}: {error}") from None
@@ -347,6 +375,30 @@ class PathField(object):
 
     def __str__(self):
         return f"{type(self).__name__} <{self.dtype.__name__}>"
+
+
+class BranchesPathField(PathField):
+    """ The field for branches requires special functions. """
+
+    def __init__(self):
+        super().__init__(list, (), False, BRANCHES_PATTERN)
+
+    def validate(self, val: Any):
+        validate_branches_flat(val)
+
+    def build(self, val: Any):
+        if isinstance(val, dict):
+            val = flatten_branches(val)
+        else:
+            self.validate(val)
+        return "".join(f"{BRANCH_SEP}{branch}" for branch in val)
+
+    def parse(self, text: str):
+        if not isinstance(text, str):
+            raise PathTypeError(f"Expected str, but got {type(text).__name__}")
+        val = list(filter(None, text.split(BRANCH_SEP)))
+        self.validate(val)
+        return val
 
 
 # Fields
@@ -361,7 +413,7 @@ CmdField = PathField(str,
                       FOLD_STEP,
                       GRAPH_STEP],
                      pattern=CMD_PATTERN)
-BranchesField = PathField(list, pattern=BRANCHES_PATTERN)
+BranchesField = BranchesPathField()
 StageField = PathField(str, STAGES)
 IntField = PathField(int)
 ClustRunResultsField = PathField(str, CLUST_PARAMS)
@@ -405,14 +457,6 @@ def check_file_extension(file: pathlib.Path,
         raise WrongFileExtensionError(
             f"Extension of {file} is not one of {extensions}"
         )
-
-
-def merge_branches(branch: str, ancestors: Iterable[str]):
-    branches = list(ancestors)
-    if branch:
-        branches.append(branch)
-    validate_branches(branches)
-    return branches
 
 
 # Path Segments ########################################################

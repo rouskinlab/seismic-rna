@@ -62,7 +62,7 @@ def split_xam_file(xam_file: Path,
                    **kwargs):
     # Assume the XAM file is named for the sample.
     sample = xam_file.stem
-    branches = path.merge_branches(branch, list())
+    branches = path.add_branch(path.ALIGN_STEP, branch, dict())
     # Determine the final output directory.
     result_dir = path.build(path.CMD_DIR_SEGS,
                             {path.TOP: out_dir,

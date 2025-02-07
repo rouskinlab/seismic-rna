@@ -144,8 +144,7 @@ def cluster(dataset: MaskMutsDataset | JoinMaskMutsDataset, *,
             **kwargs):
     """ Cluster unique reads from one mask dataset. """
     # Check if the report file already exists.
-    ancestors = dataset.branches
-    branches = path.merge_branches(branch, ancestors)
+    branches = path.add_branch(path.CLUSTER_STEP, branch, dataset.branches)
     report_file = ClusterReport.build_path({path.TOP: dataset.top,
                                             path.SAMPLE: dataset.sample,
                                             path.BRANCHES: branches,

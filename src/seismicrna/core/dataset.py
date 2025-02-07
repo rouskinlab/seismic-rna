@@ -10,8 +10,7 @@ from .io import MutsBatchIO, ReadBatchIO
 from .logs import logger
 from .rel import RelPattern
 from .report import (DATETIME_FORMAT,
-                     BranchF,
-                     AncestorsF,
+                     BranchesF,
                      SampleF,
                      RefF,
                      RegF,
@@ -66,20 +65,10 @@ class Dataset(ABC):
         top, _ = self.get_report_type().parse_path(self.report_file)
         return top
 
-    @cached_property
-    def ancestors(self) -> list[str]:
-        """ Ancestor branches. """
-        return self.report.get_field(AncestorsF)
-
-    @cached_property
-    def branch(self) -> str:
-        """ Branch of the workflow. """
-        return self.report.get_field(BranchF)
-
     @property
     def branches(self):
         """ Branches of the workflow. """
-        return self.report.branches
+        return self.report.get_field(BranchesF)
 
     @cached_property
     def sample(self) -> str:
@@ -587,7 +576,7 @@ class MultistepDataset(MutsDataset, ABC):
             # Replace the default fields and branches of report path 2
             # with those of report path 1.
             (load_func.report_path_auto_fields
-             | {path.BRANCHES: dataset2.ancestors})
+             | {path.BRANCHES: path.get_ancestors(dataset2.branches)})
         )
 
     @classmethod

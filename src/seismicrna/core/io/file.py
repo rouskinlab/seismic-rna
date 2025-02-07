@@ -93,7 +93,7 @@ class RefIO(FileIO, ABC):
     def __init__(self, *,
                  sample: str,
                  ref: str,
-                 branches: list[str],
+                 branches: dict[str, str],
                  **kwargs):
         super().__init__(**kwargs)
         self.sample = sample

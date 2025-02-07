@@ -16,9 +16,9 @@ from .core.arg import (CMD_POOL,
                        opt_keep_tmp,
                        opt_max_procs,
                        opt_force)
-from .core.error import InconsistentValueError
+from .core.error import InconsistentValueError, NoDataError
 from .core.logs import logger
-from .core.report import BranchF, AncestorsF
+from .core.report import BranchesF
 from .core.run import run_func
 from .core.task import dispatch
 from .core.tmp import release_to_out, with_tmp_dir
@@ -37,7 +37,7 @@ def write_report(out_dir: Path, **kwargs):
 @with_tmp_dir(pass_keep_tmp=False)
 def pool_samples(out_dir: Path,
                  name: str,
-                 branches: Iterable[str],
+                 branches_flat: Iterable[str],
                  ref: str,
                  samples: Iterable[str], *,
                  tmp_dir: Path,
@@ -53,8 +53,8 @@ def pool_samples(out_dir: Path,
     out_dir: pathlib.Path
         Output directory.
     name: str
-        Name of the pool.
-    branches: Iterable[str]
+        Name of the pooled sample.
+    branches_flat: Iterable[str]
         Branches of the datasets being pooled.
     ref: str
         Name of the reference
@@ -79,8 +79,7 @@ def pool_samples(out_dir: Path,
         Path of the Pool report file.
     """
     began = datetime.now()
-    # Ensure that branches is not an exhaustible generator.
-    branches = list(branches)
+    branches_flat = list(branches_flat)
     # Deduplicate and sort the samples.
     sample_counts = Counter(samples)
     if max(sample_counts.values()) > 1:
@@ -90,7 +89,7 @@ def pool_samples(out_dir: Path,
     # Determine the output report file.
     pool_report_file = PoolReport.build_path({path.TOP: out_dir,
                                               path.SAMPLE: name,
-                                              path.BRANCHES: branches,
+                                              path.BRANCHES: branches_flat,
                                               path.REF: ref})
     if need_write(pool_report_file, force):
         # Because Relate and Pool report files have the same name, it
@@ -114,34 +113,31 @@ def pool_samples(out_dir: Path,
             relate_dataset = load_relate_dataset(
                 RelateReport.build_path({path.TOP: out_dir,
                                          path.SAMPLE: sample,
-                                         path.BRANCHES: branches,
+                                         path.BRANCHES: branches_flat,
                                          path.REF: ref}),
                 verify_times=verify_times
             )
-            # Ensure all datasets have the same branch and ancestors;
-            # it's possible for them to have the same branches but
-            # different individual branch or ancestors attributes.
-            if BranchF.key in report_kwargs:
-                assert AncestorsF.key in report_kwargs
-                if relate_dataset.branch != report_kwargs[BranchF.key]:
+            # Ensure all datasets have the same branches; it's possible
+            # for two datasets to have different branches despite having
+            # the same flattened branches.
+            if BranchesF.key in report_kwargs:
+                if relate_dataset.branches != report_kwargs[BranchesF.key]:
                     raise InconsistentValueError(
-                        "Datasets have different values for branch: "
-                        f"{report_kwargs[BranchF.key]} ≠ "
-                        f"{repr(relate_dataset.branch)}"
+                        "Cannot pool datasets with different branches: "
+                        f"{report_kwargs[BranchesF.key]} ≠ "
+                        f"{relate_dataset.branches}"
                     )
-                assert relate_dataset.ancestors == report_kwargs[AncestorsF.key]
             else:
-                assert AncestorsF.key not in report_kwargs
-                report_kwargs[BranchF.key] = relate_dataset.branch
-                report_kwargs[AncestorsF.key] = relate_dataset.ancestors
+                report_kwargs[BranchesF.key] = relate_dataset.branches
             # Make links to the files for this dataset in the temporary
             # directory.
             relate_dataset.link_data_dirs_to_tmp(tmp_dir)
-        if BranchF.key not in report_kwargs:
-            assert AncestorsF.key not in report_kwargs
-            # Default to these values if there are no samples.
-            report_kwargs[BranchF.key] = ""
-            report_kwargs[AncestorsF.key] = branches
+        if BranchesF.key not in report_kwargs:
+            raise NoDataError(
+                f"No samples were given to make pooled sample {repr(name)} "
+                f"with branches {branches_flat} and reference {repr(ref)} "
+                f"in {out_dir}"
+            )
         # Tabulate the pooled dataset.
         pool_dataset = load_relate_dataset(write_report(tmp_dir,
                                                         **report_kwargs),
@@ -184,14 +180,21 @@ def run(input_path: Iterable[str | Path], *,
         else:
             # Otherwise, use just the sample of the dataset.
             samples = [dataset.sample]
-        key = dataset.top, tuple(dataset.branches), dataset.ref
+        # Flatten the dict of branches because the path preserves
+        # only the flat structure, and this step must group datasets
+        # that will have the same pooled path.
+        branches_flat = tuple(path.flatten_branches(dataset.branches))
+        key = (dataset.top,
+               branches_flat,
+               dataset.ref)
         pools[key].extend(samples)
+        logger.detail(f"Added samples {samples} for {dataset}")
     # Make each pool of samples.
     return dispatch(pool_samples,
                     max_procs=max_procs,
                     pass_n_procs=True,
-                    args=[(out_dir, pooled, branches, ref, samples)
-                          for (out_dir, branches, ref), samples
+                    args=[(out_dir, pooled, branches_flat, ref, samples)
+                          for (out_dir, branches_flat, ref), samples
                           in pools.items()],
                     kwargs=dict(relate_pos_table=relate_pos_table,
                                 relate_read_table=relate_read_table,

@@ -126,8 +126,7 @@ class RelationWriter(object):
     def _write_report(self, *, top: Path, **kwargs):
         report = RelateReport(sample=self.sample,
                               ref=self.ref,
-                              branch=self._xam.branch,
-                              ancestors=self._xam.ancestors,
+                              branches=self.branches,
                               n_reads_xam=self.num_reads,
                               **kwargs)
         return report.save(top)

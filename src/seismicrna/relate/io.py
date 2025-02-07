@@ -48,10 +48,10 @@ def from_reads(reads: Iterable[tuple[str,
                                      tuple[tuple[list[int], list[int]],
                                            dict[int, int]]]], *,
                sample: str,
+               branches: dict[str, str],
                ref: str,
                refseq: DNA,
                batch: int,
-               branches: list[str],
                write_read_names: bool):
     """ Accumulate reads into relation vectors. """
     # Initialize empty data.
@@ -92,8 +92,8 @@ def from_reads(reads: Iterable[tuple[str,
                                  muts=muts)
     if write_read_names:
         name_batch = ReadNamesBatchIO(sample=sample,
-                                      ref=ref,
                                       branches=branches,
+                                      ref=ref,
                                       batch=batch,
                                       names=names)
     else:
