@@ -11,17 +11,24 @@ from ..seq import Region
 from ..write import need_write, write_mode
 
 
-def _from_file(file: Path, parser: Callable, *args, **kwargs):
+def _from_file(file: Path,
+               parser: Callable,
+               *args,
+               branch: str = "",
+               **kwargs):
     titles: set[str] = set()
     for title, region, pairs in parser(file, *args, **kwargs):
         if title in titles:
             logger.warning(f"Title {repr(title)} is repeated in {file}")
         else:
             titles.add(title)
-        yield RNAStructure(title=title, region=region, pairs=pairs)
+        yield RNAStructure(title=title,
+                           region=region,
+                           pairs=pairs,
+                           branch=branch)
 
 
-def from_ct(ct_path: Path):
+def from_ct(ct_path: Path, branch: str = ""):
     """ Yield an instance of an RNAStructure for each structure in a
     connectivity table (CT) file.
 
@@ -29,16 +36,18 @@ def from_ct(ct_path: Path):
     ----------
     ct_path: Path
         Path of the CT file.
+    branch: str
+        Branch of the workflow for folding (optional).
 
     Returns
     -------
     Generator[RNAStructure, Any, None]
         RNA secondary structures from the CT file.
     """
-    yield from _from_file(ct_path, parse_ct)
+    yield from _from_file(ct_path, parse_ct, branch=branch)
 
 
-def from_db(db_path: Path, seq5: int = 1):
+def from_db(db_path: Path, branch: str = "", seq5: int = 1):
     """ Yield an instance of an RNAStructure for each structure in a
     dot-bracket (DB) file.
 
@@ -46,6 +55,8 @@ def from_db(db_path: Path, seq5: int = 1):
     ----------
     db_path: Path
         Path of the DB file.
+    branch: str
+        Branch of the workflow for folding (optional).
     seq5: int = 1
         Number to give the 5' position of the sequence.
 
@@ -54,7 +65,7 @@ def from_db(db_path: Path, seq5: int = 1):
     Generator[RNAStructure, Any, None]
         RNA secondary structures from the CT file.
     """
-    yield from _from_file(db_path, parse_db, seq5=seq5)
+    yield from _from_file(db_path, parse_db, branch=branch, seq5=seq5)
 
 
 def find_ct_region(ct_path: Path) -> Region:
@@ -93,7 +104,7 @@ def to_ct(structures: Iterable[RNAStructure],
         # Write the structures to the file.
         with open(ct_path, write_mode(force)) as f:
             f.write(text)
-        logger.routine(f"Wrote {ct_path}")
+        logger.action(f"Wrote {ct_path}")
 
 
 def to_db(structures: Iterable[RNAStructure],
@@ -119,7 +130,7 @@ def to_db(structures: Iterable[RNAStructure],
         # Write the structures to the file.
         with open(db_path, write_mode(force)) as f:
             f.write(text)
-        logger.routine(f"Wrote {db_path}")
+        logger.action(f"Wrote {db_path}")
 
 
 def renumber_ct(ct_in: Path, ct_out: Path, seq5: int, force: bool = False):

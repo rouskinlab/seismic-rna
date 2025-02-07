@@ -4,8 +4,8 @@ from typing import Iterable
 
 from click import command
 
-from .cluster.dataset import load_cluster_dataset
-from .cluster.table import ClusterCountTabulator, ClusterDatasetTabulator
+from .cluster.data import load_cluster_dataset
+from .cluster.data import ClusterCountTabulator, ClusterDatasetTabulator
 from .core.arg import (CMD_TABLE,
                        arg_input_path,
                        opt_relate_pos_table,

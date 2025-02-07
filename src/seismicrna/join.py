@@ -6,8 +6,8 @@ from typing import Iterable
 import pandas as pd
 from click import command
 
-from .cluster.dataset import load_cluster_dataset
-from .cluster.table import ClusterDatasetTabulator
+from .cluster.data import load_cluster_dataset
+from .cluster.data import ClusterDatasetTabulator
 from .core import path
 from .core.arg import (CMD_JOIN,
                        arg_input_path,
@@ -188,7 +188,7 @@ def join_regions(out_dir: Path,
         pos_table = mask_pos_table
         read_table = mask_read_table
         clust_table = False
-    load_function = tabulator_type.load_function()
+    load_function = tabulator_type.get_load_function()
     _, dataset_type = load_function.dataset_types
     report_type = dataset_type.get_report_type()
     # Determine the output report file.

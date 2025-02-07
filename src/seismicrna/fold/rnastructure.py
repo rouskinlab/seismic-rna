@@ -1,5 +1,5 @@
-""" Wrapper around RNAstructure from the Mathews Lab at U of Rochester:
-https://rna.urmc.rochester.edu/RNAstructure.html
+""" Wrapper around RNAstructure from the Mathews Lab at the University
+of Rochester: https://rna.urmc.rochester.edu/RNAstructure.html
 """
 
 import os
@@ -380,6 +380,7 @@ def make_fold_cmd(fasta_file: Path,
 
 @docdef.auto()
 def fold(rna: RNAProfile, *,
+         branch: str,
          fold_temp: float,
          fold_constraint: Path | None = None,
          fold_md: int,
@@ -391,13 +392,14 @@ def fold(rna: RNAProfile, *,
          keep_tmp: bool,
          n_procs: int):
     """ Run the 'Fold' or 'Fold-smp' program of RNAstructure. """
-    ct_out = rna.get_ct_file(out_dir)
+    logger.routine(f"Began folding {rna}")
+    ct_out = rna.get_ct_file(out_dir, branch)
     # Temporary FASTA file for the RNA.
-    fasta_tmp = rna.to_fasta(tmp_dir)
+    fasta_tmp = rna.to_fasta(tmp_dir, branch)
     # Path of the temporary CT file.
-    ct_tmp = rna.get_ct_file(tmp_dir)
+    ct_tmp = rna.get_ct_file(tmp_dir, branch)
     # DMS reactivities file for the RNA.
-    dms_file = rna.to_dms(tmp_dir)
+    dms_file = rna.to_dms(tmp_dir, branch)
     try:
         # Run the command.
         fold_cmds = {
@@ -431,7 +433,7 @@ def fold(rna: RNAProfile, *,
             dms_file.unlink(missing_ok=True)
             if ct_tmp != ct_out:
                 ct_tmp.unlink(missing_ok=True)
-    logger.routine(f"Predicted structure of {rna} to {ct_out}")
+    logger.routine(f"Ended folding {rna}")
     return ct_out
 
 

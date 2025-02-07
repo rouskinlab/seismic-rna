@@ -16,7 +16,7 @@ from ..core.header import AVERAGE_PREFIX
 
 from ..relate.table import RelatePositionTable, RelatePositionTableLoader
 from ..mask.table import MaskPositionTable, MaskPositionTableLoader
-from ..cluster.table import ClusterPositionTable, ClusterPositionTableLoader
+from ..cluster.data import ClusterPositionTable, ClusterPositionTableLoader
 
 
 from jinja2 import Template

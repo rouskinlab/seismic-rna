@@ -5,7 +5,7 @@ from pathlib import Path
 
 import numpy as np
 
-from seismicrna.cluster.dataset import JoinClusterMutsDataset
+from seismicrna.cluster.data import JoinClusterMutsDataset
 from seismicrna.core.arg.cli import opt_sim_dir
 from seismicrna.core.logs import Level, get_config, set_config
 from seismicrna.core.rna.convert import db_to_ct

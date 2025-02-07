@@ -10,7 +10,7 @@ from click import command
 from . import (mask as mask_mod,
                cluster as cluster_mod,
                join as join_mod)
-from .cluster.dataset import ClusterMutsDataset, get_clust_params
+from .cluster.data import ClusterMutsDataset, get_clust_params
 from .cluster.emk import calc_mean_arcsine_distance_clusters
 from .cluster.report import ClusterReport
 from .core import path

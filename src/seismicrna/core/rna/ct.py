@@ -4,7 +4,6 @@ from typing import TextIO
 from .. import path
 from ..seq import RNA, Region
 
-
 NUM_FIELDS = 6
 
 
@@ -177,9 +176,9 @@ def parse_ct(ct_path: Path):
     """
     # Determine the reference and region names from the path.
     fields = path.parse(ct_path,
-                        path.RefSeg,
-                        path.RegSeg,
-                        path.ConnectTableSeg)
+                        [path.RefSeg,
+                         path.RegSeg,
+                         path.ConnectTableSeg])
     ref = fields[path.REF]
     reg = fields[path.REG]
     # Parse each structure in the CT file.

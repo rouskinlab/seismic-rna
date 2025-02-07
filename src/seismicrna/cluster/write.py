@@ -5,7 +5,7 @@ from typing import Iterable
 
 import numpy as np
 
-from .dataset import ClusterMutsDataset
+from .data import ClusterMutsDataset
 from .em import EMRun
 from .emk import EMRunsK, find_best_k, sort_runs
 from .io import ClusterBatchWriter
@@ -13,7 +13,7 @@ from .obsexp import write_obs_exp_counts
 from .params import write_mus, write_pis
 from .report import ClusterReport
 from .summary import write_summaries
-from .table import ClusterDatasetTabulator
+from .data import ClusterDatasetTabulator
 from .uniq import UniqReads
 from ..core import path
 from ..core.header import validate_ks

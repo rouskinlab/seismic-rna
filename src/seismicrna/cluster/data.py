@@ -6,11 +6,6 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from ._table import (ClusterBatchTabulator,
-                     ClusterPositionTableLoader,
-                     ClusterPositionTableWriter,
-                     ClusterAbundanceTableLoader,
-                     ClusterAbundanceTableWriter)
 from .batch import ClusterMutsBatch
 from .io import ClusterBatchIO
 from .report import ClusterReport, JoinClusterReport
@@ -24,9 +19,12 @@ from ..core.dataset import (LoadFunction,
                             MergedUnbiasDataset)
 from ..core.header import (NUM_CLUSTS_NAME,
                            ClustHeader,
+                           RelClustHeader,
                            list_clusts,
                            list_ks_clusts,
-                           validate_ks)
+                           validate_ks,
+                           make_header,
+                           parse_header)
 from ..core.join import (BATCH_NUM,
                          READ_NUMS,
                          SEG_END5S,
@@ -38,9 +36,20 @@ from ..core.logs import logger
 from ..core.mu import calc_sum_arcsine_distance
 from ..core.report import JoinedClustersF, KsWrittenF, BestKF
 from ..core.seq import POS_NAME, BASE_NAME
+from ..core.table import (BatchTabulator,
+                          CountTabulator,
+                          AbundanceTable,
+                          RelTypeTable,
+                          PositionTableWriter,
+                          AbundanceTableWriter)
 from ..core.table import MUTAT_REL
 from ..mask.batch import MaskMutsBatch
 from ..mask.dataset import load_mask_dataset
+from ..mask.table import PartialDatasetTabulator
+from ..mask.table import (PartialTable,
+                          PartialPositionTable,
+                          PartialTabulator)
+from ..relate.table import TableLoader, PositionTableLoader
 
 
 class ClusterDataset(Dataset, ABC):
@@ -137,12 +146,12 @@ def get_clust_params(dataset: ClusterMutsDataset, max_procs: int = 1):
                    path.SAMPLE: dataset.sample,
                    path.REF: dataset.ref,
                    path.REG: dataset.region.name}
-    pos_table_file = ClusterPositionTableLoader.build_path(**path_fields)
+    pos_table_file = ClusterPositionTableLoader.build_path(path_fields)
     try:
         pos_table = ClusterPositionTableLoader(pos_table_file)
     except FileNotFoundError:
         pos_table = None
-    abundance_table_file = ClusterAbundanceTableLoader.build_path(**path_fields)
+    abundance_table_file = ClusterAbundanceTableLoader.build_path(path_fields)
     try:
         abundance_table = ClusterAbundanceTableLoader(abundance_table_file)
     except FileNotFoundError:
@@ -204,7 +213,7 @@ def _join_regions_k(region_params: dict[str, pd.DataFrame]):
     for df in dfs:
         assert isinstance(df, pd.DataFrame)
         assert df.columns.equals(clusters)
-    logger.detail(f"There are {n} region(s) and {k} cluster(s)")
+    logger.detail(f"There are {n} regions and {k} clusters")
     # Calculate matrices of the cost of joining each pair of clusters
     # from each pair of regions.
     cost_matrices = dict()
@@ -277,7 +286,7 @@ def _join_regions_k(region_params: dict[str, pd.DataFrame]):
     if result.status != 0 or not result.success:
         raise RuntimeError(
             f"Failed to determine optimal way to join regions {region_names} "
-            f"with {k} cluster(s)"
+            f"with {k} clusters"
         )
     logger.detail("Ended solving mixed-integer linear program: "
                   f"minimum total cost is {result.fun}")
@@ -286,7 +295,7 @@ def _join_regions_k(region_params: dict[str, pd.DataFrame]):
                            in zip(hyperedges, result.x, strict=True)
                            if is_selected]
     assert len(selected_hyperedges) == k
-    logger.detail(f"Selected {k} hyperedge(s):\n"
+    logger.detail(f"Selected {k} hyperedges:\n"
                   + "\n".join(map(str, selected_hyperedges)))
     logger.routine("Ended determining the optimal way to join clusters")
     return selected_hyperedges
@@ -401,3 +410,120 @@ class JoinClusterMutsDataset(ClusterDataset,
 
 
 load_cluster_dataset = LoadFunction(ClusterMutsDataset, JoinClusterMutsDataset)
+
+
+class ClusterTable(RelTypeTable, ABC):
+
+    @classmethod
+    def get_kind(cls):
+        return path.CLUSTER_STEP
+
+    @classmethod
+    def get_load_function(cls):
+        return load_cluster_dataset
+
+    @classmethod
+    def get_header_type(cls):
+        return RelClustHeader
+
+
+class ClusterPositionTable(ClusterTable, PartialPositionTable, ABC):
+    pass
+
+
+class ClusterAbundanceTable(AbundanceTable, PartialTable, ABC):
+
+    @classmethod
+    def get_kind(cls):
+        return path.CLUSTER_STEP
+
+    @classmethod
+    def get_load_function(cls):
+        return load_cluster_dataset
+
+    @classmethod
+    def get_header_type(cls):
+        return ClustHeader
+
+    @classmethod
+    def get_index_depth(cls):
+        return cls.get_header_depth()
+
+    def _get_header(self):
+        return parse_header(self.data.index)
+
+    @cached_property
+    def proportions(self):
+        return self.data / self.data.groupby(level=NUM_CLUSTS_NAME).sum()
+
+
+class ClusterPositionTableWriter(PositionTableWriter, ClusterPositionTable):
+    pass
+
+
+class ClusterAbundanceTableWriter(AbundanceTableWriter, ClusterAbundanceTable):
+    pass
+
+
+class ClusterPositionTableLoader(PositionTableLoader, ClusterPositionTable):
+    """ Load cluster data indexed by position. """
+
+
+class ClusterAbundanceTableLoader(TableLoader, ClusterAbundanceTable):
+    """ Load cluster data indexed by cluster. """
+
+    @cached_property
+    def data(self) -> pd.Series:
+        data = pd.read_csv(self.path,
+                           index_col=self.get_index_cols()).squeeze(axis=1)
+        if not isinstance(data, pd.Series):
+            raise ValueError(f"{self} must have one column, but got\n{data}")
+        # Any numeric data in the header will be read as strings and
+        # must be cast to integers using parse_header.
+        header = parse_header(data.index)
+        # The index must be replaced with the header index for the
+        # type casting to take effect.
+        data.index = header.index
+        return data
+
+
+class ClusterTabulator(PartialTabulator, ABC):
+
+    @classmethod
+    def table_types(cls):
+        return [ClusterPositionTableWriter, ClusterAbundanceTableWriter]
+
+    def __init__(self, *, ks: list[int], **kwargs):
+        super().__init__(**kwargs)
+        if ks is None:
+            raise ValueError(
+                f"{type(self).__name__} requires clusters, but got ks={ks}"
+            )
+        self.ks = ks
+
+    @cached_property
+    def clust_header(self):
+        """ Header of the per-cluster data. """
+        return make_header(ks=self.ks)
+
+    @cached_property
+    def data_per_clust(self):
+        """ Number of reads in each cluster. """
+        n_rels, n_clust = self._adjusted
+        n_clust.name = "Number of Reads"
+        return n_clust
+
+
+class ClusterBatchTabulator(BatchTabulator, ClusterTabulator):
+    pass
+
+
+class ClusterCountTabulator(CountTabulator, ClusterTabulator):
+    pass
+
+
+class ClusterDatasetTabulator(PartialDatasetTabulator, ClusterTabulator):
+
+    @classmethod
+    def init_kws(cls):
+        return super().init_kws() + ["ks"]

@@ -245,10 +245,10 @@ class LoadFunction(object):
             lambda dt: dt.get_report_type().auto_fields()
         )
 
-    def is_dataset_type(self, dataset: Dataset):
-        """ Whether the dataset is one of the loadable types. """
-        return any(isinstance(dataset, dataset_type)
-                   for dataset_type in self.dataset_types)
+    def build_report_path(self, path_fields: dict[str, Any]):
+        """ Build the path of a report file. """
+        return path.build(self.report_path_seg_types,
+                          {**self.report_path_auto_fields, **path_fields})
 
     def __call__(self, report_file: str | Path, **kwargs):
         """ Load a dataset from the report file. """
@@ -441,7 +441,7 @@ class TallDataset(MergedDataset, ABC):
             self.report_file,
             self.get_report_type().seg_types(),
             load_func.report_path_seg_types,
-            (load_func.report_path_auto_fields | {path.SAMPLE: sample})
+            {**load_func.report_path_auto_fields, path.SAMPLE: sample}
         ) for sample in pooled_samples]
         if not sample_report_files:
             raise ValueError(f"{self} got no datasets")

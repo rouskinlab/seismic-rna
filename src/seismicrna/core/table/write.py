@@ -25,7 +25,7 @@ from .base import (DELET_REL,
                    AbundanceTable,
                    all_patterns)
 from ..batch import accumulate_batches, accumulate_counts
-from ..dataset import LoadFunction, MutsDataset
+from ..dataset import MutsDataset
 from ..header import Header, make_header
 from ..logs import logger
 from ..seq import Region
@@ -50,6 +50,15 @@ class Tabulator(ABC):
     @abstractmethod
     def table_types(cls) -> list[type[TableWriter]]:
         """ Types of tables that this tabulator can write. """
+
+    @classmethod
+    @cache
+    def get_load_function(cls):
+        """ LoadFunction for all Dataset types for this Tabulator. """
+        load_functions = list(set(table_type.get_load_function()
+                                  for table_type in cls.table_types()))
+        assert len(load_functions) == 1
+        return load_functions[0]
 
     @classmethod
     @abstractmethod
@@ -235,14 +244,9 @@ class DatasetTabulator(BatchTabulator, ABC):
     """ Tabulator made from one dataset. """
 
     @classmethod
-    @abstractmethod
-    def load_function(cls) -> LoadFunction:
-        """ LoadFunction for all Dataset types for this Tabulator. """
-
-    @classmethod
-    def dataset_types(cls):
+    def get_dataset_types(cls):
         """ Types of Dataset this Tabulator can process. """
-        return cls.load_function().dataset_types
+        return cls.get_load_function().dataset_types
 
     @classmethod
     def _list_args(cls, func: Callable):
@@ -266,9 +270,11 @@ class DatasetTabulator(BatchTabulator, ABC):
                  dataset: MutsDataset,
                  validate: bool = False,
                  **kwargs):
-        if not isinstance(dataset, self.dataset_types()):
-            raise TypeError(f"Expected dataset to be {self.dataset_types()}, "
-                            f"but got {type(dataset).__name__}")
+        if not isinstance(dataset, self.get_dataset_types()):
+            raise TypeError(
+                f"Dataset must be one of {self.get_dataset_types()}, "
+                f"but got {type(dataset).__name__}"
+            )
         # Since the batches come from a Dataset, they do not need to be
         # validated, so make validate False by default.
         super().__init__(**{attr: getattr(dataset, attr)
@@ -281,35 +287,11 @@ class TableWriter(Table, ABC):
     """ Write a table to a file. """
 
     def __init__(self, tabulator: Tabulator):
-        self.tabulator = tabulator
+        self._tabulator = tabulator
 
     @property
-    def top(self):
-        return self.tabulator.top
-
-    @property
-    def branches(self):
-        return self.tabulator.branches
-
-    @property
-    def sample(self):
-        return self.tabulator.sample
-
-    @property
-    def ref(self):
-        return self.tabulator.ref
-
-    @property
-    def reg(self):
-        return self.tabulator.region.name
-
-    @property
-    def refseq(self):
-        return self.tabulator.refseq
-
-    @property
-    def columns(self):
-        return self.header.index
+    def _source(self):
+        return self._tabulator
 
     def write(self, force: bool):
         """ Write the table's rounded data to the table's CSV file. """
@@ -323,18 +305,18 @@ class PositionTableWriter(TableWriter, PositionTable, ABC):
 
     @cached_property
     def data(self):
-        return self.tabulator.data_per_pos
+        return self._tabulator.data_per_pos
 
 
 class ReadTableWriter(TableWriter, ReadTable, ABC):
 
     @cached_property
     def data(self):
-        return self.tabulator.data_per_read
+        return self._tabulator.data_per_read
 
 
 class AbundanceTableWriter(TableWriter, AbundanceTable, ABC):
 
     @cached_property
     def data(self):
-        return self.tabulator.data_per_clust
+        return self._tabulator.data_per_clust

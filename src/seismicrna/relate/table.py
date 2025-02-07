@@ -6,11 +6,10 @@ from typing import Iterable
 import pandas as pd
 
 from .dataset import load_relate_dataset
-from .report import RelateReport
 from ..core import path
 from ..core.header import RelHeader, parse_header
 from ..core.logs import logger
-from ..core.seq import FULL_NAME, DNA, Region
+from ..core.seq import DNA, Region
 from ..core.table import (Table,
                           Tabulator,
                           BatchTabulator,
@@ -55,6 +54,10 @@ class RelateTable(AverageTable, ABC):
     def get_kind(cls):
         return path.RELATE_STEP
 
+    @classmethod
+    def get_load_function(cls):
+        return load_relate_dataset
+
 
 class RelatePositionTable(RelateTable, FullPositionTable, ABC):
 
@@ -64,8 +67,8 @@ class RelatePositionTable(RelateTable, FullPositionTable, ABC):
                        rel: str,
                        k: int | None,
                        clust: int | None):
-        # Relation table loaders have unmasked, unfiltered reads and are
-        # thus unsuitable for making RNA profiles. Yield no profiles.
+        # Relate tables have unfiltered reads and are thus unsuitable
+        # for making RNA profiles: do not generate any.
         yield from ()
 
 
@@ -125,10 +128,6 @@ class RelateBatchTabulator(BatchTabulator, RelateTabulator):
 class RelateDatasetTabulator(DatasetTabulator, RelateTabulator):
 
     @classmethod
-    def load_function(cls):
-        return load_relate_dataset
-
-    @classmethod
     @cache
     def init_kws(cls):
         return super().init_kws() + cls._list_args(FullTabulator.__init__)
@@ -145,54 +144,25 @@ class TableLoader(Table, ABC):
                 yield file
 
     @classmethod
-    def load_tables(cls, paths: Iterable[str | Path]):
+    def load_tables(cls, paths: Iterable[str | Path], **kwargs):
         """ Yield tables within the given paths. """
         for file in cls.find_tables(paths):
             try:
-                yield cls(file)
+                yield cls(file, **kwargs)
             except Exception as error:
                 logger.error(error)
 
-    def __init__(self, table_file: Path):
-        fields = path.parse(table_file, self.get_path_segs())
-        self._out_dir = fields[path.TOP]
-        self._branches = fields[path.BRANCHES]
-        self._sample = fields[path.SAMPLE]
-        self._ref = fields[path.REF]
-        self._reg = fields.get(path.REG, FULL_NAME)
-        if not self.path.with_suffix(table_file.suffix).samefile(table_file):
-            raise ValueError(f"{type(self).__name__} got path {table_file}, "
-                             f"but expected {self.path}")
+    def __init__(self, table_file: str | Path, **kwargs):
+        load_function = self.get_load_function()
+        report_file = path.cast_path(table_file,
+                                     self.get_path_segs(),
+                                     load_function.report_path_seg_types,
+                                     load_function.report_path_auto_fields)
+        self._dataset = load_function(report_file, **kwargs)
 
     @property
-    def top(self) -> Path:
-        return self._out_dir
-
-    @property
-    def branches(self):
-        return self._branches
-
-    @property
-    def sample(self) -> str:
-        return self._sample
-
-    @property
-    def ref(self) -> str:
-        return self._ref
-
-    @property
-    def reg(self) -> str:
-        return self._reg
-
-    @cached_property
-    def refseq(self):
-        dataset = load_relate_dataset(RelateReport.build_path(
-            {path.TOP: self.top,
-             path.BRANCHES: self.branches,
-             path.SAMPLE: self.sample,
-             path.REF: self.ref}
-        ))
-        return dataset.refseq
+    def _source(self):
+        return self._dataset
 
 
 class RelTypeTableLoader(TableLoader, RelTypeTable, ABC):

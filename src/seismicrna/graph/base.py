@@ -9,8 +9,8 @@ from click import Argument, Option
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
-from ..cluster.dataset import ClusterDataset
-from ..cluster.table import ClusterTable, ClusterAbundanceTable
+from ..cluster.data import ClusterDataset
+from ..cluster.data import ClusterTable, ClusterAbundanceTable
 from ..core import path
 from ..core.arg import (arg_input_path,
                         opt_csv,
@@ -172,9 +172,8 @@ class BaseGraph(ABC):
 
     def get_path(self, ext: str):
         """ Path to the output file of the graph. """
-        return path.buildpar(*self.get_path_segs(),
-                             **self.get_path_fields(),
-                             ext=ext)
+        return path.buildpar(self.get_path_segs(),
+                             {**self.get_path_fields(), path.EXT: ext})
 
     @cached_property
     @abstractmethod

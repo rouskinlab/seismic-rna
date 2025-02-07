@@ -65,6 +65,7 @@ class PartialPositionTable(PartialTable, PositionTable, ABC):
                 for region in regions:
                     yield RNAProfile(region=region,
                                      sample=self.sample,
+                                     branches=self.branches,
                                      data_reg=self.reg,
                                      data_name=data_name,
                                      data=self.fetch_ratio(quantile=quantile,
@@ -86,6 +87,10 @@ class MaskTable(AverageTable, ABC):
     @classmethod
     def get_kind(cls):
         return path.MASK_STEP
+
+    @classmethod
+    def get_load_function(cls):
+        return load_mask_dataset
 
 
 class MaskPositionTable(MaskTable, PartialPositionTable, ABC):
@@ -209,10 +214,7 @@ class MaskCountTabulator(CountTabulator, MaskTabulator):
 
 
 class MaskDatasetTabulator(PartialDatasetTabulator, MaskTabulator):
-
-    @classmethod
-    def load_function(cls):
-        return load_mask_dataset
+    pass
 
 
 def _insert_masked(p_mut: pd.Series | pd.DataFrame,

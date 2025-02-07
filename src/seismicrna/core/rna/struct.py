@@ -79,6 +79,7 @@ class RNAStructure(RNARegion):
     def __init__(self, *,
                  title: str,
                  pairs: Iterable[tuple[int, int]],
+                 branch: str = "",
                  **kwargs):
         """
         Parameters
@@ -87,14 +88,19 @@ class RNAStructure(RNARegion):
             Title of the RNA structure, as written in the CT/DB file.
         pairs: Iterable[tuple[int, int]]
             Base pairs in the structure.
+        branch: str
+            Branch of the workflow for folding (optional).
         """
         super().__init__(**kwargs)
         self.title = title
         self.table = pairs_to_table(pairs, self.region)
+        self.branch = branch
 
     @cached_property
     def init_args(self):
-        return super().init_args | dict(title=self.title, pairs=self.pairs)
+        return super().init_args | dict(title=self.title,
+                                        pairs=self.pairs,
+                                        branch=self.branch)
 
     def _renumber_from_args(self, seq5: int):
         return super()._renumber_from_args(seq5) | dict(

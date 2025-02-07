@@ -21,7 +21,7 @@ from .table import (TableGraph,
                     RelTableRunner,
                     TableWriter,
                     load_pos_tables)
-from ..cluster.table import ClusterTable
+from ..cluster.data import ClusterTable
 from ..core.arg import opt_comppair, opt_compself, opt_out_dir
 from ..core.logs import logger
 from ..core.table import PositionTable, Table

@@ -8,6 +8,7 @@ import pandas as pd
 
 from .. import path
 from ..batch import RB_INDEX_NAMES
+from ..dataset import LoadFunction
 from ..header import REL_NAME, Header, parse_header
 from ..mu import winsorize
 from ..rel import HalfRelPattern, RelPattern
@@ -132,6 +133,11 @@ class Table(ABC):
 
     @classmethod
     @abstractmethod
+    def get_load_function(cls) -> LoadFunction:
+        """ LoadFunction for all Dataset types for this Table. """
+
+    @classmethod
+    @abstractmethod
     def get_kind(cls) -> str:
         """ Kind of table. """
 
@@ -166,13 +172,6 @@ class Table(ABC):
 
     @classmethod
     @cache
-    def get_path_fields(cls) -> dict[str, Any]:
-        """ Table's path fields. """
-        return path.get_fields_in_seg_types(cls.get_path_segs(),
-                                            include_top=True)
-
-    @classmethod
-    @cache
     def get_default_path_fields(cls):
         """ Default values of the path fields. """
         return {path.CMD: cls.get_kind(),
@@ -191,50 +190,56 @@ class Table(ABC):
 
     @classmethod
     def get_ext(cls):
-        """ Table's file extension: either ".csv" or ".csv.gz". """
+        """ Table's file extension. """
         return path.CSVZIP_EXT if cls.get_is_gzipped() else path.CSV_EXT
 
     @property
     @abstractmethod
+    def _source(self):
+        """ Source of the table's attributes. """
+
+    @property
     def top(self) -> Path:
         """ Path of the table's output directory. """
+        return self._source.top
 
     @property
-    @abstractmethod
-    def branches(self) -> list[str]:
+    def branches(self) -> dict[str, str]:
         """ Branches of the workflow. """
+        return self._source.branches
 
     @property
-    @abstractmethod
     def sample(self) -> str:
         """ Name of the table's sample. """
+        return self._source.sample
 
     @property
-    @abstractmethod
     def ref(self) -> str:
         """ Name of the table's reference. """
+        return self._source.ref
 
     @property
-    @abstractmethod
     def reg(self) -> str:
         """ Name of the table's region. """
+        return self._source.region.name
 
     @cached_property
-    @abstractmethod
     def refseq(self) -> DNA:
         """ Reference sequence. """
-
-    @cached_property
-    def path_field_values(self):
-        """ Values of the path fields. """
-        return {field: (getattr(self, field) if hasattr(self, field)
-                        else self.get_default_path_fields()[field])
-                for field in self.get_path_fields()}
+        return self._source.refseq
 
     @cached_property
     def path(self):
-        """ Path of the table's CSV file (possibly gzipped). """
-        return self.build_path(self.path_field_values)
+        """ Path of the table's file. """
+        fields = path.get_fields_in_seg_types(self.get_path_segs(),
+                                              include_top=True)
+        defaults = self.get_default_path_fields()
+        return self.build_path(
+            {field: (getattr(self, field)
+                     if hasattr(self, field)
+                     else defaults[field])
+             for field in fields}
+        )
 
     @abstractmethod
     def _get_header(self) -> Header:

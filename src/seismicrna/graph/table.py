@@ -5,9 +5,9 @@ from typing import Any, Generator, Iterable
 
 from .base import BaseGraph, BaseRunner, BaseWriter
 from .rel import RelGraph, RelRunner
-from ..cluster.table import (ClusterPositionTableLoader,
-                             ClusterAbundanceTableLoader)
-from ..core.arg import opt_use_ratio, opt_quantile
+from ..cluster.data import (ClusterPositionTableLoader,
+                            ClusterAbundanceTableLoader)
+from ..core.arg import opt_use_ratio, opt_quantile, opt_verify_times
 from ..core.table import Table, PositionTable
 from ..mask.table import MaskPositionTableLoader, MaskReadTableLoader
 from ..relate.table import RelatePositionTableLoader, RelateReadTableLoader
@@ -96,28 +96,28 @@ class TableWriter(BaseWriter, ABC):
         pass
 
 
-def load_pos_tables(input_paths: Iterable[str | Path]):
+def load_pos_tables(input_paths: Iterable[str | Path], **kwargs):
     """ Load position tables. """
     paths = list(input_paths)
     for table_type in [RelatePositionTableLoader,
                        MaskPositionTableLoader,
                        ClusterPositionTableLoader]:
-        yield from table_type.load_tables(paths)
+        yield from table_type.load_tables(paths, **kwargs)
 
 
-def load_read_tables(input_paths: Iterable[str | Path]):
+def load_read_tables(input_paths: Iterable[str | Path], **kwargs):
     """ Load read tables. """
     paths = list(input_paths)
     for table_type in [RelateReadTableLoader,
                        MaskReadTableLoader]:
-        yield from table_type.load_tables(paths)
+        yield from table_type.load_tables(paths, **kwargs)
 
 
-def load_abundance_tables(input_paths: Iterable[str | Path]):
+def load_abundance_tables(input_paths: Iterable[str | Path], **kwargs):
     """ Load read tables. """
     paths = list(input_paths)
     for table_type in [ClusterAbundanceTableLoader]:
-        yield from table_type.load_tables(paths)
+        yield from table_type.load_tables(paths, **kwargs)
 
 
 class TableRunner(BaseRunner, ABC):
@@ -129,7 +129,7 @@ class TableRunner(BaseRunner, ABC):
 
     @classmethod
     def var_params(cls):
-        return super().var_params() + [opt_use_ratio]
+        return super().var_params() + [opt_verify_times, opt_use_ratio]
 
 
 class RelTableRunner(RelRunner, TableRunner, ABC):

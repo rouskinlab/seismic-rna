@@ -13,6 +13,7 @@ class RNAProfile(RNARegion):
 
     def __init__(self, *,
                  sample: str,
+                 branches: dict[str, str],
                  data_reg: str,
                  data_name: str,
                  data: pd.Series,
@@ -22,6 +23,8 @@ class RNAProfile(RNARegion):
         ----------
         sample: str
             Name of the sample from which the mutational profile comes.
+        branches: dict[str, str]
+            Branches of the workflow.
         data_reg: str
             Name of the region from which the mutational profile comes.
         data_name: str
@@ -31,6 +34,7 @@ class RNAProfile(RNARegion):
         """
         super().__init__(**kwargs)
         self.sample = sample
+        self.branches = branches
         self.data_reg = data_reg
         self.data_name = data_name
         if not isinstance(data, pd.Series):
@@ -44,6 +48,7 @@ class RNAProfile(RNARegion):
     @cached_property
     def init_args(self):
         return super().init_args | dict(sample=self.sample,
+                                        branches=self.branches,
                                         data_reg=self.data_reg,
                                         data_name=self.data_name,
                                         data=self.data)
@@ -59,13 +64,15 @@ class RNAProfile(RNARegion):
         """ Name of the mutational profile. """
         return f"{self.data_reg}__{self.data_name}"
 
-    def _get_dir_fields(self, top: Path):
+    def _get_dir_fields(self, top: Path, branch: str):
         """ Get the path fields for the directory of this RNA.
 
         Parameters
         ----------
         top: pathlib.Path
             Top-level directory.
+        branch: str
+            Branch to add (optional, for folding).
 
         Returns
         -------
@@ -73,165 +80,75 @@ class RNAProfile(RNARegion):
             Path fields.
         """
         return {path.TOP: top,
-                path.CMD: path.FOLD_STEP,
                 path.SAMPLE: self.sample,
+                path.CMD: path.FOLD_STEP,
+                path.BRANCHES: path.add_branch(path.FOLD_STEP,
+                                               branch,
+                                               self.branches),
                 path.REF: self.ref,
                 path.REG: self.reg}
 
-    def _get_dir(self, top: Path):
-        """ Get the directory in which to write files of this RNA.
+    def _get_dir(self, top: Path, branch: str):
+        """ Get the directory in which to write files of this RNA. """
+        return path.builddir(path.REG_DIR_SEGS,
+                             self._get_dir_fields(top, branch))
 
-        Parameters
-        ----------
-        top: pathlib.Path
-            Top-level directory.
+    def _get_file(self,
+                  top: Path,
+                  branch: str,
+                  path_seg: path.PathSegment,
+                  path_fields):
+        """ Get the path to a file of the RNA. """
+        return self._get_dir(top, branch).joinpath(path_seg.build(path_fields))
 
-        Returns
-        -------
-        pathlib.Path
-            Parent directory of files for this RNA.
-        """
-        return path.builddir(*path.REG_DIR_SEGS, **self._get_dir_fields(top))
-
-    def _get_file(self, top: Path, file_seg: path.PathSegment, **file_fields):
-        """ Get the path to a file of the RNA.
-
-        Parameters
-        ----------
-        top: pathlib.Path
-            Top-level directory.
-        file_seg: path.PathSegment
-            Segment of the file component of the path.
-        **file_fields
-            Fields for the file segment.
-
-        Returns
-        -------
-        pathlib.Path
-            Path of the file.
-        """
-        return self._get_dir(top).joinpath(file_seg.build(**file_fields))
-
-    def get_fasta(self, top: Path):
-        """ Get the path to the FASTA file.
-
-        Parameters
-        ----------
-        top: pathlib.Path
-            Top-level directory.
-
-        Returns
-        -------
-        pathlib.Path
-            Path of the file.
-        """
+    def get_fasta(self, top: Path, branch: str):
+        """ Get the path to the FASTA file. """
         return self._get_file(top,
+                              branch,
                               path.FastaSeg,
-                              ref=self.profile,
-                              ext=path.FASTA_EXTS[0])
+                              {path.REF: self.profile,
+                               path.EXT: path.FASTA_EXTS[0]})
 
-    def get_ct_file(self, top: Path):
-        """ Get the path to the connectivity table (CT) file.
-
-        Parameters
-        ----------
-        top: pathlib.Path
-            Top-level directory.
-
-        Returns
-        -------
-        pathlib.Path
-            Path of the file.
-        """
+    def get_ct_file(self, top: Path, branch: str):
+        """ Get the path to the connectivity table (CT) file. """
         return self._get_file(top,
+                              branch,
                               path.ConnectTableSeg,
-                              profile=self.profile,
-                              ext=path.CT_EXT)
+                              {path.PROFILE: self.profile,
+                               path.EXT: path.CT_EXT})
 
-    def get_db_file(self, top: Path):
-        """ Get the path to the dot-bracket (DB) file.
-
-        Parameters
-        ----------
-        top: pathlib.Path
-            Top-level directory.
-
-        Returns
-        -------
-        pathlib.Path
-            Path of the file.
-        """
+    def get_db_file(self, top: Path, branch: str):
+        """ Get the path to the dot-bracket (DB) file. """
         return self._get_file(top,
+                              branch,
                               path.DotBracketSeg,
-                              profile=self.profile,
-                              ext=path.DOT_EXTS[0])
+                              {path.PROFILE: self.profile,
+                               path.EXT: path.DOT_EXTS[0]})
 
-    def get_dms_file(self, top: Path):
-        """ Get the path to the DMS data file.
-
-        Parameters
-        ----------
-        top: pathlib.Path
-            Top-level directory.
-
-        Returns
-        -------
-        pathlib.Path
-            DMS data file.
-        """
+    def get_dms_file(self, top: Path, branch: str):
+        """ Get the path to the DMS data file. """
         return self._get_file(top,
+                              branch,
                               path.DmsReactsSeg,
-                              profile=self.profile,
-                              ext=path.DMS_EXT)
+                              {path.PROFILE: self.profile,
+                               path.EXT: path.DMS_EXT})
 
-    def get_varna_color_file(self, top: Path):
-        """ Get the path to the VARNA color file.
-
-        Parameters
-        ----------
-        top: pathlib.Path
-            Top-level directory.
-
-        Returns
-        -------
-        pathlib.Path
-            Path of the file.
-        """
+    def get_varna_color_file(self, top: Path, branch: str):
+        """ Get the path to the VARNA color file. """
         return self._get_file(top,
+                              branch,
                               path.VarnaColorSeg,
-                              profile=self.profile,
-                              ext=path.TXT_EXT)
+                              {path.PROFILE: self.profile,
+                               path.EXT: path.TXT_EXT})
 
-    def to_fasta(self, top: Path):
-        """ Write the RNA sequence to a FASTA file.
-
-        Parameters
-        ----------
-        top: pathlib.Path
-            Top-level directory.
-
-        Returns
-        -------
-        pathlib.Path
-            File into which the RNA sequence was written.
-        """
-        fasta = self.get_fasta(top)
+    def to_fasta(self, top: Path, branch: str):
+        """ Write the RNA sequence to a FASTA file. """
+        fasta = self.get_fasta(top, branch)
         write_fasta(fasta, [self.seq_record])
         return fasta
 
-    def to_dms(self, top: Path):
-        """ Write the DMS reactivities to a DMS file.
-
-        Parameters
-        ----------
-        top: pathlib.Path
-            Top-level directory.
-
-        Returns
-        -------
-        pathlib.Path
-            File into which the DMS reactivities were written.
-        """
+    def to_dms(self, top: Path, branch: str):
+        """ Write the DMS reactivities to a DMS file. """
         # The DMS reactivities must be numbered starting from 1 at the
         # beginning of the region, even if the region does not start
         # at 1. Renumber the region from 1.
@@ -240,27 +157,16 @@ class RNAProfile(RNARegion):
         # Drop bases with missing data to make RNAstructure ignore them.
         dms.dropna(inplace=True)
         # Write the DMS reactivities to the DMS file.
-        dms_file = self.get_dms_file(top)
+        dms_file = self.get_dms_file(top, branch)
         dms.to_csv(dms_file, sep="\t", header=False)
         return dms_file
 
-    def to_varna_color_file(self, top: Path):
-        """ Write the VARNA colors to a file.
-
-        Parameters
-        ----------
-        top: pathlib.Path
-            Top-level directory.
-
-        Returns
-        -------
-        pathlib.Path
-            File into which the VARNA colors were written.
-        """
+    def to_varna_color_file(self, top: Path, branch: str):
+        """ Write the VARNA colors to a file. """
         # Fill missing reactivities with -1, to signify no data.
         varna_color = self.data.fillna(-1.)
         # Write the values to the VARNA color file.
-        varna_color_file = self.get_varna_color_file(top)
+        varna_color_file = self.get_varna_color_file(top, branch)
         varna_color.to_csv(varna_color_file,
                            float_format="%f",
                            header=False,

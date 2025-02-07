@@ -751,23 +751,22 @@ class Path(object):
         `fields` into a full path. """
         # Build the new path one segment at a time.
         segments = list()
+        used_fields = set()
         for seg_type in self.seg_types:
             # For each type of segment in the path, try to get the names
             # and values of all fields of the segment.
             try:
-                seg_fields = {name: fields.pop(name)
+                seg_fields = {name: fields[name]
                               for name in seg_type.field_types}
             except KeyError as error:
                 raise PathValueError(f"Missing field for {seg_type}: {error}")
+            used_fields.update(seg_fields)
             # Generate a string representation of the segment using the
             # values of its fields, and add it to the growing path.
             segments.append(seg_type.build(seg_fields))
         # Check whether any fields were given but not used by the path.
-        if fields:
-            exp = [ft for seg in self.seg_types for ft in seg.field_types]
-            segs = [str(seg) for seg in self.seg_types]
-            raise PathValueError(f"Unexpected fields: {fields}; expected "
-                                 f"fields {exp} for segment types {segs}")
+        if extras := fields.keys() - used_fields:
+            raise PathValueError(f"Got extra fields: {extras}")
         # Assemble the segment strings into a path, and return it.
         path = pathlib.Path(*segments)
         return path
@@ -936,7 +935,7 @@ def get_fields_in_seg_types(segment_types: Iterable[PathSegment],
     fields_no_top = {field_name: field
                      for segment_type in segment_types
                      for field_name, field in segment_type.field_types.items()}
-    return {TOP: TopField} | fields_no_top if include_top else fields_no_top
+    return {TOP: TopField, **fields_no_top} if include_top else fields_no_top
 
 
 def deduplicate(paths: Iterable[str | pathlib.Path], warn: bool = True):
@@ -1060,7 +1059,7 @@ def find_files_chain(paths: Iterable[str | pathlib.Path],
 # Path transformation routines
 
 
-def cast_path(input_path: pathlib.Path,
+def cast_path(input_path: str | pathlib.Path,
               input_segments: Sequence[PathSegment],
               output_segments: Sequence[PathSegment],
               override: dict[str, Any] | None = None):
@@ -1069,7 +1068,7 @@ def cast_path(input_path: pathlib.Path,
 
     Parameters
     ----------
-    input_path: pathlib.Path
+    input_path: str | pathlib.Path
         Input path from which to take the path fields.
     input_segments: Sequence[PathSegment]
         Path segments to use to determine the fields in `input_path`.

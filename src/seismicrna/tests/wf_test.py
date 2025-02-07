@@ -29,7 +29,7 @@ from seismicrna.sim.fold import run as run_sim_fold
 from seismicrna.sim.params import run as run_sim_params
 from seismicrna.sim.ref import run as run_sim_ref
 from seismicrna.wf import run as run_wf
-from seismicrna.cluster.dataset import ClusterMutsDataset
+from seismicrna.cluster.data import ClusterMutsDataset
 
 
 def list_step_dir_contents(parent_dir: Path,

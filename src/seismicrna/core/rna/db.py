@@ -96,9 +96,9 @@ def parse_db(db_path: Path, seq5: int = 1):
     """
     # Determine the reference and region names from the path.
     fields = path.parse(db_path,
-                        path.RefSeg,
-                        path.RegSeg,
-                        path.DotBracketSeg)
+                        [path.RefSeg,
+                         path.RegSeg,
+                         path.DotBracketSeg])
     ref = fields[path.REF]
     reg = fields[path.REG]
     # Parse each structure in the CT file.
