@@ -181,7 +181,8 @@ class Table(ABC):
     @classmethod
     def build_path(cls, path_fields: dict[str, Any]):
         """ Build the path of a table's CSV file using the fields. """
-        return path.build(cls.get_path_segs(), path_fields)
+        return path.build(cls.get_path_segs(),
+                          {**path_fields, **cls.get_default_path_fields()})
 
     @classmethod
     def get_is_gzipped(cls):
@@ -231,15 +232,17 @@ class Table(ABC):
     @cached_property
     def path(self):
         """ Path of the table's file. """
-        fields = path.get_fields_in_seg_types(self.get_path_segs(),
-                                              include_top=True)
-        defaults = self.get_default_path_fields()
-        return self.build_path(
-            {field: (getattr(self, field)
-                     if hasattr(self, field)
-                     else defaults[field])
-             for field in fields}
-        )
+        field_values = dict()
+        for field in path.get_fields_in_seg_types(self.get_path_segs(),
+                                                  include_top=True):
+            try:
+                field_values[field] = getattr(self, field)
+            except AttributeError:
+                # If the field name is not an attribute of the table,
+                # then it has a default value that will be supplied by
+                # self.build_path().
+                pass
+        return self.build_path(field_values)
 
     @abstractmethod
     def _get_header(self) -> Header:
