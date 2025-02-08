@@ -127,6 +127,7 @@ class TestWorkflow(ut.TestCase):
                             svg=True,
                             pdf=True,
                             png=True,
+                            verify_times=True,
                             max_procs=1,
                             force=False)
         rel_graph_kwargs = graph_kwargs | dict(rels=("m",),
@@ -310,8 +311,8 @@ class TestWorkflow(ut.TestCase):
                              clust=2,
                              k_clust_list=[(1,1)])
         self.assertListEqual(tracks, target_tracks)
-        for sample1, sample2 in combinations(samples, 2):
-            sample = f"{sample1}__and__{sample2}"
+        for sample1, sample2 in combinations(sorted(samples), 2):
+            sample = f"{sample1}_VS_{sample2}"
             sample_dir = self.OUT_DIR.joinpath(sample)
             for ref, ref_regions in refs_regions.items():
                 graph_full_dir = sample_dir.joinpath("graph", ref, "full")
@@ -331,7 +332,7 @@ class TestWorkflow(ut.TestCase):
                             if action1 == action2:
                                 action = action1
                             else:
-                                action = f"{action1}__and__{action2}"
+                                action = f"{action1}_VS_{action2}"
                             for name in [
                                 f"corroll_{action}_21-7_m-ratio-q0_pcc",
                                 f"delprof_{action}_m-ratio-q0",
