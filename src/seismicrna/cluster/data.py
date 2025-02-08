@@ -144,6 +144,7 @@ def get_clust_params(dataset: ClusterMutsDataset, max_procs: int = 1):
     # Try to load the tables from files.
     path_fields = {path.TOP: dataset.top,
                    path.SAMPLE: dataset.sample,
+                   path.BRANCHES: dataset.branches,
                    path.REF: dataset.ref,
                    path.REG: dataset.region.name}
     pos_table_file = ClusterPositionTableLoader.build_path(path_fields)
