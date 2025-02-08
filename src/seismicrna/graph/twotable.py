@@ -23,7 +23,7 @@ from .table import (TableGraph,
 from ..cluster.data import ClusterTable
 from ..core.arg import opt_comppair, opt_compself, opt_out_dir
 from ..core.logs import logger
-from ..core.path import BRANCH_SEP, flatten_branches
+from ..core.path import BRANCH_SEP, VERSUS_BRANCH, flatten_branches
 from ..core.table import PositionTable, Table
 from ..core.task import dispatch
 
@@ -32,8 +32,7 @@ SAMPLE_NAME = "Sample"
 ROW_NAME = "Row"
 COL_NAME = "Column"
 
-VERSUS = "VS"
-VERSUS_NAMES = f"{BRANCH_SEP}{VERSUS}{BRANCH_SEP}"
+VERSUS_NAMES = f"{BRANCH_SEP}{VERSUS_BRANCH}{BRANCH_SEP}"
 
 
 class TwoTableGraph(TableGraph, ABC):
@@ -64,13 +63,28 @@ class TwoTableGraph(TableGraph, ABC):
 
     @cached_property
     def branches(self):
-        if self.table1.branches == self.table2.branches:
-            return self.table1.branches
+        # Check if any steps have different branches.
+        branches_union = self.table1.branches | self.table2.branches
+        for step in branches_union:
+            # Use "" as the default value for get() because each step
+            # that does not have a branch gets "" as its branch value.
+            branch1 = self.table1.branches.get(step, "")
+            branch2 = self.table2.branches.get(step, "")
+            if branch1 != branch2:
+                break
+        else:
+            # The tables have the same branches, but the branches dicts
+            # can still differ (if table1 had a branch with value ""
+            # for a step and table2 was missing that step altogether),
+            # so take the union of the branches.
+            return branches_union
+        # The tables have different branches, so make a new dict that
+        # includes all branches and compares table1 and table2.
         branches1 = {f"{step}1": branch
                      for step, branch in self.table1.branches.items()}
         branches2 = {f"{step}2": branch
                      for step, branch in self.table2.branches.items()}
-        return {**branches1, VERSUS: VERSUS, **branches2}
+        return {**branches1, VERSUS_BRANCH: VERSUS_BRANCH, **branches2}
 
     @property
     def sample1(self):
