@@ -34,9 +34,6 @@ ACTION_REL = "all"
 ACTION_MASK = "filtered"
 ACTION_CLUST = "clustered"
 
-# String to join sample names.
-LINKER = "__and__"
-
 
 def get_action_name(source: MutsDataset | Table):
     if isinstance(source, (RelateDataset, RelateTable)):
@@ -119,6 +116,11 @@ class BaseGraph(ABC):
 
     @property
     @abstractmethod
+    def branches(self) -> dict[str, str]:
+        """ Branches of the workflow. """
+
+    @property
+    @abstractmethod
     def sample(self) -> str:
         """ Name(s) of the sample(s) from which the data come. """
 
@@ -166,6 +168,7 @@ class BaseGraph(ABC):
         return {path.TOP: self.top,
                 path.SAMPLE: self.sample,
                 path.CMD: path.GRAPH_STEP,
+                path.BRANCHES: self.branches,
                 path.REF: self.ref,
                 path.REG: self.reg,
                 path.GRAPH: self.graph_filename}

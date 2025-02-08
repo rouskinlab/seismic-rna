@@ -32,6 +32,10 @@ class OneTableGraph(TableGraph, OneSourceGraph, ABC):
         return self.table.top
 
     @property
+    def branches(self):
+        return self.table.branches
+
+    @property
     def sample(self):
         return self.table.sample
 

@@ -30,6 +30,10 @@ class DatasetGraph(OneRelGraph, OneSourceClusterGroupGraph, ABC):
         return self.dataset.top
 
     @property
+    def branches(self):
+        return self.dataset.branches
+
+    @property
     def sample(self):
         return self.dataset.sample
 

@@ -7,8 +7,7 @@ from typing import Any, Callable, Iterable
 
 import pandas as pd
 
-from .base import (LINKER,
-                   get_action_name,
+from .base import (get_action_name,
                    make_title_action_sample,
                    make_path_subject)
 from .cgroup import (ClusterGroupGraph,
@@ -24,6 +23,7 @@ from .table import (TableGraph,
 from ..cluster.data import ClusterTable
 from ..core.arg import opt_comppair, opt_compself, opt_out_dir
 from ..core.logs import logger
+from ..core.path import BRANCH_SEP, flatten_branches
 from ..core.table import PositionTable, Table
 from ..core.task import dispatch
 
@@ -31,6 +31,9 @@ from ..core.task import dispatch
 SAMPLE_NAME = "Sample"
 ROW_NAME = "Row"
 COL_NAME = "Column"
+
+VERSUS = "VS"
+VERSUS_NAMES = f"{BRANCH_SEP}{VERSUS}{BRANCH_SEP}"
 
 
 class TwoTableGraph(TableGraph, ABC):
@@ -59,6 +62,16 @@ class TwoTableGraph(TableGraph, ABC):
     def top(self):
         return self._top
 
+    @cached_property
+    def branches(self):
+        if self.table1.branches == self.table2.branches:
+            return self.table1.branches
+        branches1 = {f"{step}1": branch
+                     for step, branch in self.table1.branches.items()}
+        branches2 = {f"{step}2": branch
+                     for step, branch in self.table2.branches.items()}
+        return {**branches1, VERSUS: VERSUS, **branches2}
+
     @property
     def sample1(self):
         """ Name of sample 1. """
@@ -71,8 +84,9 @@ class TwoTableGraph(TableGraph, ABC):
 
     @cached_property
     def sample(self):
-        return (self.sample1 if self.sample1 == self.sample2
-                else LINKER.join([self.sample1, self.sample2]))
+        if self.sample1 == self.sample2:
+            return self.sample1
+        return VERSUS_NAMES.join([self.sample1, self.sample2])
 
     @cached_property
     def ref(self):
@@ -146,9 +160,9 @@ class TwoTableRelClusterGroupGraph(TwoTableGraph,
 
     @cached_property
     def path_subject(self):
-        return (self.path_subject1
-                if self.path_subject1 == self.path_subject2
-                else LINKER.join([self.path_subject1, self.path_subject2]))
+        if self.path_subject1 == self.path_subject2:
+            return self.path_subject1
+        return VERSUS_NAMES.join([self.path_subject1, self.path_subject2])
 
     @cached_property
     def data1(self):
@@ -255,6 +269,12 @@ class TwoTableRelClusterGroupWriter(TwoTableWriter, ABC):
                                  **kwargs)
 
 
+def _table_order(table: Table):
+    return (table.sample,
+            flatten_branches(table.branches),
+            get_action_name(table))
+
+
 def iter_table_pairs(tables: Iterable[Table]):
     """ Yield every pair of tables whose reference and region match. """
     tables = list(tables)
@@ -274,7 +294,7 @@ def iter_table_pairs(tables: Iterable[Table]):
                       f"with reference {repr(ref)} and region {repr(reg)}")
         # Sort the tables by sample to ensure the order of combinations
         # is consistent no matter the order of the "tables" argument.
-        yield from combinations(sorted(table_group, key=lambda t: t.sample), 2)
+        yield from combinations(sorted(table_group, key=_table_order), 2)
 
 
 class TwoTableRunner(TableRunner, ABC):
@@ -293,10 +313,12 @@ class TwoTableRunner(TableRunner, ABC):
             input_path: Iterable[str | Path], *,
             compself: bool,
             comppair: bool,
+            verify_times: bool,
             max_procs: int,
             **kwargs):
         # List all table files.
-        tables = load_pos_tables(input_path)
+        tables = list(load_pos_tables(input_path,
+                                      verify_times=verify_times))
         # Determine all pairs of tables to compare.
         table_pairs = list()
         if compself:
