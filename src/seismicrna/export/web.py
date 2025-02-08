@@ -73,9 +73,12 @@ def get_ref_metadata(top: Path,
                      sample: str,
                      ref: str,
                      refs_metadata: dict[str, dict]):
-    dataset = load_relate_dataset(RelateReport.build_path(top=top,
-                                                          sample=sample,
-                                                          ref=ref))
+    dataset = load_relate_dataset(RelateReport.build_path(
+        {path.TOP: top,
+         path.SAMPLE: sample,
+         path.BRANCHES: dict(),
+         path.REF: ref}
+    ))
     ref_metadata = {REF_SEQ: str(dataset.refseq),
                     REF_NUM_ALIGN: dataset.num_reads}
     return format_metadata(combine_metadata(ref_metadata,
@@ -89,10 +92,13 @@ def get_reg_metadata(top: Path,
                      ref: str,
                      reg: str,
                      all_pos: bool):
-    dataset = MaskMutsDataset(MaskReport.build_path(top=top,
-                                                    sample=sample,
-                                                    ref=ref,
-                                                    reg=reg))
+    dataset = MaskMutsDataset(MaskReport.build_path(
+        {path.TOP: top,
+         path.SAMPLE: sample,
+         path.BRANCHES: dict(),
+         path.REF: ref,
+         path.REG: reg}
+    ))
     positions = (dataset.region.range_int if all_pos
                  else dataset.region.unmasked_int)
     reg_metadata = {REG_END5: dataset.region.end5,
@@ -118,7 +124,7 @@ def get_db_structs(table: PositionTable,
     structs = dict()
     energies = dict()
     for profile in table.iter_profiles(k=k, clust=clust):
-        db_file = profile.get_db_file(table.top)
+        db_file = profile.get_db_file(table.top, branch="")
         if db_file.is_file():
             try:
                 # Parse all structures in the dot-bracket file.
@@ -252,11 +258,14 @@ def get_sample_data(top: Path,
 
 def export_sample(top_sample: tuple[Path, str], *args, force: bool, **kwargs):
     top, sample = top_sample
-    sample_file = path.buildpar(path.WebAppFileSeg,
-                                top=top,
-                                sample=sample,
-                                ext=path.JSON_EXT)
+    sample_file = path.buildpar([path.WebAppFileSeg],
+                                {path.TOP: top,
+                                 path.SAMPLE: sample,
+                                 path.EXT: path.JSON_EXT})
     if need_write(sample_file, force):
+        # Calculate the sample data before opening the file so that the
+        # file will not be written if get_sample_data() fails.
+        sample_data = get_sample_data(top, sample, *args, **kwargs)
         with open(sample_file, write_mode(force)) as f:
-            json.dump(get_sample_data(top, sample, *args, **kwargs), f)
+            json.dump(sample_data, f)
     return sample_file
