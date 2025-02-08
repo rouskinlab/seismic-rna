@@ -232,11 +232,13 @@ def get_seismicrna_project_dir():
 
 def validate_str(txt: str):
     if not isinstance(txt, str):
-        raise PathTypeError(f"Expected str, but got {type(txt).__name__}")
+        raise PathTypeError(f"txt must be str, but got {type(txt).__name__}")
     if not txt:
-        raise PathValueError("String cannot be empty")
+        raise PathValueError("txt cannot be empty string")
     if illegal := sorted(set(txt) - STR_CHARS_SET):
-        raise PathValueError(f"{repr(txt)} has illegal characters: {illegal}")
+        raise PathValueError(
+            f"txt {repr(txt)} has illegal characters: {illegal}"
+        )
 
 
 def validate_top(top: pathlib.Path):
@@ -257,16 +259,20 @@ def validate_int(num: int):
 
 def validate_branch(branch: str):
     if not isinstance(branch, str):
-        raise PathTypeError(f"Expected str, but got {type(branch).__name__}")
+        raise PathTypeError(
+            f"branch must be str, but got {type(branch).__name__}"
+        )
     if illegal := sorted(set(branch) - BRANCH_CHARS_SET):
         raise PathValueError(
-            f"{repr(branch)} has illegal characters: {illegal}"
+            f"branch {repr(branch)} has illegal characters: {illegal}"
         )
 
 
 def validate_branches(branches: dict[str, str]):
     if not isinstance(branches, dict):
-        raise PathTypeError(branches)
+        raise PathTypeError(
+            f"branches must be dict, but got {type(branches).__name__}"
+        )
     for step, branch in branches.items():
         validate_str(step)
         validate_branch(branch)
@@ -297,9 +303,12 @@ def flatten_branches(branches: dict[str, str]):
 
 def validate_branches_flat(branches_flat: list[str]):
     if not isinstance(branches_flat, list):
-        raise PathTypeError(branches_flat)
+        raise PathTypeError("branches_flat must be list, "
+                            f"but got {type(branches_flat).__name__}")
     for branch in branches_flat:
         validate_branch(branch)
+        if not branch:
+            raise PathValueError("branch cannot be the empty string")
 
 
 VALIDATE = {int: validate_int,
@@ -336,7 +345,7 @@ class PathField(object):
         else:
             if not isinstance(pattern, str):
                 raise PathTypeError(
-                    f"Expected str, but got {type(pattern).__name__}"
+                    f"pattern must be str, but got {type(pattern).__name__}"
                 )
             if pattern:
                 self.pattern = pattern
@@ -365,7 +374,9 @@ class PathField(object):
     def parse(self, text: str) -> Any:
         """ Parse a value from a string, validate it, and return it. """
         if not isinstance(text, str):
-            raise PathTypeError(f"Expected str, but got {type(text).__name__}")
+            raise PathTypeError(
+                f"text to parse must be str, but got {type(text).__name__}"
+            )
         try:
             val = self.dtype(text)
         except Exception as error:
@@ -396,7 +407,9 @@ class BranchesPathField(PathField):
 
     def parse(self, text: str):
         if not isinstance(text, str):
-            raise PathTypeError(f"Expected str, but got {type(text).__name__}")
+            raise PathTypeError(
+                f"text to parse must be str, but got {type(text).__name__}"
+            )
         val = list(filter(None, text.split(BRANCH_SEP)))
         self.validate(val)
         return val
