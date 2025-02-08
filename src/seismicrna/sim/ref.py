@@ -19,10 +19,10 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 
 def get_fasta_path(top: Path, ref: str):
     """ Get the path of a FASTA file. """
-    return path.buildpar(path.FastaSeg,
-                         top=top,
-                         ref=ref,
-                         ext=path.FASTA_EXTS[0])
+    return path.buildpar([path.FastaSeg],
+                         {path.TOP: top,
+                          path.REF: ref,
+                          path.EXT: path.FASTA_EXTS[0]})
 
 
 @run_func(COMMAND, default=Path)

@@ -42,6 +42,7 @@ class ReadNamesBatch(FullReadBatch):
 
     @classmethod
     def simulate(cls,
+                 branches: dict[str, str],
                  batch: int,
                  num_reads: int,
                  formatter: Callable[[int, int], str] = format_read_name,
@@ -50,6 +51,8 @@ class ReadNamesBatch(FullReadBatch):
 
         Parameters
         ----------
+        branches: dict[str, str]
+            Branches of the workflow.
         batch: int
             Batch number.
         num_reads: int
@@ -58,7 +61,8 @@ class ReadNamesBatch(FullReadBatch):
             Function to generate the name of each read: must accept the
             batch number and the read number and return a string.
         """
-        return cls(batch=batch,
+        return cls(branches=branches,
+                   batch=batch,
                    names=[formatter(batch, read) for read in range(num_reads)],
                    **kwargs)
 
@@ -75,6 +79,7 @@ class RelateBatch(FullRegionMutsBatch):
 
     @classmethod
     def simulate(cls,
+                 branches: dict[str, str],
                  batch: int,
                  ref: str,
                  pmut: pd.DataFrame,
@@ -91,6 +96,8 @@ class RelateBatch(FullRegionMutsBatch):
 
         Parameters
         ----------
+        branches: dict[str, str]
+            Branches of the workflow.
         batch: int
             Batch number.
         ref: str
@@ -124,7 +131,8 @@ class RelateBatch(FullRegionMutsBatch):
                                                      (read_length if paired
                                                       else 0),
                                                      p_rev)
-        simulated_all = cls(batch=batch,
+        simulated_all = cls(branches=branches,
+                            batch=batch,
                             region=region,
                             seg_end5s=seg_end5s,
                             seg_end3s=seg_end3s,
@@ -139,7 +147,8 @@ class RelateBatch(FullRegionMutsBatch):
                                      reads_noclose,
                                      assume_unique=True)
         renumber = calc_inverse(reads_noclose, what="reads_noclose")
-        return cls(batch=batch,
+        return cls(branches=branches,
+                   batch=batch,
                    region=region,
                    seg_end5s=seg_end5s[reads_noclose],
                    seg_end3s=seg_end3s[reads_noclose],

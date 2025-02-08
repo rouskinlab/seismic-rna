@@ -40,14 +40,14 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 
 def get_ct_path(top: Path, region: Region, profile: str):
     """ Get the path of a connectivity table (CT) file. """
-    return path.buildpar(path.RefSeg,
-                         path.RegSeg,
-                         path.ConnectTableSeg,
-                         top=top.joinpath(path.SIM_PARAM_DIR),
-                         ref=region.ref,
-                         reg=region.name,
-                         profile=profile,
-                         ext=path.CT_EXT)
+    return path.buildpar([path.RefSeg,
+                          path.RegSeg,
+                          path.ConnectTableSeg],
+                         {path.TOP: top.joinpath(path.SIM_PARAM_DIR),
+                          path.REF: region.ref,
+                          path.REG: region.name,
+                          path.PROFILE: profile,
+                          path.EXT: path.CT_EXT})
 
 
 def fold_region(region: Region, *,

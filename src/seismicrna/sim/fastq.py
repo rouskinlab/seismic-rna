@@ -194,7 +194,11 @@ def generate_fastq(top: Path,
                  else ext[:-len(path.GZIP_EXT)])
                 for ext in exts]
         open_func = open
-    fastq_paths = [path.buildpar(*seg, top=top, sample=sample, ref=ref, ext=ext)
+    fastq_paths = [path.buildpar(seg,
+                                 {path.TOP: top,
+                                  path.SAMPLE: sample,
+                                  path.REF: ref,
+                                  path.EXT: ext})
                    for seg, ext in zip(segs, exts, strict=True)]
     if any(need_write(fastq, force, warn=False) for fastq in fastq_paths):
         fastq_files = list()
@@ -286,6 +290,7 @@ def from_param_dir(param_dir: Path, *,
     sim_dir, _, _ = get_param_dir_fields(param_dir)
     region, pmut, u5s, u3s, pends, pclust = load_param_dir(param_dir, profile)
     batches = simulate_batches(sample=sample,
+                               branches=dict(),
                                ref=region.ref,
                                pmut=pmut,
                                uniq_end5s=u5s,
