@@ -13,6 +13,7 @@ from . import (demult as demultiplex_mod,
                export as export_mod)
 from .core.arg import (CMD_WORKFLOW,
                        merge_params,
+                       opt_branch,
                        opt_demultiplex,
                        opt_cluster,
                        opt_min_clusters,
@@ -459,6 +460,7 @@ def run(fasta: str | Path,
                           svg=svg,
                           pdf=pdf,
                           png=png,
+                          verify_times=verify_times,
                           max_procs=max_procs,
                           force=force)
         if graph_aucroll:
@@ -479,6 +481,7 @@ def run(fasta: str | Path,
                                  svg=svg,
                                  pdf=pdf,
                                  png=png,
+                                 verify_times=verify_times,
                                  max_procs=max_procs,
                                  force=force)
     if draw:
@@ -507,6 +510,7 @@ def run(fasta: str | Path,
                           svg=svg,
                           pdf=pdf,
                           png=png,
+                          verify_times=verify_times,
                           max_procs=max_procs,
                           force=force)
     if graph_ncov:
@@ -520,6 +524,7 @@ def run(fasta: str | Path,
                           svg=svg,
                           pdf=pdf,
                           png=png,
+                          verify_times=verify_times,
                           max_procs=max_procs,
                           force=force)
     if graph_mhist:
@@ -535,6 +540,7 @@ def run(fasta: str | Path,
                                 svg=svg,
                                 pdf=pdf,
                                 png=png,
+                                verify_times=verify_times,
                                 max_procs=max_procs,
                                 force=force)
     if graph_abundance:
@@ -545,6 +551,7 @@ def run(fasta: str | Path,
                                    svg=svg,
                                    pdf=pdf,
                                    png=png,
+                                   verify_times=verify_times,
                                    max_procs=max_procs,
                                    force=force)
     if graph_giniroll:
@@ -560,6 +567,7 @@ def run(fasta: str | Path,
                               svg=svg,
                               pdf=pdf,
                               png=png,
+                              verify_times=verify_times,
                               max_procs=max_procs,
                               force=force)
     if graph_poscorr:
@@ -635,7 +643,8 @@ params = merge_params([opt_demultiplex],
                       draw_mod.params,
                       [opt_export],
                       export_mod.params,
-                      graph_options)
+                      graph_options,
+                      exclude=[opt_branch])
 
 
 @command(CMD_WORKFLOW, params=params)
