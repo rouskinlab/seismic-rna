@@ -292,7 +292,9 @@ def add_branch(step: str, branch: str, ancestors: dict[str, str]):
     validate_branch(branch)
     validate_branches(ancestors)
     if step in ancestors:
-        raise PathValueError(f"Duplicate step: {repr(step)}")
+        raise PathValueError(
+            f"A step named {repr(step)} already exists in {ancestors}"
+        )
     return {**ancestors, step: branch}
 
 

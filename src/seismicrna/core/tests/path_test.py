@@ -19,6 +19,8 @@ class TestValidateBranches(ut.TestCase):
         self.assertIsNone(validate_branches({"step1": "a1"}))
         self.assertIsNone(validate_branches({"step_1": "a1",
                                              "step_2": "b1"}))
+        self.assertIsNone(validate_branches({"step_1": "a1",
+                                             "step_2": "a1"}))
         self.assertRaisesRegex(PathTypeError,
                                "branches must be dict, but got list",
                                validate_branches,
@@ -48,6 +50,7 @@ class TestValidateBranches(ut.TestCase):
         self.assertIsNone(validate_branches_flat([]))
         self.assertIsNone(validate_branches_flat(["a1"]))
         self.assertIsNone(validate_branches_flat(["a1", "b1"]))
+        self.assertIsNone(validate_branches_flat(["a1", "a1"]))
         self.assertRaisesRegex(PathTypeError,
                                "branches_flat must be list, but got dict",
                                validate_branches_flat,
@@ -82,6 +85,9 @@ class TestAddBranch(ut.TestCase):
         self.assertDictEqual(add_branch("step2", "b1", {"step1": "a1"}),
                              {"step1": "a1",
                               "step2": "b1"})
+        self.assertDictEqual(add_branch("step2", "a1", {"step1": "a1"}),
+                             {"step1": "a1",
+                              "step2": "a1"})
         self.assertDictEqual(add_branch("step3", "b1", {"step1": "a1",
                                                         "step2": "a2"}),
                              {"step1": "a1",
@@ -96,7 +102,7 @@ class TestAddBranch(ut.TestCase):
                                add_branch,
                                "step1", "a_1", {})
         self.assertRaisesRegex(PathValueError,
-                               "Duplicate step: 'step1'",
+                               "A step named 'step1' already exists",
                                add_branch,
                                "step1", "a2", {"step1": "a1"})
 
