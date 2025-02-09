@@ -9,8 +9,7 @@ from click import Argument, Option
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
-from ..cluster.data import ClusterDataset
-from ..cluster.data import ClusterTable, ClusterAbundanceTable
+from ..cluster.data import ClusterDataset, ClusterTable, ClusterAbundanceTable
 from ..core import path
 from ..core.arg import (arg_input_path,
                         opt_csv,

@@ -6,8 +6,7 @@ from typing import Iterable
 import pandas as pd
 from click import command
 
-from .cluster.data import load_cluster_dataset
-from .cluster.data import ClusterDatasetTabulator
+from .cluster.data import ClusterDatasetTabulator, load_cluster_dataset
 from .core import path
 from .core.arg import (CMD_JOIN,
                        arg_input_path,
