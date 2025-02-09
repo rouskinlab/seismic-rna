@@ -1,25 +1,23 @@
-import re
 import os
+import re
 from functools import cached_property
-from typing import Iterable
 from pathlib import Path
-
-from ..core import path
-from ..core.logs import logger
-from ..core.task import dispatch
-from ..core.write import need_write
-from ..core.extern.shell import args_to_cmd, run_cmd, JAVA_CMD, JAR_CMD
-from ..core.rna.io import from_ct
-from ..core.rna.state import RNAState
-from ..fold.report import FoldReport
-from ..core.header import AVERAGE_PREFIX
-
-from ..relate.table import RelatePositionTable, RelatePositionTableLoader
-from ..mask.table import MaskPositionTable, MaskPositionTableLoader
-from ..cluster.data import ClusterPositionTable, ClusterPositionTableLoader
-
+from typing import Iterable
 
 from jinja2 import Template
+
+from ..cluster.data import ClusterPositionTable, ClusterPositionTableLoader
+from ..core import path
+from ..core.extern.shell import args_to_cmd, run_cmd, JAVA_CMD, JAR_CMD
+from ..core.header import AVERAGE_PREFIX
+from ..core.logs import logger
+from ..core.report import SampleF, BranchesF, RefF, RegF, ProfileF
+from ..core.rna.io import from_ct
+from ..core.rna.state import RNAState
+from ..core.task import dispatch
+from ..core.write import need_write
+from ..fold.report import FoldReport
+from ..mask.table import MaskPositionTable, MaskPositionTableLoader
 
 TEMPLATE_STRING = """
 rnartist {
@@ -107,14 +105,14 @@ class ColorBlock:
 
 class JinjaData:
     def __init__(self,
-                 path: Path,
+                 path_: Path,
                  seq: str,
                  value: str,
                  name: str,
                  color_dict: dict,
                  details_value: int,
                  color_blocks: list[ColorBlock]):
-        self.path = path
+        self.path = path_
         self.seq = seq
         self.value = value
         self.name = name
@@ -130,7 +128,10 @@ class JinjaData:
             'name': self.name,
             'color_dict': self.color_dict,
             'details_value': self.details_value,
-            'color_blocks': [block.to_dict() if hasattr(block, 'to_dict') else block for block in self.color_blocks]
+            'color_blocks': [block.to_dict()
+                             if hasattr(block, 'to_dict')
+                             else block
+                             for block in self.color_blocks]
         }
 
 
@@ -170,7 +171,7 @@ def build_jinja_data(struct: str,
             color_blocks.append(ColorBlock("n", "black",
                                            location=(pos, pos)))
 
-    jinja_data = JinjaData(path=out_dir,
+    jinja_data = JinjaData(path_=out_dir,
                            seq=struct["seq"],
                            value=struct["value"],
                            name=name,
@@ -190,17 +191,18 @@ class RNArtistRun(object):
             logger.warning(f"Could not parse profile: {self.profile}.")
 
     def __init__(self,
-                 report: Path,
+                 report_file: Path,
                  tmp_dir: Path,
                  struct_num: Iterable[int],
                  color: bool,
                  n_procs: int):
-        self.top, self.fields = FoldReport.parse_path(report)
-        self.sample = self.fields.get(path.SAMPLE)
-        self.ref = self.fields.get(path.REF)
-        self.reg = self.fields.get(path.REG)
-        self.profile = self.fields.get(path.PROFILE)
-        self.report = FoldReport.load(report)
+        self.top, _ = FoldReport.parse_path(report_file)
+        report = FoldReport.load(report_file)
+        self.sample = report.get_field(SampleF)
+        self.branches = report.get_field(BranchesF)
+        self.ref = report.get_field(RefF)
+        self.reg = report.get_field(RegF)
+        self.profile = report.get_field(ProfileF)
         self.tmp_dir = tmp_dir
         self.struct_num = list(struct_num)
         self.color = color
@@ -223,6 +225,7 @@ class RNArtistRun(object):
         return {path.TOP: top,
                 path.CMD: path.FOLD_STEP,
                 path.SAMPLE: self.sample,
+                path.BRANCHES: self.branches,
                 path.REF: self.ref,
                 path.REG: self.reg}
 
@@ -279,10 +282,11 @@ class RNArtistRun(object):
 
     @property
     def table_file(self):
-        return (self.table_class.build_path(top=self.top,
-                                            sample=self.sample,
-                                            ref=self.ref,
-                                            reg=self.data_reg)
+        return (self.table_class.build_path({path.TOP: self.top,
+                                             path.SAMPLE: self.sample,
+                                             path.BRANCHES: self.branches,
+                                             path.REF: self.ref,
+                                             path.REG: self.data_reg})
                 if self.table_class else None)
 
     @cached_property

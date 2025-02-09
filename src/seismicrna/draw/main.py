@@ -26,7 +26,8 @@ def run(input_path: Iterable[str | Path], *,
     """ Draw RNA structures with reactivities using RNArtistCore. """
     require_env_var("RNARTISTCORE", CMD_DRAW)
     # Generate the positional arguments for draw.
-    args = as_list_of_tuples(path.find_files_chain(input_path, [path.FoldRepSeg]))
+    args = as_list_of_tuples(path.find_files_chain(input_path,
+                                                   [path.FoldRepSeg]))
     # Draw the files.
     return dispatch(draw,
                     max_procs,
