@@ -195,6 +195,7 @@ class RNArtistRun(object):
                  tmp_dir: Path,
                  struct_num: Iterable[int],
                  color: bool,
+                 verify_times: bool,
                  n_procs: int):
         self.top, _ = FoldReport.parse_path(report_file)
         report = FoldReport.load(report_file)
@@ -207,6 +208,7 @@ class RNArtistRun(object):
         self.struct_num = list(struct_num)
         self.color = color
         self.n_procs = n_procs
+        self.verify_times = verify_times
         self._parse_profile()
 
     def _get_dir_fields(self, top: Path):
@@ -242,9 +244,9 @@ class RNArtistRun(object):
         pathlib.Path
             Parent directory of files for this RNA.
         """
-        return path.builddir(*path.REG_DIR_SEGS, **self._get_dir_fields(top))
+        return path.builddir(path.REG_DIR_SEGS, self._get_dir_fields(top))
 
-    def _get_file(self, top: Path, file_seg: path.PathSegment, **file_fields):
+    def _get_file(self, top: Path, file_seg: path.PathSegment, file_fields):
         """ Get the path to a file of the RNA.
 
         Parameters
@@ -253,7 +255,7 @@ class RNArtistRun(object):
             Top-level directory.
         file_seg: path.PathSegment
             Segment of the file component of the path.
-        **file_fields
+        file_fields
             Fields for the file segment.
 
         Returns
@@ -261,7 +263,7 @@ class RNArtistRun(object):
         pathlib.Path
             Path of the file.
         """
-        return self._get_dir(top).joinpath(file_seg.build(**file_fields))
+        return self._get_dir(top).joinpath(file_seg.build(file_fields))
 
     @cached_property
     def table_classes(self):
@@ -292,7 +294,8 @@ class RNArtistRun(object):
     @cached_property
     def table(self):
         if self.table_file.exists():
-            return (self.table_loader(self.table_file)
+            return (self.table_loader(self.table_file,
+                                      verify_times=self.verify_times)
                     if self.table_loader else None)
         else:
             logger.warning(f"{self.table_file} does not exist.")
@@ -313,8 +316,8 @@ class RNArtistRun(object):
         """
         return self._get_file(top,
                               path.ConnectTableSeg,
-                              profile=self.profile,
-                              ext=path.CT_EXT)
+                              {path.PROFILE: self.profile,
+                               path.EXT: path.CT_EXT})
 
     def get_db_file(self, top: Path):
         """ Get the path to the dot-bracket (DB) file.
@@ -331,11 +334,11 @@ class RNArtistRun(object):
         """
         return self._get_file(top,
                               path.DotBracketSeg,
-                              profile=self.profile,
-                              ext=path.DOT_EXTS[0])
+                              {path.PROFILE: self.profile,
+                               path.EXT: path.DOT_EXTS[0]})
 
     def get_svg_file(self, top: Path, struct: int):
-        """ Get the path to the dot-bracket (DB) file.
+        """ Get the path to the SVG file.
 
         Parameters
         ----------
@@ -349,9 +352,9 @@ class RNArtistRun(object):
         """
         return self._get_file(top,
                               path.SvgSeg,
-                              profile=self.profile,
-                              struct=struct,
-                              ext=path.SVG_EXT)
+                              {path.PROFILE: self.profile,
+                               path.STRUCT: struct,
+                               path.EXT: path.SVG_EXT})
 
     def get_varna_color_file(self, top: Path):
         """ Get the path to the VARNA color file.
@@ -368,8 +371,8 @@ class RNArtistRun(object):
         """
         return self._get_file(top,
                               path.VarnaColorSeg,
-                              profile=self.profile,
-                              ext=path.TXT_EXT)
+                              {path.PROFILE: self.profile,
+                               path.EXT: path.TXT_EXT})
 
     def get_script_file(self, top: Path, struct: int):
         """ Get the path to the RNArtist script (.kts) file.
@@ -386,9 +389,9 @@ class RNArtistRun(object):
         """
         return self._get_file(top,
                               path.KtsSeg,
-                              profile=self.profile,
-                              struct=struct,
-                              ext=path.KTS_EXT)
+                              {path.PROFILE: self.profile,
+                               path.STRUCT: struct,
+                               path.EXT: path.KTS_EXT})
 
     @cached_property
     def best_struct(self):
@@ -486,6 +489,7 @@ def draw(report_path: Path, *,
          color: bool,
          tmp_dir: Path,
          keep_tmp: bool,
+         verify_times: bool,
          n_procs: int,
          force: bool = False):
     """ Draw RNA structure(s) from a FoldReport. """
@@ -493,6 +497,7 @@ def draw(report_path: Path, *,
                            tmp_dir,
                            struct_num,
                            color,
+                           verify_times,
                            n_procs)
     # By convention, a function must return a Path for dispatch to deem
     # that it has completed successfully.
