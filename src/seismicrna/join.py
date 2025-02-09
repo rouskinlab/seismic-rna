@@ -39,16 +39,18 @@ from .table import tabulate
 
 def joined_mask_report_exists(top: Path,
                               sample: str,
-                              branches: Iterable[str],
+                              branches_flat: Iterable[str],
                               ref: str,
                               joined: str,
                               regs: Iterable[str]):
     """ Return whether a mask report for the joined region exists. """
-    mask_report_file = JoinMaskReport.build_path({path.TOP: top,
-                                                  path.SAMPLE: sample,
-                                                  path.BRANCHES: list(branches),
-                                                  path.REF: ref,
-                                                  path.REG: joined})
+    mask_report_file = JoinMaskReport.build_path(
+        {path.TOP: top,
+         path.SAMPLE: sample,
+         path.BRANCHES: list(branches_flat),
+         path.REF: ref,
+         path.REG: joined}
+    )
     if not mask_report_file.is_file():
         logger.detail(
             f"Joined mask report {mask_report_file} does not already exist"

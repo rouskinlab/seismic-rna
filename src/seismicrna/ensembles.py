@@ -249,18 +249,19 @@ def group_clusters(cluster_dirs: Iterable[Path],
     # List the fields and 5'/3' ends of each clustered dataset.
     regs_info = defaultdict(list)
     for cluster_dir in cluster_dirs:
-        path_fields = path.parse(cluster_dir, *path.REG_DIR_SEGS)
-        report_file = ClusterReport.build_path(**path_fields)
+        path_fields = path.parse(cluster_dir, path.REG_DIR_SEGS)
+        report_file = ClusterReport.build_path(path_fields)
         report = ClusterReport.load(report_file)
         ks = report.get_field(KsWrittenF)
         if ks:
             mask_report = MaskReport.load(MaskReport.build_path(
-                **(path_fields | {path.CMD: path.MASK_STEP})
+                path_fields | {path.CMD: path.MASK_STEP}
             ))
             top = path_fields[path.TOP]
             sample = path_fields[path.SAMPLE]
+            branches_flat = tuple(path_fields[path.BRANCHES])
             ref = path_fields[path.REF]
-            key = top, sample, ref
+            key = top, sample, branches_flat, ref
             reg = path_fields[path.REG]
             end5 = mask_report.get_field(End5F)
             end3 = mask_report.get_field(End3F)
@@ -284,7 +285,7 @@ def group_clusters(cluster_dirs: Iterable[Path],
     for key in list(regs_info):
         # Sort by 5' and 3' ends to ensure regions are joined in order.
         regs_info[key].sort(key=lambda reg_info_: reg_info_.ends)
-        top, sample, ref = key
+        top, sample, branches_flat, ref = key
         logger.detail(f"Grouping regions of reference {repr(ref)} "
                       f"sample {repr(sample)} in {top}: {regs_info[key]}")
         # Add the first region to the first group.
@@ -339,6 +340,7 @@ def group_clusters(cluster_dirs: Iterable[Path],
 @run_func(CMD_ENSEMBLES, extra_defaults=extra_defaults)
 def run(input_path: Iterable[str | Path], *,
         # General options
+        branch: str,
         tmp_pfx: str | Path,
         keep_tmp: bool,
         brotli_level: int,
@@ -417,6 +419,7 @@ def run(input_path: Iterable[str | Path], *,
                                     min_mut_gap=min_mut_gap)
     mask_dirs = mask_mod.run(
         input_path=input_path,
+        branch=branch,
         tmp_pfx=tmp_pfx,
         keep_tmp=keep_tmp,
         mask_coords=tuple(mask_regions),
@@ -486,12 +489,13 @@ def run(input_path: Iterable[str | Path], *,
     for clustered in [False, True]:
         args = list()
         for key, groups in cluster_groups.items():
-            top, sample, ref = key
+            top, sample, branches_flat, ref = key
             for group_num, regs in enumerate(groups, start=1):
                 joined_region = f"{joined}{group_num}"
                 if clustered or force or not joined_mask_report_exists(
                         top,
                         sample,
+                        branches_flat,
                         ref,
                         joined_region,
                         regs
@@ -501,6 +505,7 @@ def run(input_path: Iterable[str | Path], *,
                     args.append((top,
                                  joined_region,
                                  sample,
+                                 branches_flat,
                                  ref,
                                  regs,
                                  clustered))
