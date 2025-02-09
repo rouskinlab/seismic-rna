@@ -9,11 +9,11 @@ from .batch import MutsBatch, RegionMutsBatch, ReadBatch, list_batch_nums
 from .io import MutsBatchIO, ReadBatchIO
 from .logs import logger
 from .rel import RelPattern
-from .report import (DATETIME_FORMAT,
-                     BranchesF,
+from .report import (BranchesF,
                      SampleF,
                      RefF,
                      RegF,
+                     TimeBeganF,
                      TimeEndedF,
                      NumBatchF,
                      ChecksumsF,
@@ -95,10 +95,15 @@ class Dataset(ABC):
     def best_k(self) -> int:
         """ Best number of clusters. """
 
-    @property
-    @abstractmethod
-    def timestamp(self) -> datetime:
+    @cached_property
+    def time_began(self) -> datetime:
         """ Time at which the data were written. """
+        return self.report.get_field(TimeBeganF)
+
+    @cached_property
+    def time_ended(self) -> datetime:
+        """ Time at which the data were written. """
+        return self.report.get_field(TimeEndedF)
 
     @property
     def dir(self) -> Path:
@@ -312,10 +317,6 @@ class LoadedDataset(Dataset, ABC):
         return cls.get_batch_type().btype()
 
     @property
-    def timestamp(self):
-        return self.report.get_field(TimeEndedF)
-
-    @property
     def num_batches(self):
         return self.report.get_field(NumBatchF)
 
@@ -397,11 +398,6 @@ class MergedDataset(Dataset, ABC):
     @cached_property
     def pattern(self):
         return self._get_common_attr("pattern")
-
-    @cached_property
-    def timestamp(self):
-        # Use the time of the most recent constituent dataset.
-        return max(dataset.timestamp for dataset in self.datasets)
 
 
 class MergedRegionDataset(MergedDataset, RegionDataset, ABC):
@@ -596,32 +592,27 @@ class MultistepDataset(MutsDataset, ABC):
 
     def __init__(self, dataset2_report_file: Path, **kwargs):
         super().__init__(dataset2_report_file, **kwargs)
-        data1 = self.load_dataset1(dataset2_report_file, self.verify_times)
-        data2 = self.load_dataset2(dataset2_report_file, self.verify_times)
-        time1 = data1.timestamp
-        time2 = data2.timestamp
+        dataset1 = self.load_dataset1(dataset2_report_file, self.verify_times)
+        dataset2 = self.load_dataset2(dataset2_report_file, self.verify_times)
+        time1 = dataset1.time_ended
+        time2 = dataset2.time_began
         if self.verify_times and time1 > time2:
             raise BadTimeStampError(
-                f"{data2} was presumably made from {data1}, but its report "
-                f"file was written earlier: {time2.strftime(DATETIME_FORMAT)} "
-                f"compared to {time1.strftime(DATETIME_FORMAT)}. "
+                f"{dataset1.report_file} should have existed before "
+                f"{dataset2.report_file} but was actually created afterwards. "
                 f"If you are sure this inconsistency is not a problem, "
                 f"then you can suppress this error using --no-verify-times"
             )
-        self.data1 = data1
-        self.data2 = data2
+        self.dataset1 = dataset1
+        self.dataset2 = dataset2
 
     @property
     def refseq(self):
-        return self.data1.refseq
-
-    @property
-    def timestamp(self):
-        return self.data2.timestamp
+        return self.dataset1.refseq
 
     @cached_property
     def data_dirs(self):
-        return self.data1.data_dirs + self.data2.data_dirs
+        return self.dataset1.data_dirs + self.dataset2.data_dirs
 
     @abstractmethod
     def _integrate(self, batch1: MutsBatch, batch2: ReadBatch) -> MutsBatch:
@@ -632,5 +623,5 @@ class MultistepDataset(MutsDataset, ABC):
         return self.report.get_field(NumBatchF)
 
     def get_batch(self, batch_num: int):
-        return self._integrate(self.data1.get_batch(batch_num),
-                               self.data2.get_batch(batch_num))
+        return self._integrate(self.dataset1.get_batch(batch_num),
+                               self.dataset2.get_batch(batch_num))

@@ -93,39 +93,39 @@ class ClusterMutsDataset(ClusterDataset, MultistepDataset, UnbiasDataset):
 
     @property
     def pattern(self):
-        return self.data1.pattern
+        return self.dataset1.pattern
 
     @pattern.setter
     def pattern(self, pattern):
-        self.data1.pattern = pattern
+        self.dataset1.pattern = pattern
 
     @property
     def region(self):
-        return self.data1.region
+        return self.dataset1.region
 
     @property
     def min_mut_gap(self):
-        return getattr(self.data1, "min_mut_gap")
+        return getattr(self.dataset1, "min_mut_gap")
 
     @min_mut_gap.setter
     def min_mut_gap(self, min_mut_gap):
-        self.data1.min_mut_gap = min_mut_gap
+        self.dataset1.min_mut_gap = min_mut_gap
 
     @property
     def quick_unbias(self):
-        return getattr(self.data1, "quick_unbias")
+        return getattr(self.dataset1, "quick_unbias")
 
     @property
     def quick_unbias_thresh(self):
-        return getattr(self.data1, "quick_unbias_thresh")
+        return getattr(self.dataset1, "quick_unbias_thresh")
 
     @property
     def ks(self):
-        return getattr(self.data2, "ks")
+        return getattr(self.dataset2, "ks")
 
     @property
     def best_k(self):
-        return getattr(self.data2, "best_k")
+        return getattr(self.dataset2, "best_k")
 
     def _integrate(self, batch1: MaskMutsBatch, batch2: ClusterBatchIO):
         return ClusterMutsBatch(batch=batch1.batch,
