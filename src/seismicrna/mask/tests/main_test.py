@@ -56,12 +56,16 @@ def write_datasets(out_dir: Path,
     if sum(reads_per_sample.values()) != len(READ_NAMES):
         raise ValueError(f"reads_per_sample must sum to {len(READ_NAMES)}, "
                          f"but got {sum(reads_per_sample.values())}")
+    branches = dict()
     report_files = list()
     read_num = 0
     for sample, num_reads in reads_per_sample.items():
         began = datetime.now()
         # Write the reference sequence.
-        refseq = RefseqIO(sample=sample, ref=REF, refseq=REF_SEQ)
+        refseq = RefseqIO(sample=sample,
+                          branches=branches,
+                          ref=REF,
+                          refseq=REF_SEQ)
         _, refseq_checksum = refseq.save(out_dir)
         # Assign read numbers to each batch.
         read_nums = iter(range(read_num, read_num + num_reads))
@@ -90,6 +94,7 @@ def write_datasets(out_dir: Path,
             # Write the batches of relate data and read names.
             relate_batch = RelateBatchIO(
                 sample=sample,
+                branches=branches,
                 region=REGION,
                 batch=batch,
                 seg_end5s=batch_end5s,
@@ -102,6 +107,7 @@ def write_datasets(out_dir: Path,
                 relate_batch.save(out_dir)[1]
             )
             name_batch = ReadNamesBatchIO(sample=sample,
+                                          branches=branches,
                                           ref=REF,
                                           batch=batch,
                                           names=names)
@@ -110,6 +116,7 @@ def write_datasets(out_dir: Path,
             )
         # Write the report file for this sample.
         report = RelateReport(sample=sample,
+                              branches=branches,
                               ref=REF,
                               min_mapq=0,
                               min_phred=0,

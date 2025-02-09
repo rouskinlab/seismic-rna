@@ -93,10 +93,11 @@ def extract_batches(batches: Iterable[RegionMutsBatch]):
 
 
 def load_refseq(out_dir: Path):
-    return RefseqIO.load(RefseqIO.build_path(top=out_dir,
-                                             sample=SAMPLE,
-                                             cmd=path.RELATE_STEP,
-                                             ref=REF),
+    return RefseqIO.load(RefseqIO.build_path({path.TOP: out_dir,
+                                              path.SAMPLE: SAMPLE,
+                                              path.CMD: path.RELATE_STEP,
+                                              path.BRANCHES: dict(),
+                                              path.REF: REF}),
                          checksum="").refseq
 
 
@@ -159,7 +160,7 @@ class TestRelateEmpty(TestRelate):
 
     def test_min_reads(self):
         self.assertRaisesRegex(ValueError,
-                               "Insufficient reads in alignment map",
+                               "Insufficient reads in Alignment map",
                                self.batches,
                                min_reads=1)
 
@@ -189,7 +190,7 @@ class TestRelateSingle(TestRelate):
 
     def test_min_reads(self):
         self.assertRaisesRegex(ValueError,
-                               "Insufficient reads in alignment map",
+                               "Insufficient reads in Alignment map",
                                self.batches,
                                min_reads=5)
 
@@ -322,7 +323,7 @@ class TestRelatePaired(TestRelate):
 
     def test_min_reads(self):
         self.assertRaisesRegex(ValueError,
-                               "Insufficient reads in alignment map",
+                               "Insufficient reads in Alignment map",
                                self.batches,
                                min_reads=7)
 
