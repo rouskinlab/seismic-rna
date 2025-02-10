@@ -459,7 +459,7 @@ class RNArtistRun(object):
             self.struct_num = (self.best_struct,)
         for struct_num, struct in enumerate(
                 from_ct(self.get_ct_file(self.top))):
-            if struct_num in self.struct_num:
+            if struct_num in self.struct_num or -1 in self.struct_num:
                 structs[struct_num] = dict(seq=struct.seq,
                                            value=struct.db_structure)
         args = [
