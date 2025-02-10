@@ -9,6 +9,7 @@ CIG_SUBST = "X"  # substitution
 CIG_DELET = "D"  # deletion
 CIG_INSRT = "I"  # insertion
 CIG_SCLIP = "S"  # soft clipping
+CIG_INTRN = "N"  # soft clipping
 
 # Regular expression pattern that matches a single CIGAR operation
 # (length ≥ 1 and operation code, defined above)
@@ -19,6 +20,7 @@ CIG_PATTERN = re.compile("".join([r"(\d+)([",
                                   CIG_DELET,
                                   CIG_INSRT,
                                   CIG_SCLIP,
+                                  CIG_INTRN,
                                   "])"]))
 
 

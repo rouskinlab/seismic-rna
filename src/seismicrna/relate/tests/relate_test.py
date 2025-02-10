@@ -734,19 +734,19 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                    973: 113,
                    975: 113,
                    976: 209,
-                   978: 209, 
+                   978: 209,
                    984: 177,
                    986: 113,
                    987: 113,
                    997: 113,
                    998: 113,
                    1000: 113,
-                   1001: 225, 
-                   1006: 225, 
+                   1001: 225,
+                   1006: 225,
                    1007: 113,
                    1008: 113,
                    1009: 113,
-                   1010: 225, 
+                   1010: 225,
                    1011: 177,
                    1013: 177,
                    1016: 209,
@@ -1464,114 +1464,122 @@ class TestCalcRelsLinesPaired(ut.TestCase):
 class TestMergeMates(ut.TestCase):
 
     def test_empty(self):
-        result = merge_mates(1, 10, {}, 1, 10, {}, True)
+        result = merge_mates([1], [10], {}, [1], [10], {}, True)
         expect = ([1, 1], [10, 10]), {}
         self.assertEqual(result, expect)
 
     def test_read1(self):
-        end51 = 1
-        end31 = 20
-        end52 = 11
-        end32 = 30
-        for pos in range(end51, end31 + 1):
-            for rel in range(MATCH + 1, NOCOV):
-                result = merge_mates(end51, end31, {pos: rel},
-                                     end52, end32, {},
-                                     True)
-                if end52 <= pos <= end32:
-                    # The relationship can be compensated by read 2.
-                    if rel & MATCH:
-                        # The match in read 2 compensated.
-                        expect = ([1, 11], [20, 30]), {}
-                    else:
-                        # The match in read 2 is irreconcilable.
-                        expect = ([1, 11], [20, 30]), {pos: IRREC}
-                else:
-                    # Read 2 cannot compensate.
-                    expect = ([1, 11], [20, 30]), {pos: rel}
-                self.assertEqual(result, expect)
+        end51s = [1]
+        end31s = [20]
+        end52s = [11]
+        end32s = [30]
+        for end51, end31 in zip(end51s, end31s):
+            for pos in range(end51, end31 + 1):
+                for rel in range(MATCH + 1, NOCOV):
+                    result = merge_mates(end51s, end31s, {pos: rel},
+                                          end52s, end32s, {},
+                                          True)
+                    for end52, end32 in zip(end52s, end32s):
+                        if end52 <= pos <= end32:
+                            # The relationship can be compensated by read 2.
+                            if rel & MATCH:
+                                # The match in read 2 compensated.
+                                expect = ([1, 11], [20, 30]), {}
+                            else:
+                                # The match in read 2 is irreconcilable.
+                                expect = ([1, 11], [20, 30]), {pos: IRREC}
+                        else:
+                            # Read 2 cannot compensate.
+                            expect = ([1, 11], [20, 30]), {pos: rel}
+                        self.assertEqual(result, expect)
 
     def test_read2(self):
-        end51 = 1
-        end31 = 20
-        end52 = 11
-        end32 = 30
-        for pos in range(end52, end32 + 1):
-            for rel in range(MATCH + 1, NOCOV):
-                result = merge_mates(end51, end31, {},
-                                     end52, end32, {pos: rel},
-                                     True)
-                if end51 <= pos <= end31:
-                    # The relationship can be compensated by read 1.
-                    if rel & MATCH:
-                        # The match in read 1 compensated.
-                        expect = ([1, 11], [20, 30]), {}
-                    else:
-                        # The match in read 1 is irreconcilable.
-                        expect = ([1, 11], [20, 30]), {pos: IRREC}
-                else:
-                    # Read 1 cannot compensate.
-                    expect = ([1, 11], [20, 30]), {pos: rel}
-                self.assertEqual(result, expect)
+        end51s = [1]
+        end31s = [20]
+        end52s = [11]
+        end32s = [30]
+        for end52, end32 in zip(end52s, end32s):
+            for pos in range(end52, end32 + 1):
+                for rel in range(MATCH + 1, NOCOV):
+                    result = merge_mates(end51s, end31s, {},
+                                          end52s, end32s, {pos: rel},
+                                          True)
+                    for end51, end31 in zip(end51s, end31s):
+                        if end51 <= pos <= end31:
+                            # The relationship can be compensated by read 1.
+                            if rel & MATCH:
+                                # The match in read 1 compensated.
+                                expect = ([1, 11], [20, 30]), {}
+                            else:
+                                # The match in read 1 is irreconcilable.
+                                expect = ([1, 11], [20, 30]), {pos: IRREC}
+                        else:
+                            # Read 1 cannot compensate.
+                            expect = ([1, 11], [20, 30]), {pos: rel}
+                        self.assertEqual(result, expect)
 
     def test_both_reads(self):
-        end51 = 1
-        end31 = 2
-        end52 = 2
-        end32 = 3
-        for pos1 in range(end51, end31 + 1):
-            for rel1 in range(MATCH + 1, NOCOV):
-                rels1 = {pos1: rel1}
-                for pos2 in range(end52, end32 + 1):
-                    for rel2 in range(MATCH + 1, NOCOV):
-                        rels2 = {pos2: rel2}
-                        with self.subTest(pos1=pos1, rel1=rel1,
-                                          pos2=pos2, rel2=rel2):
-                            result = merge_mates(end51, end31, rels1,
-                                                 end52, end32, rels2,
-                                                 True)
-                            if pos1 == pos2:
-                                merged = rel1 & rel2
-                                if merged == MATCH:
-                                    expect = ([1, 2], [2, 3]), {}
-                                else:
-                                    expect = ([1, 2], [2, 3]), {pos1: merged}
-                            else:
-                                expect = ([1, 2], [2, 3]), {}
-                                merged1 = (rel1 & MATCH
-                                           if end52 <= pos1 <= end32
-                                           else rel1)
-                                if merged1 != MATCH:
-                                    expect[1][pos1] = merged1
-                                merged2 = (rel2 & MATCH
-                                           if end51 <= pos2 <= end31
-                                           else rel2)
-                                if merged2 != MATCH:
-                                    expect[1][pos2] = merged2
-                            self.assertEqual(result, expect)
+        end51s = [1]
+        end31s = [2]
+        end52s = [2]
+        end32s = [3]
+        for end51, end31 in zip(end51s, end31s):
+            for pos1 in range(end51, end31 + 1):
+                for rel1 in range(MATCH + 1, NOCOV):
+                    rels1 = {pos1: rel1}
+                    for end52, end32 in zip(end52s, end32s):
+                        for pos2 in range(end52, end32 + 1):
+                            for rel2 in range(MATCH + 1, NOCOV):
+                                rels2 = {pos2: rel2}
+                                with self.subTest(pos1=pos1, rel1=rel1,
+                                                  pos2=pos2, rel2=rel2):
+                                    result = merge_mates(end51s, end31s, rels1,
+                                                          end52s, end32s, rels2,
+                                                          True)
+                                    if pos1 == pos2:
+                                        merged = rel1 & rel2
+                                        if merged == MATCH:
+                                            expect = ([1, 2], [2, 3]), {}
+                                        else:
+                                            expect = ([1, 2], [2, 3]), {pos1: merged}
+                                    else:
+                                        expect = ([1, 2], [2, 3]), {}
+                                        merged1 = (rel1 & MATCH
+                                                    if end52 <= pos1 <= end32
+                                                    else rel1)
+                                        if merged1 != MATCH:
+                                            expect[1][pos1] = merged1
+                                        merged2 = (rel2 & MATCH
+                                                    if end51 <= pos2 <= end31
+                                                    else rel2)
+                                        if merged2 != MATCH:
+                                            expect[1][pos2] = merged2
+                                    self.assertEqual(result, expect)
 
     def test_both_blank(self):
-        end51 = 1
-        end31 = 2
-        end52 = 2
-        end32 = 3
-        for pos1 in range(end51, end31 + 1):
-            rels1 = {pos1: NOCOV}
-            for pos2 in range(end52, end32 + 1):
-                rels2 = {pos2: NOCOV}
-                with self.subTest(pos1=pos1, pos2=pos2):
-                    if end52 <= pos1 <= end32:
-                        error = pos2
-                    else:
-                        error = pos1
-                    self.assertRaisesRegex(
-                        RelateErrorPy,
-                        f"Cannot merge non-covered position {error}",
-                        merge_mates,
-                        end51, end31, rels1,
-                        end52, end32, rels2,
-                        True
-                    )
+        end51s = [1]
+        end31s = [2]
+        end52s = [2]
+        end32s = [3]
+        for end51, end31 in zip(end51s, end31s):
+            for pos1 in range(end51, end31 + 1):
+                rels1 = {pos1: NOCOV}
+                for end52, end32 in zip(end52s, end32s):
+                    for pos2 in range(end52, end32 + 1):
+                        rels2 = {pos2: NOCOV}
+                        with self.subTest(pos1=pos1, pos2=pos2):
+                            if end52 <= pos1 <= end32:
+                                error = pos2
+                            else:
+                                error = pos1
+                            self.assertRaisesRegex(
+                                RelateErrorPy,
+                                f"Cannot merge non-covered position {error}",
+                                merge_mates,
+                                end51s, end31s, rels1,
+                                end52s, end32s, rels2,
+                                True
+                            )
 
     def test_overhangs(self):
         for end5f, end5r, read_length in product(range(5), repeat=3):
@@ -1580,8 +1588,8 @@ class TestMergeMates(ut.TestCase):
             relsf = {pos: SUB_G for pos in range(end5f, end3f + 1)}
             relsr = {pos: SUB_G for pos in range(end5r, end3r + 1)}
             for overhangs in [True, False]:
-                result = merge_mates(end5f, end3f, relsf,
-                                     end5r, end3r, relsr,
+                result = merge_mates([end5f], [end3f], relsf,
+                                     [end5r], [end3r], relsr,
                                      overhangs)
                 if overhangs:
                     ends = [end5f, end5r], [end3f, end3r]

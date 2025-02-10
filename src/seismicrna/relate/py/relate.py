@@ -9,6 +9,7 @@ from .cigar import (CIG_ALIGN,
                     CIG_DELET,
                     CIG_INSRT,
                     CIG_SCLIP,
+                    CIG_INTRN,
                     parse_cigar)
 from .encode import encode_relate
 from .error import RelateError
@@ -175,6 +176,9 @@ def _calc_rels_read(read: SamRead,
     # Ends of the read, in the read coordinates (1-indexed).
     read_end5 = 1
     read_end3 = read_length
+    # Lists of segment ends, in reference coordinates (1-indexed)
+    seg_ends5 = list()
+    seg_ends3 = list()
     # Record the relationship for each mutated position.
     rels: dict[int, int] = dict()
     # Record the positions of deletions and insertions.
@@ -190,7 +194,7 @@ def _calc_rels_read(read: SamRead,
             # These operations consume the reference and read.
             ref_bases += op_length
             read_bases += op_length
-        elif cigar_op == CIG_DELET:
+        elif cigar_op == CIG_DELET or cigar_op == CIG_INTRN:
             # These operations consume only the reference.
             ref_bases += op_length
         elif cigar_op == CIG_INSRT or cigar_op == CIG_SCLIP:
@@ -256,6 +260,24 @@ def _calc_rels_read(read: SamRead,
             read_pos -= 1  # 0-indexed now
             assert read_pos > 0
             assert read_pos < len(read.seq)
+        elif cigar_op == CIG_INTRN:
+            # The portion of the reference sequence corresponding to the
+            # CIGAR operation is spliced out of the read. Treat each side of
+            # the splice junction as its own segment.
+            assert ref_pos + op_length <= ref_length, ("CIGAR operations "
+                                                       "extended out of the "
+                                                       "reference")
+            if ref_pos == init_ref_pos:
+                raise RelateError("A splice was the first relationship")
+            # The start of an intron delimits the end of segment.
+            # The segment ends at the position before the intron starts.
+            seg_ends3.append(ref_pos)
+            ref_pos += op_length
+            if ref_pos - init_ref_pos >= ref_bases:
+                raise RelateError("A splice was the last relationship")
+            # The end of an intron delimits the start of a segment.
+            # The segment starts at the position after the intron ends.
+            seg_ends5.append(ref_pos + 1)
         elif cigar_op == CIG_INSRT:
             # The read contains an insertion of one or more bases that
             # are not present in the reference sequence. Create one
@@ -357,11 +379,19 @@ def _calc_rels_read(read: SamRead,
     ref_end5 = min(read.pos + clip_end5, ref_length + 1)
     ref_end3 = max(ref_pos - clip_end3, 0)
 
+    seg_ends5.insert(0, ref_end5)
+    seg_ends3.append(ref_end3)
+
+    assert len(seg_ends5) == len(seg_ends3), ("The number of 5' segment ends "
+                                               "must match the number of "
+                                               "3' segment ends")
+
     # Convert rels to a non-default dict and select only the positions
-    # between ref_end5 and ref_end3.
+    # contained within a segment.
     rels = {pos: rel for pos, rel in rels.items()
-            if ref_end5 <= pos <= ref_end3}
-    return ref_end5, ref_end3, rels
+            if any(end5 <= pos <= end3 for end5, end3 in zip(seg_ends5,
+                                                             seg_ends3))}
+    return seg_ends5, seg_ends3, rels
 
 
 def _validate_read(read: SamRead,
@@ -397,16 +427,46 @@ def _validate_pair(read1: SamRead, read2: SamRead):
         raise RelateError("Mates 1 and 2 aligned in the same orientation")
 
 
-def _merge_rels(end5f: int,
-                end3f: int,
+def trim_segs_start(seg5s: list[int],
+                    seg3s: list[int],
+                    min_start: int) -> tuple[list[int], list[int]]:
+    """
+    For each segment (start, end), the segment's start is replaced by
+    max(start, min_start).
+    """
+    trimmed = [(max(start, min_start), end)
+               for start, end in zip(seg5s, seg3s)]
+    new_seg5s, new_seg3s = zip(*trimmed)
+    return list(new_seg5s), list(new_seg3s)
+
+
+def trim_segs_end(seg5s: list[int],
+                  seg3s: list[int],
+                  max_end: int) -> tuple[list[int], list[int]]:
+    """
+    For each segment (start, end), the segment's end is replaced by
+    min(start, max_end).
+    """
+    trimmed = [(start, min(end, max_end))
+               for start, end in zip(seg5s, seg3s)]
+    new_seg5s, new_seg3s = zip(*trimmed)
+    return list(new_seg5s), list(new_seg3s)
+
+
+def _merge_rels(end5sf: list[int],
+                end3sf: list[int],
                 relsf: dict[int, int],
-                end5r: int,
-                end3r: int,
+                end5sr: list[int],
+                end3sr: list[int],
                 relsr: dict[int, int]):
     merged_rels = dict()
     for pos in relsf | relsr:
-        relf = relsf.get(pos, MATCH if end5f <= pos <= end3f else NOCOV)
-        relr = relsr.get(pos, MATCH if end5r <= pos <= end3r else NOCOV)
+        relf = relsf.get(pos, MATCH if any(end5f <= pos <= end3f
+                                           for end5f, end3f
+                                           in zip(end5sf, end3sf)) else NOCOV)
+        relr = relsr.get(pos, MATCH if any(end5r <= pos <= end3r
+                                           for end5r, end3r
+                                           in zip(end5sr, end3sr)) else NOCOV)
         rel = relf & relr
         if rel != MATCH:
             if rel == NOCOV:
@@ -415,26 +475,32 @@ def _merge_rels(end5f: int,
     return merged_rels
 
 
-def merge_mates(end5f: int,
-                end3f: int,
+def merge_mates(end5sf: list[int],
+                end3sf: list[int],
                 relsf: dict[int, int],
-                end5r: int,
-                end3r: int,
+                end5sr: list[int],
+                end3sr: list[int],
                 relsr: dict[int, int],
                 overhangs: bool):
     if not overhangs:
         # The 5' end of the reverse mate cannot extend past the 5' end
         # of the forward mate.
-        if end5r < end5f:
-            end5r = end5f
-            relsr = {pos: rel for pos, rel in relsr.items() if pos >= end5r}
+        min_end5r = min(end5sr)
+        min_end5f = min(end5sf)
+        if min_end5r < min_end5f:
+            end5sr, end3sr = trim_segs_start(end5sr, end3sr, min_end5f)
+            relsr = {pos: rel for pos, rel in relsr.items() if pos >= min_end5f}
         # The 3' end of the forward mate cannot extend past the 3' end
         # of the reverse mate.
-        if end3f > end3r:
-            end3f = end3r
-            relsf = {pos: rel for pos, rel in relsf.items() if pos <= end3f}
-    rels = _merge_rels(end5f, end3f, relsf, end5r, end3r, relsr)
-    return ([end5f, end5r], [end3f, end3r]), rels
+        if len(end3sr) == 0:
+            print(end5sr, end5sf, end3sr, end3sf)
+        max_end3r = max(end3sr)
+        max_end3f = max(end3sf)
+        if max_end3f > max_end3r:
+            end5sf, end3sf = trim_segs_end(end5sf, end3sf, max_end3r)
+            relsf = {pos: rel for pos, rel in relsf.items() if pos <= max_end3r}
+    rels = _merge_rels(end5sf, end3sf, relsf, end5sr, end3sr, relsr)
+    return ([*end5sf, *end5sr], [*end3sf, *end3sr]), rels
 
 
 def calc_rels_lines(line1: str,
@@ -454,7 +520,7 @@ def calc_rels_lines(line1: str,
     # Generate the relationships for read 1.
     read1 = SamRead(line1)
     _validate_read(read1, ref, min_mapq, paired, proper)
-    end51, end31, rels1 = _calc_rels_read(read1,
+    end5s1, end3s1, rels1 = _calc_rels_read(read1,
                                           refseq,
                                           chr(min_qual),
                                           insert3,
@@ -469,7 +535,7 @@ def calc_rels_lines(line1: str,
             read2 = SamRead(line2)
             _validate_read(read2, ref, min_mapq, paired, proper)
             _validate_pair(read1, read2)
-            end52, end32, rels2 = _calc_rels_read(read2,
+            end5s2, end3s2, rels2 = _calc_rels_read(read2,
                                                   refseq,
                                                   chr(min_qual),
                                                   insert3,
@@ -478,23 +544,24 @@ def calc_rels_lines(line1: str,
                                                   clip_end3)
             # Determine which read (1 or 2) faces forward and reverse.
             if read2.flag.rev:
-                end5f, end3f, relsf = end51, end31, rels1
-                end5r, end3r, relsr = end52, end32, rels2
+                end5sf, end3sf, relsf = end5s1, end3s1, rels1
+                end5sr, end3sr, relsr = end5s2, end3s2, rels2
             else:
-                end5f, end3f, relsf = end52, end32, rels2
-                end5r, end3r, relsr = end51, end31, rels1
+                end5sf, end3sf, relsf = end5s2, end3s2, rels2
+                end5sr, end3sr, relsr = end5s1, end3s1, rels1
+
             # Merge the relationships and end coordinates.
             ends, rels = merge_mates(
-                end5f, end3f, relsf, end5r, end3r, relsr, overhangs,
+                end5sf, end3sf, relsf, end5sr, end3sr, relsr, overhangs,
             )
         else:
             # The read is improperly paired (paired-end but comprises
             # only one mate), which can occur only if Bowtie2 is run in
             # mixed mode.
-            ends = [end51, end51], [end31, end31]
+            ends = [*end5s1, *end5s1], [*end3s1, *end3s1]
             rels = rels1
     else:
         # The read is single-end.
-        ends = [end51], [end31]
+        ends = [*end5s1], [*end3s1]
         rels = rels1
     return ends, rels

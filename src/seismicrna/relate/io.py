@@ -72,6 +72,11 @@ def from_reads(reads: Iterable[tuple[str,
             seg_end3s.append(end3s)
             for pos, rel in poss.items():
                 muts[pos][rel].append(read)
+    # TODO: Check segment number is consistent between batches
+    max_segs = max(max(len(segs) for segs in seg_end5s), max(len(segs) for segs in seg_end3s))
+    seg_end5s = [segs + [segs[0]] * (max_segs - len(segs)) for segs in seg_end5s]
+    seg_end3s = [segs + [segs[0]] * (max_segs - len(segs)) for segs in seg_end3s]
+
     # Make sure seg_end5s and seg_end3s have two dimensions and at least
     # one column each.
     pos_dtype = fit_uint_type(max(muts))
