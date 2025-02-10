@@ -7,21 +7,25 @@ from .batch import ClusterReadBatch
 from .emk import EMRunsK
 from ..core import path
 from ..core.header import ClustHeader
-from ..core.io import ReadBatchIO, RegIO
+from ..core.io import ReadBatchIO, RegFileIO, RegBrickleIO
 from ..mask.dataset import MaskMutsDataset
 
 
-class ClusterIO(RegIO, ABC):
+class ClusterFile(path.HasRegFilePath, ABC):
 
     @classmethod
-    def auto_fields(cls):
-        return super().auto_fields() | {path.CMD: path.CLUSTER_STEP}
+    def get_step(cls):
+        return path.CLUSTER_STEP
 
 
-class ClusterBatchIO(ReadBatchIO, ClusterIO, ClusterReadBatch):
+class ClusterIO(ClusterFile, RegFileIO, ABC):
+    pass
+
+
+class ClusterBatchIO(ClusterReadBatch, ReadBatchIO, RegBrickleIO, ClusterIO):
 
     @classmethod
-    def file_seg_type(cls):
+    def get_file_seg_type(cls):
         return path.ClustBatSeg
 
 

@@ -29,7 +29,7 @@ class FullReadBatch(ReadBatch, ABC):
     def max_read(self):
         return self.num_reads - 1
 
-    @cached_property
+    @property
     def read_indexes(self):
         return self.read_nums
 

@@ -6,10 +6,9 @@ import numpy as np
 import pandas as pd
 
 from .batch import format_read_name
-from .io import ReadNamesBatchIO, RelateBatchIO
+from .io import ReadNamesBatchIO, RelateBatchIO, RefseqIO
 from .report import RelateReport
 from ..core import path
-from ..core.io import RefseqIO
 from ..core.seq import DNA
 from ..core.tmp import release_to_out
 from ..core.write import need_write

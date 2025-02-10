@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 
 from .dataset import load_mask_dataset
+from .io import MaskFile
 from ..core import path
 from ..core.batch import END5_COORD, END3_COORD
 from ..core.header import NUM_CLUSTS_NAME, format_clust_name, validate_ks
@@ -37,15 +38,11 @@ from ..relate.table import (AverageTable,
                             ReadTableLoader)
 
 
-class PartialTable(Table, ABC):
+class PartialTable(Table, path.HasRegFilePath, ABC):
     """ Table of filtered reads over a region of the sequence. """
 
 
 class PartialPositionTable(PartialTable, PositionTable, ABC):
-
-    @classmethod
-    def get_path_segs(cls):
-        return path.REG_DIR_SEGS + (path.PositionTableSeg,)
 
     def _iter_profiles(self, *,
                        regions: Iterable[Region] | None,
@@ -76,17 +73,10 @@ class PartialPositionTable(PartialTable, PositionTable, ABC):
 
 
 class PartialReadTable(PartialTable, ReadTable, ABC):
-
-    @classmethod
-    def get_path_segs(cls):
-        return path.REG_DIR_SEGS + (path.ReadTableSeg,)
+    pass
 
 
-class MaskTable(AverageTable, ABC):
-
-    @classmethod
-    def get_kind(cls):
-        return path.MASK_STEP
+class MaskTable(AverageTable, MaskFile, ABC):
 
     @classmethod
     def get_load_function(cls):

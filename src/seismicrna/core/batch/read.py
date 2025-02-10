@@ -12,7 +12,8 @@ from ..types import fit_uint_type
 class ReadBatch(ABC):
     """ Batch of reads. """
 
-    def __init__(self, *, batch: int):
+    def __init__(self, *, batch: int, **kwargs):
+        super().__init__(**kwargs)
         self.batch = batch
         self.masked_read_nums = None
 

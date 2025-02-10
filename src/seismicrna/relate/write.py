@@ -2,12 +2,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Iterable
 
-from .io import from_reads, ReadNamesBatchIO, RelateBatchIO
+from .io import from_reads, ReadNamesBatchIO, RelateBatchIO, RefseqIO
 from .report import RelateReport
 from .sam import XamViewer
 from .table import RelateCountTabulator
 from ..core import path
-from ..core.io import RefseqIO
 from ..core.logs import logger
 from ..core.ngs import encode_phred
 from ..core.seq import DNA, get_fasta_seq

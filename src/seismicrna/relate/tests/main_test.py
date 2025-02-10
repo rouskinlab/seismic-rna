@@ -6,12 +6,12 @@ from typing import Iterable
 
 from seismicrna.core import path
 from seismicrna.core.batch.muts import RegionMutsBatch
-from seismicrna.core.io.seq import RefseqIO
 from seismicrna.core.logs import Level, set_config
 from seismicrna.core.ngs.xam import SAM_DELIM
 from seismicrna.core.seq.fasta import write_fasta
 from seismicrna.core.seq.xna import DNA
 from seismicrna.relate.dataset import RelateMutsDataset
+from seismicrna.relate.io import RefseqIO
 from seismicrna.relate.main import run
 
 SAMPLE = "sample"

@@ -4,6 +4,7 @@ import os
 import pathlib
 import re
 import shutil
+from abc import ABC, abstractmethod
 from collections import Counter
 from functools import cache, cached_property, partial, wraps
 from itertools import chain, islice, product
@@ -45,7 +46,6 @@ RELATE_STEP = "relate"
 NAMES_STEP = "names"
 MASK_STEP = "mask"
 CLUSTER_STEP = "cluster"
-LIST_STEP = "list"
 FOLD_STEP = "fold"
 GRAPH_STEP = "graph"
 
@@ -281,9 +281,9 @@ def validate_branches(branches: dict[str, str]):
 def get_ancestors(branches: dict[str, str]):
     """ Get all but the last branch in a dict of branches. """
     validate_branches(branches)
-    if branches:
-        return dict(islice(branches.items(), len(branches) - 1))
-    return dict()
+    if not branches:
+        return dict()
+    return dict(islice(branches.items(), len(branches) - 1))
 
 
 def add_branch(step: str, branch: str, ancestors: dict[str, str]):
@@ -425,7 +425,6 @@ CmdField = PathField(str,
                       RELATE_STEP,
                       MASK_STEP,
                       CLUSTER_STEP,
-                      LIST_STEP,
                       FOLD_STEP,
                       GRAPH_STEP],
                      pattern=CMD_PATTERN)
@@ -597,6 +596,7 @@ REF = "ref"
 REG = "reg"
 BATCH = "batch"
 TABLE = "table"
+LIST = "list"
 NCLUST = "k"
 RUN = "run"
 PROFILE = "profile"
@@ -690,6 +690,14 @@ ReadTableSeg = PathSegment("read-table",
 AbundanceTableSeg = PathSegment("abundance-table",
                                 {TABLE: AbundanceField, EXT: AbundanceExt},
                                 frmt="{table}-abundance-table{ext}")
+
+# List
+PositionListSeg = PathSegment("position-list",
+                              {LIST: PosTableField, EXT: PosTableExt},
+                              frmt="{list}-position-list{ext}")
+ReadListSeg = PathSegment("read-list",
+                          {LIST: ReadTableField, EXT: ReadTableExt},
+                          frmt="{list}-read-list{ext}")
 
 # Fold
 FoldRepSeg = PathSegment("fold-rep",
@@ -897,7 +905,7 @@ def rmdir_if_needed(path: pathlib.Path | str,
             # to avoid logging that the directory was removed.
             logger.warning(error)
             return path
-    logger.action(f"Removed directory {path}")
+    logger.action(f"Deleted directory {path}")
 
 
 # Path creation routines
@@ -1182,3 +1190,123 @@ def transpaths(to_dir: str | pathlib.Path,
     common_path = os.path.commonpath([sanitize(p, strict) for p in paths])
     # Move each path from that common path to the given directory.
     return tuple(transpath(to_dir, common_path, p, strict) for p in paths)
+
+
+# Classes each of whose instances corresponds to a path
+
+class HasFilePath(ABC):
+    """ Object that corresponds to the path of a file (which may or may
+    not actually exist on the file system). """
+
+    @classmethod
+    @abstractmethod
+    def get_dir_seg_types(cls) -> list[PathSegment]:
+        """ Types of the directory segments in the path. """
+        return list()
+
+    @classmethod
+    @abstractmethod
+    def get_file_seg_type(cls) -> PathSegment:
+        """ Type of the last segment in the path. """
+
+    @classmethod
+    def get_path_seg_types(cls):
+        """ Types of the segments in the path. """
+        return [*cls.get_dir_seg_types(), cls.get_file_seg_type()]
+
+    @classmethod
+    def get_path_fields(cls):
+        """ Path fields for the file type. """
+        return get_fields_in_seg_types(cls.get_path_seg_types())
+
+    @classmethod
+    def get_ext(cls):
+        """ File extension. """
+        try:
+            return cls.get_file_seg_type().exts[0]
+        except IndexError:
+            raise ValueError(
+                f"{cls.__name__} has no file extension"
+            ) from None
+
+    @classmethod
+    def get_auto_path_fields(cls) -> dict[str, Any]:
+        """ Names and automatic values of selected fields. """
+        return {EXT: cls.get_ext()}
+
+    @classmethod
+    def parse_path(cls, file: str | Path):
+        """ Parse a file path to determine the field values. """
+        return parse_top_separate(file, cls.get_path_seg_types())
+
+    @classmethod
+    def build_path(cls, path_fields: dict[str, Any]):
+        """ Build the file path from the given field values. """
+        return buildpar(cls.get_path_seg_types(),
+                        {**cls.get_auto_path_fields(), **path_fields})
+
+    def get_path_field_values(self,
+                              top: str | Path | None = None,
+                              exclude: Iterable[str] = ()):
+        """ Path field values as a dict. """
+        # Make exclude a set for fast membership checking, and to ensure
+        # it is not an exhaustible generator.
+        exclude = set(exclude)
+        auto_path_fields = self.get_auto_path_fields()
+        fields = {TOP: pathlib.Path(top)} if top else dict()
+        for field in self.get_path_fields():
+            if field not in exclude:
+                try:
+                    fields[field] = getattr(self, field)
+                except AttributeError:
+                    # If the field is in neither self.path_fields() nor
+                    # self.get_auto_path_fields(), then there is a bug
+                    # in how the class itself is designed.
+                    assert field in auto_path_fields
+                    fields[field] = auto_path_fields[field]
+        return fields
+
+    def get_path(self, top: str | Path):
+        """ Return the file path. """
+        return self.build_path(self.get_path_field_values(top))
+
+    def __str__(self):
+        return type(self).__name__
+
+
+class HasSampleFilePath(HasFilePath, ABC):
+    """ Object that has a path with a sample, step, and branches. """
+
+    @classmethod
+    def get_dir_seg_types(cls):
+        return [*super().get_dir_seg_types(),
+                SampSeg,
+                CmdSeg]
+
+    @classmethod
+    @abstractmethod
+    def get_step(cls) -> str:
+        """ Step of the workflow. """
+
+    @classmethod
+    def get_auto_path_fields(cls):
+        return {**super().get_auto_path_fields(),
+                CMD: cls.get_step()}
+
+
+class HasRefFilePath(HasSampleFilePath, ABC):
+    """ Object that has a path with a reference. """
+
+    @classmethod
+    def get_dir_seg_types(cls):
+        return [*super().get_dir_seg_types(),
+                RefSeg]
+
+
+class HasRegFilePath(HasRefFilePath, ABC):
+    """ Object that has a path with a region. """
+
+    @classmethod
+    def get_dir_seg_types(cls):
+        return [*super().get_dir_seg_types(),
+                RegSeg]

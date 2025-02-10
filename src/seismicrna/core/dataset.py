@@ -20,7 +20,8 @@ from .report import (BranchesF,
                      PooledSamplesF,
                      JoinedRegionsF,
                      Report,
-                     BatchedReport)
+                     BatchedReport,
+                     MissingFieldWithNoDefaultError)
 from .seq import DNA, Region, unite
 
 
@@ -62,7 +63,7 @@ class Dataset(ABC):
     @cached_property
     def top(self) -> Path:
         """ Top-level directory of the dataset. """
-        top, _ = self.get_report_type().parse_path(self.report_file)
+        top, fields = self.get_report_type().parse_path(self.report_file)
         return top
 
     @property
@@ -229,7 +230,8 @@ class LoadFunction(object):
     def __init__(self, data_type: type[Dataset], /, *more_types: type[Dataset]):
         self.dataset_types = (data_type,) + more_types
 
-    def _dataset_type_consensus(self, method: Callable[[type[Dataset]], Any]):
+    def _get_dataset_type_consensus(self,
+                                    method: Callable[[type[Dataset]], Any]):
         """ Get the consensus value among all types of dataset. """
         value0 = method(self.dataset_types[0])
         for dataset_type in self.dataset_types[1:]:
@@ -239,15 +241,15 @@ class LoadFunction(object):
     @cached_property
     def report_path_seg_types(self):
         """ Segment types of the report file path. """
-        return self._dataset_type_consensus(
-            lambda dt: dt.get_report_type().seg_types()
+        return self._get_dataset_type_consensus(
+            lambda dt: dt.get_report_type().get_path_seg_types()
         )
 
     @cached_property
     def report_path_auto_fields(self):
         """ Automatic field values of the report file path. """
-        return self._dataset_type_consensus(
-            lambda dt: dt.get_report_type().auto_fields()
+        return self._get_dataset_type_consensus(
+            lambda dt: dt.get_report_type().get_auto_path_fields()
         )
 
     def build_report_path(self, path_fields: dict[str, Any]):
@@ -272,9 +274,10 @@ class LoadFunction(object):
                 # has a timestamp that is earlier than that of one of
                 # its constituents, then no dataset type can load it.
                 raise
-            except Exception as error:
-                # If a type fails for any other reason, then record the
-                # error silently.
+            except MissingFieldWithNoDefaultError as error:
+                # If a dataset type fails because of missing a default
+                # value, then it was probably the wrong datasettype, so
+                # record the error silently.
                 errors[dataset_type.__name__] = error
         # If all dataset types failed, then raise an error.
         errmsg = "\n".join(f"{type_name}: {error}"
@@ -326,13 +329,13 @@ class LoadedDataset(Dataset, ABC):
 
     @cached_property
     def report_path_field_values(self):
-        return self.report.path_field_values(self.top,
-                                             self.get_batch_type().auto_fields())
+        return self.report.get_path_field_values(self.top,
+                                                 self.get_batch_type().get_auto_path_fields())
 
     def get_batch_path(self, batch_num: int):
         """ Get the path to a batch of a specific number. """
-        fields = self.report_path_field_values | {path.BATCH: batch_num}
-        return self.get_batch_type().build_path(fields)
+        return self.get_batch_type().build_path({**self.report_path_field_values,
+                                                 path.BATCH: batch_num})
 
     def get_batch_checksum(self, batch_num: int):
         """ Get the checksum of a specific batch from the report. """
@@ -435,7 +438,7 @@ class TallDataset(MergedDataset, ABC):
         load_func = self.get_dataset_load_func()
         sample_report_files = [path.cast_path(
             self.report_file,
-            self.get_report_type().seg_types(),
+            self.get_report_type().get_path_seg_types(),
             load_func.report_path_seg_types,
             {**load_func.report_path_auto_fields, path.SAMPLE: sample}
         ) for sample in pooled_samples]
@@ -495,7 +498,7 @@ class WideDataset(MergedRegionDataset, ABC):
         load_func = self.get_dataset_load_func()
         region_report_files = [path.cast_path(
             self.report_file,
-            self.get_report_type().seg_types(),
+            self.get_report_type().get_path_seg_types(),
             load_func.report_path_seg_types,
             (load_func.report_path_auto_fields | {path.REG: reg})
         ) for reg in joined_regs]
@@ -567,7 +570,7 @@ class MultistepDataset(MutsDataset, ABC):
         dataset2 = cls.load_dataset2(dataset2_report_file, verify_times)
         return path.cast_path(
             dataset2_report_file,
-            cls.get_report_type().seg_types(),
+            cls.get_report_type().get_path_seg_types(),
             load_func.report_path_seg_types,
             # Replace the default fields and branches of report path 2
             # with those of report path 1.

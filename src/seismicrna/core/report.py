@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from functools import cache
 from inspect import getmembers
+from itertools import chain
 from pathlib import Path
 from typing import Any, Callable, Hashable, Iterable
 
@@ -89,7 +90,7 @@ from .arg import (opt_phred_enc,
                   opt_mask_discontig,
                   opt_min_phred)
 from .error import InconsistentValueError
-from .io import FileIO, ReadBatchIO, RefIO
+from .io import SampleFileIO, ReadBatchIO, RefFileIO, RegFileIO
 from .logs import logger
 from .path import flatten_branches
 from .rel import HalfRelPattern
@@ -630,24 +631,59 @@ def default_key(key: str):
 
 # Report classes
 
-class Report(FileIO, ABC):
+class Report(SampleFileIO, ABC):
     """ Abstract base class for a report from a step. """
 
     @classmethod
-    @abstractmethod
-    def fields(cls):
-        """ All fields of the report. """
-        return [BranchesF,
-                TimeBeganF,
+    def get_ident_report_fields(cls) -> list[ReportField]:
+        """ Identification fields of the report. """
+        return [SampleF, BranchesF]
+
+    @classmethod
+    def get_param_report_fields(cls) -> list[ReportField]:
+        """ Parameter fields of the report. """
+        return []
+
+    @classmethod
+    def get_result_report_fields(cls) -> list[ReportField]:
+        """ Result fields of the report. """
+        return []
+
+    @classmethod
+    def get_checksum_report_fields(cls) -> list[ReportField]:
+        """ Checksum fields of the report. """
+        return []
+
+    @classmethod
+    def get_meta_report_fields(cls) -> list[ReportField]:
+        """ Metadata fields of the report. """
+        return [TimeBeganF,
                 TimeEndedF,
                 TimeTakenF,
                 VersionF]
 
     @classmethod
     @cache
-    def field_keys(cls):
+    def get_report_fields(cls):
+        """ All fields of the report. """
+        return list(chain(cls.get_ident_report_fields(),
+                          cls.get_param_report_fields(),
+                          cls.get_result_report_fields(),
+                          cls.get_checksum_report_fields(),
+                          cls.get_meta_report_fields()))
+
+    @classmethod
+    @cache
+    def get_field_keys(cls):
         """ Keys of all fields of the report. """
-        return [field.key for field in cls.fields()]
+        return [field.key for field in cls.get_report_fields()]
+
+    @classmethod
+    @cache
+    def get_field_keys_set(cls):
+        """ Same as get_field_keys but caches and returns a set for fast
+        membership checking. """
+        return set(cls.get_field_keys())
 
     @classmethod
     def from_dict(cls, odata: dict[str, Any]):
@@ -678,7 +714,7 @@ class Report(FileIO, ABC):
         # Ensure that the path-related fields in the JSON data match the
         # actual path of the JSON file.
         top, path_fields = cls.parse_path(file)
-        for key, value in report.path_field_values().items():
+        for key, value in report.get_path_field_values().items():
             if key == BranchesF.key:
                 # The branches in the report must be flattened to match
                 # the value from parsin the path.
@@ -693,19 +729,19 @@ class Report(FileIO, ABC):
         return report
 
     @classmethod
-    def _auto_default_fields(cls):
+    def _get_auto_default_fields(cls):
         return [TimeTakenF, VersionF]
 
     @classmethod
-    def _auto_init_kwargs(cls):
+    def _get_auto_init_kwargs(cls):
         """ Automatic keyword arguments for __init__. """
         return {field.key: field.default
-                for field in cls._auto_default_fields()}
+                for field in cls._get_auto_default_fields()}
 
     def __init__(self, **kwargs: Any | Callable[[Report], Any]):
-        kwargs = self._auto_init_kwargs() | kwargs
+        kwargs = self._get_auto_init_kwargs() | kwargs
         defaulted = dict()
-        for key in self.field_keys():
+        for key in self.get_field_keys():
             # Try to get the value of the field from the report.
             try:
                 value = kwargs.pop(key)
@@ -752,7 +788,7 @@ class Report(FileIO, ABC):
         """ Return a dict of raw values of the fields, keyed by the
         titles of their fields. """
         odata = dict()
-        for key in self.field_keys():
+        for key in self.get_field_keys():
             field = lookup_key(key)
             # Output only the fields with non-blank titles.
             value = self.get_field(field)
@@ -763,7 +799,6 @@ class Report(FileIO, ABC):
         return odata
 
     def save(self, top: Path, force: bool = False):
-        """ Save the report to a JSON file. """
         text = json.dumps(self.to_dict(), indent=4)
         save_path = self.get_path(top)
         if need_write(save_path, force):
@@ -774,7 +809,8 @@ class Report(FileIO, ABC):
 
     def __setattr__(self, key: str, value: Any):
         """ Validate the attribute name and value before setting it. """
-        if key not in self.field_keys():
+        # Cache a set of the field keys for fast membership checking.
+        if key not in self.get_field_keys_set():
             raise ReportDoesNotHaveFieldError(f"{type(self).__name__}.{key}")
         super().__setattr__(key, value)
 
@@ -784,42 +820,57 @@ class Report(FileIO, ABC):
         return self.to_dict() == other.to_dict()
 
 
-class RefseqReport(Report, RefIO, ABC):
+class RefReport(Report, RefFileIO, ABC):
+
+    @classmethod
+    def get_ident_report_fields(cls):
+        return [*super().get_ident_report_fields(), RefF]
+
+
+class RefseqReport(RefReport, ABC):
     """ Report associated with a reference sequence file. """
 
     @classmethod
-    @abstractmethod
-    def fields(cls):
-        return [RefseqChecksumF] + super().fields()
+    def get_checksum_report_fields(cls):
+        return [*super().get_checksum_report_fields(),
+                RefseqChecksumF]
+
+
+class RegReport(RefReport, RegFileIO, ABC):
+
+    @classmethod
+    def get_ident_report_fields(cls):
+        return [*super().get_ident_report_fields(), RegF]
 
 
 class BatchedReport(Report, ABC):
     """ Report with a number of data batches (one file per batch). """
 
     @classmethod
-    @abstractmethod
-    def fields(cls):
-        return [NumBatchF, ChecksumsF] + super().fields()
+    def get_checksum_report_fields(cls):
+        return [NumBatchF,
+                ChecksumsF,
+                *super().get_checksum_report_fields()]
 
     @classmethod
     @abstractmethod
-    def _batch_types(cls) -> list[type[ReadBatchIO]]:
+    def _get_batch_types(cls) -> list[type[ReadBatchIO]]:
         """ Type(s) of batch(es) for the report. """
 
     @classmethod
     @cache
-    def batch_types(cls) -> dict[str, type[ReadBatchIO]]:
+    def get_batch_types(cls) -> dict[str, type[ReadBatchIO]]:
         """ Type(s) of batch(es) for the report, keyed by name. """
         return {batch_type.btype(): batch_type
-                for batch_type in cls._batch_types()}
+                for batch_type in cls._get_batch_types()}
 
     @classmethod
     def get_batch_type(cls, btype: str | None = None) -> type[ReadBatchIO]:
         """ Return a valid type of batch based on its name. """
         if btype is None:
-            batch_types = list(cls.batch_types().values())
+            batch_types = list(cls.get_batch_types().values())
             if (ntypes := len(batch_types)) != 1:
                 raise ValueError("btype is optional only if there is exactly "
                                  f"one type of batch, but got {ntypes} types")
             return batch_types[0]
-        return cls.batch_types()[btype]
+        return cls.get_batch_types()[btype]

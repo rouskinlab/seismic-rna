@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import ABC
 
 from ..core import path
 from ..core.report import (Report,
-                           SampleF,
                            RefF,
                            IsDemultF,
                            IsPairedEndF,
@@ -52,11 +51,14 @@ from ..core.report import (Report,
                            ReadsRefsF)
 
 
-class AlignReport(Report, ABC):
+class BaseAlignReport(Report, ABC):
 
     @classmethod
-    @abstractmethod
-    def fields(cls):
+    def get_step(cls):
+        return path.ALIGN_STEP
+
+    @classmethod
+    def get_param_report_fields(cls):
         return [IsDemultF,
                 IsPairedEndF,
                 PhredEncF,
@@ -96,29 +98,22 @@ class AlignReport(Report, ABC):
                 F1R2FwdF,
                 RevLabelF,
                 MinReadsF,
-                AlignReadsInitF,
+                *super().get_param_report_fields()]
+
+    @classmethod
+    def get_result_report_fields(cls):
+        return [AlignReadsInitF,
                 ReadsTrimF,
                 ReadsAlignF,
                 ReadsDedupF,
-                ReadsRefsF] + super().fields()
+                ReadsRefsF,
+                *super().get_result_report_fields()]
+
+
+class AlignSampleReport(BaseAlignReport):
 
     @classmethod
-    def dir_seg_types(cls):
-        return path.SampSeg, path.CmdSeg
-
-    @classmethod
-    def auto_fields(cls):
-        return {**super().auto_fields(), path.CMD: path.ALIGN_STEP}
-
-
-class AlignSampleReport(AlignReport):
-
-    @classmethod
-    def fields(cls):
-        return [SampleF] + super().fields()
-
-    @classmethod
-    def file_seg_type(cls):
+    def get_file_seg_type(cls):
         return path.AlignSampleRepSeg
 
     def __init__(self, *,
@@ -132,15 +127,16 @@ class AlignSampleReport(AlignReport):
         super().__init__(demultiplexed=demultiplexed, **kwargs)
 
 
-class AlignRefReport(AlignReport):
+class AlignRefReport(BaseAlignReport):
 
     @classmethod
-    def fields(cls):
-        return [SampleF, RefF] + super().fields()
-
-    @classmethod
-    def file_seg_type(cls):
+    def get_file_seg_type(cls):
         return path.AlignRefRepSeg
+
+    @classmethod
+    def get_ident_report_fields(cls):
+        return [*super().get_ident_report_fields(),
+                RefF]
 
     def __init__(self, *,
                  ref: str,

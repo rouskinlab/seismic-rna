@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+from abc import ABC
+
 from ..core import path
-from ..core.report import (Report,
-                           SampleF,
-                           RefF,
-                           RegF,
+from ..core.io import RegFileIO
+from ..core.report import (RegReport,
                            ProfileF,
                            Quantile,
                            FoldTempF,
@@ -14,29 +14,26 @@ from ..core.report import (Report,
                            FoldPercent)
 
 
-class FoldReport(Report):
+class FoldIO(RegFileIO, ABC):
 
     @classmethod
-    def fields(cls):
-        return [SampleF,
-                RefF,
-                RegF,
-                ProfileF,
+    def get_step(cls):
+        return path.FOLD_STEP
+
+
+class FoldReport(RegReport, FoldIO, ABC):
+
+    @classmethod
+    def get_file_seg_type(cls):
+        return path.FoldRepSeg
+
+    @classmethod
+    def get_param_report_fields(cls):
+        return [ProfileF,
                 Quantile,
                 FoldTempF,
                 FoldMaxDistF,
                 FoldMinFreeEnergyF,
                 FoldMaxStructsF,
-                FoldPercent] + super().fields()
-
-    @classmethod
-    def file_seg_type(cls):
-        return path.FoldRepSeg
-
-    @classmethod
-    def dir_seg_types(cls):
-        return path.SampSeg, path.CmdSeg, path.RefSeg, path.RegSeg
-
-    @classmethod
-    def auto_fields(cls):
-        return {**super().auto_fields(), path.CMD: path.FOLD_STEP}
+                FoldPercent,
+                *super().get_param_report_fields()]

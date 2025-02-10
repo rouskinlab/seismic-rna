@@ -6,6 +6,7 @@ from typing import Iterable
 import pandas as pd
 
 from .dataset import load_relate_dataset
+from .io import RelateFile
 from ..core import path
 from ..core.header import RelHeader, parse_header
 from ..core.logs import logger
@@ -30,36 +31,14 @@ class AverageTable(RelTypeTable, ABC):
         return RelHeader
 
 
-class FullTable(Table, ABC):
-    """ Table of all reads over the full reference sequence. """
-
-
-class FullPositionTable(FullTable, PositionTable, ABC):
-
-    @classmethod
-    def get_path_segs(cls):
-        return path.REF_DIR_SEGS + (path.PositionTableSeg,)
-
-
-class FullReadTable(FullTable, ReadTable, ABC):
-
-    @classmethod
-    def get_path_segs(cls):
-        return path.REF_DIR_SEGS + (path.ReadTableSeg,)
-
-
-class RelateTable(AverageTable, ABC):
-
-    @classmethod
-    def get_kind(cls):
-        return path.RELATE_STEP
+class RelateTable(AverageTable, RelateFile, ABC):
 
     @classmethod
     def get_load_function(cls):
         return load_relate_dataset
 
 
-class RelatePositionTable(RelateTable, FullPositionTable, ABC):
+class RelatePositionTable(RelateTable, PositionTable, ABC):
 
     def _iter_profiles(self, *,
                        regions: Iterable[Region] | None,
@@ -72,7 +51,7 @@ class RelatePositionTable(RelateTable, FullPositionTable, ABC):
         yield from ()
 
 
-class RelateReadTable(RelateTable, FullReadTable, ABC):
+class RelateReadTable(RelateTable, ReadTable, ABC):
     pass
 
 
@@ -139,8 +118,8 @@ class TableLoader(Table, ABC):
     @classmethod
     def find_tables(cls, paths: Iterable[str | Path]):
         """ Yield files of the tables within the given paths. """
-        for file in path.find_files_chain(paths, cls.get_path_segs()):
-            if file.name.startswith(cls.get_kind()):
+        for file in path.find_files_chain(paths, cls.get_path_seg_types()):
+            if file.name.startswith(cls.get_step()):
                 yield file
 
     @classmethod
@@ -155,7 +134,7 @@ class TableLoader(Table, ABC):
     def __init__(self, table_file: str | Path, **kwargs):
         load_function = self.get_load_function()
         report_file = path.cast_path(table_file,
-                                     self.get_path_segs(),
+                                     self.get_path_seg_types(),
                                      load_function.report_path_seg_types,
                                      load_function.report_path_auto_fields)
         self._dataset = load_function(report_file, **kwargs)

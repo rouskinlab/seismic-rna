@@ -128,7 +128,7 @@ def _get_denom_cols(numer_cols: pd.Index):
                     name=numer_cols.name)
 
 
-class Table(ABC):
+class Table(path.HasRefFilePath, ABC):
     """ Table base class. """
 
     @classmethod
@@ -138,13 +138,12 @@ class Table(ABC):
 
     @classmethod
     @abstractmethod
-    def get_kind(cls) -> str:
-        """ Kind of table. """
-
-    @classmethod
-    @abstractmethod
     def get_by_read(cls) -> bool:
         """ Whether the table contains data for each read. """
+
+    @classmethod
+    def get_ext(cls):
+        return path.CSVZIP_EXT if cls.get_by_read() else path.CSV_EXT
 
     @classmethod
     @abstractmethod
@@ -166,33 +165,12 @@ class Table(ABC):
         return list(range(cls.get_index_depth()))
 
     @classmethod
-    @abstractmethod
-    def get_path_segs(cls) -> tuple[path.PathSegment, ...]:
-        """ Table's path segments. """
-
-    @classmethod
     @cache
-    def get_default_path_fields(cls):
+    def get_auto_path_fields(cls):
         """ Default values of the path fields. """
-        return {path.CMD: cls.get_kind(),
-                path.TABLE: cls.get_kind(),
-                path.EXT: cls.get_ext()}
-
-    @classmethod
-    def build_path(cls, path_fields: dict[str, Any]):
-        """ Build the path of a table's CSV file using the fields. """
-        return path.build(cls.get_path_segs(),
-                          {**path_fields, **cls.get_default_path_fields()})
-
-    @classmethod
-    def get_is_gzipped(cls):
-        """ Whether the table's file is compressed with gzip. """
-        return cls.get_by_read()
-
-    @classmethod
-    def get_ext(cls):
-        """ Table's file extension. """
-        return path.CSVZIP_EXT if cls.get_is_gzipped() else path.CSV_EXT
+        return {path.CMD: cls.get_step(),
+                path.TABLE: cls.get_step(),
+                **super().get_auto_path_fields()}
 
     @property
     @abstractmethod
@@ -233,7 +211,7 @@ class Table(ABC):
     def path(self):
         """ Path of the table's file. """
         field_values = dict()
-        for field in path.get_fields_in_seg_types(self.get_path_segs(),
+        for field in path.get_fields_in_seg_types(self.get_path_seg_types(),
                                                   include_top=True):
             try:
                 field_values[field] = getattr(self, field)
@@ -337,6 +315,10 @@ class PositionTable(RelTypeTable, ABC):
     """ Table indexed by position. """
 
     MASK = "pos-mask"
+
+    @classmethod
+    def get_file_seg_type(cls):
+        return path.PositionTableSeg
 
     @classmethod
     def get_by_read(cls):
@@ -655,6 +637,10 @@ class ReadTable(RelTypeTable, ABC):
     """ Table indexed by read. """
 
     @classmethod
+    def get_file_seg_type(cls):
+        return path.ReadTableSeg
+
+    @classmethod
     def get_by_read(cls):
         return True
 
@@ -676,12 +662,12 @@ class AbundanceTable(Table, ABC):
     """ Table of abundances. """
 
     @classmethod
-    def get_by_read(cls):
-        return False
+    def get_file_seg_type(cls):
+        return path.AbundanceTableSeg
 
     @classmethod
-    def get_path_segs(cls):
-        return path.REG_DIR_SEGS + (path.AbundanceTableSeg,)
+    def get_by_read(cls):
+        return False
 
     @classmethod
     def get_index_depth(cls):

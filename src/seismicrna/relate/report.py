@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-from functools import cache
+from abc import ABC
 from pathlib import Path
 
-from .io import RelateIO, ReadNamesBatchIO, RelateBatchIO
+from .io import RelateIO, ReadNamesBatchIO, RelateBatchIO, RefseqIO
 from ..core import path
-from ..core.io import RefIO
-from ..core.report import (Report,
-                           BatchedReport,
+from ..core.report import (RefReport,
                            RefseqReport,
+                           BatchedReport,
                            RefF,
                            SampleF,
+                           BranchesF,
                            PooledSamplesF,
                            MinMapQualF,
                            MinReadsF,
@@ -27,13 +27,18 @@ from ..core.report import (Report,
 BATCH_INDEX_COL = "Read Name"
 
 
-class RelateReport(BatchedReport, RefseqReport, RelateIO):
+class BaseRelateReport(RefReport, RelateIO, ABC):
 
     @classmethod
-    def fields(cls):
-        return [SampleF,
-                RefF,
-                MinMapQualF,
+    def get_file_seg_type(cls):
+        return path.RelateRepSeg
+
+
+class RelateReport(BatchedReport, RefseqReport, BaseRelateReport):
+
+    @classmethod
+    def get_param_report_fields(cls):
+        return [MinMapQualF,
                 PhredEncF,
                 MinPhredF,
                 Insert3F,
@@ -42,69 +47,33 @@ class RelateReport(BatchedReport, RefseqReport, RelateIO):
                 ClipEnd5F,
                 ClipEnd3F,
                 MinReadsF,
-                NumReadsXamF,
-                NumReadsRelF] + super().fields()
+                *super().get_param_report_fields()]
 
     @classmethod
-    def file_seg_type(cls):
-        return path.RelateRepSeg
+    def get_result_report_fields(cls):
+        return [NumReadsXamF,
+                NumReadsRelF,
+                *super().get_result_report_fields()]
 
     @classmethod
-    def _batch_types(cls):
+    def _get_batch_types(cls):
         return [ReadNamesBatchIO, RelateBatchIO]
 
-    def refseq_file(self, top: Path):
-        return refseq_file_path(top,
-                                self.branches,
-                                self.get_field(SampleF),
-                                self.get_field(RefF))
+    def get_refseq_file(self, top: Path):
+        return RefseqIO.build_path({path.TOP: top,
+                                    path.SAMPLE: self.get_field(SampleF),
+                                    path.BRANCHES: self.get_path(BranchesF),
+                                    path.REF: self.get_field(RefF)})
 
 
-class PoolReport(Report, RefIO):
-
-    @classmethod
-    def file_seg_type(cls):
-        return path.RelateRepSeg
+class PoolReport(BaseRelateReport):
 
     @classmethod
-    def fields(cls):
-        return [
-            # Sample and reference.
-            SampleF,
-            RefF,
-            # Pooled samples.
-            PooledSamplesF,
-        ] + super().fields()
+    def get_param_report_fields(cls):
+        return [PooledSamplesF,
+                *super().get_param_report_fields()]
 
     @classmethod
-    def path_segs(cls):
-        return (path.SampSeg,
-                path.CmdSeg,
-                path.RefSeg,
-                path.RelateRepSeg)
-
-    @classmethod
-    def auto_fields(cls):
-        return {**super().auto_fields(), path.CMD: path.RELATE_STEP}
-
-
-@cache
-def refseq_file_seg_types():
-    return RelateReport.seg_types()[:-1] + (path.RefseqFileSeg,)
-
-
-@cache
-def refseq_file_auto_fields():
-    return {**RelateReport.auto_fields(), path.EXT: path.BROTLI_PICKLE_EXT}
-
-
-def refseq_file_path(top: Path,
-                     branches: dict[str, str],
-                     sample: str,
-                     ref: str):
-    return path.build(refseq_file_seg_types(),
-                      (refseq_file_auto_fields()
-                       | {path.TOP: top,
-                          path.BRANCHES: branches,
-                          path.SAMPLE: sample,
-                          path.REF: ref}))
+    def get_auto_path_fields(cls):
+        return {**super().get_auto_path_fields(),
+                path.CMD: path.RELATE_STEP}

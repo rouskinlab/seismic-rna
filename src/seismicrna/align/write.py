@@ -228,7 +228,7 @@ def separate_strands(xam_file: Path,
         # will fail.
         if not keep_tmp:
             rmtree(tmp_dir)
-            logger.detail(f"Deleted temporary directory {tmp_dir}")
+            logger.action(f"Deleted temporary directory {tmp_dir}")
 
 
 def extract_reference(ref: str,
@@ -403,7 +403,7 @@ def split_references(xam_whole: Path, *,
                                       path.EXT: path.BAM_EXT})
                 try:
                     xam_ref.unlink()
-                    logger.detail(f"Deleted {xam_ref}")
+                    logger.action(f"Deleted {xam_ref}")
                 except OSError:
                     pass
             else:
@@ -608,7 +608,7 @@ def fq_pipeline(fq_inp: FastqUnit,
     if not keep_tmp:
         # Delete the BAM file of all references.
         xam_whole.unlink(missing_ok=True)
-        logger.detail(f"Deleted {xam_whole}")
+        logger.action(f"Deleted {xam_whole}")
     ended = datetime.now()
     # Write a report to summarize the alignment.
     if fq_inp.ref is not None:

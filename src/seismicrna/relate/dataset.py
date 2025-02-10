@@ -2,7 +2,7 @@ from abc import ABC
 from functools import cached_property
 
 from .batch import RelateBatch
-from .io import ReadNamesBatchIO, RelateBatchIO
+from .io import ReadNamesBatchIO, RelateBatchIO, RefseqIO
 from .report import RelateReport, PoolReport
 from ..core import path
 from ..core.dataset import (Dataset,
@@ -12,7 +12,6 @@ from ..core.dataset import (Dataset,
                             LoadFunction,
                             TallDataset)
 from ..core.header import NO_K, NO_KS
-from ..core.io import RefseqIO
 from ..core.report import RefseqChecksumF
 from ..core.seq import FULL_NAME, Region
 

@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 from .batch import ClusterMutsBatch
-from .io import ClusterBatchIO
+from .io import ClusterFile, ClusterBatchIO
 from .report import ClusterReport, JoinClusterReport
 from ..core import path
 from ..core.batch import MutsBatch
@@ -413,11 +413,7 @@ class JoinClusterMutsDataset(ClusterDataset,
 load_cluster_dataset = LoadFunction(ClusterMutsDataset, JoinClusterMutsDataset)
 
 
-class ClusterTable(RelTypeTable, ABC):
-
-    @classmethod
-    def get_kind(cls):
-        return path.CLUSTER_STEP
+class ClusterTable(RelTypeTable, ClusterFile, ABC):
 
     @classmethod
     def get_load_function(cls):
@@ -432,11 +428,7 @@ class ClusterPositionTable(ClusterTable, PartialPositionTable, ABC):
     pass
 
 
-class ClusterAbundanceTable(AbundanceTable, PartialTable, ABC):
-
-    @classmethod
-    def get_kind(cls):
-        return path.CLUSTER_STEP
+class ClusterAbundanceTable(AbundanceTable, PartialTable, ClusterFile, ABC):
 
     @classmethod
     def get_load_function(cls):

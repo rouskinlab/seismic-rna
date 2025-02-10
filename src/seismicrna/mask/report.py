@@ -1,10 +1,10 @@
+from abc import ABC
+
 from .io import MaskIO, MaskBatchIO
 from ..core import path
 from ..core.join import JoinReport
-from ..core.report import (BatchedReport,
-                           SampleF,
-                           RefF,
-                           RegF,
+from ..core.report import (RegReport,
+                           BatchedReport,
                            End5F,
                            End3F,
                            CountMutsF,
@@ -47,23 +47,23 @@ from ..core.report import (BatchedReport,
                            JoinedRegionsF)
 
 
-class MaskReport(BatchedReport, MaskIO):
+class BaseMaskReport(RegReport, MaskIO, ABC):
 
     @classmethod
-    def file_seg_type(cls):
+    def get_file_seg_type(cls):
         return path.MaskRepSeg
 
+
+class MaskReport(BatchedReport, BaseMaskReport):
+
     @classmethod
-    def _batch_types(cls):
+    def _get_batch_types(cls):
         return [MaskBatchIO]
 
     @classmethod
-    def fields(cls):
+    def get_param_report_fields(cls):
         return [
-            # Sample, reference, and region information.
-            SampleF,
-            RefF,
-            RegF,
+            # Region 5' and 3' ends.
             End5F,
             End3F,
             # Types of mutations and matches to count.
@@ -75,6 +75,23 @@ class MaskReport(BatchedReport, MaskIO):
             ExclListPosF,
             MinNInfoPosF,
             MaxFMutPosF,
+            # Read filtering parameters.
+            MinNCovReadF,
+            DiscontigF,
+            MinFInfoReadF,
+            MaxFMutReadF,
+            MinMutGapF,
+            # Iterations.
+            MaxMaskIterF,
+            # Observer bias correction.
+            QuickUnbiasF,
+            QuickUnbiasThreshF,
+            *super().get_param_report_fields()
+        ]
+
+    @classmethod
+    def get_result_report_fields(cls):
+        return [
             # Position filtering results.
             NumPosInitF,
             NumPosCutGUF,
@@ -89,12 +106,6 @@ class MaskReport(BatchedReport, MaskIO):
             PosCutLoInfoF,
             PosCutHiMutF,
             PosKeptF,
-            # Read filtering parameters.
-            MinNCovReadF,
-            DiscontigF,
-            MinFInfoReadF,
-            MaxFMutReadF,
-            MinMutGapF,
             # Read filtering results.
             NumReadsInitF,
             NumReadCutListF,
@@ -105,35 +116,14 @@ class MaskReport(BatchedReport, MaskIO):
             NumReadsCloseMutF,
             NumReadsKeptF,
             # Iterations.
-            MaxMaskIterF,
             NumMaskIterF,
-            # Observer bias correction.
-            QuickUnbiasF,
-            QuickUnbiasThreshF,
-        ] + super().fields()
+            *super().get_result_report_fields()
+        ]
+
+
+class JoinMaskReport(JoinReport, BaseMaskReport):
 
     @classmethod
-    def auto_fields(cls):
-        return {**super().auto_fields(), path.CMD: path.MASK_STEP}
-
-
-class JoinMaskReport(JoinReport):
-
-    @classmethod
-    def file_seg_type(cls):
-        return path.MaskRepSeg
-
-    @classmethod
-    def fields(cls):
-        return [
-            # Sample and reference.
-            SampleF,
-            RefF,
-            RegF,
-            # Joined data.
-            JoinedRegionsF,
-        ] + super().fields()
-
-    @classmethod
-    def auto_fields(cls):
-        return {**super().auto_fields(), path.CMD: path.MASK_STEP}
+    def get_param_report_fields(cls):
+        return [JoinedRegionsF,
+                *super().get_param_report_fields()]
