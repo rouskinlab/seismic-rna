@@ -2,7 +2,7 @@ import unittest as ut
 from pathlib import Path
 
 from seismicrna.core.path import randdir
-from seismicrna.relate.sam import (line_attrs,
+from seismicrna.relate.sam import (get_line_attrs,
                                    _iter_records_paired)
 
 
@@ -11,17 +11,17 @@ class TestLineAttrs(ut.TestCase):
     def test_single(self):
         line = "readname\t0\trefname\t1\t42\t3=\t=\t115\t278\tGAA\tFFF"
         expect = "readname", False, False
-        self.assertEqual(line_attrs(line), expect)
+        self.assertEqual(get_line_attrs(line), expect)
 
     def test_paired_improper(self):
         line = "readname\t1\trefname\t1\t42\t3=\t=\t115\t278\tGAA\tFFF"
         expect = "readname", True, False
-        self.assertEqual(line_attrs(line), expect)
+        self.assertEqual(get_line_attrs(line), expect)
 
     def test_paired_proper(self):
         line = "readname\t3\trefname\t1\t42\t3=\t=\t115\t278\tGAA\tFFF"
         expect = "readname", True, True
-        self.assertEqual(line_attrs(line), expect)
+        self.assertEqual(get_line_attrs(line), expect)
 
 
 def write_sam(text: str):

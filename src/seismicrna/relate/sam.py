@@ -20,13 +20,20 @@ from ..core.ngs import (SAM_DELIM,
                         xam_paired)
 
 
-def line_attrs(line: str) -> tuple[str, bool, bool]:
+def get_line_attrs(line: str) -> tuple[str, bool, bool, int]:
     """ Read attributes from a line in a SAM file. """
-    name, flag_str, _ = line.split(SAM_DELIM, 2)
+    name, flag_str, _, _, _, cigar, _ = line.split(SAM_DELIM, 6)
     flag = int(flag_str)
     paired = bool(flag & FLAG_PAIRED)
     proper = bool(flag & FLAG_PROPER)
-    return name, paired, proper
+    # The number of segments is one more than the number of introns,
+    # which are marked as N in the CIGAR string.
+    num_segs = cigar.count("N") + 1
+    return name, paired, proper, num_segs
+
+
+def get_num_segs(line: str):
+    return get_line_attrs(line)[3]
 
 
 def _iter_batch_indexes(sam_file: Path, batch_size: int, paired: bool):
@@ -40,29 +47,40 @@ def _iter_batch_indexes(sam_file: Path, batch_size: int, paired: bool):
     # has at least one line) times the number of mates per record.
     n_skip = (batch_size - 1) * (paired + 1)
     batch = 0
+    max_segs = 0
     with open(sam_file) as f:
         # Current position in the SAM file.
         position = f.tell()
         while line := f.readline():
             # The current batch starts at the current position.
             batch_start = position
+            # Find the number of segments in this line.
+            max_segs = max(max_segs, get_num_segs(line))
             # Skip either the prescribed number of lines or to the
             # end of the file, whichever limit is reached first.
             i_skip = 0
             while i_skip < n_skip and (line := f.readline()):
+                max_segs = max(max_segs, get_num_segs(line))
                 i_skip += 1
             # Update the position to the end of the current line.
             position = f.tell()
             # Files of paired-end reads require an extra step.
             if paired and line:
                 # Check if the current and next lines are mates.
-                read_name, read_paired, read_proper = line_attrs(line)
+                (read_name,
+                 read_paired,
+                 read_proper,
+                 num_segs) = get_line_attrs(line)
                 if line := f.readline():
                     # The next line exists.
-                    next_name, next_paired, next_proper = line_attrs(line)
+                    (next_name,
+                     next_paired,
+                     next_proper,
+                     num_segs) = get_line_attrs(line)
                     if not (read_paired and next_paired):
                         raise ValueError(f"{sam_file} does not have only "
                                          "paired-end reads")
+                    max_segs = max(max_segs, num_segs)
                     names_match = read_name == next_name
                     if names_match and read_proper != next_proper:
                         raise ValueError(
@@ -82,11 +100,14 @@ def _iter_batch_indexes(sam_file: Path, batch_size: int, paired: bool):
                         f.seek(position)
             # Yield the number and positions of the batch.
             logger.detail(
-                f"Batch {batch} of {sam_file}: {batch_start} - {position}"
+                f"Batch {batch} of {sam_file}: {batch_start} - {position} "
+                f"(at most {max_segs} segments per read)"
             )
-            yield batch, batch_start, position
+            assert max_segs >= 1
+            yield batch, batch_start, position, max_segs
             # Increment the batch number.
             batch += 1
+            max_segs = 0
     logger.routine(f"Ended calculating batch indexes in {sam_file}")
 
 
@@ -97,7 +118,7 @@ def _iter_records_single(sam_file: Path, start: int, stop: int):
         f.seek(start)
         while f.tell() < stop:
             line = f.readline()
-            name, paired, proper = line_attrs(line)
+            name, paired, _, _ = get_line_attrs(line)
             if paired:
                 raise ValueError(
                     f"Read {repr(name)} in {sam_file} is not single-end"
@@ -116,7 +137,7 @@ def _iter_records_paired(sam_file: Path, start: int, stop: int):
         prev_proper = False
         while f.tell() < stop:
             line = f.readline()
-            name, paired, proper = line_attrs(line)
+            name, paired, proper, _ = get_line_attrs(line)
             if not paired:
                 raise ValueError(f"Read {repr(name)} in {sam_file} "
                                  "is not paired-end")
@@ -284,9 +305,17 @@ class XamViewer(object):
         logger.routine(f"Ended computing batch indexes for {self}")
 
     @cached_property
+    def _indexes(self):
+        return list(self._iter_batch_indexes())
+
+    @property
     def indexes(self):
         return {batch: (start, stop)
-                for batch, start, stop in self._iter_batch_indexes()}
+                for batch, start, stop, max_segs in self._indexes}
+
+    @property
+    def max_segs(self):
+        return max(max_segs for batch, start, stop, max_segs in self._indexes)
 
     def iter_records(self, batch: int):
         """ Iterate through the records of the batch. """
