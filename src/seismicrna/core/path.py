@@ -35,7 +35,7 @@ PATH_PATTERN = f"([{PATH_CHARS}]+)"
 STR_PATTERN = f"([{STR_CHARS}]+)"
 BRANCHES_PATTERN = f"([{STR_CHARS}]*)"
 INT_PATTERN = f"([{INT_CHARS}]+)"
-CMD_PATTERN = f"([{ALPHANUM_CHARS}]+)"
+STEP_PATTERN = f"([{ALPHANUM_CHARS}]+)"
 RE_PATTERNS = {str: STR_PATTERN,
                int: INT_PATTERN,
                pathlib.Path: PATH_PATTERN}
@@ -420,14 +420,14 @@ class BranchesPathField(PathField):
 # Fields
 TopField = PathField(pathlib.Path)
 NameField = PathField(str)
-CmdField = PathField(str,
-                     [ALIGN_STEP,
-                      RELATE_STEP,
-                      MASK_STEP,
-                      CLUSTER_STEP,
-                      FOLD_STEP,
-                      GRAPH_STEP],
-                     pattern=CMD_PATTERN)
+StepField = PathField(str,
+                      [ALIGN_STEP,
+                       RELATE_STEP,
+                       MASK_STEP,
+                       CLUSTER_STEP,
+                       FOLD_STEP,
+                       GRAPH_STEP],
+                      pattern=STEP_PATTERN)
 BranchesField = BranchesPathField()
 StageField = PathField(str, STAGES)
 IntField = PathField(int)
@@ -589,7 +589,7 @@ class PathSegment(object):
 
 TOP = "top"
 STAGE = "stage"
-CMD = "cmd"
+STEP = "step"
 BRANCHES = "branches"
 SAMPLE = "sample"
 REF = "ref"
@@ -609,9 +609,9 @@ STRUCT = "struct"
 TopSeg = PathSegment("top-dir", {TOP: TopField}, order=-1)
 StageSeg = PathSegment("stage-dir", {STAGE: StageField}, order=70)
 SampSeg = PathSegment("sample-dir", {SAMPLE: NameField}, order=60)
-CmdSeg = PathSegment("command-dir",
-                     {CMD: CmdField, BRANCHES: BranchesField},
-                     order=50)
+StepSeg = PathSegment("command-dir",
+                      {STEP: StepField, BRANCHES: BranchesField},
+                      order=50)
 RefSeg = PathSegment("ref-dir", {REF: NameField}, order=30)
 RegSeg = PathSegment("reg-dir", {REG: NameField}, order=20)
 
@@ -730,10 +730,10 @@ WebAppFileSeg = PathSegment("webapp",
                             frmt="{sample}__webapp{ext}")
 
 # Path segment patterns
-CMD_DIR_SEGS = SampSeg, CmdSeg
-REF_DIR_SEGS = CMD_DIR_SEGS + (RefSeg,)
+STEP_DIR_SEGS = SampSeg, StepSeg
+REF_DIR_SEGS = STEP_DIR_SEGS + (RefSeg,)
 REG_DIR_SEGS = REF_DIR_SEGS + (RegSeg,)
-STAGE_DIR_SEGS = SampSeg, CmdSeg, StageSeg
+STAGE_DIR_SEGS = SampSeg, StepSeg, StageSeg
 FASTA_STAGE_SEGS = StageSeg, FastaSeg
 FASTA_INDEX_DIR_STAGE_SEGS = StageSeg, RefSeg
 FASTQ_SEGS = FastqSeg,
@@ -742,7 +742,7 @@ FASTQ2_SEGS = Fastq2Seg,
 DMFASTQ_SEGS = SampSeg, DmFastqSeg
 DMFASTQ1_SEGS = SampSeg, DmFastq1Seg
 DMFASTQ2_SEGS = SampSeg, DmFastq2Seg
-XAM_SEGS = CMD_DIR_SEGS + (XamSeg,)
+XAM_SEGS = STEP_DIR_SEGS + (XamSeg,)
 XAM_STAGE_SEGS = STAGE_DIR_SEGS + (XamSeg,)
 CLUST_TAB_SEGS = REG_DIR_SEGS + (ClustParamsDirSeg, ClustParamsFileSeg)
 CT_FILE_SEGS = REG_DIR_SEGS + (ConnectTableSeg,)
@@ -1281,7 +1281,7 @@ class HasSampleFilePath(HasFilePath, ABC):
     def get_dir_seg_types(cls):
         return [*super().get_dir_seg_types(),
                 SampSeg,
-                CmdSeg]
+                StepSeg]
 
     @classmethod
     @abstractmethod
@@ -1291,7 +1291,7 @@ class HasSampleFilePath(HasFilePath, ABC):
     @classmethod
     def get_auto_path_fields(cls):
         return {**super().get_auto_path_fields(),
-                CMD: cls.get_step()}
+                STEP: cls.get_step()}
 
 
 class HasRefFilePath(HasSampleFilePath, ABC):

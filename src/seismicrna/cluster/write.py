@@ -156,7 +156,7 @@ def cluster(dataset: MaskMutsDataset | JoinMaskMutsDataset, *,
         tmp_clust_dir = path.buildpar(path.REG_DIR_SEGS,
                                       {path.TOP: tmp_dir,
                                        path.SAMPLE: dataset.sample,
-                                       path.CMD: path.CLUSTER_STEP,
+                                       path.STEP: path.CLUSTER_STEP,
                                        path.BRANCHES: branches,
                                        path.REF: dataset.ref,
                                        path.REG: dataset.region.name})

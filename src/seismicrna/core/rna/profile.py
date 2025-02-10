@@ -81,7 +81,7 @@ class RNAProfile(RNARegion):
         """
         return {path.TOP: top,
                 path.SAMPLE: self.sample,
-                path.CMD: path.FOLD_STEP,
+                path.STEP: path.FOLD_STEP,
                 path.BRANCHES: path.add_branch(path.FOLD_STEP,
                                                branch,
                                                self.branches),

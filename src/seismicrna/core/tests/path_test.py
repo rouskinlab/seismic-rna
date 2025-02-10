@@ -192,76 +192,76 @@ class TestBranchesField(ut.TestCase):
 class TestCmdSeg(ut.TestCase):
 
     def test_cmdseg_build_branches_list(self):
-        self.assertEqual(CmdSeg.build({CMD: "align",
-                                       BRANCHES: []}),
+        self.assertEqual(StepSeg.build({STEP: "align",
+                                        BRANCHES: []}),
                          "align")
-        self.assertEqual(CmdSeg.build({CMD: "align",
-                                       BRANCHES: ["branch1"]}),
+        self.assertEqual(StepSeg.build({STEP: "align",
+                                        BRANCHES: ["branch1"]}),
                          "align_branch1")
-        self.assertEqual(CmdSeg.build({CMD: "align",
-                                       BRANCHES: ["branch1", "branch2"]}),
+        self.assertEqual(StepSeg.build({STEP: "align",
+                                        BRANCHES: ["branch1", "branch2"]}),
                          "align_branch1_branch2")
         self.assertRaisesRegex(PathValueError,
                                "branch cannot be the empty string",
-                               CmdSeg.build,
-                               {CMD: "align",
+                               StepSeg.build,
+                               {STEP: "align",
                                 BRANCHES: ["branch1", ""]})
         self.assertRaisesRegex(PathValueError,
                                "Invalid option 'malign'",
-                               CmdSeg.build,
-                               {CMD: "malign",
+                               StepSeg.build,
+                               {STEP: "malign",
                                 BRANCHES: ["branch1"]})
 
     def test_cmdseg_build_branches_dict(self):
-        self.assertEqual(CmdSeg.build({CMD: "align",
-                                       BRANCHES: {}}),
+        self.assertEqual(StepSeg.build({STEP: "align",
+                                        BRANCHES: {}}),
                          "align")
-        self.assertEqual(CmdSeg.build({CMD: "align",
-                                       BRANCHES: {"step1": ""}}),
+        self.assertEqual(StepSeg.build({STEP: "align",
+                                        BRANCHES: {"step1": ""}}),
                          "align")
-        self.assertEqual(CmdSeg.build({CMD: "align",
-                                       BRANCHES: {"step1": "branch1"}}),
+        self.assertEqual(StepSeg.build({STEP: "align",
+                                        BRANCHES: {"step1": "branch1"}}),
                          "align_branch1")
-        self.assertEqual(CmdSeg.build({CMD: "align",
-                                       BRANCHES: {"step1": "",
+        self.assertEqual(StepSeg.build({STEP: "align",
+                                        BRANCHES: {"step1": "",
                                                   "step2": "branch1"}}),
                          "align_branch1")
-        self.assertEqual(CmdSeg.build({CMD: "align",
-                                       BRANCHES: {"step1": "branch1",
+        self.assertEqual(StepSeg.build({STEP: "align",
+                                        BRANCHES: {"step1": "branch1",
                                                   "step2": "branch2"}}),
                          "align_branch1_branch2")
         self.assertRaisesRegex(PathValueError,
                                "Invalid option 'malign'",
-                               CmdSeg.build,
-                               {CMD: "malign",
+                               StepSeg.build,
+                               {STEP: "malign",
                                 BRANCHES: {"step1": "branch1"}})
 
     def test_cmdseg_parse(self):
-        self.assertEqual(CmdSeg.parse("align"),
-                         {CMD: "align", BRANCHES: []})
-        self.assertEqual(CmdSeg.parse("align_branch1"),
-                         {CMD: "align", BRANCHES: ["branch1"]})
-        self.assertEqual(CmdSeg.parse("align__branch1"),
-                         {CMD: "align", BRANCHES: ["branch1"]})
-        self.assertEqual(CmdSeg.parse("align_branch1_"),
-                         {CMD: "align", BRANCHES: ["branch1"]})
-        self.assertEqual(CmdSeg.parse("align_branch1_branch2"),
-                         {CMD: "align", BRANCHES: ["branch1", "branch2"]})
-        self.assertEqual(CmdSeg.parse("align__branch1_branch2"),
-                         {CMD: "align", BRANCHES: ["branch1", "branch2"]})
-        self.assertEqual(CmdSeg.parse("align_branch1__branch2"),
-                         {CMD: "align", BRANCHES: ["branch1", "branch2"]})
+        self.assertEqual(StepSeg.parse("align"),
+                         {STEP: "align", BRANCHES: []})
+        self.assertEqual(StepSeg.parse("align_branch1"),
+                         {STEP: "align", BRANCHES: ["branch1"]})
+        self.assertEqual(StepSeg.parse("align__branch1"),
+                         {STEP: "align", BRANCHES: ["branch1"]})
+        self.assertEqual(StepSeg.parse("align_branch1_"),
+                         {STEP: "align", BRANCHES: ["branch1"]})
+        self.assertEqual(StepSeg.parse("align_branch1_branch2"),
+                         {STEP: "align", BRANCHES: ["branch1", "branch2"]})
+        self.assertEqual(StepSeg.parse("align__branch1_branch2"),
+                         {STEP: "align", BRANCHES: ["branch1", "branch2"]})
+        self.assertEqual(StepSeg.parse("align_branch1__branch2"),
+                         {STEP: "align", BRANCHES: ["branch1", "branch2"]})
         self.assertRaisesRegex(PathValueError,
                                "Could not parse fields in text ''",
-                               CmdSeg.parse,
+                               StepSeg.parse,
                                "")
         self.assertRaisesRegex(PathValueError,
                                "Could not parse fields in text '_align'",
-                               CmdSeg.parse,
+                               StepSeg.parse,
                                "_align")
         self.assertRaisesRegex(PathValueError,
                                "Invalid option 'alight'",
-                               CmdSeg.parse,
+                               StepSeg.parse,
                                "alight")
 
 

@@ -95,7 +95,7 @@ def extract_batches(batches: Iterable[RegionMutsBatch]):
 def load_refseq(out_dir: Path):
     return RefseqIO.load(RefseqIO.build_path({path.TOP: out_dir,
                                               path.SAMPLE: SAMPLE,
-                                              path.CMD: path.RELATE_STEP,
+                                              path.STEP: path.RELATE_STEP,
                                               path.BRANCHES: dict(),
                                               path.REF: REF}),
                          checksum="").refseq

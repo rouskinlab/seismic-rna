@@ -111,14 +111,14 @@ def migrate_table_reg_dir(reg_dir: Path):
                                  "Informative",
                                  count=-1)
             if table_name.startswith("relate"):
-                cmd = "relate"
-                to_dir = sample_dir.joinpath(cmd).joinpath(ref)
+                step = "relate"
+                to_dir = sample_dir.joinpath(step).joinpath(ref)
             elif table_name.startswith("mask"):
-                cmd = "mask"
-                to_dir = sample_dir.joinpath(cmd).joinpath(ref).joinpath(reg)
+                step = "mask"
+                to_dir = sample_dir.joinpath(step).joinpath(ref).joinpath(reg)
             elif table_name.startswith("clust"):
-                cmd = "cluster"
-                to_dir = sample_dir.joinpath(cmd).joinpath(ref).joinpath(reg)
+                step = "cluster"
+                to_dir = sample_dir.joinpath(step).joinpath(ref).joinpath(reg)
             else:
                 raise ValueError(table_name)
             if "per-pos" in table_name:
@@ -129,7 +129,7 @@ def migrate_table_reg_dir(reg_dir: Path):
                 table_type = "abundance"
             else:
                 raise ValueError(table_name)
-            to_name = f"{cmd}-{table_type}-table{''.join(table_file.suffixes)}"
+            to_name = f"{step}-{table_type}-table{''.join(table_file.suffixes)}"
             to_file = to_dir.joinpath(to_name)
             table_file.rename(to_file)
     reg_dir.rmdir()

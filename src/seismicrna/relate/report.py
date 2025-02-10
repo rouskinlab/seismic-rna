@@ -72,8 +72,3 @@ class PoolReport(BaseRelateReport):
     def get_param_report_fields(cls):
         return [PooledSamplesF,
                 *super().get_param_report_fields()]
-
-    @classmethod
-    def get_auto_path_fields(cls):
-        return {**super().get_auto_path_fields(),
-                path.CMD: path.RELATE_STEP}

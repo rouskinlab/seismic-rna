@@ -69,7 +69,7 @@ class StructOneTableGraph(OneTableRelClusterGroupGraph, OneRelGraph, ABC):
         return path.build(path.CT_FILE_SEGS,
                           {path.TOP: self.top,
                            path.SAMPLE: self.sample,
-                           path.CMD: path.FOLD_STEP,
+                           path.STEP: path.FOLD_STEP,
                            path.BRANCHES: self.branches,
                            path.REF: self.ref,
                            path.REG: self.struct_reg,

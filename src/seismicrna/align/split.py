@@ -64,10 +64,10 @@ def split_xam_file(xam_file: Path,
     sample = xam_file.stem
     branches = path.add_branch(path.ALIGN_STEP, branch, dict())
     # Determine the final output directory.
-    result_dir = path.build(path.CMD_DIR_SEGS,
+    result_dir = path.build(path.STEP_DIR_SEGS,
                             {path.TOP: out_dir,
                              path.SAMPLE: sample,
-                             path.CMD: path.ALIGN_STEP,
+                             path.STEP: path.ALIGN_STEP,
                              path.BRANCHES: branches})
     if need_write(result_dir, force):
         # Sort and index the XAM file.
@@ -75,7 +75,7 @@ def split_xam_file(xam_file: Path,
         xam_sorted = path.buildpar(path.XAM_SEGS,
                                    {path.TOP: xam_input_dir,
                                     path.SAMPLE: sample,
-                                    path.CMD: path.ALIGN_STEP,
+                                    path.STEP: path.ALIGN_STEP,
                                     path.BRANCHES: branches,
                                     path.REF: fasta.stem,
                                     path.EXT: xam_file.suffix})
@@ -94,10 +94,10 @@ def split_xam_file(xam_file: Path,
                          **kwargs)
         release_to_out(out_dir,
                        release_dir,
-                       path.build(path.CMD_DIR_SEGS,
+                       path.build(path.STEP_DIR_SEGS,
                                   {path.TOP: release_dir,
                                    path.SAMPLE: sample,
-                                   path.CMD: path.ALIGN_STEP,
+                                   path.STEP: path.ALIGN_STEP,
                                    path.BRANCHES: branches}))
     return result_dir
 

@@ -168,7 +168,7 @@ class Table(path.HasRefFilePath, ABC):
     @cache
     def get_auto_path_fields(cls):
         """ Default values of the path fields. """
-        return {path.CMD: cls.get_step(),
+        return {path.STEP: cls.get_step(),
                 path.TABLE: cls.get_step(),
                 **super().get_auto_path_fields()}
 

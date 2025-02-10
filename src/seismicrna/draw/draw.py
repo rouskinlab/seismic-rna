@@ -225,7 +225,7 @@ class RNArtistRun(object):
             Path fields.
         """
         return {path.TOP: top,
-                path.CMD: path.FOLD_STEP,
+                path.STEP: path.FOLD_STEP,
                 path.SAMPLE: self.sample,
                 path.BRANCHES: self.branches,
                 path.REF: self.ref,

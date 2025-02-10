@@ -98,7 +98,7 @@ class BaseGraph(ABC):
     def get_path_segs(cls):
         """ Path segments. """
         return (path.SampSeg,
-                path.CmdSeg,
+                path.StepSeg,
                 path.RefSeg,
                 path.RegSeg,
                 path.GraphSeg)
@@ -166,7 +166,7 @@ class BaseGraph(ABC):
         """ Path fields. """
         return {path.TOP: self.top,
                 path.SAMPLE: self.sample,
-                path.CMD: path.GRAPH_STEP,
+                path.STEP: path.GRAPH_STEP,
                 path.BRANCHES: self.branches,
                 path.REF: self.ref,
                 path.REG: self.reg,

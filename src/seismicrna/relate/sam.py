@@ -267,7 +267,7 @@ class XamViewer(object):
         return path.build(path.XAM_STAGE_SEGS,
                           {path.TOP: self.tmp_dir,
                            path.SAMPLE: self.sample,
-                           path.CMD: path.RELATE_STEP,
+                           path.STEP: path.RELATE_STEP,
                            path.BRANCHES: self.branches,
                            path.STAGE: path.STAGE_REL_SAMS,
                            path.REF: self.ref,

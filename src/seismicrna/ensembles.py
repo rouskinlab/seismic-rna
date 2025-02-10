@@ -255,7 +255,7 @@ def group_clusters(cluster_dirs: Iterable[Path],
         ks = report.get_field(KsWrittenF)
         if ks:
             mask_report = MaskReport.load(MaskReport.build_path(
-                path_fields | {path.CMD: path.MASK_STEP}
+                path_fields | {path.STEP: path.MASK_STEP}
             ))
             top = path_fields[path.TOP]
             sample = path_fields[path.SAMPLE]
