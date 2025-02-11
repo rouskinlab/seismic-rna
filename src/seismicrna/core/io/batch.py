@@ -1,7 +1,7 @@
 import re
 from abc import ABC
 
-from .file import BrickleIO
+from .brickle import BrickleIO
 from ..batch import MutsBatch, ReadBatch
 from ..seq import Region
 
