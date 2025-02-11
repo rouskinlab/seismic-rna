@@ -354,9 +354,9 @@ NumReadsRelF = ReportField("n_reads_rel",
                            "Number of reads processed by relate",
                            int)
 NumBatchF = ReportField("n_batches", "Number of batches", int)
-ChecksumsF = ReportField("checksums", "MD5 checksums of batches", dict)
+ChecksumsF = ReportField("checksums", "Checksums of batches (SHA-512)", dict)
 RefseqChecksumF = ReportField("refseq_checksum",
-                              "MD5 checksum of reference sequence",
+                              "Checksum of reference sequence (SHA-512)",
                               str)
 Insert3F = OptionReportField(opt_insert3)
 AmbindelF = OptionReportField(opt_ambindel)

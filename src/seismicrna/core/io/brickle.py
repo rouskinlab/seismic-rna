@@ -1,7 +1,8 @@
 import pickle
+import warnings
 from abc import ABC
 from functools import cached_property
-from hashlib import md5
+from hashlib import md5, sha512
 from pathlib import Path
 from typing import Any
 
@@ -19,14 +20,23 @@ class WrongChecksumError(ValueError):
     """ A file or piece of data has the wrong checksum. """
 
 
-def digest_data(data: bytes):
-    """ Compute the MD5 digest of the data as a hexadecimal number. """
+def calc_md5_digest(data: bytes):
+    """ Calculate the MD5 hash of the data in hexadecimal. """
+    if not isinstance(data, bytes):
+        raise TypeError(f"data must be {bytes}, but got {type(data)}")
+    warnings.warn("The checksum function has been changed from MD5 to SHA-512 "
+                  "to improve security; MD5 will be removed in version 0.25. "
+                  "Run seismic migrate to update the output files and suppress "
+                  "this warning.",
+                  FutureWarning)
     return md5(data).hexdigest()
 
 
-def digest_file(file: Path | str):
-    with open(file, "rb") as f:
-        return digest_data(f.read())
+def calc_sha512_digest(data: bytes):
+    """ Calculate the SHA256 hash of the data in hexadecimal. """
+    if not isinstance(data, bytes):
+        raise TypeError(f"data must be {bytes}, but got {type(data)}")
+    return sha512(data).hexdigest()
 
 
 class BrickleIO(FileIO, ABC):
@@ -110,8 +120,8 @@ def save_brickle(item: BrickleIO,
     with open(file, write_mode(force, binary=True)) as f:
         f.write(data)
     logger.action(f"Wrote {item} to {file}")
-    checksum = digest_data(data)
-    logger.detail(f"Computed MD5 checksum of {file}: {checksum}")
+    checksum = calc_sha512_digest(data)
+    logger.detail(f"Computed SHA-512 checksum of {file}: {checksum}")
     logger.routine(f"Ended writing {item} to {file}")
     return checksum
 
@@ -127,10 +137,19 @@ def load_brickle(file: Path | str,
     with open(file, "rb") as f:
         data = f.read()
     if checksum:
-        digest = digest_data(data)
-        if digest != checksum:
-            raise WrongChecksumError(f"Expected checksum of {file} to be "
-                                     f"{checksum}, but got {digest}")
+        sha512_digest = calc_sha512_digest(data)
+        if sha512_digest != checksum:
+            # raise WrongChecksumError(
+            #     f"Expected SHA-512 digest of {file} to be {checksum}, "
+            #     f"but got {sha512_digest}"
+            # )
+            # Also check MD5 until this feature is removed.
+            md5_digest = calc_md5_digest(data)
+            if md5_digest != checksum:
+                raise WrongChecksumError(
+                    f"Expected MD5 digest of {file} to be {checksum}, "
+                    f"but got {md5_digest}"
+                )
     else:
         logger.warning(f"No checksum was given for {file}")
     state = pickle.loads(brotli.decompress(data))
