@@ -166,11 +166,14 @@ def calc_coverage(pos_index: pd.Index,
     dims = find_dims(dim_names, arrays, names)
     n_reads = dims[READS]
     # Clip the end coordinates to the minimum and maximum positions.
-    # Sort the end coordinates and label the 3' ends.
-    ends, _, is_end3 = sort_segment_ends(seg_end5s.clip(min_pos, max_pos + 1),
-                                         seg_end3s.clip(min_pos - 1, max_pos),
-                                         zero_indexed=True,
-                                         fill_mask=True)
+    # Sort the end coordinates and label the 3' end of each contiguous
+    # segment.
+    ends_sorted, _, is_contig_end3 = sort_segment_ends(
+        seg_end5s.clip(min_pos, max_pos + 1),
+        seg_end3s.clip(min_pos - 1, max_pos),
+        zero_indexed=True,
+        fill_mask=True
+    )
     # Find the cumulative count of each base up to each position.
     bases = list()
     base_count = list()
@@ -181,8 +184,8 @@ def calc_coverage(pos_index: pd.Index,
         base_count.append(np.cumsum(is_base))
     base_count = np.stack(base_count, axis=1)
     # Compute the coverage per position and per read.
-    cover_per_pos, cover_per_read = _calc_coverage(ends,
-                                                   is_end3,
+    cover_per_pos, cover_per_read = _calc_coverage(ends_sorted,
+                                                   is_contig_end3,
                                                    (read_weights.values
                                                     if read_weights is not None
                                                     else np.ones((n_reads, 1))),
