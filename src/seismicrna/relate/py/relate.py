@@ -463,10 +463,10 @@ def _merge_rels(end5sf: list[int],
     for pos in relsf | relsr:
         relf = relsf.get(pos, MATCH if any(end5f <= pos <= end3f
                                            for end5f, end3f
-                                           in zip(end5sf, end3sf)) else NOCOV)
+                                           in zip(end5sf, end3sf, strict=True)) else NOCOV)
         relr = relsr.get(pos, MATCH if any(end5r <= pos <= end3r
                                            for end5r, end3r
-                                           in zip(end5sr, end3sr)) else NOCOV)
+                                           in zip(end5sr, end3sr, strict=True)) else NOCOV)
         rel = relf & relr
         if rel != MATCH:
             if rel == NOCOV:
@@ -562,6 +562,6 @@ def calc_rels_lines(line1: str,
             rels = rels1
     else:
         # The read is single-end.
-        ends = [*end5s1], [*end3s1]
+        ends = end5s1, end3s1
         rels = rels1
     return ends, rels
