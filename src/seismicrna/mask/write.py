@@ -18,14 +18,17 @@ from ..core.arg import docdef
 from ..core.batch import RegionMutsBatch
 from ..core.dataset import MissingBatchTypeError
 from ..core.error import IncompatibleValuesError
+from ..core.lists import PositionList
 from ..core.logs import logger
 from ..core.rel import RelPattern
 from ..core.report import mask_iter_no_convergence
-from ..core.seq import FIELD_REF, POS_NAME, Region, index_to_pos
+from ..core.seq import POS_NAME, Region, index_to_pos
 from ..core.table import MUTAT_REL, INFOR_REL
 from ..core.tmp import release_to_out, with_tmp_dir
 from ..core.write import need_write
-from ..relate.dataset import RelateMutsDataset, PoolDataset, load_read_names_dataset
+from ..relate.dataset import (RelateMutsDataset,
+                              PoolDataset,
+                              load_read_names_dataset)
 
 
 class Masker(object):
@@ -233,11 +236,10 @@ class Masker(object):
                             dtype=int)
         # Read positions to exclude from a file.
         if mask_pos_file is not None:
-            mask_pos = np.concatenate([mask_pos,
-                                       pd.read_csv(
-                                           mask_pos_file,
-                                           index_col=[FIELD_REF, POS_NAME]
-                                       ).loc[dataset_ref].index.values])
+            file_data = PositionList.load_data(mask_pos_file)
+            mask_pos = np.concatenate(
+                [mask_pos, file_data.get_level_values(POS_NAME).values]
+            )
         # Drop redundant positions and sort the remaining ones.
         mask_pos = np.unique(np.asarray(mask_pos, dtype=int))
         # Keep only the positions in the region.

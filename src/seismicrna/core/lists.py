@@ -3,7 +3,6 @@ from functools import cache
 from pathlib import Path
 from typing import Iterable, Self
 
-import numpy as np
 import pandas as pd
 
 from . import path
@@ -11,7 +10,8 @@ from .arg import opt_max_fmut_pos, opt_min_ninfo_pos
 from .io import RefFileIO
 from .logs import logger
 from .seq import FIELD_REF, POS_NAME
-from .table import (INFOR_REL,
+from .table import (READ_TITLE,
+                    INFOR_REL,
                     MUTAT_REL,
                     RelTypeTable,
                     PositionTableLoader,
@@ -20,8 +20,6 @@ from .table import (INFOR_REL,
 
 class List(RefFileIO, ABC):
     """ List base class. """
-
-    NAMES = [FIELD_REF, POS_NAME]
 
     @classmethod
     @abstractmethod
@@ -62,10 +60,18 @@ class List(RefFileIO, ABC):
                                                               table.branches)})
 
     @classmethod
-    def load(cls, file: Path):
+    @abstractmethod
+    def get_index_names(cls) -> list[str]:
+        """ Names of the index columns. """
+
+    @classmethod
+    def load_data(cls, file: str | Path):
+        return pd.read_csv(file, index_col=cls.get_index_names()).index
+
+    @classmethod
+    def load(cls, file: str | Path):
         top, path_field_values = cls.parse_path(file, exclude_auto=True)
-        return cls(data=pd.read_csv(file, index_col=cls.NAMES).index.to_frame(),
-                   **path_field_values)
+        return cls(data=cls.load_data(file), **path_field_values)
 
     @classmethod
     @abstractmethod
@@ -76,7 +82,7 @@ class List(RefFileIO, ABC):
                  sample: str,
                  branches: Iterable[str],
                  ref: str,
-                 data: pd.DataFrame,
+                 data: pd.Index,
                  **kwargs):
         super().__init__(**kwargs)
         self.sample = sample
@@ -87,20 +93,15 @@ class List(RefFileIO, ABC):
             path.validate_branches_flat(branches)
         self.branches = branches
         self.ref = ref
-        if not isinstance(data, pd.DataFrame):
-            raise TypeError(
-                f"data must be {pd.DataFrame}, but got {type(data)}"
-            )
-        if data.columns.to_list() != self.NAMES:
-            raise ValueError(f"data must have columns {self.NAMES}, "
-                             f"but got {data.columns.to_list()}")
+        if not isinstance(data, pd.Index):
+            raise TypeError(f"data must be {pd.Index}, but got {type(data)}")
         self.data = data
 
     def save(self, top: Path, force: bool = False):
         file = self.get_path(top)
         if not force and file.exists():
             raise FileExistsError(file)
-        self.data.to_csv(file, header=True, index=False)
+        self.data.to_frame().to_csv(file, header=True, index=False)
         return file
 
 
@@ -117,6 +118,10 @@ class PositionList(List, ABC):
     @classmethod
     def get_file_seg_type(cls):
         return path.PositionListSeg
+
+    @classmethod
+    def get_index_names(cls):
+        return [FIELD_REF, POS_NAME]
 
     @classmethod
     def from_table(cls,
@@ -146,9 +151,8 @@ class PositionList(List, ABC):
         logger.detail(f"{table} has {region.get_mask(cls.MASK_FMUT).size} "
                       f"positions with mutation rates > {max_fmut_pos}")
         positions = region.masked_int
-        data = pd.DataFrame.from_dict({FIELD_REF: np.repeat(table.ref,
-                                                            positions.size),
-                                       POS_NAME: positions})
+        data = pd.MultiIndex.from_product([[table.ref], positions],
+                                          names=cls.get_index_names())
         new_list = cls(data=data,
                        sample=table.sample,
                        branches=path.add_branch(path.LIST_STEP,
@@ -159,6 +163,16 @@ class PositionList(List, ABC):
                       "positions to mask")
         logger.routine(f"Ended making {cls} from {table}")
         return new_list
+
+    def __init__(self, *, data: pd.MultiIndex, **kwargs):
+        if not isinstance(data, pd.MultiIndex):
+            raise TypeError(
+                f"data must be {pd.MultiIndex}, but got {type(data)}"
+            )
+        if data.names != self.get_index_names():
+            raise ValueError(f"data must have names {self.get_index_names()}, "
+                             f"but got {data.names}")
+        super().__init__(data=data, **kwargs)
 
 
 class ReadList(List, ABC):
@@ -171,3 +185,7 @@ class ReadList(List, ABC):
     @classmethod
     def get_file_seg_type(cls):
         return path.ReadListSeg
+
+    @classmethod
+    def get_index_names(cls):
+        return [READ_TITLE]
