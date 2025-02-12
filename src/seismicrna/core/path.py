@@ -13,6 +13,11 @@ from tempfile import mkdtemp
 from typing import Any, Callable, Iterable, Sequence
 
 from .logs import logger
+from .validate import (require_isinstance,
+                       require_issubclass,
+                       require_isin,
+                       require_equal,
+                       require_atleast)
 
 # Constants ############################################################
 
@@ -163,7 +168,8 @@ class WrongFileExtensionError(PathValueError):
 
 # Path Functions #######################################################
 
-def fill_whitespace(path: str | Path, fill: str = "_"):
+def fill_whitespace(path: str | pathlib.Path,
+                    fill: str = "_") -> str | pathlib.Path:
     """ Replace all whitespace in `path` with `fill`. """
     return path.__class__(fill.join(str(path).split()))
 
@@ -198,16 +204,17 @@ def get_seismicrna_source_dir():
     except ImportError:
         seismicrna_file = None
     if seismicrna_file:
-        seismicrna_parent = sanitize(seismicrna_file).parent
-        if seismicrna_parent != seismicrna_src_dir:
-            raise PathValueError("Inconsistent source directory: "
-                                 f"{seismicrna_src_dir} ≠ {seismicrna_parent}")
+        require_equal("source directory",
+                      sanitize(seismicrna_file).parent,
+                      seismicrna_src_dir,
+                      classes=pathlib.Path,
+                      error_type=PathValueError)
     else:
         logger.warning("seismicrna is not installed: skipped verifying path")
-    name = "seismicrna"
-    if seismicrna_src_dir.name != name:
-        raise PathValueError(f"Source directory {seismicrna_src_dir} "
-                             f"is not named {repr(name)}")
+    require_equal("source directory name",
+                  seismicrna_src_dir.name,
+                  "seismicrna",
+                  error_type=PathValueError)
     return seismicrna_src_dir
 
 
@@ -232,8 +239,7 @@ def get_seismicrna_project_dir():
 # Field validation functions
 
 def validate_str(txt: str):
-    if not isinstance(txt, str):
-        raise PathTypeError(f"txt must be str, but got {type(txt).__name__}")
+    require_isinstance("txt", txt, str, error_type=PathTypeError)
     if not txt:
         raise PathValueError("txt cannot be empty string")
     if illegal := sorted(set(txt) - STR_CHARS_SET):
@@ -243,8 +249,7 @@ def validate_str(txt: str):
 
 
 def validate_top(top: pathlib.Path):
-    if not isinstance(top, pathlib.Path):
-        raise PathTypeError(top)
+    require_isinstance("top", top, pathlib.Path, error_type=PathTypeError)
     if not top.parent.is_dir():
         raise PathNotFoundError(top.parent)
     if top.is_file():
@@ -252,17 +257,12 @@ def validate_top(top: pathlib.Path):
 
 
 def validate_int(num: int):
-    if not isinstance(num, int):
-        raise PathTypeError(num)
-    if num < 0:
-        raise PathValueError(f"Integer must be ≥ 0, but got {num}")
+    require_isinstance("num", num, int, error_type=PathTypeError)
+    require_atleast("num", num, 0, error_type=PathValueError)
 
 
 def validate_branch(branch: str):
-    if not isinstance(branch, str):
-        raise PathTypeError(
-            f"branch must be str, but got {type(branch).__name__}"
-        )
+    require_isinstance("branch", branch, str, error_type=PathTypeError)
     if illegal := sorted(set(branch) - BRANCH_CHARS_SET):
         raise PathValueError(
             f"branch {repr(branch)} has illegal characters: {illegal}"
@@ -270,10 +270,7 @@ def validate_branch(branch: str):
 
 
 def validate_branches(branches: dict[str, str]):
-    if not isinstance(branches, dict):
-        raise PathTypeError(
-            f"branches must be dict, but got {type(branches).__name__}"
-        )
+    require_isinstance("branches", branches, dict, error_type=PathTypeError)
     for step, branch in branches.items():
         validate_str(step)
         validate_branch(branch)
@@ -305,9 +302,10 @@ def flatten_branches(branches: dict[str, str]):
 
 
 def validate_branches_flat(branches_flat: list[str]):
-    if not isinstance(branches_flat, list):
-        raise PathTypeError("branches_flat must be list, "
-                            f"but got {type(branches_flat).__name__}")
+    require_isinstance("branches_flat",
+                       branches_flat,
+                       list,
+                       error_type=PathTypeError)
     for branch in branches_flat:
         validate_branch(branch)
         if not branch:
@@ -333,23 +331,21 @@ class PathField(object):
         self.options = list(options)
         if self.dtype is list and self.options:
             raise PathValueError("Cannot take options if the data type is list")
-        if not all(isinstance(option, self.dtype) for option in self.options):
-            raise PathTypeError("All options of a field must be of its type")
+        for i, option in enumerate(self.options):
+            require_isinstance(f"option {i}", option, self.dtype,
+                               error_type=PathTypeError)
         self.is_ext = is_ext
         if self.is_ext:
-            if self.dtype is not str:
-                raise PathTypeError("Extension field must be type 'str', "
-                                    f"but got type {repr(self.dtype.__name__)}")
+            require_issubclass("Extension field dtype", self.dtype, str,
+                               error_type=PathValueError)
             if not self.options:
                 raise PathValueError("Extension field must have options")
             if pattern:
-                raise TypeError("Extension field cannot have a pattern")
+                raise PathValueError("Extension field cannot have a pattern")
             self.pattern = ""
         else:
-            if not isinstance(pattern, str):
-                raise PathTypeError(
-                    f"pattern must be str, but got {type(pattern).__name__}"
-                )
+            require_isinstance("pattern", pattern, str,
+                               error_type=PathTypeError)
             if pattern:
                 self.pattern = pattern
             else:
@@ -357,17 +353,16 @@ class PathField(object):
                     self.pattern = RE_PATTERNS[self.dtype]
                 except KeyError:
                     raise PathTypeError(
-                        f"No default pattern for {self.dtype.__name__}"
+                        f"No default pattern for {self.dtype}"
                     ) from None
 
     def validate(self, val: Any):
         """ Validate a value before turning it into a string. """
         validate_func = VALIDATE[self.dtype]
         validate_func(val)
-        if self.options and val not in self.options:
-            raise PathValueError(
-                f"Invalid option {repr(val)}; expected one of {self.options}"
-            )
+        if self.options:
+            require_isin("option", val, self.options,
+                         error_type=PathValueError)
 
     def build(self, val: Any):
         """ Validate a value and return it as a string. """
@@ -376,20 +371,17 @@ class PathField(object):
 
     def parse(self, text: str) -> Any:
         """ Parse a value from a string, validate it, and return it. """
-        if not isinstance(text, str):
-            raise PathTypeError(
-                f"text to parse must be str, but got {type(text).__name__}"
-            )
+        require_isinstance("text", text, str, error_type=PathTypeError)
         try:
             val = self.dtype(text)
         except Exception as error:
             raise PathValueError(f"Could not interpret {repr(text)} as type "
-                                 f"{self.dtype.__name__}: {error}") from None
+                                 f"{self.dtype}: {error}") from None
         self.validate(val)
         return val
 
     def __str__(self):
-        return f"{type(self).__name__} <{self.dtype.__name__}>"
+        return f"{type(self).__name__} {self.dtype.__name__}"
 
 
 class BranchesPathField(PathField):
@@ -409,10 +401,7 @@ class BranchesPathField(PathField):
         return "".join(f"{BRANCH_SEP}{branch}" for branch in val)
 
     def parse(self, text: str):
-        if not isinstance(text, str):
-            raise PathTypeError(
-                f"text to parse must be str, but got {type(text).__name__}"
-            )
+        require_isinstance("text", text, str, error_type=PathTypeError)
         val = list(filter(None, text.split(BRANCH_SEP)))
         self.validate(val)
         return val
@@ -469,10 +458,8 @@ def check_file_extension(file: pathlib.Path,
         extensions = extensions.options
     elif not isinstance(extensions, (tuple, list, set, dict)):
         extensions = set(extensions)
-    if file.suffix not in extensions:
-        raise WrongFileExtensionError(
-            f"Extension of {file} is not one of {extensions}"
-        )
+    require_isin("file extension", file.suffix, extensions,
+                 error_type=WrongFileExtensionError)
 
 
 # Path Segments ########################################################
@@ -493,19 +480,20 @@ class PathSegment(object):
         for i, (name, field) in enumerate(self.field_types.items(), start=1):
             if name == EXT:
                 if not field.is_ext:
-                    raise PathValueError(f"Field '{EXT}' is not an extension")
+                    raise PathValueError(
+                        f"Field {repr(EXT)} is not an extension"
+                    )
                 if i != len(self.field_types):
                     raise PathValueError(
                         f"Extension of {self} is not the last field"
                     )
-                if order != 0:
-                    raise ValueError("Segments with extensions must have order "
-                                     f"= 0, but {self.name} has order {order}")
+                require_equal("order of segment with an extension", order, 0,
+                              error_type=PathValueError)
             elif field.is_ext:
-                raise PathValueError(f"{self} extension has name '{name}'")
-        if order <= 0 and not any(ft in self.field_types for ft in [EXT, TOP]):
-            raise ValueError("Segments without extensions must have order > 0, "
-                             f"but {self.name} has order {order}")
+                raise PathValueError(f"{self} extension has name {repr(name)}")
+        if not any(ft in self.field_types for ft in [EXT, TOP]):
+            require_atleast("order of segment without an extension", order, 1,
+                            error_type=PathValueError)
         self.order = order
         # Determine the format string.
         if frmt is None:
@@ -532,7 +520,9 @@ class PathSegment(object):
         if self.ext_type is None:
             return list()
         if not self.ext_type.options:
-            raise ValueError(f"{self} extension {self.ext_type} has no options")
+            raise PathValueError(
+                f"{self} extension {self.ext_type} has no options"
+            )
         return self.ext_type.options
 
     def match_longest_ext(self, text: str):
@@ -547,11 +537,12 @@ class PathSegment(object):
         return
 
     def build(self, vals: dict[str, Any]):
-        if not isinstance(vals, dict):
-            raise PathTypeError(f"Expected dict, but got {type(vals).__name__}")
+        require_isinstance("vals", vals, dict, error_type=PathTypeError)
         # Verify that a value is given for every field, with no extras.
-        if (v := sorted(vals.keys())) != (f := sorted(self.field_types.keys())):
-            raise PathValueError(f"{self} expected fields {f}, but got {v}")
+        require_equal("segment fields",
+                      sorted(vals.keys()),
+                      sorted(self.field_types.keys()),
+                      error_type=PathValueError)
         # Validate the value passed to every field.
         fields = {name: field.build(vals[name])
                   for name, field in self.field_types.items()}
@@ -563,13 +554,15 @@ class PathSegment(object):
         if self.ext_type is not None:
             # If the segment has a file extension, then determine the
             # longest valid file extension that matches the text.
-            if (ext := self.match_longest_ext(text)) is None:
-                raise PathValueError(f"Segment {repr(text)} is missing a file "
+            ext = self.match_longest_ext(text)
+            if ext is None:
+                raise PathValueError(f"text {repr(text)} has no file "
                                      f"extension; expected one of {self.exts}")
             # Remove the file extension from the end of the text.
             text = text[: -len(ext)]
         # Try to parse the text (with the extension, if any, removed).
-        if not (match := self.ptrn.match(text)):
+        match = self.ptrn.match(text)
+        if not match:
             raise PathValueError(f"Could not parse fields in text {repr(text)} "
                                  f"using pattern {repr(self.ptrn)}")
         vals = list(match.groups())
@@ -769,7 +762,9 @@ class Path(object):
         self.seg_types.insert(0, TopSeg)
         # Check for duplicate orders.
         if max(Counter(segt.order for segt in self.seg_types).values()) > 1:
-            raise ValueError(f"Got duplicate order values in {self.seg_types}")
+            raise PathValueError(
+                f"Got duplicate order values in {self.seg_types}"
+            )
 
     def build(self, fields: dict[str, Any]):
         """ Return a `pathlib.Path` instance by assembling the given
@@ -790,8 +785,9 @@ class Path(object):
             # values of its fields, and add it to the growing path.
             segments.append(seg_type.build(seg_fields))
         # Check whether any fields were given but not used by the path.
-        if extras := fields.keys() - used_fields:
-            raise PathValueError(f"Got extra fields: {extras}")
+        extras = fields.keys() - used_fields
+        if extras:
+            raise PathValueError(f"Extra fields for {type(self)}: {extras}")
         # Assemble the segment strings into a path, and return it.
         path = pathlib.Path(*segments)
         return path
@@ -821,13 +817,8 @@ class Path(object):
             fields.update(seg_type.parse(tail))
         return fields
 
-    @cached_property
-    def as_str(self):
-        # Define the string as a cached property to speed up str(self).
-        return f"{type(self).__name__}: {list(map(str, self.seg_types))}"
-
     def __str__(self):
-        return self.as_str
+        return f"{type(self).__name__}: {list(map(str, self.seg_types))}"
 
 
 # mkdir/symlink/rmdir.
@@ -1226,9 +1217,7 @@ class HasFilePath(ABC):
         try:
             return cls.get_file_seg_type().exts[0]
         except IndexError:
-            raise ValueError(
-                f"{cls.__name__} has no file extension"
-            ) from None
+            raise ValueError(f"{cls} has no file extension") from None
 
     @classmethod
     def get_auto_path_fields(cls) -> dict[str, Any]:

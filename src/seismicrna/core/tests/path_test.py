@@ -21,56 +21,83 @@ class TestValidateBranches(ut.TestCase):
                                              "step_2": "b1"}))
         self.assertIsNone(validate_branches({"step_1": "a1",
                                              "step_2": "a1"}))
-        self.assertRaisesRegex(PathTypeError,
-                               "branches must be dict, but got list",
-                               validate_branches,
-                               ["a1"])
-        self.assertRaisesRegex(PathTypeError,
-                               "txt must be str, but got int",
-                               validate_branches,
-                               {1: "a1"})
-        self.assertRaisesRegex(PathTypeError,
-                               "branch must be str, but got int",
-                               validate_branches,
-                               {"step1": 1})
-        self.assertRaisesRegex(PathValueError,
-                               "txt cannot be empty string",
-                               validate_branches,
-                               {"": "a1"})
-        self.assertRaisesRegex(PathValueError,
-                               r"txt 'step 1' has illegal characters: \[' '\]",
-                               validate_branches,
-                               {"step 1": "a1"})
-        self.assertRaisesRegex(PathValueError,
-                               r"branch 'a_1' has illegal characters: \['_'\]",
-                               validate_branches,
-                               {"step1": "a_1"})
+        self.assertRaisesRegex(
+            PathTypeError,
+            (r"branches must be an instance of <class 'dict'>, "
+             r"but got \['a1'\] of type <class 'list'>"),
+            validate_branches,
+            ["a1"]
+        )
+        self.assertRaisesRegex(
+            PathTypeError,
+            ("txt must be an instance of <class 'str'>, "
+             "but got 1 of type <class 'int'>"),
+            validate_branches,
+            {1: "a1"}
+        )
+        self.assertRaisesRegex(
+            PathTypeError,
+            ("branch must be an instance of <class 'str'>, "
+             "but got 1 of type <class 'int'>"),
+            validate_branches,
+            {"step1": 1}
+        )
+        self.assertRaisesRegex(
+            PathValueError,
+            "txt cannot be empty string",
+            validate_branches,
+            {"": "a1"}
+        )
+        self.assertRaisesRegex(
+            PathValueError,
+            r"txt 'step 1' has illegal characters: \[' '\]",
+            validate_branches,
+            {"step 1": "a1"}
+        )
+        self.assertRaisesRegex(
+            PathValueError,
+            r"branch 'a_1' has illegal characters: \['_'\]",
+            validate_branches,
+            {"step1": "a_1"}
+        )
 
     def test_validate_branches_flat(self):
         self.assertIsNone(validate_branches_flat([]))
         self.assertIsNone(validate_branches_flat(["a1"]))
         self.assertIsNone(validate_branches_flat(["a1", "b1"]))
         self.assertIsNone(validate_branches_flat(["a1", "a1"]))
-        self.assertRaisesRegex(PathTypeError,
-                               "branches_flat must be list, but got dict",
-                               validate_branches_flat,
-                               {"step1": "a1"})
-        self.assertRaisesRegex(PathTypeError,
-                               "branch must be str, but got int",
-                               validate_branches_flat,
-                               [1])
-        self.assertRaisesRegex(PathValueError,
-                               "branch cannot be the empty string",
-                               validate_branches_flat,
-                               [""])
-        self.assertRaisesRegex(PathValueError,
-                               r"branch 'a 1' has illegal characters: \[' '\]",
-                               validate_branches_flat,
-                               ["a 1"])
-        self.assertRaisesRegex(PathValueError,
-                               r"branch 'a_1' has illegal characters: \['_'\]",
-                               validate_branches_flat,
-                               ["a_1"])
+        self.assertRaisesRegex(
+            PathTypeError,
+            ("branches_flat must be an instance of <class 'list'>, "
+             "but got {'step1': 'a1'} of type <class 'dict'>"),
+            validate_branches_flat,
+            {"step1": "a1"}
+        )
+        self.assertRaisesRegex(
+            PathTypeError,
+            ("branch must be an instance of <class 'str'>, "
+             "but got 1 of type <class 'int'>"),
+            validate_branches_flat,
+            [1]
+        )
+        self.assertRaisesRegex(
+            PathValueError,
+            "branch cannot be the empty string",
+            validate_branches_flat,
+            [""]
+        )
+        self.assertRaisesRegex(
+            PathValueError,
+            r"branch 'a 1' has illegal characters: \[' '\]",
+            validate_branches_flat,
+            ["a 1"]
+        )
+        self.assertRaisesRegex(
+            PathValueError,
+            r"branch 'a_1' has illegal characters: \['_'\]",
+            validate_branches_flat,
+            ["a_1"]
+        )
 
 
 class TestAddBranch(ut.TestCase):
@@ -113,14 +140,20 @@ class TestBranchesField(ut.TestCase):
         self.assertIsNone(BranchesField.validate([]))
         self.assertIsNone(BranchesField.validate(["branch1"]))
         self.assertIsNone(BranchesField.validate(["branch1", "branch2"]))
-        self.assertRaisesRegex(PathTypeError,
-                               "branches_flat must be list, but got str",
-                               BranchesField.validate,
-                               "branch1")
-        self.assertRaisesRegex(PathTypeError,
-                               "branch must be str, but got int",
-                               BranchesField.validate,
-                               [1])
+        self.assertRaisesRegex(
+            PathTypeError,
+            ("branches_flat must be an instance of <class 'list'>, "
+             "but got 'branch1' of type <class 'str'>"),
+            BranchesField.validate,
+            "branch1"
+        )
+        self.assertRaisesRegex(
+            PathTypeError,
+            ("branch must be an instance of <class 'str'>, "
+             "but got 1 of type <class 'int'>"),
+            BranchesField.validate,
+            [1]
+        )
         self.assertRaisesRegex(
             PathValueError,
             "branch cannot be the empty string",
@@ -149,10 +182,13 @@ class TestBranchesField(ut.TestCase):
                          "_branch1")
         self.assertEqual(BranchesField.build(["branch1", "branch2"]),
                          "_branch1_branch2")
-        self.assertRaisesRegex(PathTypeError,
-                               "branches_flat must be list, but got str",
-                               BranchesField.build,
-                               "branch1")
+        self.assertRaisesRegex(
+            PathTypeError,
+            ("branches_flat must be an instance of <class 'list'>, "
+             "but got 'branch1' of type <class 'str'>"),
+            BranchesField.build,
+            "branch1"
+        )
         self.assertRaisesRegex(PathValueError,
                                "branch cannot be the empty string",
                                BranchesField.build,
@@ -177,10 +213,13 @@ class TestBranchesField(ut.TestCase):
                              ["branch1", "branch2"])
         self.assertListEqual(BranchesField.parse("_branch1___branch2_"),
                              ["branch1", "branch2"])
-        self.assertRaisesRegex(PathTypeError,
-                               "text to parse must be str, but got list",
-                               BranchesField.parse,
-                               ["branch1"])
+        self.assertRaisesRegex(
+            PathTypeError,
+            ("text must be an instance of <class 'str'>, "
+             r"but got \['branch1'\] of type <class 'list'>"),
+            BranchesField.parse,
+            ["branch1"]
+        )
         self.assertRaisesRegex(
             PathValueError,
             r"branch 'branch 2' has illegal characters: \[' '\]",
@@ -206,11 +245,14 @@ class TestCmdSeg(ut.TestCase):
                                StepSeg.build,
                                {STEP: "align",
                                 BRANCHES: ["branch1", ""]})
-        self.assertRaisesRegex(PathValueError,
-                               "Invalid option 'malign'",
-                               StepSeg.build,
-                               {STEP: "malign",
-                                BRANCHES: ["branch1"]})
+        self.assertRaisesRegex(
+            PathValueError,
+            (r"option must be in \['align', 'relate', 'mask', 'cluster', "
+             r"'fold', 'graph'\], but got 'malign'"),
+            StepSeg.build,
+            {STEP: "malign",
+             BRANCHES: ["branch1"]}
+        )
 
     def test_cmdseg_build_branches_dict(self):
         self.assertEqual(StepSeg.build({STEP: "align",
@@ -224,17 +266,20 @@ class TestCmdSeg(ut.TestCase):
                          "align_branch1")
         self.assertEqual(StepSeg.build({STEP: "align",
                                         BRANCHES: {"step1": "",
-                                                  "step2": "branch1"}}),
+                                                   "step2": "branch1"}}),
                          "align_branch1")
         self.assertEqual(StepSeg.build({STEP: "align",
                                         BRANCHES: {"step1": "branch1",
-                                                  "step2": "branch2"}}),
+                                                   "step2": "branch2"}}),
                          "align_branch1_branch2")
-        self.assertRaisesRegex(PathValueError,
-                               "Invalid option 'malign'",
-                               StepSeg.build,
-                               {STEP: "malign",
-                                BRANCHES: {"step1": "branch1"}})
+        self.assertRaisesRegex(
+            PathValueError,
+            (r"option must be in \['align', 'relate', 'mask', 'cluster', "
+             r"'fold', 'graph'\], but got 'malign'"),
+            StepSeg.build,
+            {STEP: "malign",
+             BRANCHES: {"step1": "branch1"}}
+        )
 
     def test_cmdseg_parse(self):
         self.assertEqual(StepSeg.parse("align"),
@@ -259,10 +304,13 @@ class TestCmdSeg(ut.TestCase):
                                "Could not parse fields in text '_align'",
                                StepSeg.parse,
                                "_align")
-        self.assertRaisesRegex(PathValueError,
-                               "Invalid option 'alight'",
-                               StepSeg.parse,
-                               "alight")
+        self.assertRaisesRegex(
+            PathValueError,
+            (r"option must be in \['align', 'relate', 'mask', 'cluster', "
+             r"'fold', 'graph'\], but got 'alight'"),
+            StepSeg.parse,
+            "alight"
+        )
 
 
 class TestSymlinkIfNeeded(ut.TestCase):
