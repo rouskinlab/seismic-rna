@@ -43,11 +43,12 @@ RE_PATTERNS = {str: STR_PATTERN,
 # Names of steps
 ALIGN_STEP = "align"
 RELATE_STEP = "relate"
-NAMES_STEP = "names"
+NAMES_BATCH = "names"
 MASK_STEP = "mask"
 CLUSTER_STEP = "cluster"
 FOLD_STEP = "fold"
 GRAPH_STEP = "graph"
+LIST_STEP = "list"
 
 # Directories for simulation
 
@@ -88,7 +89,7 @@ TABLES = (RELATE_STEP, MASK_STEP, CLUSTER_STEP)
 GZIP_EXT = ".gz"
 TXT_EXT = ".txt"
 CSV_EXT = ".csv"
-CSVZIP_EXT = ".csv.gz"
+CSVZIP_EXT = f"{CSV_EXT}{GZIP_EXT}"
 CSV_EXTS = CSV_EXT, CSVZIP_EXT
 BROTLI_PICKLE_EXT = ".brickle"
 JSON_EXT = ".json"
@@ -646,7 +647,7 @@ RefseqFileSeg = PathSegment("refseq-file",
                             frmt="refseq{ext}")
 ReadNamesBatSeg = PathSegment("names-bat",
                               {BATCH: IntField, EXT: BatchExt},
-                              frmt=NAMES_STEP + "-batch-{batch}{ext}")
+                              frmt=NAMES_BATCH + "-batch-{batch}{ext}")
 RelateBatSeg = PathSegment(f"relate-bat",
                            {BATCH: IntField, EXT: BatchExt},
                            frmt=RELATE_STEP + "-batch-{batch}{ext}")
@@ -1231,13 +1232,20 @@ class HasFilePath(ABC):
 
     @classmethod
     def get_auto_path_fields(cls) -> dict[str, Any]:
-        """ Names and automatic values of selected fields. """
+        """ Names and path fields that have automatic values. """
         return {EXT: cls.get_ext()}
 
     @classmethod
-    def parse_path(cls, file: str | Path):
+    def parse_path(cls, file: str | Path, exclude_auto: bool = False):
         """ Parse a file path to determine the field values. """
-        return parse_top_separate(file, cls.get_path_seg_types())
+        top, field_values = parse_top_separate(file, cls.get_path_seg_types())
+        if exclude_auto:
+            # Taking the union creates a new set, which avoids iterating
+            # over field_values itself as it is being modified.
+            exclude = field_values.keys() | cls.get_auto_path_fields().keys()
+            for field in exclude:
+                field_values.pop(field)
+        return top, field_values
 
     @classmethod
     def build_path(cls, path_fields: dict[str, Any]):
@@ -1247,12 +1255,16 @@ class HasFilePath(ABC):
 
     def get_path_field_values(self,
                               top: str | Path | None = None,
+                              exclude_auto: bool = False,
                               exclude: Iterable[str] = ()):
         """ Path field values as a dict. """
+        auto_path_fields = self.get_auto_path_fields()
         # Make exclude a set for fast membership checking, and to ensure
         # it is not an exhaustible generator.
-        exclude = set(exclude)
-        auto_path_fields = self.get_auto_path_fields()
+        if not isinstance(exclude, set):
+            exclude = set(exclude)
+        if exclude_auto:
+            exclude.update(auto_path_fields)
         fields = {TOP: pathlib.Path(top)} if top else dict()
         for field in self.get_path_fields():
             if field not in exclude:

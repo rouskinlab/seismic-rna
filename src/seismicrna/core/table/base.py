@@ -146,6 +146,13 @@ class Table(path.HasRefFilePath, ABC):
         return path.CSVZIP_EXT if cls.get_by_read() else path.CSV_EXT
 
     @classmethod
+    @cache
+    def get_auto_path_fields(cls):
+        return {path.STEP: cls.get_step(),
+                path.TABLE: cls.get_step(),
+                **super().get_auto_path_fields()}
+
+    @classmethod
     @abstractmethod
     def get_header_type(cls) -> type[Header]:
         """ Type of the header for the table. """
@@ -164,48 +171,40 @@ class Table(path.HasRefFilePath, ABC):
         """ Column(s) of the file to use as the index. """
         return list(range(cls.get_index_depth()))
 
-    @classmethod
-    @cache
-    def get_auto_path_fields(cls):
-        """ Default values of the path fields. """
-        return {path.STEP: cls.get_step(),
-                path.TABLE: cls.get_step(),
-                **super().get_auto_path_fields()}
-
     @property
     @abstractmethod
-    def _source(self):
+    def _attrs(self):
         """ Source of the table's attributes. """
 
     @property
     def top(self) -> Path:
         """ Path of the table's output directory. """
-        return self._source.top
+        return self._attrs.top
 
     @property
     def branches(self) -> dict[str, str]:
         """ Branches of the workflow. """
-        return self._source.branches
+        return self._attrs.branches
 
     @property
     def sample(self) -> str:
         """ Name of the table's sample. """
-        return self._source.sample
+        return self._attrs.sample
 
     @property
     def ref(self) -> str:
         """ Name of the table's reference. """
-        return self._source.ref
+        return self._attrs.ref
 
     @property
     def reg(self) -> str:
         """ Name of the table's region. """
-        return self._source.region.name
+        return self._attrs.region.name
 
     @cached_property
     def refseq(self) -> DNA:
         """ Reference sequence. """
-        return self._source.refseq
+        return self._attrs.refseq
 
     @cached_property
     def path(self):

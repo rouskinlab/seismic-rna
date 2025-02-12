@@ -26,6 +26,8 @@ from ..core.table import (COVER_REL,
                           Table,
                           PositionTable,
                           ReadTable,
+                          PositionTableLoader,
+                          ReadTableLoader,
                           PositionTableWriter,
                           ReadTableWriter)
 from ..core.unbias import (calc_p_ends_observed,
@@ -33,9 +35,7 @@ from ..core.unbias import (calc_p_ends_observed,
                            calc_p_noclose_given_ends_auto,
                            calc_params)
 from ..relate.table import (AverageTable,
-                            AverageTabulator,
-                            PositionTableLoader,
-                            ReadTableLoader)
+                            AverageTabulator)
 
 
 class PartialTable(Table, path.HasRegFilePath, ABC):

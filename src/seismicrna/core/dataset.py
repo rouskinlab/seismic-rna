@@ -329,8 +329,10 @@ class LoadedDataset(Dataset, ABC):
 
     @cached_property
     def report_path_field_values(self):
-        return self.report.get_path_field_values(self.top,
-                                                 self.get_batch_type().get_auto_path_fields())
+        return self.report.get_path_field_values(
+            self.top,
+            self.get_batch_type().get_auto_path_fields()
+        )
 
     def get_batch_path(self, batch_num: int):
         """ Get the path to a batch of a specific number. """

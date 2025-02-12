@@ -36,7 +36,9 @@ from ..core.logs import logger
 from ..core.mu import calc_sum_arcsine_distance
 from ..core.report import JoinedClustersF, KsWrittenF, BestKF
 from ..core.seq import POS_NAME, BASE_NAME
-from ..core.table import (BatchTabulator,
+from ..core.table import (TableLoader,
+                          PositionTableLoader,
+                          BatchTabulator,
                           CountTabulator,
                           AbundanceTable,
                           RelTypeTable,
@@ -49,7 +51,6 @@ from ..mask.table import PartialDatasetTabulator
 from ..mask.table import (PartialTable,
                           PartialPositionTable,
                           PartialTabulator)
-from ..relate.table import TableLoader, PositionTableLoader
 
 
 class ClusterDataset(Dataset, ABC):

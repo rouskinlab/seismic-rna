@@ -66,8 +66,9 @@ def cli(verbose: int,
 
 # Add all commands to the main CLI command group.
 
-for module in (wf,
+for module in [wf,
                demult,
+               split,
                align,
                relate,
                pool,
@@ -76,6 +77,7 @@ for module in (wf,
                join,
                ensembles,
                table,
+               lists,
                fold,
                graph,
                export,
@@ -84,11 +86,9 @@ for module in (wf,
                test,
                sim,
                cleanfa,
-               renumct):
+               renumct]:
     cli.add_command(module.cli)
 
-cli.add_command(split.cli)
-cli.add_command(lists.listpos.cli)
 cli.add_command(rna.convert.cli_ct2db)
 cli.add_command(rna.convert.cli_db2ct)
 cli.add_command(fold.cli_datapath)

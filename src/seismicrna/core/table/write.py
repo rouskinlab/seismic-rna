@@ -290,7 +290,7 @@ class TableWriter(Table, ABC):
         self._tabulator = tabulator
 
     @property
-    def _source(self):
+    def _attrs(self):
         return self._tabulator
 
     def write(self, force: bool):
