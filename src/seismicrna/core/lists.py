@@ -1,4 +1,3 @@
-import gzip
 from abc import ABC, abstractmethod
 from functools import cache
 from pathlib import Path
@@ -42,10 +41,6 @@ class List(RefFileIO, ABC):
     @classmethod
     def get_ext(cls):
         return path.CSVZIP_EXT if cls.get_is_gzip() else path.CSV_EXT
-
-    @classmethod
-    def get_open_func(cls):
-        return gzip.open if cls.get_is_gzip() else open
 
     @classmethod
     @cache
