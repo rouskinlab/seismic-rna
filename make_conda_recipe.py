@@ -116,7 +116,7 @@ def list_pip_dependencies():
 
 def list_nonpip_dependencies():
     """ List the dependencies not in the pyproject.toml file. """
-    return ["python >=3.10",
+    return ["python >=3.11",
             "bowtie2 >=2.5.4",
             "fastp >=0.23.0",
             "rnastructure >=6.4",
@@ -239,7 +239,7 @@ def write_metadata():
             "number": 0,
             "run_exports": [format_run_exports_pin()]
         },
-        "requirements": {"host": ["python >=3.10",
+        "requirements": {"host": ["python >=3.11",
                                   "numpy >=1.26,<1.27",
                                   "meson-python >=0.15.0",
                                   "pip"],
