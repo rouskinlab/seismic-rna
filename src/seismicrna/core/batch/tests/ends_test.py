@@ -3,7 +3,8 @@ from itertools import product
 
 import numpy as np
 
-from seismicrna.core.batch.ends import (_check_no_coverage_reads,
+from seismicrna.core.batch.ends import (BadSegmentEndsError,
+                                        _check_no_coverage_reads,
                                         count_reads_segments,
                                         find_contiguous_reads,
                                         find_read_end5s,
@@ -29,26 +30,30 @@ class TestCountReadsSegments(ut.TestCase):
     def test_0_segments(self):
         for num_reads in range(5):
             ends = rng.integers(1, 10, (num_reads, 0))
-            self.assertRaisesRegex(ValueError,
-                                   "xyz has 0 segments",
+            self.assertRaisesRegex(BadSegmentEndsError,
+                                   "Must have num_segs ≥ 1, but got 0",
                                    count_reads_segments,
                                    ends, "xyz")
 
     def test_non_array(self):
-        self.assertRaisesRegex(TypeError,
-                               "xyz must be ndarray, but got int",
-                               count_reads_segments,
-                               rng.integers(1, 10), "xyz")
+        self.assertRaisesRegex(
+            TypeError,
+            ("xyz must be an instance of <class 'numpy.ndarray'>, "
+             "but got 8 of type <class 'numpy.int64'>"),
+            count_reads_segments,
+            rng.integers(1, 10), "xyz"
+        )
 
     def test_wrong_dims(self):
         for ndim in range(5):
             if ndim != 2:
                 ends = rng.integers(1, 10, (3,) * ndim)
-                self.assertRaisesRegex(ValueError,
-                                       f"xyz must have 2 dimensions, "
-                                       f"but got {ndim}",
-                                       count_reads_segments,
-                                       ends, "xyz")
+                self.assertRaisesRegex(
+                    BadSegmentEndsError,
+                    f"Must have xyz.ndim = 2, but got {ndim}",
+                    count_reads_segments,
+                    ends, "xyz"
+                )
 
 
 class TestMatchReadsSegments(ut.TestCase):
@@ -59,17 +64,21 @@ class TestMatchReadsSegments(ut.TestCase):
                 end5s = rng.integers(1, 10, (r1, s1))
                 end3s = rng.integers(1, 10, (r2, s2))
                 if r1 != r2:
-                    self.assertRaisesRegex(ValueError,
-                                           "Numbers of 5' and 3' reads must "
-                                           f"equal, but got {r1} ≠ {r2}",
-                                           match_reads_segments,
-                                           end5s, end3s)
+                    self.assertRaisesRegex(
+                        BadSegmentEndsError,
+                        ("Must have num_reads_5 = num_reads_3, but got "
+                         f"num_reads_5={r1} and num_reads_3={r2}"),
+                        match_reads_segments,
+                        end5s, end3s
+                    )
                 elif s1 != s2:
-                    self.assertRaisesRegex(ValueError,
-                                           "Numbers of 5' and 3' segments must "
-                                           f"equal, but got {s1} ≠ {s2}",
-                                           match_reads_segments,
-                                           end5s, end3s)
+                    self.assertRaisesRegex(
+                        BadSegmentEndsError,
+                        ("Must have num_segs_5 = num_segs_3, but got "
+                         f"num_segs_5={s1} and num_segs_3={s2}"),
+                        match_reads_segments,
+                        end5s, end3s
+                    )
                 else:
                     self.assertEqual(match_reads_segments(end5s, end3s),
                                      end5s.shape)
@@ -177,8 +186,8 @@ class TestCheckNoCoverageReads(ut.TestCase):
 
     def test_1_segment_none_covered(self):
         ends = np.ma.masked_array([[1]], [[True]])
-        self.assertRaisesRegex(ValueError,
-                               "Got 1 read[(]s[)] with no coverage",
+        self.assertRaisesRegex(BadSegmentEndsError,
+                               "1 reads have no coverage",
                                _check_no_coverage_reads,
                                ends)
 
@@ -194,8 +203,8 @@ class TestCheckNoCoverageReads(ut.TestCase):
 
     def test_2_segments_none_covered(self):
         ends = np.ma.masked_array([[1, 2]], [[True, True]])
-        self.assertRaisesRegex(ValueError,
-                               "Got 1 read[(]s[)] with no coverage",
+        self.assertRaisesRegex(BadSegmentEndsError,
+                               "1 reads have no coverage",
                                _check_no_coverage_reads,
                                ends)
 
