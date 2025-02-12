@@ -5,6 +5,10 @@ import pandas as pd
 from numba import jit
 
 from .types import UINT_NBYTES, fit_uint_type, get_uint_type
+from .validate import (require_isinstance,
+                       require_atleast,
+                       require_equal,
+                       require_array_equal)
 
 rng = np.random.default_rng()
 
@@ -28,19 +32,13 @@ def check_naturals(values: np.ndarray, what: str = "values"):
     """ Raise ValueError if the values are not monotonically increasing
     natural numbers. """
     length = get_length(values, what)
-    if not np.array_equal(values, np.arange(1, length + 1)):
-        raise ValueError(f"{what} must be numbered 1 to {length}, "
-                         f"but got {values}")
+    require_array_equal(what, values, np.arange(1, length + 1))
     return np.asarray(values, dtype=int)
 
 
 def get_length(array: np.ndarray, what: str = "array") -> int:
-    if not isinstance(array, np.ndarray):
-        raise TypeError(
-            f"{what} must be ndarray, but got {type(array).__name__}"
-        )
-    if array.ndim != 1:
-        raise ValueError(f"{what} must have 1 dimension, but got {array.ndim}")
+    require_isinstance(what, array, np.ndarray)
+    require_equal(f"{what}.ndim", array.ndim, 1)
     length, = array.shape
     return length
 
@@ -198,10 +196,9 @@ def ensure_same_length(arr1: np.ndarray,
                        arr2: np.ndarray,
                        what1: str = "array1",
                        what2: str = "array2"):
-    if (len1 := get_length(arr1, what1)) != (len2 := get_length(arr2, what2)):
-        raise ValueError(
-            f"Lengths differ between {what1} ({len1}) and {what2} ({len2})"
-        )
+    len1 = get_length(arr1, what1)
+    len2 = get_length(arr2, what2)
+    require_equal(f"len({what1})", len1, len2, f"len({what2})")
     return len1
 
 
@@ -293,21 +290,16 @@ def find_dims(dims: Sequence[Sequence[str | None]],
     elif nonzero is not True:
         nonzero = set(map(str, nonzero))
     # Verify there are the same number of arrays, dimensions, and names.
-    if (n := len(arrays)) != len(dims):
-        raise ValueError("The numbers of arrays and dimensions must equal, "
-                         f"but got {n} array(s) and {len(dims)} dimension(s)")
+    n = len(arrays)
+    require_equal("len(arrays)", n, len(dims), "len(dims)")
     if names is not None:
-        if len(names) != n:
-            raise ValueError("The numbers of arrays and names must equal, "
-                             f"but got {n} array(s) and {len(names)} name(s)")
+        require_equal("len(arrays)", n, len(names), "len(names)")
     else:
         names = [f"array{i}" for i in range(n)]
     # Check the dimensions of the arrays.
     sizes = dict()
     for array, dim, name in zip(arrays, dims, names, strict=True):
-        if not isinstance(array, np.ndarray):
-            raise TypeError(f"Each array must be a NumPy NDArray, "
-                            f"but got {type(array).__name__} for {repr(name)}")
+        require_isinstance(name, array, np.ndarray)
         # Count the named and extra dimensions for this array.
         if len(dim) > 0 and dim[-1] is None:
             # The last dimension is None, so subtract it from the number
@@ -323,19 +315,20 @@ def find_dims(dims: Sequence[Sequence[str | None]],
         # Verify the array has a valid number of dimensions.
         if array.ndim != n_named:
             if not extras:
-                raise ValueError(f"Array {repr(name)} must have {n_named} "
-                                 f"dimension(s), but got {array.ndim}")
+                raise ValueError(f"{name} must have {n_named} dimensions, "
+                                 f"but got {array.ndim}")
             if array.ndim < n_named:
-                raise ValueError(f"Array {repr(name)} must have ≥ {n_named} "
-                                 f"dimension(s), but got {array.ndim}")
+                raise ValueError(f"{name} must have ≥ {n_named} dimensions, "
+                                 f"but got {array.ndim}")
         # Check each named dimension of the array.
         for i in range(n_named):
-            if not isinstance(dim[i], str):
-                raise TypeError("The name of each dimension must be str, "
-                                f"but got {type(dim[i]).__name__}")
+            dimi = dim[i]
+            sizei = f"size({dim[i]})"
+            require_isinstance(f"dim[{i}]", dimi, str)
             # Get the size of this dimension in the array.
             size = array.shape[i]
-            if (other_size := sizes.get(dim[i])) is not None:
+            other_size = sizes.get(dimi)
+            if other_size is not None:
                 # A dimension of this name was already encountered.
                 if size != other_size:
                     raise ValueError("Got multiple sizes for dimension "
@@ -343,17 +336,15 @@ def find_dims(dims: Sequence[Sequence[str | None]],
             else:
                 # This is the first time this dimension was encountered.
                 # Validate the size.
-                if not isinstance(size, int):
-                    raise TypeError(f"Size of dimension {repr(dim[i])} must "
-                                    f"be int, but got {type(size).__name__}")
-                min_size = int(nonzero is True or dim[i] in nonzero)
-                if size < min_size:
-                    raise ValueError(f"Size of dimension {repr(dim[i])} must "
-                                     f"be ≥ {min_size}, but got {size}")
-                sizes[dim[i]] = size
+                require_isinstance(sizei, size, int)
+                min_size = int(nonzero is True or dimi in nonzero)
+                require_atleast(sizei, size, min_size)
+                sizes[dimi] = size
     # Check if any dimensions in nonzero were not defined.
-    if nonzero is not True and (unknown := nonzero - set(sizes)):
-        raise ValueError(f"Unknown dimensions for nonzero: {unknown}")
+    if nonzero is not True:
+        unknown = nonzero - set(sizes)
+        if unknown:
+            raise ValueError(f"Unknown dimensions for nonzero: {unknown}")
     # Return the size of each dimension.
     return sizes
 
