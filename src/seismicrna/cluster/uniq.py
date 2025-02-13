@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 
 from .names import BIT_VECTOR_NAME
+from ..core import path
 from ..core.array import get_length
 from ..core.batch import EndCoords, RegionMutsBatch
 from ..core.rel import RelPattern
@@ -17,7 +18,7 @@ class UniqReads(EndCoords):
     """ Collection of bit vectors of unique reads. """
 
     @classmethod
-    def from_dataset(cls, dataset: MaskMutsDataset, **kwargs):
+    def from_dataset(cls, dataset: MaskMutsDataset, branch: str, **kwargs):
         """ Get unique reads from a dataset. """
         ((seg_end5s, seg_end3s),
          muts_per_pos,
@@ -27,6 +28,7 @@ class UniqReads(EndCoords):
                                           dataset.iter_batches(),
                                           **kwargs)
         return cls(dataset.sample,
+                   path.add_branch(path.CLUSTER_STEP, branch, dataset.branches),
                    dataset.region,
                    dataset.min_mut_gap,
                    dataset.quick_unbias,
@@ -38,14 +40,16 @@ class UniqReads(EndCoords):
                    seg_end3s=seg_end3s)
 
     @classmethod
-    def from_dataset_contig(cls, dataset: MaskMutsDataset):
+    def from_dataset_contig(cls, dataset: MaskMutsDataset, branch: str):
         """ Get unique reads from a dataset of contiguous reads. """
         return cls.from_dataset(dataset,
+                                branch,
                                 only_read_ends=True,
                                 require_contiguous=True)
 
     def __init__(self,
                  sample: str,
+                 branches: dict[str, str],
                  region: Region,
                  min_mut_gap: int,
                  quick_unbias: bool,
@@ -56,6 +60,7 @@ class UniqReads(EndCoords):
                  **kwargs):
         super().__init__(region=region, **kwargs)
         self.sample = sample
+        self.branches = branches
         self.region = region
         self.min_mut_gap = min_mut_gap
         self.quick_unbias = quick_unbias
@@ -168,6 +173,7 @@ class UniqReads(EndCoords):
         if not isinstance(other, UniqReads):
             return NotImplemented
         return (self.sample == other.sample
+                and self.branches == other.branches
                 and self.region == other.region
                 and self.min_mut_gap == other.min_mut_gap
                 and self.num_batches == other.num_batches

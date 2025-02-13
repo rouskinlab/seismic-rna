@@ -7,6 +7,13 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
+from .validate import (require_equal,
+                       require_array_equal,
+                       require_index_equals,
+                       require_atleast,
+                       require_atmost,
+                       require_isinstance)
+
 # Index level names
 REL_NAME = "Relationship"
 NUM_CLUSTS_NAME = "K"
@@ -48,17 +55,10 @@ def validate_k_clust(k: int, clust: int):
     ValueError
         If k and clust do not form a valid pair.
     """
-    if not isinstance(k, int):
-        raise TypeError(f"k must be int, but got {type(k).__name__}")
-    if not isinstance(clust, int):
-        raise TypeError(f"clust must be int, but got {type(clust).__name__}")
-    if k < 0:
-        raise ValueError(f"k must be ≥ 0, but got {k}")
+    require_atleast("k", k, 0, classes=int)
     min_clust = 1 if k > 0 else 0
-    if clust < min_clust:
-        raise ValueError(f"clust must be ≥ {min_clust}, but got {clust}")
-    if clust > k:
-        raise ValueError(f"clust must be ≤ k, but got {clust} > {k}")
+    require_atleast("clust", clust, min_clust, classes=int)
+    require_atmost("clust", clust, k, "k", classes=int)
 
 
 def validate_ks(ks: Iterable):
@@ -81,8 +81,7 @@ def validate_ks(ks: Iterable):
     """
     validated = set()
     for k in map(int, ks):
-        if k < 1:
-            raise ValueError(f"k must be ≥ 1, but got {k}")
+        require_atleast("k", k, 1, classes=int)
         if k in validated:
             raise ValueError(f"Duplicate k: {k}")
         validated.add(k)
@@ -164,15 +163,14 @@ def list_clusts(k: int):
     Parameters
     ----------
     k: int
-        Number of clusters (≥ 0)
+        Number of clusters (≥ 1)
 
     Returns
     -------
     list[int]
         List of cluster numbers.
     """
-    if k < 1:
-        raise ValueError(f"k must be ≥ 1, but got {k}")
+    require_atleast("k", k, 1, classes=int)
     return list(range(1, k + 1))
 
 
@@ -182,7 +180,7 @@ def list_k_clusts(k: int):
     Parameters
     ----------
     k: int
-        Number of clusters (≥ 0)
+        Number of clusters (≥ 1)
 
     Returns
     -------
@@ -281,8 +279,7 @@ class Header(ABC):
         selected = np.ones(index.size, dtype=bool)
         # Handle combinations of k and clust in a list of tuples.
         if value := kwargs.pop(K_CLUST_KEY, None):
-            if not isinstance(value, list):
-                raise TypeError(f"{K_CLUST_KEY} must be a list of tuples")
+            require_isinstance(K_CLUST_KEY, value, list)
             k_name = self.levels().get('k')
             clust_name = self.levels().get('clust')
             combo_selected = np.zeros(index.size, dtype=bool)
@@ -302,14 +299,15 @@ class Header(ABC):
                 equal_values = np.isin(level_values, np.atleast_1d(value))
                 if not np.any(equal_values):
                     expect = np.unique(level_values).tolist()
-                    raise ValueError(f"Expected {key} to be one of {expect}, "
+                    raise ValueError(f"{key} must be in {repr(expect)}, "
                                      f"but got {repr(value)}")
                 selected &= equal_values
         # Check if any extra keyword arguments were given; allow extra
         # arguments only if their values are falsy (e.g. None, 0).
         if extras := {k: v for k, v in kwargs.items() if v}:
-            raise TypeError("Unexpected keyword arguments for "
-                            f"{type(self).__name__}: {extras}")
+            raise TypeError(
+                f"Extra keyword arguments for {type(self)}: {extras}"
+            )
         return index[selected]
 
     def modified(self, **kwargs):
@@ -348,9 +346,7 @@ class Header(ABC):
             return False
         for key, value in self.signature.items():
             other_value = other.signature[key]
-            if not isinstance(other_value, type(value)):
-                raise TypeError(f"For key {repr(key)}, types of {repr(value)} "
-                                f"and {repr(other_value)} differ")
+            require_isinstance(key, other_value, type(value))
             if value != other_value:
                 return False
         return True
@@ -510,24 +506,22 @@ def parse_header(index: pd.Index | pd.MultiIndex):
         rels = deduplicate_rels(index.values)
         ks = None
     else:
-        raise ValueError(f"Expected index named {repr(REL_NAME)}, "
+        raise ValueError(f"index must be named {repr(REL_NAME)}, "
                          f"but got {repr(index.name)}")
     header = make_header(rels=rels, ks=ks)
     # Verify that the index of the new header matches the given index.
     if isinstance(index, pd.MultiIndex):
-        if set(index.names) != set(header.level_names()):
-            raise ValueError(f"Expected index names {header.level_names()}, "
-                             f"but got {index.names}")
+        require_equal("index names",
+                      sorted(index.names),
+                      sorted(header.level_names()))
         for name in header.level_names():
-            if not np.array_equal(
-                    np.asarray(index.get_level_values(name).values,
-                               dtype=str if name == REL_NAME else int),
-                    header.index.get_level_values(name).values
-            ):
-                raise ValueError(f"Invalid index level {repr(name)}: expected "
-                                 f"{header.index.get_level_values(name)}, "
-                                 f"but got {index.get_level_values(name)}")
+            require_array_equal(
+                f"values of index level {repr(name)}",
+                np.asarray(index.get_level_values(name).values,
+                           dtype=str if name == REL_NAME else int),
+                header.index.get_level_values(name).values,
+                "values of header index"
+            )
     else:
-        if not index.equals(header.index):
-            raise ValueError(f"Indexes do not match: {header.index} ≠ {index}")
+        require_index_equals("index", index, header.index, "header index")
     return header

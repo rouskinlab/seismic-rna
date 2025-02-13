@@ -7,8 +7,7 @@ from typing import Any, Callable, Iterable
 
 import pandas as pd
 
-from .base import (LINKER,
-                   get_action_name,
+from .base import (get_action_name,
                    make_title_action_sample,
                    make_path_subject)
 from .cgroup import (ClusterGroupGraph,
@@ -21,9 +20,10 @@ from .table import (TableGraph,
                     RelTableRunner,
                     TableWriter,
                     load_pos_tables)
-from ..cluster.table import ClusterTable
+from ..cluster.data import ClusterTable
 from ..core.arg import opt_comppair, opt_compself, opt_out_dir
 from ..core.logs import logger
+from ..core.path import BRANCH_SEP, VERSUS_BRANCH, flatten_branches
 from ..core.table import PositionTable, Table
 from ..core.task import dispatch
 
@@ -31,6 +31,8 @@ from ..core.task import dispatch
 SAMPLE_NAME = "Sample"
 ROW_NAME = "Row"
 COL_NAME = "Column"
+
+VERSUS_NAMES = f"{BRANCH_SEP}{VERSUS_BRANCH}{BRANCH_SEP}"
 
 
 class TwoTableGraph(TableGraph, ABC):
@@ -59,6 +61,31 @@ class TwoTableGraph(TableGraph, ABC):
     def top(self):
         return self._top
 
+    @cached_property
+    def branches(self):
+        # Check if any steps have different branches.
+        branches_union = self.table1.branches | self.table2.branches
+        for step in branches_union:
+            # Use "" as the default value for get() because each step
+            # that does not have a branch gets "" as its branch value.
+            branch1 = self.table1.branches.get(step, "")
+            branch2 = self.table2.branches.get(step, "")
+            if branch1 != branch2:
+                break
+        else:
+            # The tables have the same branches, but the branches dicts
+            # can still differ (if table1 had a branch with value ""
+            # for a step and table2 was missing that step altogether),
+            # so take the union of the branches.
+            return branches_union
+        # The tables have different branches, so make a new dict that
+        # includes all branches and compares table1 and table2.
+        branches1 = {f"{step}1": branch
+                     for step, branch in self.table1.branches.items()}
+        branches2 = {f"{step}2": branch
+                     for step, branch in self.table2.branches.items()}
+        return {**branches1, VERSUS_BRANCH: VERSUS_BRANCH, **branches2}
+
     @property
     def sample1(self):
         """ Name of sample 1. """
@@ -71,8 +98,9 @@ class TwoTableGraph(TableGraph, ABC):
 
     @cached_property
     def sample(self):
-        return (self.sample1 if self.sample1 == self.sample2
-                else LINKER.join([self.sample1, self.sample2]))
+        if self.sample1 == self.sample2:
+            return self.sample1
+        return VERSUS_NAMES.join([self.sample1, self.sample2])
 
     @cached_property
     def ref(self):
@@ -146,9 +174,9 @@ class TwoTableRelClusterGroupGraph(TwoTableGraph,
 
     @cached_property
     def path_subject(self):
-        return (self.path_subject1
-                if self.path_subject1 == self.path_subject2
-                else LINKER.join([self.path_subject1, self.path_subject2]))
+        if self.path_subject1 == self.path_subject2:
+            return self.path_subject1
+        return VERSUS_NAMES.join([self.path_subject1, self.path_subject2])
 
     @cached_property
     def data1(self):
@@ -255,6 +283,12 @@ class TwoTableRelClusterGroupWriter(TwoTableWriter, ABC):
                                  **kwargs)
 
 
+def _table_order(table: Table):
+    return (table.sample,
+            flatten_branches(table.branches),
+            get_action_name(table))
+
+
 def iter_table_pairs(tables: Iterable[Table]):
     """ Yield every pair of tables whose reference and region match. """
     tables = list(tables)
@@ -274,7 +308,7 @@ def iter_table_pairs(tables: Iterable[Table]):
                       f"with reference {repr(ref)} and region {repr(reg)}")
         # Sort the tables by sample to ensure the order of combinations
         # is consistent no matter the order of the "tables" argument.
-        yield from combinations(sorted(table_group, key=lambda t: t.sample), 2)
+        yield from combinations(sorted(table_group, key=_table_order), 2)
 
 
 class TwoTableRunner(TableRunner, ABC):
@@ -293,10 +327,12 @@ class TwoTableRunner(TableRunner, ABC):
             input_path: Iterable[str | Path], *,
             compself: bool,
             comppair: bool,
+            verify_times: bool,
             max_procs: int,
             **kwargs):
         # List all table files.
-        tables = load_pos_tables(input_path)
+        tables = list(load_pos_tables(input_path,
+                                      verify_times=verify_times))
         # Determine all pairs of tables to compare.
         table_pairs = list()
         if compself:

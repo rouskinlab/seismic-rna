@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import ABC
 
 from ..core import path
 from ..core.report import (Report,
-                           SampleF,
                            RefF,
                            IsDemultF,
                            IsPairedEndF,
@@ -52,11 +51,14 @@ from ..core.report import (Report,
                            ReadsRefsF)
 
 
-class AlignReport(Report, ABC):
+class BaseAlignReport(Report, ABC):
 
     @classmethod
-    @abstractmethod
-    def fields(cls):
+    def get_step(cls):
+        return path.ALIGN_STEP
+
+    @classmethod
+    def get_param_report_fields(cls):
         return [IsDemultF,
                 IsPairedEndF,
                 PhredEncF,
@@ -96,48 +98,52 @@ class AlignReport(Report, ABC):
                 F1R2FwdF,
                 RevLabelF,
                 MinReadsF,
-                AlignReadsInitF,
+                *super().get_param_report_fields()]
+
+    @classmethod
+    def get_result_report_fields(cls):
+        return [AlignReadsInitF,
                 ReadsTrimF,
                 ReadsAlignF,
                 ReadsDedupF,
-                ReadsRefsF] + super().fields()
+                ReadsRefsF,
+                *super().get_result_report_fields()]
+
+
+class AlignSampleReport(BaseAlignReport):
 
     @classmethod
-    def dir_seg_types(cls):
-        return path.SampSeg, path.CmdSeg
-
-    @classmethod
-    def auto_fields(cls):
-        return {**super().auto_fields(), path.CMD: path.ALIGN_STEP}
-
-
-class AlignSampleReport(AlignReport):
-
-    @classmethod
-    def fields(cls):
-        return [SampleF] + super().fields()
-
-    @classmethod
-    def file_seg_type(cls):
+    def get_file_seg_type(cls):
         return path.AlignSampleRepSeg
 
-    def __init__(self, ref: str | None = None, **kwargs):
+    def __init__(self, *,
+                 ref: str | None = None,
+                 demultiplexed: bool,
+                 **kwargs):
         if ref is not None:
             raise TypeError(f"Got an unexpected reference name: {repr(ref)}")
-        super().__init__(demultiplexed=False, **kwargs)
+        if demultiplexed:
+            raise ValueError(f"{type(self).__name__} cannot be demultiplexed")
+        super().__init__(demultiplexed=demultiplexed, **kwargs)
 
 
-class AlignRefReport(AlignReport):
-
-    @classmethod
-    def fields(cls):
-        return [SampleF, RefF] + super().fields()
+class AlignRefReport(BaseAlignReport):
 
     @classmethod
-    def file_seg_type(cls):
+    def get_file_seg_type(cls):
         return path.AlignRefRepSeg
 
-    def __init__(self, ref: str, **kwargs):
-        if ref is None:
+    @classmethod
+    def get_ident_report_fields(cls):
+        return [*super().get_ident_report_fields(),
+                RefF]
+
+    def __init__(self, *,
+                 ref: str,
+                 demultiplexed: bool,
+                 **kwargs):
+        if not isinstance(ref, str):
             raise TypeError(f"Expected a reference name, but got {repr(ref)}")
-        super().__init__(ref=ref, demultiplexed=True, **kwargs)
+        if not demultiplexed:
+            raise ValueError(f"{type(self).__name__} must be demultiplexed")
+        super().__init__(ref=ref, demultiplexed=demultiplexed, **kwargs)

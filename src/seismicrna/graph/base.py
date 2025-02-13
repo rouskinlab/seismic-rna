@@ -9,8 +9,7 @@ from click import Argument, Option
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
-from ..cluster.dataset import ClusterDataset
-from ..cluster.table import ClusterTable, ClusterAbundanceTable
+from ..cluster.data import ClusterDataset, ClusterTable, ClusterAbundanceTable
 from ..core import path
 from ..core.arg import (arg_input_path,
                         opt_csv,
@@ -33,9 +32,6 @@ from ..relate.table import RelateTable
 ACTION_REL = "all"
 ACTION_MASK = "filtered"
 ACTION_CLUST = "clustered"
-
-# String to join sample names.
-LINKER = "__and__"
 
 
 def get_action_name(source: MutsDataset | Table):
@@ -102,7 +98,7 @@ class BaseGraph(ABC):
     def get_path_segs(cls):
         """ Path segments. """
         return (path.SampSeg,
-                path.CmdSeg,
+                path.StepSeg,
                 path.RefSeg,
                 path.RegSeg,
                 path.GraphSeg)
@@ -116,6 +112,11 @@ class BaseGraph(ABC):
     @abstractmethod
     def top(self) -> Path:
         """ Path of the top-level output directory for all files. """
+
+    @property
+    @abstractmethod
+    def branches(self) -> dict[str, str]:
+        """ Branches of the workflow. """
 
     @property
     @abstractmethod
@@ -164,17 +165,17 @@ class BaseGraph(ABC):
     def get_path_fields(self):
         """ Path fields. """
         return {path.TOP: self.top,
-                path.SAMP: self.sample,
-                path.CMD: path.GRAPH_STEP,
+                path.SAMPLE: self.sample,
+                path.STEP: path.GRAPH_STEP,
+                path.BRANCHES: self.branches,
                 path.REF: self.ref,
                 path.REG: self.reg,
                 path.GRAPH: self.graph_filename}
 
     def get_path(self, ext: str):
         """ Path to the output file of the graph. """
-        return path.buildpar(*self.get_path_segs(),
-                             **self.get_path_fields(),
-                             ext=ext)
+        return path.buildpar(self.get_path_segs(),
+                             {**self.get_path_fields(), path.EXT: ext})
 
     @cached_property
     @abstractmethod

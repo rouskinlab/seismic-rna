@@ -28,7 +28,7 @@ class TestGetLength(ut.TestCase):
             for length in range(10):
                 array = rng.random((length,) * d)
                 self.assertRaisesRegex(ValueError,
-                                       f"x must have 1 dimension, but got {d}",
+                                       f"Must have x.ndim = 1, but got {d}",
                                        get_length,
                                        array, "x")
 
@@ -50,10 +50,14 @@ class TestEnsureSameLength(ut.TestCase):
                 if length1 == length2:
                     continue
                 y = rng.random(length2)
-                self.assertRaisesRegex(ValueError,
-                                       "Lengths differ",
-                                       ensure_same_length,
-                                       x, y)
+                self.assertRaisesRegex(
+                    ValueError,
+                    ("Must have len[(]array1[)] = len[(]array2[)], "
+                     f"but got len[(]array1[)]={length1} "
+                     f"and len[(]array2[)]={length2}"),
+                    ensure_same_length,
+                    x, y
+                )
 
     def test_other_dims(self):
         """ Non-1D arrays are not valid. """
@@ -61,15 +65,17 @@ class TestEnsureSameLength(ut.TestCase):
             for d1 in range(4):
                 x = rng.random((length,) * d1)
                 for d2 in range(4):
-                    if d1 == 1 == d2:
+                    if d1 != 1:
+                        message = f"Must have x.ndim = 1, but got {d1}"
+                    elif d2 != 1:
+                        message = f"Must have y.ndim = 1, but got {d2}"
+                    else:
                         continue
                     y = rng.random((length,) * d2)
-                    self.assertRaisesRegex(
-                        ValueError,
-                        f"{'x' if d1 != 1 else 'y'} must have 1 dimension",
-                        ensure_same_length,
-                        x, y, "x", "y"
-                    )
+                    self.assertRaisesRegex(ValueError,
+                                           message,
+                                           ensure_same_length,
+                                           x, y, "x", "y")
 
 
 class TestCalcInverse(ut.TestCase):
@@ -311,7 +317,7 @@ class TestFindDims(ut.TestCase):
         arrays = [np.zeros(())]
         dims = [("x",)]
         self.assertRaisesRegex(ValueError,
-                               "Array 'array0' must have 1",
+                               "array0 must have 1 dimensions, but got 0",
                                find_dims,
                                dims,
                                arrays)
@@ -333,7 +339,7 @@ class TestFindDims(ut.TestCase):
             arrays = [np.zeros(x)]
             dims = [("x", "y")]
             self.assertRaisesRegex(ValueError,
-                                   "Array 'array0' must have 2",
+                                   "array0 must have 2 dimensions, but got 1",
                                    find_dims,
                                    dims,
                                    arrays)
@@ -343,7 +349,7 @@ class TestFindDims(ut.TestCase):
             arrays = [np.zeros(x)]
             dims = [("x", "y", None)]
             self.assertRaisesRegex(ValueError,
-                                   "Array 'array0' must have ≥ 2",
+                                   "array0 must have ≥ 2 dimensions, but got 1",
                                    find_dims,
                                    dims,
                                    arrays)
@@ -360,11 +366,14 @@ class TestFindDims(ut.TestCase):
             for y in range(5):
                 arrays = [np.zeros((x, y))]
                 dims = [(None, "y")]
-                self.assertRaisesRegex(TypeError,
-                                       "The name of each dimension must be str",
-                                       find_dims,
-                                       dims,
-                                       arrays)
+                self.assertRaisesRegex(
+                    TypeError,
+                    (r"dim\[0\] must be an instance of <class 'str'>, "
+                     "but got None of type <class 'NoneType'>"),
+                    find_dims,
+                    dims,
+                    arrays
+                )
 
     def test_0d_nonzero(self):
         arrays = [np.zeros(())]
@@ -389,8 +398,7 @@ class TestFindDims(ut.TestCase):
                 self.assertEqual(find_dims(dims, arrays, nonzero="x"), {"x": x})
             else:
                 self.assertRaisesRegex(ValueError,
-                                       "Size of dimension 'x' must be ≥ 1, "
-                                       "but got 0",
+                                       r"Must have size\(x\) ≥ 1, but got 0",
                                        find_dims,
                                        dims,
                                        arrays,
@@ -405,30 +413,34 @@ class TestFindDims(ut.TestCase):
                     self.assertEqual(find_dims(dims, arrays, nonzero="x"),
                                      {"x": x, "y": y})
                 else:
-                    self.assertRaisesRegex(ValueError,
-                                           "Size of dimension 'x' must be ≥ 1, "
-                                           "but got 0",
-                                           find_dims,
-                                           dims,
-                                           arrays,
-                                           nonzero="x")
+                    self.assertRaisesRegex(
+                        ValueError,
+                        r"Must have size\(x\) ≥ 1, but got 0",
+                        find_dims,
+                        dims,
+                        arrays,
+                        nonzero="x"
+                    )
                 if y:
                     self.assertEqual(find_dims(dims, arrays, nonzero="y"),
                                      {"x": x, "y": y})
                 else:
-                    self.assertRaisesRegex(ValueError,
-                                           "Size of dimension 'y' must be ≥ 1, "
-                                           "but got 0",
-                                           find_dims,
-                                           dims,
-                                           arrays,
-                                           nonzero="y")
-                self.assertRaisesRegex(ValueError,
-                                       "Unknown dimensions for nonzero: {'z'}",
-                                       find_dims,
-                                       dims,
-                                       arrays,
-                                       nonzero="z")
+                    self.assertRaisesRegex(
+                        ValueError,
+                        r"Must have size\(y\) ≥ 1, but got 0",
+                        find_dims,
+                        dims,
+                        arrays,
+                        nonzero="y"
+                    )
+                self.assertRaisesRegex(
+                    ValueError,
+                    "Unknown dimensions for nonzero: {'z'}",
+                    find_dims,
+                    dims,
+                    arrays,
+                    nonzero="z"
+                )
 
 
 class TestTriangular(ut.TestCase):

@@ -7,7 +7,7 @@ import numpy as np
 from .array import locate_elements
 from .batch import MutsBatch, match_reads_segments
 from .dataset import WideMutsDataset
-from .io import RegIO
+from .io import RegFileIO
 from .report import Report
 from .seq import Region
 
@@ -146,5 +146,5 @@ class JoinMutsDataset(WideMutsDataset, ABC):
         return self.get_batch_type()(region=self.region, **attrs)
 
 
-class JoinReport(Report, RegIO, ABC):
+class JoinReport(Report, RegFileIO, ABC):
     """ Report for a joined dataset. """

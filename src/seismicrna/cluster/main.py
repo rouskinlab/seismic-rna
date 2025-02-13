@@ -4,9 +4,9 @@ from typing import Iterable
 from click import command
 
 from .write import cluster
-from ..core import path
 from ..core.arg import (CMD_CLUSTER,
                         arg_input_path,
+                        opt_branch,
                         opt_tmp_pfx,
                         opt_keep_tmp,
                         opt_min_clusters,
@@ -38,6 +38,7 @@ from ..mask.dataset import load_mask_dataset
 
 @run_func(CMD_CLUSTER)
 def run(input_path: Iterable[str | Path], *,
+        branch: str,
         tmp_pfx: str | Path,
         keep_tmp: bool,
         min_clusters: int,
@@ -63,14 +64,13 @@ def run(input_path: Iterable[str | Path], *,
         max_procs: int,
         force: bool) -> list[Path]:
     """ Infer alternative structures by clustering reads' mutations. """
-    report_files = path.find_files_chain(
-        input_path, load_mask_dataset.report_path_seg_types
-    )
+    datasets = load_mask_dataset.iterate(input_path, verify_times=verify_times)
     return dispatch(cluster,
                     max_procs,
                     pass_n_procs=True,
-                    args=as_list_of_tuples(report_files),
+                    args=as_list_of_tuples(datasets),
                     kwargs=dict(tmp_pfx=tmp_pfx,
+                                branch=branch,
                                 keep_tmp=keep_tmp,
                                 min_clusters=min_clusters,
                                 max_clusters=max_clusters,
@@ -96,8 +96,9 @@ def run(input_path: Iterable[str | Path], *,
 
 
 params = [
-    # Input files
+    # Input and output files
     arg_input_path,
+    opt_branch,
     # Clustering options
     opt_min_clusters,
     opt_max_clusters,

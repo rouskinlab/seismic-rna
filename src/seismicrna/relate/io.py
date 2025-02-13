@@ -1,28 +1,51 @@
 from abc import ABC
 from collections import defaultdict
+from functools import cached_property
 from typing import Any, Iterable
 
 import numpy as np
 
 from .batch import ReadNamesBatch, RelateBatch
 from ..core import path
-from ..core.io import MutsBatchIO, ReadBatchIO, RefIO
+from ..core.io import (MutsBatchIO,
+                       ReadBatchIO,
+                       RefBrickleIO,
+                       RefFileIO)
 from ..core.logs import logger
 from ..core.seq import DNA, Region
 from ..core.types import fit_uint_type
 
 
-class RelateIO(RefIO, ABC):
+class RelateFile(path.HasRefFilePath, ABC):
 
     @classmethod
-    def auto_fields(cls):
-        return super().auto_fields() | {path.CMD: path.RELATE_STEP}
+    def get_step(cls):
+        return path.RELATE_STEP
 
 
-class ReadNamesBatchIO(ReadBatchIO, RelateIO, ReadNamesBatch):
+class RelateIO(RelateFile, RefFileIO, ABC):
+    pass
+
+
+class RefseqIO(RefBrickleIO, RelateIO):
 
     @classmethod
-    def file_seg_type(cls):
+    def get_file_seg_type(cls):
+        return path.RefseqFileSeg
+
+    def __init__(self, *args, refseq: DNA, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._s = refseq.compress()
+
+    @cached_property
+    def refseq(self):
+        return self._s.decompress()
+
+
+class ReadNamesBatchIO(ReadNamesBatch, ReadBatchIO, RefBrickleIO, RelateIO):
+
+    @classmethod
+    def get_file_seg_type(cls):
         return path.ReadNamesBatSeg
 
     def __getstate__(self):
@@ -37,17 +60,18 @@ class ReadNamesBatchIO(ReadBatchIO, RelateIO, ReadNamesBatch):
         self.names = np.char.decode(state["names"])
 
 
-class RelateBatchIO(MutsBatchIO, RelateIO, RelateBatch):
+class RelateBatchIO(RelateBatch, MutsBatchIO, RefBrickleIO, RelateIO):
 
     @classmethod
-    def file_seg_type(cls):
+    def get_file_seg_type(cls):
         return path.RelateBatSeg
 
 
 def from_reads(reads: Iterable[tuple[str,
                                      tuple[tuple[list[int], list[int]],
-                                           dict[int, int]]]],
+                                           dict[int, int]]]], *,
                sample: str,
+               branches: dict[str, str],
                ref: str,
                refseq: DNA,
                batch: int,
@@ -88,6 +112,7 @@ def from_reads(reads: Iterable[tuple[str,
         seg_end3s = seg_end3s[:, np.newaxis]
     # Assemble and return the batches.
     relate_batch = RelateBatchIO(sample=sample,
+                                 branches=branches,
                                  batch=batch,
                                  region=Region(ref, refseq),
                                  seg_end5s=seg_end5s,
@@ -95,6 +120,7 @@ def from_reads(reads: Iterable[tuple[str,
                                  muts=muts)
     if write_read_names:
         name_batch = ReadNamesBatchIO(sample=sample,
+                                      branches=branches,
                                       ref=ref,
                                       batch=batch,
                                       names=names)

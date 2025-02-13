@@ -6,9 +6,9 @@ import numpy as np
 import pandas as pd
 
 from .batch import format_read_name
-from .io import ReadNamesBatchIO, RelateBatchIO
+from .io import ReadNamesBatchIO, RelateBatchIO, RefseqIO
 from .report import RelateReport
-from ..core.io import RefseqIO
+from ..core import path
 from ..core.seq import DNA
 from ..core.tmp import release_to_out
 from ..core.write import need_write
@@ -26,6 +26,7 @@ def _update_checksums(current_checksums: dict[str, list[str]],
 
 
 def simulate_batch(sample: str,
+                   branches: dict[str, str],
                    ref: str,
                    batch: int,
                    write_read_names: bool,
@@ -41,6 +42,7 @@ def simulate_batch(sample: str,
                    formatter: Callable[[int, int], str] = format_read_name):
     """ Simulate a pair of RelateBatchIO and ReadNamesBatchIO. """
     relate_batch = RelateBatchIO.simulate(sample=sample,
+                                          branches=branches,
                                           ref=ref,
                                           batch=batch,
                                           pmut=pmut,
@@ -54,6 +56,7 @@ def simulate_batch(sample: str,
                                           num_reads=num_reads)
     if write_read_names:
         name_batch = ReadNamesBatchIO.simulate(sample=sample,
+                                               branches=branches,
                                                ref=ref,
                                                batch=batch,
                                                num_reads=relate_batch.num_reads,
@@ -108,6 +111,7 @@ def simulate_batches(batch_size: int,
 def simulate_relate(*,
                     out_dir: Path,
                     tmp_dir: Path,
+                    branch: str,
                     sample: str,
                     ref: str,
                     refseq: DNA,
@@ -123,13 +127,18 @@ def simulate_relate(*,
                     force: bool,
                     **kwargs):
     """ Simulate an entire relate step. """
-    report_file = RelateReport.build_path(top=out_dir,
-                                          sample=sample,
-                                          ref=ref)
+    branches = path.add_branch(path.RELATE_STEP, branch, dict())
+    report_file = RelateReport.build_path({path.TOP: out_dir,
+                                           path.SAMPLE: sample,
+                                           path.BRANCHES: branches,
+                                           path.REF: ref})
     if need_write(report_file, force):
         began = datetime.now()
         # Write the reference sequence to a file.
-        refseq_file = RefseqIO(sample=sample, ref=ref, refseq=refseq)
+        refseq_file = RefseqIO(sample=sample,
+                               branches=branches,
+                               ref=ref,
+                               refseq=refseq)
         _, refseq_checksum = refseq_file.save(tmp_dir,
                                               brotli_level=brotli_level,
                                               force=True)
@@ -140,6 +149,7 @@ def simulate_relate(*,
         read_count = 0
         for relate_batch, name_batch in simulate_batches(
                 sample=sample,
+                branches=branches,
                 ref=ref,
                 batch_size=batch_size,
                 num_reads=num_reads,
@@ -173,6 +183,7 @@ def simulate_relate(*,
         ended = datetime.now()
         # Write the report.
         report = RelateReport(sample=sample,
+                              branches=branches,
                               ref=ref,
                               min_mapq=0,
                               phred_enc=0,

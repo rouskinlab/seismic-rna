@@ -8,6 +8,7 @@ from ..core.arg import (CMD_DRAW,
                         opt_keep_tmp,
                         opt_struct_num,
                         opt_color,
+                        opt_verify_times,
                         opt_max_procs)
 from ..core.run import run_func
 from ..core.task import dispatch, as_list_of_tuples
@@ -22,11 +23,13 @@ def run(input_path: Iterable[str | Path], *,
         force: bool,
         max_procs: int,
         tmp_dir: Path,
+        verify_times: bool,
         keep_tmp: bool) -> list[Path]:
     """ Draw RNA structures with reactivities using RNArtistCore. """
     require_env_var("RNARTISTCORE", CMD_DRAW)
     # Generate the positional arguments for draw.
-    args = as_list_of_tuples(path.find_files_chain(input_path, [path.FoldRepSeg]))
+    args = as_list_of_tuples(path.find_files_chain(input_path,
+                                                   [path.FoldRepSeg]))
     # Draw the files.
     return dispatch(draw,
                     max_procs,
@@ -36,7 +39,8 @@ def run(input_path: Iterable[str | Path], *,
                                 color=color,
                                 tmp_dir=tmp_dir,
                                 keep_tmp=keep_tmp,
-                                force=force,))
+                                verify_times=verify_times,
+                                force=force, ))
 
 
 params = [
@@ -45,6 +49,7 @@ params = [
     opt_color,
     opt_force,
     opt_keep_tmp,
+    opt_verify_times,
     opt_max_procs
 ]
 

@@ -2,12 +2,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Iterable
 
-from .io import from_reads, ReadNamesBatchIO, RelateBatchIO
+from .io import from_reads, ReadNamesBatchIO, RelateBatchIO, RefseqIO
 from .report import RelateReport
 from .sam import XamViewer
 from .table import RelateCountTabulator
 from ..core import path
-from ..core.io import RefseqIO
 from ..core.logs import logger
 from ..core.ngs import encode_phred
 from ..core.seq import DNA, get_fasta_seq
@@ -30,7 +29,7 @@ def relate_records(records: Iterable[tuple[str, str, str]],
                    relate_cx: bool):
     # Load the module.
     if relate_cx:
-        # Load the C extension module.
+        # Try to load the C extension module.
         try:
             from .cx.relate import RelateError, calc_rels_lines
         except ImportError:
@@ -76,11 +75,12 @@ def generate_batch(batch: int, *,
                        ref=xam_view.ref,
                        refseq=str(refseq),
                        **kwargs),
-        xam_view.sample,
-        xam_view.ref,
-        refseq,
-        batch,
-        write_read_names
+        branches=xam_view.branches,
+        sample=xam_view.sample,
+        ref=xam_view.ref,
+        refseq=refseq,
+        batch=batch,
+        write_read_names=write_read_names
     )
     logger.routine(f"Ended calculating batch {batch} of {xam_view}")
     _, relate_checksum = relate_batch.save(top, brotli_level)
@@ -118,13 +118,22 @@ class RelationWriter(object):
     def num_reads(self):
         return self._xam.n_reads
 
+    @property
+    def branches(self):
+        return self._xam.branches
+
     def _write_report(self, *, top: Path, **kwargs):
-        report = RelateReport(sample=self.sample, ref=self.ref, **kwargs)
+        report = RelateReport(sample=self.sample,
+                              ref=self.ref,
+                              branches=self.branches,
+                              n_reads_xam=self.num_reads,
+                              **kwargs)
         return report.save(top)
 
     def _write_refseq(self, top: Path, brotli_level: int):
         """ Write the reference sequence to a file. """
-        refseq_file = RefseqIO(sample=self.sample,
+        refseq_file = RefseqIO(branches=self.branches,
+                               sample=self.sample,
                                ref=self.ref,
                                refseq=self.refseq)
         _, checksum = refseq_file.save(top, brotli_level)
@@ -199,9 +208,10 @@ class RelationWriter(object):
               n_procs: int,
               **kwargs):
         """ Compute relationships for every record in a XAM file. """
-        report_file = RelateReport.build_path(top=out_dir,
-                                              sample=self.sample,
-                                              ref=self.ref)
+        report_file = RelateReport.build_path({path.TOP: out_dir,
+                                               path.SAMPLE: self.sample,
+                                               path.BRANCHES: self.branches,
+                                               path.REF: self.ref})
         if need_write(report_file, force):
             began = datetime.now()
             # Determine if there are enough reads.
@@ -230,6 +240,7 @@ class RelationWriter(object):
             # Tabulate the data.
             tabulator = RelateCountTabulator(batch_counts=batch_counts,
                                              top=release_dir,
+                                             branches=self.branches,
                                              sample=self.sample,
                                              ref=self.ref,
                                              refseq=self.refseq,
@@ -238,7 +249,7 @@ class RelationWriter(object):
                                              validate=False)
             tabulator.write_tables(pos=relate_pos_table, read=relate_read_table)
             ended = datetime.now()
-            # Write a report of the relation step.
+            # Write the report.
             report_saved = self._write_report(
                 top=release_dir,
                 min_mapq=min_mapq,
@@ -250,7 +261,6 @@ class RelationWriter(object):
                 clip_end5=clip_end5,
                 clip_end3=clip_end3,
                 min_reads=min_reads,
-                n_reads_xam=self.num_reads,
                 n_reads_rel=tabulator.num_reads,
                 n_batches=len(batch_counts),
                 checksums=checks,
@@ -268,14 +278,16 @@ class RelationWriter(object):
 def relate_xam(xam_file: Path, *,
                fasta: Path,
                tmp_dir: Path,
+               branch: str,
                batch_size: int,
                n_procs: int,
                **kwargs):
     """ Write the batches of relationships for one XAM file. """
     release_dir, working_dir = get_release_working_dirs(tmp_dir)
-    ref = path.parse(xam_file, *path.XAM_SEGS)[path.REF]
+    ref = path.parse(xam_file, path.XAM_SEGS)[path.REF]
     writer = RelationWriter(XamViewer(xam_file,
                                       working_dir,
+                                      branch,
                                       batch_size,
                                       n_procs=n_procs),
                             get_fasta_seq(fasta, DNA, ref))

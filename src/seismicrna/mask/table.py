@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 
 from .dataset import load_mask_dataset
+from .io import MaskFile
 from ..core import path
 from ..core.batch import END5_COORD, END3_COORD
 from ..core.header import NUM_CLUSTS_NAME, format_clust_name, validate_ks
@@ -25,6 +26,8 @@ from ..core.table import (COVER_REL,
                           Table,
                           PositionTable,
                           ReadTable,
+                          PositionTableLoader,
+                          ReadTableLoader,
                           PositionTableWriter,
                           ReadTableWriter)
 from ..core.unbias import (calc_p_ends_observed,
@@ -32,26 +35,14 @@ from ..core.unbias import (calc_p_ends_observed,
                            calc_p_noclose_given_ends_auto,
                            calc_params)
 from ..relate.table import (AverageTable,
-                            AverageTabulator,
-                            PositionTableLoader,
-                            ReadTableLoader)
+                            AverageTabulator)
 
 
-class PartialTable(Table, ABC):
-
-    @property
-    def path_fields(self):
-        return {path.TOP: self.top,
-                path.SAMP: self.sample,
-                path.REF: self.ref,
-                path.REG: self.reg}
+class PartialTable(Table, path.HasRegFilePath, ABC):
+    """ Table of filtered reads over a region of the sequence. """
 
 
 class PartialPositionTable(PartialTable, PositionTable, ABC):
-
-    @classmethod
-    def path_segs(cls):
-        return path.REG_DIR_SEGS + (path.PositionTableSeg,)
 
     def _iter_profiles(self, *,
                        regions: Iterable[Region] | None,
@@ -71,6 +62,7 @@ class PartialPositionTable(PartialTable, PositionTable, ABC):
                 for region in regions:
                     yield RNAProfile(region=region,
                                      sample=self.sample,
+                                     branches=self.branches,
                                      data_reg=self.reg,
                                      data_name=data_name,
                                      data=self.fetch_ratio(quantile=quantile,
@@ -81,17 +73,14 @@ class PartialPositionTable(PartialTable, PositionTable, ABC):
 
 
 class PartialReadTable(PartialTable, ReadTable, ABC):
+    pass
+
+
+class MaskTable(AverageTable, MaskFile, ABC):
 
     @classmethod
-    def path_segs(cls):
-        return path.REG_DIR_SEGS + (path.ReadTableSeg,)
-
-
-class MaskTable(AverageTable, ABC):
-
-    @classmethod
-    def kind(cls):
-        return path.MASK_STEP
+    def get_load_function(cls):
+        return load_mask_dataset
 
 
 class MaskPositionTable(MaskTable, PartialPositionTable, ABC):
@@ -215,10 +204,7 @@ class MaskCountTabulator(CountTabulator, MaskTabulator):
 
 
 class MaskDatasetTabulator(PartialDatasetTabulator, MaskTabulator):
-
-    @classmethod
-    def load_function(cls):
-        return load_mask_dataset
+    pass
 
 
 def _insert_masked(p_mut: pd.Series | pd.DataFrame,
@@ -239,6 +225,23 @@ def adjust_counts(table_per_pos: pd.DataFrame,
                   quick_unbias_thresh: float):
     """ Adjust the given table of masked/clustered counts per position
     to correct for observer bias. """
+    if not isinstance(table_per_pos, pd.DataFrame):
+        raise TypeError(table_per_pos)
+    action = (f"unbiasing counts (min_mut_gap={min_mut_gap}) "
+              f"of table with {table_per_pos.index.size} positions")
+    if isinstance(n_reads_clust, pd.Series):
+        k = n_reads_clust.size
+        action += f", {k} clusters,"
+        n_rels, rem = divmod(table_per_pos.columns.size, k)
+        if rem:
+            raise ValueError(
+                f"Number of columns in table ({table_per_pos.columns.size}) "
+                f"is not a multiple of number of clusters ({k})"
+            )
+    else:
+        n_rels = table_per_pos.columns.size
+    action += f" and {n_rels} relationships"
+    logger.routine(f"Began {action}")
     # Determine which positions are unmasked.
     unmask = region.unmasked_bool
     # Calculate the fraction of mutations at each position among reads
@@ -362,4 +365,5 @@ def adjust_counts(table_per_pos: pd.DataFrame,
     # Scale every subtype of mutation by this factor.
     for mut in SUBMUTS:
         n_rels.loc[unmask, mut] = scale * table_per_pos.loc[unmask, mut].values
+    logger.routine(f"Ended {action}")
     return n_rels, n_clust

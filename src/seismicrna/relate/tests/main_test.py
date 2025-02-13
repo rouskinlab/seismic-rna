@@ -6,12 +6,12 @@ from typing import Iterable
 
 from seismicrna.core import path
 from seismicrna.core.batch.muts import RegionMutsBatch
-from seismicrna.core.io.seq import RefseqIO
 from seismicrna.core.logs import Level, set_config
 from seismicrna.core.ngs.xam import SAM_DELIM
 from seismicrna.core.seq.fasta import write_fasta
 from seismicrna.core.seq.xna import DNA
 from seismicrna.relate.dataset import RelateMutsDataset
+from seismicrna.relate.io import RefseqIO
 from seismicrna.relate.main import run
 
 SAMPLE = "sample"
@@ -93,10 +93,11 @@ def extract_batches(batches: Iterable[RegionMutsBatch]):
 
 
 def load_refseq(out_dir: Path):
-    return RefseqIO.load(RefseqIO.build_path(top=out_dir,
-                                             sample=SAMPLE,
-                                             cmd=path.RELATE_STEP,
-                                             ref=REF),
+    return RefseqIO.load(RefseqIO.build_path({path.TOP: out_dir,
+                                              path.SAMPLE: SAMPLE,
+                                              path.STEP: path.RELATE_STEP,
+                                              path.BRANCHES: dict(),
+                                              path.REF: REF}),
                          checksum="").refseq
 
 
@@ -159,7 +160,7 @@ class TestRelateEmpty(TestRelate):
 
     def test_min_reads(self):
         self.assertRaisesRegex(ValueError,
-                               "Insufficient reads in alignment map",
+                               "Insufficient reads in Alignment map",
                                self.batches,
                                min_reads=1)
 
@@ -189,7 +190,7 @@ class TestRelateSingle(TestRelate):
 
     def test_min_reads(self):
         self.assertRaisesRegex(ValueError,
-                               "Insufficient reads in alignment map",
+                               "Insufficient reads in Alignment map",
                                self.batches,
                                min_reads=5)
 
@@ -322,7 +323,7 @@ class TestRelatePaired(TestRelate):
 
     def test_min_reads(self):
         self.assertRaisesRegex(ValueError,
-                               "Insufficient reads in alignment map",
+                               "Insufficient reads in Alignment map",
                                self.batches,
                                min_reads=7)
 

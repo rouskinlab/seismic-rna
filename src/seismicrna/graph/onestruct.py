@@ -10,6 +10,7 @@ from .onetable import (OneTableRelClusterGroupGraph,
 from .rel import OneRelGraph
 from ..core import path
 from ..core.arg import (opt_struct_file,
+                        opt_branch,
                         opt_fold_regions_file,
                         opt_fold_coords,
                         opt_fold_primers,
@@ -26,10 +27,16 @@ class StructOneTableGraph(OneTableRelClusterGroupGraph, OneRelGraph, ABC):
     def __init__(self, *,
                  struct_file: Path | None,
                  struct_reg: str | None,
+                 branch: str,
                  **kwargs):
         super().__init__(**kwargs)
         self._struct_file = struct_file
         self._struct_reg = struct_reg
+        self.branch = branch
+
+    @property
+    def branches(self):
+        return path.add_branch(path.FOLD_STEP, self.branch, super().branches)
 
     @property
     def struct_reg(self):
@@ -37,9 +44,9 @@ class StructOneTableGraph(OneTableRelClusterGroupGraph, OneRelGraph, ABC):
         if self._struct_file is not None:
             # Use the region from the given structure file.
             fields = path.parse(self._struct_file,
-                                path.RefSeg,
-                                path.RegSeg,
-                                path.ConnectTableSeg)
+                                [path.RefSeg,
+                                 path.RegSeg,
+                                 path.ConnectTableSeg])
             return fields[path.REG]
         if self._struct_reg is None:
             raise ValueError("A structure region is required if no structure "
@@ -52,21 +59,22 @@ class StructOneTableGraph(OneTableRelClusterGroupGraph, OneRelGraph, ABC):
         fields[path.REG] = self.struct_reg
         return fields
 
-    def _get_struct_files(self, profile: str):
+    def _get_struct_file(self, profile: str):
         """ Get the path of the CT file of RNA structures for a specific
         RNA profile. """
         if self._struct_file is not None:
             # Use the given structure file for every profile.
             return self._struct_file
         # Determine the path of the structure file from the profile.
-        return path.build(*path.CT_FILE_SEGS,
-                          top=self.top,
-                          sample=self.sample,
-                          cmd=path.FOLD_STEP,
-                          ref=self.ref,
-                          reg=self.struct_reg,
-                          profile=profile,
-                          ext=path.CT_EXT)
+        return path.build(path.CT_FILE_SEGS,
+                          {path.TOP: self.top,
+                           path.SAMPLE: self.sample,
+                           path.STEP: path.FOLD_STEP,
+                           path.BRANCHES: self.branches,
+                           path.REF: self.ref,
+                           path.REG: self.struct_reg,
+                           path.PROFILE: profile,
+                           path.EXT: path.CT_EXT})
 
     @cached_property
     def path_subject(self):
@@ -92,7 +100,7 @@ class StructOneTableGraph(OneTableRelClusterGroupGraph, OneRelGraph, ABC):
     def iter_states(self):
         """ Yield each RNAState. """
         for profile in self.iter_profiles():
-            ct_file = self._get_struct_files(profile.profile)
+            ct_file = self._get_struct_file(profile.profile)
             try:
                 for struct in from_ct(ct_file):
                     yield RNAState.from_struct_profile(struct, profile)
@@ -107,6 +115,7 @@ class StructOneTableWriter(OneTableRelClusterGroupWriter, ABC):
                     rels: list[str],
                     cgroup: str,
                     struct_file: Iterable[str | Path] = (),
+                    branch: str = "",
                     fold_coords: Iterable[tuple[str, int, int]] = (),
                     fold_primers: Iterable[tuple[str, DNA, DNA]] = (),
                     fold_regions_file: str | None = None,
@@ -117,9 +126,9 @@ class StructOneTableWriter(OneTableRelClusterGroupWriter, ABC):
             # Use a given CT file of an RNA structure, and determine the
             # structure region name from the file path.
             fields = path.parse(file,
-                                path.RefSeg,
-                                path.RegSeg,
-                                path.ConnectTableSeg)
+                                [path.RefSeg,
+                                 path.RegSeg,
+                                 path.ConnectTableSeg])
             ref = fields[path.REF]
             if ref == self.table.ref:
                 struct_files.append(file)
@@ -154,6 +163,7 @@ class StructOneTableWriter(OneTableRelClusterGroupWriter, ABC):
                     yield self.get_graph(rels_group,
                                          struct_file=None,
                                          struct_reg=reg,
+                                         branch=branch,
                                          **kwparams)
 
 
@@ -166,6 +176,7 @@ class StructOneTableRunner(OneTableRelClusterGroupRunner, ABC):
     @classmethod
     def var_params(cls):
         return super().var_params() + [opt_struct_file,
+                                       opt_branch,
                                        opt_fold_regions_file,
                                        opt_fold_coords,
                                        opt_fold_primers,

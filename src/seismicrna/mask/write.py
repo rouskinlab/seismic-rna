@@ -18,14 +18,17 @@ from ..core.arg import docdef
 from ..core.batch import RegionMutsBatch
 from ..core.dataset import MissingBatchTypeError
 from ..core.error import IncompatibleValuesError
+from ..core.lists import PositionList
 from ..core.logs import logger
 from ..core.rel import RelPattern
 from ..core.report import mask_iter_no_convergence
-from ..core.seq import FIELD_REF, POS_NAME, Region, index_to_pos
+from ..core.seq import POS_NAME, Region, index_to_pos
 from ..core.table import MUTAT_REL, INFOR_REL
 from ..core.tmp import release_to_out, with_tmp_dir
 from ..core.write import need_write
-from ..relate.dataset import RelateMutsDataset, PoolDataset, load_read_names_dataset
+from ..relate.dataset import (RelateMutsDataset,
+                              PoolDataset,
+                              load_read_names_dataset)
 
 
 class Masker(object):
@@ -44,6 +47,11 @@ class Masker(object):
     MASK_POS_FMUT = "pos-fmut"
     CHECKSUM_KEY = MaskReport.get_batch_type().btype()
 
+    # This decorator is used to make Masker instances easier to create
+    # using the Python API, since the arguments with default values do
+    # not need to be specified; but it can also obscure bugs caused by
+    # failing to pass an argument to __init__, so it's best to comment
+    # out @docdef.auto() when developing the source code.
     @docdef.auto()
     def __init__(self,
                  dataset: RelateMutsDataset | PoolDataset,
@@ -68,6 +76,7 @@ class Masker(object):
                  count_read: bool,
                  brotli_level: int,
                  top: Path,
+                 branch: str,
                  max_procs: int = 1):
         # Set the general parameters.
         self._began = datetime.now()
@@ -115,43 +124,58 @@ class Masker(object):
         self.top = top
         self.count_read = count_read
         self.brotli_level = brotli_level
-        self.checksums = [""] * self.dataset.num_batches
+        self.checksums = [""] * dataset.num_batches
+        # After the first iteration, self.dataset will become the new,
+        # masked dataset, which will also have a branch for the mask
+        # step, so calculate the branches using the original dataset.
+        self.branches = path.add_branch(path.MASK_STEP,
+                                        branch,
+                                        dataset.branches)
         # Parallelization
         self.max_procs = max_procs
 
+    # This property can change: do not cache it.
     @property
     def n_reads_init(self):
         return self._n_reads[self.MASK_READ_INIT]
 
+    # This property can change: do not cache it.
     @property
     def n_reads_list(self):
         return self._n_reads[self.MASK_READ_LIST]
 
+    # This property can change: do not cache it.
     @property
     def n_reads_min_ncov(self):
         return self._n_reads[self.MASK_READ_NCOV]
 
+    # This property can change: do not cache it.
     @property
     def n_reads_discontig(self):
         return self._n_reads[self.MASK_READ_DISCONTIG]
 
+    # This property can change: do not cache it.
     @property
     def n_reads_min_finfo(self):
         return self._n_reads[self.MASK_READ_FINFO]
 
+    # This property can change: do not cache it.
     @property
     def n_reads_max_fmut(self):
         return self._n_reads[self.MASK_READ_FMUT]
 
+    # This property can change: do not cache it.
     @property
     def n_reads_min_gap(self):
         return self._n_reads[self.MASK_READ_GAP]
 
+    # This property can change: do not cache it.
     @property
     def n_reads_kept(self):
         """ Number of reads kept. """
         return self._n_reads[self.MASK_READ_KEPT]
 
+    # This property can change: do not cache it.
     @property
     def pos_gu(self):
         """ Positions masked for having a G or U base. """
@@ -159,36 +183,43 @@ class Masker(object):
                 if self.mask_gu
                 else np.array([], dtype=int))
 
+    # This property can change: do not cache it.
     @property
     def pos_polya(self):
         """ Positions masked for lying in a poly(A) sequence. """
         return self.region.get_mask(self.region.MASK_POLYA)
 
+    # This property can change: do not cache it.
     @property
     def pos_list(self):
         """ Positions masked arbitrarily from a list. """
         return self.region.get_mask(self.region.MASK_LIST)
 
+    # This property can change: do not cache it.
     @property
     def pos_min_ninfo(self):
         """ Positions masked for having too few informative reads. """
         return self.region.get_mask(self.MASK_POS_NINFO)
 
+    # This property can change: do not cache it.
     @property
     def pos_max_fmut(self):
         """ Positions masked for having too many mutations. """
         return self.region.get_mask(self.MASK_POS_FMUT)
 
+    # This property can change: do not cache it.
     @property
     def pos_kept(self):
         """ Positions kept. """
         return self.region.unmasked_int
 
+    # This property can change: do not cache it.
     @property
     def _force_write(self):
         """ Whether to force-write each file. """
         return self._iter > 1
 
+    # This property can change: do not cache it.
     @property
     def read_names_dataset(self):
         """ Dataset of the read names. """
@@ -203,13 +234,15 @@ class Masker(object):
         mask_pos = np.array([pos for ref, pos in mask_pos
                              if ref == dataset_ref],
                             dtype=int)
+        logger.detail(f"Got {mask_pos.size} positions listed individually "
+                      f"to pre-exclude for reference {repr(dataset_ref)}")
         # Read positions to exclude from a file.
         if mask_pos_file is not None:
-            mask_pos = np.concatenate([mask_pos,
-                                       pd.read_csv(
-                                           mask_pos_file,
-                                           index_col=[FIELD_REF, POS_NAME]
-                                       ).loc[dataset_ref].index.values])
+            file_data = PositionList.load_data(mask_pos_file).to_frame()
+            file_pos = file_data.loc[dataset_ref, POS_NAME].values
+            logger.detail(f"Got {file_pos.size} positions in {mask_pos_file} "
+                          f"to pre-exclude for reference {repr(dataset_ref)}")
+            mask_pos = np.concatenate([mask_pos, file_pos])
         # Drop redundant positions and sort the remaining ones.
         mask_pos = np.unique(np.asarray(mask_pos, dtype=int))
         # Keep only the positions in the region.
@@ -347,26 +380,22 @@ class Masker(object):
             self.region.mask_gu()
         self.region.mask_list(self.mask_pos)
 
+    def _get_batch_num_path(self, batch_num: int):
+        return MaskBatchIO.build_path({path.TOP: self.top,
+                                       path.SAMPLE: self.dataset.sample,
+                                       path.BRANCHES: self.branches,
+                                       path.REF: self.dataset.ref,
+                                       path.REG: self.region.name,
+                                       path.BATCH: batch_num})
+
     def _get_n_reads_path(self, batch_num: int):
         """ Get the path to the file of the number of reads masked out
         for a batch. """
-        return MaskBatchIO.build_path(
-            top=self.top,
-            sample=self.dataset.sample,
-            ref=self.dataset.ref,
-            reg=self.region.name,
-            batch=batch_num
-        ).with_suffix(path.JSON_EXT)
+        return self._get_batch_num_path(batch_num).with_suffix(path.JSON_EXT)
 
     def _get_checksum_path(self, batch_num: int):
         """ Get the path to the file of the checksum for a batch. """
-        return MaskBatchIO.build_path(
-            top=self.top,
-            sample=self.dataset.sample,
-            ref=self.dataset.ref,
-            reg=self.region.name,
-            batch=batch_num
-        ).with_suffix(path.TXT_EXT)
+        return self._get_batch_num_path(batch_num).with_suffix(path.TXT_EXT)
 
     def _filter_batch_reads(self, batch_num: int, **kwargs):
         """ Remove the reads in the batch that do not pass the filters
@@ -401,6 +430,7 @@ class Masker(object):
         n_reads[self.MASK_READ_KEPT] = n
         # Save the batch.
         batch_file = MaskBatchIO(sample=self.dataset.sample,
+                                 branches=self.branches,
                                  ref=self.dataset.ref,
                                  reg=self.region.name,
                                  batch=batch.batch,
@@ -447,6 +477,7 @@ class Masker(object):
             num_batches=self.dataset.num_batches,
             top=self.top,
             sample=self.dataset.sample,
+            branches=self.branches,
             refseq=self.dataset.refseq,
             region=self.region,
             pattern=self.pattern,
@@ -534,6 +565,7 @@ class Masker(object):
     def create_report(self):
         return MaskReport(
             sample=self.dataset.sample,
+            branches=self.branches,
             ref=self.dataset.ref,
             reg=self.region.name,
             end5=self.region.end5,
@@ -590,6 +622,7 @@ class Masker(object):
 @with_tmp_dir(pass_keep_tmp=False)
 def mask_region(dataset: RelateMutsDataset | PoolDataset,
                 region: Region, *,
+                branch: str,
                 tmp_dir: Path,
                 mask_del: bool,
                 mask_ins: bool,
@@ -601,16 +634,19 @@ def mask_region(dataset: RelateMutsDataset | PoolDataset,
                 **kwargs):
     """ Mask out certain reads, positions, and relationships. """
     # Check if the report file already exists.
-    report_file = MaskReport.build_path(top=dataset.top,
-                                        sample=dataset.sample,
-                                        ref=dataset.ref,
-                                        reg=region.name)
+    branches = path.add_branch(path.MASK_STEP, branch, dataset.branches)
+    report_file = MaskReport.build_path({path.TOP: dataset.top,
+                                         path.SAMPLE: dataset.sample,
+                                         path.BRANCHES: branches,
+                                         path.REF: dataset.ref,
+                                         path.REG: region.name})
     if need_write(report_file, force):
         pattern = RelPattern.from_counts(not mask_del, not mask_ins, mask_mut)
         masker = Masker(dataset,
                         region,
                         pattern,
                         top=tmp_dir,
+                        branch=branch,
                         count_read=mask_read_table,
                         max_procs=n_procs,
                         **kwargs)

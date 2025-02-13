@@ -231,27 +231,42 @@ class XamViewer(object):
     def __init__(self,
                  xam_input: Path,
                  tmp_dir: Path,
+                 branch: str,
                  batch_size: int,
                  n_procs: int = 1):
         self.xam_input = xam_input
         self.tmp_dir = tmp_dir
+        self.branch = branch
         self.batch_size = batch_size
         self.n_procs = n_procs
 
     @cached_property
-    def _sample_ref(self):
-        fields = path.parse(self.xam_input, *path.XAM_SEGS)
-        return fields[path.SAMP], fields[path.REF]
+    def _sample_ref_ancestors_flat(self):
+        fields = path.parse(self.xam_input, path.XAM_SEGS)
+        return fields[path.SAMPLE], fields[path.REF], fields[path.BRANCHES]
 
     @property
     def sample(self):
-        sample, _ = self._sample_ref
+        sample, ref, ancestors_flat = self._sample_ref_ancestors_flat
         return sample
 
     @property
     def ref(self):
-        _, ref = self._sample_ref
+        sample, ref, ancestors_flat = self._sample_ref_ancestors_flat
         return ref
+
+    @cached_property
+    def ancestors(self):
+        sample, ref, ancestors_flat = self._sample_ref_ancestors_flat
+        if len(ancestors_flat) > 1:
+            raise ValueError(f"{self} must have ≤ 1 ancestor branches, "
+                             f"but got {ancestors_flat}")
+        ancestor = ancestors_flat[0] if ancestors_flat else ""
+        return {path.ALIGN_STEP: ancestor}
+
+    @cached_property
+    def branches(self):
+        return path.add_branch(path.RELATE_STEP, self.branch, self.ancestors)
 
     @cached_property
     def flagstats(self):
@@ -270,13 +285,14 @@ class XamViewer(object):
     @cached_property
     def tmp_sam_path(self):
         """ Get the path to the temporary SAM file. """
-        return path.build(*path.XAM_STAGE_SEGS,
-                          top=self.tmp_dir,
-                          sample=self.sample,
-                          cmd=path.RELATE_STEP,
-                          stage=path.STAGE_REL_SAMS,
-                          ref=self.ref,
-                          ext=path.SAM_EXT)
+        return path.build(path.XAM_STAGE_SEGS,
+                          {path.TOP: self.tmp_dir,
+                           path.SAMPLE: self.sample,
+                           path.STEP: path.RELATE_STEP,
+                           path.BRANCHES: self.branches,
+                           path.STAGE: path.STAGE_REL_SAMS,
+                           path.REF: self.ref,
+                           path.EXT: path.SAM_EXT})
 
     def create_tmp_sam(self):
         """ Create the temporary SAM file. """
@@ -328,4 +344,4 @@ class XamViewer(object):
         logger.routine(f"Ended iterating records for {self} batch {batch}")
 
     def __str__(self):
-        return f"alignment map {self.xam_input}"
+        return f"Alignment map {self.xam_input}"

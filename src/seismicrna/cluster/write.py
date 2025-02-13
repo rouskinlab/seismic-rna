@@ -5,26 +5,24 @@ from typing import Iterable
 
 import numpy as np
 
-from .dataset import ClusterMutsDataset
-from .emk import EMRunsK, find_best_k, sort_runs
+from .data import ClusterMutsDataset
 from .em import EMRun
+from .emk import EMRunsK, find_best_k, sort_runs
 from .io import ClusterBatchWriter
 from .obsexp import write_obs_exp_counts
 from .params import write_mus, write_pis
 from .report import ClusterReport
 from .summary import write_summaries
-from .table import ClusterDatasetTabulator
+from .data import ClusterDatasetTabulator
 from .uniq import UniqReads
 from ..core import path
 from ..core.header import validate_ks
-from ..core.io import recast_file_path
 from ..core.logs import logger
 from ..core.task import dispatch
 from ..core.tmp import release_to_out, with_tmp_dir
 from ..core.types import get_max_uint
 from ..core.write import need_write
-from ..mask.dataset import load_mask_dataset
-from ..mask.report import MaskReport
+from ..mask.dataset import MaskMutsDataset, JoinMaskMutsDataset
 
 SEED_DTYPE = np.uint32
 
@@ -78,10 +76,11 @@ def run_ks(uniq_reads: UniqReads,
            top: Path,
            **kwargs):
     """ Run EM with multiple numbers of clusters. """
-    path_kwargs = dict(top=top,
-                       sample=uniq_reads.sample,
-                       ref=uniq_reads.ref,
-                       reg=uniq_reads.region.name)
+    path_kwargs = {path.TOP: top,
+                   path.BRANCHES: uniq_reads.branches,
+                   path.SAMPLE: uniq_reads.sample,
+                   path.REF: uniq_reads.ref,
+                   path.REG: uniq_reads.region.name}
     runs_ks = dict()
     ks = validate_ks(ks)
     # Loop through every K if try_all_ks is True, otherwise go until the
@@ -128,7 +127,8 @@ def run_ks(uniq_reads: UniqReads,
 
 
 @with_tmp_dir(pass_keep_tmp=False)
-def cluster(mask_report_file: Path, *,
+def cluster(dataset: MaskMutsDataset | JoinMaskMutsDataset, *,
+            branch: str,
             tmp_dir: Path,
             min_clusters: int,
             max_clusters: int,
@@ -143,26 +143,28 @@ def cluster(mask_report_file: Path, *,
             verify_times: bool,
             **kwargs):
     """ Cluster unique reads from one mask dataset. """
-    # Check if the cluster report file already exists.
-    cluster_report_file = recast_file_path(mask_report_file,
-                                           MaskReport,
-                                           ClusterReport)
-    if need_write(cluster_report_file, force):
+    # Check if the report file already exists.
+    branches = path.add_branch(path.CLUSTER_STEP, branch, dataset.branches)
+    report_file = ClusterReport.build_path({path.TOP: dataset.top,
+                                            path.SAMPLE: dataset.sample,
+                                            path.BRANCHES: branches,
+                                            path.REF: dataset.ref,
+                                            path.REG: dataset.region.name})
+    if need_write(report_file, force):
         began = datetime.now()
         # Load the unique reads.
-        dataset = load_mask_dataset(mask_report_file,
-                                    verify_times=verify_times)
-        tmp_clust_dir = path.buildpar(*path.REG_DIR_SEGS,
-                                      top=tmp_dir,
-                                      cmd=path.CLUSTER_STEP,
-                                      sample=dataset.sample,
-                                      ref=dataset.ref,
-                                      reg=dataset.region.name)
+        tmp_clust_dir = path.buildpar(path.REG_DIR_SEGS,
+                                      {path.TOP: tmp_dir,
+                                       path.SAMPLE: dataset.sample,
+                                       path.STEP: path.CLUSTER_STEP,
+                                       path.BRANCHES: branches,
+                                       path.REF: dataset.ref,
+                                       path.REG: dataset.region.name})
         if dataset.min_mut_gap != 3:
             logger.warning("For clustering, it is highly recommended to use "
                            "the observer bias correction with min_mut_gap=3, "
                            f"but got min_mut_gap={dataset.min_mut_gap}")
-        uniq_reads = UniqReads.from_dataset_contig(dataset)
+        uniq_reads = UniqReads.from_dataset_contig(dataset, branch)
         # Run clustering for every number of clusters.
         if max_clusters >= 1:
             max_clusters_use = max_clusters
@@ -199,7 +201,8 @@ def cluster(mask_report_file: Path, *,
         batch_writer = ClusterBatchWriter(dataset,
                                           write_ks,
                                           brotli_level,
-                                          tmp_dir)
+                                          tmp_dir,
+                                          branch)
         batch_writer.write_batches()
         # Write the observed and expected counts for every best run.
         counts_dir = tmp_clust_dir.joinpath(path.CLUST_COUNTS_DIR)
@@ -227,10 +230,10 @@ def cluster(mask_report_file: Path, *,
         release_to_out(dataset.top, tmp_dir, report_saved.parent)
         # Write the tables.
         ClusterDatasetTabulator(
-            dataset=ClusterMutsDataset(cluster_report_file,
+            dataset=ClusterMutsDataset(report_file,
                                        verify_times=verify_times),
             count_pos=cluster_pos_table,
             count_read=False,
             max_procs=n_procs,
         ).write_tables(pos=cluster_pos_table, clust=cluster_abundance_table)
-    return cluster_report_file.parent
+    return report_file.parent

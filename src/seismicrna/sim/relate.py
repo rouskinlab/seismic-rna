@@ -11,6 +11,7 @@ from ..core import path
 from ..core.arg import (opt_param_dir,
                         opt_profile_name,
                         opt_sample,
+                        opt_branch,
                         opt_paired_end,
                         opt_read_length,
                         opt_reverse_fraction,
@@ -30,7 +31,7 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 
 
 def get_param_dir_fields(param_dir: Path):
-    fields = path.parse(param_dir, path.RefSeg, path.RegSeg)
+    fields = path.parse(param_dir, [path.RefSeg, path.RegSeg])
     params_dir = fields[path.TOP]
     if params_dir.name != path.SIM_PARAM_DIR:
         raise ValueError(
@@ -74,6 +75,7 @@ def run(*,
         param_dir: Iterable[str | Path],
         profile_name: str,
         sample: str,
+        branch: str,
         paired_end: bool,
         read_length: int,
         reverse_fraction: float,
@@ -91,6 +93,7 @@ def run(*,
                     pass_n_procs=False,
                     args=as_list_of_tuples(map(Path, param_dir)),
                     kwargs=dict(sample=sample,
+                                branch=branch,
                                 profile=profile_name,
                                 paired=paired_end,
                                 read_length=read_length,
@@ -108,6 +111,7 @@ params = [
     opt_param_dir,
     opt_profile_name,
     opt_sample,
+    opt_branch,
     opt_paired_end,
     opt_read_length,
     opt_reverse_fraction,

@@ -2,18 +2,22 @@ from abc import ABC
 
 from .batch import MaskReadBatch
 from ..core import path
-from ..core.io import ReadBatchIO, RegIO
+from ..core.io import ReadBatchIO, RegFileIO, RegBrickleIO
 
 
-class MaskIO(RegIO, ABC):
-
-    @classmethod
-    def auto_fields(cls):
-        return super().auto_fields() | {path.CMD: path.MASK_STEP}
-
-
-class MaskBatchIO(ReadBatchIO, MaskIO, MaskReadBatch):
+class MaskFile(path.HasRegFilePath, ABC):
 
     @classmethod
-    def file_seg_type(cls):
+    def get_step(cls):
+        return path.MASK_STEP
+
+
+class MaskIO(MaskFile, RegFileIO, ABC):
+    pass
+
+
+class MaskBatchIO(MaskReadBatch, ReadBatchIO, RegBrickleIO, MaskIO):
+
+    @classmethod
+    def get_file_seg_type(cls):
         return path.MaskBatSeg

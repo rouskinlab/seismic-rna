@@ -177,11 +177,11 @@ def generate_fastq(top: Path,
     """ Generate FASTQ file(s) from a dataset. """
     seq_str = str(refseq)
     if paired:
-        segs = [path.DMFASTQ1_SEGS, path.DMFASTQ2_SEGS]
+        segs_list = [path.DMFASTQ1_SEGS, path.DMFASTQ2_SEGS]
         exts = [path.FQ1_EXTS[0], path.FQ2_EXTS[0]]
         adapters = [ILLUMINA_TRUSEQ_ADAPTER_R1, ILLUMINA_TRUSEQ_ADAPTER_R2]
     else:
-        segs = [path.DMFASTQ_SEGS]
+        segs_list = [path.DMFASTQ_SEGS]
         exts = [path.FQ_EXTS[0]]
         adapters = [ILLUMINA_TRUSEQ_ADAPTER_R1]
     if fq_gzip:
@@ -194,8 +194,12 @@ def generate_fastq(top: Path,
                  else ext[:-len(path.GZIP_EXT)])
                 for ext in exts]
         open_func = open
-    fastq_paths = [path.buildpar(*seg, top=top, sample=sample, ref=ref, ext=ext)
-                   for seg, ext in zip(segs, exts, strict=True)]
+    fastq_paths = [path.buildpar(segs,
+                                 {path.TOP: top,
+                                  path.SAMPLE: sample,
+                                  path.REF: ref,
+                                  path.EXT: ext})
+                   for segs, ext in zip(segs_list, exts, strict=True)]
     if any(need_write(fastq, force, warn=False) for fastq in fastq_paths):
         fastq_files = list()
         try:
@@ -286,6 +290,7 @@ def from_param_dir(param_dir: Path, *,
     sim_dir, _, _ = get_param_dir_fields(param_dir)
     region, pmut, u5s, u3s, pends, pclust = load_param_dir(param_dir, profile)
     batches = simulate_batches(sample=sample,
+                               branches=dict(),
                                ref=region.ref,
                                pmut=pmut,
                                uniq_end5s=u5s,

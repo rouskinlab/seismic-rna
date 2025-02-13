@@ -87,19 +87,19 @@ class MaskMutsDataset(MaskDataset, MultistepDataset, UnbiasDataset):
 
     @property
     def pattern(self):
-        return self.data2.pattern
+        return self.dataset2.pattern
 
     @property
     def min_mut_gap(self):
-        return getattr(self.data2, "min_mut_gap")
+        return getattr(self.dataset2, "min_mut_gap")
 
     @property
     def quick_unbias(self):
-        return getattr(self.data2, "quick_unbias")
+        return getattr(self.dataset2, "quick_unbias")
 
     @property
     def quick_unbias_thresh(self):
-        return getattr(self.data2, "quick_unbias_thresh")
+        return getattr(self.dataset2, "quick_unbias_thresh")
 
     @cached_property
     def region(self):
@@ -109,7 +109,7 @@ class MaskMutsDataset(MaskDataset, MultistepDataset, UnbiasDataset):
                         end5=self.report.get_field(End5F),
                         end3=self.report.get_field(End3F))
         region.add_mask(self.MASK_NAME,
-                        getattr(self.data2, "pos_kept"),
+                        getattr(self.dataset2, "pos_kept"),
                         complement=True)
         return region
 

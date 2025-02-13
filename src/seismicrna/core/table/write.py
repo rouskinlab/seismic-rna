@@ -24,8 +24,9 @@ from .base import (DELET_REL,
                    ReadTable,
                    AbundanceTable,
                    all_patterns)
+from .. import path
 from ..batch import accumulate_batches, accumulate_counts
-from ..dataset import LoadFunction, MutsDataset
+from ..dataset import MutsDataset
 from ..header import Header, make_header
 from ..logs import logger
 from ..seq import Region
@@ -52,6 +53,15 @@ class Tabulator(ABC):
         """ Types of tables that this tabulator can write. """
 
     @classmethod
+    @cache
+    def get_load_function(cls):
+        """ LoadFunction for all Dataset types for this Tabulator. """
+        load_functions = list(set(table_type.get_load_function()
+                                  for table_type in cls.table_types()))
+        assert len(load_functions) == 1
+        return load_functions[0]
+
+    @classmethod
     @abstractmethod
     def get_null_value(cls) -> int | float:
         """ The null value for a count: either 0 or NaN. """
@@ -72,6 +82,7 @@ class Tabulator(ABC):
 
     def __init__(self, *,
                  top: Path,
+                 branches: dict[str, str],
                  sample: str,
                  region: Region,
                  count_ends: bool,
@@ -79,6 +90,7 @@ class Tabulator(ABC):
                  count_read: bool,
                  validate: bool = True):
         self.top = top
+        self.branches = branches
         self.sample = sample
         self.refseq = region.seq
         self.region = region
@@ -193,6 +205,17 @@ class Tabulator(ABC):
             files.append(table.write(force))
         return files
 
+    @cached_property
+    def _str_dict(self):
+        return {path.TOP: self.top,
+                path.SAMPLE: self.sample,
+                path.BRANCHES: self.branches,
+                path.REF: self.ref,
+                path.REG: self.region.name}
+
+    def __str__(self):
+        return f"{type(self).__name__} of {self._str_dict}"
+
 
 class CountTabulator(Tabulator, ABC):
     """ Tabulator that accepts pre-counted data from batches. """
@@ -205,7 +228,10 @@ class CountTabulator(Tabulator, ABC):
 
     @cached_property
     def _counts(self):
-        return accumulate_counts(self._batch_counts, **self._accum_kwargs)
+        logger.routine(f"Began tabulating {self}")
+        counts = accumulate_counts(self._batch_counts, **self._accum_kwargs)
+        logger.routine(f"Ended tabulating {self}")
+        return counts
 
 
 class BatchTabulator(Tabulator, ABC):
@@ -223,24 +249,22 @@ class BatchTabulator(Tabulator, ABC):
 
     @cached_property
     def _counts(self):
-        return accumulate_batches(self._get_batch_count_all,
-                                  self.num_batches,
-                                  max_procs=self.max_procs,
-                                  **self._accum_kwargs)
+        logger.routine(f"Began tabulating {self}")
+        counts = accumulate_batches(self._get_batch_count_all,
+                                    self.num_batches,
+                                    max_procs=self.max_procs,
+                                    **self._accum_kwargs)
+        logger.routine(f"Ended tabulating {self}")
+        return counts
 
 
 class DatasetTabulator(BatchTabulator, ABC):
     """ Tabulator made from one dataset. """
 
     @classmethod
-    @abstractmethod
-    def load_function(cls) -> LoadFunction:
-        """ LoadFunction for all Dataset types for this Tabulator. """
-
-    @classmethod
-    def dataset_types(cls):
+    def get_dataset_types(cls):
         """ Types of Dataset this Tabulator can process. """
-        return cls.load_function().dataset_types
+        return cls.get_load_function().dataset_types
 
     @classmethod
     def _list_args(cls, func: Callable):
@@ -254,15 +278,21 @@ class DatasetTabulator(BatchTabulator, ABC):
     def init_kws(cls):
         """ Attributes of the dataset to use as keyword arguments in
         super().__init__(). """
-        return ["top", "sample", "get_batch_count_all", "num_batches"]
+        return ["top",
+                "sample",
+                "branches",
+                "get_batch_count_all",
+                "num_batches"]
 
     def __init__(self, *,
                  dataset: MutsDataset,
                  validate: bool = False,
                  **kwargs):
-        if not isinstance(dataset, self.dataset_types()):
-            raise TypeError(f"Expected dataset to be {self.dataset_types()}, "
-                            f"but got {type(dataset).__name__}")
+        if not isinstance(dataset, self.get_dataset_types()):
+            raise TypeError(
+                f"Dataset must be one of {self.get_dataset_types()}, "
+                f"but got {type(dataset).__name__}"
+            )
         # Since the batches come from a Dataset, they do not need to be
         # validated, so make validate False by default.
         super().__init__(**{attr: getattr(dataset, attr)
@@ -275,31 +305,11 @@ class TableWriter(Table, ABC):
     """ Write a table to a file. """
 
     def __init__(self, tabulator: Tabulator):
-        self.tabulator = tabulator
+        self._tabulator = tabulator
 
     @property
-    def top(self):
-        return self.tabulator.top
-
-    @property
-    def sample(self):
-        return self.tabulator.sample
-
-    @property
-    def ref(self):
-        return self.tabulator.ref
-
-    @property
-    def reg(self):
-        return self.tabulator.region.name
-
-    @property
-    def refseq(self):
-        return self.tabulator.refseq
-
-    @property
-    def columns(self):
-        return self.header.index
+    def _attrs(self):
+        return self._tabulator
 
     def write(self, force: bool):
         """ Write the table's rounded data to the table's CSV file. """
@@ -313,18 +323,18 @@ class PositionTableWriter(TableWriter, PositionTable, ABC):
 
     @cached_property
     def data(self):
-        return self.tabulator.data_per_pos
+        return self._tabulator.data_per_pos
 
 
 class ReadTableWriter(TableWriter, ReadTable, ABC):
 
     @cached_property
     def data(self):
-        return self.tabulator.data_per_read
+        return self._tabulator.data_per_read
 
 
 class AbundanceTableWriter(TableWriter, AbundanceTable, ABC):
 
     @cached_property
     def data(self):
-        return self.tabulator.data_per_clust
+        return self._tabulator.data_per_clust

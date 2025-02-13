@@ -47,28 +47,30 @@ class TestValidateKClust(ut.TestCase):
 
     def test_float_k(self):
         self.assertRaisesRegex(TypeError,
-                               "k must be int",
+                               (f"k must be an instance of {int}, "
+                                f"but got 1.0 of type {float}"),
                                validate_k_clust,
                                k=1.,
                                clust=1)
 
     def test_float_clust(self):
         self.assertRaisesRegex(TypeError,
-                               "clust must be int",
+                               (f"clust must be an instance of {int}, "
+                                f"but got 1.0 of type {float}"),
                                validate_k_clust,
                                k=1,
                                clust=1.)
 
     def test_negative_zero(self):
         self.assertRaisesRegex(ValueError,
-                               "k must be ≥ 0",
+                               "Must have k ≥ 0, but got -1",
                                validate_k_clust,
                                k=-1,
                                clust=0)
 
     def test_zero_negative(self):
         self.assertRaisesRegex(ValueError,
-                               "clust must be ≥ 0",
+                               "Must have clust ≥ 0, but got -1",
                                validate_k_clust,
                                k=0,
                                clust=-1)
@@ -78,14 +80,14 @@ class TestValidateKClust(ut.TestCase):
 
     def test_zero_one_allowed(self):
         self.assertRaisesRegex(ValueError,
-                               "clust must be ≤ k",
+                               "Must have clust ≤ k, but got clust=1 and k=0",
                                validate_k_clust,
                                k=0,
                                clust=1)
 
     def test_one_zero_allowed(self):
         self.assertRaisesRegex(ValueError,
-                               "clust must be ≥ 1",
+                               "Must have clust ≥ 1, but got 0",
                                validate_k_clust,
                                k=1,
                                clust=0)
@@ -97,7 +99,8 @@ class TestValidateKClust(ut.TestCase):
                     self.assertIsNone(validate_k_clust(k, clust))
                 else:
                     self.assertRaisesRegex(ValueError,
-                                           "clust must be ≤ k",
+                                           ("Must have clust ≤ k, but got "
+                                            f"clust={clust} and k={k}"),
                                            validate_k_clust,
                                            k=k,
                                            clust=clust)
@@ -110,7 +113,7 @@ class TestValidateKs(ut.TestCase):
 
     def test_zero(self):
         self.assertRaisesRegex(ValueError,
-                               "k must be ≥ 1, but got 0",
+                               "Must have k ≥ 1, but got 0",
                                validate_ks,
                                [0])
 
@@ -186,7 +189,7 @@ class TestListClusts(ut.TestCase):
 
     def test_zero(self):
         self.assertRaisesRegex(ValueError,
-                               "k must be ≥ 1, but got 0",
+                               "Must have k ≥ 1, but got 0",
                                list_clusts,
                                0)
 
@@ -195,7 +198,7 @@ class TestListKClusts(ut.TestCase):
 
     def test_zero(self):
         self.assertRaisesRegex(ValueError,
-                               "k must be ≥ 1, but got 0",
+                               "Must have k ≥ 1, but got 0",
                                list_k_clusts,
                                0)
 
@@ -217,7 +220,7 @@ class TestListKsClusts(ut.TestCase):
 
     def test_zero(self):
         self.assertRaisesRegex(ValueError,
-                               "k must be ≥ 1, but got 0",
+                               "Must have k ≥ 1, but got 0",
                                list_ks_clusts,
                                [0])
 
@@ -342,17 +345,21 @@ class TestRelHeader(ut.TestCase):
 
     def test_select_invalid(self):
         header = RelHeader(rels=list("qwerty"))
-        self.assertRaisesRegex(ValueError,
-                               "Expected rel to be one of",
-                               header.select,
-                               rel="v")
+        self.assertRaisesRegex(
+            ValueError,
+            r"rel must be in \['e', 'q', 'r', 't', 'w', 'y'\], but got 'v'",
+            header.select,
+            rel="v"
+        )
 
     def test_select_extra(self):
         header = RelHeader(rels=list("qwerty"))
-        self.assertRaisesRegex(TypeError,
-                               "Unexpected keyword arguments",
-                               header.select,
-                               k=1)
+        self.assertRaisesRegex(
+            TypeError,
+            f"Extra keyword arguments for {RelHeader}: {{'k': 1}}",
+            header.select,
+            k=1
+        )
 
     def test_select_extra_zero(self):
         header = RelHeader(rels=list("qwerty"))
@@ -535,23 +542,25 @@ class TestClustHeader(ut.TestCase):
     def test_select_invalid_k(self):
         header = ClustHeader(ks=range(1, 5))
         self.assertRaisesRegex(ValueError,
-                               "Expected k to be one of",
+                               r"k must be in \[1, 2, 3, 4\], but got 5",
                                header.select,
                                k=5)
 
     def test_select_invalid_clust(self):
         header = ClustHeader(ks=range(1, 5))
         self.assertRaisesRegex(ValueError,
-                               "Expected clust to be one of",
+                               r"clust must be in \[1, 2, 3, 4\], but got 5",
                                header.select,
                                clust=5)
 
     def test_select_extra(self):
         header = ClustHeader(ks=range(1, 5))
-        self.assertRaisesRegex(TypeError,
-                               "Unexpected keyword arguments",
-                               header.select,
-                               rel="w")
+        self.assertRaisesRegex(
+            TypeError,
+            f"Extra keyword arguments for {ClustHeader}: {{'rel': 'w'}}",
+            header.select,
+            rel="w"
+        )
 
     def test_modified_none(self):
         for min_k in range(1, 4):
@@ -723,30 +732,32 @@ class TestRelClustHeader(ut.TestCase):
     def test_select_invalid_rel(self):
         header = RelClustHeader(rels=["a", "b"], ks=[2, 3])
         self.assertRaisesRegex(ValueError,
-                               "Expected rel to be one of",
+                               r"rel must be in \['a', 'b'\], but got 'c'",
                                header.select,
                                rel="c")
 
     def test_select_invalid_k(self):
         header = RelClustHeader(rels=["a", "b"], ks=[2, 3])
         self.assertRaisesRegex(ValueError,
-                               "Expected k to be one of",
+                               r"k must be in \[2, 3\], but got 1",
                                header.select,
                                k=1)
 
     def test_select_invalid_clust(self):
         header = RelClustHeader(rels=["a", "b"], ks=[2, 3])
         self.assertRaisesRegex(ValueError,
-                               "Expected clust to be one of",
+                               r"clust must be in \[1, 2, 3\], but got 4",
                                header.select,
                                clust=4)
 
     def test_select_extra(self):
         header = RelClustHeader(rels=["a", "b"], ks=[2, 3])
-        self.assertRaisesRegex(TypeError,
-                               "Unexpected keyword arguments",
-                               header.select,
-                               extra="x")
+        self.assertRaisesRegex(
+            TypeError,
+            f"Extra keyword arguments for {RelClustHeader}: {{'extra': 'x'}}",
+            header.select,
+            extra="x"
+        )
 
     def test_select_extra_none(self):
         header = RelClustHeader(rels=["a", "b"], ks=[2, 3])
@@ -985,7 +996,8 @@ class TestParseHeader(ut.TestCase):
 
     def test_rel_index_invalid_name(self):
         self.assertRaisesRegex(ValueError,
-                               f"Expected index named {repr(REL_NAME)}",
+                               (f"index must be named {repr(REL_NAME)}, "
+                                f"but got {repr(NUM_CLUSTS_NAME)}"),
                                parse_header,
                                pd.Index(["a", "b"], name=NUM_CLUSTS_NAME))
 
@@ -1028,7 +1040,7 @@ class TestParseHeader(ut.TestCase):
 
     def test_rel_index_repeated(self):
         self.assertRaisesRegex(ValueError,
-                               "Indexes do not match",
+                               "Must have index = header index",
                                parse_header,
                                pd.Index(["a", "b", "a"]))
 
@@ -1041,7 +1053,8 @@ class TestParseHeader(ut.TestCase):
 
     def test_extra_index_names(self):
         self.assertRaisesRegex(ValueError,
-                               "Expected index names",
+                               (r"Must have index names = \['Relationship'\], "
+                                r"but got \['Relationship', 'random'\]"),
                                parse_header,
                                pd.MultiIndex.from_arrays([["a", "b"],
                                                           [0, 0]],
@@ -1050,7 +1063,8 @@ class TestParseHeader(ut.TestCase):
 
     def test_missing_values(self):
         self.assertRaisesRegex(ValueError,
-                               "Invalid index level",
+                               ("Must have values of index level 'K' "
+                                "= values of header index"),
                                parse_header,
                                pd.MultiIndex.from_tuples([("1", "1"),
                                                           ("2", "2")],
@@ -1059,7 +1073,8 @@ class TestParseHeader(ut.TestCase):
 
     def test_extra_values(self):
         self.assertRaisesRegex(ValueError,
-                               "Invalid index level",
+                               ("Must have values of index level 'K' "
+                                "= values of header index"),
                                parse_header,
                                pd.MultiIndex.from_tuples([("1", "1"),
                                                           ("2", "1"),
@@ -1084,7 +1099,8 @@ class TestParseHeader(ut.TestCase):
 
     def test_invalid_numeric(self):
         self.assertRaisesRegex(ValueError,
-                               "Expected index names",
+                               (r"Must have index names = \['Relationship'\], "
+                                r"but got \['Cluster', 'K', 'Relationship'\]"),
                                parse_header,
                                pd.MultiIndex.from_tuples([("a", "0", "0"),
                                                           ("b", "0", "0")],

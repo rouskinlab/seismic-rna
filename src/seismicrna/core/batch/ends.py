@@ -6,6 +6,7 @@ from ..array import ensure_order, ensure_same_length, find_dims
 from ..logs import logger
 from ..seq import Region
 from ..types import fit_uint_type
+from ..validate import require_isinstance, require_equal, require_atleast
 
 rng = np.random.default_rng()
 
@@ -14,23 +15,22 @@ END5_COORD = "5' End"
 END3_COORD = "3' End"
 END_COORDS = [END5_COORD, END3_COORD]
 
-NUM_READS = "reads"
+NUM_UNIQ = "uniq"
 NUM_SEGS = "segments"
+
+
+class BadSegmentEndsError(ValueError):
+    """ Segment 5' and 3' ends are not valid. """
 
 
 def count_reads_segments(seg_ends: np.ndarray,
                          what: str = "seg_ends") -> tuple[int, int]:
-    if not isinstance(seg_ends, np.ndarray):
-        raise TypeError(
-            f"{what} must be ndarray, but got {type(seg_ends).__name__}"
-        )
-    if seg_ends.ndim != 2:
-        raise ValueError(
-            f"{what} must have 2 dimensions, but got {seg_ends.ndim}"
-        )
+    require_isinstance(what, seg_ends, np.ndarray)
+    require_equal(f"{what}.ndim", seg_ends.ndim, 2,
+                  error_type=BadSegmentEndsError)
     num_reads, num_segs = seg_ends.shape
-    if num_segs == 0:
-        raise ValueError(f"{what} has 0 segments")
+    require_atleast("num_segs", num_segs, 1,
+                    error_type=BadSegmentEndsError)
     return num_reads, num_segs
 
 
@@ -38,12 +38,10 @@ def match_reads_segments(seg_end5s: np.ndarray, seg_end3s: np.ndarray):
     """ Number of segments for the given end coordinates. """
     num_reads_5, num_segs_5 = count_reads_segments(seg_end5s, "seg_end5s")
     num_reads_3, num_segs_3 = count_reads_segments(seg_end3s, "seg_end3s")
-    if num_reads_5 != num_reads_3:
-        raise ValueError("Numbers of 5' and 3' reads must equal, "
-                         f"but got {num_reads_5} ≠ {num_reads_3}")
-    if num_segs_5 != num_segs_3:
-        raise ValueError("Numbers of 5' and 3' segments must equal, "
-                         f"but got {num_segs_5} ≠ {num_segs_3}")
+    require_equal("num_reads_5", num_reads_5, num_reads_3, "num_reads_3",
+                  error_type=BadSegmentEndsError)
+    require_equal("num_segs_5", num_segs_5, num_segs_3, "num_segs_3",
+                  error_type=BadSegmentEndsError)
     return num_reads_5, num_segs_5
 
 
@@ -77,8 +75,8 @@ def _check_no_coverage_reads(seg_ends: np.ndarray, what: str = "seg_ends"):
         # Check if any reads have no coverage (are completely masked).
         no_coverage = np.ma.getmaskarray(seg_ends).all(axis=1)
         if np.any(no_coverage):
-            raise ValueError(
-                f"Got {np.count_nonzero(no_coverage)} read(s) with no coverage "
+            raise BadSegmentEndsError(
+                f"{np.count_nonzero(no_coverage)} reads have no coverage "
             )
     return num_reads, num_segs
 
@@ -136,8 +134,7 @@ def sanitize_segment_ends(seg_end5s: np.ndarray,
         and `max_pos` (inclusive).
     """
     num_reads, num_segs = match_reads_segments(seg_end5s, seg_end3s)
-    if num_segs == 0:
-        raise ValueError(f"Expected ≥ 1 segment(s), but got {num_segs}")
+    require_atleast("num_segs", num_segs, 1, error_type=BadSegmentEndsError)
     if check_values:
         for i in range(num_segs):
             # All coordinates must be ≥ 1.
@@ -272,17 +269,13 @@ def simulate_segment_ends(uniq_end5s: np.ndarray,
     tuple[np.ndarray, np.ndarray]
         5' and 3' segment end coordinates of the simulated reads.
     """
-    dims = find_dims([(NUM_READS,), (NUM_READS,), (NUM_READS,)],
-                     [uniq_end5s, uniq_end3s, p_ends],
-                     ["end5s", "end3s", "p_ends"])
-    if num_reads < 0:
-        raise ValueError(f"num_reads must be ≥ 0, but got {num_reads}")
-    elif num_reads == 0:
+    require_atleast("num_reads", num_reads, 0)
+    if num_reads == 0:
         return np.array([], dtype=int), np.array([], dtype=int)
-    elif dims[NUM_READS] == 0:
-        raise ValueError(
-            f"Number of 5'/3' ends cannot be 0 if num_reads is {num_reads}"
-        )
+    find_dims([(NUM_UNIQ,), (NUM_UNIQ,), (NUM_UNIQ,)],
+              [uniq_end5s, uniq_end3s, p_ends],
+              ["end5s", "end3s", "p_ends"],
+              nonzero=[NUM_UNIQ])
     # Drop pairs of 5'/3' ends where the 5' is greater than the 3'.
     valid_ends = np.less_equal(uniq_end5s, uniq_end3s)
     num_ends = np.count_nonzero(valid_ends)
@@ -306,8 +299,7 @@ def simulate_segment_ends(uniq_end5s: np.ndarray,
     indexes = rng.choice(num_ends, num_reads, p=p_ends)
     read_end5s = uniq_end5s[indexes]
     read_end3s = uniq_end3s[indexes]
-    if read_length < 0:
-        raise ValueError(f"read_length must be ≥ 0, but got {read_length}")
+    require_atleast("read_length", read_length, 0)
     if read_length > 0:
         diff = read_length - 1
         seg_end5s = np.stack([read_end5s,

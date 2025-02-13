@@ -13,7 +13,7 @@ authors = [
 ]
 description = "Structure Ensemble Inference by Sequencing, Mutation Identification, and Clustering of RNA (SEISMIC-RNA)"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = {text = "GPL-3.0-only"}
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -44,4 +44,3 @@ seismic = "seismicrna.main:cli"
 
 [tool.mesonpy]
 build-dir = "build"
-

@@ -1,25 +1,23 @@
-import re
 import os
+import re
 from functools import cached_property
-from typing import Iterable
 from pathlib import Path
-
-from ..core import path
-from ..core.logs import logger
-from ..core.task import dispatch
-from ..core.write import need_write
-from ..core.extern.shell import args_to_cmd, run_cmd, JAVA_CMD, JAR_CMD
-from ..core.rna.io import from_ct
-from ..core.rna.state import RNAState
-from ..fold.report import FoldReport
-from ..core.header import AVERAGE_PREFIX
-
-from ..relate.table import RelatePositionTable, RelatePositionTableLoader
-from ..mask.table import MaskPositionTable, MaskPositionTableLoader
-from ..cluster.table import ClusterPositionTable, ClusterPositionTableLoader
-
+from typing import Iterable
 
 from jinja2 import Template
+
+from ..cluster.data import ClusterPositionTable, ClusterPositionTableLoader
+from ..core import path
+from ..core.extern.shell import args_to_cmd, run_cmd, JAVA_CMD, JAR_CMD
+from ..core.header import AVERAGE_PREFIX
+from ..core.logs import logger
+from ..core.report import SampleF, BranchesF, RefF, RegF, ProfileF
+from ..core.rna.io import from_ct
+from ..core.rna.state import RNAState
+from ..core.task import dispatch
+from ..core.write import need_write
+from ..fold.report import FoldReport
+from ..mask.table import MaskPositionTable, MaskPositionTableLoader
 
 TEMPLATE_STRING = """
 rnartist {
@@ -107,14 +105,14 @@ class ColorBlock:
 
 class JinjaData:
     def __init__(self,
-                 path: Path,
+                 path_: Path,
                  seq: str,
                  value: str,
                  name: str,
                  color_dict: dict,
                  details_value: int,
                  color_blocks: list[ColorBlock]):
-        self.path = path
+        self.path = path_
         self.seq = seq
         self.value = value
         self.name = name
@@ -130,7 +128,10 @@ class JinjaData:
             'name': self.name,
             'color_dict': self.color_dict,
             'details_value': self.details_value,
-            'color_blocks': [block.to_dict() if hasattr(block, 'to_dict') else block for block in self.color_blocks]
+            'color_blocks': [block.to_dict()
+                             if hasattr(block, 'to_dict')
+                             else block
+                             for block in self.color_blocks]
         }
 
 
@@ -170,7 +171,7 @@ def build_jinja_data(struct: str,
             color_blocks.append(ColorBlock("n", "black",
                                            location=(pos, pos)))
 
-    jinja_data = JinjaData(path=out_dir,
+    jinja_data = JinjaData(path_=out_dir,
                            seq=struct["seq"],
                            value=struct["value"],
                            name=name,
@@ -190,21 +191,24 @@ class RNArtistRun(object):
             logger.warning(f"Could not parse profile: {self.profile}.")
 
     def __init__(self,
-                 report: Path,
+                 report_file: Path,
                  tmp_dir: Path,
                  struct_num: Iterable[int],
                  color: bool,
+                 verify_times: bool,
                  n_procs: int):
-        self.top, self.fields = FoldReport.parse_path(report)
-        self.sample = self.fields.get(path.SAMP)
-        self.ref = self.fields.get(path.REF)
-        self.reg = self.fields.get(path.REG)
-        self.profile = self.fields.get(path.PROFILE)
-        self.report = FoldReport.load(report)
+        self.top, _ = FoldReport.parse_path(report_file)
+        report = FoldReport.load(report_file)
+        self.sample = report.get_field(SampleF)
+        self.branches = report.get_field(BranchesF)
+        self.ref = report.get_field(RefF)
+        self.reg = report.get_field(RegF)
+        self.profile = report.get_field(ProfileF)
         self.tmp_dir = tmp_dir
         self.struct_num = list(struct_num)
         self.color = color
         self.n_procs = n_procs
+        self.verify_times = verify_times
         self._parse_profile()
 
     def _get_dir_fields(self, top: Path):
@@ -221,8 +225,9 @@ class RNArtistRun(object):
             Path fields.
         """
         return {path.TOP: top,
-                path.CMD: path.FOLD_STEP,
-                path.SAMP: self.sample,
+                path.STEP: path.FOLD_STEP,
+                path.SAMPLE: self.sample,
+                path.BRANCHES: self.branches,
                 path.REF: self.ref,
                 path.REG: self.reg}
 
@@ -239,18 +244,18 @@ class RNArtistRun(object):
         pathlib.Path
             Parent directory of files for this RNA.
         """
-        return path.builddir(*path.REG_DIR_SEGS, **self._get_dir_fields(top))
+        return path.builddir(path.REG_DIR_SEGS, self._get_dir_fields(top))
 
-    def _get_file(self, top: Path, file_seg: path.Segment, **file_fields):
+    def _get_file(self, top: Path, file_seg: path.PathSegment, file_fields):
         """ Get the path to a file of the RNA.
 
         Parameters
         ----------
         top: pathlib.Path
             Top-level directory.
-        file_seg: path.Segment
+        file_seg: path.PathSegment
             Segment of the file component of the path.
-        **file_fields
+        file_fields
             Fields for the file segment.
 
         Returns
@@ -258,7 +263,7 @@ class RNArtistRun(object):
         pathlib.Path
             Path of the file.
         """
-        return self._get_dir(top).joinpath(file_seg.build(**file_fields))
+        return self._get_dir(top).joinpath(file_seg.build(file_fields))
 
     @cached_property
     def table_classes(self):
@@ -279,16 +284,18 @@ class RNArtistRun(object):
 
     @property
     def table_file(self):
-        return (self.table_class.build_path(top=self.top,
-                                            sample=self.sample,
-                                            ref=self.ref,
-                                            reg=self.data_reg)
+        return (self.table_class.build_path({path.TOP: self.top,
+                                             path.SAMPLE: self.sample,
+                                             path.BRANCHES: self.branches,
+                                             path.REF: self.ref,
+                                             path.REG: self.data_reg})
                 if self.table_class else None)
 
     @cached_property
     def table(self):
         if self.table_file.exists():
-            return (self.table_loader(self.table_file)
+            return (self.table_loader(self.table_file,
+                                      verify_times=self.verify_times)
                     if self.table_loader else None)
         else:
             logger.warning(f"{self.table_file} does not exist.")
@@ -309,8 +316,8 @@ class RNArtistRun(object):
         """
         return self._get_file(top,
                               path.ConnectTableSeg,
-                              profile=self.profile,
-                              ext=path.CT_EXT)
+                              {path.PROFILE: self.profile,
+                               path.EXT: path.CT_EXT})
 
     def get_db_file(self, top: Path):
         """ Get the path to the dot-bracket (DB) file.
@@ -327,11 +334,11 @@ class RNArtistRun(object):
         """
         return self._get_file(top,
                               path.DotBracketSeg,
-                              profile=self.profile,
-                              ext=path.DOT_EXTS[0])
+                              {path.PROFILE: self.profile,
+                               path.EXT: path.DOT_EXTS[0]})
 
     def get_svg_file(self, top: Path, struct: int):
-        """ Get the path to the dot-bracket (DB) file.
+        """ Get the path to the SVG file.
 
         Parameters
         ----------
@@ -345,9 +352,9 @@ class RNArtistRun(object):
         """
         return self._get_file(top,
                               path.SvgSeg,
-                              profile=self.profile,
-                              struct=struct,
-                              ext=path.SVG_EXT)
+                              {path.PROFILE: self.profile,
+                               path.STRUCT: struct,
+                               path.EXT: path.SVG_EXT})
 
     def get_varna_color_file(self, top: Path):
         """ Get the path to the VARNA color file.
@@ -364,8 +371,8 @@ class RNArtistRun(object):
         """
         return self._get_file(top,
                               path.VarnaColorSeg,
-                              profile=self.profile,
-                              ext=path.TXT_EXT)
+                              {path.PROFILE: self.profile,
+                               path.EXT: path.TXT_EXT})
 
     def get_script_file(self, top: Path, struct: int):
         """ Get the path to the RNArtist script (.kts) file.
@@ -382,9 +389,9 @@ class RNArtistRun(object):
         """
         return self._get_file(top,
                               path.KtsSeg,
-                              profile=self.profile,
-                              struct=struct,
-                              ext=path.KTS_EXT)
+                              {path.PROFILE: self.profile,
+                               path.STRUCT: struct,
+                               path.EXT: path.KTS_EXT})
 
     @cached_property
     def best_struct(self):
@@ -482,6 +489,7 @@ def draw(report_path: Path, *,
          color: bool,
          tmp_dir: Path,
          keep_tmp: bool,
+         verify_times: bool,
          n_procs: int,
          force: bool = False):
     """ Draw RNA structure(s) from a FoldReport. """
@@ -489,6 +497,7 @@ def draw(report_path: Path, *,
                            tmp_dir,
                            struct_num,
                            color,
+                           verify_times,
                            n_procs)
     # By convention, a function must return a Path for dispatch to deem
     # that it has completed successfully.

@@ -163,7 +163,7 @@ class FastqUnit(object):
         return parents[0]
 
     @cached_property
-    def seg_types(self) -> dict[str, tuple[path.Segment, ...]]:
+    def seg_types(self) -> dict[str, tuple[path.PathSegment, ...]]:
         if self.one_ref:
             seg_types = {self.KEY_SINGLE: path.DMFASTQ_SEGS,
                          self.KEY_INTER: path.DMFASTQ_SEGS,
@@ -192,8 +192,8 @@ class FastqUnit(object):
         refs: set[str | None] = set()
         exts: dict[str, str] = dict()
         for key, fq in self.paths.items():
-            fq_fields = path.parse(fq, *self.seg_types[key])
-            samples.add(fq_fields[path.SAMP])
+            fq_fields = path.parse(fq, self.seg_types[key])
+            samples.add(fq_fields[path.SAMPLE])
             refs.add(fq_fields.get(path.REF))
             exts[key] = fq_fields[path.EXT]
         if len(samples) > 1:
@@ -205,7 +205,7 @@ class FastqUnit(object):
         return list(samples)[0], list(refs)[0], exts
 
     def fields(self, key: str):
-        fields = {path.SAMP: self.sample}
+        fields = {path.SAMPLE: self.sample}
         if self.ref is not None:
             fields[path.REF] = self.ref
         fields[path.EXT] = self.exts[key]
@@ -217,13 +217,13 @@ class FastqUnit(object):
         return tuple(chain(*[(self.BOWTIE2_FLAGS[key], fq)
                              for key, fq in self.paths.items()]))
 
-    def to_new(self, *new_segments: path.Segment, **new_fields):
+    def to_new(self, *new_segments: path.PathSegment, **new_fields):
         """ Return a new FASTQ unit with updated path fields. """
         new_paths = dict()
         for key, self_path in self.paths.items():
             combined_segments = new_segments + self.seg_types[key]
             combined_fields = self.fields(key) | new_fields
-            new_paths[key] = path.build(*combined_segments, **combined_fields)
+            new_paths[key] = path.build(combined_segments, combined_fields)
         return self.__class__(**new_paths,
                               phred_enc=self.phred_enc,
                               one_ref=self.one_ref)
@@ -272,11 +272,11 @@ class FastqUnit(object):
         fq2s = list(path.find_files_chain(fqs, seg2s))
 
         # Determine the sample and reference name of each file.
-        def find_sample_ref(fqs_: list[Path], segs: list[path.Segment]):
+        def find_sample_ref(fqs_: list[Path], segs: list[path.PathSegment]):
             sample_refs: dict[tuple[str, str | None], Path] = dict()
             for fq in fqs_:
-                fields = path.parse(fq, *segs)
-                sample_ref_ = fields[path.SAMP], fields.get(path.REF)
+                fields = path.parse(fq, segs)
+                sample_ref_ = fields[path.SAMPLE], fields.get(path.REF)
                 if sample_ref_ in sample_refs:
                     raise DuplicateSampleReferenceError(sample_ref_)
                 sample_refs[sample_ref_] = fq

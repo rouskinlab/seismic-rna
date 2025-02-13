@@ -97,6 +97,13 @@ opt_keep_tmp = Option(
     help="Keep temporary files after finishing"
 )
 
+opt_branch = Option(
+    ("--branch", "-b"),
+    type=str,
+    default="",
+    help="Create a new branch of the workflow with this name"
+)
+
 # Resource usage options
 
 opt_max_procs = Option(
@@ -959,15 +966,6 @@ opt_max_marcd_join = Option(
          "does not exceed this threshold"
 )
 
-# List options
-
-opt_complement = Option(
-    ("--complement/--no-complement",),
-    type=bool,
-    default=False,
-    help="List the complement"
-)
-
 # Fold
 
 opt_fold = Option(
@@ -1491,13 +1489,13 @@ opt_fq_gzip = Option(
 opt_verbose = Option(
     ("--verbose", "-v"),
     count=True,
-    help="Log more messages (-v, -vv, or -vvv) on stderr"
+    help="Log more messages (-v, -vv, -vvv, -vvvv) on stderr"
 )
 
 opt_quiet = Option(
     ("--quiet", "-q"),
     count=True,
-    help="Log fewer messages (-q, -qq, or -qqq) on stderr"
+    help="Log fewer messages (-q, -qq, -qqq, -qqqq) on stderr"
 )
 
 opt_log = Option(
@@ -1506,14 +1504,14 @@ opt_log = Option(
     default=os.path.join(CWD, "log", datetime.now().strftime(
         "seismic-rna_%Y-%m-%d_%H-%M-%S.log"
     )),
-    help="Log all messages (except profiling) to a file"
+    help="Log all messages to this file ('' to disable)"
 )
 
 opt_log_color = Option(
     ("--log-color/--log-plain",),
     type=bool,
     default=True,
-    help="Log messages with or without color codes on stdout"
+    help="Log messages with or without color codes on stderr"
 )
 
 opt_exit_on_error = Option(

@@ -3,6 +3,8 @@ from functools import cached_property
 from .profile import RNAProfile
 from .roc import compute_auc, compute_roc_curve, compute_rolling_auc
 from .struct import RNAStructure
+from .. import path
+from ..error import InconsistentValueError
 
 
 class RNAState(RNAStructure, RNAProfile):
@@ -12,13 +14,18 @@ class RNAState(RNAStructure, RNAProfile):
     def from_struct_profile(cls, struct: RNAStructure, profile: RNAProfile):
         """ Make an RNAState from an RNAStructure and an RNAProfile. """
         if struct.region.ref != profile.region.ref:
-            raise ValueError("Reference names differ between "
-                             f"structure ({repr(struct.region.ref)}) "
-                             f"and profile ({repr(profile.region.ref)})")
+            raise InconsistentValueError(
+                "Reference names differ between "
+                f"structure ({repr(struct.region.ref)}) "
+                f"and profile ({repr(profile.region.ref)})"
+            )
         return cls(region=struct.region,
                    title=struct.title,
                    pairs=struct.pairs,
                    sample=profile.sample,
+                   branches=path.add_branch(path.FOLD_STEP,
+                                            struct.branch,
+                                            profile.branches),
                    data_reg=profile.data_reg,
                    data_name=profile.data_name,
                    data=profile.data)

@@ -14,7 +14,6 @@ from .xamops import (FASTP_PHRED_OUT,
                      run_realign,
                      run_xamgen)
 from ..core import path
-from ..core.arg import CMD_ALIGN
 from ..core.logs import logger
 from ..core.ngs import (FLAG_PAIRED,
                         FLAG_PROPER,
@@ -55,11 +54,13 @@ def write_tmp_ref_files(tmp_dir: Path,
             if ref in refs:
                 # Write the reference sequence to a temporary FASTA file
                 # only if at least one demultiplexed FASTQ file uses it.
-                ref_path = path.buildpar(*path.FASTA_STAGE_SEGS,
-                                         top=tmp_dir,
-                                         stage=path.STAGE_ALIGN_INDEX_DEMULT,
-                                         ref=ref,
-                                         ext=refset_path.suffix)
+                ref_path = path.buildpar(
+                    path.FASTA_STAGE_SEGS,
+                    {path.TOP: tmp_dir,
+                     path.STAGE: path.STAGE_ALIGN_INDEX_DEMULT,
+                     path.REF: ref,
+                     path.EXT: refset_path.suffix}
+                )
                 try:
                     # Write the temporary FASTA file.
                     write_fasta(ref_path, [record])
@@ -165,7 +166,7 @@ def separate_strands(xam_file: Path,
     if paired is None:
         paired = xam_paired(run_flagstat(xam_file, n_procs=n_procs))
     out_dir = xam_file.parent
-    ref = path.parse(xam_file, *path.XAM_SEGS)[path.REF]
+    ref = path.parse(xam_file, path.XAM_SEGS)[path.REF]
     ref_rev = format_ref_reverse(ref, rev_label)
     # Calculate the flags.
     ((flags_req_fwd, flags_exc_fwd),
@@ -227,11 +228,12 @@ def separate_strands(xam_file: Path,
         # will fail.
         if not keep_tmp:
             rmtree(tmp_dir)
-            logger.detail(f"Deleted temporary directory {tmp_dir}")
+            logger.action(f"Deleted temporary directory {tmp_dir}")
 
 
 def extract_reference(ref: str,
                       header: str, *,
+                      branches: dict[str, str],
                       xam_whole: Path,
                       fasta: Path,
                       sample: str,
@@ -246,12 +248,13 @@ def extract_reference(ref: str,
         min_reads = 0
         logger.warning(f"min_reads must be ≥ 0, but got {min_reads}: set to 0")
     # Export the reads that align to the given reference.
-    xam_ref = path.build(*path.XAM_SEGS,
-                         top=top,
-                         sample=sample,
-                         cmd=CMD_ALIGN,
-                         ref=ref,
-                         ext=path.BAM_EXT)
+    xam_ref = path.build(path.XAM_SEGS,
+                         {path.TOP: top,
+                          path.SAMPLE: sample,
+                          path.STEP: path.ALIGN_STEP,
+                          path.BRANCHES: branches,
+                          path.REF: ref,
+                          path.EXT: path.BAM_EXT})
     run_export(xam_whole,
                xam_ref,
                ref=ref,
@@ -280,7 +283,7 @@ def extract_reference(ref: str,
     nums_reads = dict()
     for xam in xam_files:
         try:
-            ref = path.parse(xam, *path.XAM_SEGS)[path.REF]
+            ref = path.parse(xam, path.XAM_SEGS)[path.REF]
             if ref in nums_reads:
                 raise ValueError(f"Duplicate reference: {repr(ref)}")
             num_reads = count_total_reads(run_flagstat(xam, n_procs=n_procs))
@@ -291,11 +294,11 @@ def extract_reference(ref: str,
                     f"{num_reads} < {min_reads} read(s)"
                 )
                 xam.unlink()
-                logger.detail(f"Deleted {xam}")
+                logger.action(f"Deleted {xam}")
         except Exception as error:
             logger.error(error)
             xam.unlink()
-            logger.detail(f"Deleted {xam}")
+            logger.action(f"Deleted {xam}")
         else:
             nums_reads[ref] = num_reads
     logger.routine(f"Ended extracting reference {repr(ref)} from {xam_whole}")
@@ -308,6 +311,7 @@ def split_references(xam_whole: Path, *,
                      phred_arg: str,
                      top: Path,
                      keep_tmp: bool,
+                     branches: dict[str, str],
                      bt2_local: bool,
                      bt2_discordant: bool,
                      bt2_mixed: bool,
@@ -332,7 +336,7 @@ def split_references(xam_whole: Path, *,
                      n_procs: int = 1):
     """ Split a XAM file into one file per reference. """
     logger.routine(f"Began splitting {xam_whole} by reference")
-    sample = path.parse(xam_whole, *path.XAM_SEGS)[path.SAMP]
+    sample = path.parse(xam_whole, path.XAM_SEGS)[path.SAMPLE]
     # Guess how many reads mapped to each reference by the index stats.
     refs_counts = run_idxstats(xam_whole)
     # Guess which references received enough reads.
@@ -361,6 +365,7 @@ def split_references(xam_whole: Path, *,
                                       phred_arg=phred_arg,
                                       top=top,
                                       keep_tmp=keep_tmp,
+                                      branches=branches,
                                       bt2_local=bt2_local,
                                       bt2_discordant=bt2_discordant,
                                       bt2_mixed=bt2_mixed,
@@ -389,15 +394,16 @@ def split_references(xam_whole: Path, *,
             logger.detail(f"Reference {repr(ref)} got {count} read(s)")
             if ref in refs_counts:
                 logger.error(f"Reference {repr(ref)} is duplicated")
-                xam_ref = path.build(*path.XAM_SEGS,
-                                     top=top,
-                                     sample=sample,
-                                     cmd=CMD_ALIGN,
-                                     ref=ref,
-                                     ext=path.BAM_EXT)
+                xam_ref = path.build(path.XAM_SEGS,
+                                     {path.TOP: top,
+                                      path.SAMPLE: sample,
+                                      path.STEP: path.ALIGN_STEP,
+                                      path.BRANCHES: branches,
+                                      path.REF: ref,
+                                      path.EXT: path.BAM_EXT})
                 try:
                     xam_ref.unlink()
-                    logger.detail(f"Deleted {xam_ref}")
+                    logger.action(f"Deleted {xam_ref}")
                 except OSError:
                     pass
             else:
@@ -421,6 +427,7 @@ def fq_pipeline(fq_inp: FastqUnit,
                 out_dir: Path,
                 tmp_dir: Path,
                 keep_tmp: bool,
+                branches: dict[str, str],
                 fastp: bool,
                 fastp_5: bool,
                 fastp_3: bool,
@@ -465,22 +472,24 @@ def fq_pipeline(fq_inp: FastqUnit,
     logger.routine(f"Began processing {fq_inp} through the alignment pipeline")
     # Get attributes of the sample and references.
     sample = fq_inp.sample
-    refset = path.parse(fasta, path.FastaSeg)[path.REF]
+    refset = path.parse(fasta, [path.FastaSeg])[path.REF]
     # Create the output directory: this is necessary for FASTQ files of
     # unaligned reads to have a place to be written.
-    align_dir = path.builddir(*path.CMD_DIR_SEGS,
-                              top=out_dir,
-                              sample=sample,
-                              cmd=path.ALIGN_STEP)
+    align_dir = path.builddir(path.STEP_DIR_SEGS,
+                              {path.TOP: out_dir,
+                               path.SAMPLE: sample,
+                               path.STEP: path.ALIGN_STEP,
+                               path.BRANCHES: branches})
     # Optionally trim the reads with Fastp, and then align them to the
     # reference sequence with Bowtie2.
-    xam_whole = path.buildpar(*path.XAM_STAGE_SEGS,
-                              top=tmp_dir,
-                              sample=sample,
-                              cmd=path.ALIGN_STEP,
-                              stage=path.STAGE_ALIGN_MAP,
-                              ref=refset,
-                              ext=path.BAM_EXT)
+    xam_whole = path.buildpar(path.XAM_STAGE_SEGS,
+                              {path.TOP: tmp_dir,
+                               path.SAMPLE: sample,
+                               path.STEP: path.ALIGN_STEP,
+                               path.BRANCHES: branches,
+                               path.STAGE: path.STAGE_ALIGN_MAP,
+                               path.REF: refset,
+                               path.EXT: path.BAM_EXT})
     reads_align = run_xamgen(
         fq_inp,
         xam_whole,
@@ -518,16 +527,15 @@ def fq_pipeline(fq_inp: FastqUnit,
         bt2_dpad=bt2_dpad,
         bt2_orient=bt2_orient,
         min_mapq=min_mapq,
-        fq_unal=(path.build(path.SampSeg,
-                            path.CmdSeg,
-                            path.DmFastqSeg,
-                            top=out_dir,
-                            sample=sample,
-                            cmd=CMD_ALIGN,
-                            ref=(f"{fq_inp.ref}__unaligned"
-                                 if fq_inp.ref is not None
-                                 else "unaligned"),
-                            ext=path.FQ_EXTS[0])
+        fq_unal=(path.build([path.SampSeg, path.StepSeg, path.DmFastqSeg],
+                            {path.TOP: out_dir,
+                             path.SAMPLE: sample,
+                             path.STEP: path.ALIGN_STEP,
+                             path.BRANCHES: branches,
+                             path.REF: (f"{fq_inp.ref}__unaligned"
+                                        if fq_inp.ref is not None
+                                        else "unaligned"),
+                             path.EXT: path.FQ_EXTS[0]})
                  if bt2_un
                  else None),
         n_procs=n_procs
@@ -574,6 +582,7 @@ def fq_pipeline(fq_inp: FastqUnit,
                                              else fq_inp.phred_arg),
                                   top=out_dir,
                                   keep_tmp=keep_tmp,
+                                  branches=branches,
                                   bt2_local=bt2_local,
                                   bt2_discordant=bt2_discordant,
                                   bt2_mixed=bt2_mixed,
@@ -599,17 +608,21 @@ def fq_pipeline(fq_inp: FastqUnit,
     if not keep_tmp:
         # Delete the BAM file of all references.
         xam_whole.unlink(missing_ok=True)
-        logger.detail(f"Deleted {xam_whole}")
+        logger.action(f"Deleted {xam_whole}")
     ended = datetime.now()
     # Write a report to summarize the alignment.
     if fq_inp.ref is not None:
         # Use the demultiplexed version of the AlignReport.
         report_type = AlignRefReport
+        demultiplexed = True
     else:
         # Use the non-demultiplexed version of the AlignReport.
         report_type = AlignSampleReport
+        demultiplexed = False
     report = report_type(sample=sample,
                          ref=fq_inp.ref,
+                         branches=branches,
+                         demultiplexed=demultiplexed,
                          paired_end=fq_inp.paired,
                          phred_enc=fq_inp.phred_enc,
                          fastp=fastp,
@@ -664,9 +677,7 @@ def fq_pipeline(fq_inp: FastqUnit,
 def fqs_pipeline(fq_units: list[FastqUnit],
                  main_fasta: Path, *,
                  max_procs: int,
-                 out_dir: Path,
                  tmp_dir: Path,
-                 keep_tmp: bool,
                  **kwargs) -> list[Path]:
     """ Run all stages of alignment for one or more FASTQ files or pairs
     of mated FASTQ files. """
@@ -723,13 +734,13 @@ def fqs_pipeline(fq_units: list[FastqUnit],
                 # The FASTA of all the references does not already
                 # have a Bowtie2 index, so build a temporary index.
                 # Determine the name of the set of references.
-                refset = path.parse(main_fasta, path.FastaSeg)[path.REF]
+                refset = path.parse(main_fasta, [path.FastaSeg])[path.REF]
                 # Determine the path of the temporary Bowtie 2 index
                 # of the main FASTA file.
-                main_index = path.buildpar(*path.FASTA_INDEX_DIR_STAGE_SEGS,
-                                           top=tmp_dir,
-                                           stage=path.STAGE_ALIGN_INDEX,
-                                           ref=refset)
+                main_index = path.buildpar(path.FASTA_INDEX_DIR_STAGE_SEGS,
+                                           {path.TOP: tmp_dir,
+                                            path.STAGE: path.STAGE_ALIGN_INDEX,
+                                            path.REF: refset})
                 # Build the Bowtie2 index.
                 try:
                     run_bowtie2_build(main_fasta,
@@ -762,10 +773,7 @@ def fqs_pipeline(fq_units: list[FastqUnit],
     xam_dirs = dispatch(fq_pipeline,
                         max_procs,
                         args=iter_args,
-                        kwargs=dict(out_dir=out_dir,
-                                    tmp_dir=tmp_dir,
-                                    keep_tmp=keep_tmp,
-                                    **kwargs))
+                        kwargs=dict(tmp_dir=tmp_dir, **kwargs))
     logger.routine(f"Ended running the alignment pipeline")
     # Return the final alignment map (XAM) directories.
     return xam_dirs
@@ -803,7 +811,8 @@ def list_alignments(fq_units: list[FastqUnit], refs: set[str]):
 
 
 def check_fqs_xams(alignments: dict[tuple[str, str], FastqUnit],
-                   out_dir: Path):
+                   out_dir: Path,
+                   branches: dict[str, str]):
     """ Return every FASTQ unit on which alignment must be run and every
     expected XAM file that already exists. """
     fqs_missing: dict[tuple[str, str], FastqUnit] = dict()
@@ -812,12 +821,13 @@ def check_fqs_xams(alignments: dict[tuple[str, str], FastqUnit],
         # Determine the path of the XAM file expected to result from the
         # alignment of the sample to the reference.
         for ext in path.XAM_EXTS:
-            xam_expect = path.build(*path.XAM_SEGS,
-                                    top=out_dir,
-                                    cmd=CMD_ALIGN,
-                                    sample=sample,
-                                    ref=ref,
-                                    ext=ext)
+            xam_expect = path.build(path.XAM_SEGS,
+                                    {path.TOP: out_dir,
+                                     path.STEP: path.ALIGN_STEP,
+                                     path.BRANCHES: branches,
+                                     path.SAMPLE: sample,
+                                     path.REF: ref,
+                                     path.EXT: ext})
             if xam_expect.is_file():
                 # If the XAM file already exists, then add it to the
                 # dict of XAM files that have already been aligned.
@@ -843,10 +853,11 @@ def merge_nondemult_fqs(fq_units: Iterable[FastqUnit]):
 
 
 def list_fqs_xams(alignments: dict[tuple[str, str], FastqUnit],
-                  out_dir: Path):
+                  out_dir: Path,
+                  branches: dict[str, str]):
     """ List every FASTQ to align and every extant XAM file. """
     # Determine which alignments need to be or have already been run.
-    fqs_missing, xams_extant = check_fqs_xams(alignments, out_dir)
+    fqs_missing, xams_extant = check_fqs_xams(alignments, out_dir, branches)
     # Merge entries for each non-demultiplexed FASTQ.
     fqs_merged = merge_nondemult_fqs(fqs_missing.values())
     return fqs_merged, set(xams_extant)
@@ -855,6 +866,7 @@ def list_fqs_xams(alignments: dict[tuple[str, str], FastqUnit],
 def align_samples(fq_units: list[FastqUnit],
                   fasta: Path, *,
                   out_dir: Path,
+                  branch: str,
                   force: bool,
                   **kwargs) -> list[Path]:
     """ Run the alignment pipeline and return a tuple of all XAM files
@@ -862,6 +874,10 @@ def align_samples(fq_units: list[FastqUnit],
     if not fq_units:
         logger.detail("No FASTQ files or pairs of files were given to align")
         return list()
+    # Even though the ancestors argument of path.add_branch() is empty,
+    # use it instead of just "branches = {path.ALIGN_STEP: branch}" in
+    # order to validate the branch name.
+    branches = path.add_branch(path.ALIGN_STEP, branch, dict())
     # List the names of all reference sequences.
     refs = set(parse_fasta(fasta, None))
     # List all alignments and check for duplicates.
@@ -872,12 +888,13 @@ def align_samples(fq_units: list[FastqUnit],
         xams_extant = set()
     else:
         # Run only the alignments whose outputs do not yet exist.
-        fqs_to_align, xams_extant = list_fqs_xams(alignments, out_dir)
+        fqs_to_align, xams_extant = list_fqs_xams(alignments, out_dir, branches)
     if fqs_to_align:
         # Align all FASTQs that need to be aligned.
         xam_dirs_new = set(fqs_pipeline(fqs_to_align,
                                         fasta,
                                         out_dir=out_dir,
+                                        branches=branches,
                                         **kwargs))
     else:
         logger.warning("All given FASTQ files have already been aligned: "

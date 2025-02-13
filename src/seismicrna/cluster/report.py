@@ -1,3 +1,4 @@
+from abc import ABC
 from datetime import datetime
 
 from .emk import EMRunsK, find_best_k
@@ -6,9 +7,7 @@ from .uniq import UniqReads
 from ..core import path
 from ..core.join import JoinReport
 from ..core.report import (BatchedReport,
-                           SampleF,
-                           RefF,
-                           RegF,
+                           RegReport,
                            NumUniqReadKeptF,
                            MinClustsF,
                            MaxClustsF,
@@ -33,50 +32,50 @@ from ..core.report import (BatchedReport,
                            JoinedClustersF)
 
 
-class ClusterReport(BatchedReport, ClusterIO):
+class BaseClusterReport(RegReport, ClusterIO, ABC):
 
     @classmethod
-    def file_seg_type(cls):
+    def get_file_seg_type(cls):
+        return path.ClustRepSeg
+
+
+class ClusterReport(BatchedReport, BaseClusterReport):
+
+    @classmethod
+    def get_file_seg_type(cls):
         return path.ClustRepSeg
 
     @classmethod
-    def _batch_types(cls):
+    def _get_batch_types(cls):
         return [ClusterBatchIO]
 
     @classmethod
-    def fields(cls):
-        return [
-            # Sample, reference, and region information.
-            SampleF,
-            RefF,
-            RegF,
-            NumUniqReadKeptF,
-            # Clustering parameters.
-            MinClustsF,
-            MaxClustsF,
-            TryAllKsF,
-            WriteAllKsF,
-            MaxPearsonRunF,
-            MinMARCDRunF,
-            JackpotF,
-            JackpotConfLevelF,
-            MaxJackpotQuotientF,
-            MaxLogLikeVsBestF,
-            MinPearsonVsBestF,
-            MaxMARCDVsBestF,
-            ClustNumRunsF,
-            MinIterClustF,
-            MaxIterClustF,
-            ClustConvThreshF,
-            # Clustering results.
-            EMKPassingF,
-            BestKF,
-            KsWrittenF,
-        ] + super().fields()
+    def get_param_report_fields(cls):
+        return [MinClustsF,
+                MaxClustsF,
+                TryAllKsF,
+                WriteAllKsF,
+                MaxPearsonRunF,
+                MinMARCDRunF,
+                JackpotF,
+                JackpotConfLevelF,
+                MaxJackpotQuotientF,
+                MaxLogLikeVsBestF,
+                MinPearsonVsBestF,
+                MaxMARCDVsBestF,
+                ClustNumRunsF,
+                MinIterClustF,
+                MaxIterClustF,
+                ClustConvThreshF,
+                *super().get_param_report_fields()]
 
     @classmethod
-    def auto_fields(cls):
-        return {**super().auto_fields(), path.CMD: path.CLUSTER_STEP}
+    def get_result_report_fields(cls):
+        return [NumUniqReadKeptF,
+                EMKPassingF,
+                BestKF,
+                KsWrittenF,
+                *super().get_param_report_fields()]
 
     @classmethod
     def from_clusters(cls,
@@ -103,7 +102,8 @@ class ClusterReport(BatchedReport, ClusterIO):
                       began: datetime,
                       ended: datetime):
         """ Create a ClusterReport from EmClustering objects. """
-        return cls(sample=uniq_reads.sample,
+        return cls(branches=uniq_reads.branches,
+                   sample=uniq_reads.sample,
                    ref=uniq_reads.ref,
                    reg=uniq_reads.region.name,
                    n_uniq_reads=uniq_reads.num_uniq,
@@ -132,24 +132,10 @@ class ClusterReport(BatchedReport, ClusterIO):
                    ended=ended)
 
 
-class JoinClusterReport(JoinReport):
+class JoinClusterReport(JoinReport, BaseClusterReport):
 
     @classmethod
-    def file_seg_type(cls):
-        return path.ClustRepSeg
-
-    @classmethod
-    def fields(cls):
-        return [
-            # Sample and reference.
-            SampleF,
-            RefF,
-            RegF,
-            # Joined data.
-            JoinedRegionsF,
-            JoinedClustersF,
-        ] + super().fields()
-
-    @classmethod
-    def auto_fields(cls):
-        return {**super().auto_fields(), path.CMD: path.CLUSTER_STEP}
+    def get_param_report_fields(cls):
+        return [JoinedRegionsF,
+                JoinedClustersF,
+                *super().get_param_report_fields()]

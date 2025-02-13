@@ -7,6 +7,7 @@ import pandas as pd
 from ..core.array import calc_inverse, get_length
 from ..core.batch import ReadBatch, RegionMutsBatch
 from ..core.seq import Region
+from ..core.validate import require_isinstance
 
 
 class PartialReadBatch(ReadBatch, ABC):
@@ -27,10 +28,7 @@ class PartialRegionMutsBatch(PartialReadBatch, RegionMutsBatch, ABC):
 class MaskReadBatch(PartialReadBatch):
 
     def __init__(self, *, read_nums: np.ndarray, **kwargs):
-        if not isinstance(read_nums, np.ndarray):
-            raise TypeError(
-                f"read_nums must be ndarray, but got {type(read_nums).__name__}"
-            )
+        require_isinstance("read_nums", read_nums, np.ndarray)
         self._read_nums = read_nums
         super().__init__(**kwargs)
 
@@ -59,6 +57,7 @@ def apply_mask(batch: RegionMutsBatch,
                read_nums: np.ndarray | None = None,
                region: Region | None = None,
                sanitize: bool = False):
+    require_isinstance("batch", batch, RegionMutsBatch)
     # Determine which reads to use.
     if read_nums is not None:
         # Select specific read indexes.
@@ -75,6 +74,7 @@ def apply_mask(batch: RegionMutsBatch,
         masked_reads = None
     # Determine the region of the new batch.
     if region is not None:
+        require_isinstance("region", region, Region)
         # Clip the read coordinates to the region bounds.
         seg_end5s = seg_end5s.clip(region.end5, region.end3 + 1)
         seg_end3s = seg_end3s.clip(region.end5 - 1, region.end3)

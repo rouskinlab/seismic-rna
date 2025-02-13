@@ -32,6 +32,10 @@ class OneTableGraph(TableGraph, OneSourceGraph, ABC):
         return self.table.top
 
     @property
+    def branches(self):
+        return self.table.branches
+
+    @property
     def sample(self):
         return self.table.sample
 
@@ -94,12 +98,15 @@ class OneTableRunner(TableRunner, ABC):
     @classmethod
     def run(cls,
             input_path: Iterable[str | Path], *,
+            verify_times: bool,
             max_procs: int,
             **kwargs):
         # Generate a table writer for each table.
         writer_type = cls.get_writer_type()
         writers = [writer_type(table_file)
-                   for table_file in cls.load_input_files(input_path)]
+                   for table_file
+                   in cls.load_input_files(input_path,
+                                           verify_times=verify_times)]
         return list(chain(*dispatch([writer.write for writer in writers],
                                     max_procs,
                                     pass_n_procs=False,

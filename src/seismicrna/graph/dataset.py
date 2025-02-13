@@ -30,6 +30,10 @@ class DatasetGraph(OneRelGraph, OneSourceClusterGroupGraph, ABC):
         return self.dataset.top
 
     @property
+    def branches(self):
+        return self.dataset.branches
+
+    @property
     def sample(self):
         return self.dataset.sample
 
@@ -118,7 +122,8 @@ class DatasetRunner(RelRunner, ClusterGroupRunner, ABC):
             **kwargs):
         # Generate a table writer for each table.
         writer_type = cls.get_writer_type()
-        writers = [writer_type(dataset=dataset) for dataset
+        writers = [writer_type(dataset=dataset)
+                   for dataset
                    in cls.load_input_files(input_path,
                                            verify_times=verify_times)]
         return list(chain(*dispatch([writer.write for writer in writers],

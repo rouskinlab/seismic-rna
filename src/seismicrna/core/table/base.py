@@ -8,6 +8,7 @@ import pandas as pd
 
 from .. import path
 from ..batch import RB_INDEX_NAMES
+from ..dataset import LoadFunction
 from ..header import REL_NAME, Header, parse_header
 from ..mu import winsorize
 from ..rel import HalfRelPattern, RelPattern
@@ -127,100 +128,98 @@ def _get_denom_cols(numer_cols: pd.Index):
                     name=numer_cols.name)
 
 
-class Table(ABC):
+class Table(path.HasRefFilePath, ABC):
     """ Table base class. """
 
     @classmethod
     @abstractmethod
-    def kind(cls) -> str:
-        """ Kind of table. """
+    def get_load_function(cls) -> LoadFunction:
+        """ LoadFunction for all Dataset types for this Table. """
 
     @classmethod
     @abstractmethod
-    def by_read(cls) -> bool:
+    def get_by_read(cls) -> bool:
         """ Whether the table contains data for each read. """
 
     @classmethod
+    def get_ext(cls):
+        return path.CSVZIP_EXT if cls.get_by_read() else path.CSV_EXT
+
+    @classmethod
+    @cache
+    def get_auto_path_fields(cls):
+        return {path.STEP: cls.get_step(),
+                path.TABLE: cls.get_step(),
+                **super().get_auto_path_fields()}
+
+    @classmethod
     @abstractmethod
-    def header_type(cls) -> type[Header]:
+    def get_header_type(cls) -> type[Header]:
         """ Type of the header for the table. """
 
     @classmethod
-    def header_depth(cls):
-        return cls.header_type().num_levels()
+    def get_header_depth(cls):
+        return cls.get_header_type().num_levels()
 
     @classmethod
     @abstractmethod
-    def index_depth(cls) -> int:
+    def get_index_depth(cls) -> int:
         """ Number of columns in the index. """
 
     @classmethod
-    def index_cols(cls) -> list[int]:
+    def get_index_cols(cls) -> list[int]:
         """ Column(s) of the file to use as the index. """
-        return list(range(cls.index_depth()))
-
-    @classmethod
-    @abstractmethod
-    def path_segs(cls) -> tuple[path.Segment, ...]:
-        """ Table's path segments. """
-
-    @classmethod
-    def default_path_fields(cls):
-        """ Default values of the path fields. """
-        return {path.CMD: cls.kind(),
-                path.TABLE: cls.kind(),
-                path.EXT: cls.ext()}
-
-    @classmethod
-    def build_path(cls, **path_fields):
-        """ Build the path of a table's CSV file using the fields. """
-        return path.build(*cls.path_segs(),
-                          **(cls.default_path_fields() | path_fields))
-
-    @classmethod
-    def gzipped(cls):
-        """ Whether the table's file is compressed with gzip. """
-        return cls.by_read()
-
-    @classmethod
-    def ext(cls):
-        """ Table's file extension: either ".csv" or ".csv.gz". """
-        return path.CSVZIP_EXT if cls.gzipped() else path.CSV_EXT
+        return list(range(cls.get_index_depth()))
 
     @property
     @abstractmethod
+    def _attrs(self):
+        """ Source of the table's attributes. """
+
+    @property
     def top(self) -> Path:
         """ Path of the table's output directory. """
+        return self._attrs.top
 
     @property
-    @abstractmethod
+    def branches(self) -> dict[str, str]:
+        """ Branches of the workflow. """
+        return self._attrs.branches
+
+    @property
     def sample(self) -> str:
         """ Name of the table's sample. """
+        return self._attrs.sample
 
     @property
-    @abstractmethod
     def ref(self) -> str:
         """ Name of the table's reference. """
+        return self._attrs.ref
 
     @property
-    @abstractmethod
     def reg(self) -> str:
         """ Name of the table's region. """
+        return self._attrs.region.name
 
     @cached_property
-    @abstractmethod
     def refseq(self) -> DNA:
         """ Reference sequence. """
-
-    @property
-    @abstractmethod
-    def path_fields(self) -> dict[str, Any]:
-        """ Table's path fields. """
+        return self._attrs.refseq
 
     @cached_property
     def path(self):
-        """ Path of the table's CSV file (possibly gzipped). """
-        return self.build_path(**self.path_fields)
+        """ Path of the table's file. """
+        field_values = dict()
+        for field in path.get_fields_in_seg_types(self.get_path_seg_types(),
+                                                  include_top=True):
+            try:
+                field_values[field] = getattr(self, field)
+            except AttributeError:
+                # If the field name is not an attribute of the table,
+                # then it has a default value that will be supplied by
+                # self.build_path().
+                pass
+        return self.build_path(field_values)
 
     @abstractmethod
     def _get_header(self) -> Header:
@@ -230,8 +229,8 @@ class Table(ABC):
     def header(self):
         """ Header for the table's data. """
         header = self._get_header()
-        if not isinstance(header, self.header_type()):
-            raise TypeError(f"Expected {self.header_type().__name__}, "
+        if not isinstance(header, self.get_header_type()):
+            raise TypeError(f"Expected {self.get_header_type().__name__}, "
                             f"but got {type(header).__name__}")
         return header
 
@@ -248,9 +247,9 @@ class RelTypeTable(Table, ABC):
     """ Table with multiple types of relationships. """
 
     @classmethod
-    def header_rows(cls) -> list[int]:
+    def get_header_rows(cls) -> list[int]:
         """ Row(s) of the file to use as the columns. """
-        return list(range(cls.header_depth()))
+        return list(range(cls.get_header_depth()))
 
     @classmethod
     def _format_data(cls,
@@ -317,11 +316,15 @@ class PositionTable(RelTypeTable, ABC):
     MASK = "pos-mask"
 
     @classmethod
-    def by_read(cls):
+    def get_file_seg_type(cls):
+        return path.PositionTableSeg
+
+    @classmethod
+    def get_by_read(cls):
         return False
 
     @classmethod
-    def index_depth(cls):
+    def get_index_depth(cls):
         return len(SEQ_INDEX_NAMES)
 
     @cached_property
@@ -633,11 +636,15 @@ class ReadTable(RelTypeTable, ABC):
     """ Table indexed by read. """
 
     @classmethod
-    def by_read(cls):
+    def get_file_seg_type(cls):
+        return path.ReadTableSeg
+
+    @classmethod
+    def get_by_read(cls):
         return True
 
     @classmethod
-    def index_depth(cls):
+    def get_index_depth(cls):
         return len(RB_INDEX_NAMES)
 
     @property
@@ -654,16 +661,16 @@ class AbundanceTable(Table, ABC):
     """ Table of abundances. """
 
     @classmethod
-    def by_read(cls):
+    def get_file_seg_type(cls):
+        return path.AbundanceTableSeg
+
+    @classmethod
+    def get_by_read(cls):
         return False
 
     @classmethod
-    def path_segs(cls):
-        return path.REG_DIR_SEGS + (path.AbundanceTableSeg,)
-
-    @classmethod
-    def index_depth(cls):
-        return cls.header_depth()
+    def get_index_depth(cls):
+        return cls.get_header_depth()
 
     @cached_property
     @abstractmethod

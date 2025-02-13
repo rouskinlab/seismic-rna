@@ -3,6 +3,7 @@ from typing import Callable, Iterable
 import numpy as np
 
 from .em import EMRun
+from ..core.error import NoDataError, InconsistentValueError
 from ..core.logs import logger
 from ..core.mu import (calc_sum_arcsine_distance,
                        calc_mean_arcsine_distance,
@@ -15,17 +16,19 @@ def get_common_k(runs: list[EMRun]):
     """ Find the number of clusters (k) from among EM clustering runs.
     If there are multiple ks, then raise a ValueError. """
     ks: list[int] = sorted({run.k for run in runs})
+    if not ks:
+        raise NoDataError("Got 0 numbers of clusters")
     if len(ks) != 1:
-        raise ValueError(f"Expected 1 unique number of clusters, but got {ks}")
+        raise InconsistentValueError(f"Got > 1 number of clusters: {ks}")
     return ks[0]
 
 
 def sort_runs(runs: list[EMRun]):
     """ Sort the runs of EM clustering by decreasing likelihood so that
     the run with the best (largest) likelihood comes first. """
-    # Verify that every run has the same k; otherwise, the likelihood is
-    # not directly comparable between runs.
     if runs:
+        # Verify that every run has the same k; if not, the likelihood
+        # is not directly comparable between runs.
         get_common_k(runs)
     return sorted(runs, key=lambda run: run.log_like, reverse=True)
 
@@ -42,7 +45,7 @@ class EMRunsK(object):
                  min_pearson_vs_best: float,
                  max_marcd_vs_best: float):
         if not runs:
-            raise ValueError(f"{self} got no EM runs")
+            raise NoDataError("Got no EM runs")
         # Sort the runs from largest to smallest likelihood.
         runs = sort_runs(runs)
         # Flag runs that fail to meet the filters.
@@ -121,7 +124,7 @@ class EMRunsK(object):
             return self.get_valid_index(0, **kwargs)
         except IndexError:
             # If no runs are valid, then use the best invalid run.
-            logger.warning(f"{self} got no EM runs that passed all filters")
+            logger.warning("No EM runs passed all filters")
             return 0
 
     def subopt_indexes(self, **kwargs):
@@ -235,6 +238,10 @@ class EMRunsK(object):
             func = getattr(self, attr)
             lines.append(f"{attr} = {func(**kwargs)}")
         return "\n".join(lines)
+
+    def __str__(self):
+        return (f"{type(self).__name__} with {self.k} clusters "
+                f"and {self.n_runs_total} runs")
 
 
 def find_best_k(ks: Iterable[EMRunsK], **kwargs):
