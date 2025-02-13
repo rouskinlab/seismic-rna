@@ -3,7 +3,7 @@ import unittest as ut
 from itertools import chain, product
 from typing import Any
 
-from seismicrna.relate.cx.relate import (RelateError as RelateErrorCx, # type: ignore
+from seismicrna.relate.cx.relate import (RelateError as RelateErrorCx,
                                          calc_rels_lines as calc_rels_lines_cx)
 
 from seismicrna.core.ngs import LO_QUAL, OK_QUAL, MAX_FLAG, SAM_DELIM
@@ -672,41 +672,41 @@ class TestCalcRelsLinesSingle(ut.TestCase):
         """
         # No soft clips.
         result = self.relate(ref="ref",
-                                refseq=DNA("ATATATATA"),
-                                read=DNA("TATATATAT"),
-                                qual="FFFFFFFFF",
-                                cigar="4=2I3=",
-                                end5=2,
-                                ambindel=True,
-                                insert3=True,
-                                clip_end5=0,
-                                clip_end3=0)
+                            refseq=DNA("ATATATATA"),
+                            read=DNA("TATATATAT"),
+                            qual="FFFFFFFFF",
+                            cigar="4=2I3=",
+                            end5=2,
+                            ambindel=True,
+                            insert3=True,
+                            clip_end5=0,
+                            clip_end3=0)
         expect = (([2], [8]), {3: 9, 4: 9, 5: 9, 6: 9, 7: 9, 8: 9})
         self.assertEqual(result, expect)
         # Soft clips.
         result = self.relate(ref="ref",
-                                refseq=DNA("ATATATATA"),
-                                read=DNA("TATATATAT"),
-                                qual="FFFFFFFFF",
-                                cigar="2S2=2I2=1S",
-                                end5=4,
-                                ambindel=True,
-                                insert3=True,
-                                clip_end5=0,
-                                clip_end3=0)
+                            refseq=DNA("ATATATATA"),
+                            read=DNA("TATATATAT"),
+                            qual="FFFFFFFFF",
+                            cigar="2S2=2I2=1S",
+                            end5=4,
+                            ambindel=True,
+                            insert3=True,
+                            clip_end5=0,
+                            clip_end3=0)
         expect = (([4], [7]), {5: 9, 6: 9, 7: 9})
         self.assertEqual(result, expect)
         # Soft clips and clip_end5/clip_end3.
         result = self.relate(ref="ref",
-                                refseq=DNA("ATATATATA"),
-                                read=DNA("TATATATAT"),
-                                qual="FFFFFFFFF",
-                                cigar="2S2=2I2=1S",
-                                end5=4,
-                                ambindel=True,
-                                insert3=True,
-                                clip_end5=1,
-                                clip_end3=1)
+                            refseq=DNA("ATATATATA"),
+                            read=DNA("TATATATAT"),
+                            qual="FFFFFFFFF",
+                            cigar="2S2=2I2=1S",
+                            end5=4,
+                            ambindel=True,
+                            insert3=True,
+                            clip_end5=1,
+                            clip_end3=1)
         expect = (([5], [6]), {5: 9, 6: 9})
         self.assertEqual(result, expect)
 
@@ -1278,11 +1278,11 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                 if read1_rev:
                     expect = (([*exp_ends52, *exp_ends51],
                                [*exp_ends32, *exp_ends31]),
-                            expect_rels)
+                              expect_rels)
                 else:
                     expect = (([*exp_ends51, *exp_ends52],
                                [*exp_ends31, *exp_ends32]),
-                            expect_rels)
+                              expect_rels)
                 self.assertEqual(result, expect)
 
     def test_gap(self):

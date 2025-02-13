@@ -593,7 +593,7 @@ static int init_read(SamRead *read)
     init_pods(&(read->pods));
     // Initialize the read's ends.
     init_ends(&(read->end5s));
-    // Add a placeholder value for the 5' segment end of read 1.
+    // Add a placeholder value for the 5' segment end.
     if(add_end(&(read->end5s), 0))
         {return -1;}
     init_ends(&(read->end3s));
@@ -2155,7 +2155,7 @@ static inline int put_rel_in_dict(PyObject *rels_dict,
         assert(rel != 255);
         if (set_rel(rels_dict, pos, rel))
             {return -1;}
-        }
+    }
     return 0;
 }
 
