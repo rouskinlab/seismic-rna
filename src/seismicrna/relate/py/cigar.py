@@ -9,6 +9,7 @@ CIG_SUBST = "X"  # substitution
 CIG_DELET = "D"  # deletion
 CIG_INSRT = "I"  # insertion
 CIG_SCLIP = "S"  # soft clipping
+CIG_INTRN = "N"  # soft clipping
 
 # Regular expression pattern that matches a single CIGAR operation
 # (length ≥ 1 and operation code, defined above)
@@ -19,6 +20,7 @@ CIG_PATTERN = re.compile("".join([r"(\d+)([",
                                   CIG_DELET,
                                   CIG_INSRT,
                                   CIG_SCLIP,
+                                  CIG_INTRN,
                                   "])"]))
 
 
@@ -66,6 +68,8 @@ def parse_cigar(cigar_string: str):
                 raise RelateError("Identical consecutive CIGAR operations")
             if {operation, prev_operation} == {CIG_DELET, CIG_INSRT}:
                 raise RelateError("Adjacent insertion and deletion")
+            if {operation, prev_operation} == {CIG_DELET, CIG_INTRN}:
+                raise RelateError("Adjacent intron and deletion")
         # Convert the length field from str to int and verify that it
         # is a positive integer.
         if (length_int := int(length_str)) < 1:
