@@ -9,6 +9,7 @@ from ..logs import logger
 from ..rel import RelPattern
 from ..seq import DNA, seq_pos_to_index
 from ..task import as_list_of_tuples, dispatch
+from ..validate import require_isinstance, require_index_equals
 
 
 def accumulate_counts(batch_counts: Iterable[tuple[Any, Any, Any, Any]],
@@ -58,62 +59,49 @@ def accumulate_counts(batch_counts: Iterable[tuple[Any, Any, Any, Any]],
              count_per_pos_i,
              count_per_read_i)) in enumerate(batch_counts):
         logger.detail(f"Began adding counts for batch {i}")
-        if not isinstance(num_reads_i, type(num_reads)):
-            raise TypeError(
-                f"num_reads_i must be {type(num_reads).__name__}, "
-                f"but got {type(num_reads_i).__name__}"
-            )
-        if (validate
-                and isinstance(num_reads, pd.Series)
-                and not num_reads_i.index.equals(num_reads.index)):
-            raise ValueError("Got different indexes for "
-                             f"num_reads_i ({num_reads_i.index}) "
-                             f"and num_reads ({num_reads.index})")
+        require_isinstance(f"num_reads_{i}",
+                           num_reads_i,
+                           type(num_reads))
+        if validate and isinstance(num_reads, pd.Series):
+            require_index_equals(f"num_reads_{i}.index",
+                                 num_reads_i.index,
+                                 num_reads.index,
+                                 "num_reads.index")
         num_reads += num_reads_i
         if end_counts is not None:
-            if not isinstance(end_counts_i, type(end_counts)):
-                raise TypeError(
-                    f"end_counts_i must be {type(end_counts).__name__}, "
-                    f"but got {type(end_counts_i).__name__}"
-                )
-            if (validate
-                    and isinstance(end_counts, pd.DataFrame)
-                    and not end_counts_i.columns.equals(end_counts.columns)):
-                raise ValueError("Got different columns for "
-                                 f"end_counts_i ({end_counts_i.columns}) "
-                                 f"and end_counts ({end_counts.columns})")
+            require_isinstance(f"end_counts_{i}",
+                               end_counts_i,
+                               type(end_counts))
+            if validate and isinstance(end_counts, pd.DataFrame):
+                require_index_equals(f"end_counts_{i}.columns",
+                                     end_counts_i.columns,
+                                     end_counts.columns,
+                                     "end_counts.columns")
             end_counts = end_counts.add(end_counts_i,
                                         fill_value=zero).astype(dtype, copy=False)
         if count_per_pos is not None:
-            if not isinstance(count_per_pos_i, pd.DataFrame):
-                raise TypeError(f"count_per_pos_i must be DataFrame, "
-                                f"but got {type(count_per_pos_i).__name__}")
-            if (validate
-                    and not count_per_pos_i.index.equals(count_per_pos.index)):
-                raise ValueError(
-                    "Got different indexes for "
-                    f"count_per_pos_i ({count_per_pos_i.index}) "
-                    f"and count_per_pos ({count_per_pos.index})"
-                )
-            if (validate and
-                    not count_per_pos_i.columns.equals(count_per_pos.columns)):
-                raise ValueError(
-                    "Got different columns for "
-                    f"count_per_pos_i ({count_per_pos_i.columns}) "
-                    f"and count_per_pos ({count_per_pos.columns})"
-                )
+            require_isinstance(f"count_per_pos_{i}",
+                               count_per_pos_i,
+                               pd.DataFrame)
+            if validate:
+                require_index_equals(f"count_per_pos_{i}.index",
+                                     count_per_pos_i.index,
+                                     count_per_pos.index,
+                                     "count_per_pos.index")
+                require_index_equals(f"count_per_pos_{i}.columns",
+                                     count_per_pos_i.columns,
+                                     count_per_pos.columns,
+                                     "count_per_pos.columns")
             count_per_pos += count_per_pos_i
         if count_per_batch_read is not None:
-            if not isinstance(count_per_read_i, pd.DataFrame):
-                raise TypeError(f"count_per_read_i must be DataFrame, "
-                                f"but got {type(count_per_read_i).__name__}")
-            if (validate
-                    and not count_per_read_i.columns.equals(rel_header.index)):
-                raise ValueError(
-                    "Got different columns for "
-                    f"count_per_read_i ({count_per_read_i.columns}) "
-                    f"and header ({rel_header.index})"
-                )
+            require_isinstance(f"count_per_read_{i}",
+                               count_per_read_i,
+                               pd.DataFrame)
+            if validate:
+                require_index_equals(f"count_per_read_{i}.columns",
+                                     count_per_read_i.columns,
+                                     rel_header.index,
+                                     "rel_header.index")
             count_per_batch_read.append(count_per_read_i)
         logger.detail(f"Ended adding counts for batch {i}")
     # Concatenate the per-read counts for the batches.
