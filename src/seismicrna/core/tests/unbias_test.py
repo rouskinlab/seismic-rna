@@ -108,8 +108,7 @@ class TestCalcPEndsGivenClustNoClose(ut.TestCase):
         p_ends = np.ones((0, 0))
         p_noclose_given_ends = np.ones((0, 0, 1))
         self.assertRaisesRegex(ValueError,
-                               "Size of dimension 'positions' must be ≥ 1, "
-                               "but got 0",
+                               r"Must have size\(positions\) ≥ 1, but got 0",
                                calc_p_ends_given_clust_noclose,
                                p_ends,
                                p_noclose_given_ends)
@@ -118,8 +117,7 @@ class TestCalcPEndsGivenClustNoClose(ut.TestCase):
         p_ends = np.ones((1, 1))
         p_noclose_given_ends = np.ones((1, 1, 0))
         self.assertRaisesRegex(ValueError,
-                               "Size of dimension 'clusters' must be ≥ 1, "
-                               "but got 0",
+                               r"Must have size\(clusters\) ≥ 1, but got 0",
                                calc_p_ends_given_clust_noclose,
                                p_ends,
                                p_noclose_given_ends)
@@ -948,7 +946,7 @@ class TestCalcPNoCloseGivenEndsAuto(ut.TestCase):
             if n_dim == 1 or n_dim == 2:
                 # Skip the dimensions that are valid.
                 continue
-            err_msg = (r"Array 'p_mut_given_span' must have 2 dimension\(s\), "
+            err_msg = ("p_mut_given_span must have 2 dimensions, "
                        f"but got {n_dim}")
             for size in range(5):
                 dims = (size,) * n_dim
