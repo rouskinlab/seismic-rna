@@ -68,6 +68,8 @@ def parse_cigar(cigar_string: str):
                 raise RelateError("Identical consecutive CIGAR operations")
             if {operation, prev_operation} == {CIG_DELET, CIG_INSRT}:
                 raise RelateError("Adjacent insertion and deletion")
+            if {operation, prev_operation} == {CIG_DELET, CIG_INTRN}:
+                raise RelateError("Adjacent intron and deletion")
         # Convert the length field from str to int and verify that it
         # is a positive integer.
         if (length_int := int(length_str)) < 1:

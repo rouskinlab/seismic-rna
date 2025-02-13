@@ -268,13 +268,13 @@ def _calc_rels_read(read: SamRead,
                                                        "extended out of the "
                                                        "reference")
             if ref_pos == init_ref_pos:
-                raise RelateError("A splice was the first relationship")
+                raise RelateError("An intron was the first relationship")
             # The start of an intron delimits the end of segment.
             # The segment ends at the position before the intron starts.
             seg_ends3.append(ref_pos)
             ref_pos += op_length
             if ref_pos - init_ref_pos >= ref_bases:
-                raise RelateError("A splice was the last relationship")
+                raise RelateError("An intron was the last relationship")
             # The end of an intron delimits the start of a segment.
             # The segment starts at the position after the intron ends.
             seg_ends5.append(ref_pos + 1)
