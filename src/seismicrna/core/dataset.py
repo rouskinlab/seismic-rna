@@ -6,6 +6,7 @@ from typing import Any, Callable, Iterable
 
 from . import path
 from .batch import MutsBatch, RegionMutsBatch, ReadBatch, list_batch_nums
+from .error import InconsistentValueError, NoDataError
 from .io import MutsBatchIO, ReadBatchIO
 from .logs import logger
 from .rel import RelPattern
@@ -23,6 +24,10 @@ from .report import (BranchesF,
                      BatchedReport,
                      MissingFieldWithNoDefaultError)
 from .seq import DNA, Region, unite
+from .validate import (require_isinstance,
+                       require_issubclass,
+                       require_atleast,
+                       require_atmost)
 
 
 class BadTimeStampError(RuntimeError):
@@ -162,6 +167,8 @@ class UnbiasDataset(Dataset, ABC):
                  masked_read_nums: dict[[int, list]] | None = None,
                  **kwargs):
         super().__init__(*args, **kwargs)
+        if masked_read_nums is not None:
+            require_isinstance("masked_read_nums", masked_read_nums, dict)
         self.masked_read_nums = masked_read_nums
 
     @property
@@ -227,8 +234,13 @@ class MutsDataset(RegionDataset, ABC):
 class LoadFunction(object):
     """ Function to load a dataset. """
 
-    def __init__(self, data_type: type[Dataset], /, *more_types: type[Dataset]):
-        self.dataset_types = (data_type,) + more_types
+    def __init__(self,
+                 dataset_type: type[Dataset], /,
+                 *more_types: type[Dataset]):
+        require_issubclass("dataset_type", dataset_type, Dataset)
+        for i in range(len(more_types)):
+            require_issubclass(f"more_types[{i}]", more_types[i], Dataset)
+        self.dataset_types = (dataset_type,) + more_types
 
     def _get_dataset_type_consensus(self,
                                     method: Callable[[type[Dataset]], Any]):
@@ -327,20 +339,28 @@ class LoadedDataset(Dataset, ABC):
     def data_dirs(self):
         return [self.dir]
 
-    @cached_property
-    def report_path_field_values(self):
-        return self.report.get_path_field_values(
-            self.top,
-            self.get_batch_type().get_auto_path_fields()
-        )
-
     def get_batch_path(self, batch_num: int):
         """ Get the path to a batch of a specific number. """
-        return self.get_batch_type().build_path({**self.report_path_field_values,
-                                                 path.BATCH: batch_num})
+        require_atleast("batch_num", batch_num, 0, classes=int)
+        require_atmost("batch_num",
+                       batch_num,
+                       self.num_batches - 1,
+                       "num_batches",
+                       classes=int)
+        return path.cast_path(self.report_file,
+                              self.report.get_path_seg_types(),
+                              self.get_batch_type().get_path_seg_types(),
+                              {path.BATCH: batch_num,
+                               path.EXT: path.BRICKLE_EXT})
 
     def get_batch_checksum(self, batch_num: int):
         """ Get the checksum of a specific batch from the report. """
+        require_atleast("batch_num", batch_num, 0, classes=int)
+        require_atmost("batch_num",
+                       batch_num,
+                       self.num_batches - 1,
+                       "num_batches",
+                       classes=int)
         checksums = self.report.get_field(ChecksumsF)
         try:
             return checksums[self.get_btype_name()][batch_num]
@@ -396,8 +416,9 @@ class MergedDataset(Dataset, ABC):
             if value not in values:
                 values.append(value)
         if len(values) != 1:
-            raise ValueError(f"{type(self).__name__} expected exactly 1 value "
-                             f"for attribute {name}, but got {values}")
+            raise InconsistentValueError(
+                f"Attribute {repr(name)} has multiple values: {values}"
+            )
         return values[0]
 
     @cached_property
@@ -445,7 +466,7 @@ class TallDataset(MergedDataset, ABC):
             {**load_func.report_path_auto_fields, path.SAMPLE: sample}
         ) for sample in pooled_samples]
         if not sample_report_files:
-            raise ValueError(f"{self} got no datasets")
+            raise NoDataError(f"{self} has no datasets")
         return list(map(self.get_dataset_load_func(),
                         sample_report_files))
 
@@ -463,18 +484,35 @@ class TallDataset(MergedDataset, ABC):
     def num_batches(self):
         return sum(self.nums_batches)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._batch_nums_table = dict()
+
     def _translate_batch_num(self, batch_num: int):
         """ Translate a batch number into the numbers of the dataset and
         of the batch within the dataset. """
-        dataset_batch_num = batch_num
-        for dataset_num, num_batches in enumerate(self.nums_batches):
-            if dataset_batch_num < 0:
-                raise ValueError(f"Invalid batch number: {dataset_batch_num}")
-            if dataset_batch_num < num_batches:
-                return dataset_num, dataset_batch_num
-            dataset_batch_num -= num_batches
-        raise ValueError(f"Batch {batch_num} is invalid for {self} with "
-                         f"{self.num_batches} batch(es)")
+        require_atleast("batch_num", batch_num, 0, classes=int)
+        require_atmost("batch_num",
+                       batch_num,
+                       self.num_batches - 1,
+                       "num_batches",
+                       classes=int)
+        try:
+            # Check if the translated batch number has been cached.
+            dataset_num, dataset_batch_num = self._batch_nums_table[batch_num]
+            return dataset_num, dataset_batch_num
+        except KeyError:
+            # If not, then calculate it.
+            dataset_batch_num = batch_num
+            for dataset_num, num_batches in enumerate(self.nums_batches):
+                assert dataset_batch_num >= 0
+                if dataset_batch_num < num_batches:
+                    # Cache the translated batch number.
+                    self._batch_nums_table[batch_num] = (dataset_num,
+                                                         dataset_batch_num)
+                    return dataset_num, dataset_batch_num
+                dataset_batch_num -= num_batches
+        raise ValueError(f"{self} has no batch with number {batch_num}")
 
     def get_batch(self, batch_num: int):
         # Determine the dataset and the batch number in that dataset.
@@ -502,10 +540,10 @@ class WideDataset(MergedRegionDataset, ABC):
             self.report_file,
             self.get_report_type().get_path_seg_types(),
             load_func.report_path_seg_types,
-            (load_func.report_path_auto_fields | {path.REG: reg})
+            {**load_func.report_path_auto_fields, path.REG: reg}
         ) for reg in joined_regs]
         if not region_report_files:
-            raise ValueError(f"{self} got no datasets")
+            raise NoDataError(f"{self} has no datasets")
         return list(map(self.get_dataset_load_func(),
                         region_report_files))
 
@@ -576,8 +614,8 @@ class MultistepDataset(MutsDataset, ABC):
             load_func.report_path_seg_types,
             # Replace the default fields and branches of report path 2
             # with those of report path 1.
-            (load_func.report_path_auto_fields
-             | {path.BRANCHES: path.get_ancestors(dataset2.branches)})
+            {**load_func.report_path_auto_fields,
+             path.BRANCHES: path.get_ancestors(dataset2.branches)}
         )
 
     @classmethod

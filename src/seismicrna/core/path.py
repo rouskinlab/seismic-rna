@@ -96,7 +96,7 @@ TXT_EXT = ".txt"
 CSV_EXT = ".csv"
 CSVZIP_EXT = f"{CSV_EXT}{GZIP_EXT}"
 CSV_EXTS = CSV_EXT, CSVZIP_EXT
-BROTLI_PICKLE_EXT = ".brickle"
+BRICKLE_EXT = ".brickle"
 JSON_EXT = ".json"
 FASTA_EXTS = ".fa", ".fna", ".fasta"
 BOWTIE2_INDEX_EXTS = (".1.bt2",
@@ -429,8 +429,8 @@ AbundanceField = PathField(str, [CLUSTER_STEP])
 # File extensions
 TextExt = PathField(str, [TXT_EXT], is_ext=True)
 ReportExt = PathField(str, [JSON_EXT], is_ext=True)
-RefseqFileExt = PathField(str, [BROTLI_PICKLE_EXT], is_ext=True)
-BatchExt = PathField(str, [BROTLI_PICKLE_EXT], is_ext=True)
+RefseqFileExt = PathField(str, [BRICKLE_EXT], is_ext=True)
+BatchExt = PathField(str, [BRICKLE_EXT], is_ext=True)
 ClustTabExt = PathField(str, CSV_EXTS, is_ext=True)
 PosTableExt = PathField(str, [CSV_EXT], is_ext=True)
 ReadTableExt = PathField(str, [CSVZIP_EXT], is_ext=True)
