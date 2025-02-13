@@ -48,8 +48,6 @@ class TestIterRecordsPaired(ut.TestCase):
                       for name, rec1, rec2
                       in _iter_records_paired(sam_file, 0, len(text))]
             self.assertEqual(result, expect)
-        except Exception:
-            raise
         finally:
             delete_sam(sam_file)
 
@@ -62,8 +60,6 @@ class TestIterRecordsPaired(ut.TestCase):
                 expect,
                 lambda: list(_iter_records_paired(sam_file, 0, len(text)))
             )
-        except Exception:
-            raise
         finally:
             delete_sam(sam_file)
 
