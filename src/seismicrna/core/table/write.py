@@ -24,6 +24,7 @@ from .base import (DELET_REL,
                    ReadTable,
                    AbundanceTable,
                    all_patterns)
+from .. import path
 from ..batch import accumulate_batches, accumulate_counts
 from ..dataset import MutsDataset
 from ..header import Header, make_header
@@ -204,6 +205,17 @@ class Tabulator(ABC):
             files.append(table.write(force))
         return files
 
+    @cached_property
+    def _str_dict(self):
+        return {path.TOP: self.top,
+                path.SAMPLE: self.sample,
+                path.BRANCHES: self.branches,
+                path.REF: self.ref,
+                path.REG: self.region.name}
+
+    def __str__(self):
+        return f"{type(self).__name__} of {self._str_dict}"
+
 
 class CountTabulator(Tabulator, ABC):
     """ Tabulator that accepts pre-counted data from batches. """
@@ -216,7 +228,10 @@ class CountTabulator(Tabulator, ABC):
 
     @cached_property
     def _counts(self):
-        return accumulate_counts(self._batch_counts, **self._accum_kwargs)
+        logger.routine(f"Began tabulating {self}")
+        counts = accumulate_counts(self._batch_counts, **self._accum_kwargs)
+        logger.routine(f"Ended tabulating {self}")
+        return counts
 
 
 class BatchTabulator(Tabulator, ABC):
@@ -234,10 +249,13 @@ class BatchTabulator(Tabulator, ABC):
 
     @cached_property
     def _counts(self):
-        return accumulate_batches(self._get_batch_count_all,
-                                  self.num_batches,
-                                  max_procs=self.max_procs,
-                                  **self._accum_kwargs)
+        logger.routine(f"Began tabulating {self}")
+        counts = accumulate_batches(self._get_batch_count_all,
+                                    self.num_batches,
+                                    max_procs=self.max_procs,
+                                    **self._accum_kwargs)
+        logger.routine(f"Ended tabulating {self}")
+        return counts
 
 
 class DatasetTabulator(BatchTabulator, ABC):

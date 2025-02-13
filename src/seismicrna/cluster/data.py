@@ -36,7 +36,8 @@ from ..core.logs import logger
 from ..core.mu import calc_sum_arcsine_distance
 from ..core.report import JoinedClustersF, KsWrittenF, BestKF
 from ..core.seq import POS_NAME, BASE_NAME
-from ..core.table import (TableLoader,
+from ..core.table import (MUTAT_REL,
+                          TableLoader,
                           PositionTableLoader,
                           BatchTabulator,
                           CountTabulator,
@@ -44,13 +45,12 @@ from ..core.table import (TableLoader,
                           RelTypeTable,
                           PositionTableWriter,
                           AbundanceTableWriter)
-from ..core.table import MUTAT_REL
 from ..mask.batch import MaskMutsBatch
 from ..mask.dataset import load_mask_dataset
-from ..mask.table import PartialDatasetTabulator
 from ..mask.table import (PartialTable,
                           PartialPositionTable,
-                          PartialTabulator)
+                          PartialTabulator,
+                          PartialDatasetTabulator)
 
 
 class ClusterDataset(Dataset, ABC):
@@ -142,6 +142,7 @@ def get_clust_params(dataset: ClusterMutsDataset, max_procs: int = 1):
     """ Get the mutation rates and proportion for each cluster. If table
     files already exist, then use them to get the parameters; otherwise,
     calculate the parameters from the dataset. """
+    logger.routine(f"Began obtaining cluster parameters from {dataset}")
     # Try to load the tables from files.
     path_fields = {path.TOP: dataset.top,
                    path.SAMPLE: dataset.sample,
@@ -151,15 +152,22 @@ def get_clust_params(dataset: ClusterMutsDataset, max_procs: int = 1):
     pos_table_file = ClusterPositionTableLoader.build_path(path_fields)
     try:
         pos_table = ClusterPositionTableLoader(pos_table_file)
+        logger.detail(f"Position table {pos_table_file} exists")
     except FileNotFoundError:
         pos_table = None
+        logger.detail(f"Position table {pos_table_file} does not exist")
     abundance_table_file = ClusterAbundanceTableLoader.build_path(path_fields)
     try:
         abundance_table = ClusterAbundanceTableLoader(abundance_table_file)
+        logger.detail(f"Abundance table {abundance_table_file} exists")
     except FileNotFoundError:
         abundance_table = None
+        logger.detail(f"Abundance table {abundance_table_file} does not exist")
     # If either table file does not exist, then calculate the tables.
     if pos_table is None or abundance_table is None:
+        logger.detail(
+            f"Tabulating is needed because at least one table does not exist"
+        )
         tabulator = ClusterBatchTabulator(
             top=dataset.top,
             sample=dataset.sample,
@@ -181,6 +189,8 @@ def get_clust_params(dataset: ClusterMutsDataset, max_procs: int = 1):
             pos_table = ClusterPositionTableWriter(tabulator)
         if abundance_table is None:
             abundance_table = ClusterAbundanceTableWriter(tabulator)
+    else:
+        logger.detail(f"Tabulating is not needed because all tables exist")
     # Calculate the parameters from the tables.
     mus = pos_table.fetch_ratio(rel=MUTAT_REL).loc[:, MUTAT_REL]
     pis = abundance_table.proportions
@@ -192,6 +202,7 @@ def get_clust_params(dataset: ClusterMutsDataset, max_procs: int = 1):
     pis_df.index = pd.MultiIndex.from_tuples([(0, "p")], names=mus.index.names)
     assert pis.index.equals(mus.columns)
     params = pd.concat([pis_df, mus])
+    logger.routine(f"Ended obtaining cluster parameters from {dataset}")
     return params
 
 

@@ -22,7 +22,7 @@ def accumulate_counts(batch_counts: Iterable[tuple[Any, Any, Any, Any]],
                       validate: bool = True):
     """ """
     rels = list(patterns)
-    logger.routine(f"Began accumulating patterns {rels}")
+    logger.routine(f"Began accumulating counts of patterns {rels}")
     header = make_header(rels=rels, ks=ks)
     end_counts_index = pd.MultiIndex.from_arrays([np.array([], dtype=int)
                                                   for _ in END_COORDS],
@@ -123,7 +123,7 @@ def accumulate_counts(batch_counts: Iterable[tuple[Any, Any, Any, Any]],
         count_per_read = pd.DataFrame(columns=rel_header.index, dtype=dtype)
     else:
         count_per_read = None
-    logger.routine(f"Ended accumulating patterns {rels}")
+    logger.routine(f"Ended accumulating counts of patterns {rels}")
     return num_reads, end_counts, count_per_pos, count_per_read
 
 
@@ -140,6 +140,7 @@ def accumulate_batches(
         validate: bool = True,
         max_procs: int = 1
 ):
+    logger.routine(f"Began accumulating counts of {num_batches} batches")
     # Generate the counts for the batches in parallel.
     batch_counts = dispatch(get_batch_count_all,
                             max_procs=max_procs,
@@ -152,12 +153,14 @@ def accumulate_batches(
                                         count_pos=count_pos,
                                         count_read=count_read))
     # Accumulate the counts for all batches.
-    return accumulate_counts(batch_counts,
-                             refseq,
-                             pos_nums,
-                             patterns,
-                             ks,
-                             count_ends=count_ends,
-                             count_pos=count_pos,
-                             count_read=count_read,
-                             validate=validate)
+    accum_counts = accumulate_counts(batch_counts,
+                                     refseq,
+                                     pos_nums,
+                                     patterns,
+                                     ks,
+                                     count_ends=count_ends,
+                                     count_pos=count_pos,
+                                     count_read=count_read,
+                                     validate=validate)
+    logger.routine(f"Ended accumulating counts of {num_batches} batches")
+    return accum_counts
