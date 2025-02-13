@@ -65,13 +65,18 @@ class List(RefFileIO, ABC):
         """ Names of the index columns. """
 
     @classmethod
-    def load_data(cls, file: str | Path):
-        return pd.read_csv(file, index_col=cls.get_index_names()).index
+    def load_data(cls, file: str | Path, only_ref: bool = False):
+        data = pd.read_csv(file, index_col=cls.get_index_names()).index
+        if only_ref:
+            _, fields = cls.parse_path(file)
+            ref = fields[path.REF]
+            return data[data.get_level_values(FIELD_REF) == ref]
+        return data
 
     @classmethod
-    def load(cls, file: str | Path):
+    def load(cls, file: str | Path, **kwargs):
         top, path_field_values = cls.parse_path(file, exclude_auto=True)
-        return cls(data=cls.load_data(file), **path_field_values)
+        return cls(data=cls.load_data(file, **kwargs), **path_field_values)
 
     @classmethod
     @abstractmethod

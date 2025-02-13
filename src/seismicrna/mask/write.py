@@ -234,12 +234,15 @@ class Masker(object):
         mask_pos = np.array([pos for ref, pos in mask_pos
                              if ref == dataset_ref],
                             dtype=int)
+        logger.detail(f"Got {mask_pos.size} positions listed individually "
+                      f"to pre-exclude for reference {repr(dataset_ref)}")
         # Read positions to exclude from a file.
         if mask_pos_file is not None:
-            file_data = PositionList.load_data(mask_pos_file)
-            mask_pos = np.concatenate(
-                [mask_pos, file_data.get_level_values(POS_NAME).values]
-            )
+            file_data = PositionList.load_data(mask_pos_file).to_frame()
+            file_pos = file_data.loc[dataset_ref, POS_NAME].values
+            logger.detail(f"Got {file_pos.size} positions in {mask_pos_file} "
+                          f"to pre-exclude for reference {repr(dataset_ref)}")
+            mask_pos = np.concatenate([mask_pos, file_pos])
         # Drop redundant positions and sort the remaining ones.
         mask_pos = np.unique(np.asarray(mask_pos, dtype=int))
         # Keep only the positions in the region.
