@@ -67,8 +67,8 @@ def list_profiles(num_structs: int):
 
 
 class TestWorkflow(ut.TestCase):
-    OUT_DIR = Path("test-out").absolute()
-    SIM_DIR = Path("test-sim").absolute()
+    OUT_DIR = Path("wf-test-out").absolute()
+    SIM_DIR = Path("wf-test-sim").absolute()
 
     def setUp(self):
         self.maxDiff = 10000
@@ -345,10 +345,10 @@ class TestWorkflow(ut.TestCase):
 
 class TestWorkflowTwoOutDirs(ut.TestCase):
     NUMBERS = [1, 2]
-    SIM_DIR = Path("test-sim").absolute()
-    OUT_DIR = Path("test-out").absolute()
-    SIM_DIRS = tuple(Path(f"test-sim{i}").absolute() for i in NUMBERS)
-    OUT_DIRS = tuple(Path(f"test-out{i}").absolute() for i in NUMBERS)
+    SIM_DIR = Path("wf2-test-sim").absolute()
+    OUT_DIR = Path("wf2-test-out").absolute()
+    SIM_DIRS = tuple(Path(f"wf2-test-sim{i}").absolute() for i in NUMBERS)
+    OUT_DIRS = tuple(Path(f"wf2-test-out{i}").absolute() for i in NUMBERS)
     REFS = "test_refs"
     REF = "test_ref"
     SAMPLE = "test_sample"

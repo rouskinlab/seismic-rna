@@ -21,10 +21,6 @@ from .validate import (require_isinstance,
 
 # Constants ############################################################
 
-CWD = pathlib.Path.cwd()
-INP_TEST_DIR = CWD.joinpath("test-inp")
-OUT_TEST_DIR = CWD.joinpath("test-out")
-TMP_TEST_DIR = CWD.joinpath("test-tmp")
 BRANCH_SEP = "_"
 VERSUS_BRANCH = "VS"
 
