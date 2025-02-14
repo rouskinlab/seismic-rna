@@ -34,3 +34,4 @@ log/
 
 # VS Code
 .vscode
+.coverage
