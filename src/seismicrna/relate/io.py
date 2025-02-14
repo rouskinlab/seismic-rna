@@ -78,8 +78,8 @@ def from_reads(reads: Iterable[tuple[str,
                batch: int,
                write_read_names: bool,
                drop_empty_reads: bool = True):
-    """ Accumulate reads into relation vectors. """
-    logger.routine("Began gathering reads into batches")
+    """ Gather reads into a batch of relationships. """
+    logger.routine(f"Began gathering reads into batch {batch}")
     max_segs = -1
     diff_segs = False
     names = list()
@@ -187,5 +187,5 @@ def from_reads(reads: Iterable[tuple[str,
                                       names=names)
     else:
         name_batch = None
-    logger.routine("Ended gathering reads into batches")
+    logger.routine(f"Ended gathering reads into batch {batch}")
     return relate_batch, name_batch
