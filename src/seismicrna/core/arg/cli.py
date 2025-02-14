@@ -1071,6 +1071,20 @@ opt_color = Option(
     help="Color bases by their reactivity"
 )
 
+opt_draw_svg = Option(
+    ("--draw-svg/--no-draw-svg",),
+    type=bool,
+    default=True,
+    help="Output each drawing in a Scalable Vector Graphics file"
+)
+
+opt_draw_png = Option(
+    ("--draw-png/--no-draw-png",),
+    type=bool,
+    default=False,
+    help="Output each drawing in a Portable Network Graphics file"
+)
+
 # Graph
 
 opt_comppair = Option(

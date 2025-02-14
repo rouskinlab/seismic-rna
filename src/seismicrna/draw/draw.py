@@ -21,9 +21,16 @@ from ..mask.table import MaskPositionTable, MaskPositionTableLoader
 
 TEMPLATE_STRING = """
 rnartist {
+    {% if draw_svg %}
     svg {
         path = "{{ path }}"
     }
+    {% endif %}
+    {% if draw_png %}
+    png {
+        path = "{{ path }}"
+    }
+    {% endif %}
     ss {
         bn {
             seq = "{{ seq }}"
@@ -111,7 +118,9 @@ class JinjaData:
                  name: str,
                  color_dict: dict,
                  details_value: int,
-                 color_blocks: list[ColorBlock]):
+                 color_blocks: list[ColorBlock],
+                 draw_svg: bool,
+                 draw_png: bool):
         self.path = path_
         self.seq = seq
         self.value = value
@@ -119,10 +128,14 @@ class JinjaData:
         self.color_dict = color_dict
         self.details_value = details_value
         self.color_blocks = color_blocks
+        self.draw_svg = draw_svg
+        self.draw_png = draw_png
 
     def to_dict(self):
         return {
             'path': self.path,
+            'draw_svg': self.draw_svg,
+            'draw_png': self.draw_png,
             'seq': self.seq,
             'value': self.value,
             'name': self.name,
@@ -150,6 +163,8 @@ def build_jinja_data(struct: str,
                      color_dict: dict,
                      name: str,
                      out_dir: Path,
+                     draw_svg: bool,
+                     draw_png: bool,
                      highlight_pos: Iterable[int] = None):
     color_blocks = [ColorBlock("N", "#caccce"),
                     ColorBlock("n", "black"),
@@ -177,7 +192,9 @@ def build_jinja_data(struct: str,
                            name=name,
                            color_dict=color_dict,
                            details_value=5,
-                           color_blocks=color_blocks)
+                           color_blocks=color_blocks,
+                           draw_svg=draw_svg,
+                           draw_png=draw_png)
     return jinja_data
 
 
@@ -196,6 +213,8 @@ class RNArtistRun(object):
                  struct_num: Iterable[int],
                  color: bool,
                  verify_times: bool,
+                 draw_svg: bool,
+                 draw_png: bool,
                  n_procs: int):
         self.top, _ = FoldReport.parse_path(report_file)
         report = FoldReport.load(report_file)
@@ -207,6 +226,8 @@ class RNArtistRun(object):
         self.tmp_dir = tmp_dir
         self.struct_num = list(struct_num)
         self.color = color
+        self.draw_svg = draw_svg
+        self.draw_png = draw_png
         self.n_procs = n_procs
         self.verify_times = verify_times
         self._parse_profile()
@@ -356,6 +377,25 @@ class RNArtistRun(object):
                                path.STRUCT: struct,
                                path.EXT: path.SVG_EXT})
 
+    def get_png_file(self, top: Path, struct: int):
+        """ Get the path to the PNG file.
+
+        Parameters
+        ----------
+        top: pathlib.Path
+            Top-level directory.
+
+        Returns
+        -------
+        pathlib.Path
+            Path of the file.
+        """
+        return self._get_file(top,
+                              path.PngSeg,
+                              profile=self.profile,
+                              struct=struct,
+                              ext=path.PNG_EXT)
+
     def get_varna_color_file(self, top: Path):
         """ Get the path to the VARNA color file.
 
@@ -437,16 +477,24 @@ class RNArtistRun(object):
     def process_struct(self,
                        struct_name: str,
                        struct: str,
-                       out_path: Path,
+                       svg_path: Path,
+                       png_path: Path,
                        script_file: Path,
+                       draw_svg: bool,
+                       draw_png: bool,
                        keep_tmp: bool,
                        force: bool):
-        if need_write(out_path, force=force):
+        if not (draw_svg or draw_png):
+            logger.warning("Both --no-draw-svg and --no-draw-png are set, defaulting to --svg")
+            draw_svg = True
+        if (draw_svg and need_write(svg_path, force=force)) or (draw_png and need_write(png_path, force=force)):
             jinja_data = build_jinja_data(struct=struct,
                                           color_dict=self.color_dict,
                                           name=struct_name,
-                                          out_dir=out_path.parent,
-                                          highlight_pos=self.edited_numbers)
+                                          out_dir=svg_path.parent,
+                                          highlight_pos=self.edited_numbers,
+                                          draw_svg=draw_svg,
+                                          draw_png=draw_png)
 
             rnartist_script = TEMPLATE.render(jinja_data.to_dict())
             with open(script_file, 'w') as f:
@@ -458,7 +506,8 @@ class RNArtistRun(object):
             run_cmd(rnartist_cmd)
             if not keep_tmp:
                 script_file.unlink(missing_ok=True)
-        return out_path
+        out_paths = [path for path, write in zip((svg_path, png_path), (draw_svg, draw_png)) if write]
+        return out_paths
 
     def run(self, keep_tmp: bool, force: bool):
         structs = dict()
@@ -470,11 +519,14 @@ class RNArtistRun(object):
                 structs[struct_num] = dict(seq=struct.seq,
                                            value=struct.db_structure)
         args = [
-            (f"{self.profile}-{struct_num}",
-             struct,
-             self.get_svg_file(self.top, struct=struct_num),
-             self.get_script_file(top=self.tmp_dir, struct=struct_num))
-            for struct_num, struct in structs.items()]
+                (f"{self.profile}-{struct_num}",
+                struct,
+                self.get_svg_file(self.top, struct=struct_num),
+                self.get_png_file(self.top, struct=struct_num),
+                self.get_script_file(top=self.tmp_dir, struct=struct_num),
+                self.draw_svg,
+                self.draw_png,)
+                for struct_num, struct in structs.items()]
         results = dispatch(self.process_struct,
                            self.n_procs,
                            args=args,
@@ -487,6 +539,8 @@ class RNArtistRun(object):
 def draw(report_path: Path, *,
          struct_num: Iterable[int],
          color: bool,
+         draw_svg: bool,
+         draw_png: bool,
          tmp_dir: Path,
          keep_tmp: bool,
          verify_times: bool,
@@ -498,6 +552,8 @@ def draw(report_path: Path, *,
                            struct_num,
                            color,
                            verify_times,
+                           draw_svg,
+                           draw_png,
                            n_procs)
     # By convention, a function must return a Path for dispatch to deem
     # that it has completed successfully.

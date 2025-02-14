@@ -447,6 +447,7 @@ DmsReactsExt = PathField(str, [DMS_EXT], is_ext=True)
 GraphExt = PathField(str, GRAPH_EXTS, is_ext=True)
 WebAppFileExt = PathField(str, [JSON_EXT], is_ext=True)
 SvgExt = PathField(str, [SVG_EXT], is_ext=True)
+PngExt = PathField(str, [PNG_EXT], is_ext=True)
 KtsExt = PathField(str, [KTS_EXT], is_ext=True)
 
 
@@ -708,12 +709,12 @@ VarnaColorSeg = PathSegment("varna-color",
                             frmt="{profile}__varna-color{ext}")
 
 # Draw
-SvgSeg = PathSegment("svg",
-                     {PROFILE: NameField, STRUCT: IntField, EXT: SvgExt},
-                     frmt="{profile}-{struct}{ext}")
-KtsSeg = PathSegment("kts",
-                     {PROFILE: NameField, STRUCT: IntField, EXT: KtsExt},
-                     frmt="{profile}-{struct}{ext}")
+SvgSeg = PathSegment("svg", {PROFILE: NameField, STRUCT: IntField, EXT: SvgExt},
+                 frmt="{profile}-{struct}{ext}")
+PngSeg = PathSegment("png", {PROFILE: NameField, STRUCT: IntField, EXT: PngExt},
+                 frmt="{profile}-{struct}{ext}")
+KtsSeg = PathSegment("kts", {PROFILE: NameField, STRUCT: IntField, EXT: KtsExt},
+                 frmt="{profile}-{struct}{ext}")
 
 # Graphs
 GraphSeg = PathSegment("graph", {GRAPH: NameField, EXT: GraphExt})
