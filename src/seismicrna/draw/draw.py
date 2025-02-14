@@ -392,9 +392,9 @@ class RNArtistRun(object):
         """
         return self._get_file(top,
                               path.PngSeg,
-                              profile=self.profile,
-                              struct=struct,
-                              ext=path.PNG_EXT)
+                              {path.PROFILE: self.profile,
+                               path.STRUCT: struct,
+                               path.EXT: path.PNG_EXT})
 
     def get_varna_color_file(self, top: Path):
         """ Get the path to the VARNA color file.
