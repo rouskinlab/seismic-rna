@@ -2,6 +2,8 @@ name: Build and Publish Project on PyPI
 
 on:
   release:
+    branches:
+      - main
   workflow_dispatch:
 
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
