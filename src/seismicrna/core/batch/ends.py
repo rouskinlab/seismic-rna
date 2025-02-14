@@ -29,8 +29,6 @@ def count_reads_segments(seg_ends: np.ndarray,
     require_equal(f"{what}.ndim", seg_ends.ndim, 2,
                   error_type=BadSegmentEndsError)
     num_reads, num_segs = seg_ends.shape
-    require_atleast("num_segs", num_segs, 1,
-                    error_type=BadSegmentEndsError)
     return num_reads, num_segs
 
 
@@ -69,32 +67,42 @@ def merge_segment_ends(seg_end5s: np.ndarray,
     return seg_ends
 
 
-def _check_no_coverage_reads(seg_ends: np.ndarray, what: str = "seg_ends"):
-    num_reads, num_segs = count_reads_segments(seg_ends, what)
-    if np.ma.isarray(seg_ends):
-        # Check if any reads have no coverage (are completely masked).
-        no_coverage = np.ma.getmaskarray(seg_ends).all(axis=1)
-        if np.any(no_coverage):
-            raise BadSegmentEndsError(
-                f"{np.count_nonzero(no_coverage)} reads have no coverage "
-            )
-    return num_reads, num_segs
-
-
 def find_read_end5s(seg_end5s: np.ndarray):
     """ Find the 5' end of each read. """
-    num_reads, num_segs = _check_no_coverage_reads(seg_end5s, "seg_end5s")
-    return np.asarray(seg_end5s.min(axis=1)
-                      if num_segs > 1
-                      else seg_end5s[:, 0])
+    num_reads, num_segs = count_reads_segments(seg_end5s, "seg_end5s")
+    if num_segs == 0:
+        # There are 0 segments, so default to 5' end = 1.
+        return np.ones(num_reads, dtype=seg_end5s.dtype)
+    if num_segs == 1:
+        # There is exactly 1 segment, so use it.
+        read_end5s = seg_end5s[:, 0]
+    else:
+        # Take the minimum over all segments.
+        read_end5s = seg_end5s.min(axis=1)
+    if np.ma.isarray(read_end5s):
+        # Fill any remaining masked values with 5' end = 1.
+        read_end5s = read_end5s.filled(1)
+    assert isinstance(read_end5s, np.ndarray) and not np.ma.isarray(read_end5s)
+    return read_end5s
 
 
 def find_read_end3s(seg_end3s: np.ndarray):
     """ Find the 3' end of each read. """
-    num_reads, num_segs = _check_no_coverage_reads(seg_end3s, "seg_end3s")
-    return np.asarray(seg_end3s.max(axis=1)
-                      if num_segs > 1
-                      else seg_end3s[:, 0])
+    num_reads, num_segs = count_reads_segments(seg_end3s, "seg_end3s")
+    if num_segs == 0:
+        # There are 0 segments, so default to 3' end = 0.
+        return np.zeros(num_reads, dtype=seg_end3s.dtype)
+    if num_segs == 1:
+        # There is exactly 1 segment, so use it.
+        read_end3s = seg_end3s[:, 0]
+    else:
+        # Take the maximum over all segments.
+        read_end3s = seg_end3s.max(axis=1)
+    if np.ma.isarray(read_end3s):
+        # Fill any remaining masked values with 3' end = 0.
+        read_end3s = read_end3s.filled(0)
+    assert isinstance(read_end3s, np.ndarray) and not np.ma.isarray(read_end3s)
+    return read_end3s
 
 
 def merge_read_ends(read_end5s: np.ndarray, read_end3s: np.ndarray):
@@ -134,7 +142,6 @@ def sanitize_segment_ends(seg_end5s: np.ndarray,
         and `max_pos` (inclusive).
     """
     num_reads, num_segs = match_reads_segments(seg_end5s, seg_end3s)
-    require_atleast("num_segs", num_segs, 1, error_type=BadSegmentEndsError)
     if check_values:
         for i in range(num_segs):
             # All coordinates must be ≥ 1.
@@ -168,7 +175,6 @@ def sanitize_segment_ends(seg_end5s: np.ndarray,
 
 def sort_segment_ends(seg_end5s: np.ndarray,
                       seg_end3s: np.ndarray,
-                      zero_indexed: bool = True,
                       fill_mask: bool = False):
     """ Sort the segment end coordinates and label the 3' end of each
     contiguous set of segments.
@@ -179,9 +185,6 @@ def sort_segment_ends(seg_end5s: np.ndarray,
         5' end of each segment in each read; may be masked.
     seg_end3s: np.ndarray
         3' end of each segment in each read; may be masked.
-    zero_indexed: bool = True
-        In the return array, make the 5' ends 0-indexed; if False, then
-        they will be 1-indexed (like the input).
     fill_mask: bool = False
         If `seg_end5s` or `seg_end3s` is a masked array, then return a
         regular array with all masked coordinates set to 0 (or 1 for
@@ -197,15 +200,20 @@ def sort_segment_ends(seg_end5s: np.ndarray,
     """
     _, num_segs = match_reads_segments(seg_end5s, seg_end3s)
     # Make the 5' ends 0-indexed and join the coordinates horizontally.
-    seg_ends = merge_segment_ends(seg_end5s - 1, seg_end3s)
+    if np.ma.isarray(seg_end5s):
+        # Arithmetic operations do not change masked values, so subtract
+        # 1 from the underlying data and then reapply the mask.
+        seg_end5s_zero_indexed = np.ma.masked_array(seg_end5s.data - 1,
+                                                    seg_end5s.mask)
+    else:
+        seg_end5s_zero_indexed = seg_end5s - 1
+    seg_ends = merge_segment_ends(seg_end5s_zero_indexed, seg_end3s)
     # Sort the coordinates in ascending order within each read.
     kwargs = dict(fill_value=0) if np.ma.isarray(seg_ends) else dict()
     sort_order = seg_ends.argsort(axis=1, kind="stable", **kwargs)
     if np.ma.isarray(seg_ends) and fill_mask:
         # Fill the masked values with zero and remove the mask.
-        mask = seg_ends.mask
-        seg_ends = seg_ends.data
-        seg_ends[mask] = 0
+        seg_ends = seg_ends.filled(0)
     seg_ends_sorted = np.take_along_axis(seg_ends, sort_order, axis=1)
     # Label the sorted coordinates that correspond to segment 5' ends.
     is_seg_end5 = sort_order < num_segs
@@ -219,23 +227,18 @@ def sort_segment_ends(seg_end5s: np.ndarray,
                                          seg_ends_sorted.mask)
         is_contig_end3 = np.ma.masked_array(is_contig_end3,
                                             seg_ends_sorted.mask)
-    if not zero_indexed:
-        # Make the 5' coordinates 1-indexed again.
-        seg_ends_sorted[np.nonzero(is_seg_end5)] += 1
     return seg_ends_sorted, is_seg_end5, is_contig_end3
 
 
 def find_contiguous_reads(seg_end5s: np.ndarray, seg_end3s: np.ndarray):
     """ Whether the segments of each read are contiguous. """
     num_reads, num_segs = match_reads_segments(seg_end5s, seg_end3s)
-    if num_segs == 1:
-        # Single-segment reads must be contiguous.
+    if num_segs <= 1:
+        # Reads with fewer than 2 segments cannot be discontiguous.
         return np.ones(num_reads, dtype=bool)
     # For contiguous reads, only the last coordinate (when sorted) will
     # be the end of a contiguous segment.
-    _, _, is_contig_end3 = sort_segment_ends(seg_end5s,
-                                             seg_end3s,
-                                             zero_indexed=True)
+    _, _, is_contig_end3 = sort_segment_ends(seg_end5s, seg_end3s)
     return np.logical_not(np.count_nonzero(is_contig_end3[:, :-1], axis=1))
 
 

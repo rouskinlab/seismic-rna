@@ -171,7 +171,6 @@ def calc_coverage(pos_index: pd.Index,
     ends_sorted, _, is_contig_end3 = sort_segment_ends(
         seg_end5s.clip(min_pos, max_pos + 1),
         seg_end3s.clip(min_pos - 1, max_pos),
-        zero_indexed=True,
         fill_mask=True
     )
     # Find the cumulative count of each base up to each position.
