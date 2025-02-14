@@ -709,12 +709,15 @@ VarnaColorSeg = PathSegment("varna-color",
                             frmt="{profile}__varna-color{ext}")
 
 # Draw
-SvgSeg = PathSegment("svg", {PROFILE: NameField, STRUCT: IntField, EXT: SvgExt},
-                 frmt="{profile}-{struct}{ext}")
-PngSeg = PathSegment("png", {PROFILE: NameField, STRUCT: IntField, EXT: PngExt},
-                 frmt="{profile}-{struct}{ext}")
-KtsSeg = PathSegment("kts", {PROFILE: NameField, STRUCT: IntField, EXT: KtsExt},
-                 frmt="{profile}-{struct}{ext}")
+SvgSeg = PathSegment("svg",
+                     {PROFILE: NameField, STRUCT: IntField, EXT: SvgExt},
+                     frmt="{profile}-{struct}{ext}")
+PngSeg = PathSegment("png",
+                     {PROFILE: NameField, STRUCT: IntField, EXT: PngExt},
+                     frmt="{profile}-{struct}{ext}")
+KtsSeg = PathSegment("kts",
+                     {PROFILE: NameField, STRUCT: IntField, EXT: KtsExt},
+                     frmt="{profile}-{struct}{ext}")
 
 # Graphs
 GraphSeg = PathSegment("graph", {GRAPH: NameField, EXT: GraphExt})
