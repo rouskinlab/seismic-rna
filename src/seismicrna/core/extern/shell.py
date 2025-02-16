@@ -18,6 +18,7 @@ RNASTRUCTURE_FOLD_CMD = "Fold"
 RNASTRUCTURE_FOLD_SMP_CMD = "Fold-smp"
 JAVA_CMD = "java"
 JAR_CMD = "-jar"
+JGO_CMD = "jgo"
 
 
 class ShellCommandFailedError(RuntimeError):

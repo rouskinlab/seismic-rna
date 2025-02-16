@@ -8,7 +8,7 @@ from jinja2 import Template
 
 from ..cluster.data import ClusterPositionTable, ClusterPositionTableLoader
 from ..core import path
-from ..core.extern.shell import args_to_cmd, run_cmd, JAVA_CMD, JAR_CMD
+from ..core.extern.shell import args_to_cmd, run_cmd, JAVA_CMD, JAR_CMD, JGO_CMD
 from ..core.header import AVERAGE_PREFIX
 from ..core.logs import logger
 from ..core.report import SampleF, BranchesF, RefF, RegF, ProfileF
@@ -79,7 +79,13 @@ rnartist {
 """
 
 TEMPLATE = Template(TEMPLATE_STRING)
-RNARTIST_PATH = os.environ.get("RNARTISTCORE")
+
+RNARTIST_REPO = "maven-snapshots=http://oss.sonatype.org/content/repositories/snapshots"
+RNARTIST_GROUP_ID = "io.github.fjossinet.rnartist"
+RNARTIST_ARTIFACT_ID = "rnartistcore"
+RNARTIST_VERSION = "0.4.7-SNAPSHOT"
+RNARTIST_MAIN_CLASS = "io.github.fjossinet.rnartist.core.MainKt"
+RNARTIST_ARTIFACT = f"{RNARTIST_GROUP_ID}:{RNARTIST_ARTIFACT_ID}:{RNARTIST_VERSION}:{RNARTIST_MAIN_CLASS}"
 
 TABLES = {AVERAGE_PREFIX: (MaskPositionTable,
                            MaskPositionTableLoader),
@@ -499,11 +505,24 @@ class RNArtistRun(object):
             rnartist_script = TEMPLATE.render(jinja_data.to_dict())
             with open(script_file, 'w') as f:
                 f.write(rnartist_script)
-            rnartist_cmd = args_to_cmd([JAVA_CMD,
-                                        JAR_CMD,
-                                        RNARTIST_PATH,
+            rnartist_cmd = args_to_cmd([JGO_CMD,
+                                        "-r",
+                                        RNARTIST_REPO,
+                                        RNARTIST_ARTIFACT,
                                         script_file])
-            run_cmd(rnartist_cmd)
+            try:
+                run_cmd(rnartist_cmd)
+            except:
+                logger.warning("Running RNArtistCore with jgo failed. Falling back to manual installation.")
+                from ..core.arg import CMD_DRAW
+                from ..core.extern import require_env_var
+                require_env_var("RNARTISTCORE", CMD_DRAW)
+                RNARTIST_PATH = os.environ.get("RNARTISTCORE")
+                rnartist_cmd = args_to_cmd([JAVA_CMD,
+                                            JAR_CMD,
+                                            RNARTIST_PATH,
+                                            script_file])
+                run_cmd(rnartist_cmd)
             if not keep_tmp:
                 script_file.unlink(missing_ok=True)
         out_paths = [path for path, write in zip((svg_path, png_path), (draw_svg, draw_png)) if write]

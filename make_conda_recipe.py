@@ -122,7 +122,9 @@ def list_nonpip_dependencies():
             "rnastructure >=6.4",
             "samtools >=1.20",
             "brotli-python >=1.0",
-            "python-kaleido >=0.2.1"]
+            "python-kaleido >=0.2.1",
+            "maven >=3.6.3",
+            "openjdk >=21.0"]
 
 
 def ignore_pip_dependencies():
