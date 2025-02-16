@@ -80,7 +80,7 @@ rnartist {
 
 TEMPLATE = Template(TEMPLATE_STRING)
 
-RNARTIST_REPO = "maven-snapshots=http://oss.sonatype.org/content/repositories/snapshots"
+RNARTIST_REPO = "maven-snapshots=https://oss.sonatype.org/content/repositories/snapshots"
 RNARTIST_GROUP_ID = "io.github.fjossinet.rnartist"
 RNARTIST_ARTIFACT_ID = "rnartistcore"
 RNARTIST_VERSION = "0.4.7-SNAPSHOT"
