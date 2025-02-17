@@ -48,8 +48,16 @@ def mask_segment_ends(seg_end5s: np.ndarray, seg_end3s: np.ndarray):
     match_reads_segments(seg_end5s, seg_end3s)
     no_coverage = seg_end5s > seg_end3s
     if np.any(no_coverage):
-        seg_end5s = np.ma.masked_array(seg_end5s, no_coverage)
-        seg_end3s = np.ma.masked_array(seg_end3s, no_coverage)
+        seg_end5s = np.ma.masked_array(
+            seg_end5s,
+            no_coverage,
+            fill_value=np.array(1, seg_end5s.dtype)
+        )
+        seg_end3s = np.ma.masked_array(
+            seg_end3s,
+            no_coverage,
+            fill_value=np.array(0, seg_end5s.dtype)
+        )
     return seg_end5s, seg_end3s
 
 
@@ -81,7 +89,7 @@ def find_read_end5s(seg_end5s: np.ndarray):
         read_end5s = seg_end5s.min(axis=1)
     if np.ma.isarray(read_end5s):
         # Fill any remaining masked values with 5' end = 1.
-        read_end5s = read_end5s.filled(1)
+        read_end5s = read_end5s.filled(np.array(1, read_end5s.dtype))
     assert isinstance(read_end5s, np.ndarray) and not np.ma.isarray(read_end5s)
     return read_end5s
 
@@ -100,7 +108,7 @@ def find_read_end3s(seg_end3s: np.ndarray):
         read_end3s = seg_end3s.max(axis=1)
     if np.ma.isarray(read_end3s):
         # Fill any remaining masked values with 3' end = 0.
-        read_end3s = read_end3s.filled(0)
+        read_end3s = read_end3s.filled(np.array(0, read_end3s.dtype))
     assert isinstance(read_end3s, np.ndarray) and not np.ma.isarray(read_end3s)
     return read_end3s
 
@@ -203,8 +211,11 @@ def sort_segment_ends(seg_end5s: np.ndarray,
     if np.ma.isarray(seg_end5s):
         # Arithmetic operations do not change masked values, so subtract
         # 1 from the underlying data and then reapply the mask.
-        seg_end5s_zero_indexed = np.ma.masked_array(seg_end5s.data - 1,
-                                                    seg_end5s.mask)
+        seg_end5s_zero_indexed = np.ma.masked_array(
+            seg_end5s.data - 1,
+            seg_end5s.mask,
+            fill_value=np.array(0, seg_end5s.data.dtype)
+        )
     else:
         seg_end5s_zero_indexed = seg_end5s - 1
     seg_ends = merge_segment_ends(seg_end5s_zero_indexed, seg_end3s)
@@ -223,10 +234,16 @@ def sort_segment_ends(seg_end5s: np.ndarray,
                                               axis=1))
     if np.ma.isarray(seg_ends_sorted):
         # Mask is_seg_end5 and is_contig_end3 like seg_ends_sorted.
-        is_seg_end5 = np.ma.masked_array(is_seg_end5,
-                                         seg_ends_sorted.mask)
-        is_contig_end3 = np.ma.masked_array(is_contig_end3,
-                                            seg_ends_sorted.mask)
+        is_seg_end5 = np.ma.masked_array(
+            is_seg_end5,
+            seg_ends_sorted.mask,
+            fill_value=np.array(0, is_seg_end5.dtype)
+        )
+        is_contig_end3 = np.ma.masked_array(
+            is_contig_end3,
+            seg_ends_sorted.mask,
+            fill_value=np.array(0, is_contig_end3.dtype)
+        )
     return seg_ends_sorted, is_seg_end5, is_contig_end3
 
 
@@ -354,6 +371,9 @@ class EndCoords(object):
     @cached_property
     def _seg_ends(self):
         """ 5' and 3' ends of each segment in each read. """
+        # Store the masked 5'/3' ends as a cached_property, rather than
+        # an instance attribute, so that the mask consumes no storage
+        # space in the file system.
         return mask_segment_ends(self._end5s, self._end3s)
 
     @property
