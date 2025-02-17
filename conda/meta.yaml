@@ -45,8 +45,8 @@ requirements:
     - pyyaml >=6.0
     - scipy >=1.13
     - jinja2 >=3.0
-    - maven >=3.6.3
-    - jgo >=1.0
+    - maven >=3.3.9
+    - jgo >=0.5.0
     - openjdk >=21.0
 
 test:
