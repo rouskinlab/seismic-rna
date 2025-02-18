@@ -102,6 +102,7 @@ def calc_muts_matrix(region: Region,
                      read_nums: np.ndarray,
                      seg_end5s: np.ndarray,
                      seg_end3s: np.ndarray,
+                     seg_ends_mask: np.ndarray,
                      muts: dict[int, dict[int, np.ndarray]]):
     """ Matrix of relationships at each position in each read. """
     dims = find_dims([(NUM_READS,),
@@ -129,10 +130,11 @@ def calc_muts_matrix(region: Region,
         for s in range(num_segments):
             end5s = seg_end5s[:, s]
             end3s = seg_end3s[:, s]
-            if np.ma.is_masked(end5s) or np.ma.is_masked(end3s):
-                unmasked_read_indexes = read_indexes[~(end5s.mask | end3s.mask)]
-                end5s = end5s.data[unmasked_read_indexes]
-                end3s = end3s.data[unmasked_read_indexes]
+            mask = seg_ends_mask[:, s]
+            if mask.any():
+                unmasked_read_indexes = read_indexes[~mask]
+                end5s = end5s[unmasked_read_indexes]
+                end3s = end3s[unmasked_read_indexes]
             else:
                 unmasked_read_indexes = read_indexes
             if unmasked_read_indexes.size > 0:
@@ -222,6 +224,7 @@ class RegionMutsBatch(MutsBatch, ABC):
                              self.read_nums,
                              self.seg_end5s,
                              self.seg_end3s,
+                             self.seg_ends_mask,
                              self.read_weights)
 
     @property
@@ -262,6 +265,7 @@ class RegionMutsBatch(MutsBatch, ABC):
                                 self.read_nums,
                                 self.seg_end5s,
                                 self.seg_end3s,
+                                self.seg_ends_mask,
                                 self.muts)
 
     def reads_per_pos(self, pattern: RelPattern):

@@ -191,7 +191,8 @@ class TestCalcCoverage(ut.TestCase):
         res_per_pos, res_per_read = calc_coverage(pos_index,
                                                   read_nums,
                                                   end5s,
-                                                  end3s)
+                                                  end3s,
+                                                  None)
         self.assertIsInstance(res_per_pos, pd.Series)
         self.assertTrue(res_per_pos.equals(exp_per_pos))
         self.assertEqual(sorted(res_per_read), sorted(exp_per_read))
@@ -223,6 +224,7 @@ class TestCalcCoverage(ut.TestCase):
                                                   read_nums,
                                                   end5s,
                                                   end3s,
+                                                  None,
                                                   read_weights)
         self.assertIsInstance(res_per_pos, pd.DataFrame)
         self.assertTrue(res_per_pos.equals(exp_per_pos))
@@ -254,7 +256,8 @@ class TestCalcCoverage(ut.TestCase):
         res_per_pos, res_per_read = calc_coverage(pos_index,
                                                   read_nums,
                                                   end5s,
-                                                  end3s)
+                                                  end3s,
+                                                  None)
         self.assertIsInstance(res_per_pos, pd.Series)
         self.assertTrue(res_per_pos.equals(exp_per_pos))
         self.assertEqual(sorted(res_per_read), sorted(exp_per_read))
@@ -339,7 +342,8 @@ class TestCalcCoverage(ut.TestCase):
         res_per_pos, res_per_read = calc_coverage(pos_index,
                                                   read_nums,
                                                   end5s,
-                                                  end3s)
+                                                  end3s,
+                                                  None)
         self.assertIsInstance(res_per_pos, pd.Series)
         self.assertTrue(res_per_pos.equals(exp_per_pos))
         self.assertEqual(sorted(res_per_read), sorted(exp_per_read))
@@ -433,6 +437,7 @@ class TestCalcCoverage(ut.TestCase):
                                                   read_nums,
                                                   end5s,
                                                   end3s,
+                                                  None,
                                                   read_weights)
         self.assertIsInstance(res_per_pos, pd.DataFrame)
         self.assertTrue(res_per_pos.round(6).equals(exp_per_pos.round(6)))
@@ -483,7 +488,8 @@ class TestCalcCoverage(ut.TestCase):
         res_per_pos, res_per_read = calc_coverage(pos_index,
                                                   read_nums,
                                                   end5s,
-                                                  end3s)
+                                                  end3s,
+                                                  None)
         self.assertIsInstance(res_per_pos, pd.Series)
         self.assertTrue(res_per_pos.equals(exp_per_pos))
         self.assertEqual(sorted(res_per_read), sorted(exp_per_read))
@@ -542,9 +548,111 @@ class TestCalcCoverage(ut.TestCase):
                                                   read_nums,
                                                   end5s,
                                                   end3s,
+                                                  None,
                                                   read_weights)
         self.assertIsInstance(res_per_pos, pd.DataFrame)
         self.assertTrue(res_per_pos.round(6).equals(exp_per_pos.round(6)))
+        self.assertEqual(sorted(res_per_read), sorted(exp_per_read))
+        for base in exp_per_read:
+            self.assertIsInstance(res_per_read[base], pd.Series)
+            self.assertTrue(res_per_read[base].equals(exp_per_read[base]))
+
+    def test_1_segment_mask(self):
+        """
+        1234567890123
+
+        .
+        ..
+        ---
+         ...
+           -
+           ---
+        .......
+        .............
+              .......
+               ...
+                 -
+                 ...
+                  ...
+                   ..
+                    .
+        """
+        pos_index = pd.MultiIndex.from_tuples([(3, "G"),
+                                               (4, "A"),
+                                               (5, "C"),
+                                               (6, "A"),
+                                               (8, "T"),
+                                               (9, "T"),
+                                               (10, "G"),
+                                               (11, "C")],
+                                              names=SEQ_INDEX_NAMES)
+        end5s = np.array([[1],
+                          [1],
+                          [1],
+                          [2],
+                          [4],
+                          [4],
+                          [1],
+                          [1],
+                          [7],
+                          [8],
+                          [10],
+                          [10],
+                          [11],
+                          [12],
+                          [13]])
+        end3s = np.array([[1],
+                          [2],
+                          [3],
+                          [4],
+                          [4],
+                          [6],
+                          [7],
+                          [13],
+                          [13],
+                          [10],
+                          [10],
+                          [12],
+                          [13],
+                          [13],
+                          [13]])
+        mask = np.array([[True],
+                         [True],
+                         [False],
+                         [True],
+                         [False],
+                         [False],
+                         [True],
+                         [True],
+                         [True],
+                         [True],
+                         [False],
+                         [True],
+                         [True],
+                         [True],
+                         [True]])
+        read_nums = np.arange(15)
+        exp_per_pos = pd.Series([1., 2., 1., 1., 0., 0., 1., 0.],
+                                index=pos_index)
+        exp_per_read = {
+            "A": pd.Series([0, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                           read_nums),
+            "C": pd.Series([0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                           read_nums),
+            "G": pd.Series([0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+                           read_nums),
+            "T": pd.Series([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                           read_nums),
+            "N": pd.Series([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                           read_nums)
+        }
+        res_per_pos, res_per_read = calc_coverage(pos_index,
+                                                  read_nums,
+                                                  end5s,
+                                                  end3s,
+                                                  mask)
+        self.assertIsInstance(res_per_pos, pd.Series)
+        self.assertTrue(res_per_pos.equals(exp_per_pos))
         self.assertEqual(sorted(res_per_read), sorted(exp_per_read))
         for base in exp_per_read:
             self.assertIsInstance(res_per_read[base], pd.Series)
@@ -631,7 +739,8 @@ class TestCalcCoverage(ut.TestCase):
         res_per_pos, res_per_read = calc_coverage(pos_index,
                                                   read_nums,
                                                   end5s,
-                                                  end3s)
+                                                  end3s,
+                                                  None)
         self.assertIsInstance(res_per_pos, pd.Series)
         self.assertTrue(res_per_pos.equals(exp_per_pos))
         self.assertEqual(sorted(res_per_read), sorted(exp_per_read))
@@ -688,26 +797,24 @@ class TestCalcCoverage(ut.TestCase):
                          [True, False],
                          [True, False],
                          [True, False]])
-        end5s = np.ma.masked_array([[1, 1],
-                                    [1, 2],
-                                    [1, 5],
-                                    [1, 6],
-                                    [1, 6],
-                                    [1, 1],
-                                    [2, 1],
-                                    [5, 1],
-                                    [6, 1]],
-                                   mask)
-        end3s = np.ma.masked_array([[5, 0],
-                                    [5, 1],
-                                    [5, 4],
-                                    [5, 5],
-                                    [5, 10],
-                                    [0, 5],
-                                    [1, 5],
-                                    [4, 5],
-                                    [5, 5]],
-                                   mask)
+        end5s = np.array([[1, 1],
+                          [1, 2],
+                          [1, 5],
+                          [1, 6],
+                          [1, 6],
+                          [1, 1],
+                          [2, 1],
+                          [5, 1],
+                          [6, 1]])
+        end3s = np.array([[5, 0],
+                          [5, 1],
+                          [5, 4],
+                          [5, 5],
+                          [5, 10],
+                          [0, 5],
+                          [1, 5],
+                          [4, 5],
+                          [5, 5]])
         read_nums = np.arange(9)
         read_weights = pd.DataFrame.from_dict({
             "C1": pd.Series([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]),
@@ -735,6 +842,7 @@ class TestCalcCoverage(ut.TestCase):
                                                   read_nums,
                                                   end5s,
                                                   end3s,
+                                                  mask,
                                                   read_weights)
         self.assertIsInstance(res_per_pos, pd.DataFrame)
         self.assertTrue(res_per_pos.round(6).equals(exp_per_pos.round(6)))

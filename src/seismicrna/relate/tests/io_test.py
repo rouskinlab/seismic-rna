@@ -22,8 +22,6 @@ class TestFromReads(ut.TestCase):
             batch.muts,
             {pos: dict() for pos in range(1, len(refseq) + 1)}
         )
-        self.assertFalse(np.ma.isarray(batch.seg_end5s))
-        self.assertFalse(np.ma.isarray(batch.seg_end3s))
         self.assertTrue(np.array_equal(
             batch.seg_end5s,
             np.zeros((0, 0), dtype=int)
@@ -31,6 +29,10 @@ class TestFromReads(ut.TestCase):
         self.assertTrue(np.array_equal(
             batch.seg_end3s,
             np.zeros((0, 0), dtype=int)
+        ))
+        self.assertTrue(np.array_equal(
+            batch.seg_ends_mask,
+            np.zeros((0, 0), dtype=bool)
         ))
         self.assertTrue(np.array_equal(
             names.names,
@@ -52,8 +54,6 @@ class TestFromReads(ut.TestCase):
             batch.muts,
             {pos: dict() for pos in range(1, len(refseq) + 1)}
         )
-        self.assertFalse(np.ma.isarray(batch.seg_end5s))
-        self.assertFalse(np.ma.isarray(batch.seg_end3s))
         self.assertTrue(np.array_equal(
             batch.seg_end5s,
             np.zeros((0, 0), dtype=int)
@@ -61,6 +61,10 @@ class TestFromReads(ut.TestCase):
         self.assertTrue(np.array_equal(
             batch.seg_end3s,
             np.zeros((0, 0), dtype=int)
+        ))
+        self.assertTrue(np.array_equal(
+            batch.seg_ends_mask,
+            np.zeros((0, 0), dtype=bool)
         ))
         self.assertTrue(np.array_equal(
             names.names,
@@ -82,8 +86,6 @@ class TestFromReads(ut.TestCase):
             batch.muts,
             {pos: dict() for pos in range(1, len(refseq) + 1)}
         )
-        self.assertFalse(np.ma.isarray(batch.seg_end5s))
-        self.assertFalse(np.ma.isarray(batch.seg_end3s))
         self.assertTrue(np.array_equal(
             batch.seg_end5s,
             np.zeros((1, 0), dtype=int)
@@ -91,6 +93,10 @@ class TestFromReads(ut.TestCase):
         self.assertTrue(np.array_equal(
             batch.seg_end3s,
             np.zeros((1, 0), dtype=int)
+        ))
+        self.assertTrue(np.array_equal(
+            batch.seg_ends_mask,
+            np.zeros((1, 0), dtype=bool)
         ))
         self.assertTrue(np.array_equal(
             names.names,
@@ -112,8 +118,6 @@ class TestFromReads(ut.TestCase):
             batch.muts,
             {pos: dict() for pos in range(1, len(refseq) + 1)}
         )
-        self.assertFalse(np.ma.isarray(batch.seg_end5s))
-        self.assertFalse(np.ma.isarray(batch.seg_end3s))
         self.assertTrue(np.array_equal(
             batch.seg_end5s,
             np.zeros((0, 1), dtype=int)
@@ -121,6 +125,10 @@ class TestFromReads(ut.TestCase):
         self.assertTrue(np.array_equal(
             batch.seg_end3s,
             np.zeros((0, 1), dtype=int)
+        ))
+        self.assertTrue(np.array_equal(
+            batch.seg_ends_mask,
+            np.zeros((0, 1), dtype=bool)
         ))
         self.assertTrue(np.array_equal(
             names.names,
@@ -142,22 +150,17 @@ class TestFromReads(ut.TestCase):
             batch.muts,
             {pos: dict() for pos in range(1, len(refseq) + 1)}
         )
-        self.assertTrue(np.ma.isarray(batch.seg_end5s))
-        self.assertTrue(np.ma.isarray(batch.seg_end3s))
+        print(batch.seg_ends_mask)
         self.assertTrue(np.array_equal(
-            batch.seg_end5s.mask,
+            batch.seg_ends_mask,
             np.array([[True]])
         ))
         self.assertTrue(np.array_equal(
-            batch.seg_end3s.mask,
-            np.array([[True]])
-        ))
-        self.assertTrue(np.array_equal(
-            batch.seg_end5s.data,
+            batch.seg_end5s,
             np.array([[3]])
         ))
         self.assertTrue(np.array_equal(
-            batch.seg_end3s.data,
+            batch.seg_end3s,
             np.array([[2]])
         ))
         self.assertTrue(np.array_equal(
@@ -180,8 +183,6 @@ class TestFromReads(ut.TestCase):
             batch.muts,
             {pos: dict() for pos in range(1, len(refseq) + 1)}
         )
-        self.assertFalse(np.ma.isarray(batch.seg_end5s))
-        self.assertFalse(np.ma.isarray(batch.seg_end3s))
         self.assertTrue(np.array_equal(
             batch.seg_end5s,
             np.array([[2]])
@@ -189,6 +190,10 @@ class TestFromReads(ut.TestCase):
         self.assertTrue(np.array_equal(
             batch.seg_end3s,
             np.array([[2]])
+        ))
+        self.assertTrue(np.array_equal(
+            batch.seg_ends_mask,
+            np.zeros((1, 1), dtype=bool)
         ))
         self.assertTrue(np.array_equal(
             names.names,
@@ -223,8 +228,6 @@ class TestFromReads(ut.TestCase):
             batch.muts[3][2],
             np.array([1])
         ))
-        self.assertFalse(np.ma.isarray(batch.seg_end5s))
-        self.assertFalse(np.ma.isarray(batch.seg_end3s))
         self.assertTrue(np.array_equal(
             batch.seg_end5s,
             np.array([[2],
@@ -234,6 +237,10 @@ class TestFromReads(ut.TestCase):
             batch.seg_end3s,
             np.array([[2],
                       [4]])
+        ))
+        self.assertTrue(np.array_equal(
+            batch.seg_ends_mask,
+            np.zeros((2, 1), dtype=bool)
         ))
         self.assertTrue(np.array_equal(
             names.names,
@@ -257,8 +264,6 @@ class TestFromReads(ut.TestCase):
              for pos, rels in batch.muts.items()},
             {1: {128: [1]}, 2: {64: [0]}, 3: {2: [1]}, 4: {}}
         )
-        self.assertFalse(np.ma.isarray(batch.seg_end5s))
-        self.assertFalse(np.ma.isarray(batch.seg_end3s))
         self.assertTrue(np.array_equal(
             batch.seg_end5s,
             np.array([[2, 4],
@@ -268,6 +273,10 @@ class TestFromReads(ut.TestCase):
             batch.seg_end3s,
             np.array([[2, 4],
                       [4, 3]])
+        ))
+        self.assertTrue(np.array_equal(
+            batch.seg_ends_mask,
+            np.zeros((2, 2), dtype=bool)
         ))
         self.assertTrue(np.array_equal(
             names.names,
@@ -291,25 +300,18 @@ class TestFromReads(ut.TestCase):
              for pos, rels in batch.muts.items()},
             {1: {128: [1]}, 2: {64: [0]}, 3: {2: [1]}, 4: {}}
         )
-        self.assertTrue(np.ma.isarray(batch.seg_end5s))
-        self.assertTrue(np.ma.isarray(batch.seg_end3s))
         self.assertTrue(np.array_equal(
-            batch.seg_end5s.mask,
+            batch.seg_ends_mask,
             np.array([[False, True],
                       [False, False]])
         ))
         self.assertTrue(np.array_equal(
-            batch.seg_end3s.mask,
-            np.array([[False, True],
-                      [False, False]])
-        ))
-        self.assertTrue(np.array_equal(
-            batch.seg_end5s.data,
+            batch.seg_end5s,
             np.array([[2, 1],
                       [1, 1]])
         ))
         self.assertTrue(np.array_equal(
-            batch.seg_end3s.data,
+            batch.seg_end3s,
             np.array([[2, 0],
                       [4, 3]])
         ))
@@ -335,25 +337,18 @@ class TestFromReads(ut.TestCase):
              for pos, rels in batch.muts.items()},
             {1: {128: [1]}, 2: {64: [0]}, 3: {2: [1]}, 4: {}}
         )
-        self.assertTrue(np.ma.isarray(batch.seg_end5s))
-        self.assertTrue(np.ma.isarray(batch.seg_end3s))
         self.assertTrue(np.array_equal(
-            batch.seg_end5s.mask,
+            batch.seg_ends_mask,
             np.array([[False, False],
                       [False, True]])
         ))
         self.assertTrue(np.array_equal(
-            batch.seg_end3s.mask,
-            np.array([[False, False],
-                      [False, True]])
-        ))
-        self.assertTrue(np.array_equal(
-            batch.seg_end5s.data,
+            batch.seg_end5s,
             np.array([[2, 4],
                       [1, 1]])
         ))
         self.assertTrue(np.array_equal(
-            batch.seg_end3s.data,
+            batch.seg_end3s,
             np.array([[2, 4],
                       [4, 0]])
         ))
@@ -381,25 +376,18 @@ class TestFromReads(ut.TestCase):
              for pos, rels in batch.muts.items()},
             {1: {128: [0, 1]}, 2: {16: [1], 64: [0]}, 3: {2: [1]}, 4: {}}
         )
-        self.assertTrue(np.ma.isarray(batch.seg_end5s))
-        self.assertTrue(np.ma.isarray(batch.seg_end3s))
         self.assertTrue(np.array_equal(
-            batch.seg_end5s.mask,
+            batch.seg_ends_mask,
             np.array([[False, False, True],
                       [False, False, False]])
         ))
         self.assertTrue(np.array_equal(
-            batch.seg_end3s.mask,
-            np.array([[False, False, True],
-                      [False, False, False]])
-        ))
-        self.assertTrue(np.array_equal(
-            batch.seg_end5s.data,
+            batch.seg_end5s,
             np.array([[1, 3, 1],
                       [1, 2, 3]])
         ))
         self.assertTrue(np.array_equal(
-            batch.seg_end3s.data,
+            batch.seg_end3s,
             np.array([[2, 4, 0],
                       [2, 3, 4]])
         ))
@@ -427,31 +415,22 @@ class TestFromReads(ut.TestCase):
              for pos, rels in batch.muts.items()},
             {1: {128: [1, 3]}, 2: {16: [3], 64: [1]}, 3: {2: [3]}, 4: {}}
         )
-        self.assertTrue(np.ma.isarray(batch.seg_end5s))
-        self.assertTrue(np.ma.isarray(batch.seg_end3s))
         self.assertTrue(np.array_equal(
-            batch.seg_end5s.mask,
+            batch.seg_ends_mask,
             np.array([[True, True, True],
                       [False, False, True],
                       [True, True, True],
                       [False, False, False]])
         ))
         self.assertTrue(np.array_equal(
-            batch.seg_end3s.mask,
-            np.array([[True, True, True],
-                      [False, False, True],
-                      [True, True, True],
-                      [False, False, False]])
-        ))
-        self.assertTrue(np.array_equal(
-            batch.seg_end5s.data,
+            batch.seg_end5s,
             np.array([[2, 4, 1],
                       [1, 3, 1],
                       [1, 1, 1],
                       [1, 2, 3]])
         ))
         self.assertTrue(np.array_equal(
-            batch.seg_end3s.data,
+            batch.seg_end3s,
             np.array([[1, 3, 0],
                       [2, 4, 0],
                       [0, 0, 0],

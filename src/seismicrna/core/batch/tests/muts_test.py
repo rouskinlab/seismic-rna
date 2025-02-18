@@ -3,7 +3,6 @@ import unittest as ut
 import numpy as np
 import pandas as pd
 
-from seismicrna.core.batch.ends import mask_segment_ends
 from seismicrna.core.batch.muts import calc_muts_matrix
 from seismicrna.core.rel.code import (DELET,
                                       MATCH,
@@ -25,11 +24,13 @@ class TestCalcMutsMatrix(ut.TestCase):
                 read_nums = np.arange(num_reads)
                 seg_end5s = np.full((num_reads, 1), region.end5)
                 seg_end3s = np.full((num_reads, 1), region.end3)
+                mask = seg_end5s > seg_end3s
                 with self.subTest(length=length, num_reads=num_reads):
                     result = calc_muts_matrix(region,
                                               read_nums,
                                               seg_end5s,
                                               seg_end3s,
+                                              mask,
                                               muts)
                     expect = pd.DataFrame(MATCH, read_nums, region.unmasked)
                     self.assertTrue(expect.equals(result))
@@ -42,11 +43,13 @@ class TestCalcMutsMatrix(ut.TestCase):
             read_nums = np.arange(num_reads)
             seg_end5s = np.full((num_reads, 1), region.end5)
             seg_end3s = np.full((num_reads, 1), region.end3)
+            mask = seg_end5s > seg_end3s
             with self.subTest(num_reads=num_reads):
                 result = calc_muts_matrix(region,
                                           read_nums,
                                           seg_end5s,
                                           seg_end3s,
+                                          mask,
                                           muts)
                 expect = pd.DataFrame(MATCH, read_nums, region.unmasked)
                 self.assertTrue(expect.equals(result))
@@ -57,10 +60,12 @@ class TestCalcMutsMatrix(ut.TestCase):
         read_nums = np.array([2, 3, 5, 7, 8, 9, 12, 13, 16, 19, 20])
         seg_end5s = np.array([[1, 1, 1, 1, 1, 1, 2, 3, 4, 5, 6]]).T
         seg_end3s = np.array([[0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5]]).T
+        mask = seg_end5s > seg_end3s
         result = calc_muts_matrix(region,
                                   read_nums,
                                   seg_end5s,
                                   seg_end3s,
+                                  mask,
                                   muts)
         expect = pd.DataFrame([[NOCOV, NOCOV, NOCOV, NOCOV, NOCOV],
                                [MATCH, NOCOV, NOCOV, NOCOV, NOCOV],
@@ -84,10 +89,12 @@ class TestCalcMutsMatrix(ut.TestCase):
         read_nums = np.array([2, 3, 5, 7, 8, 9, 12, 13, 16, 19, 20])
         seg_end5s = np.array([[1, 1, 1, 1, 1, 1, 2, 3, 4, 5, 6]]).T
         seg_end3s = np.array([[0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5]]).T
+        mask = seg_end5s > seg_end3s
         result = calc_muts_matrix(region,
                                   read_nums,
                                   seg_end5s,
                                   seg_end3s,
+                                  mask,
                                   muts)
         expect = pd.DataFrame([[NOCOV, NOCOV],
                                [NOCOV, NOCOV],
@@ -112,10 +119,12 @@ class TestCalcMutsMatrix(ut.TestCase):
                               [1, 2, 3, 4, 5, 5, 5, 5, 5]]).T
         seg_end3s = np.array([[1, 1, 1, 1, 1, 2, 3, 4, 5],
                               [1, 2, 3, 4, 5, 5, 5, 5, 5]]).T
+        mask = seg_end5s > seg_end3s
         result = calc_muts_matrix(region,
                                   read_nums,
                                   seg_end5s,
                                   seg_end3s,
+                                  mask,
                                   muts)
         expect = pd.DataFrame([[MATCH, NOCOV, NOCOV, NOCOV, NOCOV],
                                [MATCH, MATCH, NOCOV, NOCOV, NOCOV],
@@ -138,13 +147,12 @@ class TestCalcMutsMatrix(ut.TestCase):
                               [1, 2, 3, 4, 5, 5, 5, 5, 5]]).T
         seg_end3s = np.array([[1, 0, 1, 0, 1, 0, 3, 0, 5],
                               [0, 2, 0, 4, 0, 5, 0, 5, 0]]).T
-        seg_end5s, seg_end3s = mask_segment_ends(seg_end5s, seg_end3s)
-        self.assertTrue(np.ma.is_masked(seg_end5s))
-        self.assertTrue(np.ma.is_masked(seg_end3s))
+        mask = seg_end5s > seg_end3s
         result = calc_muts_matrix(region,
                                   read_nums,
                                   seg_end5s,
                                   seg_end3s,
+                                  mask,
                                   muts)
         expect = pd.DataFrame([[MATCH, NOCOV, NOCOV, NOCOV, NOCOV],
                                [NOCOV, MATCH, NOCOV, NOCOV, NOCOV],
@@ -189,10 +197,12 @@ class TestCalcMutsMatrix(ut.TestCase):
         read_nums = np.array([2, 3, 5, 7, 8, 9, 12, 13, 16, 19, 20])
         seg_end5s = np.array([[1, 1, 1, 1, 1, 1, 2, 3, 4, 5, 6]]).T
         seg_end3s = np.array([[0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5]]).T
+        mask = seg_end5s > seg_end3s
         result = calc_muts_matrix(region,
                                   read_nums,
                                   seg_end5s,
                                   seg_end3s,
+                                  mask,
                                   muts)
         expect = pd.DataFrame([[NOCOV, NOCOV, NOCOV, NOCOV, NOCOV],
                                [DELET, NOCOV, NOCOV, NOCOV, NOCOV],

@@ -5,7 +5,10 @@ import numpy as np
 import pandas as pd
 from numba import jit
 
-from .ends import END_COORDS, merge_read_ends, sort_segment_ends
+from .ends import (END_COORDS,
+                   match_reads_segments,
+                   merge_read_ends,
+                   sort_segment_ends)
 from .index import count_base_types, iter_base_types
 from ..array import find_dims, get_length
 from ..logs import logger
@@ -131,9 +134,11 @@ def calc_coverage(pos_index: pd.Index,
                   read_nums: np.ndarray,
                   seg_end5s: np.ndarray,
                   seg_end3s: np.ndarray,
+                  seg_ends_mask: np.ndarray | None,
                   read_weights: pd.DataFrame | None = None):
     """ Number of positions covered by each read. """
     logger.routine("Began calculating coverage per position and per read")
+    match_reads_segments(seg_end5s, seg_end3s, seg_ends_mask)
     # Find the positions in use.
     positions = pos_index.get_level_values(POS_NAME).values
     logger.detail(f"There are {positions.size} position(s) in use")
@@ -171,7 +176,7 @@ def calc_coverage(pos_index: pd.Index,
     ends_sorted, _, is_contig_end3 = sort_segment_ends(
         seg_end5s.clip(min_pos, max_pos + 1),
         seg_end3s.clip(min_pos - 1, max_pos),
-        fill_mask=True
+        seg_ends_mask
     )
     # Find the cumulative count of each base up to each position.
     bases = list()
