@@ -492,8 +492,6 @@ def merge_mates(end5sf: list[int],
             relsr = {pos: rel for pos, rel in relsr.items() if pos >= min_end5f}
         # The 3' end of the forward mate cannot extend past the 3' end
         # of the reverse mate.
-        if len(end3sr) == 0:
-            print(end5sr, end5sf, end3sr, end3sf)
         max_end3r = max(end3sr)
         max_end3f = max(end3sf)
         if max_end3f > max_end3r:

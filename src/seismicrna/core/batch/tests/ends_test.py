@@ -28,7 +28,7 @@ class TestCountReadsSegments(ut.TestCase):
         self.assertRaisesRegex(
             TypeError,
             ("xyz must be an instance of <class 'numpy.ndarray'>, "
-             "but got 8 of type <class 'numpy.int64'>"),
+             "but got np.int64[(]8[)] of type <class 'numpy.int64'>"),
             count_reads_segments,
             rng.integers(1, 10), "xyz"
         )

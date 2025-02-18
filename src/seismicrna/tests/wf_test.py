@@ -433,7 +433,8 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
         self.check_no_identical(bam_files, True)
         # Relate BAM files in the same output directory.
         relate_kwargs = dict(min_reads=min_reads,
-                             min_mapq=min_mapq)
+                             min_mapq=min_mapq,
+                             batch_size=256)
         self.assertRaisesRegex(DuplicateSampleReferenceError,
                                str((self.SAMPLE, self.REF)),
                                run_relate,

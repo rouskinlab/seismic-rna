@@ -242,7 +242,7 @@ def write_metadata():
             "run_exports": [format_run_exports_pin()]
         },
         "requirements": {"host": ["python >=3.11",
-                                  "numpy >=1.26,<1.27",
+                                  "numpy >=2.0,<2.2",
                                   "meson-python >=0.15.0",
                                   "pip"],
                          "build": ["{{ compiler('c') }}"],

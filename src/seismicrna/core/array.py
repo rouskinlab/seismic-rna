@@ -134,7 +134,7 @@ def calc_inverse(target: np.ndarray,
     # Create a 1-dimensional array whose length is one greater than the
     # maximum value of target, so that the array has every index in the
     # range [0, max(target)]; initialize all elements to be missing.
-    max_value = max(target.max(), require)
+    max_value = max(int(target.max()), require)
     inverse = np.full(max_value + 1, MISSING)
     # For each value n with index i in target, set the value at index n
     # of inverse to i.

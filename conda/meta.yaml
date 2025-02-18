@@ -38,8 +38,8 @@ requirements:
     - click >=8.1
     - fastqsplitter >=1.2
     - networkx >=3.4
-    - numpy >=1.26,<1.27
-    - numba >=0.60
+    - numpy >=2.0,<2.2
+    - numba >=0.61
     - pandas >=2.2
     - plotly >=5.23
     - pyyaml >=6.0
