@@ -323,8 +323,10 @@ def parse_bowtie2(process: CompletedProcess):
     lines = iter(process.stderr.split(linesep))
     # Read through the lines until one matches the first pattern.
     try:
-        while not (match := pattern1.match(next(lines).rstrip())):
-            pass
+        while not (match := pattern1.match(line := next(lines).rstrip())):
+            if line == "0 reads":
+                # Handle the edge case where there are 0 reads.
+                return {"reads": 0}
     except StopIteration:
         return n_reads
     # Read the remaining lines.
