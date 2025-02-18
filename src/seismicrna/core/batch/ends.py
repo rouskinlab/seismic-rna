@@ -69,25 +69,22 @@ def find_read_end5s(seg_end5s: np.ndarray, seg_ends_mask: np.ndarray | None):
     if seg_ends_mask is not None:
         mask_i, mask_j = np.nonzero(seg_ends_mask)
         assert mask_i.shape == mask_j.shape
-        any_masked = mask_i.size > 0
+        # Avoid modifying the original values when applying the mask.
+        seg_end5s = seg_end5s.copy()
     else:
         mask_i = None
         mask_j = None
-        any_masked = False
-    if any_masked:
-        # Avoid modifying the original values when applying the mask.
-        seg_end5s = seg_end5s.copy()
     if num_segs == 1:
         # There is exactly 1 segment, so use it.
         read_end5s = seg_end5s[:, 0]
     else:
         # Take the minimum over all segments.
-        if any_masked:
+        if seg_ends_mask is not None:
             # Replace masked values with the maximum possible value for
             # their data type so that they won't affect the minimum.
             seg_end5s[mask_i, mask_j] = np.iinfo(seg_end5s.dtype).max
         read_end5s = seg_end5s.min(axis=1)
-    if any_masked:
+    if seg_ends_mask is not None:
         # Fill reads where every 5' end is masked with 5' end = 1.
         read_end5s[seg_ends_mask.all(axis=1)] = 1
     return read_end5s
@@ -104,25 +101,22 @@ def find_read_end3s(seg_end3s: np.ndarray, seg_ends_mask: np.ndarray | None):
     if seg_ends_mask is not None:
         mask_i, mask_j = np.nonzero(seg_ends_mask)
         assert mask_i.shape == mask_j.shape
-        any_masked = mask_i.size > 0
+        # Avoid modifying the original values when applying the mask.
+        seg_end3s = seg_end3s.copy()
     else:
         mask_i = None
         mask_j = None
-        any_masked = False
-    if any_masked:
-        # Avoid modifying the original values when applying the mask.
-        seg_end3s = seg_end3s.copy()
     if num_segs == 1:
         # There is exactly 1 segment, so use it.
         read_end3s = seg_end3s[:, 0]
     else:
         # Take the maximum over all segments.
-        if any_masked:
+        if seg_ends_mask is not None:
             # Replace masked values with the minimum possible value for
             # their data type so that they won't affect the maximum.
             seg_end3s[mask_i, mask_j] = np.iinfo(seg_end3s.dtype).min
         read_end3s = seg_end3s.max(axis=1)
-    if any_masked:
+    if seg_ends_mask is not None:
         # Fill reads where every 5' end is masked with 3' end = 0.
         read_end3s[seg_ends_mask.all(axis=1)] = 0
     return read_end3s
@@ -225,8 +219,7 @@ def sort_segment_ends(seg_end5s: np.ndarray,
         # Prevent overflow when subtracting 1.
         raise ValueError("All 5' ends must be ≥ 1, but got 0")
     seg_ends = np.hstack([seg_end5s - 1, seg_end3s])
-    any_masked = seg_ends_mask.any() if seg_ends_mask is not None else False
-    if any_masked:
+    if seg_ends_mask is not None:
         seg_ends_mask = np.hstack([seg_ends_mask, seg_ends_mask])
         # Fill the masked 5' and 3' ends with 0.
         seg_ends[np.nonzero(seg_ends_mask)] = 0
@@ -239,7 +232,7 @@ def sort_segment_ends(seg_end5s: np.ndarray,
     # when the cumulative numbers of 5' and 3' segment ends are equal.
     is_contig_end3 = np.logical_not(np.cumsum(np.where(is_seg_end5, 1, -1),
                                               axis=1))
-    if any_masked:
+    if seg_ends_mask is not None:
         # Apply the mask that seg_ends_sorted has to is_seg_end5 and
         # is_contig_end3.
         mask_sorted = np.take_along_axis(seg_ends_mask, sort_order, axis=1)
