@@ -10,6 +10,8 @@ from .dataset import WideMutsDataset
 from .io import RegFileIO
 from .report import Report
 from .seq import Region
+from .types import fit_uint_type
+from .validate import require_equal
 
 BATCH_NUM = "batch"
 READ_NUMS = "read_nums"
@@ -55,10 +57,11 @@ def _join_position(muts: dict[int, dict[int, np.ndarray]],
 def _join_attrs(attrs: dict[str, Any],
                 add_attrs: dict[str, Any],
                 region: Region):
-    # Verify the batch number matches (but no need to update).
-    if attrs[BATCH_NUM] != add_attrs[BATCH_NUM]:
-        raise ValueError(f"Inconsistent batch number ({attrs[BATCH_NUM]} "
-                         f"≠ {add_attrs[BATCH_NUM]})")
+    require_equal("attrs[BATCH_NUM]",
+                  attrs[BATCH_NUM],
+                  add_attrs[BATCH_NUM],
+                  "add_attrs[BATCH_NUM]",
+                  classes=int)
     # Merge the read numbers and find the indexes of the original read
     # numbers in the combined array.
     union_read_nums = np.union1d(attrs[READ_NUMS], add_attrs[READ_NUMS])
@@ -73,15 +76,21 @@ def _join_attrs(attrs: dict[str, Any],
     # region, respectively (the 5'/3' coordinates are swapped so that
     # any missing segments will have 5' coordinates greater than their
     # 3' coordinates and thus be masked).
+    default_end5 = region.end3 + 1
+    default_end3 = region.end5 - 1
+    dtype = fit_uint_type(max(default_end5, default_end3))
     num_reads, = attrs[READ_NUMS].shape
     _, num_segs = match_reads_segments(attrs[SEG_END5S],
-                                       attrs[SEG_END3S])
+                                       attrs[SEG_END3S],
+                                       None)
     _, add_num_segs = match_reads_segments(add_attrs[SEG_END5S],
-                                           add_attrs[SEG_END3S])
-    seg_end5s = np.full((num_reads, num_segs), region.end3 + 1)
-    seg_end3s = np.full((num_reads, num_segs), region.end5 - 1)
-    add_seg_end5s = np.full((num_reads, add_num_segs), region.end3 + 1)
-    add_seg_end3s = np.full((num_reads, add_num_segs), region.end5 - 1)
+                                           add_attrs[SEG_END3S],
+                                           None)
+    seg_ends_shape = num_reads, num_segs
+    seg_end5s = np.full(seg_ends_shape, default_end5, dtype=dtype)
+    seg_end3s = np.full(seg_ends_shape, default_end3, dtype=dtype)
+    add_seg_end5s = np.full(seg_ends_shape, default_end5, dtype=dtype)
+    add_seg_end3s = np.full(seg_ends_shape, default_end3, dtype=dtype)
     seg_end5s[read_indexes] = attrs[SEG_END5S]
     seg_end3s[read_indexes] = attrs[SEG_END3S]
     add_seg_end5s[add_read_indexes] = add_attrs[SEG_END5S]
