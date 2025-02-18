@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from .core.table import TableWriter
+from .core.dataset import FailedToLoadDatasetError
 from .relate.dataset import load_relate_dataset, MutsDataset
 from .mask.dataset import load_mask_dataset
 from .cluster.data import load_cluster_dataset
@@ -26,13 +27,22 @@ def dataset_from_report(report_path: str | Path,
     """
     if isinstance(report_path, str):
         report = Path(report_path)
+
+    dataset = None
+    errors = dict()
     for load_func in [load_relate_dataset,
                       load_mask_dataset,
                       load_cluster_dataset]:
         try:
             dataset = load_func(report_path, verify_times=verify_times)
-        except:
+        except Exception as error:
+            errors[load_func] = error
             pass
+    if dataset is None:
+        errmsg = "\n".join(f"{type_name}: {error}"
+                           for type_name, error in errors.items())
+        raise FailedToLoadDatasetError(
+            f"Failed to load {report_path}:\n{errmsg}")
     return dataset
 
 
