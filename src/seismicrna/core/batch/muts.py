@@ -53,7 +53,7 @@ def simulate_muts(pmut: pd.DataFrame,
     seg_end3s:
         3' end coordinate of each segment.
     """
-    num_reads, _ = match_reads_segments(seg_end5s, seg_end3s)
+    num_reads, _ = match_reads_segments(seg_end5s, seg_end3s, None)
     read_nums = np.arange(num_reads, dtype=fit_uint_type(num_reads))
     rels = np.asarray(pmut.columns.get_level_values(REL_NAME), dtype=REL_TYPE)
     if MATCH not in rels:
@@ -128,15 +128,13 @@ def calc_muts_matrix(region: Region,
         # Fill all covered positions with matches.
         read_indexes = np.arange(num_reads)
         for s in range(num_segments):
-            end5s = seg_end5s[:, s]
-            end3s = seg_end3s[:, s]
-            mask = seg_ends_mask[:, s]
-            if mask.any():
+            if seg_ends_mask is not None:
+                mask = seg_ends_mask[:, s]
                 unmasked_read_indexes = read_indexes[~mask]
-                end5s = end5s[unmasked_read_indexes]
-                end3s = end3s[unmasked_read_indexes]
             else:
                 unmasked_read_indexes = read_indexes
+            end5s = seg_end5s[unmasked_read_indexes, s]
+            end3s = seg_end3s[unmasked_read_indexes, s]
             if unmasked_read_indexes.size > 0:
                 _fill_matches(matrix,
                               pos5_indexes[end5s],
