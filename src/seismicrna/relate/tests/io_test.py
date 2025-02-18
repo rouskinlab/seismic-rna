@@ -30,10 +30,7 @@ class TestFromReads(ut.TestCase):
             batch.seg_end3s,
             np.zeros((0, 0), dtype=int)
         ))
-        self.assertTrue(np.array_equal(
-            batch.seg_ends_mask,
-            np.zeros((0, 0), dtype=bool)
-        ))
+        self.assertIsNone(batch.seg_ends_mask)
         self.assertTrue(np.array_equal(
             names.names,
             np.array([], dtype=str)
@@ -62,10 +59,7 @@ class TestFromReads(ut.TestCase):
             batch.seg_end3s,
             np.zeros((0, 0), dtype=int)
         ))
-        self.assertTrue(np.array_equal(
-            batch.seg_ends_mask,
-            np.zeros((0, 0), dtype=bool)
-        ))
+        self.assertIsNone(batch.seg_ends_mask)
         self.assertTrue(np.array_equal(
             names.names,
             np.array([], dtype=str)
@@ -94,10 +88,7 @@ class TestFromReads(ut.TestCase):
             batch.seg_end3s,
             np.zeros((1, 0), dtype=int)
         ))
-        self.assertTrue(np.array_equal(
-            batch.seg_ends_mask,
-            np.zeros((1, 0), dtype=bool)
-        ))
+        self.assertIsNone(batch.seg_ends_mask)
         self.assertTrue(np.array_equal(
             names.names,
             np.array(["Read1"])
@@ -126,10 +117,7 @@ class TestFromReads(ut.TestCase):
             batch.seg_end3s,
             np.zeros((0, 1), dtype=int)
         ))
-        self.assertTrue(np.array_equal(
-            batch.seg_ends_mask,
-            np.zeros((0, 1), dtype=bool)
-        ))
+        self.assertIsNone(batch.seg_ends_mask)
         self.assertTrue(np.array_equal(
             names.names,
             np.array([], dtype=str)
@@ -150,11 +138,6 @@ class TestFromReads(ut.TestCase):
             batch.muts,
             {pos: dict() for pos in range(1, len(refseq) + 1)}
         )
-        print(batch.seg_ends_mask)
-        self.assertTrue(np.array_equal(
-            batch.seg_ends_mask,
-            np.array([[True]])
-        ))
         self.assertTrue(np.array_equal(
             batch.seg_end5s,
             np.array([[3]])
@@ -162,6 +145,10 @@ class TestFromReads(ut.TestCase):
         self.assertTrue(np.array_equal(
             batch.seg_end3s,
             np.array([[2]])
+        ))
+        self.assertTrue(np.array_equal(
+            batch.seg_ends_mask,
+            np.array([[True]])
         ))
         self.assertTrue(np.array_equal(
             names.names,
@@ -191,10 +178,7 @@ class TestFromReads(ut.TestCase):
             batch.seg_end3s,
             np.array([[2]])
         ))
-        self.assertTrue(np.array_equal(
-            batch.seg_ends_mask,
-            np.zeros((1, 1), dtype=bool)
-        ))
+        self.assertIsNone(batch.seg_ends_mask)
         self.assertTrue(np.array_equal(
             names.names,
             np.array(["Read1"])
@@ -238,10 +222,7 @@ class TestFromReads(ut.TestCase):
             np.array([[2],
                       [4]])
         ))
-        self.assertTrue(np.array_equal(
-            batch.seg_ends_mask,
-            np.zeros((2, 1), dtype=bool)
-        ))
+        self.assertIsNone(batch.seg_ends_mask)
         self.assertTrue(np.array_equal(
             names.names,
             np.array(["Read1", "Read2"])
@@ -274,10 +255,7 @@ class TestFromReads(ut.TestCase):
             np.array([[2, 4],
                       [4, 3]])
         ))
-        self.assertTrue(np.array_equal(
-            batch.seg_ends_mask,
-            np.zeros((2, 2), dtype=bool)
-        ))
+        self.assertIsNone(batch.seg_ends_mask)
         self.assertTrue(np.array_equal(
             names.names,
             np.array(["Read1", "Read2"])
@@ -301,11 +279,6 @@ class TestFromReads(ut.TestCase):
             {1: {128: [1]}, 2: {64: [0]}, 3: {2: [1]}, 4: {}}
         )
         self.assertTrue(np.array_equal(
-            batch.seg_ends_mask,
-            np.array([[False, True],
-                      [False, False]])
-        ))
-        self.assertTrue(np.array_equal(
             batch.seg_end5s,
             np.array([[2, 1],
                       [1, 1]])
@@ -314,6 +287,11 @@ class TestFromReads(ut.TestCase):
             batch.seg_end3s,
             np.array([[2, 0],
                       [4, 3]])
+        ))
+        self.assertTrue(np.array_equal(
+            batch.seg_ends_mask,
+            np.array([[False, True],
+                      [False, False]])
         ))
         self.assertTrue(np.array_equal(
             names.names,
@@ -338,11 +316,6 @@ class TestFromReads(ut.TestCase):
             {1: {128: [1]}, 2: {64: [0]}, 3: {2: [1]}, 4: {}}
         )
         self.assertTrue(np.array_equal(
-            batch.seg_ends_mask,
-            np.array([[False, False],
-                      [False, True]])
-        ))
-        self.assertTrue(np.array_equal(
             batch.seg_end5s,
             np.array([[2, 4],
                       [1, 1]])
@@ -351,6 +324,11 @@ class TestFromReads(ut.TestCase):
             batch.seg_end3s,
             np.array([[2, 4],
                       [4, 0]])
+        ))
+        self.assertTrue(np.array_equal(
+            batch.seg_ends_mask,
+            np.array([[False, False],
+                      [False, True]])
         ))
         self.assertTrue(np.array_equal(
             names.names,
@@ -377,11 +355,6 @@ class TestFromReads(ut.TestCase):
             {1: {128: [0, 1]}, 2: {16: [1], 64: [0]}, 3: {2: [1]}, 4: {}}
         )
         self.assertTrue(np.array_equal(
-            batch.seg_ends_mask,
-            np.array([[False, False, True],
-                      [False, False, False]])
-        ))
-        self.assertTrue(np.array_equal(
             batch.seg_end5s,
             np.array([[1, 3, 1],
                       [1, 2, 3]])
@@ -390,6 +363,11 @@ class TestFromReads(ut.TestCase):
             batch.seg_end3s,
             np.array([[2, 4, 0],
                       [2, 3, 4]])
+        ))
+        self.assertTrue(np.array_equal(
+            batch.seg_ends_mask,
+            np.array([[False, False, True],
+                      [False, False, False]])
         ))
         self.assertTrue(np.array_equal(
             names.names,
@@ -416,13 +394,6 @@ class TestFromReads(ut.TestCase):
             {1: {128: [1, 3]}, 2: {16: [3], 64: [1]}, 3: {2: [3]}, 4: {}}
         )
         self.assertTrue(np.array_equal(
-            batch.seg_ends_mask,
-            np.array([[True, True, True],
-                      [False, False, True],
-                      [True, True, True],
-                      [False, False, False]])
-        ))
-        self.assertTrue(np.array_equal(
             batch.seg_end5s,
             np.array([[2, 4, 1],
                       [1, 3, 1],
@@ -435,6 +406,13 @@ class TestFromReads(ut.TestCase):
                       [2, 4, 0],
                       [0, 0, 0],
                       [2, 3, 4]])
+        ))
+        self.assertTrue(np.array_equal(
+            batch.seg_ends_mask,
+            np.array([[True, True, True],
+                      [False, False, True],
+                      [True, True, True],
+                      [False, False, False]])
         ))
         self.assertTrue(np.array_equal(
             names.names,
