@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import re
 from functools import cache
-from itertools import product
 from typing import Iterable
 
 from .code import (MATCH,
@@ -12,7 +11,8 @@ from .code import (MATCH,
                    SUB_C,
                    SUB_G,
                    SUB_T,
-                   REL_TYPE)
+                   REL_TYPE,
+                   ALL_SUBS)
 from ..seq import BASEA, BASEC, BASEG, BASET, DNA
 
 READ_DEL = "D"
@@ -174,9 +174,7 @@ class HalfRelPattern(object):
             codes.update(cls.as_plain(2 * base) for base in cls.ref_bases)
         if count_sub:
             # Count all substitutions in the read.
-            codes.update(cls.as_plain(f"{base1}{base2}")
-                         for base1, base2 in product(cls.ref_bases, repeat=2)
-                         if base1 != base2)
+            codes.update(cls.as_plain(sub) for sub in ALL_SUBS)
         if count_del:
             # Count all deletions in the read.
             codes.update(cls.as_plain(f"{base}D") for base in cls.ref_bases)

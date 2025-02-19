@@ -37,7 +37,6 @@ def dataset_from_report(report_path: str | Path,
             dataset = load_func(report_path, verify_times=verify_times)
         except Exception as error:
             errors[load_func] = error
-            pass
     if dataset is None:
         errmsg = "\n".join(f"{type_name}: {error}"
                            for type_name, error in errors.items())

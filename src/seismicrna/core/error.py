@@ -6,6 +6,10 @@ class IncompatibleValuesError(ValueError):
     is not. """
 
 
+class IncompatibleOptionsError(ValueError):
+    """ Two or more options are incompatible. """
+
+
 class InconsistentValueError(ValueError):
     """ Two or more values differ when they should be equal. """
 
