@@ -613,54 +613,54 @@ class TestCalcRelsLinesSingle(ut.TestCase):
         self.assertEqual(result, expect)
 
     def test_example_3(self):
-            """ Introns cannot move out of soft-clipped regions.
+        """ Introns cannot move out of soft-clipped regions.
 
-            Seq  TATA--TAT
-            Qul  FFFF--FFF
-            CGR  SS==NN==S
-            Ref ATATATATATA
-            Pos 123456789ab
-            """
-            # No soft clips.
-            result = self.relate(ref="ref",
-                                refseq=DNA("ATATATATATA"),
-                                read=DNA("TATATAT"),
-                                qual="FFFFFFF",
-                                cigar="4=2N3=",
-                                end5=2,
-                                ambindel=True,
-                                insert3=True,
-                                clip_end5=0,
-                                clip_end3=0)
-            expect = (([2, 8], [5, 10]), {})
-            self.assertEqual(result, expect)
-            # Soft clips.
-            result = self.relate(ref="ref",
-                                refseq=DNA("ATATATATATA"),
-                                read=DNA("TATATAT"),
-                                qual="FFFFFFF",
-                                cigar="2S2=2N2=1S",
-                                end5=4,
-                                ambindel=True,
-                                insert3=True,
-                                clip_end5=0,
-                                clip_end3=0)
-            expect = (([4, 8], [5, 9]), {})
-            self.assertEqual(result, expect)
-            # Soft clips and clip_end5/clip_end3.
-            result = self.relate(ref="ref",
-                                refseq=DNA("ATATATATATA"),
-                                read=DNA("TATATAT"),
-                                qual="FFFFFFF",
-                                cigar="2S2=2N2=1S",
-                                end5=4,
-                                ambindel=True,
-                                insert3=True,
-                                clip_end5=1,
-                                clip_end3=1)
-            expect = (([5, 8], [5, 8]), {})
-            self.assertEqual(result, expect)
-        
+        Seq  TATA__TAT
+        Qul  FFFF__FFF
+        CGR  SS==NN==S
+        Ref ATATATATATA
+        Pos 123456789ab
+        """
+        # No soft clips.
+        result = self.relate(ref="ref",
+                             refseq=DNA("ATATATATATA"),
+                             read=DNA("TATATAT"),
+                             qual="FFFFFFF",
+                             cigar="4=2N3=",
+                             end5=2,
+                             ambindel=True,
+                             insert3=True,
+                             clip_end5=0,
+                             clip_end3=0)
+        expect = (([2, 8], [5, 10]), {})
+        self.assertEqual(result, expect)
+        # Soft clips.
+        result = self.relate(ref="ref",
+                             refseq=DNA("ATATATATATA"),
+                             read=DNA("TATATAT"),
+                             qual="FFFFFFF",
+                             cigar="2S2=2N2=1S",
+                             end5=4,
+                             ambindel=True,
+                             insert3=True,
+                             clip_end5=0,
+                             clip_end3=0)
+        expect = (([4, 8], [5, 9]), {})
+        self.assertEqual(result, expect)
+        # Soft clips and clip_end5/clip_end3.
+        result = self.relate(ref="ref",
+                             refseq=DNA("ATATATATATA"),
+                             read=DNA("TATATAT"),
+                             qual="FFFFFFF",
+                             cigar="2S2=2N2=1S",
+                             end5=4,
+                             ambindel=True,
+                             insert3=True,
+                             clip_end5=1,
+                             clip_end3=1)
+        expect = (([5, 8], [5, 8]), {})
+        self.assertEqual(result, expect)
+
     def test_example_4(self):
         """ Insertions cannot move out of soft-clipped regions.
 
@@ -672,41 +672,41 @@ class TestCalcRelsLinesSingle(ut.TestCase):
         """
         # No soft clips.
         result = self.relate(ref="ref",
-                            refseq=DNA("ATATATATA"),
-                            read=DNA("TATATATAT"),
-                            qual="FFFFFFFFF",
-                            cigar="4=2I3=",
-                            end5=2,
-                            ambindel=True,
-                            insert3=True,
-                            clip_end5=0,
-                            clip_end3=0)
+                             refseq=DNA("ATATATATA"),
+                             read=DNA("TATATATAT"),
+                             qual="FFFFFFFFF",
+                             cigar="4=2I3=",
+                             end5=2,
+                             ambindel=True,
+                             insert3=True,
+                             clip_end5=0,
+                             clip_end3=0)
         expect = (([2], [8]), {3: 9, 4: 9, 5: 9, 6: 9, 7: 9, 8: 9})
         self.assertEqual(result, expect)
         # Soft clips.
         result = self.relate(ref="ref",
-                            refseq=DNA("ATATATATA"),
-                            read=DNA("TATATATAT"),
-                            qual="FFFFFFFFF",
-                            cigar="2S2=2I2=1S",
-                            end5=4,
-                            ambindel=True,
-                            insert3=True,
-                            clip_end5=0,
-                            clip_end3=0)
+                             refseq=DNA("ATATATATA"),
+                             read=DNA("TATATATAT"),
+                             qual="FFFFFFFFF",
+                             cigar="2S2=2I2=1S",
+                             end5=4,
+                             ambindel=True,
+                             insert3=True,
+                             clip_end5=0,
+                             clip_end3=0)
         expect = (([4], [7]), {5: 9, 6: 9, 7: 9})
         self.assertEqual(result, expect)
         # Soft clips and clip_end5/clip_end3.
         result = self.relate(ref="ref",
-                            refseq=DNA("ATATATATA"),
-                            read=DNA("TATATATAT"),
-                            qual="FFFFFFFFF",
-                            cigar="2S2=2I2=1S",
-                            end5=4,
-                            ambindel=True,
-                            insert3=True,
-                            clip_end5=1,
-                            clip_end3=1)
+                             refseq=DNA("ATATATATA"),
+                             read=DNA("TATATATAT"),
+                             qual="FFFFFFFFF",
+                             cigar="2S2=2I2=1S",
+                             end5=4,
+                             ambindel=True,
+                             insert3=True,
+                             clip_end5=1,
+                             clip_end3=1)
         expect = (([5], [6]), {5: 9, 6: 9})
         self.assertEqual(result, expect)
 
@@ -770,7 +770,7 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                              clip_end3=4)
         ended = time.time()
         expect = (([943], [1096]),
-                  {944: 113, 
+                  {944: 113,
                    950: 225,
                    953: 177,
                    957: 177,
@@ -873,7 +873,7 @@ class TestCalcRelsLinesSingle(ut.TestCase):
                    1091: 113,
                    1093: 225})
         self.assertEqual(result, expect)
-        # Make sure it didn't take too long to calculate.
+        # Make sure it didn't take too long (> 0.1 s) to calculate.
         self.assertLessEqual(ended - began, 0.1)
 
     def test_error_name_missing(self):
@@ -1401,10 +1401,11 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                       end52=3)
 
     def test_staggered_con_int(self):
-        """ Spliced reads overlap in a staggered manner with a consistent intron.
+        """ Spliced reads overlap in a staggered manner with a
+        consistent intron.
 
-        R1  aGT-gtA
-        R2    A-ATGc
+        R1  aGT_gtA
+        R2    A_ATGc
         Ref AGTCAACGT
         Pos 123456789
         """
@@ -1425,12 +1426,13 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                       qual2="FFFF!",
                       cigar2="1M1N4M",
                       end52=3)
-        
-    def test_staggered_inc_int(self):
-        """ Spliced reads overlap in a staggered manner with an inconsistent intron.
 
-        R1  aGT-gtA
-        R2    AGA-Gc
+    def test_staggered_inc_int(self):
+        """ Spliced reads overlap in a staggered manner with an
+        inconsistent intron.
+
+        R1  aGT_gtA
+        R2    AGA_Gc
         Ref AGTCAACGT
         Pos 123456789
         """
@@ -1479,10 +1481,11 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                       end52=2)
 
     def test_contain_flush5_con_int(self):
-        """ One spliced read contains the other, with 5' ends flush and a consistent intron.
+        """ One spliced read contains the other, with 5' ends flush and
+        a consistent intron.
 
-        R1   A-cAggG
-        R2   g-caT
+        R1   A_cAggG
+        R2   g_caT
         Ref AGTCAACGT
         Pos 123456789
         """
@@ -1504,10 +1507,11 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                       end52=2)
 
     def test_contain_flush5_inc_int(self):
-        """ One spliced read contains the other, with 5' ends flush and an inconsistent intron.
+        """ One spliced read contains the other, with 5' ends flush and
+        an inconsistent intron.
 
-        R1   A-cAggG
-        R2   gT-aT
+        R1   A_cAggG
+        R2   gT_aT
         Ref AGTCAACGT
         Pos 123456789
         """
@@ -1553,10 +1557,11 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                       end52=3)
 
     def test_contain_flush53_con_int(self):
-        """ Both reads start and end at the same positions with a consistent intron.
+        """ Both reads start and end at the same positions with a
+        consistent intron.
 
-        R1    tc-A-G
-        R2    gGAT-G
+        R1    tc-A_G
+        R2    gGAT_G
         Ref AGTCAACGT
         Pos 123456789
         """
@@ -1575,19 +1580,20 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                       qual2="!FFFF",
                       cigar2="4M1N1M",
                       end52=3)
-        
-    def test_contain_flush53_inc_int(self):
-        """ Both reads start and end at the same positions with an inconsistent intron.
 
-        R1    tc-A-G
-        R2    g-ATCG
+    def test_contain_flush53_inc_int(self):
+        """ Both reads start and end at the same positions with an
+        inconsistent intron.
+
+        R1    tc-A_G
+        R2    g_ATCG
         Ref AGTCAACGT
         Pos 123456789
         """
         self.evaluate([(3, 6), (8, 8)],
                       [(3, 3), (5, 8)],
                       {3: MATCH + SUB_A + SUB_C + SUB_G,
-                       4: MATCH + SUB_A + SUB_T + SUB_G + DELET, 
+                       4: MATCH + SUB_A + SUB_T + SUB_G + DELET,
                        6: IRREC},
                       ref="ref",
                       refseq=DNA("AGTCAACGT"),
@@ -1627,20 +1633,21 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                       end52=2)
 
     def test_contain_flush3_con_int(self):
-        """ One read contains the other, with 3' ends flush and a consistent intron.
+        """ One read contains the other, with 3' ends flush and a
+        consistent intron.
 
-        R1     TAt-a
-        R2   CggAt-c
+        R1     TAt_a
+        R2   CggAt_c
         Ref AGTCAACGT
         Pos 123456789
         """
         self.evaluate([(4, 6), (8, 8)],
                       [(2, 6), (8, 8)],
                       {2: SUB_C,
-                      3: MATCH + SUB_A + SUB_C + SUB_G,
-                      4: SUB_T,
-                      6: MATCH + SUB_C + SUB_G + SUB_T,
-                      8: MATCH + SUB_A + SUB_C + SUB_T},
+                       3: MATCH + SUB_A + SUB_C + SUB_G,
+                       4: SUB_T,
+                       6: MATCH + SUB_C + SUB_G + SUB_T,
+                       8: MATCH + SUB_A + SUB_C + SUB_T},
                       ref="ref",
                       refseq=DNA("AGTCAACGT"),
                       read1=DNA("TAta"),
@@ -1651,11 +1658,12 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                       qual2="F!!F!!",
                       cigar2="5M1N1M",
                       end52=2)
-        
-    def test_contain_flush3_inc_int(self):
-        """ One read contains the other, with 3' ends flush and an inconsistent intron.
 
-        R1     TAt-a
+    def test_contain_flush3_inc_int(self):
+        """ One read contains the other, with 3' ends flush and an
+        inconsistent intron.
+
+        R1     TAt_a
         R2   CggAtCc
         Ref AGTCAACGT
         Pos 123456789
@@ -1663,10 +1671,10 @@ class TestCalcRelsLinesPaired(ut.TestCase):
         self.evaluate([(4, 6), (8, 8)],
                       [(2, 8)],
                       {2: SUB_C,
-                      3: MATCH + SUB_A + SUB_C + SUB_G,
-                      4: SUB_T,
-                      6: MATCH + SUB_C + SUB_G + SUB_T,
-                      8: MATCH + SUB_A + SUB_C + SUB_T},
+                       3: MATCH + SUB_A + SUB_C + SUB_G,
+                       4: SUB_T,
+                       6: MATCH + SUB_C + SUB_G + SUB_T,
+                       8: MATCH + SUB_A + SUB_C + SUB_T},
                       ref="ref",
                       refseq=DNA("AGTCAACGT"),
                       read1=DNA("TAta"),
@@ -1703,10 +1711,11 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                       end52=2)
 
     def test_contain_con_int(self):
-        """ One read contains the other, with neither end flush and a consistent intron.
+        """ One read contains the other, with neither end flush and a
+        consistent intron.
 
-        R1    Tgc-T
-        R2   gtaA-CG
+        R1    Tgc_T
+        R2   gtaA_CG
         Ref AGTCAACGT
         Pos 123456789
         """
@@ -1725,12 +1734,13 @@ class TestCalcRelsLinesPaired(ut.TestCase):
                       qual2="!!!FFF",
                       cigar2="4M1N2M",
                       end52=2)
-        
-    def test_contain_inc_int(self):
-        """ One read contains the other, with neither end flush and an inconsistent intron.
 
-        R1    Tgc-T
-        R2   gtaA--G
+    def test_contain_inc_int(self):
+        """ One read contains the other, with neither end flush and an
+        inconsistent intron.
+
+        R1    Tgc_T
+        R2   gtaA__G
         Ref AGTCAACGT
         Pos 123456789
         """
@@ -1881,8 +1891,8 @@ class TestMergeMates(ut.TestCase):
             for pos in range(end51, end31 + 1):
                 for rel in range(MATCH + 1, NOCOV):
                     result = merge_mates(end51s, end31s, {pos: rel},
-                                          end52s, end32s, {},
-                                          True)
+                                         end52s, end32s, {},
+                                         True)
                     for end52, end32 in zip(end52s, end32s):
                         if end52 <= pos <= end32:
                             # The relationship can be compensated by read 2.
@@ -1906,8 +1916,8 @@ class TestMergeMates(ut.TestCase):
             for pos in range(end52, end32 + 1):
                 for rel in range(MATCH + 1, NOCOV):
                     result = merge_mates(end51s, end31s, {},
-                                          end52s, end32s, {pos: rel},
-                                          True)
+                                         end52s, end32s, {pos: rel},
+                                         True)
                     for end51, end31 in zip(end51s, end31s):
                         if end51 <= pos <= end31:
                             # The relationship can be compensated by read 1.
@@ -1938,8 +1948,8 @@ class TestMergeMates(ut.TestCase):
                                 with self.subTest(pos1=pos1, rel1=rel1,
                                                   pos2=pos2, rel2=rel2):
                                     result = merge_mates(end51s, end31s, rels1,
-                                                          end52s, end32s, rels2,
-                                                          True)
+                                                         end52s, end32s, rels2,
+                                                         True)
                                     if pos1 == pos2:
                                         merged = rel1 & rel2
                                         if merged == MATCH:
@@ -1949,13 +1959,13 @@ class TestMergeMates(ut.TestCase):
                                     else:
                                         expect = ([1, 2], [2, 3]), {}
                                         merged1 = (rel1 & MATCH
-                                                    if end52 <= pos1 <= end32
-                                                    else rel1)
+                                                   if end52 <= pos1 <= end32
+                                                   else rel1)
                                         if merged1 != MATCH:
                                             expect[1][pos1] = merged1
                                         merged2 = (rel2 & MATCH
-                                                    if end51 <= pos2 <= end31
-                                                    else rel2)
+                                                   if end51 <= pos2 <= end31
+                                                   else rel2)
                                         if merged2 != MATCH:
                                             expect[1][pos2] = merged2
                                     self.assertEqual(result, expect)

@@ -3,7 +3,6 @@
 // Required for integration with Python; also includes other required
 // header files such as <stdlib.h> and <string.h>.
 #include <Python.h>
-#include <stdbool.h>
 
 
 
@@ -192,7 +191,7 @@ static int init_pod(IndelPod *pod, int insert)
         PyErr_NoMemory();
         return -1;
     }
-    // printf("malloc %p\n", pod->indels);
+    // printf("init_pod\tmalloc\t%p\n", pod->indels);
     pod->num_indels = 0;
     return 0;
 }
@@ -206,8 +205,11 @@ static void free_pod(IndelPod *pod)
 {
     assert(pod != NULL);
     free(pod->indels);
-    // printf("free %p\n", pod->indels);
+    // printf("free_pod\tfree\t%p\n", pod->indels);
+    // Now that its memory has been freed, reset all of its fields.
     pod->indels = NULL;
+    pod->capacity = 0;
+    pod->num_indels = 0;
 }
 
 
@@ -248,7 +250,7 @@ static void free_pods(IndelPodArray *pods)
         free_pod(&(pods->pods[p]));
     }
     free(pods->pods);
-    // printf("free %p\n", pods->pods);
+    // printf("free_pods\tfree\t%p\n", pods->pods);
     // Now that its memory has been freed, reset all of its fields.
     init_pods(pods);
 }
@@ -284,7 +286,7 @@ static int add_indel(IndelPodArray *pods,
             PyErr_NoMemory();
             return -1;
         }
-        // printf("malloc %p\n", pods->pods);
+        // printf("add_indel\tmalloc\t%p\n", pods->pods);
 
         // Initialize the first pod in the new array.
         pod = pods->pods;
@@ -317,8 +319,8 @@ static int add_indel(IndelPodArray *pods,
                     PyErr_NoMemory();
                     return -1;
                 }
-                // printf("implicit-free %p\n", pods->pods);
-                // printf("realloc %p\n", new_pods);
+                // printf("add_indel\t(free)\t%p\n", pods->pods);
+                // printf("add_indel\trealloc\t%p\n", new_pods);
                 pods->pods = new_pods;
             }
 
@@ -347,8 +349,8 @@ static int add_indel(IndelPodArray *pods,
                     PyErr_NoMemory();
                     return -1;
                 }
-                // printf("implicit-free %p\n", pod->indels);
-                // printf("realloc %p\n", new_indels);
+                // printf("add_indel\t(free)\t%p\n", pod->indels);
+                // printf("add_indel\trealloc\t%p\n", new_indels);
                 pod->indels = new_indels;
             }
         }
@@ -479,38 +481,41 @@ corrupting the memory. */
 static void free_ends(EndsArray *ends)
 {
     assert(ends != NULL);
-    if (ends->ends != NULL) {
-        free(ends->ends);
-        // printf("free %p\n", ends->ends);
-        ends->ends = NULL;
-    }
+    free(ends->ends);
+    // printf("free_ends\tfree\t%p\n", ends->ends);
+    // Now that its memory has been freed, reset all of its fields.
     init_ends(ends);
 }
 
 
-static int add_end(EndsArray *ends, size_t end) {
+static int add_end(EndsArray *ends, size_t end)
+{
     assert(ends != NULL);
     if (ends->num_ends == ends->cap_ends)
     {
-        ends->cap_ends = (ends->num_ends == 0) ? INIT_ENDS_CAPACITY : (ends->cap_ends * CAPACITY_FACTOR);
         if (ends->num_ends == 0)
         {
+            ends->cap_ends = INIT_ENDS_CAPACITY;
             ends->ends = malloc(ends->cap_ends * sizeof(size_t));
-            if (ends->ends == NULL) {
+            if (ends->ends == NULL)
+            {
                 PyErr_NoMemory();
                 return -1;
             }
-        // printf("malloc %p\n", ends->ends);
+            // printf("add_end\tmalloc\t%p\n", ends->ends);
         }
         else
         {
-            size_t *new_ends = realloc(ends->ends, ends->cap_ends * sizeof(size_t));
-            if (new_ends == NULL) {
+            ends->cap_ends = ends->cap_ends * CAPACITY_FACTOR;
+            size_t *new_ends = realloc(ends->ends,
+                                       ends->cap_ends * sizeof(size_t));
+            if (new_ends == NULL)
+            {
                 PyErr_NoMemory();
                 return -1;
             }
-            // printf("implicit-free %p\n", ends->ends);
-            // printf("realloc %p\n", new_ends);
+            // printf("add_end\t(free)\t%p\n", ends->ends);
+            // printf("add_end\trealloc\t%p\n", new_ends);
             ends->ends = new_ends;
         }
     }
@@ -520,23 +525,25 @@ static int add_end(EndsArray *ends, size_t end) {
 }
 
 
-// Insertion sort implementation
-void sort_seg_ends(EndsArray *ends) {
-    if (ends == NULL || ends->ends == NULL || ends->num_ends < 2) {
-        return;  // Nothing to sort if array is empty or has only one element
-    }
-    size_t *arr = ends->ends;  // Pointer to array of size_t structs
-    for (size_t i = 1; i < ends->num_ends; i++) {
-        size_t key = arr[i];  // Copy current element
-        size_t j = i;
-        // Shift elements greater than key.pos one position to the right
-        while (j > 0 && arr[j - 1] > key) {
-            arr[j] = arr[j - 1];
-            j--;
-        }
-        // Insert key at the correct position
-        arr[j] = key;
-    }
+/* Determine the order of two size_t values. */
+static inline int comp_size_t(const void *a, const void *b)
+{
+    assert(a != NULL);
+    assert(b != NULL);
+    size_t value1 = *(const size_t *)a;
+    size_t value2 = *(const size_t *)b;
+    if (value1 < value2)
+        {return -1;}
+    if (value1 > value2)
+        {return 1;}
+    return 0;
+}
+
+
+static void sort_seg_ends(EndsArray *ends)
+{
+    assert(ends != NULL);
+    qsort(ends->ends, ends->num_ends, sizeof(size_t), comp_size_t);
 }
 
 
@@ -594,7 +601,7 @@ static int init_read(SamRead *read)
     // Initialize the read's ends.
     init_ends(&(read->end5s));
     // Add a placeholder value for the 5' segment end.
-    if(add_end(&(read->end5s), 0))
+    if (add_end(&(read->end5s), 0))
         {return -1;}
     init_ends(&(read->end3s));
     return 0;
@@ -610,10 +617,10 @@ static void free_read(SamRead *read)
 {
     assert(read != NULL);
     free(read->line);
-    // printf("free %p\n", read->line);
+    // printf("free_read\tfree\t%p\n", read->line);
     read->line = NULL;
     free(read->rels);
-    // printf("free %p\n", read->rels);
+    // printf("free_read\tfree\t%p\n", read->rels);
     read->rels = NULL;
     free_pods(&(read->pods));
     free_ends(&(read->end5s));
@@ -623,11 +630,22 @@ static void free_read(SamRead *read)
 }
 
 
-static int finalize_ends(SamRead *read) {
+/* Number of segments in this read. */
+static inline size_t get_num_segs(const SamRead *read)
+{
     assert(read != NULL);
-    // Finalize the 5' endpoint:
+    assert((read->end5s).num_ends == (read->end3s).num_ends);
+    return (read->end5s).num_ends;
+}
+
+
+static int finalize_ends(SamRead *read)
+{
+    assert(read != NULL);
+    // Finalize the 5' end.
+    assert((read->end5s).num_ends > 0);
     (read->end5s).ends[0] = read->ref_end5;
-    // Finalize the 3' endpoint:
+    // Finalize the 3' end.
     if (add_end(&read->end3s, read->ref_end3))
         {return -1;}
     assert((read->end5s).num_ends == (read->end3s).num_ends);
@@ -637,8 +655,9 @@ static int finalize_ends(SamRead *read) {
 
 static void trim_end5s(SamRead* read)
 {
-    assert(read != NULL);
-    for (size_t i = 0; i < (read->end5s).num_ends; i++) {
+    size_t num_segs = get_num_segs(read);
+    for (size_t i = 0; i < num_segs; i++)
+    {
         size_t seg_start = (read->end5s).ends[i];
         (read->end5s).ends[i] = min(seg_start, read->ref_end5);
     }
@@ -647,8 +666,9 @@ static void trim_end5s(SamRead* read)
 
 static void trim_end3s(SamRead* read)
 {
-    assert(read != NULL);
-    for (size_t i = 0; i < (read->end3s).num_ends; i++) {
+    size_t num_segs = get_num_segs(read);
+    for (size_t i = 0; i < num_segs; i++)
+    {
         size_t seg_end = (read->end3s).ends[i];
         (read->end3s).ends[i] = max(read->ref_end3, seg_end);
     }
@@ -752,7 +772,7 @@ static int parse_sam_line(SamRead *read,
         PyErr_NoMemory();
         return -1;
     }
-    // printf("malloc %p\n", read->line);
+    // printf("parse_sam_line\tmalloc\t%p\n", read->line);
 
     // Copy the line into read->line and ensure it was copied correctly.
     memcpy(read->line, line, line_size);
@@ -1136,12 +1156,15 @@ size_t find_indel_index(IndelPod *pod, size_t label)
     }
     // In this algorithm, the label must always exist.
     assert(0);
+    return -1;
 }
 
 
 /* Determine the order of two Indels from 5' to 3'. */
 static inline int comp_indels(const void *a, const void *b)
 {
+    assert(a != NULL);
+    assert(b != NULL);
     const Indel *indel1 = (const Indel *)a;
     const Indel *indel2 = (const Indel *)b;
     // Two Indels cannot have the same value for opposite.
@@ -1805,7 +1828,7 @@ static int calc_rels_line(SamRead *read,
         PyErr_NoMemory();
         return -1;
     }
-    // printf("malloc %p\n", read->rels);
+    // printf("calc_rels_line\tmalloc\t%p\n", read->rels);
 
     // Positions in the relationship array and read (0-indexed).
     size_t rels_pos = 0;
@@ -1926,12 +1949,12 @@ static int calc_rels_line(SamRead *read,
                 assert(read_pos < read->len);
                 // The start of an intron delimits the end of a segment.
                 // The segment ends at the position before the start of the intron.
-                if(add_end(&(read->end3s), rels_pos + read->pos - 1))
+                if (add_end(&(read->end3s), rels_pos + read->pos - 1))
                     {return -1;}
                 rels_pos = next_rels_pos;
                 // The end of an intron delimits the start of a segment.
                 // The segment starts at the position after the end of the intron.
-                if(add_end(&(read->end5s), rels_pos + read->pos))
+                if (add_end(&(read->end5s), rels_pos + read->pos))
                     {return -1;}
                 break;
             
@@ -2094,51 +2117,38 @@ static int calc_rels_line(SamRead *read,
 
 static int set_rel(PyObject *rels_dict, size_t pos, unsigned char rel)
 {
-    unsigned long long_rel = (unsigned long)rel;
-    // Convert the C variables pos and rel into Python int objects.
+    // Do not call Py_DECREF(rels_dict) inside this function because
+    // rels_dict is owned by ends_rels_tuple. If any errors occur, then
+    // the reference count of rels_dict will be decremented implicitly
+    // when Py_DECREF(ends_rels_tuple) is called within cleanup().
+
     PyObject *key = PyLong_FromSize_t(pos);
-
     if (key == NULL)
-    {
-        // Decrement reference counts if not NULL.
-        Py_DECREF(rels_dict);
-        return -1;
-    }
+        {return -1;}
+    // This key (i.e. position) should not already be in rels_dict.
+    assert(PyDict_GetItem(rels_dict, key) == NULL);
 
-    PyObject *curr_rel_py = PyDict_GetItem(rels_dict, key);
-    if (curr_rel_py != NULL)
-    {
-        unsigned long curr_rel = PyLong_AsUnsignedLong(curr_rel_py);
-        if (PyErr_Occurred() != NULL)
-        {
-            Py_DECREF(key);
-            Py_DECREF(rels_dict);
-            return -1;
-        }
-        long_rel &= curr_rel;
-    }
-
-    PyObject *value = PyLong_FromUnsignedLong(long_rel);
+    PyObject *value = PyLong_FromUnsignedLong((unsigned long)rel);
     if (value == NULL)
     {
         Py_DECREF(key);
-        Py_DECREF(rels_dict);
         return -1;
     }
+
     // Add the key-value pair to the dictionary.
-    if (PyDict_SetItem(rels_dict, key, value) < 0)
+    if (PyDict_SetItem(rels_dict, key, value))
     {
         Py_DECREF(key);
         Py_DECREF(value);
-        Py_DECREF(rels_dict);
         return -1;
     }
 
-    // Clean up the references for the key and value (they are now owned
-    // by the dictionary).
+    // Clean up the references for the key and value. Even though they
+    // are now both inside rels_dict, PyDict_SetItem does NOT steal
+    // references to them (unlike PyTuple_SetItem and PyList_SetItem),
+    // so their reference counts must be decremented separately.
     Py_DECREF(key);
     Py_DECREF(value);
-
     return 0;
 }
 
@@ -2188,19 +2198,14 @@ static int put_rels_in_dict(PyObject *rels_dict,
 }
 
 
-static int seg_in_segs(SamRead *read, size_t seg5, size_t seg3)
+static int seg_in_segs(const SamRead *read, size_t seg5, size_t seg3)
 {
-    assert(read != NULL);
-    for (size_t seg = 0; seg < read->end5s.num_ends; seg++)
+    size_t num_segs = get_num_segs(read);
+    for (size_t seg = 0; seg < num_segs; seg++)
     {
         size_t read_seg5 = read->end5s.ends[seg];
         size_t read_seg3 = read->end3s.ends[seg];
-
-        if ((read_seg5 <= seg5) 
-            &&
-            (seg5 <= seg3) 
-            &&
-            (seg3 <= read_seg3))
+        if ((read_seg5 <= seg5) && (seg5 <= seg3) && (seg3 <= read_seg3))
             {return 1;}
     }
     return 0;
@@ -2208,101 +2213,123 @@ static int seg_in_segs(SamRead *read, size_t seg5, size_t seg3)
 
 
 static int put_2_rels_in_dict(PyObject *rels_dict,
-                              SamRead *fwd_read,
-                              SamRead *rev_read)
+                              const SamRead *fwd_read,
+                              const SamRead *rev_read)
 {
-    // Validate the arguments; positions are 1-indexed and the 5' ends
-    // must be ≥ 1.
+    // Validate the arguments; all 5' ends must be ≥ 1 because positions
+    // are 1-indexed.
+    assert(rels_dict != NULL);
+    assert(fwd_read != NULL);
+    assert(rev_read != NULL);
     assert(fwd_read->ref_end5 >= 1);
     assert(rev_read->ref_end5 >= 1);
 
+    // Merge the 5' and 3' ends, then sort them.
     EndsArray combined_ends;
     init_ends(&combined_ends);
-    // Merge ends
-    for (size_t segf = 0; segf < (fwd_read->end5s).num_ends; segf++)
+    size_t num_segs_fwd = get_num_segs(fwd_read);
+    for (size_t segf = 0; segf < num_segs_fwd; segf++)
     {
-        size_t segf5 = (fwd_read->end5s).ends[segf];
-        size_t segf3 = (fwd_read->end3s).ends[segf];
-        // 5' ends must be 0-indexed
-        segf5 -= 1;
-        add_end(&combined_ends, segf5);
-        add_end(&combined_ends, segf3);
+        // Convert 5' ends to 0-indexed for sorting.
+        assert((fwd_read->end5s).ends[segf] >= 1);
+        if (add_end(&combined_ends, (fwd_read->end5s).ends[segf] - 1))
+        {
+            free_ends(&combined_ends);
+            return -1;
+        }
+        if (add_end(&combined_ends, (fwd_read->end3s).ends[segf]))
+        {
+            free_ends(&combined_ends);
+            return -1;
+        }
     }
-    for (size_t segr = 0; segr < (rev_read->end5s).num_ends; segr++)
+    size_t num_segs_rev = get_num_segs(rev_read);
+    for (size_t segr = 0; segr < num_segs_rev; segr++)
     {
-        size_t segr5 = (rev_read->end5s).ends[segr];
-        size_t segr3 = (rev_read->end3s).ends[segr];
-        // 5' ends must be 0-indexed
-        segr5 -= 1;
-        add_end(&combined_ends, segr5);
-        add_end(&combined_ends, segr3);
+        // Convert 5' ends to 0-indexed for sorting.
+        assert((rev_read->end5s).ends[segr] >= 1);
+        if (add_end(&combined_ends, (rev_read->end5s).ends[segr] - 1))
+        {
+            free_ends(&combined_ends);
+            return -1;
+        }
+        if (add_end(&combined_ends, (rev_read->end3s).ends[segr]))
+        {
+            free_ends(&combined_ends);
+            return -1;
+        }
     }
-
     sort_seg_ends(&combined_ends);
 
-    bool relate_fwd_read;
-    bool relate_rev_read;
-
-    for (size_t seg = 0; seg < combined_ends.num_ends-1; seg++)
+    // Add the relationships within every segment that is delimited by
+    for (size_t seg = 1; seg < combined_ends.num_ends; seg++)
     {
-        size_t seg5 = combined_ends.ends[seg];
-        size_t seg3 = combined_ends.ends[seg+1];
+        // Find the 5' and 3' ends of this segment; convert the 5' end
+        // back to 1-indexed.
+        size_t seg5 = combined_ends.ends[seg - 1] + 1;
+        size_t seg3 = combined_ends.ends[seg];
+        
+        // Determine if the segment 
+        int seg_in_fwd_read = seg_in_segs(fwd_read, seg5, seg3);
+        int seg_in_rev_read = seg_in_segs(rev_read, seg5, seg3);
 
-        assert(seg5 != NULL);
-        assert(seg3 != NULL);
-
-        // Reset seg5 to 1-indexed
-        seg5++;
-        relate_fwd_read = (bool)seg_in_segs(fwd_read, seg5, seg3);
-        relate_rev_read = (bool)seg_in_segs(rev_read, seg5, seg3);
-
-        // Skip zero length segments and segments not covered by either read
-        if ((seg5 > seg3) || !(relate_fwd_read || relate_rev_read))
-           {continue;}
-
-        // printf("\nSegment %zu to %zu\nRelate read1: %B Relate read2: %B", seg5->pos, seg3->pos, relate_fwd_read, relate_rev_read);
-        if (relate_fwd_read && relate_rev_read)
+        if (seg_in_fwd_read && seg_in_rev_read)
         {
             // Fill relationships in the region of overlap.
             assert(seg5 >= fwd_read->pos);
             assert(seg5 >= rev_read->pos);
-            unsigned char rel;
-            for (size_t pos = seg5; pos <= seg3; pos++) {
+            for (size_t pos = seg5; pos <= seg3; pos++)
+            {
                 unsigned char rel = (fwd_read->rels[pos - fwd_read->pos]
                                      &
                                      rev_read->rels[pos - rev_read->pos]);
                 if (put_rel_in_dict(rels_dict, pos, rel))
-                    {return -1;}
+                {
+                    free_ends(&combined_ends);
+                    return -1;
+                }
             }
         }
-        else if (relate_fwd_read)
+        else if (seg_in_fwd_read)
         {
             if (put_rels_in_dict(rels_dict,
                                  fwd_read->rels,
                                  fwd_read->pos,
                                  seg5,
                                  seg3))
-                {return -1;}
+            {
+                free_ends(&combined_ends);
+                return -1;
+            }
         }
-        else if (relate_rev_read)
+        else if (seg_in_rev_read)
         {
             if (put_rels_in_dict(rels_dict,
                                  rev_read->rels,
                                  rev_read->pos,
                                  seg5,
                                  seg3))
-                {return -1;}
+            {
+                free_ends(&combined_ends);
+                return -1;
+            }
         }
     }
+
+    // Free the combined 5' and 3' ends or else the memory will leak.
+    free_ends(&combined_ends);
     return 0;
 }
 
 
-static int put_end_in_list(PyObject *ends_list, size_t end) {
+static int put_end_in_list(PyObject *ends_list, size_t end)
+{
+    assert(ends_list != NULL);
     PyObject *py_end = PyLong_FromSize_t(end);
     if (py_end == NULL)
-        return -1;
-    if (PyList_Append(ends_list, py_end) != 0) {
+        {return -1;}
+    if (PyList_Append(ends_list, py_end))
+    {
         Py_DECREF(py_end);
         return -1;
     }
@@ -2325,23 +2352,17 @@ static int put_end_in_list(PyObject *ends_list, size_t end) {
 
 
 /* Clean up by freeing all dynamically allocated memory for the reads
-and decrementing the reference count for py_object (if given).
+and decrementing the reference count for ends_rels_tuple (if not NULL).
 Do NOT pass SamReads that have not yet been initialized with init_read()
 to this function, because it will call free_read() on them. */
 static PyObject *cleanup(SamRead *read1,
                          SamRead *read2,
-                         PyObject *py_object)
+                         PyObject *ends_rels_tuple)
 {
-    // Free the dynamically allocated memory for the reads.
+    // It is allowed for read1, read2, and ends_rels_tuple to be NULL.
     free_read(read1);
     free_read(read2);
-
-    // Decrement the reference count for py_object.
-    if (py_object != NULL)
-    {
-        Py_DECREF(py_object);
-    }
-
+    Py_XDECREF(ends_rels_tuple);
     // Return NULL so that py_calc_rels_lines can "return cleanup(...);"
     return NULL;
 }
@@ -2383,7 +2404,7 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
                           &clip_end5,
                           &clip_end3))
         {return NULL;}
-    
+
     // It is impossible for any of these pointers to be NULL.
     assert(line1 != NULL);
     assert(line2 != NULL);
@@ -2397,34 +2418,10 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
     // Declare two SamReads to hold the results and initialize them to
     // prevent any errors caused by uninitialized pointers.
     SamRead read1, read2;
-    if(init_read(&read1))
+    if (init_read(&read1))
         {return cleanup(NULL, NULL, NULL);}
-    if(init_read(&read2))
+    if (init_read(&read2))
         {return cleanup(&read1, NULL, NULL);}
-    // Determine whether the read is paired-end and, if so, whether it
-    // is properly paired.
-    Py_ssize_t num_mates;
-    int paired, proper;
-    if (*line2)
-    {
-        // Paired-end
-        assert(line2_len > 0);
-        num_mates = 2;
-        paired = 1;
-        // The read is properly paired if lines 1 and 2 are different
-        // because the way that SEISMIC-RNA indicates that a read is
-        // paired-end but improperly paired (i.e. has one mate) is by
-        // passing identical lines for reads 1 and 2.
-        proper = (line1_len != line2_len) || (strcmp(line1, line2) != 0);
-    }
-    else
-    {
-        // Single-end
-        assert(line2_len == 0);
-        num_mates = 1;
-        paired = 0;
-        proper = 0;
-    }
     
     // Initialize Python objects to return the results.
 
@@ -2452,6 +2449,27 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
         {return cleanup(&read1, &read2, ends_rels_tuple);}
     PyTuple_SET_ITEM(ends_rels_tuple, 1, rels_dict);
 
+    // Check if the read is paired-end and, if so, properly paired.
+    int paired, proper;
+    if (*line2)
+    {
+        assert(line2_len > 0);
+        paired = 1;
+        // The read is properly paired if lines 1 and 2 are different
+        // because the way that SEISMIC-RNA indicates that a read is
+        // paired-end but improperly paired (i.e. has one mate) is by
+        // passing identical lines for reads 1 and 2.
+        // Check (line1_len != line2_len) first because that comparison
+        // is faster than (strcmp(line1, line2) != 0).
+        proper = (line1_len != line2_len) || (strcmp(line1, line2) != 0);
+    }
+    else
+    {
+        assert(line2_len == 0);
+        paired = 0;
+        proper = 0;
+    }
+
     // Calculate relationships for line 1.
     if (calc_rels_line(&read1,
                        line1,
@@ -2472,8 +2490,8 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
     if (paired)
     {
         // The read comprises forward (fwd) and reverse (rev) mates.
-        SamRead *fwd_read, *rev_read;
-        // Check if line 2 differs from line 1.
+        SamRead *fwd_read = NULL;
+        SamRead *rev_read = NULL;
         if (proper)
         {
             // Calculate relationships for line 2.
@@ -2540,9 +2558,10 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
             // Lines 1 and 2 are identical: no need to process line 2.
             fwd_read = &read1;
             rev_read = &read1;
-            // Finalize ends for only read1
+            // Finalize ends for only read1.
             finalize_ends(&read1);
-            for (size_t i = 0; i < fwd_read->end5s.num_ends; i++)
+            size_t num_segs_fwd = get_num_segs(fwd_read);
+            for (size_t i = 0; i < num_segs_fwd; i++)
             {
                 size_t seg5 = fwd_read->end5s.ends[i];
                 size_t seg3 = fwd_read->end3s.ends[i];
@@ -2556,32 +2575,42 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
         }
 
         // Fill in the lists of 5' and 3' ends.
-        for (size_t i = 0; i < fwd_read->end5s.num_ends; i++) {
-            if (put_end_in_list(end5s_list, fwd_read->end5s.ends[i])) {
+        size_t num_segs_fwd = get_num_segs(fwd_read);
+        for (size_t i = 0; i < num_segs_fwd; i++)
+        {
+            if (put_end_in_list(end5s_list, fwd_read->end5s.ends[i]))
+            {
+                return cleanup(&read1, &read2, ends_rels_tuple);
+            }
+            if (put_end_in_list(end3s_list, fwd_read->end3s.ends[i]))
+            {
                 return cleanup(&read1, &read2, ends_rels_tuple);
             }
         }
-        for (size_t i = 0; i < fwd_read->end3s.num_ends; i++) {
-            if (put_end_in_list(end3s_list, fwd_read->end3s.ends[i])) {
+        // If the read is not properly paired, then fwd_read == rev_read
+        // and adding rev_read to end5s_list and end3s_list duplicates
+        // the existing contents (from fwd_read). This is the intended
+        // behavior so that all paired-end reads ultimately get two 5'
+        // and two 3' ends (or more than two if they contain introns).
+        size_t num_segs_rev = get_num_segs(rev_read);
+        for (size_t i = 0; i < num_segs_rev; i++)
+        {
+            if (put_end_in_list(end5s_list, rev_read->end5s.ends[i]))
+            {
                 return cleanup(&read1, &read2, ends_rels_tuple);
             }
-        }
-        for (size_t i = 0; i < rev_read->end5s.num_ends; i++) {
-            if (put_end_in_list(end5s_list, rev_read->end5s.ends[i])) {
-                return cleanup(&read1, &read2, ends_rels_tuple);
-            }
-        }
-        for (size_t i = 0; i < rev_read->end3s.num_ends; i++) {
-            if (put_end_in_list(end3s_list, rev_read->end3s.ends[i])) {
+            if (put_end_in_list(end3s_list, rev_read->end3s.ends[i]))
+            {
                 return cleanup(&read1, &read2, ends_rels_tuple);
             }
         }
     }
     else
     {
+        // The read comprises only a single mate.
         finalize_ends(&read1);
-        // Line 2 does not exist.
-        for (size_t i = 0; i < read1.end5s.num_ends; i++)
+        size_t num_segs = get_num_segs(&read1);
+        for (size_t i = 0; i < num_segs; i++)
             {
                 size_t seg5 = read1.end5s.ends[i];
                 size_t seg3 = read1.end3s.ends[i];
@@ -2593,14 +2622,15 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
                     {return cleanup(&read1, &read2, ends_rels_tuple);}
             }
         
-        // Fill int the lists of 5' and 3' ends.
-        for (size_t i = 0; i < read1.end5s.num_ends; i++) {
-            if (put_end_in_list(end5s_list, read1.end5s.ends[i])) {
+        // Fill in the lists of 5' and 3' ends.
+        for (size_t i = 0; i < num_segs; i++)
+        {
+            if (put_end_in_list(end5s_list, read1.end5s.ends[i]))
+            {
                 return cleanup(&read1, &read2, ends_rels_tuple);
             }
-        }
-        for (size_t i = 0; i < read1.end3s.num_ends; i++) {
-            if (put_end_in_list(end3s_list, read1.end3s.ends[i])) {
+            if (put_end_in_list(end3s_list, read1.end3s.ends[i]))
+            {
                 return cleanup(&read1, &read2, ends_rels_tuple);
             }
         }
@@ -2609,7 +2639,6 @@ static PyObject *py_calc_rels_lines(PyObject *self, PyObject *args)
     // Free the memory of rels1 and rels2, but not of ends_rels_tuple
     // which will be returned.
     cleanup(&read1, &read2, NULL);
-
     return ends_rels_tuple;
 }
 

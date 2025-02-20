@@ -383,8 +383,8 @@ def _calc_rels_read(read: SamRead,
     seg_ends3.append(ref_end3)
 
     assert len(seg_ends5) == len(seg_ends3), ("The number of 5' segment ends "
-                                               "must match the number of "
-                                               "3' segment ends")
+                                              "must match the number of "
+                                              "3' segment ends")
 
     # Convert rels to a non-default dict and select only the positions
     # contained within a segment.
@@ -519,12 +519,12 @@ def calc_rels_lines(line1: str,
     read1 = SamRead(line1)
     _validate_read(read1, ref, min_mapq, paired, proper)
     end5s1, end3s1, rels1 = _calc_rels_read(read1,
-                                          refseq,
-                                          chr(min_qual),
-                                          insert3,
-                                          ambindel,
-                                          clip_end5,
-                                          clip_end3)
+                                            refseq,
+                                            chr(min_qual),
+                                            insert3,
+                                            ambindel,
+                                            clip_end5,
+                                            clip_end3)
     if paired:
         # The read is paired-end.
         if proper:
@@ -534,12 +534,12 @@ def calc_rels_lines(line1: str,
             _validate_read(read2, ref, min_mapq, paired, proper)
             _validate_pair(read1, read2)
             end5s2, end3s2, rels2 = _calc_rels_read(read2,
-                                                  refseq,
-                                                  chr(min_qual),
-                                                  insert3,
-                                                  ambindel,
-                                                  clip_end5,
-                                                  clip_end3)
+                                                    refseq,
+                                                    chr(min_qual),
+                                                    insert3,
+                                                    ambindel,
+                                                    clip_end5,
+                                                    clip_end3)
             # Determine which read (1 or 2) faces forward and reverse.
             if read2.flag.rev:
                 end5sf, end3sf, relsf = end5s1, end3s1, rels1
