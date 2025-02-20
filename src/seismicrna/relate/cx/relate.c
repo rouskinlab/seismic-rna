@@ -1143,7 +1143,7 @@ static int validate_pair(const SamRead *read1,
 
 
 /* Determine the index of an Indel with the given label. */
-size_t find_indel_index(IndelPod *pod, size_t label)
+static size_t find_indel_index(IndelPod *pod, size_t label)
 {
     assert(pod != NULL);
     assert(pod->num_indels >= 1);
