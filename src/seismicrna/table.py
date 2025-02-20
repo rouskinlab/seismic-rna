@@ -45,7 +45,7 @@ def tabulate(dataset: MutsDataset,
     return list({file.parent for file in files})
 
 
-def load_all_datasets(input_path: Iterable[str | Path], verify_times: bool):
+def load_all_datasets(input_path: Iterable[str | Path], **kwargs):
     """ Load datasets from all steps of the workflow. """
     if not isinstance(input_path, (tuple, list, set, dict)):
         # Make sure input_path is not an iterator that will be exhausted
@@ -54,7 +54,7 @@ def load_all_datasets(input_path: Iterable[str | Path], verify_times: bool):
     for load_func in [load_relate_dataset,
                       load_mask_dataset,
                       load_cluster_dataset]:
-        yield from load_func.iterate(input_path, verify_times=verify_times)
+        yield from load_func.iterate(input_path, **kwargs)
 
 
 def get_tabulator_type(dataset_type: type[Dataset], count: bool = False):
