@@ -638,10 +638,10 @@ RefseqFileSeg = PathSegment("refseq-file",
 ReadNamesBatSeg = PathSegment("names-bat",
                               {BATCH: IntField, EXT: BatchExt},
                               frmt=NAMES_BATCH + "-batch-{batch}{ext}")
-RelateBatSeg = PathSegment(f"relate-bat",
+RelateBatSeg = PathSegment("relate-bat",
                            {BATCH: IntField, EXT: BatchExt},
                            frmt=RELATE_STEP + "-batch-{batch}{ext}")
-RelateRepSeg = PathSegment(f"relate-rep",
+RelateRepSeg = PathSegment("relate-rep",
                            {EXT: ReportExt},
                            frmt=RELATE_STEP + "-report{ext}")
 
@@ -654,11 +654,11 @@ MaskRepSeg = PathSegment("mask-rep",
                          frmt=MASK_STEP + "-report{ext}")
 
 # Cluster
-ClustParamsDirSeg = PathSegment(f"cluster-run-res-dir",
+ClustParamsDirSeg = PathSegment("cluster-run-res-dir",
                                 {},
                                 frmt=CLUST_PARAMS_DIR,
                                 order=10)
-ClustParamsFileSeg = PathSegment(f"cluster-run-res",
+ClustParamsFileSeg = PathSegment("cluster-run-res",
                                  {TABLE: ClustRunResultsField,
                                   NCLUST: IntField,
                                   RUN: IntField,
