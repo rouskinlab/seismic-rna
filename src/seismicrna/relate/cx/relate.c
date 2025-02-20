@@ -506,7 +506,7 @@ static int add_end(EndsArray *ends, size_t end)
         }
         else
         {
-            ends->cap_ends = ends->cap_ends * CAPACITY_FACTOR;
+            ends->cap_ends *= CAPACITY_FACTOR;
             size_t *new_ends = realloc(ends->ends,
                                        ends->cap_ends * sizeof(size_t));
             if (new_ends == NULL)
