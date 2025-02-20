@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from functools import cache
+from itertools import product
 from typing import Iterable
 
 from .code import (MATCH,
@@ -11,8 +12,8 @@ from .code import (MATCH,
                    SUB_C,
                    SUB_G,
                    SUB_T,
-                   REL_TYPE,
-                   ALL_SUBS)
+                   REL_TYPE)
+from ..error import IncompatibleOptionsError
 from ..seq import BASEA, BASEC, BASEG, BASET, DNA
 
 READ_DEL = "D"
@@ -142,6 +143,7 @@ class HalfRelPattern(object):
                     count_sub: bool = False,
                     count_del: bool = False,
                     count_ins: bool = False,
+                    count: Iterable[str] = (),
                     discount: Iterable[str] = ()):
         """
         Return a new SemiBitCaller by specifying which general types of
@@ -168,13 +170,21 @@ class HalfRelPattern(object):
         HalfRelPattern
             New HalfRefPattern instance that counts the specified bytes.
         """
-        codes: set[str] = set()
+        
+        codes: set[str] = set(map(cls.as_plain, count))
+        discount = set(map(cls.as_plain, discount))
+        intersect_codes = codes & discount
+        if intersect_codes:
+            raise IncompatibleOptionsError(f"Got the same mutations to count and discount {intersect_codes}.")
+        
         if count_ref:
             # Count all matches between the read and reference.
             codes.update(cls.as_plain(2 * base) for base in cls.ref_bases)
         if count_sub:
             # Count all substitutions in the read.
-            codes.update(cls.as_plain(sub) for sub in ALL_SUBS)
+            codes.update(cls.as_plain(f"{base1}{base2}") for base1, base2 
+                         in product("".join(DNA.four()), repeat=2)
+                         if base1 != base2)
         if count_del:
             # Count all deletions in the read.
             codes.update(cls.as_plain(f"{base}D") for base in cls.ref_bases)
@@ -182,7 +192,7 @@ class HalfRelPattern(object):
             # Count all insertions in the read.
             codes.update(cls.as_plain(f"{base}I") for base in cls.ref_bases)
         # Remove all the codes to be discounted.
-        codes -= set(map(cls.as_plain, discount))
+        codes -= discount
         return cls(*codes)
 
     @classmethod

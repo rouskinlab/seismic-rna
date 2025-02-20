@@ -20,7 +20,7 @@ from ..core.dataset import MissingBatchTypeError
 from ..core.error import IncompatibleValuesError
 from ..core.lists import PositionList
 from ..core.logs import logger
-from ..core.rel import RelPattern, ALL_SUBS
+from ..core.rel import RelPattern, HalfRelPattern
 from ..core.report import mask_iter_no_convergence
 from ..core.seq import POS_NAME, Region, index_to_pos
 from ..core.table import MUTAT_REL, INFOR_REL
@@ -644,11 +644,15 @@ def mask_region(dataset: RelateMutsDataset | PoolDataset,
                                          path.REG: region.name})
     if need_write(report_file, force):
         if count_mut:
-            if mask_mut:
-                raise IncompatibleOptionsError("--mask-mut and --count-mut mutually exclusive options.")
-            count_mut = set(mut.upper() for mut in count_mut)
-            mask_mut = (ALL_SUBS - set(count_mut))
-        pattern = RelPattern.from_counts(not mask_del, not mask_ins, mask_mut)
+            pattern = RelPattern(HalfRelPattern.from_counts(count_sub=False,
+                                                            count_del=not mask_del,
+                                                            count_ins=not mask_ins,
+                                                            count=count_mut,
+                                                            discount=mask_mut),
+                                 HalfRelPattern.from_counts(count_ref=True,
+                                                            discount=mask_mut))
+        else:
+            pattern = RelPattern.from_counts(not mask_del, not mask_ins, mask_mut)
         masker = Masker(dataset,
                         region,
                         pattern,
