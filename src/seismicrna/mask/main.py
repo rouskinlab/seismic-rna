@@ -1,5 +1,5 @@
 from collections import defaultdict
-from itertools import chain, product
+from itertools import product
 from pathlib import Path
 from typing import Iterable
 
@@ -63,7 +63,8 @@ def load_regions(input_path: Iterable[str | Path],
             logger.error(error)
     # Determine the regions for each reference in the datasets.
     regions = RefRegions({(dataset.ref, dataset.refseq)
-                          for dataset in chain(*datasets.values())},
+                          for ref_datasets in datasets.values()
+                          for dataset in ref_datasets},
                          regs_file=regions_file,
                          coords=coords,
                          primers=primers,
