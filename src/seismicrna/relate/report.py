@@ -6,7 +6,6 @@ from pathlib import Path
 from .io import RelateIO, ReadNamesBatchIO, RelateBatchIO, RefseqIO
 from ..core import path
 from ..core.report import (RefReport,
-                           RefseqReport,
                            BatchedReport,
                            RefF,
                            SampleF,
@@ -22,7 +21,8 @@ from ..core.report import (RefReport,
                            MinPhredF,
                            PhredEncF,
                            ClipEnd5F,
-                           ClipEnd3F)
+                           ClipEnd3F,
+                           RefseqChecksumF)
 
 BATCH_INDEX_COL = "Read Name"
 
@@ -34,7 +34,7 @@ class BaseRelateReport(RefReport, RelateIO, ABC):
         return path.RelateRepSeg
 
 
-class RelateReport(BatchedReport, RefseqReport, BaseRelateReport):
+class RelateReport(BatchedReport, BaseRelateReport):
 
     @classmethod
     def get_param_report_fields(cls):
@@ -54,6 +54,11 @@ class RelateReport(BatchedReport, RefseqReport, BaseRelateReport):
         return [NumReadsXamF,
                 NumReadsRelF,
                 *super().get_result_report_fields()]
+
+    @classmethod
+    def get_checksum_report_fields(cls):
+        return [*super().get_checksum_report_fields(),
+                RefseqChecksumF]
 
     @classmethod
     def _get_batch_types(cls):

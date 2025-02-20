@@ -1,17 +1,30 @@
 import gzip
+import pickle
+from hashlib import md5
 from pathlib import Path
 from typing import Iterable
 
+import brotli
 from click import command
 
+from .cluster.report import ClusterReport
 from .core.arg import (CMD_MIGRATE,
                        arg_input_path,
                        opt_max_procs)
+from .core.io import BadChecksumError, save_brickle
+from .core.report import Report, NumBatchesF, ChecksumsF, RefseqChecksumF
 from .core.run import run_func
 from .core.task import as_list_of_tuples, dispatch
+from .mask.report import MaskReport
+from .relate.io import RelateBatchIO
+from .relate.report import RelateReport
 
 JSON_INDENT = " " * 4
 JSON_DELIM = f",\n{JSON_INDENT}"
+
+
+class FindAndReplaceError(ValueError):
+    pass
 
 
 def find_and_replace(file: Path, find: str, replace: str, count: int = 1):
@@ -23,50 +36,120 @@ def find_and_replace(file: Path, find: str, replace: str, count: int = 1):
         text = f.read()
     find_count = text.count(find)
     if 0 <= count != find_count:
-        raise ValueError(f"{file} contains {repr(find)} {find_count} time(s)")
+        raise FindAndReplaceError(
+            f"{file} contains {repr(find)} {find_count} time(s)"
+        )
     text = text.replace(find, replace)
     with open_func(file, "wt") as f:
         f.write(text)
     return find_count
 
 
+def update_brickle(file: str | Path, md5_checksum: str):
+    # Load the item from the file.
+    with open(file, "rb") as f:
+        data = f.read()
+    md5_digest = md5(data).hexdigest()
+    if md5_digest != md5_checksum:
+        raise BadChecksumError(
+            f"Expected MD5 digest of {file} to be {md5_checksum}, "
+            f"but got {md5_digest}"
+        )
+    item = pickle.loads(brotli.decompress(data))
+    # Edit the item's attributes.
+    setattr(item, "branches", dict())
+    if isinstance(item, RelateBatchIO):
+        for end in [5, 3]:
+            ends = getattr(item, f"_end{end}s")
+            delattr(item, f"_end{end}s")
+            setattr(item, f"seg_end{end}s", ends)
+    # Save the updated item back to the same file.
+    return save_brickle(item, file, brotli_level=10, force=True)
+
+
+def update_brickles(report: Report, top: str | Path):
+    report_file = report.get_path(top)
+    num_batches = report.get_field(NumBatchesF)
+    checksums = report.get_field(ChecksumsF)
+    if isinstance(report, RelateReport):
+        if "readnames" in checksums:
+            for batch in range(num_batches):
+                batch_file = report_file.parent.joinpath(
+                    f"readnames-batch-{batch}.brickle"
+                )
+                md5_checksum = checksums["readnames"][batch]
+                checksums["readnames"][batch] = update_brickle(batch_file,
+                                                               md5_checksum)
+        report_type = "relate"
+    elif isinstance(report, MaskReport):
+        report_type = "mask"
+    elif isinstance(report, ClusterReport):
+        report_type = "cluster"
+    else:
+        raise TypeError(report)
+    for batch in range(num_batches):
+        batch_file = report_file.parent.joinpath(
+            f"{report_type}-batch-{batch}.brickle"
+        )
+        md5_checksum = checksums[report_type][batch]
+        checksums[report_type][batch] = update_brickle(batch_file,
+                                                       md5_checksum)
+    return checksums
+
+
+def migrate_align_dir(align_dir: Path):
+    for file in align_dir.iterdir():
+        if file.name.endswith("align-report.json"):
+            find_and_replace(file,
+                             '"Branches": [],',
+                             '"Branches": {},')
+    return 0
+
+
 def migrate_relate_ref_dir(ref_dir: Path):
-    relate_report_file = ref_dir.joinpath("relate-report.json")
-    find_and_replace(relate_report_file,
-                     '"Mark all ambiguous insertions and deletions":',
-                     JSON_DELIM.join(
-                         ['"Mark each insertion on the base to its 3\' (True) or 5\' (False) side": true',
-                          f'"Mark all ambiguous insertions and deletions (indels)":']))
-    find_and_replace(relate_report_file,
-                     "qnames",
-                     "readnames")
-    return ref_dir
+    report_file = ref_dir.joinpath("relate-report.json")
+    find_and_replace(report_file,
+                     '"Branches": [],',
+                     '"Branches": {},')
+    try:
+        find_and_replace(report_file,
+                         "MD5 checksums of batches",
+                         "Checksums of batches (SHA-512)")
+    except FindAndReplaceError:
+        # The report is pooled.
+        return 0
+    find_and_replace(report_file,
+                     "MD5 checksum of reference sequence",
+                     "Checksum of reference sequence (SHA-512)")
+    report = RelateReport.load(report_file)
+    top, _ = report.parse_path(report_file)
+    sha512_checksum = update_brickle(report_file.with_name("refseq.brickle"),
+                                     report.get_field(RefseqChecksumF))
+    setattr(report, RefseqChecksumF.key, sha512_checksum)
+    sha512_checksums = update_brickles(report, top)
+    setattr(report, ChecksumsF.key, sha512_checksums)
+    report.save(top, force=True)
+    return 0
 
 
 def migrate_mask_reg_dir(reg_dir: Path):
-    mask_report_file = reg_dir.joinpath("mask-report.json")
-    find_and_replace(mask_report_file,
-                     "Section",
-                     "Region",
-                     count=3)
-    find_and_replace(mask_report_file,
-                     "section",
-                     "region",
-                     count=3)
-    find_and_replace(mask_report_file,
-                     "unambiguous",
-                     "informative",
-                     count=5)
-    find_and_replace(mask_report_file,
-                     '"Number of reads with too few bases covering the region":',
-                     JSON_DELIM.join(['"Number of reads masked from a list": 0',
-                                      '"Number of reads with too few bases covering the region":']))
-    find_and_replace(mask_report_file,
-                     '"Correct observer bias using a quick (typically linear time) heuristic":',
-                     JSON_DELIM.join(['"Maximum number of iterations for masking (0 for no limit)": 1',
-                                      '"Number of iterations until convergence (0 if not converged)": 1',
-                                      '"Correct observer bias using a quick (typically linear time) heuristic":']))
-    return reg_dir
+    report_file = reg_dir.joinpath("mask-report.json")
+    find_and_replace(report_file,
+                     '"Branches": [],',
+                     '"Branches": {},')
+    try:
+        find_and_replace(report_file,
+                         "MD5 checksums of batches",
+                         "Checksums of batches (SHA-512)")
+    except FindAndReplaceError:
+        # The report is joined.
+        return 0
+    report = MaskReport.load(report_file)
+    top, _ = report.parse_path(report_file)
+    sha512_checksums = update_brickles(report, top)
+    setattr(report, ChecksumsF.key, sha512_checksums)
+    report.save(top, force=True)
+    return 0
 
 
 def migrate_mask_ref_dir(ref_dir: Path, n_procs: int):
@@ -74,15 +157,27 @@ def migrate_mask_ref_dir(ref_dir: Path, n_procs: int):
              max_procs=n_procs,
              pass_n_procs=False,
              args=as_list_of_tuples(ref_dir.iterdir()))
-    return ref_dir
+    return 0
 
 
 def migrate_cluster_reg_dir(reg_dir: Path):
-    cluster_report_file = reg_dir.joinpath("cluster-report.json")
-    find_and_replace(cluster_report_file,
-                     "Section",
-                     "Region")
-    return reg_dir
+    report_file = reg_dir.joinpath("cluster-report.json")
+    find_and_replace(report_file,
+                     '"Branches": [],',
+                     '"Branches": {},')
+    try:
+        find_and_replace(report_file,
+                         "MD5 checksums of batches",
+                         "Checksums of batches (SHA-512)")
+    except FindAndReplaceError:
+        # The report is joined.
+        return 0
+    report = ClusterReport.load(report_file)
+    top, _ = report.parse_path(report_file)
+    sha512_checksums = update_brickles(report, top)
+    setattr(report, ChecksumsF.key, sha512_checksums)
+    report.save(top, force=True)
+    return 0
 
 
 def migrate_cluster_ref_dir(ref_dir: Path, n_procs: int):
@@ -90,68 +185,16 @@ def migrate_cluster_ref_dir(ref_dir: Path, n_procs: int):
              max_procs=n_procs,
              pass_n_procs=False,
              args=as_list_of_tuples(ref_dir.iterdir()))
-    return ref_dir
-
-
-def migrate_table_reg_dir(reg_dir: Path):
-    reg = reg_dir.name
-    ref = reg_dir.parent.name
-    sample_dir = reg_dir.parent.parent.parent
-    for table_name in ["relate-per-pos.csv",
-                       "relate-per-read.csv.gz",
-                       "mask-per-pos.csv",
-                       "mask-per-read.csv.gz",
-                       "clust-per-pos.csv",
-                       "clust-freq.csv"]:
-        table_file = reg_dir.joinpath(table_name)
-        if table_file.is_file():
-            if "per" in table_name:
-                find_and_replace(table_file,
-                                 "Unambiguous",
-                                 "Informative",
-                                 count=-1)
-            if table_name.startswith("relate"):
-                step = "relate"
-                to_dir = sample_dir.joinpath(step).joinpath(ref)
-            elif table_name.startswith("mask"):
-                step = "mask"
-                to_dir = sample_dir.joinpath(step).joinpath(ref).joinpath(reg)
-            elif table_name.startswith("clust"):
-                step = "cluster"
-                to_dir = sample_dir.joinpath(step).joinpath(ref).joinpath(reg)
-            else:
-                raise ValueError(table_name)
-            if "per-pos" in table_name:
-                table_type = "position"
-            elif "per-read" in table_name:
-                table_type = "read"
-            elif "freq" in table_name:
-                table_type = "abundance"
-            else:
-                raise ValueError(table_name)
-            to_name = f"{step}-{table_type}-table{''.join(table_file.suffixes)}"
-            to_file = to_dir.joinpath(to_name)
-            table_file.rename(to_file)
-    reg_dir.rmdir()
-    return reg_dir
-
-
-def migrate_table_ref_dir(ref_dir: Path, n_procs: int):
-    dispatch(migrate_table_reg_dir,
-             max_procs=n_procs,
-             pass_n_procs=False,
-             args=as_list_of_tuples(ref_dir.iterdir()))
-    ref_dir.rmdir()
-    return ref_dir
+    return 0
 
 
 def migrate_fold_reg_dir(reg_dir: Path):
     for file in reg_dir.iterdir():
         if file.name.endswith("fold-report.json"):
             find_and_replace(file,
-                             "Section",
-                             "Region")
-    return reg_dir
+                             '"Branches": [],',
+                             '"Branches": {},')
+    return 0
 
 
 def migrate_fold_ref_dir(ref_dir: Path, n_procs: int):
@@ -159,38 +202,13 @@ def migrate_fold_ref_dir(ref_dir: Path, n_procs: int):
              max_procs=n_procs,
              pass_n_procs=False,
              args=as_list_of_tuples(ref_dir.iterdir()))
-    return ref_dir
-
-
-def migrate_graph_file(graph_file: Path):
-    if graph_file.suffix in [".html", ".svg"]:
-        find_and_replace(graph_file, "Unambiguous", "Informative", count=-1)
-        find_and_replace(graph_file, "masked", "filtered", count=-1)
-        find_and_replace(graph_file, "' section '", "' region '")
-    graph_name = graph_file.name
-    if graph_name.split("_")[1] == "masked":
-        graph_name = graph_name.replace("masked", "filtered", 1)
-        graph_file = graph_file.rename(graph_file.parent.joinpath(graph_name))
-    return graph_file
-
-
-def migrate_graph_reg_dir(reg_dir: Path, n_procs: int):
-    dispatch(migrate_graph_file,
-             max_procs=n_procs,
-             pass_n_procs=False,
-             args=as_list_of_tuples(reg_dir.iterdir()))
-    return reg_dir
-
-
-def migrate_graph_ref_dir(ref_dir: Path, n_procs: int):
-    dispatch(migrate_graph_reg_dir,
-             max_procs=n_procs,
-             pass_n_procs=True,
-             args=as_list_of_tuples(ref_dir.iterdir()))
-    return ref_dir
+    return 0
 
 
 def migrate_sample_dir(sample_dir: Path, n_procs: int):
+    align_dir = sample_dir.joinpath("align")
+    if align_dir.is_dir():
+        migrate_align_dir(align_dir)
     relate_dir = sample_dir.joinpath("relate")
     if relate_dir.is_dir():
         dispatch(migrate_relate_ref_dir,
@@ -209,17 +227,6 @@ def migrate_sample_dir(sample_dir: Path, n_procs: int):
                  max_procs=n_procs,
                  pass_n_procs=True,
                  args=as_list_of_tuples(cluster_dir.iterdir()))
-    table_dir = sample_dir.joinpath("table")
-    if table_dir.is_dir():
-        dispatch(migrate_table_ref_dir,
-                 max_procs=n_procs,
-                 pass_n_procs=True,
-                 args=as_list_of_tuples(table_dir.iterdir()),
-                 raise_on_error=True)
-        try:
-            table_dir.rmdir()
-        except OSError:
-            pass
     fold_dir = sample_dir.joinpath("fold")
     if fold_dir.is_dir():
         dispatch(migrate_fold_ref_dir,
@@ -227,14 +234,7 @@ def migrate_sample_dir(sample_dir: Path, n_procs: int):
                  pass_n_procs=True,
                  args=as_list_of_tuples(fold_dir.iterdir()),
                  raise_on_error=True)
-    graph_dir = sample_dir.joinpath("graph")
-    if graph_dir.is_dir():
-        dispatch(migrate_graph_ref_dir,
-                 max_procs=n_procs,
-                 pass_n_procs=True,
-                 args=as_list_of_tuples(graph_dir.iterdir()),
-                 raise_on_error=True)
-    return sample_dir
+    return 0
 
 
 def migrate_out_dir(out_dir: Path, n_procs: int):
@@ -242,17 +242,18 @@ def migrate_out_dir(out_dir: Path, n_procs: int):
              max_procs=n_procs,
              pass_n_procs=True,
              args=as_list_of_tuples(out_dir.iterdir()))
-    return out_dir
+    return 0
 
 
 @run_func(CMD_MIGRATE)
 def run(input_path: Iterable[str | Path], *,
-        max_procs: int) -> list[Path]:
-    """ Migrate output directories from v0.21 to v0.22 """
-    return dispatch(migrate_out_dir,
-                    max_procs=max_procs,
-                    pass_n_procs=True,
-                    args=as_list_of_tuples(map(Path, input_path)))
+        max_procs: int):
+    """ Migrate output directories from v0.23 to v0.24 """
+    dispatch(migrate_out_dir,
+             max_procs=max_procs,
+             pass_n_procs=True,
+             args=as_list_of_tuples(map(Path, input_path)))
+    return 0
 
 
 params = [
@@ -263,5 +264,5 @@ params = [
 
 @command(CMD_MIGRATE, params=params)
 def cli(*args, **kwargs):
-    """ Migrate output directories from v0.21 to v0.22 """
-    return run(*args, **kwargs)
+    """ Migrate output directories from v0.23 to v0.24 """
+    run(*args, **kwargs)

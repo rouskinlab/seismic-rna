@@ -16,7 +16,7 @@ from .report import (BranchesF,
                      RegF,
                      TimeBeganF,
                      TimeEndedF,
-                     NumBatchF,
+                     NumBatchesF,
                      ChecksumsF,
                      PooledSamplesF,
                      JoinedRegionsF,
@@ -333,7 +333,7 @@ class LoadedDataset(Dataset, ABC):
 
     @property
     def num_batches(self):
-        return self.report.get_field(NumBatchF)
+        return self.report.get_field(NumBatchesF)
 
     @property
     def data_dirs(self):
@@ -663,7 +663,7 @@ class MultistepDataset(MutsDataset, ABC):
 
     @property
     def num_batches(self):
-        return self.report.get_field(NumBatchF)
+        return self.report.get_field(NumBatchesF)
 
     def get_batch(self, batch_num: int):
         return self._integrate(self.dataset1.get_batch(batch_num),

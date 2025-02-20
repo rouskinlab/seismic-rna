@@ -353,7 +353,7 @@ NumReadsXamF = ReportField("n_reads_xam",
 NumReadsRelF = ReportField("n_reads_rel",
                            "Number of reads processed by relate",
                            int)
-NumBatchF = ReportField("n_batches", "Number of batches", int)
+NumBatchesF = ReportField("n_batches", "Number of batches", int)
 ChecksumsF = ReportField("checksums", "Checksums of batches (SHA-512)", dict)
 RefseqChecksumF = ReportField("refseq_checksum",
                               "Checksum of reference sequence (SHA-512)",
@@ -827,15 +827,6 @@ class RefReport(Report, RefFileIO, ABC):
         return [*super().get_ident_report_fields(), RefF]
 
 
-class RefseqReport(RefReport, ABC):
-    """ Report associated with a reference sequence file. """
-
-    @classmethod
-    def get_checksum_report_fields(cls):
-        return [*super().get_checksum_report_fields(),
-                RefseqChecksumF]
-
-
 class RegReport(RefReport, RegFileIO, ABC):
 
     @classmethod
@@ -848,7 +839,7 @@ class BatchedReport(Report, ABC):
 
     @classmethod
     def get_checksum_report_fields(cls):
-        return [NumBatchF,
+        return [NumBatchesF,
                 ChecksumsF,
                 *super().get_checksum_report_fields()]
 
