@@ -649,6 +649,14 @@ opt_mask_ins = Option(
     help="Mask insertions"
 )
 
+opt_count_mut = Option(
+    ("--count-mut",),
+    type=str,
+    multiple=True,
+    default=(),
+    help="Count only this type of mutation"
+)
+
 opt_mask_mut = Option(
     ("--mask-mut",),
     type=str,

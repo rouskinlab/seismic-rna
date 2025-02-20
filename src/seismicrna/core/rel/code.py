@@ -1,3 +1,5 @@
+from itertools import product
+from ..seq import DNA
 from ..types import get_uint_type
 
 REL_SIZE = 1
@@ -26,3 +28,8 @@ ANY_H = REL_TYPE(SUB_H | MATCH)
 ANY_V = REL_TYPE(SUB_V | MATCH)
 INSRT = REL_TYPE(INS_5 | INS_3)
 INDEL = REL_TYPE(DELET | INSRT)
+
+# Substitutions as plain text
+ALL_SUBS = set(f"{base1}{base2}" for base1, base2
+               in product("".join(DNA.four()), repeat=2)
+               if base1 != base2)
