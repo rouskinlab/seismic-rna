@@ -1,12 +1,13 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import Callable
+from typing import Callable, Self
 
 import numpy as np
 import pandas as pd
 
 from ..core.array import calc_inverse, check_naturals, get_length
 from ..core.batch import (ReadBatch,
+                          MutsBatch,
                           RegionMutsBatch,
                           simulate_muts,
                           simulate_segment_ends)
@@ -21,6 +22,11 @@ def format_read_name(batch_num: int, read_num: int):
 
 class FullReadBatch(ReadBatch, ABC):
 
+    @classmethod
+    @abstractmethod
+    def simulate(cls, *args, **kwargs) -> Self:
+        """ Simulate a batch. """
+
     @cached_property
     def read_nums(self):
         return np.arange(self.num_reads, dtype=self.read_dtype)
@@ -32,10 +38,6 @@ class FullReadBatch(ReadBatch, ABC):
     @property
     def read_indexes(self):
         return self.read_nums
-
-
-class FullRegionMutsBatch(FullReadBatch, RegionMutsBatch, ABC):
-    pass
 
 
 class ReadNamesBatch(FullReadBatch):
@@ -75,12 +77,22 @@ class ReadNamesBatch(FullReadBatch):
         return get_length(self.names, "read names")
 
 
-class RelateBatch(FullRegionMutsBatch):
+class RelateMutsBatch(FullReadBatch, MutsBatch, ABC):
+
+    @property
+    def read_weights(self):
+        read_weights = None
+        if self.masked_reads_bool.any():
+            read_weights = np.ones(self.num_reads)
+            read_weights[self.masked_reads_bool] = 0
+            read_weights = pd.DataFrame(read_weights)
+        return read_weights
+
+
+class RelateRegionMutsBatch(RelateMutsBatch, RegionMutsBatch):
 
     @classmethod
     def simulate(cls,
-                 branches: dict[str, str],
-                 batch: int,
                  ref: str,
                  pmut: pd.DataFrame,
                  uniq_end5s: np.ndarray,
@@ -96,10 +108,6 @@ class RelateBatch(FullRegionMutsBatch):
 
         Parameters
         ----------
-        branches: dict[str, str]
-            Branches of the workflow.
-        batch: int
-            Batch number.
         ref: str
             Name of the reference.
         pmut: pd.DataFrame
@@ -131,9 +139,7 @@ class RelateBatch(FullRegionMutsBatch):
                                                      (read_length if paired
                                                       else 0),
                                                      p_rev)
-        simulated_all = cls(branches=branches,
-                            batch=batch,
-                            region=region,
+        simulated_all = cls(region=region,
                             seg_end5s=seg_end5s,
                             seg_end3s=seg_end3s,
                             muts=simulate_muts(pmut, seg_end5s, seg_end3s),
@@ -147,9 +153,7 @@ class RelateBatch(FullRegionMutsBatch):
                                      reads_noclose,
                                      assume_unique=True)
         renumber = calc_inverse(reads_noclose, what="reads_noclose")
-        return cls(branches=branches,
-                   batch=batch,
-                   region=region,
+        return cls(region=region,
                    seg_end5s=seg_end5s[reads_noclose],
                    seg_end3s=seg_end3s[reads_noclose],
                    muts={pos: {rel: renumber[np.setdiff1d(reads,
@@ -158,12 +162,3 @@ class RelateBatch(FullRegionMutsBatch):
                                for rel, reads in rels.items()}
                          for pos, rels in simulated_all.muts.items()},
                    **kwargs)
-
-    @property
-    def read_weights(self):
-        read_weights = None
-        if self.masked_reads_bool.any():
-            read_weights = np.ones(self.num_reads)
-            read_weights[self.masked_reads_bool] = 0
-            read_weights = pd.DataFrame(read_weights)
-        return read_weights

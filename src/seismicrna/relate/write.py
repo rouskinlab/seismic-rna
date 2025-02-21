@@ -9,7 +9,7 @@ from .table import RelateCountTabulator
 from ..core import path
 from ..core.logs import logger
 from ..core.ngs import encode_phred
-from ..core.seq import DNA, get_fasta_seq
+from ..core.seq import DNA, Region, get_fasta_seq
 from ..core.table import all_patterns
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.tmp import get_release_working_dirs, release_to_out
@@ -83,6 +83,8 @@ def generate_batch(batch: int, *,
         write_read_names=write_read_names
     )
     logger.routine(f"Ended calculating batch {batch} of {xam_view}")
+    # Save the RelateBatchIO instance, which has as few attributes as
+    # possible to make the file as small as possible.
     _, relate_checksum = relate_batch.save(top, brotli_level)
     if write_read_names:
         assert isinstance(name_batch, ReadNamesBatchIO)
@@ -90,10 +92,14 @@ def generate_batch(batch: int, *,
     else:
         assert name_batch is None
         name_checksum = None
-    return (relate_batch.count_all(all_patterns(),
-                                   count_pos=count_pos,
-                                   count_read=count_read,
-                                   count_ends=False),
+    # Generate a RelateRegionMutsBatch in order to count the mutations,
+    # which the RelateBatchIO instance cannot do.
+    relate_region_batch = relate_batch.to_region_batch(Region(xam_view.ref,
+                                                              refseq))
+    return (relate_region_batch.count_all(all_patterns(),
+                                          count_pos=count_pos,
+                                          count_read=count_read,
+                                          count_ends=False),
             relate_checksum,
             name_checksum)
 

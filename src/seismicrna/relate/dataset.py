@@ -1,7 +1,7 @@
 from abc import ABC
 from functools import cached_property
 
-from .batch import RelateBatch
+from .batch import RelateRegionMutsBatch
 from .io import ReadNamesBatchIO, RelateBatchIO, RefseqIO
 from .report import RelateReport, PoolReport
 from ..core import path
@@ -73,13 +73,10 @@ class RelateMutsDataset(RelateDataset, LoadedDataset, MutsDataset):
         return self.get_batch(0).num_segments == 2
 
     def get_batch(self, batch: int):
+        # Load the saved batch, which is a RelateBatchIO instance.
         relate_batch = super().get_batch(batch)
-        return RelateBatch(batch=relate_batch.batch,
-                           seg_end5s=relate_batch.seg_end5s,
-                           seg_end3s=relate_batch.seg_end3s,
-                           muts=relate_batch.muts,
-                           region=self.region,
-                           sanitize=False)
+        # Generate a RelateRegionMutsBatch from that batch.
+        return relate_batch.to_region_batch(self.region)
 
 
 class PoolDataset(RelateDataset,

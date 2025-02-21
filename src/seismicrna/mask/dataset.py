@@ -30,7 +30,7 @@ from ..core.report import (CountMutsF,
                            QuickUnbiasThreshF,
                            JoinedClustersF)
 from ..core.seq import Region
-from ..relate.batch import RelateBatch
+from ..relate.batch import RelateMutsBatch
 from ..relate.dataset import AverageDataset, load_relate_dataset
 
 
@@ -113,7 +113,7 @@ class MaskMutsDataset(MaskDataset, MultistepDataset, UnbiasDataset):
                         complement=True)
         return region
 
-    def _integrate(self, batch1: RelateBatch, batch2: MaskBatchIO):
+    def _integrate(self, batch1: RelateMutsBatch, batch2: MaskBatchIO):
         if self.masked_read_nums is not None:
             read_nums = np.setdiff1d(batch2.read_nums,
                                      self.masked_read_nums.get(batch2.batch),

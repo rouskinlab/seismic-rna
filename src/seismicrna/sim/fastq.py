@@ -37,11 +37,13 @@ from ..core.rel import (MATCH,
                         DELET)
 from ..core.report import SampleF
 from ..core.run import run_func
-from ..core.seq import DNA, BASEA, BASEC, BASEG, BASET, BASEN
+from ..core.seq import DNA, BASEA, BASEC, BASEG, BASET, BASEN, Region
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write, write_mode
-from ..relate.batch import ReadNamesBatch, RelateBatch
-from ..relate.dataset import ReadNamesDataset, RelateMutsDataset, load_relate_dataset
+from ..relate.batch import ReadNamesBatch, RelateRegionMutsBatch
+from ..relate.dataset import (ReadNamesDataset,
+                              RelateMutsDataset,
+                              load_relate_dataset)
 from ..relate.report import RelateReport
 from ..relate.sim import simulate_batches
 
@@ -164,18 +166,19 @@ def _get_common_attr(a: Any, b: Any, attr: str):
     return rval
 
 
-def generate_fastq(top: Path,
-                   sample: str,
-                   ref: str,
-                   refseq: DNA,
-                   paired: bool,
-                   read_length: int,
-                   batches: Iterable[tuple[RelateBatch, ReadNamesBatch]],
-                   p_rev: float = 0.5,
-                   fq_gzip: bool = True,
-                   force: bool = False):
+def generate_fastq(
+        top: Path,
+        sample: str,
+        ref: str,
+        refseq: DNA,
+        paired: bool,
+        read_length: int,
+        batches: Iterable[tuple[RelateRegionMutsBatch, ReadNamesBatch]],
+        p_rev: float = 0.5,
+        fq_gzip: bool = True,
+        force: bool = False
+):
     """ Generate FASTQ file(s) from a dataset. """
-    seq_str = str(refseq)
     if paired:
         segs_list = [path.DMFASTQ1_SEGS, path.DMFASTQ2_SEGS]
         exts = [path.FQ1_EXTS[0], path.FQ2_EXTS[0]]
@@ -201,6 +204,8 @@ def generate_fastq(top: Path,
                                   path.EXT: ext})
                    for segs, ext in zip(segs_list, exts, strict=True)]
     if any(need_write(fastq, force, warn=False) for fastq in fastq_paths):
+        region = Region(ref, refseq)
+        seq_str = str(refseq)
         fastq_files = list()
         try:
             for fastq in fastq_paths:
@@ -303,6 +308,10 @@ def from_param_dir(param_dir: Path, *,
                                batch_size=opt_batch_size.default,
                                write_read_names=True,
                                **kwargs)
+    # Convert each RelateBatchIO into a RelateRegionMutsBatch, which is
+    # required by generate_fastq().
+    batches = [(rbatch.to_region_batch(region), nbatch)
+               for rbatch, nbatch in batches]
     return generate_fastq(sim_dir.joinpath(path.SIM_SAMPLES_DIR),
                           sample,
                           region.ref,

@@ -99,7 +99,7 @@ def run(input_path: Iterable[str | Path], *,
     """ Tabulate counts of relationships per read and position. """
     # Load the datasets from the report files.
     args = list()
-    for dataset in load_all_datasets(input_path, verify_times):
+    for dataset in load_all_datasets(input_path, verify_times=verify_times):
         args.append((dataset,
                      get_tabulator_type(type(dataset)),
                      *get_dataset_flags(dataset,

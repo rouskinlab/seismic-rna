@@ -5,7 +5,7 @@ from typing import Any, Iterable
 
 import numpy as np
 
-from .batch import ReadNamesBatch, RelateBatch
+from .batch import ReadNamesBatch, RelateMutsBatch, RelateRegionMutsBatch
 from ..core import path
 from ..core.array import calc_inverse
 from ..core.io import (MutsBatchIO,
@@ -15,6 +15,7 @@ from ..core.io import (MutsBatchIO,
 from ..core.logs import logger
 from ..core.seq import DNA, Region
 from ..core.types import fit_uint_type
+from ..core.validate import require_isinstance
 
 
 class RelateFile(path.HasRefFilePath, ABC):
@@ -61,11 +62,47 @@ class ReadNamesBatchIO(ReadNamesBatch, ReadBatchIO, RefBrickleIO, RelateIO):
         self.names = np.char.decode(state["names"])
 
 
-class RelateBatchIO(RelateBatch, MutsBatchIO, RefBrickleIO, RelateIO):
+class RelateBatchIO(RelateMutsBatch, MutsBatchIO, RefBrickleIO, RelateIO):
 
     @classmethod
     def get_file_seg_type(cls):
         return path.RelateBatSeg
+
+    @classmethod
+    def from_region_batch(cls,
+                          batch: RelateRegionMutsBatch, *,
+                          sample: str,
+                          branches: dict[str, str]):
+        """ Create an instance from a RelateRegionMutsBatch. """
+        require_isinstance("batch", batch, RelateRegionMutsBatch)
+        return cls(batch=batch.batch,
+                   region=batch.region,
+                   seg_end5s=batch.seg_end5s,
+                   seg_end3s=batch.seg_end3s,
+                   muts=batch.muts,
+                   sample=sample,
+                   branches=branches,
+                   sanitize=False)
+
+    @classmethod
+    def simulate(cls, *args, sample: str, branches: dict[str, str], **kwargs):
+        # This class does not have all methods needed to simulate data,
+        # so steal them from RelateRegionMutsBatch.
+        return cls.from_region_batch(
+            RelateRegionMutsBatch.simulate(*args, **kwargs),
+            sample=sample,
+            branches=branches
+        )
+
+    def to_region_batch(self, region: Region):
+        """ Create a RelateRegionMutsBatch from this instance. """
+        require_isinstance("region", region, Region)
+        return RelateRegionMutsBatch(batch=self.batch,
+                                     seg_end5s=self.seg_end5s,
+                                     seg_end3s=self.seg_end3s,
+                                     muts=self.muts,
+                                     region=region,
+                                     sanitize=False)
 
 
 def from_reads(reads: Iterable[tuple[str,
