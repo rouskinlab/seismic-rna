@@ -2,10 +2,9 @@ from pathlib import Path
 
 from .core.table import TableWriter
 from .core.dataset import FailedToLoadDatasetError
-from .relate.dataset import load_relate_dataset, MutsDataset
-from .mask.dataset import load_mask_dataset
+from .relate.dataset import MutsDataset
 from .cluster.data import load_cluster_dataset
-from .table import get_tabulator_type
+from .table import load_all_datasets, get_tabulator_type
 
 
 def dataset_from_report(report_path: str | Path,
@@ -25,24 +24,13 @@ def dataset_from_report(report_path: str | Path,
     RelateMutsDataset | MaskMutsDataset | ClusterMutsDataset
         The type of MutsDataset returned depends on the report file.
     """
-    if isinstance(report_path, str):
-        report = Path(report_path)
-
-    dataset = None
-    errors = dict()
-    for load_func in [load_relate_dataset,
-                      load_mask_dataset,
-                      load_cluster_dataset]:
-        try:
-            dataset = load_func(report_path, verify_times=verify_times)
-        except Exception as error:
-            errors[load_func] = error
-    if dataset is None:
-        errmsg = "\n".join(f"{type_name}: {error}"
-                           for type_name, error in errors.items())
-        raise FailedToLoadDatasetError(
-            f"Failed to load {report_path}:\n{errmsg}")
-    return dataset
+    datasets = list(load_all_datasets([report_path], verify_times=verify_times, raise_on_error=True))
+    if len(datasets) > 1:
+        raise FailedToLoadDatasetError(f"Multiple datasets were found at {report_path}:"
+                                       f"\n{[dataset.report_file for dataset in datasets]}")
+    if len(datasets) == 0:
+        raise FailedToLoadDatasetError(f"No datasets were found at {report_path}")
+    return datasets[0]
 
 
 def table_from_dataset(dataset: MutsDataset,
@@ -84,3 +72,9 @@ def table_from_dataset(dataset: MutsDataset,
                                                                        read=read_table,
                                                                        clust=clust_table))
     return table
+
+def table_from_report(report_path: str | Path,
+                      verify_times: bool = True,
+                      table: str = "pos"):
+    dataset = dataset_from_report(report_path=report_path, verify_times=verify_times)
+    return table_from_dataset(dataset=dataset, table=table)

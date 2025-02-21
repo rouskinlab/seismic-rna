@@ -298,13 +298,15 @@ class LoadFunction(object):
             f"{self} failed to load {report_file}:\n{errmsg}"
         )
 
-    def iterate(self, input_path: Iterable[str | Path], **kwargs):
+    def iterate(self, input_path: Iterable[str | Path], *, raise_on_error : bool = False, **kwargs):
         """ Yield a Dataset from each report file in `input_path`. """
         for report_file in path.find_files_chain(input_path,
                                                  self.report_path_seg_types):
             try:
                 yield self(report_file, **kwargs)
             except Exception as error:
+                if raise_on_error:
+                    raise error
                 logger.error(error)
 
     def __str__(self):
