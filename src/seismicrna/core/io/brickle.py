@@ -7,6 +7,7 @@ from typing import Any
 
 import brotli
 
+from .checksum import BadChecksumError, calc_sha512_digest
 from .file import FileIO, SampleFileIO, RefFileIO, RegFileIO
 from ..logs import logger
 from ..write import write_mode
@@ -14,16 +15,6 @@ from ..write import write_mode
 DEFAULT_BROTLI_LEVEL = 10
 PICKLE_PROTOCOL = 5
 
-
-class BadChecksumError(ValueError):
-    """ A file or piece of data has the wrong checksum. """
-
-
-def calc_sha512_digest(data: bytes):
-    """ Calculate the SHA-512 hash of the data in hexadecimal. """
-    if not isinstance(data, bytes):
-        raise TypeError(f"data must be {bytes}, but got {type(data)}")
-    return sha512(data).hexdigest()
 
 
 class BrickleIO(FileIO, ABC):

@@ -14,6 +14,7 @@ from .xamops import (FASTP_PHRED_OUT,
                      run_realign,
                      run_xamgen)
 from ..core import path
+from ..core.io.checksum import calc_sha512_digest
 from ..core.logs import logger
 from ..core.ngs import (FLAG_PAIRED,
                         FLAG_PROPER,
@@ -624,6 +625,8 @@ def fq_pipeline(fq_inp: FastqUnit,
                          branches=branches,
                          demultiplexed=demultiplexed,
                          paired_end=fq_inp.paired,
+                         fastq_checksums=fq_inp.checksums,
+                         ref_fasta_checksum=calc_sha512_digest(fasta),
                          phred_enc=fq_inp.phred_enc,
                          fastp=fastp,
                          fastp_5=fastp_5,

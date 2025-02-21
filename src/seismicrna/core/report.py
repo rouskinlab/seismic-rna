@@ -345,6 +345,15 @@ ReadsRefsF = ReportField("reads_refs",
                          "Number of reads aligned to each reference",
                          dict,
                          iconv=iconv_dict_str_int)
+RefFastaChecksumF = ReportField("ref_fasta_checksum",
+                                "Checksum of reference fasta (SHA-512)",
+                                str)
+FastqChecksumsF = ReportField("fastq_checksums",
+                              "Checksum(s) of the input fastq(s) (SHA-512)",
+                              dict)
+XamChecksumF = ReportField("xam_checksum",
+                           "Checksum of the input xam (SHA-512)",
+                           str)
 
 # Relate fields
 NumReadsXamF = ReportField("n_reads_xam",
