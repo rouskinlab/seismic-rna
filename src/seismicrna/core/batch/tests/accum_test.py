@@ -13,11 +13,10 @@ from seismicrna.core.rel import RelPattern
 from seismicrna.core.seq.region import Region
 from seismicrna.core.seq.xna import DNA
 from seismicrna.mask.batch import MaskMutsBatch
-from seismicrna.relate.batch import RelateMutsBatch
+from seismicrna.relate.batch import RelateRegionMutsBatch
 
 
 def get_batch_count_all_func(batches: list[RegionMutsBatch]):
-
     def get_batch_count_all(batch_num: int, **kwargs):
         return batches[batch_num].count_all(**kwargs)
 
@@ -46,24 +45,24 @@ class TestAccumulateBatches(ut.TestCase):
         patterns = {"Matches": RelPattern.muts().invert(),
                     "Mutations": RelPattern.muts()}
         batches = [
-            RelateMutsBatch(region=region,
-                            batch=0,
-                            muts={1: {128: np.array([2, 3]),
-                                  129: np.array([4])},
-                              2: {16: np.array([0, 1, 2, 3])},
-                              3: {32: np.array([2]),
-                                  33: np.array([0])},
-                              4: {64: np.array([0])}},
-                            seg_end5s=np.array([[2],
-                                            [1],
-                                            [1],
-                                            [1],
-                                            [1]]),
-                            seg_end3s=np.array([[4],
-                                            [4],
-                                            [3],
-                                            [3],
-                                            [3]]))
+            RelateRegionMutsBatch(region=region,
+                                  batch=0,
+                                  muts={1: {128: np.array([2, 3]),
+                                            129: np.array([4])},
+                                        2: {16: np.array([0, 1, 2, 3])},
+                                        3: {32: np.array([2]),
+                                            33: np.array([0])},
+                                        4: {64: np.array([0])}},
+                                  seg_end5s=np.array([[2],
+                                                      [1],
+                                                      [1],
+                                                      [1],
+                                                      [1]]),
+                                  seg_end3s=np.array([[4],
+                                                      [4],
+                                                      [3],
+                                                      [3],
+                                                      [3]]))
         ]
         n, ends, fpp, fpr = accumulate_batches(
             get_batch_count_all_func(batches),
@@ -121,30 +120,30 @@ class TestAccumulateBatches(ut.TestCase):
         patterns = {"Matches": RelPattern.muts().invert(),
                     "Mutations": RelPattern.muts()}
         batches = [
-            RelateMutsBatch(region=region,
-                            batch=0,
-                            muts={1: {128: np.array([2])},
-                              2: {16: np.array([0, 1, 2])},
-                              3: {32: np.array([2]),
-                                  33: np.array([0])},
-                              4: {64: np.array([0])}},
-                            seg_end5s=np.array([[2],
-                                            [1],
-                                            [1]]),
-                            seg_end3s=np.array([[4],
-                                            [4],
-                                            [3]])),
-            RelateMutsBatch(region=region,
-                            batch=1,
-                            muts={1: {128: np.array([0]),
-                                  129: np.array([1])},
-                              2: {16: np.array([0])},
-                              3: {},
-                              4: {}},
-                            seg_end5s=np.array([[1],
-                                            [1]]),
-                            seg_end3s=np.array([[3],
-                                            [3]]))
+            RelateRegionMutsBatch(region=region,
+                                  batch=0,
+                                  muts={1: {128: np.array([2])},
+                                        2: {16: np.array([0, 1, 2])},
+                                        3: {32: np.array([2]),
+                                            33: np.array([0])},
+                                        4: {64: np.array([0])}},
+                                  seg_end5s=np.array([[2],
+                                                      [1],
+                                                      [1]]),
+                                  seg_end3s=np.array([[4],
+                                                      [4],
+                                                      [3]])),
+            RelateRegionMutsBatch(region=region,
+                                  batch=1,
+                                  muts={1: {128: np.array([0]),
+                                            129: np.array([1])},
+                                        2: {16: np.array([0])},
+                                        3: {},
+                                        4: {}},
+                                  seg_end5s=np.array([[1],
+                                                      [1]]),
+                                  seg_end3s=np.array([[3],
+                                                      [3]]))
         ]
         n, ends, fpp, fpr = accumulate_batches(
             get_batch_count_all_func(batches),
