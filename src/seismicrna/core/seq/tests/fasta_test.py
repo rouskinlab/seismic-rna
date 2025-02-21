@@ -47,7 +47,7 @@ class TestValidFastaSeqname(ut.TestCase):
             prefix = f"{FASTA_NAME_MARK}{a}{b}"
             for line in [prefix, f"{prefix}\n"]:
                 self.assertRaisesRegex(BadReferenceNameLineError,
-                                       f"Blank FASTA name line",
+                                       "Blank FASTA name line",
                                        valid_fasta_seqname,
                                        line)
 
@@ -67,7 +67,7 @@ class TestValidFastaSeqname(ut.TestCase):
         for prefix in prefixes:
             for line in [prefix, f"{prefix}\n"]:
                 self.assertRaisesRegex(BadReferenceNameLineError,
-                                       f"Blank FASTA name line",
+                                       "Blank FASTA name line",
                                        valid_fasta_seqname,
                                        line)
 

@@ -163,33 +163,33 @@ class TestFormatDbStructure(ut.TestCase):
     def test_invalid_pair(self):
         pairs = [(2, 8), (5, 3), (4, 7)]
         self.assertRaisesRegex(ValueError,
-                               f"5' partner must be less than 3' partner, "
-                               f"but got 5 ≥ 3",
+                               "5' partner must be less than 3' partner, "
+                               "but got 5 ≥ 3",
                                format_db_structure,
                                pairs, 10)
 
     def test_invalid_pos3(self):
         pairs = [(2, 8), (3, 5), (4, 7)]
         self.assertRaisesRegex(ValueError,
-                               f"3' partner must be ≤ 7, but got 8",
+                               "3' partner must be ≤ 7, but got 8",
                                format_db_structure,
                                pairs, 7, 1)
         self.assertRaisesRegex(ValueError,
-                               f"3' partner must be ≤ 7, but got 8",
+                               "3' partner must be ≤ 7, but got 8",
                                format_db_structure,
                                pairs, 6, 2)
 
     def test_repeat_pos5(self):
         pairs = [(2, 8), (2, 5), (4, 7)]
         self.assertRaisesRegex(ValueError,
-                               f"Got >1 base pair for position 2",
+                               "Got >1 base pair for position 2",
                                format_db_structure,
                                pairs, 8)
 
     def test_repeat_pos3(self):
         pairs = [(2, 8), (3, 4), (4, 7)]
         self.assertRaisesRegex(ValueError,
-                               f"Got >1 base pair for position 4",
+                               "Got >1 base pair for position 4",
                                format_db_structure,
                                pairs, 8)
 

@@ -199,7 +199,7 @@ def view_xam_cmd(xam_inp: Path | None,
             if end3 is not None:
                 logger.warning(f"Got end3 = {end3} but not end5")
     elif end5 is not None or end5 is not None:
-        logger.warning(f"Options end5 and end3 require a reference name")
+        logger.warning("Options end5 and end3 require a reference name")
     return args_to_cmd(args)
 
 

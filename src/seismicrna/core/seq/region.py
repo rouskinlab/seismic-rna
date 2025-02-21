@@ -115,7 +115,7 @@ def get_reg_coords_primers(regs_file: Path):
                 # Map the reference and primers to the region.
                 map_reg(primers, (ref, DNA(fwd), DNA(rev)), reg)
             else:
-                raise ValueError(f"Got neither coordinates nor primers")
+                raise ValueError("Got neither coordinates nor primers")
         except Exception as error:
             logger.error(error)
     return coords, primers

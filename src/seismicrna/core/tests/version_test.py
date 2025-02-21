@@ -1,5 +1,4 @@
 import unittest as ut
-from pathlib import Path
 
 from seismicrna.core.path import get_seismicrna_project_dir
 from seismicrna.core.version import (__version__,

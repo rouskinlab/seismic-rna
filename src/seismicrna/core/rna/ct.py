@@ -23,7 +23,7 @@ def _parse_ct_header_line(line: str):
     """ Get the title and sequence length from a CT header line. """
     content = line.strip()
     if not content:
-        raise ValueError(f"Got all-whitespace CT header line")
+        raise ValueError("Got all-whitespace CT header line")
     # Determine the length of the sequence, which is the first item
     # in the header line.
     length_str = content.split()[0]
@@ -38,7 +38,7 @@ def _parse_ct_body_line(line: str, first: bool, last: bool):
     """ Get the position and pairing data from a CT body line. """
     content = line.strip()
     if not content:
-        raise ValueError(f"Got all-whitespace CT body line")
+        raise ValueError("Got all-whitespace CT body line")
     # Parse each whitespace-delimited field of the CT file.
     fields = content.split()
     if len(fields) != NUM_FIELDS:
@@ -56,7 +56,7 @@ def _parse_ct_body_line(line: str, first: bool, last: bool):
     next_idx = _parse_int(fields[3], "next index", zero_ok=last)
     if last:
         if next_idx != 0:
-            raise ValueError(f"Expected next index of last line to be 0, "
+            raise ValueError("Expected next index of last line to be 0, "
                              f"but got {next_idx}")
     elif next_idx != curr_idx + 1:
         raise ValueError(f"Next index ({next_idx}) does not succeed "

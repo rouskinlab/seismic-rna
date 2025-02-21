@@ -1,4 +1,4 @@
-from typing import Generator, Iterable
+from typing import Iterable
 
 import pandas as pd
 
@@ -208,8 +208,7 @@ def _find_root_pairs_nested(pair_dict: dict[int, int]):
             pos += 1
 
 
-def find_root_pairs(pairs: Iterable[tuple[int, int]],
-                    assume_nested: bool = False):
+def find_root_pairs(pairs: Iterable[tuple[int, int]]):
     """ Return all pairs which are not contained any other pair. """
     pair_dict = pairs_to_dict(pairs)
     return list(_find_root_pairs_nested(pair_dict))

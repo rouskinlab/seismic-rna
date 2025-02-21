@@ -1097,7 +1097,7 @@ class TestIntersect(ut.TestCase):
         self.assertEqual(inter.seq, DNA(""))
         self.assertEqual(inter.end5, 19)
         self.assertEqual(inter.end3, 18)
-        self.assertEqual(inter.name, f"19-18")
+        self.assertEqual(inter.name, "19-18")
 
     def test_three_overlapping(self):
         seq = DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCTACTCTT")
@@ -1223,7 +1223,7 @@ class TestUnite(ut.TestCase):
         self.assertEqual(union.seq, DNA("TCTCGTAGTNNNNNNNNNNGTCTCTCTA"))
         self.assertEqual(union.end5, 4)
         self.assertEqual(union.end3, 31)
-        self.assertEqual(union.name, f"4-31")
+        self.assertEqual(union.name, "4-31")
         self.assertEqual(union.unmasked_int.tolist(),
                          list(range(4, 12 + 1)) + list(range(23, 31 + 1)))
 
@@ -1235,7 +1235,7 @@ class TestUnite(ut.TestCase):
         self.assertEqual(union.seq, seq[4 - 1: 31])
         self.assertEqual(union.end5, 4)
         self.assertEqual(union.end3, 31)
-        self.assertEqual(union.name, f"4-31")
+        self.assertEqual(union.name, "4-31")
         self.assertEqual(union.unmasked_int.tolist(),
                          list(range(4, 12 + 1)) + list(range(23, 31 + 1)))
 

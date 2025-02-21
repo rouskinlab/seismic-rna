@@ -31,8 +31,7 @@ from seismicrna.core.unbias import (_clip,
                                     calc_p_clust_given_ends_noclose,
                                     calc_p_clust_given_noclose,
                                     calc_params,
-                                    calc_rectangular_sum,
-                                    calc_params_observed)
+                                    calc_rectangular_sum)
 
 rng = np.random.default_rng(seed=0)
 

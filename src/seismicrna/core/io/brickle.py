@@ -20,7 +20,7 @@ class BadChecksumError(ValueError):
 
 
 def calc_sha512_digest(data: bytes):
-    """ Calculate the SHA256 hash of the data in hexadecimal. """
+    """ Calculate the SHA-512 hash of the data in hexadecimal. """
     if not isinstance(data, bytes):
         raise TypeError(f"data must be {bytes}, but got {type(data)}")
     return sha512(data).hexdigest()

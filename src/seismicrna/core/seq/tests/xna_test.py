@@ -1,10 +1,3 @@
-"""
-
-Tests for Sequence Core Module.
-
-========================================================================
-
-"""
 import unittest as ut
 from itertools import combinations, product
 from string import printable
@@ -292,7 +285,7 @@ class TestRNA(ut.TestCase):
         """ Test whether invalid characters raise ValueError. """
         for char in printable:
             if char not in "ACGUNacgun":
-                self.assertRaisesRegex(ValueError, f"Invalid RNA bases:",
+                self.assertRaisesRegex(ValueError, "Invalid RNA bases:",
                                        RNA, char)
 
     def test_bool(self):
