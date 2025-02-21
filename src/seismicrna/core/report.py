@@ -346,7 +346,7 @@ ReadsRefsF = ReportField("reads_refs",
                          dict,
                          iconv=iconv_dict_str_int)
 RefFastaChecksumF = ReportField("ref_fasta_checksum",
-                                "Checksum of reference fasta (SHA-512)",
+                                "Checksum of the reference fasta (SHA-512)",
                                 str)
 FastqChecksumsF = ReportField("fastq_checksums",
                               "Checksum(s) of the input fastq(s) (SHA-512)",
