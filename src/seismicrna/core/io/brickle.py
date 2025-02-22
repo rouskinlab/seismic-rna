@@ -10,6 +10,7 @@ import brotli
 from .file import FileIO, SampleFileIO, RefFileIO, RegFileIO
 from ..logs import logger
 from ..write import write_mode
+from ..validate import require_isinstance, require_issubclass
 
 DEFAULT_BROTLI_LEVEL = 10
 PICKLE_PROTOCOL = 5
@@ -41,13 +42,13 @@ class BrickleIO(FileIO, ABC):
         return save_path, checksum
 
     def __getstate__(self):
-        # Copy self.__dict__ to avoid modifying this object's state.
-        state = self.__dict__.copy()
-        # Do not pickle cached properties.
-        for name, value in vars(type(self)).items():
-            if isinstance(value, cached_property):
-                state.pop(name, None)
-        return state
+        # To reduce storage space, remove cached_property attributes.
+        # Use getattr(cls) rather than getattr(self) because the latter
+        # will return the value that is cached, while the former will
+        # return the cached_property object that caches the value.
+        cls = type(self)
+        return {name: value for name, value in self.__dict__.items()
+                if not isinstance(getattr(cls, name, None), cached_property)}
 
     def __setstate__(self, state: dict[str, Any]):
         # All BrickleIO objects have a __dict__ rather than __slots__.
@@ -93,13 +94,11 @@ def save_brickle(item: BrickleIO,
                  brotli_level: int = DEFAULT_BROTLI_LEVEL,
                  force: bool = False):
     """ Pickle an object, compress with Brotli, and save to a file. """
-    if not isinstance(item, BrickleIO):
-        raise TypeError(
-            f"item must be {BrickleIO.__name__}, but got {type(item).__name__}"
-        )
+    require_isinstance("item", item, BrickleIO)
     logger.routine(f"Began writing {item} to {file}")
     # Save the item's state rather than the item itself.
     state = item.__getstate__()
+    logger.detail(f"State attributes of {item}: {list(state)}")
     logger.detail(f"Began compressing {item} with Brotli level {brotli_level}")
     data = brotli.compress(pickle.dumps(state, protocol=PICKLE_PROTOCOL),
                            quality=brotli_level)
@@ -117,10 +116,8 @@ def load_brickle(file: str | Path,
                  data_type: type[BrickleIO],
                  checksum: str):
     """ Unpickle and return an object from a Brotli-compressed file. """
+    require_issubclass("data_type", data_type, BrickleIO)
     logger.routine(f"Began loading {data_type} from {file}")
-    if not issubclass(data_type, BrickleIO):
-        raise TypeError(f"data_type must be subclass of {BrickleIO.__name__}, "
-                        f"but got {type(data_type).__name__}")
     with open(file, "rb") as f:
         data = f.read()
     if checksum:
@@ -134,11 +131,13 @@ def load_brickle(file: str | Path,
     logger.detail(f"{file} contains {type(state)}")
     if isinstance(state, data_type):
         item = state
+        state = item.__getstate__()
     elif isinstance(state, dict):
         item = object.__new__(data_type)
         item.__setstate__(state)
     else:
         raise TypeError(f"Expected to unpickle {data_type}, "
                         f"but got {type(state)}")
+    logger.detail(f"State attributes of {item}: {list(state)}")
     logger.routine(f"Ended loading {data_type} from {file}")
     return item
