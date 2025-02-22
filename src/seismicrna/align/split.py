@@ -68,13 +68,10 @@ def split_xam_file(xam_file: Path,
     # Assume the XAM file is named for the sample.
     sample = xam_file.stem
     branches = path.add_branch(path.ALIGN_STEP, branch, dict())
-    # Determine the final output directory.
-    result_dir = path.build(path.STEP_DIR_SEGS,
-                            {path.TOP: out_dir,
-                             path.SAMPLE: sample,
-                             path.STEP: path.ALIGN_STEP,
-                             path.BRANCHES: branches})
-    if need_write(result_dir, force):
+    report_file = SplitReport.build_path({path.TOP: out_dir,
+                                          path.SAMPLE: sample,
+                                          path.BRANCHES: branches})
+    if need_write(report_file, force):
         # Sort and index the XAM file.
         xam_input_dir = tmp_dir.joinpath("input")
         xam_sorted = path.buildpar(path.XAM_SEGS,
@@ -136,8 +133,8 @@ def split_xam_file(xam_file: Path,
                              reads_refs=reads_refs,
                              began=began,
                              ended=ended)
-    report_saved = report.save(out_dir, force=True)
-    return report_saved
+        report_saved = report.save(out_dir, force=True)
+    return report_file.parent
 
 
 @run_func(CMD_SPLITBAM, with_tmp=True, pass_keep_tmp=True)
