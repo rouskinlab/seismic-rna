@@ -57,7 +57,7 @@ class TestFlagsCmds(ut.TestCase):
         expect = [
             f"( samtools view -@ 0 -f 16 -F 128 -h {self.XAM_INP} "
             f"; samtools view -@ 0 -f 32 -F 256 {self.XAM_INP} )",
-            f"samtools collate -@ 0 -f -O -u -"
+            "samtools collate -@ 0 -f -O -u -"
         ]
         self.assertEqual(result, expect)
 

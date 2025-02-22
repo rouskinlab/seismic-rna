@@ -37,7 +37,7 @@ from ..core.rel import (MATCH,
                         DELET)
 from ..core.report import SampleF
 from ..core.run import run_func
-from ..core.seq import DNA, BASEA, BASEC, BASEG, BASET, BASEN, Region
+from ..core.seq import DNA, BASEA, BASEC, BASEG, BASET, BASEN
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write, write_mode
 from ..relate.batch import ReadNamesBatch, RelateRegionMutsBatch
@@ -204,7 +204,6 @@ def generate_fastq(
                                   path.EXT: ext})
                    for segs, ext in zip(segs_list, exts, strict=True)]
     if any(need_write(fastq, force, warn=False) for fastq in fastq_paths):
-        region = Region(ref, refseq)
         seq_str = str(refseq)
         fastq_files = list()
         try:
@@ -219,7 +218,7 @@ def generate_fastq(
                 elif rbatch.num_segments == 2:
                     reverse = seg_end5s[:, 0] > seg_end5s[:, 1]
                 else:
-                    raise ValueError(f"Each batch must have 1 or 2 segments, "
+                    raise ValueError("Each batch must have 1 or 2 segments, "
                                      f"but got {rbatch.num_segments}")
                 for rels, end5s, end3s, name, rev in zip(rbatch.matrix.values,
                                                          seg_end5s,

@@ -30,7 +30,7 @@ class TestCigarOp(ut.TestCase):
         operations. """
         for op in string.printable:
             if op not in self.ops:
-                self.assertRaisesRegex(ValueError, f"Invalid CIGAR operation: ",
+                self.assertRaisesRegex(ValueError, "Invalid CIGAR operation: ",
                                        CigarOp, op)
 
     def test_cigar_lengthen(self):
