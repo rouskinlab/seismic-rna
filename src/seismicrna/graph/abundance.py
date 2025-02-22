@@ -10,7 +10,7 @@ from .onetable import OneTableGraph, OneTableWriter, OneTableRunner
 from .table import AbundanceTableRunner
 from .trace import iter_stack_bar_traces
 from ..core.header import NUM_CLUSTS_NAME, CLUST_NAME
-from ..core.run import run_func
+from ..core.run import log_command
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -101,7 +101,7 @@ class ClusterAbundanceRunner(OneTableRunner, AbundanceTableRunner):
         return ClusterAbundanceWriter
     
     @classmethod
-    @run_func(COMMAND, )
+    @log_command(COMMAND)
     def run(cls, *args, **kwargs):
         return super().run(*args, **kwargs)
 
