@@ -32,7 +32,7 @@ Option 1: Install with Conda, if you already know how to use it
 ================================================================================
 
 SEISMIC-RNA is available from the Bioconda_ channel and compatible with Python
-3.10 and later.
+3.11 and later.
 
 To install, type this into a terminal::
 
@@ -92,7 +92,7 @@ example, it is named ``seismic``.
 
 You must indicate which version of Python to use; we recommend the most recent
 stable release (currently version 3.12), though SEISMIC-RNA is compatible with
-version 3.10 and later.
+version 3.11 and later.
 
 Step 3: Activate the Conda environment for SEISMIC-RNA
 --------------------------------------------------------------------------------
@@ -144,7 +144,7 @@ Option 4: Install without Conda
 Although Conda is the easiest means to install SEISMIC-RNA, it is not necessary.
 
 First, if Python_ is not installed, then install the latest version.
-Confirm that Python version 3.10 or later and pip_ are installed by typing the
+Confirm that Python version 3.11 or later and pip_ are installed by typing the
 following commands, one by one::
 
     python --version

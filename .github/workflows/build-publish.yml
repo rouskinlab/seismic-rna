@@ -64,10 +64,9 @@ jobs:
           echo 'eval "$(pyenv init --path)"' >> ~/.zshrc
           echo 'eval "$(pyenv init -)"' >> ~/.zshrc
           source ~/.zshrc
-          pyenv install 3.10
           pyenv install 3.11
           pyenv install 3.12
-          pyenv global 3.10 3.11 3.12
+          pyenv global 3.11 3.12
 
       - name: Install cibuildwheel
         run: |
