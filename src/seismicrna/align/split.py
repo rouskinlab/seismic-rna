@@ -44,7 +44,6 @@ from ..core.extern import (BOWTIE2_CMD,
                            SAMTOOLS_CMD,
                            require_dependency)
 from ..core.io.checksum import calc_sha512_path
-from ..core.logs import logger
 from ..core.ngs import (run_flagstat,
                         run_sort_xam,
                         run_index_xam,
@@ -133,7 +132,7 @@ def split_xam_file(xam_file: Path,
                              reads_refs=reads_refs,
                              began=began,
                              ended=ended)
-        report_saved = report.save(out_dir, force=True)
+        report.save(out_dir, force=True)
     return report_file.parent
 
 

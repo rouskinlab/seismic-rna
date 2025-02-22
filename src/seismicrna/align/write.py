@@ -684,7 +684,7 @@ def fqs_pipeline(fq_units: list[FastqUnit],
                  **kwargs) -> list[Path]:
     """ Run all stages of alignment for one or more FASTQ files or pairs
     of mated FASTQ files. """
-    logger.routine(f"Began running the alignment pipeline")
+    logger.routine("Began running the alignment pipeline")
     # Validate the maximum number of processes.
     if max_procs < 1:
         logger.warning("max_procs must be ≥ 1: setting to 1")
@@ -777,7 +777,7 @@ def fqs_pipeline(fq_units: list[FastqUnit],
                         max_procs,
                         args=iter_args,
                         kwargs=dict(tmp_dir=tmp_dir, **kwargs))
-    logger.routine(f"Ended running the alignment pipeline")
+    logger.routine("Ended running the alignment pipeline")
     # Return the final alignment map (XAM) directories.
     return xam_dirs
 

@@ -260,7 +260,7 @@ class TestWorkflow(ut.TestCase):
                                          )))
                     graph_reg_dir = sample_dir.joinpath("graph", ref, reg)
                     for ext in graph_formats:
-                        for name in [f"histread_filtered_m-count"]:
+                        for name in ["histread_filtered_m-count"]:
                             file = graph_reg_dir.joinpath(f"{name}{ext}")
                             with self.subTest(file=file):
                                 self.assertTrue(file.is_file())
@@ -317,9 +317,9 @@ class TestWorkflow(ut.TestCase):
             for ref, ref_regions in refs_regions.items():
                 graph_full_dir = sample_dir.joinpath("graph", ref, "full")
                 for ext in graph_formats:
-                    for name in [f"corroll_all_21-7_m-ratio-q0_pcc",
-                                 f"delprof_all_m-ratio-q0",
-                                 f"scatter_all_m-ratio-q0"]:
+                    for name in ["corroll_all_21-7_m-ratio-q0_pcc",
+                                 "delprof_all_m-ratio-q0",
+                                 "scatter_all_m-ratio-q0"]:
                         file = graph_full_dir.joinpath(f"{name}{ext}")
                         with self.subTest(file=file):
                             self.assertTrue(file.is_file())

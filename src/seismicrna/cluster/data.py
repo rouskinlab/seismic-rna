@@ -166,7 +166,7 @@ def get_clust_params(dataset: ClusterMutsDataset, max_procs: int = 1):
     # If either table file does not exist, then calculate the tables.
     if pos_table is None or abundance_table is None:
         logger.detail(
-            f"Tabulating is needed because at least one table does not exist"
+            "Tabulating is needed because at least one table does not exist"
         )
         tabulator = ClusterBatchTabulator(
             top=dataset.top,
@@ -190,7 +190,7 @@ def get_clust_params(dataset: ClusterMutsDataset, max_procs: int = 1):
         if abundance_table is None:
             abundance_table = ClusterAbundanceTableWriter(tabulator)
     else:
-        logger.detail(f"Tabulating is not needed because all tables exist")
+        logger.detail("Tabulating is not needed because all tables exist")
     # Calculate the parameters from the tables.
     mus = pos_table.fetch_ratio(rel=MUTAT_REL).loc[:, MUTAT_REL]
     pis = abundance_table.proportions

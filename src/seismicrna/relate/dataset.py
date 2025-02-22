@@ -1,7 +1,6 @@
 from abc import ABC
 from functools import cached_property
 
-from .batch import RelateRegionMutsBatch
 from .io import ReadNamesBatchIO, RelateBatchIO, RefseqIO
 from .report import RelateReport, PoolReport
 from ..core import path

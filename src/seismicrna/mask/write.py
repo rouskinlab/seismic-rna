@@ -26,7 +26,6 @@ from ..core.seq import POS_NAME, Region, index_to_pos
 from ..core.table import MUTAT_REL, INFOR_REL
 from ..core.tmp import release_to_out, with_tmp_dir
 from ..core.write import need_write
-from ..core.error import IncompatibleOptionsError
 from ..relate.dataset import (RelateMutsDataset,
                               PoolDataset,
                               load_read_names_dataset)
