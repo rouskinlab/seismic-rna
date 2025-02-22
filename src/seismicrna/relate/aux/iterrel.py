@@ -17,7 +17,7 @@ def iter_relvecs_q53(refseq: DNA,
                      max_ins: int | None = None):
     """
     For a given reference sequence, yield every possible unambiguous
-    relation vector between positions end5 and end3 that follows the
+    relationships between positions end5 and end3 that follows the
     given low-quality positions and has at most two insertions.
 
     Parameters
@@ -68,7 +68,7 @@ def iter_relvecs_q53(refseq: DNA,
         rel_opts.append([(pos, rel) for rel in opts])
     # Iterate through all possible relationships at each position.
     for rels in product(*rel_opts):
-        # Generate a relation vector from the relationships.
+        # Generate one possible relationship.
         relvec = dict((pos, rel) for pos, rel in rels if rel != MATCH)
         yield region.end5, region.end3, relvec
         if (max_ins is None or max_ins > 0) and not low_qual:
@@ -97,7 +97,7 @@ def iter_relvecs_all(refseq: DNA,
                      max_ins: int | None = None):
     """
     For a given reference sequence, yield every possible unambiguous
-    relation vector that has at most two insertions.
+    set of relationships that has at most two insertions.
 
     Parameters
     ----------
@@ -114,7 +114,7 @@ def iter_relvecs_all(refseq: DNA,
         for n_low_qual in range((end3 - (end5 - 1)) + 1):
             # Use every possible set of low-quality positions.
             for low_qual in combinations(range(end5, end3 + 1), n_low_qual):
-                # Yield every possible relation vector.
+                # Yield every possible set of relationships.
                 yield from iter_relvecs_q53(refseq,
                                             low_qual,
                                             end5,

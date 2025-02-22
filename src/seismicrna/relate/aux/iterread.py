@@ -42,7 +42,7 @@ def ref_to_alignments(refseq: DNA, *,
                       max_ins_len: int = 1,
                       max_ins_bases: int | None = None):
     """ For a given reference sequence, map every possible read to its
-    CIGAR string(s) and (possibly ambiguous) relation vector.
+    CIGAR string(s) and (possibly ambiguous) relationships.
 
     Parameters
     ----------
@@ -70,9 +70,9 @@ def ref_to_alignments(refseq: DNA, *,
         if max_ins_bases is not None and max_ins_bases < max_ins:
             raise ValueError(f"max_ins_bases ({max_ins_bases}) "
                              f"must be ≥ max_ins ({max_ins})")
-    # Iterate through all possible relation vectors.
+    # Iterate through all possible relationships.
     for end5, end3, muts in iter_relvecs_all(refseq, insert3, max_ins):
-        # Check if there are insertions in the relation vector.
+        # Check if there are insertions.
         if insert3:
             ins = INS_3
             anti_ins = INS_5
@@ -91,7 +91,7 @@ def ref_to_alignments(refseq: DNA, *,
             if max_ins_bases is not None and sum(ins_len) > max_ins_bases:
                 # Skip insertion lengths whose sum exceeds the limit.
                 continue
-            # Determine the read(s) corresponding to this relation vector.
+            # Determine the read(s) corresponding to these relationships.
             degen, qual, cigar = infer_read(refseq,
                                             end5,
                                             end3,
@@ -115,7 +115,7 @@ def ref_to_alignments(refseq: DNA, *,
                 quals[key] = qual
                 # Gather every CIGAR string for the read.
                 reads[key][num_muts].append((cigar, tuple(muts.items())))
-    # Accumulate the bitwise OR of all relation vectors for each read,
+    # Accumulate the bitwise OR of all relationships for each read,
     # quality, ends, and number of mutations.
     cigars_best = dict()
     muts_best = dict()
@@ -177,7 +177,7 @@ def ref_to_alignments(refseq: DNA, *,
 def iter_alignments(*args, **kwargs):
     """ For a given reference sequence, find every read that could come
     from the reference (with up to 2 bases inserted). For each read,
-    yield the (possibly ambiguous) relation vector and every possible
+    yield the (possibly ambiguous) relationships and every possible
     CIGAR string. """
     quals, all_cigars, all_muts = ref_to_alignments(*args, **kwargs)
     for key in all_muts:

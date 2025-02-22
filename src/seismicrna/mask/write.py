@@ -32,7 +32,7 @@ from ..relate.dataset import (RelateMutsDataset,
 
 
 class Masker(object):
-    """ Mask batches of relation vectors. """
+    """ Mask batches of relationships. """
 
     PATTERN_KEY = "pattern"
     MASK_READ_INIT = "read-init"

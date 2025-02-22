@@ -14,7 +14,6 @@ from seismicrna.core.seq import DNA
 
 
 class TestInferRead(ut.TestCase):
-    """ Test function `infer_read`. """
 
     def assert_equal(self,
                      refseq: DNA,
@@ -33,7 +32,6 @@ class TestInferRead(ut.TestCase):
                      relvecs: Iterable[tuple[int, int, dict[int, int]]],
                      error: type[Exception],
                      regex: str):
-        """ Assert that the relation vectors raise an exception. """
         for relvec in relvecs:
             with self.subTest(relvec=relvec):
                 self.assertRaisesRegex(error, regex, infer_read, ref, *relvec)

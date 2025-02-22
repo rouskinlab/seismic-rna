@@ -32,10 +32,10 @@ def sanitize_muts(muts: dict[int, dict[int, list[int] | np.ndarray]],
                   region: Region,
                   data_type: type,
                   sanitize: bool = True):
-    return {pos: ({REL_TYPE(rel): np.asarray(reads, data_type)
-                   for rel, reads in muts[pos].items()}
-                  if sanitize
-                  else muts[pos])
+    return {int(pos): ({int(rel): np.asarray(reads, data_type)
+                        for rel, reads in muts[pos].items()}
+                       if sanitize
+                       else muts[pos])
             for pos in region.unmasked_int}
 
 
@@ -62,7 +62,7 @@ def simulate_muts(pmut: pd.DataFrame,
         raise ValueError(f"Relationships include no coverage ({NOCOV}): {rels}")
     muts = dict()
     for pos in index_to_pos(pmut.index):
-        muts[pos] = dict()
+        muts[int(pos)] = dict()
         # Find the reads that cover this position.
         usable_reads = read_nums[np.any(np.logical_and(seg_end5s <= pos,
                                                        pos <= seg_end3s),
@@ -79,7 +79,7 @@ def simulate_muts(pmut: pd.DataFrame,
                                                num_reads_pos_rel,
                                                replace=False,
                                                shuffle=False)
-                    muts[pos][rel] = reads_pos_rel
+                    muts[pos][int(rel)] = reads_pos_rel
                     # Prevent those reads from being chosen for another
                     # relationship.
                     usable_reads = np.setdiff1d(usable_reads,

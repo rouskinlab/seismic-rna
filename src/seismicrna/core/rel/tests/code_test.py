@@ -20,19 +20,21 @@ from ..code import (IRREC,
                     ANY_H,
                     ANY_V,
                     ANY_N,
+                    REL_SIZE,
                     REL_TYPE)
 
 
 class TestConstants(ut.TestCase):
-    """ Test constants of `rel` module. """
 
-    def test_np_type(self):
+    def test_rel_size_type(self):
+        self.assertIs(REL_SIZE, 1)
         self.assertIs(REL_TYPE, np.uint8)
 
     def test_primary_codes(self):
         """ Test the primary relation codes. """
         for exp, code in enumerate([MATCH, DELET, INS_5, INS_3,
                                     SUB_A, SUB_C, SUB_G, SUB_T]):
+            self.assertIsInstance(code, int)
             self.assertEqual(code, 2 ** exp)
 
     def test_derived_codes(self):

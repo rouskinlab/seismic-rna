@@ -41,13 +41,13 @@ def infer_read(refseq: DNA,
         Mutations in the read, keyed by their positions.
     hi_qual: str = MAX_QUAL
         Character to put in the quality string at every position that is
-        high-quality according to the relation vector.
+        high-quality.
     lo_qual: str = MIN_QUAL
         Character to put in the quality string at every position that is
-        low-quality according to the relation vector.
+        low-quality.
     ins_len: int | Sequence[int] = 1
         Number of bases to insert into the read and quality strings upon
-        finding an insertion in the relation vector. If an integer, then
+        finding an insertion in the relationships. If an integer, then
         insert that number of bases for every insertion. If a sequence
         of integers, then the ith insertion gets a number of bases equal
         to the ith element of ins_len.
@@ -55,7 +55,7 @@ def infer_read(refseq: DNA,
     Returns
     -------
     """
-    # Validate the relation vector and reference sequence.
+    # Validate the relationships and reference sequence.
     if end5 < 1:
         raise ValueError(f"end5 must be ≥ 1, but got {end5}")
     if end3 > len(refseq):
@@ -84,7 +84,7 @@ def infer_read(refseq: DNA,
     need_to_add_ins3 = False
 
     def add_to_cigar(op: str):
-        """ Add one base of the relation vector to the CIGAR string. """
+        """ Add one base of the relationships to the CIGAR string. """
         if cigars and cigars[-1].op == op:
             # The current operation matches that of the last CigarOp:
             # just increment its length.
