@@ -1,6 +1,7 @@
 from hashlib import sha512
 from pathlib import Path
 
+
 class BadChecksumError(ValueError):
     """ A file or piece of data has the wrong checksum. """
 
@@ -33,5 +34,4 @@ def calc_sha512_digest(target: str | Path | bytes, chunk_size=8192):
                 hasher.update(chunk)
     else:
         raise ValueError("Target must be a file path or a bytes object.")
-
     return hasher.hexdigest()

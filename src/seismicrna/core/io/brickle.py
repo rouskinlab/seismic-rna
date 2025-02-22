@@ -1,7 +1,6 @@
 import pickle
 from abc import ABC
 from functools import cached_property
-from hashlib import sha512
 from pathlib import Path
 from typing import Any
 
@@ -10,12 +9,11 @@ import brotli
 from .checksum import BadChecksumError, calc_sha512_digest
 from .file import FileIO, SampleFileIO, RefFileIO, RegFileIO
 from ..logs import logger
-from ..write import write_mode
 from ..validate import require_isinstance, require_issubclass
+from ..write import write_mode
 
 DEFAULT_BROTLI_LEVEL = 10
 PICKLE_PROTOCOL = 5
-
 
 
 class BrickleIO(FileIO, ABC):
