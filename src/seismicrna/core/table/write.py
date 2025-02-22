@@ -315,7 +315,7 @@ class TableWriter(Table, ABC):
         """ Write the table's rounded data to the table's CSV file. """
         if need_write(self.path, force):
             self.data.round(decimals=PRECISION).to_csv(self.path)
-            logger.routine(f"Wrote {self} to {self.path}")
+            logger.action(f"Wrote {self} to {self.path}")
         return self.path
 
 

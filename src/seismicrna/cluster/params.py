@@ -44,7 +44,7 @@ def write_single_run_table(run: EMRun,
     data = getattr(run, attr)
     file = get_table_path(top, branches, sample, ref, reg, table, run.k, rank)
     data.round(PRECISION).to_csv(file, header=True, index=True)
-    logger.routine(f"Wrote {table} of {run} to {file}")
+    logger.action(f"Wrote {table} of {run} to {file}")
     return file
 
 

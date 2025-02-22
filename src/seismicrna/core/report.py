@@ -813,7 +813,7 @@ class Report(SampleFileIO, ABC):
         if need_write(save_path, force):
             with open(save_path, write_mode(force)) as f:
                 f.write(text)
-            logger.routine(f"Wrote {self} to {save_path}")
+            logger.action(f"Wrote {self} to {save_path}")
         return save_path
 
     def __setattr__(self, key: str, value: Any):
