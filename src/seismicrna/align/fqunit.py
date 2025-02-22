@@ -10,7 +10,7 @@ from ..core.extern import (GUNZIP_CMD,
                            ShellCommand,
                            args_to_cmd,
                            cmds_to_pipe)
-from ..core.io.checksum import calc_sha512_digest
+from ..core.io.checksum import calc_sha512_path
 from ..core.logs import logger
 from ..core.ngs import DuplicateSampleReferenceError
 
@@ -231,7 +231,7 @@ class FastqUnit(object):
 
     @cached_property
     def checksums(self):
-        return {name: calc_sha512_digest(path) for name, path in self.paths.items()}
+        return {name: calc_sha512_path(path) for name, path in self.paths.items()}
 
     @classmethod
     def _from_files(cls, /, *,

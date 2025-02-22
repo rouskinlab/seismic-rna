@@ -43,7 +43,7 @@ from ..core.extern import (BOWTIE2_CMD,
                            BOWTIE2_BUILD_CMD,
                            SAMTOOLS_CMD,
                            require_dependency)
-from ..core.io.checksum import calc_sha512_digest
+from ..core.io.checksum import calc_sha512_path
 from ..core.logs import logger
 from ..core.ngs import (run_flagstat,
                         run_sort_xam,
@@ -106,8 +106,8 @@ def split_xam_file(xam_file: Path,
         report_type = SplitReport
         report = report_type(sample=sample,
                              branches=branches,
-                             xam_checksum=calc_sha512_digest(xam_file),
-                             ref_fasta_checksum=calc_sha512_digest(fasta),
+                             xam_checksum=calc_sha512_path(xam_file),
+                             ref_fasta_checksum=calc_sha512_path(fasta),
                              bt2_local=bt2_local,
                              bt2_discordant=kwargs.get("bt2_discordant"),
                              bt2_mixed=kwargs.get("bt2_mixed"),

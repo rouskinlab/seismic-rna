@@ -6,7 +6,7 @@ from typing import Any
 
 import brotli
 
-from .checksum import BadChecksumError, calc_sha512_digest
+from .checksum import BadChecksumError, calc_sha512_bytes
 from .file import FileIO, SampleFileIO, RefFileIO, RegFileIO
 from ..logs import logger
 from ..validate import require_isinstance, require_issubclass
@@ -95,7 +95,7 @@ def save_brickle(item: BrickleIO,
     with open(file, write_mode(force, binary=True)) as f:
         f.write(data)
     logger.action(f"Wrote {item} to {file}")
-    checksum = calc_sha512_digest(data)
+    checksum = calc_sha512_bytes(data)
     logger.detail(f"Computed SHA-512 checksum of {file}: {checksum}")
     logger.routine(f"Ended writing {item} to {file}")
     return checksum
@@ -110,7 +110,7 @@ def load_brickle(file: str | Path,
     with open(file, "rb") as f:
         data = f.read()
     if checksum:
-        sha512_digest = calc_sha512_digest(data)
+        sha512_digest = calc_sha512_bytes(data)
         if sha512_digest != checksum:
             raise BadChecksumError(
                 f"Expected SHA-512 digest of {file} to be {checksum}, "
