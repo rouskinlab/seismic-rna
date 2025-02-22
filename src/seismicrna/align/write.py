@@ -14,7 +14,7 @@ from .xamops import (FASTP_PHRED_OUT,
                      run_realign,
                      run_xamgen)
 from ..core import path
-from ..core.io.checksum import calc_sha512_path
+from ..core.io import calc_sha512_path
 from ..core.logs import logger
 from ..core.ngs import (FLAG_PAIRED,
                         FLAG_PROPER,

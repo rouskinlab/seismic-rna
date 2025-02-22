@@ -10,7 +10,7 @@ from ..core.extern import (GUNZIP_CMD,
                            ShellCommand,
                            args_to_cmd,
                            cmds_to_pipe)
-from ..core.io.checksum import calc_sha512_path
+from ..core.io import calc_sha512_path
 from ..core.logs import logger
 from ..core.ngs import DuplicateSampleReferenceError
 

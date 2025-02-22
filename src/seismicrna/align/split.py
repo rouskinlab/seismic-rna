@@ -43,7 +43,7 @@ from ..core.extern import (BOWTIE2_CMD,
                            BOWTIE2_BUILD_CMD,
                            SAMTOOLS_CMD,
                            require_dependency)
-from ..core.io.checksum import calc_sha512_path
+from ..core.io import calc_sha512_path
 from ..core.ngs import (run_flagstat,
                         run_sort_xam,
                         run_index_xam,
