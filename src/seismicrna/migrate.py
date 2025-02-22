@@ -1,5 +1,7 @@
 import gzip
+import os
 import pickle
+import shutil
 from hashlib import md5
 from pathlib import Path
 from typing import Iterable
@@ -8,8 +10,10 @@ import brotli
 from click import command
 
 from .cluster.report import ClusterReport
+from .core import path
 from .core.arg import (CMD_MIGRATE,
                        arg_input_path,
+                       opt_out_dir,
                        opt_max_procs)
 from .core.io import BadChecksumError, save_brickle
 from .core.report import Report, NumBatchesF, ChecksumsF, RefseqChecksumF
@@ -249,17 +253,43 @@ def migrate_out_dir(out_dir: Path, n_procs: int):
 
 @run_func(CMD_MIGRATE)
 def run(input_path: Iterable[str | Path], *,
+        out_dir: str | Path,
         max_procs: int):
     """ Migrate output directories from v0.23 to v0.24 """
-    dispatch(migrate_out_dir,
-             max_procs=max_procs,
-             pass_n_procs=True,
-             args=as_list_of_tuples(map(Path, input_path)))
+    input_path = list(input_path)
+    if len(input_path) != 1:
+        raise ValueError("seismic migrate can process 1 directory at a time, "
+                         f"but got {len(input_path)}")
+    input_dir = path.sanitize(input_path[0], strict=True)
+    out_dir = path.sanitize(out_dir, strict=False)
+    if out_dir.exists():
+        if os.path.samefile(input_dir, out_dir):
+            message = ("For safety, seismic migrate refuses to overwrite "
+                       "existing directories, so the output directory must "
+                       "be different from the input directory, but got "
+                       f"input_dir={input_dir}, out_dir={out_dir}. Please "
+                       "specify a different output directory that does not "
+                       "yet exist with -o")
+        else:
+            message = ("For safety, seismic migrate refuses to overwrite "
+                       "existing directories, so the output directory must "
+                       f"not exist, but got out_dir={out_dir}, which exists. "
+                       "Please specify a different output directory that "
+                       "does not yet exist with -o")
+        raise FileExistsError(message)
+    try:
+        shutil.copytree(input_dir, out_dir)
+        migrate_out_dir(out_dir, n_procs=max_procs)
+    except Exception as error:
+        if out_dir.exists():
+            shutil.rmtree(out_dir, ignore_errors=True)
+        raise error
     return 0
 
 
 params = [
     arg_input_path,
+    opt_out_dir,
     opt_max_procs
 ]
 
