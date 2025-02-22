@@ -3,12 +3,12 @@ from pathlib import Path
 from .logs import logger
 
 
-def need_write(query: Path, force: bool = False, warn: bool = True):
+def need_write(query: str | Path, force: bool = False, warn: bool = True):
     """ Determine whether a file/directory must be written.
 
     Parameters
     ----------
-    query: Path
+    query: str | Path
         File or directory for which to check the need for writing.
     force: bool = False
         Force the query to be written, even if it already exists.
@@ -20,6 +20,8 @@ def need_write(query: Path, force: bool = False, warn: bool = True):
     bool
         Whether the file must be written.
     """
+    if not isinstance(query, Path):
+        query = Path(query)
     if force or not query.exists():
         return True
     if warn:

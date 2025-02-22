@@ -84,6 +84,7 @@ def format_fasta_record(name: str, seq: XNA, wrap: int = 0):
 def parse_fasta(fasta: str | Path,
                 seq_type: type[XNA] | None,
                 only: Iterable[str] | None = None):
+    fasta = path.sanitize(fasta, strict=True)
     path.check_file_extension(fasta, path.FastaExt)
     if seq_type is None:
         item_type = "names of sequence"
@@ -150,12 +151,13 @@ def get_fasta_seq(fasta: str | Path, seq_type: type[XNA], name: str):
     return seq
 
 
-def write_fasta(fasta: Path,
+def write_fasta(fasta: str | Path,
                 refs: Iterable[tuple[str, XNA]],
                 wrap: int = 0,
                 force: bool = False):
     """ Write an iterable of reference names and DNA sequences to a
     FASTA file. """
+    fasta = path.sanitize(fasta, strict=False)
     path.check_file_extension(fasta, path.FastaExt)
     if need_write(fasta, force):
         logger.routine(f"Began writing FASTA file {fasta}")
