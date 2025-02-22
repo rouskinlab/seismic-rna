@@ -226,7 +226,7 @@ class Masker(object):
 
     def _get_mask_pos(self,
                       mask_pos: Iterable[tuple[str, int]],
-                      mask_pos_file: Iterable[str | Path], ):
+                      mask_pos_file: Iterable[str | Path]):
         """ List all positions to mask. """
         # Collect the positions to mask from the list.
         dataset_ref = self.dataset.ref
