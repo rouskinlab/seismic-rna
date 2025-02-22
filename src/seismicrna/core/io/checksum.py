@@ -25,7 +25,9 @@ def calc_sha512_digest(target: str | Path | bytes, chunk_size=8192):
         # Directly hash the bytes if input is a bytes object
         hasher.update(target)
     elif isinstance(target, (str, Path)):
-        # Assume it's a file path and read in chunks
+        target = Path(target)
+        if not target.exists():
+            raise ValueError("Target file does not exist.")
         with open(target, "rb") as f:
             while chunk := f.read(chunk_size):
                 hasher.update(chunk)
