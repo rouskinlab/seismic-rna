@@ -39,11 +39,13 @@ from ..core.arg import (CMD_SPLITBAM,
                         opt_sep_strands,
                         opt_rev_label,
                         opt_f1r2_fwd)
+from ..core.error import DuplicateValueError
 from ..core.extern import (BOWTIE2_CMD,
                            BOWTIE2_BUILD_CMD,
                            SAMTOOLS_CMD,
                            require_dependency)
 from ..core.io import calc_sha512_path
+from ..core.logs import logger
 from ..core.ngs import (run_flagstat,
                         run_sort_xam,
                         run_index_xam,
@@ -52,6 +54,10 @@ from ..core.run import run_func
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.tmp import release_to_out
 from ..core.write import need_write
+
+
+class DuplicateSampleError(DuplicateValueError):
+    """ A sample name occurs more than once. """
 
 
 def split_xam_file(xam_file: Path,
@@ -136,6 +142,24 @@ def split_xam_file(xam_file: Path,
     return report_file.parent
 
 
+def check_duplicate_samples(xam_files: Iterable[str | Path]):
+    """ Check if any XAM files have the same sample name. """
+    samples = set()
+    for xam_file in map(Path, xam_files):
+        try:
+            path.check_file_extension(xam_file, path.XAM_EXTS)
+        except path.WrongFileExtensionError as error:
+            logger.error(error)
+        else:
+            # Assume that the XAM file is named after its sample.
+            sample = xam_file.stem
+            if sample in samples:
+                raise DuplicateSampleError(
+                    f"More than one file is named {repr(sample)}"
+                )
+            samples.add(sample)
+
+
 @run_func(CMD_SPLITBAM, with_tmp=True, pass_keep_tmp=True)
 def run(fasta: str | Path, *,
         # Inputs
@@ -177,11 +201,14 @@ def run(fasta: str | Path, *,
     require_dependency(SAMTOOLS_CMD, __name__)
     require_dependency(BOWTIE2_CMD, __name__)
     require_dependency(BOWTIE2_BUILD_CMD, __name__)
+    # List the XAM files to split and check for duplicates.
+    xam_files = list(path.find_files_chain(input_path, path.XAM_SEGS))
+    check_duplicate_samples(xam_files)
     # Split each input XAM file.
     return dispatch(split_xam_file,
                     max_procs=max_procs,
                     pass_n_procs=True,
-                    args=as_list_of_tuples(map(Path, input_path)),
+                    args=as_list_of_tuples(xam_files),
                     kwargs=dict(fasta=Path(fasta),
                                 phred_enc=phred_enc,
                                 out_dir=Path(out_dir),

@@ -2,8 +2,9 @@ import re
 from pathlib import Path
 from subprocess import CompletedProcess
 
-from ..logs import logger
+from ..error import DuplicateValueError
 from ..extern import SAMTOOLS_CMD, args_to_cmd, ShellCommand
+from ..logs import logger
 
 # SAM file format specifications
 SAM_HEADER = "@"
@@ -38,7 +39,7 @@ MAX_FLAG = sum([FLAG_PAIRED,
                 FLAG_SUPPLEMENTARY])
 
 
-class DuplicateSampleReferenceError(ValueError):
+class DuplicateSampleReferenceError(DuplicateValueError):
     """ A sample-reference pair occurred more than once. """
 
 

@@ -14,6 +14,10 @@ class InconsistentValueError(ValueError):
     """ Two or more values differ when they should be equal. """
 
 
+class DuplicateValueError(ValueError):
+    """ A value occurred more than once when all must be unique. """
+
+
 class OutOfBoundsError(ValueError):
     """ A numeric value is outside its proper bounds. """
 
