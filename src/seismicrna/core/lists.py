@@ -16,6 +16,7 @@ from .table import (READ_TITLE,
                     RelTypeTable,
                     PositionTableLoader,
                     RelTypeTableLoader)
+from .validate import require_isinstance, require_equal
 
 
 class List(RefFileIO, ABC):
@@ -61,16 +62,24 @@ class List(RefFileIO, ABC):
 
     @classmethod
     @abstractmethod
-    def get_index_names(cls) -> list[str]:
+    def get_column_names(cls) -> list[str]:
         """ Names of the index columns. """
 
     @classmethod
+    def validate_data(cls, data: pd.DataFrame):
+        require_isinstance("data", data, pd.DataFrame)
+        require_equal("data.columns.to_list()",
+                      data.columns.to_list(),
+                      cls.get_column_names(),
+                      f"{cls}.get_column_names()")
+
+    @classmethod
     def load_data(cls, file: str | Path, only_ref: bool = False):
-        data = pd.read_csv(file, index_col=cls.get_index_names()).index
+        data = pd.read_csv(file)
+        cls.validate_data(data)
         if only_ref:
             _, fields = cls.parse_path(file)
-            ref = fields[path.REF]
-            return data[data.get_level_values(FIELD_REF) == ref]
+            return data.loc[data[FIELD_REF] == fields[path.REF]]
         return data
 
     @classmethod
@@ -87,7 +96,7 @@ class List(RefFileIO, ABC):
                  sample: str,
                  branches: Iterable[str],
                  ref: str,
-                 data: pd.Index,
+                 data: pd.DataFrame,
                  **kwargs):
         super().__init__(**kwargs)
         self.sample = sample
@@ -98,15 +107,14 @@ class List(RefFileIO, ABC):
             path.validate_branches_flat(branches)
         self.branches = branches
         self.ref = ref
-        if not isinstance(data, pd.Index):
-            raise TypeError(f"data must be {pd.Index}, but got {type(data)}")
+        self.validate_data(data)
         self.data = data
 
     def save(self, top: Path, force: bool = False):
         file = self.get_path(top)
         if not force and file.exists():
             raise FileExistsError(file)
-        self.data.to_frame().to_csv(file, header=True, index=False)
+        self.data.to_csv(file, header=True, index=False)
         return file
 
 
@@ -125,7 +133,7 @@ class PositionList(List, ABC):
         return path.PositionListSeg
 
     @classmethod
-    def get_index_names(cls):
+    def get_column_names(cls):
         return [FIELD_REF, POS_NAME]
 
     @classmethod
@@ -161,8 +169,10 @@ class PositionList(List, ABC):
         logger.detail(f"{table} has {region.get_mask(cls.MASK_FMUT).size} "
                       f"positions with mutation rates > {max_fmut_pos}")
         positions = region.masked_int
-        data = pd.MultiIndex.from_product([[table.ref], positions],
-                                          names=cls.get_index_names())
+        data = pd.MultiIndex.from_product(
+            [[table.ref], positions],
+            names=cls.get_column_names()
+        ).to_frame(index=False)
         new_list = cls(data=data,
                        branches=path.add_branch(path.LIST_STEP,
                                                 branch,
@@ -173,16 +183,6 @@ class PositionList(List, ABC):
                       "positions to mask")
         logger.routine(f"Ended making {cls} from {table}")
         return new_list
-
-    def __init__(self, *, data: pd.MultiIndex, **kwargs):
-        if not isinstance(data, pd.MultiIndex):
-            raise TypeError(
-                f"data must be {pd.MultiIndex}, but got {type(data)}"
-            )
-        if data.names != self.get_index_names():
-            raise ValueError(f"data must have names {self.get_index_names()}, "
-                             f"but got {data.names}")
-        super().__init__(data=data, **kwargs)
 
 
 class ReadList(List, ABC):
@@ -197,5 +197,5 @@ class ReadList(List, ABC):
         return path.ReadListSeg
 
     @classmethod
-    def get_index_names(cls):
+    def get_column_names(cls):
         return [READ_TITLE]

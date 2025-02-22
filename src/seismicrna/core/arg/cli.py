@@ -689,7 +689,9 @@ opt_mask_pos = Option(
 
 opt_mask_pos_file = Option(
     ("--mask-pos-file",),
-    type=Path(dir_okay=False, exists=True),
+    type=Path(exists=True),
+    multiple=True,
+    default=(),
     help="Mask positions in references from a file"
 )
 
@@ -703,7 +705,9 @@ opt_mask_read = Option(
 
 opt_mask_read_file = Option(
     ("--mask-read-file",),
-    type=Path(dir_okay=False, exists=True),
+    type=Path(exists=True),
+    multiple=True,
+    default=(),
     help="Mask the reads with names in this file"
 )
 

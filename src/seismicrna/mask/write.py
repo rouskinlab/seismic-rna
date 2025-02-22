@@ -1,7 +1,6 @@
 import json
 from collections import defaultdict
 from datetime import datetime
-from itertools import chain
 from pathlib import Path
 from typing import Iterable
 
@@ -22,7 +21,7 @@ from ..core.lists import PositionList
 from ..core.logs import logger
 from ..core.rel import RelPattern, HalfRelPattern
 from ..core.report import mask_iter_no_convergence
-from ..core.seq import POS_NAME, Region, index_to_pos
+from ..core.seq import FIELD_REF, POS_NAME, Region, index_to_pos
 from ..core.table import MUTAT_REL, INFOR_REL
 from ..core.tmp import release_to_out, with_tmp_dir
 from ..core.write import need_write
@@ -61,9 +60,9 @@ class Masker(object):
                  mask_polya: int,
                  mask_gu: bool,
                  mask_pos: list[tuple[str, int]],
-                 mask_pos_file: Path | None,
+                 mask_pos_file: list[Path],
                  mask_read: list[str],
-                 mask_read_file: Path | None,
+                 mask_read_file: list[Path],
                  mask_discontig: bool,
                  min_ncov_read: int,
                  min_finfo_read: float,
@@ -226,8 +225,8 @@ class Masker(object):
         return load_read_names_dataset(self.dataset.report_file)
 
     def _get_mask_pos(self,
-                      mask_pos: list[tuple[str, int]],
-                      mask_pos_file: Path | None):
+                      mask_pos: Iterable[tuple[str, int]],
+                      mask_pos_file: Iterable[str | Path], ):
         """ List all positions to mask. """
         # Collect the positions to mask from the list.
         dataset_ref = self.dataset.ref
@@ -236,34 +235,40 @@ class Masker(object):
                             dtype=int)
         logger.detail(f"Got {mask_pos.size} positions listed individually "
                       f"to pre-exclude for reference {repr(dataset_ref)}")
-        # Read positions to exclude from a file.
-        if mask_pos_file is not None:
-            file_data = PositionList.load_data(mask_pos_file).to_frame()
-            file_pos = file_data.loc[dataset_ref, POS_NAME].values
-            logger.detail(f"Got {file_pos.size} positions in {mask_pos_file} "
+        # List positions to exclude from file(s).
+        for file in path.find_files_chain(mask_pos_file,
+                                          [path.PositionListSeg]):
+            file_data = PositionList.load_data(file)
+            ref_rows = file_data[FIELD_REF] == dataset_ref
+            file_pos = file_data.loc[ref_rows, POS_NAME].values
+            logger.detail(f"Got {file_pos.size} positions in {file} "
                           f"to pre-exclude for reference {repr(dataset_ref)}")
-            mask_pos = np.concatenate([mask_pos, file_pos])
+            if file_pos.size > 0:
+                mask_pos = np.concatenate([mask_pos, file_pos])
         # Drop redundant positions and sort the remaining ones.
         mask_pos = np.unique(np.asarray(mask_pos, dtype=int))
         # Keep only the positions in the region.
-        return mask_pos[np.logical_and(mask_pos >= self.region.end5,
-                                       mask_pos <= self.region.end3)]
+        mask_pos = mask_pos[np.logical_and(mask_pos >= self.region.end5,
+                                           mask_pos <= self.region.end3)]
+        logger.detail(f"Got {mask_pos.size} positions to pre-exclude "
+                      f"for reference {repr(dataset_ref)}")
+        return mask_pos
 
     @staticmethod
     def _get_mask_read(mask_read: Iterable[str],
-                       mask_read_file: Path | None):
+                       mask_read_file: Iterable[str | Path]):
         """ List all reads to pre-exclude. """
         # Ensure that the given read names are all strings.
-        mask_read = map(str, mask_read)
-        # List reads to exclude from a file.
-        if mask_read_file is not None:
-            with open(mask_read_file) as f:
+        mask_read = set(map(str, mask_read))
+        # List reads to exclude from file(s).
+        for file in path.find_files_chain(mask_read_file,
+                                          [path.ReadListSeg]):
+            with open(file) as f:
                 # Ensure every read name is unique.
-                mask_read_combined = set(chain(mask_read, map(str.rstrip, f)))
-        else:
-            # Ensure every read name is unique.
-            mask_read_combined = set(mask_read)
-        return np.asarray(list(mask_read_combined), dtype=str)
+                mask_read.update(map(str.rstrip, f))
+        mask_read = np.asarray(list(mask_read), dtype=str)
+        logger.detail(f"Got {mask_read.size} reads to pre-exclude")
+        return mask_read
 
     def _filter_exclude_read(self, batch: RegionMutsBatch):
         """ Filter out reads in the list of pre-excluded read. """
