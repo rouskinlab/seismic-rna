@@ -632,6 +632,9 @@ AlignSampleRepSeg = PathSegment("align-samp-rep",
 AlignRefRepSeg = PathSegment("align-ref-rep",
                              {REF: NameField, EXT: ReportExt},
                              frmt="{ref}__align-report{ext}")
+SplitRepSeg = PathSegment("split-rep",
+                          {EXT: ReportExt},
+                          frmt="split-report{ext}")
 
 # Relate
 RefseqFileSeg = PathSegment("refseq-file",

@@ -1,9 +1,11 @@
+from datetime import datetime
 from pathlib import Path
 from typing import Iterable
 
 from click import command
 
 from .fqunit import format_phred_arg
+from .report import SplitReport
 from .write import split_references
 from ..core import path
 from ..core.arg import (CMD_SPLITBAM,
@@ -41,6 +43,8 @@ from ..core.extern import (BOWTIE2_CMD,
                            BOWTIE2_BUILD_CMD,
                            SAMTOOLS_CMD,
                            require_dependency)
+from ..core.io.checksum import calc_sha512_digest
+from ..core.logs import logger
 from ..core.ngs import (run_flagstat,
                         run_sort_xam,
                         run_index_xam,
@@ -60,16 +64,14 @@ def split_xam_file(xam_file: Path,
                    force: bool,
                    n_procs: int,
                    **kwargs):
+    began = datetime.now()
     # Assume the XAM file is named for the sample.
     sample = xam_file.stem
     branches = path.add_branch(path.ALIGN_STEP, branch, dict())
-    # Determine the final output directory.
-    result_dir = path.build(path.STEP_DIR_SEGS,
-                            {path.TOP: out_dir,
-                             path.SAMPLE: sample,
-                             path.STEP: path.ALIGN_STEP,
-                             path.BRANCHES: branches})
-    if need_write(result_dir, force):
+    report_file = SplitReport.build_path({path.TOP: out_dir,
+                                          path.SAMPLE: sample,
+                                          path.BRANCHES: branches})
+    if need_write(report_file, force):
         # Sort and index the XAM file.
         xam_input_dir = tmp_dir.joinpath("input")
         xam_sorted = path.buildpar(path.XAM_SEGS,
@@ -84,14 +86,14 @@ def split_xam_file(xam_file: Path,
         # Split the XAM file into one file for each reference.
         release_dir = tmp_dir.joinpath("release")
         paired = xam_paired(run_flagstat(xam_file, n_procs=n_procs))
-        split_references(xam_sorted,
-                         fasta=fasta,
-                         paired=paired,
-                         phred_arg=format_phred_arg(phred_enc),
-                         top=release_dir,
-                         branches=branches,
-                         n_procs=n_procs,
-                         **kwargs)
+        reads_refs = split_references(xam_sorted,
+                                      fasta=fasta,
+                                      paired=paired,
+                                      phred_arg=format_phred_arg(phred_enc),
+                                      top=release_dir,
+                                      branches=branches,
+                                      n_procs=n_procs,
+                                      **kwargs)
         release_to_out(out_dir,
                        release_dir,
                        path.build(path.STEP_DIR_SEGS,
@@ -99,7 +101,40 @@ def split_xam_file(xam_file: Path,
                                    path.SAMPLE: sample,
                                    path.STEP: path.ALIGN_STEP,
                                    path.BRANCHES: branches}))
-    return result_dir
+        ended = datetime.now()
+        bt2_local = kwargs.get("bt2_local")
+        report_type = SplitReport
+        report = report_type(sample=sample,
+                             branches=branches,
+                             xam_checksum=calc_sha512_digest(xam_file),
+                             ref_fasta_checksum=calc_sha512_digest(fasta),
+                             bt2_local=bt2_local,
+                             bt2_discordant=kwargs.get("bt2_discordant"),
+                             bt2_mixed=kwargs.get("bt2_mixed"),
+                             bt2_dovetail=kwargs.get("bt2_dovetail"),
+                             bt2_contain=kwargs.get("bt2_contain"),
+                             bt2_score_min=(kwargs.get("bt2_score_min_loc") if bt2_local
+                                            else kwargs.get("bt2_score_min_e2e")),
+                             bt2_i=kwargs.get("bt2_i"),
+                             bt2_x=kwargs.get("bt2_x"),
+                             bt2_gbar=kwargs.get("bt2_gbar"),
+                             bt2_l=kwargs.get("bt2_l"),
+                             bt2_s=kwargs.get("bt2_s"),
+                             bt2_d=kwargs.get("bt2_d"),
+                             bt2_r=kwargs.get("bt2_r"),
+                             bt2_dpad=kwargs.get("bt2_dpad"),
+                             bt2_orient=kwargs.get("bt2_orient"),
+                             bt2_un=kwargs.get("bt2_un"),
+                             min_mapq=kwargs.get("min_mapq"),
+                             sep_strands=kwargs.get("sep_strands"),
+                             f1r2_fwd=kwargs.get("f1r2_fwd"),
+                             rev_label=kwargs.get("rev_label"),
+                             min_reads=kwargs.get("min_reads"),
+                             reads_refs=reads_refs,
+                             began=began,
+                             ended=ended)
+        report_saved = report.save(out_dir, force=True)
+    return report_file.parent
 
 
 @run_func(CMD_SPLITBAM, with_tmp=True, pass_keep_tmp=True)
