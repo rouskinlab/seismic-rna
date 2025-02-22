@@ -59,10 +59,12 @@ def update_brickle(file: str | Path, md5_checksum: str):
     # Edit the item's attributes.
     setattr(item, "branches", dict())
     if isinstance(item, RelateBatchIO):
+        # Rename self._end5s, self._end3s, and self._muts
         for end in [5, 3]:
-            ends = getattr(item, f"_end{end}s")
+            setattr(item, f"seg_end{end}s", getattr(item, f"_end{end}s"))
             delattr(item, f"_end{end}s")
-            setattr(item, f"seg_end{end}s", ends)
+        setattr(item, "muts", getattr(item, "_muts"))
+        delattr(item, "_muts")
     # Save the updated item back to the same file.
     return save_brickle(item, file, brotli_level=10, force=True)
 

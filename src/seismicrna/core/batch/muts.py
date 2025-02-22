@@ -161,14 +161,9 @@ class MutsBatch(EndCoords, ReadBatch, ABC):
                  **kwargs):
         super().__init__(region=region, sanitize=sanitize, **kwargs)
         # Validate and store the mutations.
-        self._muts = sanitize_muts(muts, region, self.read_dtype, sanitize)
+        self.muts = sanitize_muts(muts, region, self.read_dtype, sanitize)
         if masked_read_nums is not None:
             self.masked_read_nums = np.asarray(masked_read_nums, dtype=int)
-
-    @property
-    def muts(self):
-        """ Reads with each type of mutation at each position. """
-        return self._muts
 
     @cached_property
     def pos_nums(self):
