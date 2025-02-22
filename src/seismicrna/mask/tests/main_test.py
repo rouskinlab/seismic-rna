@@ -145,11 +145,12 @@ def write_datasets(out_dir: Path,
 
 
 def extract_read_nums(dataset: MaskMutsDataset):
-    return [list(batch.read_nums) for batch in dataset.iter_batches()]
+    return [list(map(int, batch.read_nums))
+            for batch in dataset.iter_batches()]
 
 
 def extract_positions(dataset: MaskMutsDataset):
-    return list(dataset.region.unmasked_int)
+    return list(map(int, dataset.region.unmasked_int))
 
 
 class TestMask(ut.TestCase, ABC):
@@ -207,7 +208,7 @@ class TestMask(ut.TestCase, ABC):
                 min_ninfo_pos: int = 1,
                 max_fmut_pos: float = 1.,
                 **kwargs):
-        mask_dir, = run_mask((str(self._report_file),),
+        mask_dir, = run_mask([self._report_file],
                              mask_del=mask_del,
                              mask_ins=mask_ins,
                              mask_polya=mask_polya,
@@ -313,41 +314,67 @@ class TestMaskSingle1Sample1Batch(TestMaskSingle,
                              [[0, 1, 2, 3, 4, 5, 6, 7, 8]])
 
     def test_mask_pos_file(self):
-        mask_pos_file = self._out_dir.joinpath("mask_pos.csv")
+        mask_pos_file = self._out_dir.joinpath("mask-position-list.csv")
         with open(mask_pos_file, "x") as f:
             f.write("\n".join(["Reference,Position",
                                f"{REF},1",
                                f"{REF}2,4",
                                f"{REF},6"]))
-        dataset = self.dataset(mask_pos_file=mask_pos_file)
+        dataset = self.dataset(mask_pos_file=[mask_pos_file])
         self.assertListEqual(extract_positions(dataset),
                              [2, 3, 4, 5, 7, 8])
         self.assertListEqual(extract_read_nums(dataset),
                              [[0, 1, 2, 3, 4, 5, 6, 7, 8]])
 
+    def test_mask_pos_files(self):
+        mask_pos_files = [
+            self._out_dir.joinpath("1", "mask-position-list.csv"),
+            self._out_dir.joinpath("2", "mask-position-list.csv"),
+            self._out_dir.joinpath("3", "mask-position-list.csv")
+        ]
+        for file in mask_pos_files:
+            file.parent.mkdir()
+        with open(mask_pos_files[0], "x") as f:
+            f.write("\n".join(["Reference,Position",
+                               f"{REF}2,4",
+                               f"{REF},6"]))
+        with open(mask_pos_files[1], "x") as f:
+            f.write("\n".join(["Reference,Position",
+                               f"{REF}2,2",
+                               f"{REF}2,5"]))
+        with open(mask_pos_files[2], "x") as f:
+            f.write("\n".join(["Reference,Position",
+                               f"{REF},8",
+                               f"{REF},3"]))
+        dataset = self.dataset(mask_pos_file=mask_pos_files)
+        self.assertListEqual(extract_positions(dataset),
+                             [1, 2, 4, 5, 7])
+        self.assertListEqual(extract_read_nums(dataset),
+                             [[0, 1, 2, 3, 4, 5, 6, 7, 8]])
+
     def test_mask_pos_and_mask_pos_file(self):
-        mask_pos_file = self._out_dir.joinpath("mask_pos.csv")
+        mask_pos_file = self._out_dir.joinpath("mask-position-list.csv")
         with open(mask_pos_file, "x") as f:
             f.write("\n".join(["Reference,Position",
                                f"{REF},1",
                                f"{REF}2,4",
                                f"{REF},6"]))
         dataset = self.dataset(mask_pos=[(REF, 1), (REF + "2", 4), (REF, 5)],
-                               mask_pos_file=mask_pos_file)
+                               mask_pos_file=[mask_pos_file])
         self.assertListEqual(extract_positions(dataset),
                              [2, 3, 4, 7, 8])
         self.assertListEqual(extract_read_nums(dataset),
                              [[0, 1, 2, 3, 4, 5, 6, 7, 8]])
 
     def test_mask_pos_multiple(self):
-        mask_pos_file = self._out_dir.joinpath("mask_pos.csv")
+        mask_pos_file = self._out_dir.joinpath("mask-position-list.csv")
         with open(mask_pos_file, "x") as f:
             f.write("\n".join(["Reference,Position",
                                f"{REF},8"]))
         dataset = self.dataset(mask_gu=True,
                                mask_polya=3,
                                mask_pos=[(REF, 3)],
-                               mask_pos_file=mask_pos_file)
+                               mask_pos_file=[mask_pos_file])
         self.assertListEqual(extract_positions(dataset),
                              [1])
         self.assertListEqual(extract_read_nums(dataset),
@@ -368,21 +395,41 @@ class TestMaskSingle1Sample1Batch(TestMaskSingle,
                              [[0, 1, 3, 4, 5, 6, 7]])
 
     def test_mask_read_file(self):
-        mask_read_file = self._out_dir.joinpath("mask_read.txt")
+        mask_read_file = self._out_dir.joinpath("mask-read-list.csv.gz")
         with open(mask_read_file, "x") as f:
             f.write("\n".join(["Read0", "Read2"]))
-        dataset = self.dataset(mask_read_file=mask_read_file)
+        dataset = self.dataset(mask_read_file=[mask_read_file])
         self.assertListEqual(extract_positions(dataset),
                              [1, 2, 3, 4, 5, 6, 7, 8])
         self.assertListEqual(extract_read_nums(dataset),
                              [[1, 3, 4, 5, 6, 7, 8]])
 
+    def test_mask_read_files(self):
+        mask_read_files = [
+            self._out_dir.joinpath("1", "mask-read-list.csv.gz"),
+            self._out_dir.joinpath("2", "mask-read-list.csv.gz"),
+            self._out_dir.joinpath("3", "mask-read-list.csv.gz")
+        ]
+        for file in mask_read_files:
+            file.parent.mkdir()
+        with open(mask_read_files[0], "x") as f:
+            f.write("\n".join(["Read0", "Read2"]))
+        with open(mask_read_files[1], "x") as f:
+            f.write("\n".join(["Read10"]))
+        with open(mask_read_files[2], "x") as f:
+            f.write("\n".join(["Read5", "Read2", "Read6"]))
+        dataset = self.dataset(mask_read_file=mask_read_files)
+        self.assertListEqual(extract_positions(dataset),
+                             [1, 2, 3, 4, 5, 6, 7, 8])
+        self.assertListEqual(extract_read_nums(dataset),
+                             [[1, 3, 4, 7, 8]])
+
     def test_mask_read_and_mask_read_file(self):
-        mask_read_file = self._out_dir.joinpath("mask_read.txt")
+        mask_read_file = self._out_dir.joinpath("mask-read-list.csv.gz")
         with open(mask_read_file, "x") as f:
             f.write("\n".join(["Read0", "Read2"]))
         dataset = self.dataset(mask_read=["Read8", "Read2"],
-                               mask_read_file=mask_read_file)
+                               mask_read_file=[mask_read_file])
         self.assertListEqual(extract_positions(dataset),
                              [1, 2, 3, 4, 5, 6, 7, 8])
         self.assertListEqual(extract_read_nums(dataset),
