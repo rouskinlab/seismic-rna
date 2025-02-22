@@ -81,7 +81,7 @@ def format_fasta_record(name: str, seq: XNA, wrap: int = 0):
     return f"{format_fasta_name_line(name)}{format_fasta_seq_lines(seq, wrap)}"
 
 
-def parse_fasta(fasta: Path,
+def parse_fasta(fasta: str | Path,
                 seq_type: type[XNA] | None,
                 only: Iterable[str] | None = None):
     path.check_file_extension(fasta, path.FastaExt)
@@ -139,10 +139,10 @@ def parse_fasta(fasta: Path,
     logger.routine(f"Ended parsing {item_type}s in FASTA file {fasta}")
 
 
-def get_fasta_seq(fasta: Path, seq_type: type[XNA], name: str):
+def get_fasta_seq(fasta: str | Path, seq_type: type[XNA], name: str):
     """ Get one sequence of a given name from a FASTA file. """
     try:
-        _, seq = next(iter(parse_fasta(fasta, seq_type, (name,))))
+        _, seq = next(iter(parse_fasta(fasta, seq_type, {name})))
     except StopIteration:
         raise MissingReferenceNameError(
             f"{repr(name)} is not in {fasta}"

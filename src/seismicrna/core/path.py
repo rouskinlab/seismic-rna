@@ -447,7 +447,7 @@ PngExt = PathField(str, [PNG_EXT], is_ext=True)
 KtsExt = PathField(str, [KTS_EXT], is_ext=True)
 
 
-def check_file_extension(file: pathlib.Path,
+def check_file_extension(file: str | pathlib.Path,
                          extensions: Iterable[str] | PathField):
     if isinstance(extensions, PathField):
         if not extensions.is_ext:
@@ -455,6 +455,8 @@ def check_file_extension(file: pathlib.Path,
         extensions = extensions.options
     elif not isinstance(extensions, (tuple, list, set, dict)):
         extensions = set(extensions)
+    if not isinstance(file, pathlib.Path):
+        file = pathlib.Path(file)
     require_isin("file extension", file.suffix, extensions,
                  error_type=WrongFileExtensionError)
 
