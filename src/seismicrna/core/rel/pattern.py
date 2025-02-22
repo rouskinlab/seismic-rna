@@ -14,7 +14,6 @@ from .code import (MATCH,
                    SUB_T)
 from ..error import IncompatibleOptionsError
 from ..seq import BASEA, BASEC, BASEG, BASET, DNA
-from ..validate import require_isinstance
 
 READ_DEL = "D"
 READ_INS = "I"
@@ -245,10 +244,8 @@ class HalfRelPattern(object):
 
     def fits(self, base: str, rel: int):
         """ Test whether a relationship code fits the pattern. """
-        require_isinstance("base", base, str)
-        require_isinstance("rel", rel, int)
-        return ((pattern := self.patterns.get(base)) is not None
-                and (rel | pattern) == pattern)
+        return ((pattern := self.patterns.get(str(base))) is not None
+                and (int(rel) | pattern) == pattern)
 
     def to_report_format(self):
         """ Return the types of counted relationships as a list. """
