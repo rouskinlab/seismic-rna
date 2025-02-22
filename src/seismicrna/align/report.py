@@ -156,6 +156,7 @@ class AlignRefReport(BaseAlignReport):
             raise ValueError(f"{type(self).__name__} must be demultiplexed")
         super().__init__(ref=ref, demultiplexed=demultiplexed, **kwargs)
 
+
 class SplitReport(Report, ABC):
 
     @classmethod

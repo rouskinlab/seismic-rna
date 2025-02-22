@@ -1,14 +1,3 @@
-"""
-
-Sequence Core Module.
-
-========================================================================
-
-Define alphabets and classes for nucleic acid sequences, and functions
-for reading them from and writing them to FASTA files.
-
-"""
-
 from __future__ import annotations
 
 import re
