@@ -10,9 +10,9 @@ from .core.arg import (CMD_LIST,
                        opt_max_fmut_pos,
                        opt_force,
                        opt_max_procs)
-from .core.lists import List, PositionList, ReadList
+from .core.lists import List, PositionList
 from .core.run import run_func
-from .core.table import MUTAT_REL, PositionTable
+from .core.table import MUTAT_REL, PositionTable, PositionTableLoader
 from .core.task import dispatch
 from .core.write import need_write
 from .mask.lists import MaskPositionList
@@ -37,7 +37,7 @@ def find_pos(table: PositionTable,
     return region.unmasked_int
 
 
-def write_list(table: PositionTable,
+def write_list(table: PositionTableLoader,
                list_type: type[List], *,
                branch: str,
                min_ninfo_pos: int,
@@ -46,11 +46,10 @@ def write_list(table: PositionTable,
     """ Write a List based on a Table. """
     list_file = list_type.get_path_from_table(table, branch)
     if need_write(list_file, force):
+        kwargs = dict()
         if issubclass(list_type, PositionList):
-            kwargs = dict(min_ninfo_pos=min_ninfo_pos,
+            kwargs.update(min_ninfo_pos=min_ninfo_pos,
                           max_fmut_pos=max_fmut_pos)
-        elif issubclass(list_type, ReadList):
-            kwargs = dict()
         else:
             raise ValueError(list_type)
         new_list = list_type.from_table(table, branch=branch, **kwargs)

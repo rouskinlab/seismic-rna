@@ -129,6 +129,11 @@ class PositionList(List, ABC):
         return [FIELD_REF, POS_NAME]
 
     @classmethod
+    def list_init_table_attrs(cls):
+        """ List the table attribute names to pass to __init__(). """
+        return [path.SAMPLE, path.REF]
+
+    @classmethod
     def from_table(cls,
                    table: PositionTableLoader,
                    branch: str, *,
@@ -159,11 +164,11 @@ class PositionList(List, ABC):
         data = pd.MultiIndex.from_product([[table.ref], positions],
                                           names=cls.get_index_names())
         new_list = cls(data=data,
-                       sample=table.sample,
                        branches=path.add_branch(path.LIST_STEP,
                                                 branch,
                                                 table.branches),
-                       ref=table.ref)
+                       **{attr: getattr(table, attr)
+                          for attr in cls.list_init_table_attrs()})
         logger.detail(f"{table} was used to produce a list of {positions.size} "
                       "positions to mask")
         logger.routine(f"Ended making {cls} from {table}")
