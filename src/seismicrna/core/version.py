@@ -1,7 +1,7 @@
 import re
 
 
-__version__ = "0.24.0"
+__version__ = "0.24.1dev"
 
 
 def parse_version(version: str = __version__):

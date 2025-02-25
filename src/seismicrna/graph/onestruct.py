@@ -14,7 +14,8 @@ from ..core.arg import (opt_struct_file,
                         opt_fold_regions_file,
                         opt_fold_coords,
                         opt_fold_primers,
-                        opt_fold_full)
+                        opt_fold_full,
+                        optional_path)
 from ..core.logs import logger
 from ..core.rna import RNAState, from_ct
 from ..core.seq import DNA, RefRegions
@@ -137,19 +138,20 @@ class StructOneTableWriter(OneTableRelClusterGroupWriter, ABC):
                                f"{repr(path.REG)} in reference directory "
                                f"{repr(ref)}, which differs from the reference "
                                f"name of the table file {repr(self.table.ref)}")
-        # Add the regions from the given coordinates/primers.
-        ref_regions = RefRegions([(self.table.ref, self.table.refseq)],
-                                 regs_file=(Path(fold_regions_file)
-                                            if fold_regions_file
-                                            else None),
-                                 coords=fold_coords,
-                                 primers=fold_primers,
-                                 default_full=fold_full)
-        fold_regs = [region.name
-                     for region in ref_regions.list(self.table.ref)]
-        if not fold_regs:
-            # Add the table's region if no other regions were defined.
-            fold_regs.append(self.table.reg)
+        if struct_files:
+            fold_regs = list()
+        else:
+            # Add the regions from the given coordinates/primers.
+            ref_regions = RefRegions([(self.table.ref, self.table.refseq)],
+                                     regs_file=optional_path(fold_regions_file),
+                                     coords=fold_coords,
+                                     primers=fold_primers,
+                                     default_full=fold_full)
+            fold_regs = [region.name
+                         for region in ref_regions.list(self.table.ref)]
+            if not fold_regs:
+                # Add the table's region if no other regions were defined.
+                fold_regs.append(self.table.reg)
         # Generate a graph for each cluster, relationship, and region.
         for cparams in cgroup_table(self.table, cgroup):
             kwparams = kwargs | cparams
@@ -158,6 +160,7 @@ class StructOneTableWriter(OneTableRelClusterGroupWriter, ABC):
                     yield self.get_graph(rels_group,
                                          struct_file=file,
                                          struct_reg=None,
+                                         branch=branch,
                                          **kwparams)
                 for reg in fold_regs:
                     yield self.get_graph(rels_group,
