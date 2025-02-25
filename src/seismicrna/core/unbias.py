@@ -1025,7 +1025,7 @@ def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
                                    init_p_mut_given_span,
                                    f_tol=f_tol,
                                    x_rtol=x_rtol))
-    except (NoConvergence, ValueError) as error:
+    except (NoConvergence, ValueError, ZeroDivisionError) as error:
         # The Newton-Krylov solver could not unbias the mutation rates.
         # Return the original mutation rates as a fallback.
         logger.warning(error)
