@@ -35,6 +35,7 @@ from .core.task import dispatch
 from .join import joined_mask_report_exists, join_regions
 from .mask.main import load_regions
 from .mask.report import MaskReport
+from .mask.write import get_pattern
 
 
 def calc_regions(total_end5: int,
@@ -164,10 +165,11 @@ def generate_regions(input_path: Iterable[str | Path],
                      mask_del: bool,
                      mask_ins: bool,
                      mask_mut: list[str],
+                     count_mut: list[str],
                      mask_discontig: bool,
                      min_mut_gap: int):
     """ For each reference, list the regions over which to mask. """
-    pattern = RelPattern.from_counts(not mask_del, not mask_ins, mask_mut)
+    pattern = get_pattern(mask_del, mask_ins, mask_mut, count_mut)
     datasets, total_regions = load_regions(input_path,
                                            coords,
                                            primers,
@@ -354,6 +356,7 @@ def run(input_path: Iterable[str | Path], *,
         mask_del: bool,
         mask_ins: bool,
         mask_mut: Iterable[str],
+        count_mut: Iterable[str],
         mask_polya: int,
         mask_gu: bool,
         mask_pos: Iterable[tuple[str, int]],
@@ -405,6 +408,7 @@ def run(input_path: Iterable[str | Path], *,
     # Ensure iterable parameters are not exhaustible generators.
     input_path = list(input_path)
     mask_mut = list(mask_mut)
+    count_mut = list(count_mut)
     mask_regions = generate_regions(input_path,
                                     coords=mask_coords,
                                     primers=mask_primers,
@@ -415,6 +419,7 @@ def run(input_path: Iterable[str | Path], *,
                                     mask_del=mask_del,
                                     mask_ins=mask_ins,
                                     mask_mut=mask_mut,
+                                    count_mut=count_mut,
                                     mask_discontig=mask_discontig,
                                     min_mut_gap=min_mut_gap)
     mask_dirs = mask_mod.run(
@@ -429,6 +434,7 @@ def run(input_path: Iterable[str | Path], *,
         mask_del=mask_del,
         mask_ins=mask_ins,
         mask_mut=mask_mut,
+        count_mut=count_mut,
         mask_polya=mask_polya,
         mask_gu=mask_gu,
         mask_pos=mask_pos,

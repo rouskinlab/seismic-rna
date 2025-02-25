@@ -624,6 +624,21 @@ class Masker(object):
         return f"Mask {self.dataset} over {self.region}"
 
 
+def get_pattern(mask_del: bool,
+                mask_ins: bool,
+                mask_mut: Iterable[str],
+                count_mut: Iterable[str]):
+    if count_mut:
+        return RelPattern(HalfRelPattern.from_counts(count_sub=False,
+                                                     count_del=not mask_del,
+                                                     count_ins=not mask_ins,
+                                                     count=count_mut,
+                                                     discount=mask_mut),
+                          HalfRelPattern.from_counts(count_ref=True,
+                                                     discount=mask_mut))
+    return RelPattern.from_counts(not mask_del, not mask_ins, mask_mut)
+
+
 @with_tmp_dir(pass_keep_tmp=False)
 def mask_region(dataset: RelateMutsDataset | PoolDataset,
                 region: Region, *,
@@ -647,16 +662,7 @@ def mask_region(dataset: RelateMutsDataset | PoolDataset,
                                          path.REF: dataset.ref,
                                          path.REG: region.name})
     if need_write(report_file, force):
-        if count_mut:
-            pattern = RelPattern(HalfRelPattern.from_counts(count_sub=False,
-                                                            count_del=not mask_del,
-                                                            count_ins=not mask_ins,
-                                                            count=count_mut,
-                                                            discount=mask_mut),
-                                 HalfRelPattern.from_counts(count_ref=True,
-                                                            discount=mask_mut))
-        else:
-            pattern = RelPattern.from_counts(not mask_del, not mask_ins, mask_mut)
+        pattern = get_pattern(mask_del, mask_ins, mask_mut, count_mut)
         masker = Masker(dataset,
                         region,
                         pattern,
