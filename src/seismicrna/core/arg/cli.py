@@ -1097,6 +1097,13 @@ opt_draw_png = Option(
     help="Output each drawing in a Portable Network Graphics file"
 )
 
+opt_update_rnartistcore = Option(
+    ("--update-rnartistcore/--no-update-rnartistcore",),
+    type=bool,
+    default=False,
+    help="Check for and install updates to RNArtistCore."
+)
+
 # Graph
 
 opt_comppair = Option(

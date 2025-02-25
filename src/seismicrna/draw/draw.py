@@ -8,7 +8,12 @@ from jinja2 import Template
 
 from ..cluster.data import ClusterPositionTable, ClusterPositionTableLoader
 from ..core import path
-from ..core.extern.shell import args_to_cmd, run_cmd, JAVA_CMD, JAR_CMD, JGO_CMD
+from ..core.extern.shell import (args_to_cmd,
+                                 run_cmd,
+                                 JAVA_CMD,
+                                 JAR_CMD,
+                                 JGO_CMD,
+                                 ShellCommandFailedError)
 from ..core.header import AVERAGE_PREFIX
 from ..core.logs import logger
 from ..core.report import SampleF, BranchesF, RefF, RegF, ProfileF
@@ -83,9 +88,12 @@ TEMPLATE = Template(TEMPLATE_STRING)
 RNARTIST_REPO = "maven-snapshots=https://oss.sonatype.org/content/repositories/snapshots"
 RNARTIST_GROUP_ID = "io.github.fjossinet.rnartist"
 RNARTIST_ARTIFACT_ID = "rnartistcore"
-RNARTIST_VERSION = "0.4.7-SNAPSHOT"
+RNARTIST_FALLBACK_VERSION = "0.4.7-SNAPSHOT"
+RNARTIST_VERSION = os.getenv("RNARTISTCORE_VERSION", RNARTIST_FALLBACK_VERSION)
 RNARTIST_MAIN_CLASS = "io.github.fjossinet.rnartist.core.MainKt"
-RNARTIST_ARTIFACT = f"{RNARTIST_GROUP_ID}:{RNARTIST_ARTIFACT_ID}:{RNARTIST_VERSION}:{RNARTIST_MAIN_CLASS}"
+RNARTIST_ARTIFACT_NO_VERSION = f"{RNARTIST_GROUP_ID}:{RNARTIST_ARTIFACT_ID}:{RNARTIST_MAIN_CLASS}"
+RNARTIST_ARTIFACT_WITH_VERSION = f"{RNARTIST_GROUP_ID}:{RNARTIST_ARTIFACT_ID}:{RNARTIST_VERSION}:{RNARTIST_MAIN_CLASS}"
+RNARTIST_ARTIFACT_FALLBACK = f"{RNARTIST_GROUP_ID}:{RNARTIST_ARTIFACT_ID}:{RNARTIST_FALLBACK_VERSION}:{RNARTIST_MAIN_CLASS}"
 
 TABLES = {AVERAGE_PREFIX: (MaskPositionTable,
                            MaskPositionTableLoader),
@@ -221,6 +229,7 @@ class RNArtistRun(object):
                  verify_times: bool,
                  draw_svg: bool,
                  draw_png: bool,
+                 update: bool,
                  n_procs: int):
         self.top, _ = FoldReport.parse_path(report_file)
         report = FoldReport.load(report_file)
@@ -234,6 +243,7 @@ class RNArtistRun(object):
         self.color = color
         self.draw_svg = draw_svg
         self.draw_png = draw_png
+        self.update = update
         self.n_procs = n_procs
         self.verify_times = verify_times
         self._parse_profile()
@@ -486,33 +496,57 @@ class RNArtistRun(object):
                        svg_path: Path,
                        png_path: Path,
                        script_file: Path,
-                       draw_svg: bool,
-                       draw_png: bool,
                        keep_tmp: bool,
                        force: bool):
-        if not (draw_svg or draw_png):
+        if not (self.draw_svg or self.draw_png):
             logger.warning("Both --no-draw-svg and --no-draw-png are set, defaulting to --svg")
-            draw_svg = True
-        if (draw_svg and need_write(svg_path, force=force)) or (draw_png and need_write(png_path, force=force)):
+            self.draw_svg = True
+        if (self.draw_svg and need_write(svg_path, force=force)) or (self.draw_png and need_write(png_path, force=force)):
             jinja_data = build_jinja_data(struct=struct,
                                           color_dict=self.color_dict,
                                           name=struct_name,
                                           out_dir=svg_path.parent,
                                           highlight_pos=self.edited_numbers,
-                                          draw_svg=draw_svg,
-                                          draw_png=draw_png)
+                                          draw_svg=self.draw_svg,
+                                          draw_png=self.draw_png)
 
             rnartist_script = TEMPLATE.render(jinja_data.to_dict())
             with open(script_file, 'w') as f:
                 f.write(rnartist_script)
-            rnartist_cmd = args_to_cmd([JGO_CMD,
-                                        "-r",
-                                        RNARTIST_REPO,
-                                        RNARTIST_ARTIFACT,
-                                        script_file])
-            try:
-                run_cmd(rnartist_cmd)
-            except:
+            if self.update:
+                args_to_try = [[JGO_CMD,
+                                "-U",
+                                "-r",
+                                RNARTIST_REPO,
+                                RNARTIST_ARTIFACT_NO_VERSION,
+                                script_file]]
+            else:
+                args_to_try = []
+            args_to_try.extend([[JGO_CMD,
+                                 "-r",
+                                 RNARTIST_REPO,
+                                 RNARTIST_ARTIFACT_NO_VERSION,
+                                 script_file],
+                                [JGO_CMD,
+                                 "-r",
+                                 RNARTIST_REPO,
+                                 RNARTIST_ARTIFACT_WITH_VERSION,
+                                 script_file],
+                                [JGO_CMD,
+                                 "-r",
+                                 RNARTIST_REPO,
+                                 RNARTIST_ARTIFACT_FALLBACK,
+                                 script_file]])
+            if RNARTIST_VERSION != RNARTIST_FALLBACK_VERSION:
+                logger.action(f"Attempting to load RNArtistCore version {RNARTIST_VERSION}")
+            for args in args_to_try:
+                try:
+                    rnartist_cmd = args_to_cmd(args)
+                    run_cmd(rnartist_cmd)
+                    break
+                except ShellCommandFailedError:
+                    continue
+            else:
                 logger.warning("Running RNArtistCore with jgo failed. Falling back to manual installation.")
                 from ..core.arg import CMD_DRAW
                 from ..core.extern import require_env_var
@@ -525,7 +559,7 @@ class RNArtistRun(object):
                 run_cmd(rnartist_cmd)
             if not keep_tmp:
                 script_file.unlink(missing_ok=True)
-        out_paths = [path for path, write in zip((svg_path, png_path), (draw_svg, draw_png)) if write]
+        out_paths = [path for path, write in zip((svg_path, png_path), (self.draw_svg, self.draw_png)) if write]
         return out_paths
 
     def run(self, keep_tmp: bool, force: bool):
@@ -542,9 +576,7 @@ class RNArtistRun(object):
                 struct,
                 self.get_svg_file(self.top, struct=struct_num),
                 self.get_png_file(self.top, struct=struct_num),
-                self.get_script_file(top=self.tmp_dir, struct=struct_num),
-                self.draw_svg,
-                self.draw_png,)
+                self.get_script_file(top=self.tmp_dir, struct=struct_num))
                 for struct_num, struct in structs.items()]
         results = dispatch(self.process_struct,
                            self.n_procs,
@@ -560,6 +592,7 @@ def draw(report_path: Path, *,
          color: bool,
          draw_svg: bool,
          draw_png: bool,
+         update: bool,
          tmp_dir: Path,
          keep_tmp: bool,
          verify_times: bool,
@@ -573,6 +606,7 @@ def draw(report_path: Path, *,
                            verify_times,
                            draw_svg,
                            draw_png,
+                           update,
                            n_procs)
     # By convention, a function must return a Path for dispatch to deem
     # that it has completed successfully.
