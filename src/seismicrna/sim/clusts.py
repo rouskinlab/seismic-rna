@@ -15,6 +15,7 @@ from ..core.header import ClustHeader
 from ..core.rna import from_ct
 from ..core.run import run_func
 from ..core.task import as_list_of_tuples, dispatch
+from ..core.validate import require_atleast
 from ..core.write import need_write
 
 COMMAND = __name__.split(os.path.extsep)[-1]
@@ -33,10 +34,10 @@ def sim_pclust(num_clusters: int,
     ----------
     num_clusters: int
         Number of clusters to simulate; must be ≥ 1.
-    concentration: float | None = None
+    concentration: float | None
         Concentration parameter for Dirichlet distribution; defaults to
         1 / (`num_clusters` - 1); must be > 0.
-    sort: bool = False
+    sort: bool
         Sort the cluster proportions from greatest to least.
 
     Returns
@@ -44,8 +45,7 @@ def sim_pclust(num_clusters: int,
     pd.Series
         Simulated proportion of each cluster.
     """
-    if num_clusters < 1:
-        raise ValueError(f"num_clusters must be ≥ 1, but got {num_clusters}")
+    require_atleast("num_clusters", num_clusters, 1)
     if num_clusters == 1:
         props = np.ones(num_clusters)
     else:
