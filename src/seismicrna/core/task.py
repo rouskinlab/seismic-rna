@@ -1,9 +1,10 @@
-from concurrent.futures import Future, ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 from inspect import getmodule
 from itertools import filterfalse, repeat
 from typing import Any, Callable, Iterable
 
 from .logs import logger, get_config, set_config
+from .validate import require_equal
 
 
 def calc_pool_size(num_tasks: int, max_procs: int):
@@ -92,11 +93,11 @@ class Task(object):
                 logger.file_stream.close()
 
 
-def dispatch(funcs: list[Callable] | Callable,
+def dispatch(funcs: Callable | list[Callable],
              max_procs: int,
              pass_n_procs: bool = True,
              raise_on_error: bool = False,
-             args: list[tuple] | tuple = (),
+             args: tuple | Iterable[tuple] = (),
              kwargs: dict[str, Any] | None = None):
     """
     Run one or more tasks in series or in parallel, depending on the
@@ -105,7 +106,7 @@ def dispatch(funcs: list[Callable] | Callable,
 
     Parameters
     ----------
-    funcs: list[Callable] | Callable
+    funcs: Callable | list[Callable]
         The function(s) to run. Can be a list of functions or a single
         function that is not in a list. If a single function, then if
         `args` is a tuple, it is called once with that tuple as its
@@ -119,7 +120,7 @@ def dispatch(funcs: list[Callable] | Callable,
     raise_on_error: bool
         Whether to raise an error if any tasks fail (if False, only log
         a warning message).
-    args: list[tuple] | tuple
+    args: tuple | Iterable[tuple]
         Positional arguments to pass to each function in `funcs`. Can be
         a list of tuples of positional arguments or a single tuple that
         is not in a list. If a single tuple, then each function receives
@@ -142,9 +143,10 @@ def dispatch(funcs: list[Callable] | Callable,
             # If args is a tuple, make it the sole element of a list.
             args = [args]
         else:
+            args = list(args)
             # Ensure that every item in args is a tuple.
-            if nontuple := list(filterfalse(lambda x: isinstance(x, tuple),
-                                            args)):
+            nontuple = list(filterfalse(lambda x: isinstance(x, tuple), args))
+            if nontuple:
                 raise TypeError(f"Got non-tuple args: {nontuple}")
         # If a function is given rather than an iterable of functions,
         # then put the function in a list whose length equal that of the
@@ -152,20 +154,21 @@ def dispatch(funcs: list[Callable] | Callable,
         funcs = list(repeat(funcs, len(args)))
     else:
         # Ensure that every item in funcs is actually callable.
-        if uncallable := list(filterfalse(callable, funcs)):
+        uncallable = list(filterfalse(callable, funcs))
+        if uncallable:
             raise TypeError(f"Got uncallable funcs: {uncallable}")
         if isinstance(args, tuple):
             # If args is a tuple, repeat it once for each function.
             args = list(repeat(args, len(funcs)))
     # Ensure that numbers of functions and argument tuples match.
-    if (n_tasks := len(funcs)) != len(args):
-        raise ValueError(f"Got {len(funcs)} funcs but {len(args)} args")
-    if n_tasks == 0:
+    num_tasks = len(funcs)
+    require_equal("len(funcs)", num_tasks, len(args), "len(args)")
+    if num_tasks == 0:
         # No tasks to run: return.
         logger.task("No tasks were given to dispatch")
         return list()
     # Determine how to parallelize each task.
-    pool_size, n_procs_per_task = calc_pool_size(n_tasks, max_procs)
+    pool_size, n_procs_per_task = calc_pool_size(num_tasks, max_procs)
     if pass_n_procs:
         # Add the number of processes as a keyword argument.
         kwargs = {**kwargs, "n_procs": n_procs_per_task}
@@ -177,20 +180,17 @@ def dispatch(funcs: list[Callable] | Callable,
         # Run the tasks in parallel.
         with ProcessPoolExecutor(max_workers=pool_size) as pool:
             logger.task(f"Opened pool of {pool_size} processes")
-            # Initialize an empty list of tasks to run.
-            tasks: list[Future] = list()
-            for func, task_args in zip(funcs, args, strict=True):
-                # Create a new task and submit it to the process pool.
-                task = Task(func)
-                tasks.append(pool.submit(task, *task_args, **kwargs))
+            # Create a Future for each task and submit it to the pool.
+            futures = [pool.submit(Task(func), *task_args, **kwargs)
+                       for func, task_args in zip(funcs, args, strict=True)]
             # Run all the tasks in parallel and collect the results as
             # they become available.
-            logger.task(f"Waiting for {n_tasks} tasks to finish")
-            results = [task.result() for task in tasks]
+            logger.task(f"Waiting for {num_tasks} tasks to finish")
+            results = [future.result() for future in futures]
         logger.task(f"Closed pool of {pool_size} processes")
     else:
         # Run the tasks in series.
-        logger.task(f"Began running {n_tasks} task(s) in series")
+        logger.task(f"Began running {num_tasks} task(s) in series")
         # Initialize an empty list of results from the tasks.
         results = list()
         for func, task_args in zip(funcs, args, strict=True):
@@ -198,19 +198,18 @@ def dispatch(funcs: list[Callable] | Callable,
             # its result to the list of results.
             task = Task(func)
             results.append(task(*task_args, **kwargs))
-        logger.task(f"Ended running {n_tasks} task(s) in series")
+        logger.task(f"Ended running {num_tasks} task(s) in series")
     # Remove any failed runs (None values) from results.
     results = [result for result in results if result is not None]
-    n_pass = len(results)
-    n_fail = n_tasks - n_pass
-    if n_fail:
-        p_fail = n_fail / n_tasks * 100.
-        message = f"Failed {n_fail} of {n_tasks} task(s) ({round(p_fail, 1)} %)"
+    num_pass = len(results)
+    num_fail = num_tasks - num_pass
+    if num_fail:
+        message = f"Failed {num_fail} of {num_tasks} task(s)"
         if raise_on_error:
             raise RuntimeError(message)
         logger.warning(message)
     else:
-        logger.task(f"All {n_tasks} task(s) completed successfully")
+        logger.task(f"All {num_tasks} task(s) completed successfully")
     return results
 
 
