@@ -19,6 +19,7 @@ from ..core.rna import find_ct_region
 from ..core.run import run_func
 from ..core.stats import calc_beta_params
 from ..core.task import as_list_of_tuples, dispatch
+from ..core.validate import require_atleast, require_between, require_fraction
 from ..core.write import need_write
 
 COMMAND = __name__.split(os.path.extsep)[-1]
@@ -26,29 +27,6 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 rng = np.random.default_rng()
 
 PROPORTION = "Proportion"
-
-
-def _validate_int(n: int,
-                  what: str,
-                  minimum: int | None = None,
-                  maximum: int | None = None):
-    if not isinstance(n, int):
-        raise ValueError(f"{what} must be int, but got {type(n).__name__}")
-    if minimum is not None:
-        _validate_int(minimum, "minimum")
-        if n < minimum:
-            raise ValueError(f"{what} must be ≥ {minimum}, but got {n}")
-    if maximum is not None:
-        _validate_int(maximum, "maximum")
-        if n > maximum:
-            raise ValueError(f"{what} must be ≤ {maximum}, but got {n}")
-
-
-def _validate_fraction(f: float | int, what: str):
-    if not isinstance(f, (float, int)):
-        raise TypeError(f"{what} must be float/int, but got {type(f).__name__}")
-    if not 0. <= f <= 1.:
-        raise ValueError(f"{what} must be ≥ 0 and ≤ 1, but got {f}")
 
 
 def _calc_p_bins(nbins: int, mean: float, fvar: float):
@@ -63,16 +41,15 @@ def _calc_p_bins(nbins: int, mean: float, fvar: float):
     fvar: float
         Variance as a fraction of its maximum, from 0 to 1.
     """
-    _validate_int(nbins, "nbins", minimum=1)
+    require_atleast("nbins", nbins, 1, classes=int)
     if nbins == 1:
         # There is only one bin, which must have probability 1.
         return np.ones(1)
     # Calculate the mean as a fraction of the degrees of freedom.
     dof = nbins - 1
-    if not 0. <= mean <= dof:
-        raise ValueError(f"mean must be ≥ 0 and ≤ {dof}, but got {mean}")
+    require_between("mean", mean, 0., dof, maximum_name="nbins - 1")
     fmean = mean / dof
-    _validate_fraction(fvar, "fvar")
+    require_fraction("fvar", fvar)
     if fvar < 1.:
         # Calculate the variance.
         var = fvar * fmean * (1. - fmean)
@@ -132,15 +109,13 @@ def sim_pends(end5: int,
         5' and 3' coordinates and their probabilities.
     """
     # Length of the region.
-    _validate_int(end5, "end5", minimum=1)
-    _validate_int(end3, "end3", minimum=0)
+    require_atleast("end5", end5, 1, classes=int)
+    require_atleast("end3", end3, 0, classes=int)
     difference = end3 - end5
     region_length = difference + 1
-    if region_length < 0:
-        raise ValueError("Length of the region must be ≥ 0, but got "
-                         f"{region_length} (end5={end5}, end3={end3})")
+    require_atleast("region_length", region_length, 0)
     # Mean center (average of 5' and 3' ends) among all reads.
-    _validate_fraction(center_fmean, "center_fmean")
+    require_fraction("center_fmean", center_fmean)
     mean_read_center = center_fmean * difference + end5
     # Central position of the region (can be a half-integer).
     region_center = (end5 + end3) / 2
@@ -148,16 +123,16 @@ def sim_pends(end5: int,
     max_mean_read_length = region_length - 2 * abs(mean_read_center
                                                    - region_center)
     # Mean length among all reads.
-    _validate_fraction(length_fmean, "length_fmean")
+    require_fraction("length_fmean", length_fmean)
     mean_read_length = length_fmean * max_mean_read_length
     # Calculate the probability of each read length.
-    _validate_fraction(length_fvar, "length_fvar")
+    require_fraction("length_fvar", length_fvar)
     p_read_length = _calc_p_bins(region_length + 1,
                                  mean_read_length,
                                  length_fvar)
     # For each read length, calculate the probability of each pair of
     # 5' and 3' ends.
-    _validate_fraction(center_fvar, "center_fvar")
+    require_fraction("center_fvar", center_fvar)
     end5s = list()
     end3s = list()
     pends = list()

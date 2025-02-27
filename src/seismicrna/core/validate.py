@@ -152,7 +152,7 @@ def require_atleast(
         classes: type | tuple[type | tuple[Any, ...], ...] = object,
         error_type: Type[ValueError] = ValueError
 ):
-    """ Require that value ≥ other_value. """
+    """ Require that value ≥ minimum_value. """
     _require_compare(name, value, ge,
                      minimum_name, "minimum", minimum_value,
                      classes, error_type)
@@ -170,3 +170,34 @@ def require_atmost(
     _require_compare(name, value, le,
                      maximum_name, "maximum", maximum_value,
                      classes, error_type)
+
+
+def require_between(
+        name: str,
+        value: Any,
+        minimum_value: Any | None,
+        maximum_value: Any | None,
+        minimum_name: str = "",
+        maximum_name: str = "",
+        classes: type | tuple[type | tuple[Any, ...], ...] = object,
+        error_type: Type[ValueError] = ValueError
+):
+    """ Require that value ≥ minimum_value and ≤ maximum_value. """
+    if minimum_value is not None:
+        require_atleast(
+            name, value, minimum_value, minimum_name, classes, error_type
+        )
+    if maximum_value is not None:
+        require_atmost(
+            name, value, maximum_value, maximum_name, classes, error_type
+        )
+
+
+def require_fraction(
+        name: str,
+        value: Any,
+        classes: type | tuple[type | tuple[Any, ...], ...] = (float, int),
+        error_type: Type[ValueError] = ValueError
+):
+    """ Require that value ≥ 0 and ≤ 1. """
+    require_between(name, value, 0., 1., classes=classes, error_type=error_type)
