@@ -870,7 +870,7 @@ opt_max_pearson_run = Option(
 opt_min_marcd_run = Option(
     ("--min-marcd-run",),
     type=float,
-    default=0.015,
+    default=0.016,
     help="Remove runs with two clusters that differ by less than this MARCD"
 )
 
@@ -899,36 +899,43 @@ opt_max_loglike_vs_best = Option(
 opt_min_pearson_vs_best = Option(
     ("--min-pearson-vs-best",),
     type=float,
-    default=0.96,
+    default=0.97,
     help="Remove Ks where every run has less than this correlation vs. the best"
 )
 
 opt_max_marcd_vs_best = Option(
     ("--max-marcd-vs-best",),
     type=float,
-    default=0.01,
+    default=0.008,
     help="Remove Ks where every run has more than this MARCD vs. the best"
 )
 
-opt_em_runs = Option(
-    ("--em-runs", "-e"),
+opt_min_em_runs = Option(
+    ("--min-em-runs", "-e"),
     type=int,
-    default=4,
-    help="Run this number times the number of clusters (K) trials of EM"
+    default=6,
+    help="Run EM (successfully) at least this number of times for each K"
+)
+
+opt_max_em_runs = Option(
+    ("--max-em-runs", "-E"),
+    type=int,
+    default=30,
+    help="Run EM (successfully or not) at most this number of times for each K"
 )
 
 opt_min_em_iter = Option(
     ("--min-em-iter",),
     type=int,
     default=10,
-    help="Run EM for at least this many iterations (times number of clusters)"
+    help="Run EM for at least this many iterations"
 )
 
 opt_max_em_iter = Option(
     ("--max-em-iter",),
     type=int,
     default=500,
-    help="Run EM for at most this many iterations (times number of clusters)"
+    help="Run EM for at most this many iterations"
 )
 
 opt_em_thresh = Option(
@@ -987,7 +994,7 @@ opt_region_min_overlap = Option(
 opt_max_marcd_join = Option(
     ("--max-marcd-join",),
     type=float,
-    default=0.015,
+    default=0.016,
     help="Join regions with the same numbers of clusters only if the mean "
          "arcsine distance (MARCD) of their mutation rates and proportions "
          "does not exceed this threshold"

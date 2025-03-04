@@ -21,6 +21,7 @@ from ..core.logs import logger
 from ..core.task import dispatch
 from ..core.tmp import release_to_out, with_tmp_dir
 from ..core.types import get_max_uint
+from ..core.validate import require_atleast
 from ..core.write import need_write
 from ..mask.dataset import MaskMutsDataset, JoinMaskMutsDataset
 
@@ -48,11 +49,11 @@ def run_k(uniq_reads: UniqReads,
                          size=num_runs,
                          dtype=SEED_DTYPE)
     args = [(uniq_reads, k, seed) for seed in seeds]
-    runs = list(dispatch([EMRun for _ in range(num_runs)],
-                         n_procs,
-                         pass_n_procs=False,
-                         args=args,
-                         kwargs=kwargs))
+    runs = dispatch(EMRun,
+                    n_procs,
+                    pass_n_procs=False,
+                    args=args,
+                    kwargs=kwargs)
     if len(runs) < num_runs:
         logger.warning(f"Obtained only {len(runs)} (of {num_runs}) "
                        f"run(s) of {uniq_reads} with {k} cluster(s)")
@@ -60,8 +61,9 @@ def run_k(uniq_reads: UniqReads,
 
 
 def run_ks(uniq_reads: UniqReads,
-           ks: Iterable[int],
-           em_runs: int, *,
+           ks: Iterable[int], *,
+           min_em_runs: int,
+           max_em_runs: int,
            try_all_ks: bool,
            min_marcd_run: float,
            max_pearson_run: float,
@@ -78,6 +80,13 @@ def run_ks(uniq_reads: UniqReads,
            top: Path,
            **kwargs):
     """ Run EM with multiple numbers of clusters. """
+    require_atleast("min_em_runs", min_em_runs, 1, classes=int)
+    require_atleast("max_em_runs",
+                    max_em_runs,
+                    min_em_runs,
+                    "min_em_runs",
+                    classes=int)
+    require_atleast("n_procs", n_procs, 1, classes=int)
     path_kwargs = {path.TOP: top,
                    path.BRANCHES: uniq_reads.branches,
                    path.SAMPLE: uniq_reads.sample,
@@ -88,35 +97,70 @@ def run_ks(uniq_reads: UniqReads,
     # Loop through every K if try_all_ks is True, otherwise go until the
     # current K is worse than the previous K or raises an error.
     for k in ks:
+        assert k >= 1
         try:
-            num_runs = em_runs * k if k > 1 else 1
-            # Cluster num_runs times with different starting points.
-            logger.routine(f"Began {num_runs} run(s) of EM with {k} cluster(s)")
-            runs = run_k(uniq_reads,
-                         k,
-                         num_runs=num_runs,
-                         em_thresh=(em_thresh if k > 1 else inf),
-                         min_iter=(min_iter * k if k > 1 else 2),
-                         max_iter=(max_iter * k if k > 1 else 2),
-                         max_jackpot_quotient=max_jackpot_quotient,
-                         n_procs=n_procs,
-                         **kwargs)
-            logger.routine(f"Ended {em_runs} run(s) of EM with {k} cluster(s)")
+            if k > 1:
+                min_runs_k = min_em_runs
+                max_runs_k = max_em_runs
+            else:
+                min_runs_k = 1
+                max_runs_k = 1
+            logger.routine(f"Began {min_runs_k} - {max_runs_k} run(s) of EM "
+                           f"with {k} cluster(s)")
+            # Accumulate EM runs for this K.
+            runs_k = list()
+            num_runs_k = 0
+            passing = False
+            while (num_runs_k < max_runs_k
+                   and (len(runs_k) < min_runs_k or not passing)):
+                if len(runs_k) < min_runs_k:
+                    # The minimum number of runs has not been reached,
+                    # so run as many times as needed to reach it.
+                    num_runs = min_runs_k - len(runs_k)
+                else:
+                    # The minimum number of runs has been reached, but
+                    # the runs do not pass all filters, so run up to
+                    # max_runs_k - num_runs_k more. To be efficient,
+                    # run up to n_procs at a time.
+                    assert not passing
+                    num_runs = min(max_runs_k - num_runs_k, n_procs)
+                num_runs_k += num_runs
+                # Run a batch of EM.
+                runs_k.extend(run_k(uniq_reads,
+                                    k,
+                                    num_runs=num_runs,
+                                    em_thresh=(em_thresh if k > 1 else inf),
+                                    min_iter=(min_iter if k > 1 else 2),
+                                    max_iter=(max_iter if k > 1 else 2),
+                                    max_jackpot_quotient=max_jackpot_quotient,
+                                    n_procs=n_procs,
+                                    **kwargs))
+                # Collect all runs so far for this K.
+                runs_ks[k] = EMRunsK(runs_k,
+                                     max_pearson_run=max_pearson_run,
+                                     min_marcd_run=min_marcd_run,
+                                     max_arcd_vs_ens_avg=max_arcd_vs_ens_avg,
+                                     max_gini_run=max_gini_run,
+                                     max_jackpot_quotient=max_jackpot_quotient,
+                                     max_loglike_vs_best=max_loglike_vs_best,
+                                     min_pearson_vs_best=min_pearson_vs_best,
+                                     max_marcd_vs_best=max_marcd_vs_best)
+                # Check if the runs pass. Use allow_underclustered=False
+                # because this is the criteria used to choose the best
+                # number of clusters at the end, so make the best effort
+                # now to find clusters that meet those criteria.
+                passing = runs_ks[k].passing(allow_underclustered=False)
+            assert k in runs_ks
+            logger.detail(runs_ks[k].summarize())
             # Output each run's mutation rates and cluster proportions.
-            for rank, run in enumerate(runs):
+            for rank, run in enumerate(runs_k):
                 write_mus(run, rank=rank, **path_kwargs)
                 write_pis(run, rank=rank, **path_kwargs)
-            # Collect all runs for this number of clusters.
-            runs_ks[k] = EMRunsK(runs,
-                                 max_pearson_run=max_pearson_run,
-                                 min_marcd_run=min_marcd_run,
-                                 max_arcd_vs_ens_avg=max_arcd_vs_ens_avg,
-                                 max_gini_run=max_gini_run,
-                                 max_jackpot_quotient=max_jackpot_quotient,
-                                 max_loglike_vs_best=max_loglike_vs_best,
-                                 min_pearson_vs_best=min_pearson_vs_best,
-                                 max_marcd_vs_best=max_marcd_vs_best)
-            logger.detail(runs_ks[k].summarize())
+            logger.routine(f"Ended {num_runs_k} ({len(runs_k)} successful) "
+                           f"run(s) of EM with {k} cluster(s)")
+            # Check if this K is the best encounted so far. Use
+            # allow_underclustered=True because the algorithm should
+            # continue with the next K if this K is underclustered.
             if not (try_all_ks or k == find_best_k(runs_ks.values(),
                                                    allow_underclustered=True)):
                 # The current k is not the best so far.
@@ -138,7 +182,7 @@ def cluster(dataset: MaskMutsDataset | JoinMaskMutsDataset, *,
             max_clusters: int,
             try_all_ks: bool,
             write_all_ks: bool,
-            em_runs: int,
+            max_em_runs: int,
             n_procs: int,
             brotli_level: int,
             force: bool,
@@ -189,7 +233,7 @@ def cluster(dataset: MaskMutsDataset | JoinMaskMutsDataset, *,
                          ks=range(min_clusters,
                                   max_clusters_use + 1),
                          try_all_ks=try_all_ks,
-                         em_runs=em_runs,
+                         max_em_runs=max_em_runs,
                          n_procs=n_procs,
                          top=tmp_dir,
                          **kwargs)
@@ -225,7 +269,7 @@ def cluster(dataset: MaskMutsDataset | JoinMaskMutsDataset, *,
                                              try_all_ks=try_all_ks,
                                              write_all_ks=write_all_ks,
                                              ks_written=batch_writer.ks_written,
-                                             em_runs=em_runs,
+                                             max_em_runs=max_em_runs,
                                              checksums=batch_writer.checksums,
                                              began=began,
                                              ended=ended,

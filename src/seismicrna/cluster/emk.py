@@ -141,7 +141,6 @@ class EMRunsK(object):
             return self.get_valid_index(0, **kwargs)
         except IndexError:
             # If no runs are valid, then use the best invalid run.
-            logger.warning("No EM runs passed all filters")
             return 0
 
     def subopt_indexes(self, **kwargs):

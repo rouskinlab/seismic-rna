@@ -68,7 +68,8 @@ from .arg import (opt_phred_enc,
                   opt_min_ninfo_pos,
                   opt_max_fmut_pos,
                   opt_max_mask_iter,
-                  opt_em_runs,
+                  opt_min_em_runs,
+                  opt_max_em_runs,
                   opt_em_thresh,
                   opt_min_em_iter,
                   opt_max_em_iter,
@@ -515,7 +516,8 @@ MinPearsonVsBestF = OptionReportField(opt_min_pearson_vs_best)
 MaxMARCDVsBestF = OptionReportField(opt_max_marcd_vs_best)
 TryAllKsF = OptionReportField(opt_try_all_ks)
 WriteAllKsF = OptionReportField(opt_write_all_ks)
-ClustNumRunsF = OptionReportField(opt_em_runs)
+MinEMRunsF = OptionReportField(opt_min_em_runs)
+MaxEMRunsF = OptionReportField(opt_max_em_runs)
 EMKPassingF = ReportField("em_k_passing",
                           "Whether each number of clusters (K) passed filters",
                           dict,
