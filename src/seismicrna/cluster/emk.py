@@ -294,8 +294,7 @@ def assign_clusterings(mus1: np.ndarray, mus2: np.ndarray):
     n2, k2 = mus2.shape
     require_equal("mus1.shape[0]", n1, n2, "mus2.shape[0]")
     require_equal("mus1.shape[1]", k1, k2, "mus2.shape[1]")
-    require_atleast("mus1.shape[1]", k1, 1)
-    if n1 >= 1:
+    if n1 >= 1 and k1 >= 1:
         # Match the clusters using linear_sum_assignment.
         costs = np.array([[calc_sum_arcsine_distance(mus1[:, cluster1],
                                                      mus2[:, cluster2])
