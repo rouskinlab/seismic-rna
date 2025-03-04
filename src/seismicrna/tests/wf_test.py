@@ -160,7 +160,7 @@ class TestWorkflow(ut.TestCase):
                try_all_ks=True,
                write_all_ks=True,
                em_thresh=1.,
-               em_runs=2,
+               min_em_runs=2,
                jackpot=True,
                fold=True,
                quantile=0.95,
