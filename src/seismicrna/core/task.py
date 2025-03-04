@@ -1,9 +1,11 @@
+import sys
 from concurrent.futures import ProcessPoolExecutor
 from inspect import getmodule
 from itertools import filterfalse, repeat
+from signal import SIGINT, signal
 from typing import Any, Callable, Iterable
 
-from .logs import logger, get_config, set_config
+from .logs import Level, logger, get_config, set_config
 from .validate import require_equal
 
 
@@ -75,13 +77,21 @@ class Task(object):
             close_file_stream = True
         else:
             close_file_stream = False
+        verbosity = self._config.verbosity
+        description_items = list()
+        if verbosity >= Level.ACTION:
+            description_items.extend(map(repr, args))
+        if verbosity >= Level.ROUTINE:
+            description_items.extend(f"{k}={repr(v)}"
+                                     for k, v in kwargs.items())
+        description = f"{self.name}({', '.join(description_items)})"
         try:
-            logger.task(f"Began {self.name}")
+            logger.task(f"Began {description}")
             result = self._func(*args, **kwargs)
         except Exception as error:
             logger.error(error)
         else:
-            logger.task(f"Ended {self.name}")
+            logger.task(f"Ended {description}")
             return result
         finally:
             if close_file_stream and logger.file_stream is not None:
@@ -91,6 +101,27 @@ class Task(object):
                 # which should be closed explicitly to free up file
                 # resources when this task finishes.
                 logger.file_stream.close()
+
+
+_handled_sigint = False
+
+
+def _worker_sigint_handler(signum, frame):
+    """ If a worker process receives SIGINT, then exit cleanly, while
+    executing any finally clauses, using sys.exit(0). """
+    global _handled_sigint
+    if not _handled_sigint:
+        print("Called _worker_sigint_handler")
+        # Call sys.exit at most once.
+        _handled_sigint = True
+        sys.exit(0)
+    else:
+        print("Repeated _worker_sigint_handler")
+
+
+def _worker_initializer():
+    """ Use _worker_sigint_handler to handle SIGINT. """
+    signal(SIGINT, _worker_sigint_handler)
 
 
 def dispatch(funcs: Callable | list[Callable],
@@ -178,15 +209,24 @@ def dispatch(funcs: Callable | list[Callable],
         logger.detail(f"Calculated size of process pool: {pool_size}")
     if pool_size > 1:
         # Run the tasks in parallel.
-        with ProcessPoolExecutor(max_workers=pool_size) as pool:
+        with ProcessPoolExecutor(max_workers=pool_size,
+                                 initializer=_worker_initializer) as pool:
             logger.task(f"Opened pool of {pool_size} processes")
-            # Create a Future for each task and submit it to the pool.
-            futures = [pool.submit(Task(func), *task_args, **kwargs)
-                       for func, task_args in zip(funcs, args, strict=True)]
-            # Run all the tasks in parallel and collect the results as
-            # they become available.
-            logger.task(f"Waiting for {num_tasks} tasks to finish")
-            results = [future.result() for future in futures]
+            try:
+                # Create and submit a Future for each task.
+                futures = [pool.submit(Task(func), *task_args, **kwargs)
+                           for func, task_args in zip(funcs, args, strict=True)]
+                # Run the Futures in parallel and collect the results as
+                # they become available.
+                logger.task(f"Waiting for {num_tasks} tasks to finish")
+                results = [future.result() for future in futures]
+            except KeyboardInterrupt:
+                # If the main process is interrupted by SIGINT, then
+                # send SIGINT to each worker process. Otherwise, they
+                # may continue running and become impossible to close.
+                print("SHUTDOWN")
+                pool.shutdown(wait=False, cancel_futures=True)
+                raise
         logger.task(f"Closed pool of {pool_size} processes")
     else:
         # Run the tasks in series.

@@ -16,6 +16,8 @@ ATTRS = {
     "log_likes": "Log likelihood",
     "bics": "Bayesian information criterion",
     "jackpot_quotients": JACKPOT_QUOTIENT,
+    "max_arcds_vs_ens_avg": "Maximum ARCD between the clusters and average",
+    "max_ginis": "Maximum Gini coefficient of a cluster",
     "min_marcds": "Minimum MARCD between any two clusters",
     "max_pearsons": "Maximum Pearson correlation between any two clusters",
     "marcds_vs_best": "MARCD versus the best run",

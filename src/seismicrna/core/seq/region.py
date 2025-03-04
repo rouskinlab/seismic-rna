@@ -638,7 +638,10 @@ class Region(object):
         return renumbered
 
     def __str__(self):
-        return f"Region {self.ref_reg} ({self.hyphen})"
+        return f"{type(self).__name__}({self.ref_reg}:{self.hyphen})"
+
+    def __repr__(self):
+        return str(self)
 
     def __eq__(self, other):
         if self is other:

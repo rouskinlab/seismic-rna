@@ -156,7 +156,10 @@ class Dataset(ABC):
             path.symlink_if_needed(tmp_data_dir, data_dir)
 
     def __str__(self):
-        return f"{type(self).__name__} in {self.report_file}"
+        return f"{type(self).__name__}({self.report_file})"
+
+    def __repr__(self):
+        return str(self)
 
 
 class UnbiasDataset(Dataset, ABC):

@@ -29,32 +29,32 @@ SEED_DTYPE = np.uint32
 
 def run_k(uniq_reads: UniqReads,
           k: int,
-          em_runs: int, *,
+          num_runs: int, *,
           n_procs: int,
           **kwargs) -> list[EMRun]:
     """ Run EM with a specific number of clusters. """
     if k < 1:
         raise ValueError(f"k must be ≥ 1, but got {k}")
-    if em_runs < 1:
+    if num_runs < 1:
         logger.warning(
-            f"Expected em_runs to be ≥ 1, but got {em_runs}: setting to 1"
+            f"Expected num_runs to be ≥ 1, but got {num_runs}: setting to 1"
         )
-        em_runs = 1
+        num_runs = 1
     rng = np.random.default_rng()
     # On some but not all platforms, using this central source of seeds
     # is necessary because otherwise the runs would all take identical
     # trajectories, defeating the purpose of replicates.
     seeds = rng.integers(get_max_uint(SEED_DTYPE),
-                         size=em_runs,
+                         size=num_runs,
                          dtype=SEED_DTYPE)
     args = [(uniq_reads, k, seed) for seed in seeds]
-    runs = list(dispatch([EMRun for _ in range(em_runs)],
+    runs = list(dispatch([EMRun for _ in range(num_runs)],
                          n_procs,
                          pass_n_procs=False,
                          args=args,
                          kwargs=kwargs))
-    if len(runs) < em_runs:
-        logger.warning(f"Obtained only {len(runs)} (of {em_runs}) "
+    if len(runs) < num_runs:
+        logger.warning(f"Obtained only {len(runs)} (of {num_runs}) "
                        f"run(s) of {uniq_reads} with {k} cluster(s)")
     return sort_runs(runs)
 
@@ -65,6 +65,8 @@ def run_ks(uniq_reads: UniqReads,
            try_all_ks: bool,
            min_marcd_run: float,
            max_pearson_run: float,
+           max_arcd_vs_ens_avg: float,
+           max_gini_run: float,
            max_jackpot_quotient: float,
            max_loglike_vs_best: float,
            min_pearson_vs_best: float,
@@ -87,12 +89,12 @@ def run_ks(uniq_reads: UniqReads,
     # current K is worse than the previous K or raises an error.
     for k in ks:
         try:
-            num_runs = em_runs if k > 1 else 1
-            # Cluster em_runs times with different starting points.
+            num_runs = em_runs * k if k > 1 else 1
+            # Cluster num_runs times with different starting points.
             logger.routine(f"Began {num_runs} run(s) of EM with {k} cluster(s)")
             runs = run_k(uniq_reads,
                          k,
-                         em_runs=num_runs,
+                         num_runs=num_runs,
                          em_thresh=(em_thresh if k > 1 else inf),
                          min_iter=(min_iter * k if k > 1 else 2),
                          max_iter=(max_iter * k if k > 1 else 2),
@@ -108,6 +110,8 @@ def run_ks(uniq_reads: UniqReads,
             runs_ks[k] = EMRunsK(runs,
                                  max_pearson_run=max_pearson_run,
                                  min_marcd_run=min_marcd_run,
+                                 max_arcd_vs_ens_avg=max_arcd_vs_ens_avg,
+                                 max_gini_run=max_gini_run,
                                  max_jackpot_quotient=max_jackpot_quotient,
                                  max_loglike_vs_best=max_loglike_vs_best,
                                  min_pearson_vs_best=min_pearson_vs_best,

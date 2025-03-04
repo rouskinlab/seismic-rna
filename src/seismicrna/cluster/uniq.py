@@ -191,7 +191,10 @@ class UniqReads(EndCoords):
                                    other.counts_per_uniq))
 
     def __str__(self):
-        return f"{type(self).__name__} of {self.sample} over {self.region}"
+        return f"{type(self).__name__}(sample={repr(self.sample)};{self.region})"
+
+    def __repr__(self):
+        return str(self)
 
 
 def _uniq_reads_to_ends_muts(uniq_reads: Iterable[tuple[tuple, tuple]],

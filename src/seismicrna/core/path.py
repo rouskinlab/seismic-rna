@@ -1277,7 +1277,10 @@ class HasFilePath(ABC):
         return self.build_path(self.get_path_field_values(top))
 
     def __str__(self):
-        return type(self).__name__
+        return f"{type(self).__name__}({self.get_path_field_values()})"
+
+    def __repr__(self):
+        return str(self)
 
 
 class HasSampleFilePath(HasFilePath, ABC):

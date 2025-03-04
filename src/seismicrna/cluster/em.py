@@ -15,7 +15,10 @@ from .uniq import UniqReads
 from ..core.array import get_length
 from ..core.header import ClustHeader
 from ..core.logs import logger
-from ..core.mu import calc_mean_arcsine_distance, calc_pearson
+from ..core.mu import (calc_arcsine_distance,
+                       calc_mean_arcsine_distance,
+                       calc_pearson,
+                       calc_gini)
 from ..core.unbias import calc_params, calc_params_observed
 
 LOG_LIKE_PRECISION = 6  # number of digits to round the log likelihood
@@ -426,17 +429,24 @@ class EMRun(object):
 
     @cached_property
     def pis(self):
-        """ Real and observed log proportion of each cluster. """
+        """ Proportion of each cluster, corrected for observer bias. """
         return pd.DataFrame(self._p_clust[:, np.newaxis],
                             index=self._clusters,
                             columns=[CLUST_PROP_NAME])
 
     @cached_property
     def mus(self):
-        """ Log mutation rate at each position for each cluster. """
+        """ Mutation rate of each position in each cluster, corrected
+        for observer bias. """
         return pd.DataFrame(self._p_mut[self._unmasked],
                             index=self.uniq_reads.region.unmasked_int,
                             columns=self._clusters)
+
+    @cached_property
+    def mus_ens_avg(self):
+        """ Mutation rate of each position in the ensemble average,
+        corrected for observer bias. """
+        return self.mus @ self.pis
 
     def get_resps(self, batch_num: int):
         """ Cluster memberships of the reads in the batch. """
@@ -507,5 +517,20 @@ class EMRun(object):
         """ Minimum MARCD among any pair of clusters. """
         return self._calc_p_mut_pairs(calc_mean_arcsine_distance, min)
 
+    @cached_property
+    def max_arcd_vs_ens_avg(self):
+        """ Maximum arcsine distance between the mutation rates of the
+        clusters and the ensemble average. """
+        return np.max(calc_arcsine_distance(self.mus.values,
+                                            self.mus_ens_avg.values))
+
+    @cached_property
+    def max_gini(self):
+        """ Maximum Gini coefficient among all clusters. """
+        return np.max(calc_gini(self.mus.values))
+
     def __str__(self):
-        return f"{type(self).__name__} {self.uniq_reads}, {self.k} cluster(s)"
+        return f"{type(self).__name__}: {self.uniq_reads}; {self.k} cluster(s)"
+
+    def __repr__(self):
+        return str(self)

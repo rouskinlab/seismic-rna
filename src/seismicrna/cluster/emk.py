@@ -1,4 +1,4 @@
-from typing import Callable, Iterable
+from typing import Iterable
 
 import numpy as np
 
@@ -8,6 +8,7 @@ from ..core.logs import logger
 from ..core.mu import (calc_sum_arcsine_distance,
                        calc_mean_arcsine_distance,
                        calc_pearson)
+from ..core.validate import require_atleast, require_equal, require_array_equal
 
 NOCONV = 0
 
@@ -40,6 +41,8 @@ class EMRunsK(object):
                  runs: list[EMRun],
                  max_pearson_run: float,
                  min_marcd_run: float,
+                 max_arcd_vs_ens_avg: float,
+                 max_gini_run: float,
                  max_jackpot_quotient: float,
                  max_loglike_vs_best: float,
                  min_pearson_vs_best: float,
@@ -51,6 +54,8 @@ class EMRunsK(object):
         # Flag runs that fail to meet the filters.
         self.max_pearson_run = max_pearson_run
         self.min_marcd_run = min_marcd_run
+        self.max_arcd_vs_ens_avg = max_arcd_vs_ens_avg
+        self.max_gini_run = max_gini_run
         self.max_jackpot_quotient = max_jackpot_quotient
         # Set the criteria for whether this number of clusters passes.
         self.max_loglike_vs_best = max_loglike_vs_best
@@ -61,11 +66,18 @@ class EMRunsK(object):
         # the desired inequality because runs with just one cluster will
         # produce NaN values, which should always compare as True here.
         self.run_not_overclustered = np.array(
-            [not (run.max_pearson > max_pearson_run
-                  or run.min_marcd < min_marcd_run)
+            [not ((run.max_pearson > max_pearson_run
+                   and run.min_marcd < min_marcd_run)
+                  or
+                  (run.max_arcd_vs_ens_avg > max_arcd_vs_ens_avg
+                   and run.max_gini > max_gini_run))
              for run in runs]
         )
         # Check whether each run shows signs of being underclustered.
+        # To select only the valid runs, use "not" with the opposite of
+        # the desired inequality because runs for which the jackpotting
+        # quotient was not calculated will produce NaN values, which
+        # should always compare as True here.
         self.run_not_underclustered = np.array(
             [not (run.jackpot_quotient > max_jackpot_quotient)
              for run in runs]
@@ -86,6 +98,11 @@ class EMRunsK(object):
         # Jackpotting quotient of each run.
         self.jackpot_quotients = np.array([run.jackpot_quotient
                                            for run in runs])
+        # Maximum ARCD between the clusters and average.
+        self.max_arcds_vs_ens_avg = np.array([run.max_arcd_vs_ens_avg
+                                              for run in runs])
+        # Maximum Gini difference between the clusters and average.
+        self.max_ginis = np.array([run.max_gini for run in runs])
         # Minimum MARCD between any two clusters in each run.
         self.min_marcds = np.array([run.min_marcd for run in runs])
         # Maximum correlation between any two clusters in each run.
@@ -210,6 +227,8 @@ class EMRunsK(object):
                      "min_marcd_run",
                      "max_jackpot_quotient",
                      "max_loglike_vs_best",
+                     "max_arcd_vs_ens_avg",
+                     "max_gini_run",
                      "min_pearson_vs_best",
                      "max_marcd_vs_best"]:
             lines.append(f"{attr} = {getattr(self, attr)}")
@@ -219,6 +238,8 @@ class EMRunsK(object):
                      "log_likes",
                      "bics",
                      "jackpot_quotients",
+                     "max_arcds_vs_ens_avg",
+                     "max_ginis",
                      "min_marcds",
                      "max_pearsons",
                      "marcds_vs_best",
@@ -268,35 +289,19 @@ def find_best_k(ks: Iterable[EMRunsK], **kwargs):
     return ks[0].k
 
 
-def _compare_groups(func: Callable, mus1: np.ndarray, mus2: np.ndarray):
-    """ Compare two groups of clusters using a comparison function and
-    return a matrix of the results. """
-    n1, k1 = mus1.shape
-    n2, k2 = mus2.shape
-    if n1 != n2:
-        raise ValueError(
-            f"Numbers of positions in groups 1 ({n1}) and 2 ({n2}) differ"
-        )
-    return np.array([[func(mus1[:, cluster1], mus2[:, cluster2])
-                      for cluster2 in range(k2)]
-                     for cluster1 in range(k1)]).reshape((k1, k2))
-
-
 def assign_clusterings(mus1: np.ndarray, mus2: np.ndarray):
     """ Optimally assign clusters from two groups to each other. """
     n1, k1 = mus1.shape
     n2, k2 = mus2.shape
-    if n1 != n2:
-        raise ValueError(
-            f"Numbers of positions in groups 1 ({n1}) and 2 ({n2}) differ"
-        )
-    if k1 != k2:
-        raise ValueError(
-            f"Numbers of clusters in groups 1 ({k1}) and 2 ({k2}) differ"
-        )
+    require_equal("mus1.shape[0]", n1, n2, "mus2.shape[0]")
+    require_equal("mus1.shape[1]", k1, k2, "mus2.shape[1]")
+    require_atleast("mus1.shape[1]", k1, 1)
     if n1 >= 1:
-        costs = _compare_groups(calc_sum_arcsine_distance, mus1, mus2)
-        assert costs.shape == (k1, k2)
+        # Match the clusters using linear_sum_assignment.
+        costs = np.array([[calc_sum_arcsine_distance(mus1[:, cluster1],
+                                                     mus2[:, cluster2])
+                           for cluster2 in range(k2)]
+                          for cluster1 in range(k1)]).reshape((k1, k2))
         from scipy.optimize import linear_sum_assignment
         rows, cols = linear_sum_assignment(costs)
     else:
@@ -309,15 +314,27 @@ def assign_clusterings(mus1: np.ndarray, mus2: np.ndarray):
     return rows, cols
 
 
+def _concat_clusters(mus: np.ndarray, clusters: np.ndarray):
+    n, k = mus.shape
+    require_equal("clusters.shape", clusters.shape, (k,), "(mus.shape[1],)")
+    require_atleast("mus.shape[1]", k, 1)
+    require_array_equal(
+        "sorted(clusters)", np.sort(clusters), np.arange(k), "np.arange(k)"
+    )
+    return np.concatenate([mus[:, c] for c in clusters])
+
+
+def _assign_concat_clusters(mus1: np.ndarray, mus2: np.ndarray):
+    rows, cols = assign_clusterings(mus1, mus2)
+    return _concat_clusters(mus1, rows), _concat_clusters(mus2, cols)
+
+
 def calc_mean_arcsine_distance_clusters(mus1: np.ndarray, mus2: np.ndarray):
-    """ Mean MARCD between the clusters. """
-    assignment = assign_clusterings(mus1, mus2)
-    marcds = _compare_groups(calc_mean_arcsine_distance, mus1, mus2)
-    return float(np.mean(marcds[assignment]))
+    """ MARCD between all clusters after matching. """
+    return float(calc_mean_arcsine_distance(*_assign_concat_clusters(mus1,
+                                                                     mus2)))
 
 
 def calc_mean_pearson_clusters(mus1: np.ndarray, mus2: np.ndarray):
-    """ Mean Pearson correlation between the clusters. """
-    assignment = assign_clusterings(mus1, mus2)
-    pearsons = _compare_groups(calc_pearson, mus1, mus2)
-    return float(np.mean(pearsons[assignment]))
+    """ Pearson correlation between all clusters after matching. """
+    return float(calc_pearson(*_assign_concat_clusters(mus1, mus2)))

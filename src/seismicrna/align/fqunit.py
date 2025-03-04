@@ -371,3 +371,6 @@ class FastqUnit(object):
         return " ".join(
             [self.kind, " and ".join(map(str, self.paths.values()))]
         )
+
+    def __repr__(self):
+        return str(self)

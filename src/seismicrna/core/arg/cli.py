@@ -870,8 +870,23 @@ opt_max_pearson_run = Option(
 opt_min_marcd_run = Option(
     ("--min-marcd-run",),
     type=float,
-    default=0.0175,
+    default=0.015,
     help="Remove runs with two clusters that differ by less than this MARCD"
+)
+
+opt_max_arcd_vs_ens_avg = Option(
+    ("--max-arcd-vs-ens-avg",),
+    type=float,
+    default=0.2,
+    help="Remove runs where a cluster differs by more than this ARCD from the "
+         "ensemble average at any position"
+)
+
+opt_max_gini_run = Option(
+    ("--max-gini-run",),
+    type=float,
+    default=round(2 / 3, 3),
+    help="Remove runs where any cluster's Gini coefficient exceeds this limit"
 )
 
 opt_max_loglike_vs_best = Option(
@@ -884,22 +899,22 @@ opt_max_loglike_vs_best = Option(
 opt_min_pearson_vs_best = Option(
     ("--min-pearson-vs-best",),
     type=float,
-    default=0.98,
+    default=0.96,
     help="Remove Ks where every run has less than this correlation vs. the best"
 )
 
 opt_max_marcd_vs_best = Option(
     ("--max-marcd-vs-best",),
     type=float,
-    default=0.005,
+    default=0.01,
     help="Remove Ks where every run has more than this MARCD vs. the best"
 )
 
 opt_em_runs = Option(
     ("--em-runs", "-e"),
     type=int,
-    default=12,
-    help="Run EM this many times for each number of clusters (K) except K = 1"
+    default=4,
+    help="Run this number times the number of clusters (K) trials of EM"
 )
 
 opt_min_em_iter = Option(
@@ -972,7 +987,7 @@ opt_region_min_overlap = Option(
 opt_max_marcd_join = Option(
     ("--max-marcd-join",),
     type=float,
-    default=0.0175,
+    default=0.015,
     help="Join regions with the same numbers of clusters only if the mean "
          "arcsine distance (MARCD) of their mutation rates and proportions "
          "does not exceed this threshold"
