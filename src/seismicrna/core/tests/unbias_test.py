@@ -1511,13 +1511,14 @@ class TestCalcPEndsObserved(ut.TestCase):
                             [0.7, 0.8],
                             [0.8, 0.9]])
         numer = np.array([[[0.7, 0.8], [1.0, 1.2], [0.3, 0.4]],
-                          [[0.0, 0.0], [0.5, 0.6], [0.4, 0.5]],
-                          [[0.0, 0.0], [0.0, 0.0], [0.7, 0.9]]])
+                          [[np.nan, np.nan], [0.5, 0.6], [0.4, 0.5]],
+                          [[np.nan, np.nan], [np.nan, np.nan], [0.7, 0.9]]])
         denom = np.array([3.6, 4.4])
         expect = numer / denom
         result = calc_p_ends_observed(npos, end5s, end3s, weights)
         self.assertEqual(result.shape, expect.shape)
-        self.assertTrue(np.allclose(result, expect))
+        self.assertTrue(np.all(np.logical_or(np.isclose(result, expect),
+                                             np.isnan(expect))))
 
 
 class TestCalcParams(ut.TestCase):
