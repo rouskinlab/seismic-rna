@@ -744,8 +744,10 @@ DMFASTQ2_SEGS = SampSeg, DmFastq2Seg
 XAM_SEGS = STEP_DIR_SEGS + (XamSeg,)
 XAM_STAGE_SEGS = STAGE_DIR_SEGS + (XamSeg,)
 CLUST_TAB_SEGS = REG_DIR_SEGS + (ClustParamsDirSeg, ClustParamsFileSeg)
-CT_FILE_SEGS = REG_DIR_SEGS + (ConnectTableSeg,)
-DB_FILE_SEGS = REG_DIR_SEGS + (DotBracketSeg,)
+CT_FILE_ALL_SEGS = REG_DIR_SEGS + (ConnectTableSeg,)
+CT_FILE_LAST_SEGS = CT_FILE_ALL_SEGS[-3:]
+DB_FILE_ALL_SEGS = REG_DIR_SEGS + (DotBracketSeg,)
+DB_FILE_LAST_SEGS = DB_FILE_ALL_SEGS[-3:]
 
 
 # Paths ################################################################

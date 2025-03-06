@@ -30,7 +30,7 @@ def _parse_db_string(db_file: TextIO, seq: RNA | None):
     return seq, struct
 
 
-def parse_db_strings(db_path: Path):
+def parse_db_strings(db_path: str | Path):
     """ Return the sequence and structures from a dot-bracket file. """
     seq = None
     structs = dict()
@@ -79,13 +79,13 @@ def _parse_db_record(db_file: TextIO, seq: RNA | None, seq5: int):
     return seq, parse_db_structure(struct, seq5)
 
 
-def parse_db(db_path: Path, seq5: int = 1):
+def parse_db(db_path: str | Path, seq5: int = 1):
     """ Yield the title, region, and base pairs for each structure in a
     dot-bracket (DB) file.
 
     Parameters
     ----------
-    db_path: Path
+    db_path: str | Path
         Path of the DB file.
     seq5: int = 1
         Number to give the 5' position of the sequence.
@@ -95,10 +95,7 @@ def parse_db(db_path: Path, seq5: int = 1):
     Generator[tuple[str, Region, list[tuple[int, int]]], Any, None]
     """
     # Determine the reference and region names from the path.
-    fields = path.parse(db_path,
-                        [path.RefSeg,
-                         path.RegSeg,
-                         path.DotBracketSeg])
+    fields = path.parse(db_path, path.DB_FILE_LAST_SEGS)
     ref = fields[path.REF]
     reg = fields[path.REG]
     # Parse each structure in the CT file.

@@ -15,6 +15,7 @@ from ..core.arg import (opt_ct_file,
                         opt_vmut_unpaired,
                         opt_force,
                         opt_max_procs)
+from ..core.error import NoDataError
 from ..core.header import RelClustHeader, list_clusts, make_header, parse_header
 from ..core.rel import (MATCH,
                         NOCOV,
@@ -171,7 +172,7 @@ def make_pmut_means(*,
                    ANY_B: (1. - pam * pad) * ploq})
     # Mutations at C bases.
     pcs = [pca, pcg, pct]
-    verify_proportions(pas + [(pcd := 1. - sum(pcs))])
+    verify_proportions(pcs + [(pcd := 1. - sum(pcs))])
     c = pd.Series({SUB_A: pcm * phiq * pca,
                    SUB_G: pcm * phiq * pcg,
                    SUB_T: pcm * phiq * pct,
@@ -187,14 +188,14 @@ def make_pmut_means(*,
                    ANY_H: (1. - pgm * pgd) * ploq})
     # Mutations at T bases.
     pts = [pta, ptc, ptg]
-    verify_proportions(pgs + [(ptd := 1. - sum(pts))])
+    verify_proportions(pts + [(ptd := 1. - sum(pts))])
     t = pd.Series({SUB_A: ptm * phiq * pta,
                    SUB_C: ptm * phiq * ptc,
                    SUB_G: ptm * phiq * ptg,
                    DELET: ptm * ptd,
                    ANY_V: (1. - ptm * ptd) * ploq})
     # Mutations at N bases.
-    n = pd.Series({DELET: pnm * ptd,
+    n = pd.Series({DELET: pnm * pnd,
                    ANY_N: 1. - pnm * pnd})
     pmut_means = pd.DataFrame.from_dict({BASEA: a,
                                          BASEC: c,
@@ -311,7 +312,7 @@ def run_struct(ct_file: Path,
         # Load the structures.
         structures = list(from_ct(ct_file))
         if not structures:
-            raise ValueError(f"No structures in {ct_file}")
+            raise NoDataError(f"{ct_file} contains 0 structures")
         num_structures = len(structures)
         index = get_shared_index(structure.table.index
                                  for structure in structures)

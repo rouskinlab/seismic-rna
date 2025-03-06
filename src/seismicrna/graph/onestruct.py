@@ -44,10 +44,7 @@ class StructOneTableGraph(OneTableRelClusterGroupGraph, OneRelGraph, ABC):
         """ Name of the region from which the structure comes. """
         if self._struct_file is not None:
             # Use the region from the given structure file.
-            fields = path.parse(self._struct_file,
-                                [path.RefSeg,
-                                 path.RegSeg,
-                                 path.ConnectTableSeg])
+            fields = path.parse(self._struct_file, path.CT_FILE_LAST_SEGS)
             return fields[path.REG]
         if self._struct_reg is None:
             raise ValueError("A structure region is required if no structure "
@@ -67,7 +64,7 @@ class StructOneTableGraph(OneTableRelClusterGroupGraph, OneRelGraph, ABC):
             # Use the given structure file for every profile.
             return self._struct_file
         # Determine the path of the structure file from the profile.
-        return path.build(path.CT_FILE_SEGS,
+        return path.build(path.CT_FILE_ALL_SEGS,
                           {path.TOP: self.top,
                            path.SAMPLE: self.sample,
                            path.STEP: path.FOLD_STEP,
@@ -123,13 +120,10 @@ class StructOneTableWriter(OneTableRelClusterGroupWriter, ABC):
                     fold_full: bool = opt_fold_full.default,
                     **kwargs):
         struct_files = list()
-        for file in struct_file:
+        for file in path.find_files_chain(struct_file, path.CT_FILE_LAST_SEGS):
             # Use a given CT file of an RNA structure, and determine the
             # structure region name from the file path.
-            fields = path.parse(file,
-                                [path.RefSeg,
-                                 path.RegSeg,
-                                 path.ConnectTableSeg])
+            fields = path.parse(file, path.CT_FILE_LAST_SEGS)
             ref = fields[path.REF]
             if ref == self.table.ref:
                 struct_files.append(file)

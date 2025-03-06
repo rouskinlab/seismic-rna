@@ -1192,7 +1192,7 @@ opt_metric = Option(
 
 opt_struct_file = Option(
     ("--struct-file",),
-    type=Path(exists=True, dir_okay=False),
+    type=Path(exists=True, dir_okay=True),
     multiple=True,
     default=(),
     help="Compare mutational profiles to the structure(s) in this CT file"

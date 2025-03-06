@@ -11,7 +11,7 @@ from ..seq import Region
 from ..write import need_write, write_mode
 
 
-def _from_file(file: Path,
+def _from_file(file: str | Path,
                parser: Callable,
                *args,
                branch: str = "",
@@ -28,7 +28,7 @@ def _from_file(file: Path,
                            branch=branch)
 
 
-def from_ct(ct_path: Path, branch: str = ""):
+def from_ct(ct_path: str | Path, branch: str = ""):
     """ Yield an instance of an RNAStructure for each structure in a
     connectivity table (CT) file.
 
@@ -47,7 +47,7 @@ def from_ct(ct_path: Path, branch: str = ""):
     yield from _from_file(ct_path, parse_ct, branch=branch)
 
 
-def from_db(db_path: Path, branch: str = "", seq5: int = 1):
+def from_db(db_path: str | Path, branch: str = "", seq5: int = 1):
     """ Yield an instance of an RNAStructure for each structure in a
     dot-bracket (DB) file.
 

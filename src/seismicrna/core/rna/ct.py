@@ -161,13 +161,13 @@ def _parse_ct_structure(ct_file: TextIO, length: int):
     return seq, pairs_list, (pos_offset if pos_offset is not None else 0)
 
 
-def parse_ct(ct_path: Path):
+def parse_ct(ct_path: str | Path):
     """ Yield the title, region, and base pairs for each structure in a
     connectivity table (CT) file.
 
     Parameters
     ----------
-    ct_path: Path
+    ct_path: str | Path
         Path of the CT file.
 
     Returns
@@ -175,10 +175,7 @@ def parse_ct(ct_path: Path):
     Generator[tuple[str, Region, list[tuple[int, int]]], Any, None]
     """
     # Determine the reference and region names from the path.
-    fields = path.parse(ct_path,
-                        [path.RefSeg,
-                         path.RegSeg,
-                         path.ConnectTableSeg])
+    fields = path.parse(ct_path, path.CT_FILE_LAST_SEGS)
     ref = fields[path.REF]
     reg = fields[path.REG]
     # Parse each structure in the CT file.
