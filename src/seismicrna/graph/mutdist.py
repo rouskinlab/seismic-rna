@@ -127,8 +127,6 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
         max_read_length = 0
         hists = _init_hists(self.dataset, self.rel_name)
         counts = list()
-        print("INIT HISTS")
-        print(hists)
         for (batch_max_read_length, batch_hists, batch_counts) in results:
             if batch_max_read_length > max_read_length:
                 max_read_length = batch_max_read_length
@@ -136,7 +134,6 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
             if self.calc_null:
                 assert batch_counts is not None
                 counts.append(batch_counts)
-            print(hists)
         if self.calc_null:
             # Calculate the mutation rates and 5'/3' ends.
             dataset_type = type(self.dataset)

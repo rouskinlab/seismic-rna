@@ -111,12 +111,9 @@ def _worker_sigint_handler(signum, frame):
     executing any finally clauses, using sys.exit(0). """
     global _handled_sigint
     if not _handled_sigint:
-        print("Called _worker_sigint_handler")
         # Call sys.exit at most once.
         _handled_sigint = True
         sys.exit(0)
-    else:
-        print("Repeated _worker_sigint_handler")
 
 
 def _worker_initializer():
@@ -224,7 +221,6 @@ def dispatch(funcs: Callable | list[Callable],
                 # If the main process is interrupted by SIGINT, then
                 # send SIGINT to each worker process. Otherwise, they
                 # may continue running and become impossible to close.
-                print("SHUTDOWN")
                 pool.shutdown(wait=False, cancel_futures=True)
                 raise
         logger.task(f"Closed pool of {pool_size} processes")
