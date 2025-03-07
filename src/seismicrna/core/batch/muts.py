@@ -289,7 +289,7 @@ class RegionMutsBatch(MutsBatch, ABC):
         """ Calculate all counts. """
         # Determine whether the data are clustered.
         header = make_header(rels=list(patterns), ks=ks)
-        if header.clustered():
+        if header.get_is_clustered():
             zero = 0.
             rel_header = header.get_rel_header()
         else:

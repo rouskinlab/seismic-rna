@@ -117,8 +117,8 @@ class ScatterRunner(TwoTableRelClusterGroupRunner, PositionTableRunner):
         return ScatterWriter
 
     @classmethod
-    def var_params(cls):
-        return super().var_params() + [opt_metric]
+    def get_var_params(cls):
+        return super().get_var_params() + [opt_metric]
 
     @classmethod
     @log_command(COMMAND)

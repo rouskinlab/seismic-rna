@@ -158,5 +158,5 @@ class HistogramWriter(OneTableRelClusterGroupWriter, ABC):
 class HistogramRunner(OneTableRelClusterGroupRunner, ABC):
 
     @classmethod
-    def var_params(cls):
-        return super().var_params() + [opt_hist_bins, opt_hist_margin]
+    def get_var_params(cls):
+        return super().get_var_params() + [opt_hist_bins, opt_hist_margin]

@@ -212,29 +212,29 @@ class Header(ABC):
 
     @classmethod
     @abstractmethod
-    def clustered(cls) -> bool:
+    def get_is_clustered(cls) -> bool:
         """ Whether the header has clusters. """
 
     @classmethod
     @abstractmethod
-    def levels(cls):
+    def get_levels(cls):
         """ Levels of the index. """
         return dict()
 
     @classmethod
-    def num_levels(cls):
+    def get_num_levels(cls):
         """ Number of levels. """
-        return len(cls.levels())
+        return len(cls.get_levels())
 
     @classmethod
-    def level_keys(cls):
+    def get_level_keys(cls):
         """ Level keys of the index. """
-        return list(cls.levels().keys())
+        return list(cls.get_levels().keys())
 
     @classmethod
-    def level_names(cls):
+    def get_level_names(cls):
         """ Level names of the index. """
-        return list(cls.levels().values())
+        return list(cls.get_levels().values())
 
     @property
     @abstractmethod
@@ -250,7 +250,7 @@ class Header(ABC):
     @cached_property
     def names(self):
         """ Formatted name of each track. """
-        return format_clust_names(self.clusts, not self.clustered())
+        return format_clust_names(self.clusts, not self.get_is_clustered())
 
     @cached_property
     def signature(self):
@@ -280,8 +280,8 @@ class Header(ABC):
         # Handle combinations of k and clust in a list of tuples.
         if value := kwargs.pop(K_CLUST_KEY, None):
             require_isinstance(K_CLUST_KEY, value, list)
-            k_name = self.levels().get('k')
-            clust_name = self.levels().get('clust')
+            k_name = self.get_levels().get('k')
+            clust_name = self.get_levels().get('clust')
             combo_selected = np.zeros(index.size, dtype=bool)
             for k, clust in value:
                 # Find rows that match each specified combination.
@@ -293,7 +293,7 @@ class Header(ABC):
             else:
                 selected |= combo_selected
         # Handle relationship selection.
-        for key, name in self.levels().items():
+        for key, name in self.get_levels().items():
             if value := kwargs.pop(key, None):
                 level_values = index.get_level_values(name)
                 equal_values = np.isin(level_values, np.atleast_1d(value))
@@ -362,12 +362,12 @@ class RelHeader(Header):
     """ Header of relationships. """
 
     @classmethod
-    def clustered(cls):
+    def get_is_clustered(cls):
         return False
 
     @classmethod
-    def levels(cls):
-        return super().levels() | dict(rel=REL_NAME)
+    def get_levels(cls):
+        return super().get_levels() | dict(rel=REL_NAME)
 
     def __init__(self, *, rels: Iterable[str], **kwargs):
         """
@@ -408,12 +408,12 @@ class ClustHeader(Header):
     """ Header of clusters. """
 
     @classmethod
-    def clustered(cls):
+    def get_is_clustered(cls):
         return True
 
     @classmethod
-    def levels(cls):
-        return super().levels() | dict(k=NUM_CLUSTS_NAME, clust=CLUST_NAME)
+    def get_levels(cls):
+        return super().get_levels() | dict(k=NUM_CLUSTS_NAME, clust=CLUST_NAME)
 
     def __init__(self, *, ks: Iterable[int], **kwargs):
         super().__init__(**kwargs)
@@ -433,7 +433,7 @@ class ClustHeader(Header):
 
     @cached_property
     def index(self):
-        return pd.MultiIndex.from_tuples(self.clusts, names=self.level_names())
+        return pd.MultiIndex.from_tuples(self.clusts, names=self.get_level_names())
 
     def iter_clust_indexes(self):
         for k, clust in self.clusts:
@@ -448,7 +448,7 @@ class RelClustHeader(ClustHeader, RelHeader):
         return pd.MultiIndex.from_tuples([(rel, k, clust)
                                           for rel in self.rels
                                           for k, clust in self.clusts],
-                                         names=self.level_names())
+                                         names=self.get_level_names())
 
 
 def make_header(*,
@@ -513,8 +513,8 @@ def parse_header(index: pd.Index | pd.MultiIndex):
     if isinstance(index, pd.MultiIndex):
         require_equal("index names",
                       sorted(index.names),
-                      sorted(header.level_names()))
-        for name in header.level_names():
+                      sorted(header.get_level_names()))
+        for name in header.get_level_names():
             require_array_equal(
                 f"values of index level {repr(name)}",
                 np.asarray(index.get_level_values(name).values,

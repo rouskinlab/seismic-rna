@@ -74,7 +74,7 @@ def load_pclust(pclust_file: Path):
     """ Load cluster proportions from a file. """
     return pd.read_csv(
         pclust_file,
-        index_col=list(range(ClustHeader.num_levels()))
+        index_col=list(range(ClustHeader.get_num_levels()))
     )[PROPORTION]
 
 

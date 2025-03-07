@@ -7,6 +7,7 @@ from typing import Any, Callable, Iterable
 from . import path
 from .batch import MutsBatch, RegionMutsBatch, ReadBatch, list_batch_nums
 from .error import InconsistentValueError, NoDataError
+from .header import NO_K
 from .io import MutsBatchIO, ReadBatchIO
 from .logs import logger
 from .rel import RelPattern
@@ -100,6 +101,11 @@ class Dataset(ABC):
     @abstractmethod
     def best_k(self) -> int:
         """ Best number of clusters. """
+
+    @cached_property
+    def is_clustered(self):
+        """ Whether the dataset is clustered. """
+        return any(k != NO_K for k in self.ks)
 
     @cached_property
     def time_began(self) -> datetime:

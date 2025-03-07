@@ -21,9 +21,10 @@ from ..table import load_all_datasets
 class DatasetGraph(OneRelGraph, OneSourceClusterGroupGraph, ABC):
     """ Graph based on one Dataset. """
 
-    def __init__(self, *, dataset: MutsDataset, **kwargs):
+    def __init__(self, *, dataset: MutsDataset, n_procs: int, **kwargs):
         super().__init__(**kwargs)
         self.dataset = dataset
+        self.max_procs = n_procs
 
     @property
     def top(self):
@@ -107,8 +108,8 @@ class DatasetRunner(RelRunner, ClusterGroupRunner, ABC):
         pass
 
     @classmethod
-    def var_params(cls):
-        return super().var_params() + [opt_verify_times]
+    def get_var_params(cls):
+        return super().get_var_params() + [opt_verify_times]
 
     @classmethod
     def get_input_loader(cls):
@@ -128,5 +129,5 @@ class DatasetRunner(RelRunner, ClusterGroupRunner, ABC):
                                            verify_times=verify_times)]
         return list(chain(*dispatch([writer.write for writer in writers],
                                     max_procs,
-                                    pass_n_procs=False,
+                                    pass_n_procs=True,
                                     kwargs=kwargs)))

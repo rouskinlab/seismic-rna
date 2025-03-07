@@ -128,15 +128,15 @@ class TableRunner(BaseRunner, ABC):
         pass
 
     @classmethod
-    def var_params(cls):
-        return super().var_params() + [opt_verify_times, opt_use_ratio]
+    def get_var_params(cls):
+        return super().get_var_params() + [opt_verify_times, opt_use_ratio]
 
 
 class RelTableRunner(RelRunner, TableRunner, ABC):
 
     @classmethod
-    def var_params(cls):
-        return super().var_params() + [opt_quantile]
+    def get_var_params(cls):
+        return super().get_var_params() + [opt_quantile]
 
 
 class PositionTableRunner(RelTableRunner, ABC):

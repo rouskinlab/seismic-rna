@@ -10,11 +10,14 @@ from .color import ColorMapGraph, RelColorMap
 from .dataset import DatasetGraph, DatasetWriter, DatasetRunner
 from .trace import HIST_COUNT_NAME, get_hist_trace
 from ..core.arg import opt_mutdist_null
+from ..core.dataset import MutsDataset
 from ..core.header import REL_NAME, make_header
 from ..core.logs import logger
+from ..core.rel import RelPattern
 from ..core.run import log_command
 from ..core.seq import FIELD_END5, FIELD_END3
 from ..core.table import PositionTable, all_patterns
+from ..core.task import as_list_of_tuples, dispatch
 from ..core.unbias import (calc_p_noclose_given_ends_auto,
                            calc_p_ends_observed,
                            triu_dot)
@@ -26,6 +29,54 @@ NULL_SUFFIX = "-NULL"
 
 def get_null_name(name: str):
     return f"{name}{NULL_SUFFIX}"
+
+
+def _get_num_bins(dataset: MutsDataset):
+    return dataset.region.length
+
+
+def _init_hists(dataset: MutsDataset, rel_name: str):
+    header = make_header(rels=[rel_name], ks=dataset.ks)
+    return pd.DataFrame(0. if header.get_is_clustered() else 0,
+                        pd.RangeIndex(_get_num_bins(dataset),
+                                      name=HIST_COUNT_NAME),
+                        header.index)
+
+
+def _calc_hists(batch_num: int, *,
+                dataset: MutsDataset,
+                pattern: RelPattern,
+                rel_name: str,
+                count_pos_ends: bool):
+    """ Calculate the histogram of the smallest distances between two
+    mutations in a read. """
+    batch = dataset.get_batch(batch_num)
+    hists = _init_hists(dataset, rel_name)
+    min_mut_dist = batch.calc_min_mut_dist(pattern)
+    num_bins = _get_num_bins(dataset)
+    if dataset.is_clustered:
+        if not isinstance(batch.read_weights, pd.DataFrame):
+            raise TypeError(batch.read_weights)
+        for (k, clust), weights in batch.read_weights.items():
+            col = (rel_name, k, clust)
+            hists.loc[:, col] += np.bincount(min_mut_dist,
+                                             weights=weights,
+                                             minlength=num_bins)
+    else:
+        if batch.read_weights is not None:
+            raise TypeError(batch.read_weights)
+        hists.loc[:, rel_name] += np.bincount(min_mut_dist,
+                                              minlength=num_bins)
+    if count_pos_ends:
+        # Also count the relationships per position and 5'/3' ends.
+        batch_counts = batch.count_all(patterns=all_patterns(dataset.pattern),
+                                       ks=dataset.ks,
+                                       count_ends=True,
+                                       count_pos=True,
+                                       count_read=False)
+    else:
+        batch_counts = None
+    return batch.read_lengths.max(initial=0), hists, batch_counts
 
 
 class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
@@ -62,68 +113,63 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
     @cached_property
     def _data(self):
         logger.routine(f"Began calculating real histogram for {self}")
-        num_bins = self.dataset.region.length
-        header = make_header(rels=self.rel_names, ks=self.dataset.ks)
-        zero = 0. if header.clustered() else 0
-        hists = pd.DataFrame(zero,
-                             pd.RangeIndex(num_bins, name=HIST_COUNT_NAME),
-                             header.index)
-        batch_counts = list()
+        results = dispatch(
+            _calc_hists,
+            max_procs=self.max_procs,
+            pass_n_procs=False,
+            raise_on_error=True,
+            args=as_list_of_tuples(range(self.dataset.num_batches)),
+            kwargs=dict(dataset=self.dataset,
+                        pattern=self.pattern,
+                        rel_name=self.rel_name,
+                        count_pos_ends=self.calc_null)
+        )
         max_read_length = 0
-        # For each read in all batches, calculate the minimum distance
-        # between two mutations.
-        for batch in self.dataset.iter_batches():
-            batch_counts.append(batch.count_all(
-                patterns=all_patterns(self.dataset.pattern),
-                ks=self.dataset.ks,
-                count_ends=True,
-                count_pos=True,
-                count_read=False
-            ))
-            max_read_length = max(max_read_length,
-                                  batch.read_lengths.max(initial=0))
-            min_mut_dist = batch.calc_min_mut_dist(self.pattern)
-            if header.clustered():
-                if not isinstance(batch.read_weights, pd.DataFrame):
-                    raise TypeError(batch.read_weights)
-                for (k, clust), weights in batch.read_weights.items():
-                    col = (self.rel_name, k, clust)
-                    hists.loc[:, col] += np.bincount(min_mut_dist,
-                                                     weights=weights,
-                                                     minlength=num_bins)
-            else:
-                if batch.read_weights is not None:
-                    raise TypeError(batch.read_weights)
-                hists.loc[:, self.rel_name] += np.bincount(min_mut_dist,
-                                                           minlength=num_bins)
-        # Calculate the mutation rates and 5'/3' ends.
-        dataset_type = type(self.dataset)
-        tabulator_type = get_tabulator_type(dataset_type, count=True)
-        init_keywords = (set(get_tabulator_type(dataset_type).init_kws())
-                         - {"get_batch_count_all", "num_batches"})
-        kwargs = {kw: getattr(self.dataset, kw) for kw in init_keywords}
-        tabulator = tabulator_type(batch_counts=batch_counts,
-                                   count_ends=True,
-                                   count_pos=True,
-                                   count_read=False,
-                                   **kwargs)
+        hists = _init_hists(self.dataset, self.rel_name)
+        counts = list()
+        print("INIT HISTS")
+        print(hists)
+        for (batch_max_read_length, batch_hists, batch_counts) in results:
+            if batch_max_read_length > max_read_length:
+                max_read_length = batch_max_read_length
+            hists += batch_hists
+            if self.calc_null:
+                assert batch_counts is not None
+                counts.append(batch_counts)
+            print(hists)
+        if self.calc_null:
+            # Calculate the mutation rates and 5'/3' ends.
+            dataset_type = type(self.dataset)
+            tabulator_type = get_tabulator_type(dataset_type, count=True)
+            init_keywords = (set(get_tabulator_type(dataset_type).init_kws())
+                             - {"get_batch_count_all", "num_batches"})
+            kwargs = {kw: getattr(self.dataset, kw) for kw in init_keywords}
+            tabulator = tabulator_type(batch_counts=counts,
+                                       count_ends=True,
+                                       count_pos=True,
+                                       count_read=False,
+                                       **kwargs)
+        else:
+            tabulator = None
         logger.routine(f"Ended calculating real histogram for {self}")
-        return hists, tabulator, max_read_length
+        return max_read_length, hists, tabulator
+
+    @property
+    def max_read_length(self):
+        max_read_length, hists, tabulator = self._data
+        return max_read_length
 
     @property
     def hists(self):
-        hists, tabulator, max_read_length = self._data
+        max_read_length, hists, tabulator = self._data
         return hists
 
     @property
     def tabulator(self):
-        hists, tabulator, max_read_length = self._data
+        max_read_length, hists, tabulator = self._data
+        if tabulator is None:
+            raise TypeError("Cannot tabulate if --mutdist-null is False")
         return tabulator
-
-    @property
-    def max_read_length(self):
-        hists, tabulator, max_read_length = self._data
-        return max_read_length
 
     @cached_property
     def table(self):
@@ -142,7 +188,7 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
 
     @cached_property
     def _real_hist(self):
-        if self.table.header.clustered():
+        if self.dataset.is_clustered:
             cols = (self.rel_name,) + self.loc_clusters
             return self.hists.loc[:, cols]
         return self.hists
@@ -150,7 +196,7 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
     @cached_property
     def _null_hist(self):
         logger.routine(f"Began calculating null histogram for {self}")
-        if self.table.header.clustered():
+        if self.dataset.is_clustered:
             end_counts = self.tabulator.end_counts.loc[:, self.loc_clusters]
             num_reads = self.tabulator.num_reads.loc[self.loc_clusters].values
         else:
@@ -267,8 +313,8 @@ class MutationDistanceRunner(DatasetRunner):
         return MutationDistanceWriter
 
     @classmethod
-    def var_params(cls):
-        return super().var_params() + [opt_mutdist_null]
+    def get_var_params(cls):
+        return super().get_var_params() + [opt_mutdist_null]
 
     @classmethod
     @log_command(COMMAND)

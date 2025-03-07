@@ -29,7 +29,7 @@ def accumulate_counts(batch_counts: Iterable[tuple[Any, Any, Any, Any]],
                                                   for _ in END_COORDS],
                                                  names=END_COORDS)
     # Initialize the total read counts and end coordinate counts.
-    if header.clustered():
+    if header.get_is_clustered():
         dtype = float
         rel_header = header.get_rel_header()
         clust_index = header.get_clust_header().index

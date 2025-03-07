@@ -159,7 +159,7 @@ class Table(path.HasRefFilePath, ABC):
 
     @classmethod
     def get_header_depth(cls):
-        return cls.get_header_type().num_levels()
+        return cls.get_header_type().get_num_levels()
 
     @classmethod
     @abstractmethod

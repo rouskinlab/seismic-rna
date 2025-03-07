@@ -249,19 +249,19 @@ class TestHeader(ut.TestCase):
 class TestRelHeader(ut.TestCase):
 
     def test_clustered(self):
-        self.assertFalse(RelHeader.clustered())
+        self.assertFalse(RelHeader.get_is_clustered())
 
     def test_levels(self):
-        self.assertEqual(RelHeader.levels(), dict(rel=REL_NAME))
+        self.assertEqual(RelHeader.get_levels(), dict(rel=REL_NAME))
 
     def test_num_levels(self):
-        self.assertEqual(RelHeader.num_levels(), 1)
+        self.assertEqual(RelHeader.get_num_levels(), 1)
 
     def test_level_keys(self):
-        self.assertListEqual(RelHeader.level_keys(), ["rel"])
+        self.assertListEqual(RelHeader.get_level_keys(), ["rel"])
 
     def test_level_names(self):
-        self.assertListEqual(RelHeader.level_names(), [REL_NAME])
+        self.assertListEqual(RelHeader.get_level_names(), [REL_NAME])
 
     def test_rels_normal(self):
         rels = RelHeader(rels=list("qwerty")).rels
@@ -401,21 +401,21 @@ class TestRelHeader(ut.TestCase):
 class TestClustHeader(ut.TestCase):
 
     def test_clustered(self):
-        self.assertTrue(ClustHeader.clustered())
+        self.assertTrue(ClustHeader.get_is_clustered())
 
     def test_levels(self):
-        self.assertEqual(ClustHeader.levels(),
+        self.assertEqual(ClustHeader.get_levels(),
                          dict(k=NUM_CLUSTS_NAME, clust=CLUST_NAME))
 
     def test_num_levels(self):
-        self.assertEqual(ClustHeader.num_levels(), 2)
+        self.assertEqual(ClustHeader.get_num_levels(), 2)
 
     def test_level_keys(self):
-        self.assertListEqual(ClustHeader.level_keys(),
+        self.assertListEqual(ClustHeader.get_level_keys(),
                              ["k", "clust"])
 
     def test_level_names(self):
-        self.assertListEqual(ClustHeader.level_names(),
+        self.assertListEqual(ClustHeader.get_level_names(),
                              [NUM_CLUSTS_NAME, CLUST_NAME])
 
     def test_ks_valid(self):
@@ -603,23 +603,23 @@ class TestClustHeader(ut.TestCase):
 class TestRelClustHeader(ut.TestCase):
 
     def test_clustered(self):
-        self.assertTrue(RelClustHeader.clustered())
+        self.assertTrue(RelClustHeader.get_is_clustered())
 
     def test_levels(self):
-        self.assertEqual(RelClustHeader.levels(),
+        self.assertEqual(RelClustHeader.get_levels(),
                          dict(rel=REL_NAME,
                               k=NUM_CLUSTS_NAME,
                               clust=CLUST_NAME))
 
     def test_num_levels(self):
-        self.assertEqual(RelClustHeader.num_levels(), 3)
+        self.assertEqual(RelClustHeader.get_num_levels(), 3)
 
     def test_level_keys(self):
-        self.assertListEqual(RelClustHeader.level_keys(),
+        self.assertListEqual(RelClustHeader.get_level_keys(),
                              ["rel", "k", "clust"])
 
     def test_level_names(self):
-        self.assertListEqual(RelClustHeader.level_names(),
+        self.assertListEqual(RelClustHeader.get_level_names(),
                              [REL_NAME, NUM_CLUSTS_NAME, CLUST_NAME])
 
     def test_signature(self):

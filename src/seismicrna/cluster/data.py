@@ -385,7 +385,7 @@ class JoinClusterMutsDataset(ClusterDataset,
         clusts = self.joined_clusts[reg]
         return pd.MultiIndex.from_tuples(
             [(k, clusts[k][clust]) for k, clust in self.clusts],
-            names=ClustHeader.level_names()
+            names=ClustHeader.get_level_names()
         )
 
     def _reg_resps(self, reg: str, resps: pd.DataFrame):
@@ -395,7 +395,7 @@ class JoinClusterMutsDataset(ClusterDataset,
         # Rename the columns by increasing k and cluster.
         reordered.columns = pd.MultiIndex.from_tuples(
             self.clusts,
-            names=ClustHeader.level_names()
+            names=ClustHeader.get_level_names()
         )
         return reordered
 

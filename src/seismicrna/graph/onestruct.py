@@ -171,10 +171,10 @@ class StructOneTableRunner(OneTableRelClusterGroupRunner, ABC):
         return load_foldable_tables
 
     @classmethod
-    def var_params(cls):
-        return super().var_params() + [opt_struct_file,
-                                       opt_branch,
-                                       opt_fold_regions_file,
-                                       opt_fold_coords,
-                                       opt_fold_primers,
-                                       opt_fold_full]
+    def get_var_params(cls):
+        return super().get_var_params() + [opt_struct_file,
+                                           opt_branch,
+                                           opt_fold_regions_file,
+                                           opt_fold_coords,
+                                           opt_fold_primers,
+                                           opt_fold_full]

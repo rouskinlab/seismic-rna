@@ -383,7 +383,7 @@ class BaseRunner(ABC):
                 opt_max_procs]
 
     @classmethod
-    def var_params(cls) -> list[Argument | Option]:
+    def get_var_params(cls) -> list[Argument | Option]:
         """ Parameters that can vary among different classes. """
         return list()
 
@@ -391,7 +391,7 @@ class BaseRunner(ABC):
     def params(cls) -> list[Argument | Option]:
         """ Parameters for the command line. """
         return list(chain(cls.universal_input_params(),
-                          cls.var_params(),
+                          cls.get_var_params(),
                           cls.universal_output_params()))
 
     @classmethod

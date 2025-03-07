@@ -117,5 +117,5 @@ class MultiRelsGraph(RelGraph, ABC):
 class RelRunner(BaseRunner, ABC):
 
     @classmethod
-    def var_params(cls):
-        return super().var_params() + [opt_rels]
+    def get_var_params(cls):
+        return super().get_var_params() + [opt_rels]

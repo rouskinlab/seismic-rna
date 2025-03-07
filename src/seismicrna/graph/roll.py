@@ -31,5 +31,5 @@ class RollingGraph(TableGraph, ABC):
 class RollingRunner(TableRunner, ABC):
 
     @classmethod
-    def var_params(cls):
-        return super().var_params() + [opt_window, opt_winmin]
+    def get_var_params(cls):
+        return super().get_var_params() + [opt_window, opt_winmin]

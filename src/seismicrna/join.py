@@ -72,7 +72,7 @@ def joined_mask_report_exists(top: Path,
 
 def parse_join_clusts_file(file: str | Path):
     """ Parse a file of joined clusters. """
-    n_cols = len(ClustHeader.level_names())
+    n_cols = len(ClustHeader.get_level_names())
     clusts_df = pd.read_csv(file, index_col=list(range(n_cols)))
     header = parse_header(clusts_df.index)
     # Verify the index: use type() rather than isinstance() so that

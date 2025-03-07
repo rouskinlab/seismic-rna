@@ -62,7 +62,7 @@ class PositionCorrelationGraph(PositionPairGraph, ABC):
         return "Phi correlation between"
 
     @classmethod
-    def _pair_func(cls):
+    def get_pair_func(cls):
         """ Function to compare each pair of positions. """
         return calc_phi
 

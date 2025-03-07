@@ -319,8 +319,8 @@ class TwoTableRunner(TableRunner, ABC):
         """ Type of Writer. """
 
     @classmethod
-    def var_params(cls):
-        return super().var_params() + [opt_comppair, opt_compself, opt_out_dir]
+    def get_var_params(cls):
+        return super().get_var_params() + [opt_comppair, opt_compself, opt_out_dir]
 
     @classmethod
     def run(cls,

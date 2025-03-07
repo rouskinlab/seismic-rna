@@ -155,7 +155,7 @@ def calc_ratio_stats(ratios: dict[str, np.ndarray], margin: float = 1.e-6):
     return means, fvar
 
 
-@run_func(COMMAND)
+@run_func(COMMAND, default=None)
 def run(input_path: Iterable[str | Path], *,
         struct_file: Iterable[str | Path],
         verify_times: bool,
@@ -206,6 +206,7 @@ def run(input_path: Iterable[str | Path], *,
                         for key, mean in unpaired_means.items())
     params_text = f"Abstracted parameters:\n{' '.join(params_items)}\n"
     sys.stdout.write(params_text)
+    return (paired_means, paired_fvar), (unpaired_means, unpaired_fvar)
 
 
 params = [arg_input_path,

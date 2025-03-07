@@ -14,51 +14,12 @@ POSITION_A = "Position A"
 POSITION_B = "Position B"
 
 
-def calc_phi(n: int | float | np.ndarray | pd.Series,
-             a: int | float | np.ndarray | pd.Series | pd.DataFrame,
-             b: int | float | np.ndarray | pd.Series | pd.DataFrame,
-             a_and_b: int | float | np.ndarray | pd.Series | pd.DataFrame):
-    """ Calculate the phi correlation coefficient for a 2x2 matrix.
-
-    +----+----+
-    | AB | AO | A.
-    +----+----+
-    | OB | OO | O.
-    +----+----+
-      .B   .O   ..
-
-    where
-      A. = AB + AO
-      .B = AB + OB
-      .. = A. + O. = .B + .O
-
-    Parameters
-    ----------
-    n: int | float | np.ndarray | pd.Series
-        Observations in total (..)
-    a: int | float | np.ndarray | pd.Series | pd.DataFrame
-        Observations for which A is true, regardless of B (A.)
-    b: int | float | np.ndarray | pd.Series | pd.DataFrame
-        Observations for which B is true, regardless of A (.B)
-    a_and_b: int | float | np.ndarray | pd.Series | pd.DataFrame
-        Observations for which A and B are both true (AB)
-
-    Returns
-    -------
-    float | np.ndarray | pd.Series | pd.DataFrame
-        Phi correlation coefficient
-    """
-    a_x_b = a * b
-    with np.errstate(divide="ignore", invalid="ignore"):
-        return (n * a_and_b - a_x_b) / np.sqrt(a_x_b * (n - a) * (n - b))
-
-
 class PositionPairGraph(DatasetGraph, ABC):
     """ Function of pairs of positions. """
 
     @classmethod
     @abstractmethod
-    def _pair_func(cls):
+    def get_pair_func(cls):
         """ Function to compare each pair of positions. """
 
     @property
@@ -139,7 +100,7 @@ class PositionPairGraph(DatasetGraph, ABC):
                         ab_accum.loc[pos_ab, clust] += ab
                 else:
                     raise TypeError(batch.read_weights)
-        pair_func = self._pair_func()
+        pair_func = self.get_pair_func()
         return pair_func(n, a_accum, b_accum, ab_accum)
 
     def get_traces(self):

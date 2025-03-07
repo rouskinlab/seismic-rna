@@ -74,8 +74,8 @@ class RollingCorrelationRunner(TwoTableRelClusterGroupRunner,
                                PositionTableRunner):
 
     @classmethod
-    def var_params(cls):
-        return super().var_params() + [opt_metric]
+    def get_var_params(cls):
+        return super().get_var_params() + [opt_metric]
 
     @classmethod
     def get_writer_type(cls):

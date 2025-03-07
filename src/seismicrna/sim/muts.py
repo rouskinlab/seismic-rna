@@ -365,7 +365,7 @@ def load_pmut(pmut_file: Path):
     """ Load mutation rates from a file. """
     pmut = pd.read_csv(pmut_file,
                        index_col=list(range(2)),
-                       header=list(range(RelClustHeader.num_levels())))
+                       header=list(range(RelClustHeader.get_num_levels())))
     # Convert the columns from strings to integers.
     pmut.columns = pd.MultiIndex.from_arrays(
         [pmut.columns.get_level_values(level).astype(int)
