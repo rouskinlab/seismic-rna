@@ -138,7 +138,7 @@ class ClusterMutsDataset(ClusterDataset, MultistepDataset, UnbiasDataset):
                                 sanitize=False)
 
 
-def get_clust_params(dataset: ClusterMutsDataset, max_procs: int = 1):
+def get_clust_params(dataset: ClusterMutsDataset, num_cpus: int = 1):
     """ Get the mutation rates and proportion for each cluster. If table
     files already exist, then use them to get the parameters; otherwise,
     calculate the parameters from the dataset. """
@@ -183,7 +183,7 @@ def get_clust_params(dataset: ClusterMutsDataset, max_procs: int = 1):
             count_ends=True,
             count_pos=(pos_table is None),
             count_read=False,
-            max_procs=max_procs
+            num_cpus=num_cpus
         )
         if pos_table is None:
             pos_table = ClusterPositionTableWriter(tabulator)

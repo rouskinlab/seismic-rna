@@ -151,7 +151,7 @@ class RelationWriter(object):
                           keep_tmp: bool,
                           phred_enc: int,
                           min_phred: int,
-                          n_procs: int,
+                          num_cpus: int,
                           **kwargs):
         """ Compute the relationships for every read in a XAM file,
         split among one or more batches. """
@@ -164,8 +164,10 @@ class RelationWriter(object):
                           write_read_names=write_read_names,
                           **kwargs)
             results = dispatch(generate_batch,
-                               n_procs,
-                               pass_n_procs=False,
+                               num_cpus=num_cpus,
+                               pass_num_cpus=False,
+                               as_list=True,
+                               ordered=True,
                                raise_on_error=True,
                                args=as_list_of_tuples(self._xam.indexes),
                                kwargs=kwargs)
@@ -211,7 +213,7 @@ class RelationWriter(object):
               relate_read_table: bool,
               brotli_level: int,
               force: bool,
-              n_procs: int,
+              num_cpus: int,
               **kwargs):
         """ Compute relationships for every record in a XAM file. """
         report_file = RelateReport.build_path({path.TOP: out_dir,
@@ -240,7 +242,7 @@ class RelationWriter(object):
                 clip_end3=clip_end3,
                 count_pos=relate_pos_table,
                 count_read=relate_read_table,
-                n_procs=n_procs,
+                num_cpus=num_cpus,
                 **kwargs
             )
             # Tabulate the data.
@@ -286,7 +288,7 @@ def relate_xam(xam_file: Path, *,
                tmp_dir: Path,
                branch: str,
                batch_size: int,
-               n_procs: int,
+               num_cpus: int,
                **kwargs):
     """ Write the batches of relationships for one XAM file. """
     release_dir, working_dir = get_release_working_dirs(tmp_dir)
@@ -295,6 +297,6 @@ def relate_xam(xam_file: Path, *,
                                       working_dir,
                                       branch,
                                       batch_size,
-                                      n_procs=n_procs),
+                                      num_cpus=num_cpus),
                             get_fasta_seq(fasta, DNA, ref))
-    return writer.write(**kwargs, n_procs=n_procs, release_dir=release_dir)
+    return writer.write(**kwargs, num_cpus=num_cpus, release_dir=release_dir)

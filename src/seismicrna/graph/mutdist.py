@@ -115,8 +115,10 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
         logger.routine(f"Began calculating real histogram for {self}")
         results = dispatch(
             _calc_hists,
-            max_procs=self.max_procs,
-            pass_n_procs=False,
+            num_cpus=self.num_cpus,
+            pass_num_cpus=False,
+            as_list=False,
+            ordered=False,
             raise_on_error=True,
             args=as_list_of_tuples(range(self.dataset.num_batches)),
             kwargs=dict(dataset=self.dataset,

@@ -43,25 +43,25 @@ class DuplicateSampleReferenceError(DuplicateValueError):
     """ A sample-reference pair occurred more than once. """
 
 
-def calc_extra_threads(n_procs: int):
+def calc_extra_threads(num_cpus: int):
     """ Calculate the number of extra threads to use (option -@). """
     try:
-        if not isinstance(n_procs, int):
+        if not isinstance(num_cpus, int):
             raise TypeError(
-                f"n_procs must be int, but got {type(n_procs).__name__}"
+                f"num_cpus must be int, but got {type(num_cpus).__name__}"
             )
-        if n_procs < 1:
-            raise ValueError(f"n_procs must be ≥ 1, but got {n_procs}")
-        return n_procs - 1
+        if num_cpus < 1:
+            raise ValueError(f"num_cpus must be ≥ 1, but got {num_cpus}")
+        return num_cpus - 1
     except (TypeError, ValueError) as error:
         logger.warning(error)
         return 0
 
 
-def index_xam_cmd(bam: Path, *, n_procs: int = 1):
+def index_xam_cmd(bam: Path, *, num_cpus: int = 1):
     """ Build an index of a XAM file using `samtools index`. """
     return args_to_cmd([SAMTOOLS_CMD, "index",
-                        "-@", calc_extra_threads(n_procs),
+                        "-@", calc_extra_threads(num_cpus),
                         bam])
 
 
@@ -74,10 +74,10 @@ def sort_xam_cmd(xam_inp: Path | None,
                  xam_out: Path | None, *,
                  tmp_pfx: Path | None = None,
                  name: bool = False,
-                 n_procs: int = 1):
+                 num_cpus: int = 1):
     """ Sort a SAM or BAM file using `samtools sort`. """
     args = [SAMTOOLS_CMD, "sort",
-            "-@", calc_extra_threads(n_procs)]
+            "-@", calc_extra_threads(num_cpus)]
     if name:
         # Sort by name instead of coordinate.
         args.append("-n")
@@ -103,10 +103,10 @@ def collate_xam_cmd(xam_inp: Path | None,
                     xam_out: Path | None, *,
                     tmp_pfx: Path | None = None,
                     fast: bool = False,
-                    n_procs: int = 1):
+                    num_cpus: int = 1):
     """ Collate a SAM or BAM file using `samtools collate`. """
     args = [SAMTOOLS_CMD, "collate",
-            "-@", calc_extra_threads(n_procs)]
+            "-@", calc_extra_threads(num_cpus)]
     if fast:
         # Use fast mode (outputs primary alignments only).
         args.append("-f")
@@ -142,12 +142,12 @@ def view_xam_cmd(xam_inp: Path | None,
                  end5: int | None = None,
                  end3: int | None = None,
                  refs_file: Path | None = None,
-                 n_procs: int = 1):
+                 num_cpus: int = 1):
     """ Convert between SAM and BAM formats, extract reads aligning to a
     specific reference/region, and filter by flag and mapping quality
     using `samtools view`. """
     args = [SAMTOOLS_CMD, "view",
-            "-@", calc_extra_threads(n_procs)]
+            "-@", calc_extra_threads(num_cpus)]
     # Read filters
     if min_mapq:
         # Require minimum mapping quality.
@@ -204,10 +204,10 @@ def view_xam_cmd(xam_inp: Path | None,
     return args_to_cmd(args)
 
 
-def flagstat_cmd(xam_inp: Path | None, *, n_procs: int = 1):
+def flagstat_cmd(xam_inp: Path | None, *, num_cpus: int = 1):
     """ Compute the statistics with `samtools flagstat`. """
     args = [SAMTOOLS_CMD, "flagstat",
-            "-@", calc_extra_threads(n_procs)]
+            "-@", calc_extra_threads(num_cpus)]
     if xam_inp:
         args.append(xam_inp)
     return args_to_cmd(args)
@@ -315,13 +315,13 @@ run_idxstats = ShellCommand("counting reads for each reference",
                             opath=False)
 
 
-def ref_header_cmd(xam_inp: Path, *, n_procs: int):
+def ref_header_cmd(xam_inp: Path, *, num_cpus: int):
     """ Get the header line for each reference. """
     return view_xam_cmd(xam_inp,
                         None,
                         sam=True,
                         only_header=True,
-                        n_procs=n_procs)
+                        num_cpus=num_cpus)
 
 
 def parse_ref_header(process: CompletedProcess):
@@ -351,10 +351,10 @@ def xam_to_fastq_cmd(xam_inp: Path | None,
                      flags_req: int | None = None,
                      flags_exc: int | None = None,
                      label_12: bool = False,
-                     n_procs: int = 1):
+                     num_cpus: int = 1):
     """ Convert XAM format to FASTQ format, and filter by flags. """
     args = [SAMTOOLS_CMD, "fastq",
-            "-@", calc_extra_threads(n_procs)]
+            "-@", calc_extra_threads(num_cpus)]
     if flags_req is not None:
         # Require these flags.
         args.extend(["-f", flags_req])

@@ -14,7 +14,7 @@ from .core import path
 from .core.arg import (CMD_MIGRATE,
                        arg_input_path,
                        opt_out_dir,
-                       opt_max_procs)
+                       opt_num_cpus)
 from .core.io import BadChecksumError, save_brickle
 from .core.report import Report, NumBatchesF, ChecksumsF, RefseqChecksumF
 from .core.run import run_func
@@ -109,7 +109,6 @@ def migrate_align_dir(align_dir: Path):
             find_and_replace(file,
                              '"Branches": [],',
                              '"Branches": {},')
-    return 0
 
 
 def migrate_relate_ref_dir(ref_dir: Path):
@@ -123,7 +122,7 @@ def migrate_relate_ref_dir(ref_dir: Path):
                          "Checksums of batches (SHA-512)")
     except FindAndReplaceError:
         # The report is pooled.
-        return 0
+        return
     find_and_replace(report_file,
                      "MD5 checksum of reference sequence",
                      "Checksum of reference sequence (SHA-512)")
@@ -135,7 +134,6 @@ def migrate_relate_ref_dir(ref_dir: Path):
     sha512_checksums = update_brickles(report, top)
     setattr(report, ChecksumsF.key, sha512_checksums)
     report.save(top, force=True)
-    return 0
 
 
 def migrate_mask_reg_dir(reg_dir: Path):
@@ -149,21 +147,22 @@ def migrate_mask_reg_dir(reg_dir: Path):
                          "Checksums of batches (SHA-512)")
     except FindAndReplaceError:
         # The report is joined.
-        return 0
+        return
     report = MaskReport.load(report_file)
     top, _ = report.parse_path(report_file)
     sha512_checksums = update_brickles(report, top)
     setattr(report, ChecksumsF.key, sha512_checksums)
     report.save(top, force=True)
-    return 0
 
 
-def migrate_mask_ref_dir(ref_dir: Path, n_procs: int):
-    dispatch(migrate_mask_reg_dir,
-             max_procs=n_procs,
-             pass_n_procs=False,
-             args=as_list_of_tuples(ref_dir.iterdir()))
-    return 0
+def migrate_mask_ref_dir(ref_dir: Path, num_cpus: int):
+    return dispatch(migrate_mask_reg_dir,
+                    num_cpus=num_cpus,
+                    pass_num_cpus=False,
+                    ordered=False,
+                    raise_on_error=False,
+                    as_list=True,
+                    args=as_list_of_tuples(ref_dir.iterdir()))
 
 
 def migrate_cluster_reg_dir(reg_dir: Path):
@@ -177,21 +176,22 @@ def migrate_cluster_reg_dir(reg_dir: Path):
                          "Checksums of batches (SHA-512)")
     except FindAndReplaceError:
         # The report is joined.
-        return 0
+        return
     report = ClusterReport.load(report_file)
     top, _ = report.parse_path(report_file)
     sha512_checksums = update_brickles(report, top)
     setattr(report, ChecksumsF.key, sha512_checksums)
     report.save(top, force=True)
-    return 0
 
 
-def migrate_cluster_ref_dir(ref_dir: Path, n_procs: int):
-    dispatch(migrate_cluster_reg_dir,
-             max_procs=n_procs,
-             pass_n_procs=False,
-             args=as_list_of_tuples(ref_dir.iterdir()))
-    return 0
+def migrate_cluster_ref_dir(ref_dir: Path, num_cpus: int):
+    return dispatch(migrate_cluster_reg_dir,
+                    num_cpus=num_cpus,
+                    pass_num_cpus=False,
+                    ordered=False,
+                    raise_on_error=False,
+                    as_list=True,
+                    args=as_list_of_tuples(ref_dir.iterdir()))
 
 
 def migrate_fold_reg_dir(reg_dir: Path):
@@ -200,61 +200,74 @@ def migrate_fold_reg_dir(reg_dir: Path):
             find_and_replace(file,
                              '"Branches": [],',
                              '"Branches": {},')
-    return 0
 
 
-def migrate_fold_ref_dir(ref_dir: Path, n_procs: int):
-    dispatch(migrate_fold_reg_dir,
-             max_procs=n_procs,
-             pass_n_procs=False,
-             args=as_list_of_tuples(ref_dir.iterdir()))
-    return 0
+def migrate_fold_ref_dir(ref_dir: Path, num_cpus: int):
+    return dispatch(migrate_fold_reg_dir,
+                    num_cpus=num_cpus,
+                    pass_num_cpus=False,
+                    ordered=False,
+                    raise_on_error=False,
+                    as_list=True,
+                    args=as_list_of_tuples(ref_dir.iterdir()))
 
 
-def migrate_sample_dir(sample_dir: Path, n_procs: int):
+def migrate_sample_dir(sample_dir: Path, num_cpus: int):
     align_dir = sample_dir.joinpath("align")
     if align_dir.is_dir():
         migrate_align_dir(align_dir)
     relate_dir = sample_dir.joinpath("relate")
     if relate_dir.is_dir():
         dispatch(migrate_relate_ref_dir,
-                 max_procs=n_procs,
-                 pass_n_procs=False,
+                 num_cpus=num_cpus,
+                 pass_num_cpus=False,
+                 ordered=False,
+                 raise_on_error=False,
+                 as_list=True,
                  args=as_list_of_tuples(relate_dir.iterdir()))
     mask_dir = sample_dir.joinpath("mask")
     if mask_dir.is_dir():
         dispatch(migrate_mask_ref_dir,
-                 max_procs=n_procs,
-                 pass_n_procs=True,
+                 num_cpus=num_cpus,
+                 pass_num_cpus=True,
+                 ordered=False,
+                 raise_on_error=False,
+                 as_list=True,
                  args=as_list_of_tuples(mask_dir.iterdir()))
     cluster_dir = sample_dir.joinpath("cluster")
     if cluster_dir.is_dir():
         dispatch(migrate_cluster_ref_dir,
-                 max_procs=n_procs,
-                 pass_n_procs=True,
+                 num_cpus=num_cpus,
+                 pass_num_cpus=True,
+                 ordered=False,
+                 raise_on_error=False,
+                 as_list=True,
                  args=as_list_of_tuples(cluster_dir.iterdir()))
     fold_dir = sample_dir.joinpath("fold")
     if fold_dir.is_dir():
         dispatch(migrate_fold_ref_dir,
-                 max_procs=n_procs,
-                 pass_n_procs=True,
-                 args=as_list_of_tuples(fold_dir.iterdir()),
-                 raise_on_error=True)
-    return 0
+                 num_cpus=num_cpus,
+                 pass_num_cpus=True,
+                 ordered=False,
+                 raise_on_error=False,
+                 as_list=True,
+                 args=as_list_of_tuples(fold_dir.iterdir()))
 
 
-def migrate_out_dir(out_dir: Path, n_procs: int):
+def migrate_out_dir(out_dir: Path, num_cpus: int):
     dispatch(migrate_sample_dir,
-             max_procs=n_procs,
-             pass_n_procs=True,
+             num_cpus=num_cpus,
+             pass_num_cpus=True,
+             ordered=False,
+             raise_on_error=False,
+             as_list=True,
              args=as_list_of_tuples(out_dir.iterdir()))
-    return 0
 
 
 @run_func(CMD_MIGRATE)
 def run(input_path: Iterable[str | Path], *,
         out_dir: str | Path,
-        max_procs: int):
+        num_cpus: int):
     """ Migrate output directories from v0.23 to v0.24 """
     input_path = list(input_path)
     if len(input_path) != 1:
@@ -279,18 +292,17 @@ def run(input_path: Iterable[str | Path], *,
         raise FileExistsError(message)
     try:
         shutil.copytree(input_dir, out_dir)
-        migrate_out_dir(out_dir, n_procs=max_procs)
+        migrate_out_dir(out_dir, num_cpus=num_cpus)
     except Exception as error:
         if out_dir.exists():
             shutil.rmtree(out_dir, ignore_errors=True)
         raise error
-    return 0
 
 
 params = [
     arg_input_path,
     opt_out_dir,
-    opt_max_procs
+    opt_num_cpus
 ]
 
 

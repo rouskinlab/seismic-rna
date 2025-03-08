@@ -13,7 +13,7 @@ from ..core.arg import (CMD_EXPORT,
                         opt_refs_meta,
                         opt_all_pos,
                         opt_force,
-                        opt_max_procs)
+                        opt_num_cpus)
 from ..core.run import run_func
 from ..core.task import dispatch
 from ..mask.table import MaskPositionTableLoader, MaskReadTableLoader
@@ -25,7 +25,7 @@ def run(input_path: Iterable[str | Path], *,
         refs_meta: str,
         all_pos: bool,
         force: bool,
-        max_procs: int) -> list[Path]:
+        num_cpus: int) -> list[Path]:
     """ Export a file of each sample for the seismic-graph web app. """
     tables = defaultdict(list)
     samples_metadata = (parse_samples_metadata(Path(samples_meta))
@@ -40,14 +40,17 @@ def run(input_path: Iterable[str | Path], *,
                        ClusterAbundanceTableLoader]:
         for table in table_type.load_tables(input_path):
             tables[(table.top, table.sample)].append(table)
-    return list(dispatch(export_sample,
-                         max_procs,
-                         pass_n_procs=False,
-                         args=list(tables.items()),
-                         kwargs=dict(samples_metadata=samples_metadata,
-                                     refs_metadata=refs_metadata,
-                                     all_pos=all_pos,
-                                     force=force)))
+    return dispatch(export_sample,
+                    num_cpus=num_cpus,
+                    pass_num_cpus=False,
+                    as_list=True,
+                    ordered=False,
+                    raise_on_error=False,
+                    args=list(tables.items()),
+                    kwargs=dict(samples_metadata=samples_metadata,
+                                refs_metadata=refs_metadata,
+                                all_pos=all_pos,
+                                force=force))
 
 
 params = [
@@ -56,7 +59,7 @@ params = [
     opt_refs_meta,
     opt_all_pos,
     opt_force,
-    opt_max_procs,
+    opt_num_cpus,
 ]
 
 

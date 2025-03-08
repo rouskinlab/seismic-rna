@@ -13,7 +13,7 @@ from ..core.arg import (opt_ct_file,
                         opt_length_fmean,
                         opt_length_fvar,
                         opt_force,
-                        opt_max_procs)
+                        opt_num_cpus)
 from ..core.batch import END5_COORD, END3_COORD
 from ..core.rna import find_ct_region
 from ..core.run import run_func
@@ -209,11 +209,14 @@ def run(*,
         length_fmean: float,
         length_fvar: float,
         force: bool,
-        max_procs: int):
+        num_cpus: int):
     """ Simulate the rate of each kind of mutation at each position. """
     return dispatch(sim_pends_ct,
-                    max_procs=max_procs,
-                    pass_n_procs=False,
+                    num_cpus=num_cpus,
+                    pass_num_cpus=False,
+                    as_list=True,
+                    ordered=False,
+                    raise_on_error=False,
                     args=as_list_of_tuples(map(Path, ct_file)),
                     kwargs=dict(center_fmean=center_fmean,
                                 center_fvar=center_fvar,
@@ -229,7 +232,7 @@ params = [
     opt_length_fmean,
     opt_length_fvar,
     opt_force,
-    opt_max_procs
+    opt_num_cpus
 ]
 
 

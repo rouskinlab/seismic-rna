@@ -21,7 +21,7 @@ from ..core.arg import (arg_fasta,
                         opt_fold_percent,
                         opt_keep_tmp,
                         opt_force,
-                        opt_max_procs,
+                        opt_num_cpus,
                         optional_path,
                         extra_defaults)
 from ..core.extern import (RNASTRUCTURE_FOLD_CMD,
@@ -60,7 +60,7 @@ def fold_region(region: Region, *,
                 fold_percent: float,
                 keep_tmp: bool,
                 force: bool,
-                n_procs: int):
+                num_cpus: int):
     ct_sim = get_ct_path(sim_dir, region, profile_name)
     if need_write(ct_sim, force):
         fasta_tmp = get_fasta_path(tmp_dir, region.ref)
@@ -80,7 +80,7 @@ def fold_region(region: Region, *,
                                               fold_mfe=fold_mfe,
                                               fold_max=fold_max,
                                               fold_percent=fold_percent,
-                                              n_procs=n_procs)))
+                                              num_cpus=num_cpus)))
             # Reformat the CT file title lines so that each is unique.
             retitle_ct(ct_tmp, ct_tmp, force=True)
             # Renumber the CT file so that it has the same numbering
@@ -114,7 +114,7 @@ def run(fasta: str | Path, *,
         keep_tmp: bool,
         tmp_dir: Path,
         force: bool,
-        max_procs: int):
+        num_cpus: int):
     # Check for the dependencies and the DATAPATH environment variable.
     require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
     require_data_path()
@@ -126,8 +126,11 @@ def run(fasta: str | Path, *,
                          coords=fold_coords,
                          primers=fold_primers)
     return dispatch(fold_region,
-                    max_procs=max_procs,
-                    pass_n_procs=True,
+                    num_cpus=num_cpus,
+                    pass_num_cpus=True,
+                    as_list=True,
+                    ordered=False,
+                    raise_on_error=False,
                     args=as_list_of_tuples(regions.regions),
                     kwargs=dict(sim_dir=Path(sim_dir),
                                 tmp_dir=tmp_dir,
@@ -157,7 +160,7 @@ params = [arg_fasta,
           opt_fold_percent,
           opt_keep_tmp,
           opt_force,
-          opt_max_procs]
+          opt_num_cpus]
 
 
 @command(COMMAND, params=params)

@@ -17,7 +17,7 @@ from ..core.arg import (CMD_SPLITBAM,
                         opt_branch,
                         opt_force,
                         opt_keep_tmp,
-                        opt_max_procs,
+                        opt_num_cpus,
                         opt_bt2_local,
                         opt_bt2_discordant,
                         opt_bt2_mixed,
@@ -67,7 +67,7 @@ def split_xam_file(xam_file: Path,
                    fasta: Path,
                    phred_enc: int,
                    force: bool,
-                   n_procs: int,
+                   num_cpus: int,
                    **kwargs):
     began = datetime.now()
     # Assume the XAM file is named for the sample.
@@ -86,18 +86,18 @@ def split_xam_file(xam_file: Path,
                                     path.BRANCHES: branches,
                                     path.REF: fasta.stem,
                                     path.EXT: xam_file.suffix})
-        run_sort_xam(xam_file, xam_sorted, n_procs=n_procs)
-        run_index_xam(xam_sorted, n_procs=n_procs)
+        run_sort_xam(xam_file, xam_sorted, num_cpus=num_cpus)
+        run_index_xam(xam_sorted, num_cpus=num_cpus)
         # Split the XAM file into one file for each reference.
         release_dir = tmp_dir.joinpath("release")
-        paired = xam_paired(run_flagstat(xam_file, n_procs=n_procs))
+        paired = xam_paired(run_flagstat(xam_file, num_cpus=num_cpus))
         reads_refs = split_references(xam_sorted,
                                       fasta=fasta,
                                       paired=paired,
                                       phred_arg=format_phred_arg(phred_enc),
                                       top=release_dir,
                                       branches=branches,
-                                      n_procs=n_procs,
+                                      num_cpus=num_cpus,
                                       **kwargs)
         release_to_out(out_dir,
                        release_dir,
@@ -194,7 +194,7 @@ def run(fasta: str | Path, *,
         f1r2_fwd: bool,
         rev_label: str,
         # Parallelization
-        max_procs: int,
+        num_cpus: int,
         force: bool) -> list[Path]:
     """ Trim FASTQ files and align them to reference sequences. """
     # Check for external dependencies.
@@ -206,8 +206,11 @@ def run(fasta: str | Path, *,
     check_duplicate_samples(xam_files)
     # Split each input XAM file.
     return dispatch(split_xam_file,
-                    max_procs=max_procs,
-                    pass_n_procs=True,
+                    num_cpus=num_cpus,
+                    pass_num_cpus=True,
+                    as_list=True,
+                    ordered=False,
+                    raise_on_error=False,
                     args=as_list_of_tuples(xam_files),
                     kwargs=dict(fasta=Path(fasta),
                                 phred_enc=phred_enc,
@@ -275,7 +278,7 @@ params = [
     opt_f1r2_fwd,
     opt_rev_label,
     # Parallelization
-    opt_max_procs,
+    opt_num_cpus,
     opt_force,
 ]
 

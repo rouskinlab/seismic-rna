@@ -19,7 +19,7 @@ from .core.arg import (CMD_JOIN,
                        opt_verify_times,
                        opt_tmp_pfx,
                        opt_keep_tmp,
-                       opt_max_procs,
+                       opt_num_cpus,
                        opt_force,
                        extra_defaults)
 from .core.error import InconsistentValueError, NoDataError
@@ -117,7 +117,7 @@ def join_regions(out_dir: Path,
                  cluster_pos_table: bool,
                  cluster_abundance_table: bool,
                  verify_times: bool,
-                 n_procs: int,
+                 num_cpus: int,
                  force: bool):
     """ Join one or more regions (horizontally).
 
@@ -153,7 +153,7 @@ def join_regions(out_dir: Path,
         Tabulate number of reads per cluster for cluster data.
     verify_times: bool
         Verify that report files from later steps have later timestamps.
-    n_procs: bool
+    num_cpus: bool
         Number of processors to use.
     force: bool
         Force the report to be written, even if it exists.
@@ -253,7 +253,7 @@ def join_regions(out_dir: Path,
                  pos_table=pos_table,
                  read_table=read_table,
                  clust_table=clust_table,
-                 n_procs=n_procs,
+                 num_cpus=num_cpus,
                  force=True)
         # Rewrite the report file with the updated time.
         if clustered:
@@ -280,7 +280,7 @@ def run(input_path: Iterable[str | Path], *,
         verify_times: bool,
         tmp_pfx: str | Path,
         keep_tmp: bool,
-        max_procs: int,
+        num_cpus: int,
         force: bool) -> list[Path]:
     """ Merge regions (horizontally) from the Mask or Cluster step. """
     if not joined:
@@ -347,8 +347,11 @@ def run(input_path: Iterable[str | Path], *,
                       keep_tmp=keep_tmp,
                       force=force)
         results.extend(dispatch(join_regions,
-                                max_procs=max_procs,
-                                pass_n_procs=True,
+                                num_cpus=num_cpus,
+                                pass_num_cpus=True,
+                                as_list=False,
+                                ordered=False,
+                                raise_on_error=False,
                                 args=args,
                                 kwargs=kwargs))
     return results
@@ -365,7 +368,7 @@ params = [
     opt_verify_times,
     opt_tmp_pfx,
     opt_keep_tmp,
-    opt_max_procs,
+    opt_num_cpus,
     opt_force,
 ]
 

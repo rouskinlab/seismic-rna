@@ -38,7 +38,7 @@ from ..core.arg import (CMD_MASK,
                         opt_mask_pos_table,
                         opt_mask_read_table,
                         opt_brotli_level,
-                        opt_max_procs,
+                        opt_num_cpus,
                         opt_force,
                         optional_path,
                         extra_defaults)
@@ -114,7 +114,7 @@ def run(input_path: Iterable[str | Path], *,
         # Compression
         brotli_level: int,
         # Parallelization
-        max_procs: int,
+        num_cpus: int,
         # Effort
         force: bool) -> list[Path]:
     """ Define mutations and regions to filter reads and positions. """
@@ -126,7 +126,11 @@ def run(input_path: Iterable[str | Path], *,
         regions_file=optional_path(mask_regions_file)
     )
     return dispatch(mask_region,
-                    max_procs=max_procs,
+                    num_cpus=num_cpus,
+                    pass_num_cpus=True,
+                    as_list=True,
+                    ordered=False,
+                    raise_on_error=False,
                     args=[(dataset, region)
                           for ref, ref_datasets in datasets.items()
                           for dataset, region in product(ref_datasets,
@@ -201,7 +205,7 @@ params = [
     # Compression
     opt_brotli_level,
     # Parallelization
-    opt_max_procs,
+    opt_num_cpus,
     # Effort
     opt_force,
 ]

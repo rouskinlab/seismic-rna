@@ -16,7 +16,7 @@ from .core.arg import (CMD_TABLE,
                        opt_cluster_pos_table,
                        opt_cluster_abundance_table,
                        opt_verify_times,
-                       opt_max_procs,
+                       opt_num_cpus,
                        opt_force)
 from .core.dataset import Dataset, MutsDataset
 from .core.run import run_func
@@ -34,11 +34,11 @@ def tabulate(dataset: MutsDataset,
              read_table: bool,
              clust_table: bool,
              force: bool,
-             n_procs: int):
+             num_cpus: int):
     files = tabulator_type(dataset=dataset,
                            count_pos=pos_table,
                            count_read=read_table,
-                           max_procs=n_procs).write_tables(pos=pos_table,
+                           num_cpus=num_cpus).write_tables(pos=pos_table,
                                                            read=read_table,
                                                            clust=clust_table,
                                                            force=force)
@@ -94,7 +94,7 @@ def run(input_path: Iterable[str | Path], *,
         cluster_pos_table: bool,
         cluster_abundance_table: bool,
         verify_times: bool,
-        max_procs: int,
+        num_cpus: int,
         force: bool) -> list[Path]:
     """ Tabulate counts of relationships per read and position. """
     # Load the datasets from the report files.
@@ -110,8 +110,11 @@ def run(input_path: Iterable[str | Path], *,
                                         cluster_pos_table,
                                         cluster_abundance_table)))
     return list(chain(*dispatch(tabulate,
-                                max_procs=max_procs,
-                                pass_n_procs=True,
+                                num_cpus=num_cpus,
+                                pass_num_cpus=True,
+                                as_list=False,
+                                ordered=False,
+                                raise_on_error=False,
                                 args=args,
                                 kwargs=dict(force=force))))
 
@@ -128,7 +131,7 @@ params = [
     # Validation
     opt_verify_times,
     # Parallelization
-    opt_max_procs,
+    opt_num_cpus,
     # Effort
     opt_force,
 ]

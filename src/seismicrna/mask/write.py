@@ -76,7 +76,7 @@ class Masker(object):
                  brotli_level: int,
                  top: Path,
                  branch: str,
-                 max_procs: int = 1):
+                 num_cpus: int = 1):
         # Set the general parameters.
         self._began = datetime.now()
         self.dataset = dataset
@@ -131,7 +131,7 @@ class Masker(object):
                                         branch,
                                         dataset.branches)
         # Parallelization
-        self.max_procs = max_procs
+        self.num_cpus = num_cpus
 
     # This property can change: do not cache it.
     @property
@@ -492,7 +492,7 @@ class Masker(object):
             count_pos=True,
             count_read=self.count_read,
             validate=False,
-            max_procs=self.max_procs,
+            num_cpus=self.num_cpus,
         )
         # Count the informative and mutated bases.
         info = tabulator.data_per_pos[INFOR_REL]
@@ -621,7 +621,7 @@ class Masker(object):
         )
 
     def __str__(self):
-        return f"Mask {self.dataset} over {self.region}"
+        return f"{type(self).__name__}: {self.dataset} over {self.region}"
 
 
 def get_pattern(mask_del: bool,
@@ -651,7 +651,7 @@ def mask_region(dataset: RelateMutsDataset | PoolDataset,
                 mask_pos_table: bool,
                 mask_read_table: bool,
                 force: bool,
-                n_procs: int,
+                num_cpus: int,
                 **kwargs):
     """ Mask out certain reads, positions, and relationships. """
     # Check if the report file already exists.
@@ -669,7 +669,7 @@ def mask_region(dataset: RelateMutsDataset | PoolDataset,
                         top=tmp_dir,
                         branch=branch,
                         count_read=mask_read_table,
-                        max_procs=n_procs,
+                        num_cpus=num_cpus,
                         **kwargs)
         tabulator, report_saved = masker.mask()
         tabulator.write_tables(pos=mask_pos_table, read=mask_read_table)

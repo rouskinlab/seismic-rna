@@ -128,16 +128,16 @@ class TestWorkflow(ut.TestCase):
                             pdf=True,
                             png=True,
                             verify_times=True,
-                            max_procs=1,
+                            num_cpus=1,
                             force=False)
         rel_graph_kwargs = graph_kwargs | dict(rels=("m",),
                                                use_ratio=True,
                                                quantile=0.0)
-        clust_rel_graph_kwargs = rel_graph_kwargs | {"cgroup":GROUP_ALL,
-                                                     K_CLUST_KEY:[(1,1),
-                                                                  (2,2)],
-                                                     "k":None,
-                                                     "clust":None}
+        clust_rel_graph_kwargs = rel_graph_kwargs | {"cgroup": GROUP_ALL,
+                                                     K_CLUST_KEY: [(1, 1),
+                                                                   (2, 2)],
+                                                     "k": None,
+                                                     "clust": None}
         pair_graph_kwargs = rel_graph_kwargs | dict(out_dir=self.OUT_DIR,
                                                     comppair=True,
                                                     compself=False)
@@ -295,7 +295,7 @@ class TestWorkflow(ut.TestCase):
                 )
         cluster_report = cluster_dir.joinpath("cluster-report.json")
         cluster_dataset = ClusterMutsDataset(cluster_report)
-        target_tracks = [(1,1), (2,2)]
+        target_tracks = [(1, 1), (2, 2)]
         tracks = make_tracks(source=cluster_dataset,
                              k=None,
                              clust=None,
@@ -304,12 +304,12 @@ class TestWorkflow(ut.TestCase):
         tracks = make_tracks(source=cluster_dataset,
                              k=1,
                              clust=None,
-                             k_clust_list=[(2,2)])
+                             k_clust_list=[(2, 2)])
         self.assertListEqual(tracks, target_tracks)
         tracks = make_tracks(source=cluster_dataset,
                              k=None,
                              clust=2,
-                             k_clust_list=[(1,1)])
+                             k_clust_list=[(1, 1)])
         self.assertListEqual(tracks, target_tracks)
         for sample1, sample2 in combinations(sorted(samples), 2):
             sample = f"{sample1}_VS_{sample2}"
@@ -458,52 +458,52 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
             relate_reports.append(relate_report)
         self.check_no_identical(relate_reports, False)
         # Pool relate reports.
-        pool_dirs = run_pool(relate_reports, pooled=self.POOLED)
-        pool_reports = [out_dir.joinpath(self.POOLED,
-                                         "relate",
-                                         self.REF,
-                                         "relate-report.json")
-                        for out_dir in self.OUT_DIRS]
+        pool_dirs = sorted(run_pool(relate_reports, pooled=self.POOLED))
+        pool_reports = sorted(out_dir.joinpath(self.POOLED,
+                                               "relate",
+                                               self.REF,
+                                               "relate-report.json")
+                              for out_dir in self.OUT_DIRS)
         for pool_report, pool_dir in zip(pool_reports, pool_dirs, strict=True):
             self.assertTrue(pool_report.is_file())
             self.assertEqual(pool_dir, pool_report.parent)
         # Mask relate reports.
-        mask_dirs = run_mask(relate_reports,
-                             mask_coords=[(self.REF, 5, 50)],
-                             min_ninfo_pos=1)
-        mask_reports = [out_dir.joinpath(self.SAMPLE,
-                                         "mask",
-                                         self.REF,
-                                         "5-50",
-                                         "mask-report.json")
-                        for out_dir in self.OUT_DIRS]
+        mask_dirs = sorted(run_mask(relate_reports,
+                                    mask_coords=[(self.REF, 5, 50)],
+                                    min_ninfo_pos=1))
+        mask_reports = sorted(out_dir.joinpath(self.SAMPLE,
+                                               "mask",
+                                               self.REF,
+                                               "5-50",
+                                               "mask-report.json")
+                              for out_dir in self.OUT_DIRS)
         for mask_report, mask_dir in zip(mask_reports, mask_dirs, strict=True):
             self.assertTrue(mask_report.is_file())
             self.assertEqual(mask_dir, mask_report.parent)
         self.check_no_identical(mask_reports, False)
         # Join mask reports.
-        mjoin_dirs = run_join(mask_reports, joined=self.MJOINED)
-        mjoin_reports = [out_dir.joinpath(self.SAMPLE,
-                                          "mask",
-                                          self.REF,
-                                          self.MJOINED,
-                                          "mask-report.json")
-                         for out_dir in self.OUT_DIRS]
+        mjoin_dirs = sorted(run_join(mask_reports, joined=self.MJOINED))
+        mjoin_reports = sorted(out_dir.joinpath(self.SAMPLE,
+                                                "mask",
+                                                self.REF,
+                                                self.MJOINED,
+                                                "mask-report.json")
+                               for out_dir in self.OUT_DIRS)
         for mjoin_report, mjoin_dir in zip(mjoin_reports,
                                            mjoin_dirs,
                                            strict=True):
             self.assertTrue(mjoin_report.is_file())
             self.assertEqual(mjoin_dir, mjoin_report.parent)
         # Cluster mask reports.
-        cluster_dirs = run_cluster(mask_dirs,
-                                   max_clusters=1,
-                                   jackpot=False)
-        cluster_reports = [out_dir.joinpath(self.SAMPLE,
-                                            "cluster",
-                                            self.REF,
-                                            "5-50",
-                                            "cluster-report.json")
-                           for out_dir in self.OUT_DIRS]
+        cluster_dirs = sorted(run_cluster(mask_dirs,
+                                          max_clusters=1,
+                                          jackpot=False))
+        cluster_reports = sorted(out_dir.joinpath(self.SAMPLE,
+                                                  "cluster",
+                                                  self.REF,
+                                                  "5-50",
+                                                  "cluster-report.json")
+                                 for out_dir in self.OUT_DIRS)
         for cluster_report, cluster_dir in zip(cluster_reports,
                                                cluster_dirs,
                                                strict=True):
@@ -511,14 +511,14 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
             self.assertEqual(cluster_dir, cluster_report.parent)
         self.check_no_identical(cluster_reports, False)
         # Join cluster reports.
-        cjoin_dirs = run_join(cluster_reports, joined=self.CJOINED)
-        cjoin_reports = [out_dir.joinpath(self.SAMPLE,
-                                          step,
-                                          self.REF,
-                                          self.CJOINED,
-                                          f"{step}-report.json")
-                         for step in ["mask", "cluster"]
-                         for out_dir in self.OUT_DIRS]
+        cjoin_dirs = sorted(run_join(cluster_reports, joined=self.CJOINED))
+        cjoin_reports = sorted(out_dir.joinpath(self.SAMPLE,
+                                                step,
+                                                self.REF,
+                                                self.CJOINED,
+                                                f"{step}-report.json")
+                               for step in ["mask", "cluster"]
+                               for out_dir in self.OUT_DIRS)
         for cjoin_report, cjoin_dir in zip(cjoin_reports,
                                            cjoin_dirs,
                                            strict=True):

@@ -328,7 +328,7 @@ class TwoTableRunner(TableRunner, ABC):
             compself: bool,
             comppair: bool,
             verify_times: bool,
-            max_procs: int,
+            num_cpus: int,
             **kwargs):
         # List all table files.
         tables = list(load_pos_tables(input_path,
@@ -346,8 +346,11 @@ class TwoTableRunner(TableRunner, ABC):
         writers = [writer_type(table1, table2)
                    for table1, table2 in table_pairs]
         return list(chain(*dispatch([writer.write for writer in writers],
-                                    max_procs,
-                                    pass_n_procs=False,
+                                    num_cpus=num_cpus,
+                                    pass_num_cpus=False,
+                                    as_list=False,
+                                    ordered=False,
+                                    raise_on_error=False,
                                     kwargs=kwargs)))
 
 

@@ -21,7 +21,7 @@ from ..core.arg import (opt_param_dir,
                         opt_write_read_names,
                         opt_brotli_level,
                         opt_force,
-                        opt_max_procs)
+                        opt_num_cpus)
 from ..core.rna import find_ct_region
 from ..core.run import run_func
 from ..core.task import as_list_of_tuples, dispatch
@@ -86,11 +86,14 @@ def run(*,
         brotli_level: int,
         tmp_dir: Path,
         force: bool,
-        max_procs: int):
+        num_cpus: int):
     """ Simulate a Relate dataset. """
     return dispatch(from_param_dir,
-                    max_procs=max_procs,
-                    pass_n_procs=False,
+                    num_cpus=num_cpus,
+                    pass_num_cpus=False,
+                    as_list=True,
+                    ordered=False,
+                    raise_on_error=False,
                     args=as_list_of_tuples(map(Path, param_dir)),
                     kwargs=dict(sample=sample,
                                 branch=branch,
@@ -121,7 +124,7 @@ params = [
     opt_write_read_names,
     opt_brotli_level,
     opt_force,
-    opt_max_procs
+    opt_num_cpus
 ]
 
 

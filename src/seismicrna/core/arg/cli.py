@@ -13,9 +13,9 @@ from ..seq import DNA
 
 # System information
 CWD = os.getcwd()
-if (NUM_CPUS := os.cpu_count()) is None:
+if (CPU_COUNT := os.cpu_count()) is None:
     logging.warning("Failed to determine CPU count: defaulting to 1")
-    NUM_CPUS = 1
+    CPU_COUNT = 1
 
 DEFAULT_MIN_PHRED = 25
 
@@ -106,11 +106,11 @@ opt_branch = Option(
 
 # Resource usage options
 
-opt_max_procs = Option(
-    ("--max-procs",),
+opt_num_cpus = Option(
+    ("--num-cpus",),
     type=int,
-    default=NUM_CPUS,
-    help="Run up to this many processes simultaneously"
+    default=CPU_COUNT,
+    help="Use up to this many CPUs simultaneously"
 )
 
 # Experiment and analysis setup options

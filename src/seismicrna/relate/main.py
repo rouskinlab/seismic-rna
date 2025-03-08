@@ -29,7 +29,7 @@ from ..core.arg import (CMD_RELATE,
                         opt_relate_pos_table,
                         opt_relate_read_table,
                         opt_relate_cx,
-                        opt_max_procs,
+                        opt_num_cpus,
                         opt_force,
                         opt_keep_tmp)
 from ..core.logs import logger
@@ -77,7 +77,7 @@ def run(fasta: str | Path,
         relate_pos_table: bool,
         relate_read_table: bool,
         relate_cx: bool,
-        max_procs: int,
+        num_cpus: int,
         brotli_level: int,
         force: bool,
         keep_tmp: bool):
@@ -95,8 +95,11 @@ def run(fasta: str | Path,
     xam_files = list(path.find_files_chain(input_path, path.XAM_SEGS))
     check_duplicates(xam_files)
     return dispatch(relate_xam,
-                    max_procs,
-                    pass_n_procs=True,
+                    num_cpus=num_cpus,
+                    pass_num_cpus=True,
+                    as_list=True,
+                    ordered=False,
+                    raise_on_error=False,
                     args=as_list_of_tuples(xam_files),
                     kwargs=dict(fasta=relate_fasta,
                                 out_dir=Path(out_dir),
@@ -152,7 +155,7 @@ params = [
     # Implementation options
     opt_relate_cx,
     # Parallelization
-    opt_max_procs,
+    opt_num_cpus,
     # File generation
     opt_force,
     opt_keep_tmp,

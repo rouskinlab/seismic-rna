@@ -12,7 +12,7 @@ from ..core.arg import (CMD_DRAW,
                         opt_draw_svg,
                         opt_draw_png,
                         opt_update_rnartistcore,
-                        opt_max_procs)
+                        opt_num_cpus)
 from ..core.run import run_func
 from ..core.task import dispatch, as_list_of_tuples
 from .draw import draw
@@ -26,7 +26,7 @@ def run(input_path: Iterable[str | Path], *,
         draw_png: bool,
         update_rnartistcore: bool,
         force: bool,
-        max_procs: int,
+        num_cpus: int,
         tmp_dir: Path,
         verify_times: bool,
         keep_tmp: bool) -> list[Path]:
@@ -36,9 +36,12 @@ def run(input_path: Iterable[str | Path], *,
                                                    [path.FoldRepSeg]))
     # Draw the files.
     return dispatch(draw,
-                    max_procs,
+                    num_cpus=num_cpus,
+                    pass_num_cpus=True,
+                    as_list=True,
+                    ordered=False,
+                    raise_on_error=False,
                     args=args,
-                    pass_n_procs=True,
                     kwargs=dict(struct_num=struct_num,
                                 color=color,
                                 draw_svg=draw_svg,
@@ -47,7 +50,7 @@ def run(input_path: Iterable[str | Path], *,
                                 tmp_dir=tmp_dir,
                                 keep_tmp=keep_tmp,
                                 verify_times=verify_times,
-                                force=force, ))
+                                force=force))
 
 
 params = [
@@ -60,7 +63,7 @@ params = [
     opt_force,
     opt_keep_tmp,
     opt_verify_times,
-    opt_max_procs
+    opt_num_cpus
 ]
 
 

@@ -171,7 +171,7 @@ def _iter_records_paired(sam_file: Path, start: int, stop: int):
     logger.routine(f"Ended iterating through paired-end records in {sam_file}")
 
 
-def tmp_xam_cmd(xam_in: Path, xam_out: Path, paired: bool, n_procs: int = 1):
+def tmp_xam_cmd(xam_in: Path, xam_out: Path, paired: bool, num_cpus: int = 1):
     """ Collate and create a temporary XAM file. """
     flags_req = 0
     flags_exc = (FLAG_UNMAP
@@ -186,7 +186,7 @@ def tmp_xam_cmd(xam_in: Path, xam_out: Path, paired: bool, n_procs: int = 1):
                                        None,
                                        tmp_pfx=xam_out.with_suffix(""),
                                        fast=True,
-                                       n_procs=max(n_procs - 1, 1))
+                                       num_cpus=max(num_cpus - 1, 1))
         # Remove the header.
         view_step = view_xam_cmd(None,
                                  xam_out,
@@ -212,12 +212,12 @@ class XamViewer(object):
                  tmp_dir: Path,
                  branch: str,
                  batch_size: int,
-                 n_procs: int = 1):
+                 num_cpus: int = 1):
         self.xam_input = xam_input
         self.tmp_dir = tmp_dir
         self.branch = branch
         self.batch_size = batch_size
-        self.n_procs = n_procs
+        self.num_cpus = num_cpus
 
     @cached_property
     def _sample_ref_ancestors_flat(self):
@@ -249,7 +249,7 @@ class XamViewer(object):
 
     @cached_property
     def flagstats(self):
-        return run_flagstat(self.xam_input, n_procs=self.n_procs)
+        return run_flagstat(self.xam_input, num_cpus=self.num_cpus)
 
     @cached_property
     def paired(self):
@@ -279,7 +279,7 @@ class XamViewer(object):
             run_tmp_xam(self.xam_input,
                         self.tmp_sam_path,
                         paired=self.paired,
-                        n_procs=self.n_procs)
+                        num_cpus=self.num_cpus)
 
     def delete_tmp_sam(self):
         """ Delete the temporary SAM file. """

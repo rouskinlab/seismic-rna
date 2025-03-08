@@ -215,14 +215,14 @@ class RegionInfo(object):
                  ks: Iterable[int],
                  report_file: Path,
                  verify_times: bool,
-                 max_procs: int):
+                 num_cpus: int):
         self.reg = reg
         self.end5 = end5
         self.end3 = end3
         self.ks = sorted(ks)
         self.report_file = report_file
         self.verify_times = verify_times
-        self.max_procs = max_procs
+        self.num_cpus = num_cpus
 
     @property
     def ends(self):
@@ -233,7 +233,7 @@ class RegionInfo(object):
         return get_clust_params(
             ClusterMutsDataset(self.report_file,
                                verify_times=self.verify_times),
-            max_procs=self.max_procs
+            num_cpus=self.num_cpus
         )
 
     def __str__(self):
@@ -246,7 +246,7 @@ class RegionInfo(object):
 def group_clusters(cluster_dirs: Iterable[Path],
                    max_marcd_join,
                    verify_times: bool,
-                   max_procs: int):
+                   num_cpus: int):
     logger.routine("Began grouping regions")
     # List the fields and 5'/3' ends of each clustered dataset.
     regs_info = defaultdict(list)
@@ -273,7 +273,7 @@ def group_clusters(cluster_dirs: Iterable[Path],
                                   ks,
                                   report_file,
                                   verify_times,
-                                  max_procs)
+                                  num_cpus)
             regs_info[key].append(reg_info)
             logger.detail(f"Found reference {repr(ref)} {reg_info} "
                           f"for sample {repr(sample)} in {top}")
@@ -347,7 +347,7 @@ def run(input_path: Iterable[str | Path], *,
         keep_tmp: bool,
         brotli_level: int,
         force: bool,
-        max_procs: int,
+        num_cpus: int,
         # Mask options
         mask_coords: Iterable[tuple[str, int, int]],
         mask_primers: Iterable[tuple[str, DNA, DNA]],
@@ -457,7 +457,7 @@ def run(input_path: Iterable[str | Path], *,
         mask_pos_table=mask_pos_table,
         mask_read_table=mask_read_table,
         brotli_level=brotli_level,
-        max_procs=max_procs,
+        num_cpus=num_cpus,
         force=force,
     )
     cluster_dirs = cluster_mod.run(
@@ -487,14 +487,14 @@ def run(input_path: Iterable[str | Path], *,
         cluster_abundance_table=cluster_abundance_table,
         verify_times=verify_times,
         brotli_level=brotli_level,
-        max_procs=max_procs,
+        num_cpus=num_cpus,
         force=force,
     )
     logger.status(f"Began {CMD_JOIN}")
     cluster_groups = group_clusters(cluster_dirs,
                                     max_marcd_join=max_marcd_join,
                                     verify_times=verify_times,
-                                    max_procs=max_procs)
+                                    num_cpus=num_cpus)
     join_dirs = list()
     # Join the masked regions first, then the clustered regions, because
     # the clustered regions require the masked regions.
@@ -531,8 +531,11 @@ def run(input_path: Iterable[str | Path], *,
                       keep_tmp=keep_tmp,
                       force=force)
         join_dirs.extend(dispatch(join_regions,
-                                  max_procs=max_procs,
-                                  pass_n_procs=True,
+                                  num_cpus=num_cpus,
+                                  pass_num_cpus=True,
+                                  as_list=False,
+                                  ordered=False,
+                                  raise_on_error=False,
                                   args=args,
                                   kwargs=kwargs))
     logger.status(f"Ended {CMD_JOIN}")

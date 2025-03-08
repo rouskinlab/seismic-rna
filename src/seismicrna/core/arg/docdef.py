@@ -10,7 +10,7 @@ from .default import cli_defaults, cli_opts
 reserved_params = ["self", "cls"]
 
 # Get the default value for every parameter.
-api_defaults = dict(n_procs=cli.NUM_CPUS)
+api_defaults = dict(num_cpus=cli.CPU_COUNT)
 all_defaults = cli_defaults | api_defaults
 
 # Get the documentation for every CLI option.

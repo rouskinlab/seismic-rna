@@ -14,7 +14,7 @@ from ..core.arg import (opt_ct_file,
                         opt_vmut_paired,
                         opt_vmut_unpaired,
                         opt_force,
-                        opt_max_procs)
+                        opt_num_cpus)
 from ..core.error import NoDataError
 from ..core.header import RelClustHeader, list_clusts, make_header, parse_header
 from ..core.rel import (MATCH,
@@ -399,11 +399,14 @@ def run(*,
         vmut_paired: float,
         vmut_unpaired: float,
         force: bool,
-        max_procs: int):
+        num_cpus: int):
     """ Simulate the rate of each kind of mutation at each position. """
     return dispatch(run_struct,
-                    max_procs=max_procs,
-                    pass_n_procs=False,
+                    num_cpus=num_cpus,
+                    pass_num_cpus=False,
+                    as_list=True,
+                    ordered=False,
+                    raise_on_error=False,
                     args=as_list_of_tuples(map(Path, ct_file)),
                     kwargs=dict(pmut_paired=pmut_paired,
                                 pmut_unpaired=pmut_unpaired,
@@ -419,7 +422,7 @@ params = [
     opt_vmut_paired,
     opt_vmut_unpaired,
     opt_force,
-    opt_max_procs
+    opt_num_cpus
 ]
 
 

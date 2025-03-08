@@ -240,19 +240,19 @@ class BatchTabulator(Tabulator, ABC):
     def __init__(self, *,
                  get_batch_count_all: Callable,
                  num_batches: int,
-                 max_procs: int = 1,
+                 num_cpus: int = 1,
                  **kwargs):
         super().__init__(**kwargs)
         self._get_batch_count_all = get_batch_count_all
         self.num_batches = num_batches
-        self.max_procs = max_procs
+        self.num_cpus = num_cpus
 
     @cached_property
     def _counts(self):
         logger.routine(f"Began tabulating {self}")
         counts = accumulate_batches(self._get_batch_count_all,
                                     self.num_batches,
-                                    max_procs=self.max_procs,
+                                    num_cpus=self.num_cpus,
                                     **self._accum_kwargs)
         logger.routine(f"Ended tabulating {self}")
         return counts

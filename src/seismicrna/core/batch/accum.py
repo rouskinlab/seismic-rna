@@ -54,56 +54,54 @@ def accumulate_counts(batch_counts: Iterable[tuple[Any, Any, Any, Any]],
     # Initialize the counts per read.
     count_per_batch_read = list() if count_read else None
     # Accumulate the counts from the batches.
-    for (i, (num_reads_i,
-             end_counts_i,
-             count_per_pos_i,
-             count_per_read_i)) in enumerate(batch_counts):
-        logger.detail(f"Began adding counts for batch {i}")
-        require_isinstance(f"num_reads_{i}",
+    for (num_reads_i,
+         end_counts_i,
+         count_per_pos_i,
+         count_per_read_i) in batch_counts:
+        require_isinstance(f"num_reads_i",
                            num_reads_i,
                            type(num_reads))
         if validate and isinstance(num_reads, pd.Series):
-            require_index_equals(f"num_reads_{i}.index",
+            require_index_equals(f"num_reads_i.index",
                                  num_reads_i.index,
                                  num_reads.index,
                                  "num_reads.index")
         num_reads += num_reads_i
         if end_counts is not None:
-            require_isinstance(f"end_counts_{i}",
+            require_isinstance(f"end_counts_i",
                                end_counts_i,
                                type(end_counts))
             if validate and isinstance(end_counts, pd.DataFrame):
-                require_index_equals(f"end_counts_{i}.columns",
+                require_index_equals(f"end_counts_i.columns",
                                      end_counts_i.columns,
                                      end_counts.columns,
                                      "end_counts.columns")
             end_counts = end_counts.add(end_counts_i,
                                         fill_value=zero).astype(dtype, copy=False)
         if count_per_pos is not None:
-            require_isinstance(f"count_per_pos_{i}",
+            require_isinstance(f"count_per_pos_i",
                                count_per_pos_i,
                                pd.DataFrame)
             if validate:
-                require_index_equals(f"count_per_pos_{i}.index",
+                require_index_equals(f"count_per_pos_i.index",
                                      count_per_pos_i.index,
                                      count_per_pos.index,
                                      "count_per_pos.index")
-                require_index_equals(f"count_per_pos_{i}.columns",
+                require_index_equals(f"count_per_pos_i.columns",
                                      count_per_pos_i.columns,
                                      count_per_pos.columns,
                                      "count_per_pos.columns")
             count_per_pos += count_per_pos_i
         if count_per_batch_read is not None:
-            require_isinstance(f"count_per_read_{i}",
+            require_isinstance(f"count_per_read_i",
                                count_per_read_i,
                                pd.DataFrame)
             if validate:
-                require_index_equals(f"count_per_read_{i}.columns",
+                require_index_equals(f"count_per_read_i.columns",
                                      count_per_read_i.columns,
                                      rel_header.index,
                                      "rel_header.index")
             count_per_batch_read.append(count_per_read_i)
-        logger.detail(f"Ended adding counts for batch {i}")
     # Concatenate the per-read counts for the batches.
     if count_per_batch_read:
         count_per_read = pd.concat(count_per_batch_read, axis=0)
@@ -126,13 +124,15 @@ def accumulate_batches(
         count_pos: bool = True,
         count_read: bool = True,
         validate: bool = True,
-        max_procs: int = 1
+        num_cpus: int = 1
 ):
     logger.routine(f"Began accumulating counts of {num_batches} batches")
     # Generate the counts for the batches in parallel.
     batch_counts = dispatch(get_batch_count_all,
-                            max_procs=max_procs,
-                            pass_n_procs=False,
+                            num_cpus=num_cpus,
+                            pass_num_cpus=False,
+                            as_list=False,
+                            ordered=False,
                             raise_on_error=True,
                             args=as_list_of_tuples(range(num_batches)),
                             kwargs=dict(patterns=patterns,

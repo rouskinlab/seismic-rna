@@ -11,7 +11,7 @@ from ..core.arg import (CMD_CLUSTER,
                         opt_keep_tmp,
                         opt_min_clusters,
                         opt_max_clusters,
-opt_min_em_runs,
+                        opt_min_em_runs,
                         opt_max_em_runs,
                         opt_em_thresh,
                         opt_min_em_iter,
@@ -32,7 +32,7 @@ opt_min_em_runs,
                         opt_cluster_abundance_table,
                         opt_verify_times,
                         opt_brotli_level,
-                        opt_max_procs,
+                        opt_num_cpus,
                         opt_force)
 from ..core.run import run_func
 from ..core.task import as_list_of_tuples, dispatch
@@ -67,13 +67,16 @@ def run(input_path: Iterable[str | Path], *,
         cluster_abundance_table: bool,
         verify_times: bool,
         brotli_level: int,
-        max_procs: int,
+        num_cpus: int,
         force: bool) -> list[Path]:
     """ Infer alternative structures by clustering reads' mutations. """
     datasets = load_mask_dataset.iterate(input_path, verify_times=verify_times)
     return dispatch(cluster,
-                    max_procs,
-                    pass_n_procs=True,
+                    num_cpus=num_cpus,
+                    pass_num_cpus=True,
+                    as_list=True,
+                    ordered=False,
+                    raise_on_error=False,
                     args=as_list_of_tuples(datasets),
                     kwargs=dict(tmp_pfx=tmp_pfx,
                                 branch=branch,
@@ -136,7 +139,7 @@ params = [
     # Compression
     opt_brotli_level,
     # Parallelization
-    opt_max_procs,
+    opt_num_cpus,
     # Effort
     opt_force,
     opt_tmp_pfx,

@@ -84,7 +84,7 @@ def run(fasta: str | Path,
         keep_tmp: bool,
         brotli_level: int,
         force: bool,
-        max_procs: int,
+        num_cpus: int,
         # FASTQ options
         fastqz: Iterable[str | Path],
         fastqy: Iterable[str | Path],
@@ -296,7 +296,7 @@ def run(fasta: str | Path,
         tmp_pfx=tmp_pfx,
         keep_tmp=keep_tmp,
         force=force,
-        max_procs=max_procs,
+        num_cpus=num_cpus,
         fasta=fasta,
         fastqz=fastqz,
         fastqy=fastqy,
@@ -365,7 +365,7 @@ def run(fasta: str | Path,
         relate_pos_table=relate_pos_table,
         relate_read_table=relate_read_table,
         relate_cx=relate_cx,
-        max_procs=max_procs,
+        num_cpus=num_cpus,
         brotli_level=brotli_level,
         force=force,
     ))
@@ -400,7 +400,7 @@ def run(fasta: str | Path,
         mask_pos_table=mask_pos_table,
         mask_read_table=mask_read_table,
         brotli_level=brotli_level,
-        max_procs=max_procs,
+        num_cpus=num_cpus,
         force=force,
     ))
     if (cluster
@@ -433,7 +433,7 @@ def run(fasta: str | Path,
             cluster_abundance_table=cluster_abundance_table,
             verify_times=verify_times,
             brotli_level=brotli_level,
-            max_procs=max_procs,
+            num_cpus=num_cpus,
             force=force,
         ))
     if fold:
@@ -452,7 +452,7 @@ def run(fasta: str | Path,
             fold_percent=fold_percent,
             tmp_pfx=tmp_pfx,
             keep_tmp=keep_tmp,
-            max_procs=max_procs,
+            num_cpus=num_cpus,
             force=force,
         ))
         if graph_roc:
@@ -472,7 +472,7 @@ def run(fasta: str | Path,
                           pdf=pdf,
                           png=png,
                           verify_times=verify_times,
-                          max_procs=max_procs,
+                          num_cpus=num_cpus,
                           force=force)
         if graph_aucroll:
             RollingAUCRunner.run(input_path=input_path,
@@ -493,7 +493,7 @@ def run(fasta: str | Path,
                                  pdf=pdf,
                                  png=png,
                                  verify_times=verify_times,
-                                 max_procs=max_procs,
+                                 num_cpus=num_cpus,
                                  force=force)
     if draw:
         draw_mod.run(
@@ -505,7 +505,7 @@ def run(fasta: str | Path,
             update_rnartistcore=update_rnartistcore,
             tmp_pfx=tmp_pfx,
             keep_tmp=keep_tmp,
-            max_procs=max_procs,
+            num_cpus=num_cpus,
             force=force,
         )
     if graph_mprof or graph_tmprof:
@@ -525,7 +525,7 @@ def run(fasta: str | Path,
                           pdf=pdf,
                           png=png,
                           verify_times=verify_times,
-                          max_procs=max_procs,
+                          num_cpus=num_cpus,
                           force=force)
     if graph_ncov:
         ProfileRunner.run(input_path=input_path,
@@ -539,7 +539,7 @@ def run(fasta: str | Path,
                           pdf=pdf,
                           png=png,
                           verify_times=verify_times,
-                          max_procs=max_procs,
+                          num_cpus=num_cpus,
                           force=force)
     if graph_mhist:
         ReadHistogramRunner.run(input_path=input_path,
@@ -555,7 +555,7 @@ def run(fasta: str | Path,
                                 pdf=pdf,
                                 png=png,
                                 verify_times=verify_times,
-                                max_procs=max_procs,
+                                num_cpus=num_cpus,
                                 force=force)
     if graph_abundance:
         ClusterAbundanceRunner.run(input_path=input_path,
@@ -566,7 +566,7 @@ def run(fasta: str | Path,
                                    pdf=pdf,
                                    png=png,
                                    verify_times=verify_times,
-                                   max_procs=max_procs,
+                                   num_cpus=num_cpus,
                                    force=force)
     if graph_giniroll:
         RollingGiniRunner.run(input_path=input_path,
@@ -582,7 +582,7 @@ def run(fasta: str | Path,
                               pdf=pdf,
                               png=png,
                               verify_times=verify_times,
-                              max_procs=max_procs,
+                              num_cpus=num_cpus,
                               force=force)
     if graph_poscorr:
         PositionCorrelationRunner.run(input_path=input_path,
@@ -594,7 +594,7 @@ def run(fasta: str | Path,
                                       svg=svg,
                                       pdf=pdf,
                                       png=png,
-                                      max_procs=max_procs,
+                                      num_cpus=num_cpus,
                                       force=force)
     if graph_mutdist:
         MutationDistanceRunner.run(input_path=input_path,
@@ -607,7 +607,7 @@ def run(fasta: str | Path,
                                    svg=svg,
                                    pdf=pdf,
                                    png=png,
-                                   max_procs=max_procs,
+                                   num_cpus=num_cpus,
                                    force=force)
     if export:
         export_mod.run(
@@ -615,7 +615,7 @@ def run(fasta: str | Path,
             samples_meta=samples_meta,
             refs_meta=refs_meta,
             all_pos=all_pos,
-            max_procs=max_procs,
+            num_cpus=num_cpus,
             force=force,
         )
 

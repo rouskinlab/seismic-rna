@@ -11,7 +11,7 @@ from ..core import path
 from ..core.arg import (arg_input_path,
                         opt_struct_file,
                         opt_verify_times,
-                        opt_max_procs,
+                        opt_num_cpus,
                         opt_pmut_paired,
                         opt_pmut_unpaired,
                         opt_vmut_paired,
@@ -159,7 +159,7 @@ def calc_ratio_stats(ratios: dict[str, np.ndarray], margin: float = 1.e-6):
 def run(input_path: Iterable[str | Path], *,
         struct_file: Iterable[str | Path],
         verify_times: bool,
-        max_procs: int):
+        num_cpus: int):
     """ Abstract simulation parameters from existing datasets. """
     # Group structure files by reference.
     ref_struct_files = dict()
@@ -181,8 +181,11 @@ def run(input_path: Iterable[str | Path], *,
     paired_ratios = new_parameter_dict()
     unpaired_ratios = new_parameter_dict()
     for p, u in dispatch(abstract_table,
-                         max_procs=max_procs,
-                         pass_n_procs=False,
+                         num_cpus=num_cpus,
+                         pass_num_cpus=False,
+                         as_list=False,
+                         ordered=False,
+                         raise_on_error=True,
                          args=args):
         assert p.keys() == paired_ratios.keys()
         # Iterate over list(paired_ratios) to avoid iterating over an
@@ -212,7 +215,7 @@ def run(input_path: Iterable[str | Path], *,
 params = [arg_input_path,
           opt_struct_file,
           opt_verify_times,
-          opt_max_procs]
+          opt_num_cpus]
 
 
 @command(COMMAND, params=params)

@@ -26,7 +26,7 @@ from ..core.arg import (CMD_FOLD,
                         opt_fold_max,
                         opt_fold_percent,
                         opt_verify_times,
-                        opt_max_procs,
+                        opt_num_cpus,
                         opt_force,
                         optional_path,
                         extra_defaults)
@@ -66,7 +66,7 @@ def fold_region(rna: RNAProfile, *,
                 fold_max: int,
                 fold_percent: float,
                 force: bool,
-                n_procs: int,
+                num_cpus: int,
                 **kwargs):
     """ Fold a region of an RNA from one mutational profile. """
     branches = path.add_branch(path.FOLD_STEP, branch, rna.branches)
@@ -89,7 +89,7 @@ def fold_region(rna: RNAProfile, *,
                        fold_mfe=fold_mfe,
                        fold_max=fold_max,
                        fold_percent=fold_percent,
-                       n_procs=n_procs,
+                       num_cpus=num_cpus,
                        **kwargs)
         ct_to_db(ct_file, force=True)
         ended = datetime.now()
@@ -113,12 +113,15 @@ def fold_region(rna: RNAProfile, *,
 def fold_profile(table: MaskPositionTableLoader | ClusterPositionTableLoader,
                  regions: list[Region],
                  quantile: float,
-                 n_procs: int,
+                 num_cpus: int,
                  **kwargs):
     """ Fold an RNA molecule from one table of reactivities. """
     return dispatch(fold_region,
-                    n_procs,
-                    pass_n_procs=True,
+                    num_cpus=num_cpus,
+                    pass_num_cpus=True,
+                    as_list=True,
+                    ordered=False,
+                    raise_on_error=False,
                     args=as_list_of_tuples(table.iter_profiles(
                         regions=regions, quantile=quantile)
                     ),
@@ -144,7 +147,7 @@ def run(input_path: Iterable[str | Path], *,
         tmp_pfx: str | Path,
         keep_tmp: bool,
         verify_times: bool,
-        max_procs: int,
+        num_cpus: int,
         force: bool):
     """ Predict RNA secondary structures using mutation rates. """
     # Check for the dependencies and the DATAPATH environment variable.
@@ -176,8 +179,11 @@ def run(input_path: Iterable[str | Path], *,
     # Fold the RNA profiles.
     return list(chain(*dispatch(
         fold_profile,
-        max_procs,
-        pass_n_procs=True,
+        num_cpus=num_cpus,
+        pass_num_cpus=True,
+        as_list=False,
+        ordered=False,
+        raise_on_error=False,
         args=args,
         kwargs=dict(branch=branch,
                     tmp_pfx=tmp_pfx,
@@ -210,7 +216,7 @@ params = [
     opt_tmp_pfx,
     opt_keep_tmp,
     opt_verify_times,
-    opt_max_procs,
+    opt_num_cpus,
     opt_force,
 ]
 

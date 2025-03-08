@@ -230,7 +230,7 @@ class RNArtistRun(object):
                  draw_svg: bool,
                  draw_png: bool,
                  update: bool,
-                 n_procs: int):
+                 num_cpus: int):
         self.top, _ = FoldReport.parse_path(report_file)
         report = FoldReport.load(report_file)
         self.sample = report.get_field(SampleF)
@@ -244,7 +244,7 @@ class RNArtistRun(object):
         self.draw_svg = draw_svg
         self.draw_png = draw_png
         self.update = update
-        self.n_procs = n_procs
+        self.num_cpus = num_cpus
         self.verify_times = verify_times
         self._parse_profile()
 
@@ -501,7 +501,8 @@ class RNArtistRun(object):
         if not (self.draw_svg or self.draw_png):
             logger.warning("Both --no-draw-svg and --no-draw-png are set, defaulting to --svg")
             self.draw_svg = True
-        if (self.draw_svg and need_write(svg_path, force=force)) or (self.draw_png and need_write(png_path, force=force)):
+        if (self.draw_svg and need_write(svg_path, force=force)) or (
+                self.draw_png and need_write(png_path, force=force)):
             jinja_data = build_jinja_data(struct=struct,
                                           color_dict=self.color_dict,
                                           name=struct_name,
@@ -571,20 +572,21 @@ class RNArtistRun(object):
             if struct_num in self.struct_num or -1 in self.struct_num:
                 structs[struct_num] = dict(seq=struct.seq,
                                            value=struct.db_structure)
-        args = [
-                (f"{self.profile}-{struct_num}",
-                struct,
-                self.get_svg_file(self.top, struct=struct_num),
-                self.get_png_file(self.top, struct=struct_num),
-                self.get_script_file(top=self.tmp_dir, struct=struct_num))
+        args = [(f"{self.profile}-{struct_num}",
+                 struct,
+                 self.get_svg_file(self.top, struct=struct_num),
+                 self.get_png_file(self.top, struct=struct_num),
+                 self.get_script_file(top=self.tmp_dir, struct=struct_num))
                 for struct_num, struct in structs.items()]
-        results = dispatch(self.process_struct,
-                           self.n_procs,
-                           args=args,
-                           pass_n_procs=False,
-                           kwargs=dict(force=force,
-                                       keep_tmp=keep_tmp))
-        return results
+        return dispatch(self.process_struct,
+                        num_cpus=self.num_cpus,
+                        pass_num_cpus=False,
+                        as_list=True,
+                        ordered=False,
+                        raise_on_error=False,
+                        args=args,
+                        kwargs=dict(force=force,
+                                    keep_tmp=keep_tmp))
 
 
 def draw(report_path: Path, *,
@@ -596,7 +598,7 @@ def draw(report_path: Path, *,
          tmp_dir: Path,
          keep_tmp: bool,
          verify_times: bool,
-         n_procs: int,
+         num_cpus: int,
          force: bool = False):
     """ Draw RNA structure(s) from a FoldReport. """
     rnartist = RNArtistRun(report_path,
@@ -607,7 +609,7 @@ def draw(report_path: Path, *,
                            draw_svg,
                            draw_png,
                            update,
-                           n_procs)
+                           num_cpus)
     # By convention, a function must return a Path for dispatch to deem
     # that it has completed successfully.
     return rnartist.run(keep_tmp, force)

@@ -21,10 +21,10 @@ from ..table import load_all_datasets
 class DatasetGraph(OneRelGraph, OneSourceClusterGroupGraph, ABC):
     """ Graph based on one Dataset. """
 
-    def __init__(self, *, dataset: MutsDataset, n_procs: int, **kwargs):
+    def __init__(self, *, dataset: MutsDataset, num_cpus: int, **kwargs):
         super().__init__(**kwargs)
         self.dataset = dataset
-        self.max_procs = n_procs
+        self.num_cpus = num_cpus
 
     @property
     def top(self):
@@ -119,7 +119,7 @@ class DatasetRunner(RelRunner, ClusterGroupRunner, ABC):
     def run(cls,
             input_path: Iterable[str | Path], *,
             verify_times: bool,
-            max_procs: int,
+            num_cpus: int,
             **kwargs):
         # Generate a table writer for each table.
         writer_type = cls.get_writer_type()
@@ -128,6 +128,9 @@ class DatasetRunner(RelRunner, ClusterGroupRunner, ABC):
                    in cls.load_input_files(input_path,
                                            verify_times=verify_times)]
         return list(chain(*dispatch([writer.write for writer in writers],
-                                    max_procs,
-                                    pass_n_procs=True,
+                                    num_cpus=num_cpus,
+                                    pass_num_cpus=True,
+                                    as_list=False,
+                                    ordered=False,
+                                    raise_on_error=False,
                                     kwargs=kwargs)))

@@ -10,7 +10,7 @@ from ..core.arg import (CMD_CLEANFA,
                         opt_inplace,
                         opt_out_dir,
                         opt_force,
-                        opt_max_procs)
+                        opt_num_cpus)
 from ..core.run import run_func
 from ..core.task import dispatch
 
@@ -20,7 +20,7 @@ def run(input_path: Iterable[str | Path], *,
         inplace: bool,
         out_dir: str | Path,
         force: bool,
-        max_procs: int):
+        num_cpus: int):
     """ Clean the names and sequences in FASTA files. """
     # List all the files to clean.
     input_files = list(path.find_files_chain(input_path, [path.FastaSeg]))
@@ -37,10 +37,13 @@ def run(input_path: Iterable[str | Path], *,
     args = list(zip(input_files, output_files, strict=True))
     # Clean the files; if modifying in-place, force must be True.
     return dispatch(clean_fasta,
-                    max_procs,
+                    num_cpus=num_cpus,
+                    pass_num_cpus=False,
+                    as_list=True,
+                    ordered=False,
+                    raise_on_error=False,
                     args=args,
-                    kwargs=dict(force=force or inplace),
-                    pass_n_procs=False)
+                    kwargs=dict(force=force or inplace))
 
 
 params = [
@@ -48,7 +51,7 @@ params = [
     opt_inplace,
     opt_out_dir,
     opt_force,
-    opt_max_procs,
+    opt_num_cpus,
 ]
 
 

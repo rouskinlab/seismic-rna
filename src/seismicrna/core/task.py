@@ -1,55 +1,53 @@
-import sys
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from inspect import getmodule
 from itertools import filterfalse, repeat
-from signal import SIGINT, signal
 from typing import Any, Callable, Iterable
 
 from .logs import Level, logger, get_config, set_config
 from .validate import require_equal
 
 
-def calc_pool_size(num_tasks: int, max_procs: int):
+def calc_pool_size(num_tasks: int, num_cpus: int):
     """ Calculate the size of a process pool.
 
     Parameters
     ----------
     num_tasks: int
         Number of tasks to parallelize. Must be ≥ 1.
-    max_procs: int
-        Maximum number of processes to run at one time. Must be ≥ 1.
+    num_cpus: int
+        Number of CPUs available. Must be ≥ 1.
 
     Returns
     -------
     tuple[int, int]
-        - Number of tasks to run in parallel. Always ≥ 1.
-        - Number of processes to run for each task. Always ≥ 1.
+        - Size of the pool (number of concurrent tasks). Always ≥ 1.
+        - Number of CPUs for each task in the pool. Always ≥ 1.
     """
-    if max_procs < 1:
-        logger.warning(f"max_procs must be ≥ 1, but got {max_procs}; "
+    if num_cpus < 1:
+        logger.warning(f"num_cpus must be ≥ 1, but got {num_cpus}; "
                        f"defaulting to 1")
-        max_procs = 1
+        num_cpus = 1
     if num_tasks < 1:
         logger.warning(f"num_tasks must be ≥ 1, but got {num_tasks}; "
                        f"defaulting to 1")
         num_tasks = 1
-    # The number of tasks that can run simultaneously is the smallest
-    # of (a) the number of tasks and (b) the number of processors minus
-    # one, since one processor must be reserved for the parent process
-    # that is managing the process pool.
-    max_child_procs = max(max_procs - 1, 1)
-    max_simultaneous = min(num_tasks, max_child_procs)
-    if max_simultaneous > 1:
+    # The number of tasks that can run concurrently is the smallest of
+    # (a) the number of tasks and (b) the number of processors minus 1,
+    # since 1 processor must be reserved for the parent process that is
+    # managing the process pool.
+    num_cpus_for_tasks = max(num_cpus - 1, 1)
+    num_simultaneous_tasks = min(num_tasks, num_cpus_for_tasks)
+    if num_simultaneous_tasks > 1:
         # Parallelize the tasks, controlled by the parent process, and
         # distribute the child processors evenly among the pooled tasks.
-        pool_size = max_simultaneous
-        num_procs_per_task = max_child_procs // pool_size
+        pool_size = num_simultaneous_tasks
+        num_cpus_per_task = num_cpus_for_tasks // pool_size
     else:
         # Run tasks serially; each task runs in the same process as the
         # parent and can thus have all processors.
         pool_size = 1
-        num_procs_per_task = max_procs
-    return pool_size, num_procs_per_task
+        num_cpus_per_task = num_cpus
+    return pool_size, num_cpus_per_task
 
 
 class Task(object):
@@ -88,9 +86,6 @@ class Task(object):
         try:
             logger.task(f"Began {description}")
             result = self._func(*args, **kwargs)
-        except Exception as error:
-            logger.error(error)
-        else:
             logger.task(f"Ended {description}")
             return result
         finally:
@@ -103,66 +98,13 @@ class Task(object):
                 logger.file_stream.close()
 
 
-_handled_sigint = False
-
-
-def _worker_sigint_handler(signum, frame):
-    """ If a worker process receives SIGINT, then exit cleanly, while
-    executing any finally clauses, using sys.exit(0). """
-    global _handled_sigint
-    if not _handled_sigint:
-        # Call sys.exit at most once.
-        _handled_sigint = True
-        sys.exit(0)
-
-
-def _worker_initializer():
-    """ Use _worker_sigint_handler to handle SIGINT. """
-    signal(SIGINT, _worker_sigint_handler)
-
-
-def dispatch(funcs: Callable | list[Callable],
-             max_procs: int,
-             pass_n_procs: bool = True,
-             raise_on_error: bool = False,
-             args: tuple | Iterable[tuple] = (),
-             kwargs: dict[str, Any] | None = None):
-    """
-    Run one or more tasks in series or in parallel, depending on the
-    number of tasks, the maximum number of processes, and whether tasks
-    are allowed to be run in parallel.
-
-    Parameters
-    ----------
-    funcs: Callable | list[Callable]
-        The function(s) to run. Can be a list of functions or a single
-        function that is not in a list. If a single function, then if
-        `args` is a tuple, it is called once with that tuple as its
-        positional arguments; and if `args` is a list of tuples, it is
-        called for each tuple of positional arguments in `args`.
-    max_procs: int
-        Maximum number of processes to run at one time. Must be ≥ 1.
-    pass_n_procs: bool
-        Whether to pass the number of processes to the function as the
-        keyword argument `n_procs`.
-    raise_on_error: bool
-        Whether to raise an error if any tasks fail (if False, only log
-        a warning message).
-    args: tuple | Iterable[tuple]
-        Positional arguments to pass to each function in `funcs`. Can be
-        a list of tuples of positional arguments or a single tuple that
-        is not in a list. If a single tuple, then each function receives
-        `args` as positional arguments. If a list, then `args` must be
-        the same length as `funcs`; each function `funcs[i]` receives
-        `args[i]` as positional arguments.
-    kwargs: dict[str, Any] | None
-        Keyword arguments to pass to every function call.
-
-    Returns
-    -------
-    list
-        List of the return value of each run.
-    """
+def _dispatch(funcs: Callable | list[Callable], *,
+              num_cpus: int,
+              pass_num_cpus: bool,
+              ordered: bool,
+              raise_on_error: bool,
+              args: tuple | Iterable[tuple] = (),
+              kwargs: dict[str, Any] | None = None):
     # Default to an empty dict if kwargs is not given.
     if kwargs is None:
         kwargs = dict()
@@ -196,57 +138,107 @@ def dispatch(funcs: Callable | list[Callable],
         logger.task("No tasks were given to dispatch")
         return list()
     # Determine how to parallelize each task.
-    pool_size, n_procs_per_task = calc_pool_size(num_tasks, max_procs)
-    if pass_n_procs:
+    pool_size, num_cpus_per_task = calc_pool_size(num_tasks, num_cpus)
+    if pass_num_cpus:
         # Add the number of processes as a keyword argument.
-        kwargs = {**kwargs, "n_procs": n_procs_per_task}
+        kwargs = {**kwargs, "num_cpus": num_cpus_per_task}
         logger.detail(f"Calculated size of process pool: {pool_size}, "
-                      f"each with {n_procs_per_task} processor(s)")
+                      f"each with {num_cpus_per_task} processor(s)")
     else:
         logger.detail(f"Calculated size of process pool: {pool_size}")
+    # Run the tasks.
+    num_failed = 0
     if pool_size > 1:
         # Run the tasks in parallel.
-        with ProcessPoolExecutor(max_workers=pool_size,
-                                 initializer=_worker_initializer) as pool:
+        with ProcessPoolExecutor(max_workers=pool_size) as pool:
             logger.task(f"Opened pool of {pool_size} processes")
-            try:
-                # Create and submit a Future for each task.
-                futures = [pool.submit(Task(func), *task_args, **kwargs)
-                           for func, task_args in zip(funcs, args, strict=True)]
-                # Run the Futures in parallel and collect the results as
-                # they become available.
-                logger.task(f"Waiting for {num_tasks} tasks to finish")
-                results = [future.result() for future in futures]
-            except KeyboardInterrupt:
-                # If the main process is interrupted by SIGINT, then
-                # send SIGINT to each worker process. Otherwise, they
-                # may continue running and become impossible to close.
-                pool.shutdown(wait=False, cancel_futures=True)
-                raise
+            # Create and submit a Future for each task.
+            futures = [pool.submit(Task(func), *task_args, **kwargs)
+                       for func, task_args in zip(funcs, args, strict=True)]
+            logger.task(f"Waiting for {num_tasks} tasks to finish")
+            for future in (futures if ordered else as_completed(futures)):
+                try:
+                    yield future.result()
+                except Exception as error:
+                    if raise_on_error:
+                        raise error
+                    else:
+                        logger.error(error)
+                        num_failed += 1
         logger.task(f"Closed pool of {pool_size} processes")
     else:
         # Run the tasks in series.
         logger.task(f"Began running {num_tasks} task(s) in series")
-        # Initialize an empty list of results from the tasks.
-        results = list()
         for func, task_args in zip(funcs, args, strict=True):
-            # Create a new task, run it in the current process, and add
-            # its result to the list of results.
-            task = Task(func)
-            results.append(task(*task_args, **kwargs))
+            try:
+                task = Task(func)
+                yield task(*task_args, **kwargs)
+            except Exception as error:
+                if raise_on_error:
+                    raise error
+                else:
+                    logger.error(error)
+                    num_failed += 1
         logger.task(f"Ended running {num_tasks} task(s) in series")
-    # Remove any failed runs (None values) from results.
-    results = [result for result in results if result is not None]
-    num_pass = len(results)
-    num_fail = num_tasks - num_pass
-    if num_fail:
-        message = f"Failed {num_fail} of {num_tasks} task(s)"
+    if num_failed:
+        message = f"Failed {num_failed} of {num_tasks} task(s)"
         if raise_on_error:
             raise RuntimeError(message)
         logger.warning(message)
     else:
         logger.task(f"All {num_tasks} task(s) completed successfully")
-    return results
+
+
+def dispatch(funcs: Callable | list[Callable], *,
+             num_cpus: int,
+             pass_num_cpus: bool,
+             as_list: bool,
+             ordered: bool,
+             raise_on_error: bool,
+             args: tuple | Iterable[tuple] = (),
+             kwargs: dict[str, Any] | None = None):
+    """ Run one or more tasks in series or in parallel, depending on the
+    number of tasks and the maximum number of CPUs.
+
+    Parameters
+    ----------
+    funcs: Callable | list[Callable]
+        The function(s) to run. Can be a list of functions or a single
+        function that is not in a list. If a single function, then if
+        `args` is a tuple, it is called once with that tuple as its
+        positional arguments; and if `args` is a list of tuples, it is
+        called for each tuple of positional arguments in `args`.
+    num_cpus: int
+        Number of CPUs available. Must be ≥ 1.
+    pass_num_cpus: bool
+        Pass the number of processes to the function(s) in `funcs` as
+        the keyword argument `num_cpus`.
+    as_list: bool
+        Return results as a list (if True) or an iterator (if False).
+    ordered: bool
+        Return results in the same order as they were given in `funcs`
+        and/or `args` (if True) or in order of completion (if False).
+    raise_on_error: bool
+        If any task fails, then raise the exception that it raises (if
+        True) or log that exception as an error (if False).
+    args: tuple | Iterable[tuple]
+        Positional arguments to pass to each function in `funcs`. Can be
+        a list of tuples of positional arguments or a single tuple that
+        is not in a list. If a single tuple, then each function receives
+        `args` as positional arguments. If a list, then `args` must be
+        the same length as `funcs`; each function `funcs[i]` receives
+        `args[i]` as positional arguments.
+    kwargs: dict[str, Any] | None
+        Keyword arguments to pass to every function call.
+    """
+    results = _dispatch(funcs,
+                        num_cpus=num_cpus,
+                        pass_num_cpus=pass_num_cpus,
+                        ordered=ordered,
+                        raise_on_error=raise_on_error,
+                        args=args,
+                        kwargs=kwargs)
+    return list(results) if as_list else iter(results)
 
 
 def as_list_of_tuples(args: Iterable[Any]):

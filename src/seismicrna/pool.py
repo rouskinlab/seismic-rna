@@ -14,7 +14,7 @@ from .core.arg import (CMD_POOL,
                        opt_verify_times,
                        opt_tmp_pfx,
                        opt_keep_tmp,
-                       opt_max_procs,
+                       opt_num_cpus,
                        opt_force)
 from .core.error import InconsistentValueError, NoDataError
 from .core.logs import logger
@@ -44,7 +44,7 @@ def pool_samples(out_dir: Path,
                  relate_pos_table: bool,
                  relate_read_table: bool,
                  verify_times: bool,
-                 n_procs: int,
+                 num_cpus: int,
                  force: bool):
     """ Pool one or more samples (vertically).
 
@@ -68,7 +68,7 @@ def pool_samples(out_dir: Path,
         Tabulate relationships per read for relate data
     verify_times: bool
         Verify that report files from later steps have later timestamps.
-    n_procs: bool
+    num_cpus: bool
         Number of processors to use.
     force: bool
         Force the report to be written, even if it exists.
@@ -147,7 +147,7 @@ def pool_samples(out_dir: Path,
                  pos_table=relate_pos_table,
                  read_table=relate_read_table,
                  clust_table=False,
-                 n_procs=n_procs,
+                 num_cpus=num_cpus,
                  force=True)
         # Rewrite the report file with the updated time.
         release_to_out(out_dir,
@@ -164,7 +164,7 @@ def run(input_path: Iterable[str | Path], *,
         verify_times: bool,
         tmp_pfx: str | Path,
         keep_tmp: bool,
-        max_procs: int,
+        num_cpus: int,
         force: bool) -> list[Path]:
     """ Merge samples (vertically) from the Relate step. """
     if not pooled:
@@ -191,8 +191,11 @@ def run(input_path: Iterable[str | Path], *,
         logger.detail(f"Added samples {samples} for {dataset}")
     # Make each pool of samples.
     return dispatch(pool_samples,
-                    max_procs=max_procs,
-                    pass_n_procs=True,
+                    num_cpus=num_cpus,
+                    pass_num_cpus=True,
+                    as_list=True,
+                    ordered=False,
+                    raise_on_error=False,
                     args=[(out_dir, pooled, branches_flat, ref, samples)
                           for (out_dir, branches_flat, ref), samples
                           in pools.items()],
@@ -212,7 +215,7 @@ params = [
     opt_verify_times,
     opt_tmp_pfx,
     opt_keep_tmp,
-    opt_max_procs,
+    opt_num_cpus,
     opt_force,
 ]
 

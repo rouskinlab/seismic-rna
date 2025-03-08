@@ -345,11 +345,11 @@ def make_fold_cmd(fasta_file: Path,
                   fold_mfe: bool,
                   fold_max: int,
                   fold_percent: float,
-                  n_procs: int = 1):
-    if n_procs > 1:
+                  num_cpus: int = 1):
+    if num_cpus > 1:
         # Fold with multiple threads using the Fold-smp program.
         cmd = [RNASTRUCTURE_FOLD_SMP_CMD]
-        os.environ[FOLD_SMP_NUM_THREADS] = str(n_procs)
+        os.environ[FOLD_SMP_NUM_THREADS] = str(num_cpus)
     else:
         # Fold with one thread using the Fold program.
         cmd = [RNASTRUCTURE_FOLD_CMD]
@@ -390,7 +390,7 @@ def fold(rna: RNAProfile, *,
          out_dir: Path,
          tmp_dir: Path,
          keep_tmp: bool,
-         n_procs: int):
+         num_cpus: int):
     """ Run the 'Fold' or 'Fold-smp' program of RNAstructure. """
     logger.routine(f"Began folding {rna}")
     ct_out = rna.get_ct_file(out_dir, branch)
@@ -412,7 +412,7 @@ def fold(rna: RNAProfile, *,
                                            fold_mfe=fold_mfe,
                                            fold_max=fold_max,
                                            fold_percent=fold_percent,
-                                           n_procs=(n_procs if smp else 1)))
+                                           num_cpus=(num_cpus if smp else 1)))
             for smp in [True, False]
         }
         try:

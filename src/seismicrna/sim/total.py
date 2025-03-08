@@ -63,7 +63,7 @@ def run(*,
         num_reads: int,
         keep_tmp: bool,
         force: bool,
-        max_procs: int):
+        num_cpus: int):
     """ Simulate FASTQ files from scratch. """
     fasta = str(ref_mod.run(
         sim_dir=sim_dir,
@@ -88,7 +88,7 @@ def run(*,
         fold_percent=fold_percent,
         keep_tmp=keep_tmp,
         force=force,
-        max_procs=max_procs
+        num_cpus=num_cpus
     )
     params_mod.run(
         ct_file=ct_file,
@@ -102,7 +102,7 @@ def run(*,
         length_fvar=length_fvar,
         clust_conc=clust_conc,
         force=force,
-        max_procs=max_procs
+        num_cpus=num_cpus
     )
     return fastq_mod.run(
         input_path=(),
@@ -116,7 +116,7 @@ def run(*,
         fq_gzip=fq_gzip,
         num_reads=num_reads,
         force=force,
-        max_procs=max_procs
+        num_cpus=num_cpus
     )
 
 

@@ -6,11 +6,11 @@ from seismicrna.core.task import calc_pool_size
 class TestCalcPoolSize(ut.TestCase):
 
     def test_1_task(self):
-        for max_procs in range(1, 5):
-            with self.subTest(max_procs=max_procs):
-                expect = 1, max_procs
+        for num_cpus in range(1, 5):
+            with self.subTest(num_cpus=num_cpus):
+                expect = 1, num_cpus
                 self.assertTupleEqual(
-                    calc_pool_size(1, max_procs),
+                    calc_pool_size(1, num_cpus),
                     expect
                 )
 
@@ -25,28 +25,28 @@ class TestCalcPoolSize(ut.TestCase):
 
     def test_multiple(self):
         self.assertTupleEqual(calc_pool_size(num_tasks=2,
-                                             max_procs=2),
+                                             num_cpus=2),
                               (1, 2))
         self.assertTupleEqual(calc_pool_size(num_tasks=2,
-                                             max_procs=3),
+                                             num_cpus=3),
                               (2, 1))
         self.assertTupleEqual(calc_pool_size(num_tasks=2,
-                                             max_procs=4),
+                                             num_cpus=4),
                               (2, 1))
         self.assertTupleEqual(calc_pool_size(num_tasks=2,
-                                             max_procs=5),
+                                             num_cpus=5),
                               (2, 2))
         self.assertTupleEqual(calc_pool_size(num_tasks=3,
-                                             max_procs=2),
+                                             num_cpus=2),
                               (1, 2))
         self.assertTupleEqual(calc_pool_size(num_tasks=3,
-                                             max_procs=3),
+                                             num_cpus=3),
                               (2, 1))
         self.assertTupleEqual(calc_pool_size(num_tasks=3,
-                                             max_procs=6),
+                                             num_cpus=6),
                               (3, 1))
         self.assertTupleEqual(calc_pool_size(num_tasks=3,
-                                             max_procs=7),
+                                             num_cpus=7),
                               (3, 2))
 
 

@@ -99,7 +99,7 @@ class OneTableRunner(TableRunner, ABC):
     def run(cls,
             input_path: Iterable[str | Path], *,
             verify_times: bool,
-            max_procs: int,
+            num_cpus: int,
             **kwargs):
         # Generate a table writer for each table.
         writer_type = cls.get_writer_type()
@@ -108,8 +108,11 @@ class OneTableRunner(TableRunner, ABC):
                    in cls.load_input_files(input_path,
                                            verify_times=verify_times)]
         return list(chain(*dispatch([writer.write for writer in writers],
-                                    max_procs,
-                                    pass_n_procs=False,
+                                    num_cpus=num_cpus,
+                                    pass_num_cpus=False,
+                                    as_list=False,
+                                    ordered=False,
+                                    raise_on_error=False,
                                     kwargs=kwargs)))
 
 

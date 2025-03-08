@@ -5,7 +5,7 @@ from typing import Iterable
 
 import numpy as np
 
-from .data import ClusterMutsDataset
+from .data import ClusterDatasetTabulator, ClusterMutsDataset
 from .em import EMRun
 from .emk import EMRunsK, find_best_k, sort_runs
 from .io import ClusterBatchWriter
@@ -13,7 +13,6 @@ from .obsexp import write_obs_exp_counts
 from .params import write_mus, write_pis
 from .report import ClusterReport
 from .summary import write_summaries
-from .data import ClusterDatasetTabulator
 from .uniq import UniqReads
 from ..core import path
 from ..core.header import validate_ks
@@ -21,7 +20,6 @@ from ..core.logs import logger
 from ..core.task import dispatch
 from ..core.tmp import release_to_out, with_tmp_dir
 from ..core.types import get_max_uint
-from ..core.validate import require_atleast
 from ..core.write import need_write
 from ..mask.dataset import MaskMutsDataset, JoinMaskMutsDataset
 
@@ -31,7 +29,7 @@ SEED_DTYPE = np.uint32
 def run_k(uniq_reads: UniqReads,
           k: int,
           num_runs: int, *,
-          n_procs: int,
+          num_cpus: int,
           **kwargs) -> list[EMRun]:
     """ Run EM with a specific number of clusters. """
     if k < 1:
@@ -50,8 +48,11 @@ def run_k(uniq_reads: UniqReads,
                          dtype=SEED_DTYPE)
     args = [(uniq_reads, k, seed) for seed in seeds]
     runs = dispatch(EMRun,
-                    n_procs,
-                    pass_n_procs=False,
+                    num_cpus=num_cpus,
+                    pass_num_cpus=False,
+                    as_list=True,
+                    ordered=False,
+                    raise_on_error=False,
                     args=args,
                     kwargs=kwargs)
     if len(runs) < num_runs:
@@ -76,17 +77,27 @@ def run_ks(uniq_reads: UniqReads,
            min_iter: int,
            max_iter: int,
            em_thresh: float,
-           n_procs: int,
+           num_cpus: int,
            top: Path,
            **kwargs):
     """ Run EM with multiple numbers of clusters. """
-    require_atleast("min_em_runs", min_em_runs, 1, classes=int)
-    require_atleast("max_em_runs",
-                    max_em_runs,
-                    min_em_runs,
-                    "min_em_runs",
-                    classes=int)
-    require_atleast("n_procs", n_procs, 1, classes=int)
+    if min_em_runs < 1:
+        logger.warning(
+            f"min_em_runs must be ≥ 1, but got {min_em_runs}; setting to 1"
+        )
+        min_em_runs = 1
+    if max_em_runs < min_em_runs:
+        logger.warning(
+            "max_em_runs must be ≥ min_em_runs, "
+            f"but got min_em_runs={min_em_runs} and max_em_runs={max_em_runs}; "
+            f"setting to {min_em_runs}"
+        )
+        max_em_runs = min_em_runs
+    if num_cpus < 1:
+        logger.warning(
+            f"num_cpus must be ≥ 1, but got {num_cpus}; setting to 1"
+        )
+        num_cpus = 1
     path_kwargs = {path.TOP: top,
                    path.BRANCHES: uniq_reads.branches,
                    path.SAMPLE: uniq_reads.sample,
@@ -121,9 +132,9 @@ def run_ks(uniq_reads: UniqReads,
                     # The minimum number of runs has been reached, but
                     # the runs do not pass all filters, so run up to
                     # max_runs_k - num_runs_k more. To be efficient,
-                    # run up to n_procs at a time.
+                    # run up to num_cpus at a time.
                     assert not passing
-                    num_runs = min(max_runs_k - num_runs_k, n_procs)
+                    num_runs = min(max_runs_k - num_runs_k, num_cpus)
                 num_runs_k += num_runs
                 # Run a batch of EM.
                 runs_k.extend(run_k(uniq_reads,
@@ -133,7 +144,7 @@ def run_ks(uniq_reads: UniqReads,
                                     min_iter=(min_iter if k > 1 else 2),
                                     max_iter=(max_iter if k > 1 else 2),
                                     max_jackpot_quotient=max_jackpot_quotient,
-                                    n_procs=n_procs,
+                                    num_cpus=num_cpus,
                                     **kwargs))
                 # Collect all runs so far for this K.
                 runs_ks[k] = EMRunsK(runs_k,
@@ -183,7 +194,7 @@ def cluster(dataset: MaskMutsDataset | JoinMaskMutsDataset, *,
             try_all_ks: bool,
             write_all_ks: bool,
             max_em_runs: int,
-            n_procs: int,
+            num_cpus: int,
             brotli_level: int,
             force: bool,
             cluster_pos_table: bool,
@@ -234,7 +245,7 @@ def cluster(dataset: MaskMutsDataset | JoinMaskMutsDataset, *,
                                   max_clusters_use + 1),
                          try_all_ks=try_all_ks,
                          max_em_runs=max_em_runs,
-                         n_procs=n_procs,
+                         num_cpus=num_cpus,
                          top=tmp_dir,
                          **kwargs)
         runs_ks_list = list(runs_ks.values())
@@ -282,6 +293,6 @@ def cluster(dataset: MaskMutsDataset | JoinMaskMutsDataset, *,
                                        verify_times=verify_times),
             count_pos=cluster_pos_table,
             count_read=False,
-            max_procs=n_procs,
+            num_cpus=num_cpus,
         ).write_tables(pos=cluster_pos_table, clust=cluster_abundance_table)
     return report_file.parent

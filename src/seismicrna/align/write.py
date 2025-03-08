@@ -43,7 +43,7 @@ def format_ref_reverse(ref: str, rev_label: str):
 def write_tmp_ref_files(tmp_dir: Path,
                         refset_path: Path,
                         refs: set[str],
-                        n_procs: int = 1):
+                        num_cpus: int = 1):
     """ Write temporary FASTA files, each containing one reference that
     corresponds to a FASTQ file from demultiplexing. """
     ref_paths: dict[str, tuple[Path, Path]] = dict()
@@ -67,7 +67,7 @@ def write_tmp_ref_files(tmp_dir: Path,
                     write_fasta(ref_path, [record])
                     # Build a Bowtie2 index of the temporary FASTA file.
                     index_prefix = ref_path.with_suffix("")
-                    run_bowtie2_build(ref_path, index_prefix, n_procs=n_procs)
+                    run_bowtie2_build(ref_path, index_prefix, num_cpus=num_cpus)
                 except Exception as error:
                     # If anything goes wrong when writing and indexing
                     # this reference, log an error message but continue
@@ -157,7 +157,7 @@ def separate_strands(xam_file: Path,
                      f1r2_fwd: bool,
                      min_mapq: int,
                      keep_tmp: bool,
-                     n_procs: int = 1,
+                     num_cpus: int = 1,
                      **kwargs):
     """ Separate a XAM file into two XAM files of reads that aligned to
     the forward and reverse strands, respectively. """
@@ -165,7 +165,7 @@ def separate_strands(xam_file: Path,
         f"Began separating forward and reverse strands in {xam_file}"
     )
     if paired is None:
-        paired = xam_paired(run_flagstat(xam_file, n_procs=n_procs))
+        paired = xam_paired(run_flagstat(xam_file, num_cpus=num_cpus))
     out_dir = xam_file.parent
     ref = path.parse(xam_file, path.XAM_SEGS)[path.REF]
     ref_rev = format_ref_reverse(ref, rev_label)
@@ -188,7 +188,7 @@ def separate_strands(xam_file: Path,
         write_fasta(fasta_rev, [(ref_rev, refseq.rc)])
         # Index the reverse-strand reference.
         index_rev = fasta_rev.with_suffix("")
-        run_bowtie2_build(fasta_rev, index_rev, n_procs=n_procs)
+        run_bowtie2_build(fasta_rev, index_rev, num_cpus=num_cpus)
         # Re-align the reads that had aligned to the reverse strand of
         # the forward-strand reference to the reverse-strand reference.
         bam_rev = out_dir.joinpath(ref_rev).with_suffix(path.BAM_EXT)
@@ -203,7 +203,7 @@ def separate_strands(xam_file: Path,
                     flags_exc=flags_exc_rev,
                     min_mapq=min_mapq,
                     bt2_mixed=bt2_mixed,
-                    n_procs=n_procs,
+                    num_cpus=num_cpus,
                     **kwargs)
         if not keep_tmp:
             rmtree(index_dir)
@@ -214,7 +214,7 @@ def separate_strands(xam_file: Path,
                   tmp_pfx=realign_dir.joinpath(ref),
                   flags_req=flags_req_fwd,
                   flags_exc=flags_exc_fwd,
-                  n_procs=n_procs)
+                  num_cpus=num_cpus)
         # Renaming overwrites the original BAM file of both strands.
         bam_fwd.rename(xam_file)
         logger.detail(f"Overwrote {xam_file} with only the forward-stand reads "
@@ -241,7 +241,7 @@ def extract_reference(ref: str,
                       top: Path,
                       min_reads: int,
                       sep_strands: bool,
-                      n_procs: int = 1,
+                      num_cpus: int = 1,
                       **kwargs):
     """ Extract one reference from a XAM file. """
     logger.routine(f"Began extracting reference {repr(ref)} from {xam_whole}")
@@ -260,14 +260,14 @@ def extract_reference(ref: str,
                xam_ref,
                ref=ref,
                header=header,
-               n_procs=n_procs)
+               num_cpus=num_cpus)
     xam_files = [xam_ref]
     if sep_strands:
         try:
             # Split the XAM file into forward and reverse strands.
             xam_rev = separate_strands(xam_ref,
                                        fasta,
-                                       n_procs=n_procs,
+                                       num_cpus=num_cpus,
                                        **kwargs)
             xam_files.append(xam_rev)
         except Exception:
@@ -287,7 +287,7 @@ def extract_reference(ref: str,
             ref = path.parse(xam, path.XAM_SEGS)[path.REF]
             if ref in nums_reads:
                 raise ValueError(f"Duplicate reference: {repr(ref)}")
-            num_reads = count_total_reads(run_flagstat(xam, n_procs=n_procs))
+            num_reads = count_total_reads(run_flagstat(xam, num_cpus=num_cpus))
             logger.detail(f"{xam} has {num_reads} read(s)")
             if num_reads < min_reads:
                 logger.warning(
@@ -334,7 +334,7 @@ def split_references(xam_whole: Path, *,
                      sep_strands: bool,
                      f1r2_fwd: bool,
                      rev_label: str,
-                     n_procs: int = 1):
+                     num_cpus: int = 1):
     """ Split a XAM file into one file per reference. """
     logger.routine(f"Began splitting {xam_whole} by reference")
     sample = path.parse(xam_whole, path.XAM_SEGS)[path.SAMPLE]
@@ -349,15 +349,19 @@ def split_references(xam_whole: Path, *,
     )
     # Cache the header for each reference that received enough reads.
     ref_headers = {ref: header
-                   for ref, header in run_ref_header(xam_whole, n_procs=n_procs)
+                   for ref, header in run_ref_header(xam_whole,
+                                                     num_cpus=num_cpus)
                    if ref in guess_refs}
     logger.detail(f"Cached SAM headers for the {len(guess_refs)} reference(s) "
                   f"that were guessed to have ≥ {min_reads} read(s)")
     # Split the whole XAM file into one XAM file for each reference that
     # was guessed to have received enough reads.
     nums_reads = dispatch(extract_reference,
-                          max_procs=n_procs,
-                          pass_n_procs=True,
+                          num_cpus=num_cpus,
+                          pass_num_cpus=True,
+                          as_list=False,
+                          ordered=False,
+                          raise_on_error=False,
                           args=list(ref_headers.items()),
                           kwargs=dict(xam_whole=xam_whole,
                                       fasta=fasta,
@@ -466,7 +470,7 @@ def fq_pipeline(fq_inp: FastqUnit,
                 sep_strands: bool,
                 f1r2_fwd: bool,
                 rev_label: str,
-                n_procs: int = 1) -> list[Path]:
+                num_cpus: int = 1) -> list[Path]:
     """ Run all stages of the alignment pipeline for one FASTQ file or
     one pair of mated FASTQ files. """
     began = datetime.now()
@@ -539,7 +543,7 @@ def fq_pipeline(fq_inp: FastqUnit,
                              path.EXT: path.FQ_EXTS[0]})
                  if bt2_un
                  else None),
-        n_procs=n_procs
+        num_cpus=num_cpus
     )
     # The number of reads after trimming is defined as the number fed to
     # Bowtie 2, regardless of whether the reads were actually trimmed.
@@ -559,7 +563,7 @@ def fq_pipeline(fq_inp: FastqUnit,
     logger.detail(f"Determined {fq_inp} contained {reads_init} reads")
     # Index the whole XAM file to enable exporting only reads aligning
     # to each reference and to speed counting reads.
-    run_index_xam(xam_whole, n_procs=n_procs)
+    run_index_xam(xam_whole, num_cpus=num_cpus)
     # Count the reads after filtering.
     flagstats = run_flagstat(xam_whole)
     paired_two, paired_one, singles = count_single_paired(flagstats)
@@ -605,7 +609,7 @@ def fq_pipeline(fq_inp: FastqUnit,
                                   f1r2_fwd=f1r2_fwd,
                                   rev_label=rev_label,
                                   min_reads=min_reads,
-                                  n_procs=n_procs)
+                                  num_cpus=num_cpus)
     if not keep_tmp:
         # Delete the BAM file of all references.
         xam_whole.unlink(missing_ok=True)
@@ -679,16 +683,16 @@ def fq_pipeline(fq_inp: FastqUnit,
 
 def fqs_pipeline(fq_units: list[FastqUnit],
                  main_fasta: Path, *,
-                 max_procs: int,
+                 num_cpus: int,
                  tmp_dir: Path,
                  **kwargs) -> list[Path]:
     """ Run all stages of alignment for one or more FASTQ files or pairs
     of mated FASTQ files. """
     logger.routine("Began running the alignment pipeline")
     # Validate the maximum number of processes.
-    if max_procs < 1:
-        logger.warning("max_procs must be ≥ 1: setting to 1")
-        max_procs = 1
+    if num_cpus < 1:
+        logger.warning("num_cpus must be ≥ 1: setting to 1")
+        num_cpus = 1
     # Get the name of the reference for every demultiplexed FASTQ.
     tmp_refs = set(filter(None, (fq_unit.ref for fq_unit in fq_units)))
     if tmp_refs:
@@ -700,7 +704,7 @@ def fqs_pipeline(fq_units: list[FastqUnit],
     tmp_fasta_paths = write_tmp_ref_files(tmp_dir,
                                           main_fasta,
                                           tmp_refs,
-                                          max_procs)
+                                          num_cpus)
     # Check if the main FASTA file already has a Bowtie2 index.
     main_index = main_fasta.with_suffix("")
     if all(index.is_file() for index in get_bowtie2_index_paths(main_index)):
@@ -748,7 +752,7 @@ def fqs_pipeline(fq_units: list[FastqUnit],
                 try:
                     run_bowtie2_build(main_fasta,
                                       main_index,
-                                      n_procs=max_procs)
+                                      num_cpus=num_cpus)
                     # Create a symbolic link to the reference file in
                     # the same directory as the new index.
                     fasta_link = main_index.with_suffix(main_fasta.suffix)
@@ -774,7 +778,11 @@ def fqs_pipeline(fq_units: list[FastqUnit],
             iter_args.append((fq_unit, main_fasta, main_index))
     # Generate alignment map (XAM) files.
     xam_dirs = dispatch(fq_pipeline,
-                        max_procs,
+                        num_cpus=num_cpus,
+                        pass_num_cpus=True,
+                        as_list=True,
+                        ordered=False,
+                        raise_on_error=False,
                         args=iter_args,
                         kwargs=dict(tmp_dir=tmp_dir, **kwargs))
     logger.routine("Ended running the alignment pipeline")

@@ -26,7 +26,7 @@ def run(*,
         length_fvar: float,
         clust_conc: float,
         force: bool,
-        max_procs: int):
+        num_cpus: int):
     """ Simulate parameter files. """
     # Since ct_file is used three times, ensure it is not an exhaustible
     # generator.
@@ -37,18 +37,18 @@ def run(*,
                  vmut_paired=vmut_paired,
                  vmut_unpaired=vmut_unpaired,
                  force=force,
-                 max_procs=max_procs)
+                 num_cpus=num_cpus)
     ends_mod.run(ct_file=ct_file,
                  center_fmean=center_fmean,
                  center_fvar=center_fvar,
                  length_fmean=length_fmean,
                  length_fvar=length_fvar,
                  force=force,
-                 max_procs=max_procs)
+                 num_cpus=num_cpus)
     clusts_mod.run(ct_file=ct_file,
                    clust_conc=clust_conc,
                    force=force,
-                   max_procs=max_procs)
+                   num_cpus=num_cpus)
 
 
 params = merge_params(clusts_mod.params,

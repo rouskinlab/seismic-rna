@@ -9,7 +9,7 @@ from .core.arg import (CMD_LIST,
                        opt_min_ninfo_pos,
                        opt_max_fmut_pos,
                        opt_force,
-                       opt_max_procs)
+                       opt_num_cpus)
 from .core.lists import List, PositionList
 from .core.run import run_func
 from .core.table import MUTAT_REL, PositionTable, PositionTableLoader
@@ -78,11 +78,14 @@ def run(input_path: Iterable[str | Path], *,
         min_ninfo_pos: int,
         max_fmut_pos: float,
         force: bool,
-        max_procs: int) -> list[Path]:
+        num_cpus: int) -> list[Path]:
     """ List positions to mask. """
     return dispatch(write_list,
-                    max_procs,
-                    pass_n_procs=False,
+                    num_cpus=num_cpus,
+                    pass_num_cpus=False,
+                    as_list=True,
+                    ordered=False,
+                    raise_on_error=False,
                     args=list(iter_tables(input_path)),
                     kwargs=dict(branch=branch,
                                 min_ninfo_pos=min_ninfo_pos,
@@ -100,7 +103,7 @@ params = [
     # Effort
     opt_force,
     # Parallelization
-    opt_max_procs,
+    opt_num_cpus,
 ]
 
 

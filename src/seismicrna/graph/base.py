@@ -18,7 +18,7 @@ from ..core.arg import (arg_input_path,
                         opt_pdf,
                         opt_png,
                         opt_force,
-                        opt_max_procs)
+                        opt_num_cpus)
 from ..core.dataset import MutsDataset
 from ..core.seq import DNA
 from ..core.table import Table
@@ -380,7 +380,7 @@ class BaseRunner(ABC):
                 opt_pdf,
                 opt_png,
                 opt_force,
-                opt_max_procs]
+                opt_num_cpus]
 
     @classmethod
     def get_var_params(cls) -> list[Argument | Option]:
