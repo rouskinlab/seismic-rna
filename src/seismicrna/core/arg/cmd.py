@@ -1,4 +1,5 @@
 CMD_DEMULT = "demult"
+CMD_DEMULT2 = "demult2"
 CMD_ALIGN = "align"
 CMD_RELATE = "relate"
 CMD_POOL = "pool"

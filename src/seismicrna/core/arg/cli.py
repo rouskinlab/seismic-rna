@@ -194,29 +194,58 @@ opt_mismatch_tolerence = Option(
          "does not apply to clipped sequences.")
 
 opt_index_tolerence = Option(
+    ("--index-tolerence",),
+    type=int,
+    default=0,
+    help="Designates the allowable amount of distance you allow the pattern to be found in a read from the reference "
+         "index")
+
+
+opt_mismatch_tolerance = Option(
+    ("--mismatch-tolerance",),
+    type=int,
+    default=0,
+    help="Designates the allowable amount of mismatches allowed in a string and still be considered a valid pattern "
+         "find. will increase non-parallel computation at a factorial rate. use caution going above 2 mismatches. "
+         "does not apply to clipped sequences.")
+
+opt_index_tolerance = Option(
     ("--index-tolerance",),
     type=int,
     default=0,
     help="Designates the allowable amount of distance you allow the pattern to be found in a read from the reference "
          "index")
 
+
+opt_barcode = Option(
+    ("--barcode",),
+    type=(str, DNA, int),
+    multiple=True,
+    default=(),
+    help=("A list of barcode name, barcode sequence, and barcode position "
+          "(1-indexed relative to read start) to demultiplex")
+)
+
 opt_barcode_start = Option(
     ("--barcode-start",),
     type=int,
     default=0,
-    help="Index of start of barcode")
+    help="Index of start of barcode"
+)
 
 opt_barcode_end = Option(
     ("--barcode-end",),
     type=int,
     default=0,
-    help="Length of barcode")
+    help="Index of end of barcode"
+)
 
-opt_barcode_length = Option(
-    ("--barcode-length",),
+opt_read_pos = Option(
+    ("--read-pos",),
     type=int,
-    default=0,
-    help="Length of barcode")
+    help=("Expected position of the barcode in the read (1-indexed). "
+          "Defaults to --barcode-start")
+)
 
 opt_demulti_overwrite = Option(
     ("--demulti-overwrite",),

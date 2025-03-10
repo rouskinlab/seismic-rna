@@ -4,6 +4,7 @@ from click import group, version_option
 
 from . import (wf,
                demult,
+               demult2,
                align,
                relate,
                pool,
@@ -68,6 +69,7 @@ def cli(verbose: int,
 
 for module in [wf,
                demult,
+               demult2,
                split,
                align,
                relate,

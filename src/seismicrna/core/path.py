@@ -42,6 +42,7 @@ RE_PATTERNS = {str: STR_PATTERN,
                pathlib.Path: PATH_PATTERN}
 
 # Names of steps
+DEMULT_STEP = "demult"
 ALIGN_STEP = "align"
 RELATE_STEP = "relate"
 NAMES_BATCH = "names"
@@ -407,7 +408,8 @@ class BranchesPathField(PathField):
 TopField = PathField(pathlib.Path)
 NameField = PathField(str)
 StepField = PathField(str,
-                      [ALIGN_STEP,
+                      [DEMULT_STEP,
+                       ALIGN_STEP,
                        RELATE_STEP,
                        MASK_STEP,
                        CLUSTER_STEP,
@@ -596,6 +598,7 @@ PROFILE = "profile"
 GRAPH = "graph"
 EXT = "ext"
 STRUCT = "struct"
+PART = "part"
 
 # Directory segments
 
@@ -623,6 +626,9 @@ Fastq2Seg = PathSegment("fastq2", {SAMPLE: NameField, EXT: Fastq2Ext})
 DmFastqSeg = PathSegment("dm-fastq", {REF: NameField, EXT: FastqExt})
 DmFastq1Seg = PathSegment("dm-fastq1", {REF: NameField, EXT: Fastq1Ext})
 DmFastq2Seg = PathSegment("dm-fastq2", {REF: NameField, EXT: Fastq2Ext})
+DmFastqPartSeg = PathSegment("dm-fastq-part", {PART: NameField,
+                                               REF: NameField,
+                                               EXT: FastqExt})
 
 # Align
 XamSeg = PathSegment("xam", {REF: NameField, EXT: XamExt})
@@ -741,6 +747,16 @@ FASTQ2_SEGS = Fastq2Seg,
 DMFASTQ_SEGS = SampSeg, DmFastqSeg
 DMFASTQ1_SEGS = SampSeg, DmFastq1Seg
 DMFASTQ2_SEGS = SampSeg, DmFastq2Seg
+
+
+DMFASTQ_SEGS2 = STEP_DIR_SEGS + (SampSeg, DmFastqSeg)
+DMFASTQ1_SEGS2 = STEP_DIR_SEGS + (SampSeg, DmFastq1Seg)
+DMFASTQ2_SEGS2 = STEP_DIR_SEGS + (SampSeg, DmFastq2Seg)
+
+DMFASTQ_PART_SEGS2 = (DmFastqPartSeg,) + DMFASTQ_SEGS2
+DMFASTQ1_PART_SEGS2 = (DmFastqPartSeg,) + DMFASTQ1_SEGS2
+DMFASTQ2_PART_SEGS2 = (DmFastqPartSeg,) + DMFASTQ2_SEGS2
+
 XAM_SEGS = STEP_DIR_SEGS + (XamSeg,)
 XAM_STAGE_SEGS = STAGE_DIR_SEGS + (XamSeg,)
 CLUST_TAB_SEGS = REG_DIR_SEGS + (ClustParamsDirSeg, ClustParamsFileSeg)
