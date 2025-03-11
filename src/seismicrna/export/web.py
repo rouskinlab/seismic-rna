@@ -19,6 +19,7 @@ from ..relate.dataset import load_relate_dataset
 from ..relate.report import RelateReport
 from ..core.table import (COVER_REL,
                           INFOR_REL,
+                          MUTAT_REL,
                           SUBST_REL,
                           SUB_A_REL,
                           SUB_C_REL,
@@ -38,15 +39,24 @@ REF_NUM_ALIGN = "num_aligned"
 REG_END5 = "section_start"
 REG_END3 = "section_end"
 REG_POS = "positions"
-POS_DATA = {"cov": COVER_REL,
-            "info": INFOR_REL,
-            "sub_N": SUBST_REL,
-            "sub_A": SUB_A_REL,
-            "sub_C": SUB_C_REL,
-            "sub_G": SUB_G_REL,
-            "sub_T": SUB_T_REL,
-            "del": DELET_REL,
-            "ins": INSRT_REL}
+COVER_COUNT = "cov"
+INFOR_COUNT = "info"
+SUBST_COUNT = "sub_N"
+SUB_A_COUNT = "sub_A"
+SUB_C_COUNT = "sub_C"
+SUB_G_COUNT = "sub_G"
+SUB_T_COUNT = "sub_T"
+DELET_COUNT = "del"
+INSRT_COUNT = "ins"
+POS_DATA = {COVER_COUNT: COVER_REL,
+            INFOR_COUNT: INFOR_REL,
+            SUBST_COUNT: SUBST_REL,
+            SUB_A_COUNT: SUB_A_REL,
+            SUB_C_COUNT: SUB_C_REL,
+            SUB_G_COUNT: SUB_G_REL,
+            SUB_T_COUNT: SUB_T_REL,
+            DELET_COUNT: DELET_REL,
+            INSRT_COUNT: INSRT_REL}
 SUBST_RATE = "sub_rate"
 SUBST_HIST = "sub_hist"
 CLUST_PROP = "proportion"
