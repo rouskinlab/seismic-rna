@@ -53,7 +53,7 @@ def load_foldable_tables(input_path: Iterable[str | Path], **kwargs):
         yield from table_type.load_tables(paths, **kwargs)
 
 
-@with_tmp_dir(pass_keep_tmp=False)
+@with_tmp_dir(pass_keep_tmp=True)
 def fold_region(rna: RNAProfile, *,
                 out_dir: Path,
                 tmp_dir: Path,
