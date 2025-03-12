@@ -202,7 +202,7 @@ def run(fasta: str | Path, *,
     require_dependency(BOWTIE2_CMD, __name__)
     require_dependency(BOWTIE2_BUILD_CMD, __name__)
     # List the XAM files to split and check for duplicates.
-    xam_files = list(path.find_files_chain(input_path, path.XAM_SEGS))
+    xam_files = list(path.find_files_chain(input_path, [path.XamSeg]))
     check_duplicate_samples(xam_files)
     # Split each input XAM file.
     return dispatch(split_xam_file,
