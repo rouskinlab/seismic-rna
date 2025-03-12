@@ -196,7 +196,7 @@ def run(fasta: str | Path, *,
         # Parallelization
         num_cpus: int,
         force: bool) -> list[Path]:
-    """ Trim FASTQ files and align them to reference sequences. """
+    """ Split a BAM file into one file for each reference. """
     # Check for external dependencies.
     require_dependency(SAMTOOLS_CMD, __name__)
     require_dependency(BOWTIE2_CMD, __name__)
@@ -285,5 +285,5 @@ params = [
 
 @command(CMD_SPLITBAM, params=params)
 def cli(*args, **kwargs):
-    """ Trim FASTQ files and align them to reference sequences. """
+    """ Split a BAM file into one file for each reference. """
     return run(*args, **kwargs)
