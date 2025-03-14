@@ -214,7 +214,8 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
         p_noclose_gap = np.empty((self.max_read_length,
                                   self._real_hist.columns.size),
                                  dtype=float)
-        p_noclose_gap[0] = 1.
+        if p_noclose_gap.size > 0:
+            p_noclose_gap[0] = 1.
         logger.detail("Calculating null fraction of reads in which every pair "
                       "of mutations would have at least N bases between them, "
                       f"from N = 1 to {self.max_read_length - 1}")
@@ -226,7 +227,8 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
         # where the closest two mutations have exactly that distance,
         # and for 0 the fraction of reads with fewer than two mutations.
         p_dist = np.zeros_like(self._real_hist, dtype=float)
-        p_dist[0] = p_noclose_gap[self.max_read_length - 1]
+        if p_dist.size > 0:
+            p_dist[0] = p_noclose_gap[self.max_read_length - 1]
         p_dist[1: self.max_read_length] = -np.diff(p_noclose_gap, axis=0)
         assert np.all(p_dist >= 0.)
         assert np.allclose(p_dist.sum(axis=0), 1.)
