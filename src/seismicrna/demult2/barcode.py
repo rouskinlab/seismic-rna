@@ -1,13 +1,18 @@
 import ahocorasick
+from tqdm import tqdm
+from functools import cached_property
 
 from collections import namedtuple, defaultdict
 from pathlib import Path
 from typing import Iterable
 
 import pandas as pd
+import numpy as np
 
 from ..core.seq.xna import DNA
 from ..core.seq.refs import RefSeqs
+
+from .neighbor import get_neighbors
 
 from ..core.logs import logger
 
@@ -82,7 +87,7 @@ def get_ref_barcodes(ref_meta_file: Path):
                 refs_meta[FIELD_READ_POS])
     refs = set()
     for i, (ref, end5, end3, name, bc, read_pos) in enumerate(lines, start=1):
-
+        end5 -= 1
         if not pd.isnull(ref):
             if ref in refs:
                 raise ValueError(f"{ref} may only appear once as a reference or name")
@@ -132,7 +137,7 @@ def get_coords_by_name(coords: Iterable[tuple[str, int | DNA, int, int | None]])
     for coord in coords:
         if len(coord) == 4:
             ref, end5, end3, start_pos = coord
-            coord_val = end5, end3
+            coord_val = end5-1, end3
         elif len(coord) == 3:
             ref, bc, start_pos = coord
             coord_val = bc, start_pos
@@ -146,8 +151,14 @@ def get_coords_by_name(coords: Iterable[tuple[str, int | DNA, int, int | None]])
 
 
 def coords_to_seq(seq: DNA, end5: int, end3: int):
-    """ Extract the sequence between inclusive coordinates """
-    return seq[end5-1:end3]
+    """ Extract the sequence between inclusive, 1-indexed coordinates """
+    return seq[end5:end3]
+
+def expand_by_tolerance(input: tuple[int, ...], tolerance: int) -> set[int]:
+    """
+    Get the full set of values in input within tolerance
+    """
+    return {inp + delta for inp in input for delta in range(-tolerance, tolerance + 1)}
 
 
 class RefBarcodes(object):
@@ -157,7 +168,9 @@ class RefBarcodes(object):
                  ref_seqs: Iterable[tuple[str, DNA]], *,
                  refs_meta_file: Path | None = None,
                  coords: Iterable[tuple[str, int, int, int]] = (),
-                 bcs: Iterable[tuple[str, DNA, int]] = ()):
+                 bcs: Iterable[tuple[str, DNA, int]] = (),
+                 mismatches: int = 0,
+                 index_tolerance: int = 0):
         ref_seqs = RefSeqs(ref_seqs)
         # Group coordinates and primers by reference.
         cli_coords = get_coords_by_name(coords)
@@ -186,16 +199,31 @@ class RefBarcodes(object):
 
         self.ref_lengths = {ref: len(seq) for ref, seq in ref_seqs.iter()}
         self._bcs = cli_bcs | meta_bcs | bcs_from_coords
+        self.mismatches = mismatches
+        self.index_tolerance = index_tolerance
+        self.rc = True # TODO Handle optional RC for barcodes
+
+        self.num_refs = len(self.ref_lengths)
+
+        self.automaton_index = 0
+
+        self.automaton
+        if self.rc:
+            self.rc_automaton
 
     @property
     def names(self):
         """ Reference names. """
-        return set(self._bcs)
+        return list(self._bcs.keys())
+
+    @property
+    def uniq_names(self):
+        return set(self.names)
 
     @property
     def as_dict(self):
         """ Get a dict of name:barcode pairs. """
-        return {name: bc for name, (bc, _) in self._bcs.items()}
+        return self._bcs
 
     @property
     def barcodes(self):
@@ -208,9 +236,50 @@ class RefBarcodes(object):
         return [read_pos for _, read_pos in self._bcs.values()]
 
     @property
+    def max_barcode_len(self):
+        return max(map(len, self.barcodes))
+
+    @property
+    def read_pos_range(self):
+        """ List the range in which a barcode can fall in a read. """
+        min_pos = max(min(self.read_positions) - self.index_tolerance, 0)
+        max_pos = max(self.read_positions) + self.max_barcode_len + self.index_tolerance # TODO: Max barcode len is not with max read_position
+        return (min_pos, max_pos)
+
+    @property
+    def slice_position(self):
+        slice_positions = list()
+        read_range_start, read_range_end = self.read_pos_range
+        range_size = read_range_end - read_range_start
+        for read_position, barcode in zip(self.read_positions, self.barcodes):
+            slice_position = (read_position - read_range_start + len(barcode)) - 1
+            slice_positions.append((slice_position, slice_position + range_size + 1)) # +1 for the space character inserted between reads.
+        return slice_positions
+
+    @property
     def rc_read_positions(self):
         """ List all reverse complement barcode positions. """
-        return [self.ref_lengths.get(name, 0)+1-(read_pos+len(bc)) for name, (bc, read_pos) in self._bcs.items()] #TODO: Fix rc indexing of non-ref barcodes
+        return [self.ref_lengths.get(name, 0)-(read_pos+len(bc)) for name, (bc, read_pos) in self._bcs.items()] #TODO: Fix rc indexing of non-ref barcodes
+
+
+    @property
+    def rc_read_pos_range(self):
+        """ List the range in which an rc barcode can fall in a read. """
+        min_pos =  max(min(self.rc_read_positions) - self.index_tolerance, 0)
+        max_pos = max(self.rc_read_positions) + self.max_barcode_len + self.index_tolerance
+        return (min_pos, max_pos)
+
+
+    @property
+    def rc_slice_position(self):
+        slice_positions = list()
+        read_range_start, read_range_end = self.rc_read_pos_range
+        range_size = read_range_end - read_range_start
+        for read_position, rc_barcode in zip(self.rc_read_positions, self.rc_barcodes): # TODO: Make more efficient. Also combine with normal barcodes to avoide code duplication.
+            slice_position = (read_position - read_range_start + len(rc_barcode)) - 1
+            slice_positions.append((slice_position, slice_position + range_size + 1)) # +1 for the space character inserted between reads.
+        return slice_positions
+
 
     @property
     def count(self):
@@ -244,17 +313,72 @@ class RefBarcodes(object):
             by_pos_dict[pos].append(barcode)
         return by_pos_dict
 
-    @property
-    def automaton(self):
+
+    def get_automaton(self, barcodes: list[tuple[str, DNA]], start: int = 0, check: list[ahocorasick.Automaton] = []): # TODO: May be able to remove the check argument depending on edge cases.
         automaton = ahocorasick.Automaton()
-        pairs = self.pairs
-        pairs.extend(self.rc_pairs)
-        as_dict = self.as_dict
-        for name, barcode in as_dict.items():
-            automaton.add_word(str(barcode), (name, str(barcode)))
-            automaton.add_word(str(barcode.rc), (name, str(barcode.rc)))
+        collisions = dict()
+        sets = set()
+        orig_set = set()
+        for barcode_idx, (name, barcode) in tqdm(enumerate(barcodes)):
+            orig_set.add(str(barcode))
+            if (name, barcode) in sets:
+                raise ValueError(f"Already encountered {(name, barcode)}")
+            if self.mismatches:
+                barcode_set = get_neighbors(barcode, max_mismatches=self.mismatches)
+            else:
+                barcode_set = set([barcode])
+            for barcode in barcode_set:
+                if (name, barcode) in sets:
+                    raise ValueError(f"Already encountered {(name, barcode)}")
+                sets.add((name, barcode))
+                barcode_set = set([str(barcode)])
+                for idx, barcode in enumerate(barcode_set):
+                    for check_automaton in check:
+                        if check_automaton.exists(barcode):
+                            assert (name, barcode) not in collisions, f"{(name, barcode)} already collided. {collisions[(name, barcode)]} {check_automaton.get(barcode)}"
+                            collisions[(name, barcode)] = check_automaton.get(barcode)
+                    automaton.add_word(str(barcode), barcode_idx + start)
+        if collisions:
+            raise ValueError(f"The following barcodes collide with --mismatch-tolerance {self.mismatches}: "
+                             f"{[f'{key} and {val}' for key, val in collisions.items()]}")
         automaton.make_automaton()
+        self.automaton_index += len(barcodes)
         return automaton
+
+    @cached_property
+    def name_map(self):
+        if self.rc:
+            names = self.names + self.names
+            num_refs = self.num_refs * 2
+        else:
+            names = self.names
+            num_refs = self.num_refs
+        name_map = {ref_idx: name for ref_idx, name in zip(np.arange(num_refs), names)}
+        return name_map
+
+    @cached_property
+    def valid_positions(self):
+        if self.rc:
+            slice_positions = self.slice_position + self.rc_slice_position
+            num_refs = self.num_refs * 2
+        else:
+            slice_positions = self.slice_position
+            num_refs = self.num_refs
+
+        if self.index_tolerance > 0:
+            valid_positions = {ref_idx: expand_by_tolerance(read_pos, self.index_tolerance) for ref_idx, read_pos in zip(np.arange(num_refs), slice_positions)}
+        else:
+            valid_positions = {ref_idx: read_pos for ref_idx, read_pos in zip(np.arange(num_refs), slice_positions)}
+        return valid_positions
+
+
+    @cached_property
+    def automaton(self):
+        return self.get_automaton([(name, barcode) for name, barcode in zip(self.names, self.barcodes)], start=self.automaton_index)
+
+    @cached_property
+    def rc_automaton(self):
+        return self.get_automaton([(name, rc_barcode) for name, rc_barcode in zip(self.names, self.rc_barcodes)], start=self.automaton_index)
 
     def __str__(self):
         return f"{type(self).__name__} ({self.count}): {self._bcs}"

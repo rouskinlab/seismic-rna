@@ -9,7 +9,7 @@ from .logs import Level, logger, get_config, set_config
 from .validate import require_equal
 
 
-def calc_pool_size(num_tasks: int, max_procs: int):
+def calc_pool_size(num_tasks: int, max_procs: int, parallel: bool = True):
     """ Calculate the size of a process pool.
 
     Parameters
@@ -18,6 +18,11 @@ def calc_pool_size(num_tasks: int, max_procs: int):
         Number of tasks to parallelize. Must be ≥ 1.
     max_procs: int
         Maximum number of processes to run at one time. Must be ≥ 1.
+    parallel: bool
+        If True, tasks are run in parallel (reserving one processor for the
+        parent process and distributing the remaining processors among tasks).
+        If False, tasks run serially, but each task can still use the remaining
+        processors (i.e. max_procs - 1, at minimum 1).
 
     Returns
     -------
@@ -33,15 +38,11 @@ def calc_pool_size(num_tasks: int, max_procs: int):
         logger.warning(f"num_tasks must be ≥ 1, but got {num_tasks}; "
                        f"defaulting to 1")
         num_tasks = 1
-    # The number of tasks that can run simultaneously is the smallest
-    # of (a) the number of tasks and (b) the number of processors minus
-    # one, since one processor must be reserved for the parent process
-    # that is managing the process pool.
+
+    # Reserve one processor for the parent process.
     max_child_procs = max(max_procs - 1, 1)
     max_simultaneous = min(num_tasks, max_child_procs)
-    if max_simultaneous > 1:
-        # Parallelize the tasks, controlled by the parent process, and
-        # distribute the child processors evenly among the pooled tasks.
+    if parallel and max_simultaneous > 1:
         pool_size = max_simultaneous
         num_procs_per_task = max_child_procs // pool_size
     else:
@@ -50,6 +51,7 @@ def calc_pool_size(num_tasks: int, max_procs: int):
         pool_size = 1
         num_procs_per_task = max_procs
     return pool_size, num_procs_per_task
+
 
 
 class Task(object):
@@ -126,6 +128,8 @@ def _worker_initializer():
 
 def dispatch(funcs: Callable | list[Callable],
              max_procs: int,
+             parallel: bool = True,
+             pass_parallel: bool = False,
              pass_n_procs: bool = True,
              raise_on_error: bool = False,
              args: tuple | Iterable[tuple] = (),
@@ -145,6 +149,9 @@ def dispatch(funcs: Callable | list[Callable],
         called for each tuple of positional arguments in `args`.
     max_procs: int
         Maximum number of processes to run at one time. Must be ≥ 1.
+    parallel: bool
+        If True, run the top-level tasks in parallel; if False, run them
+        serially (each task still gets multiple processors via child parallelism).
     pass_n_procs: bool
         Whether to pass the number of processes to the function as the
         keyword argument `n_procs`.
@@ -199,7 +206,7 @@ def dispatch(funcs: Callable | list[Callable],
         logger.task("No tasks were given to dispatch")
         return list()
     # Determine how to parallelize each task.
-    pool_size, n_procs_per_task = calc_pool_size(num_tasks, max_procs)
+    pool_size, n_procs_per_task = calc_pool_size(num_tasks, max_procs, parallel)
     if pass_n_procs:
         # Add the number of processes as a keyword argument.
         kwargs = {**kwargs, "n_procs": n_procs_per_task}
@@ -207,6 +214,8 @@ def dispatch(funcs: Callable | list[Callable],
                       f"each with {n_procs_per_task} processor(s)")
     else:
         logger.detail(f"Calculated size of process pool: {pool_size}")
+    if pass_parallel:
+        kwargs = {**kwargs, "parallel": parallel}
     if pool_size > 1:
         # Run the tasks in parallel.
         with ProcessPoolExecutor(max_workers=pool_size,
@@ -251,6 +260,7 @@ def dispatch(funcs: Callable | list[Callable],
     else:
         logger.task(f"All {num_tasks} task(s) completed successfully")
     return results
+
 
 
 def as_list_of_tuples(args: Iterable[Any]):

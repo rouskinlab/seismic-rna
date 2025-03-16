@@ -309,13 +309,13 @@ class super_fastq():
         return big_set
 
     """
-    takes a dict of reads 
+    takes a dict of reads
     this method is for efficently organizing the reads based on which pickle
     they are in so pickles only need to be opened once
 
-    union dict a diction representing the sequence to its 
+    union dict a diction representing the sequence to its
 
-    they will write to the "directory_to_write_to" which is just a string 
+    they will write to the "directory_to_write_to" which is just a string
     names file as construct name (key in union dict) +"_R"+fastq_id+".fastq
 
     also clears the union dict to save space
@@ -327,7 +327,7 @@ class super_fastq():
 
         """
         organizes reads into sets per k,
-        based on which pickle the read is in 
+        based on which pickle the read is in
         """
         sample_fq_dir = directoy_to_write_to + sample_name + "/"
         os.makedirs(sample_fq_dir, exist_ok=True)
@@ -356,7 +356,7 @@ class super_fastq():
 
         # union_dict.clear()
         """
-        now that the reads are organized we have to open each pickle file write fastqs 
+        now that the reads are organized we have to open each pickle file write fastqs
         """
         # fqs=[]
         for k in sequence_objects.keys():
@@ -404,9 +404,9 @@ class super_fastq():
 """
 tolerence is added to both ends of search range
 
-if tolerence==-1 then disregards indexes 
+if tolerence==-1 then disregards indexes
     this will increase computation time
-no index ranges and high mismatch threshhold will result in extremely high comp time 
+no index ranges and high mismatch threshhold will result in extremely high comp time
 """
 
 
@@ -422,8 +422,8 @@ def run_seqkit_grep_function(pattern: str,
                              delete_fq: bool = False
                              ):
     """
-    1 indexed? 
-    
+    1 indexed?
+
     """
     append_char = ">>" if append_bool else ">"
 
@@ -459,9 +459,9 @@ def make_dict_from_fasta(fasta_path) -> dict:
 
 
 """
-input csv, mask_regions_file that represents each sequence to be dumultiplexed with many different coloumns 
+input csv, mask_regions_file that represents each sequence to be dumultiplexed with many different coloumns
 
-workspace directory that demultiplexing is being done in 
+workspace directory that demultiplexing is being done in
 
 fq1/fq2 path for big fastq which will be demultiplexed? maybe should be removed
 
@@ -474,7 +474,7 @@ this whole method could be replaced with a dataframe that organizes all of these
 
 def make_sequence_objects_from_csv(input_csv, barcode_start, barcode_end, fasta, fastq1_path, fastq2_path, paired,
                                    workspace) -> dict:
-    
+
     sequence_object_dict = {}
     fasta_dict = make_dict_from_fasta(fasta)
     if (input_csv == ""):
@@ -482,11 +482,11 @@ def make_sequence_objects_from_csv(input_csv, barcode_start, barcode_end, fasta,
         for name in fasta_dict.keys():
             seq = fasta_dict[name]
             rev_seq = reverse_compliment(seq)
-            bc = seq[barcode_start:barcode_end]
+            bc = seq[barcode_start-1:barcode_end]
 
             rev_barcode = reverse_compliment(bc)
-            rev_bc_start = rev_seq.index(rev_barcode)
-            rev_bc_end = rev_bc_start + len(rev_barcode)
+            rev_bc_start = rev_seq.index(rev_barcode) - 1
+            rev_bc_end = rev_bc_start + len(rev_barcode) - 1
 
             sequence_object_dict[name] = Sequence_Obj(
                 sequence=fasta_dict[name],
@@ -529,10 +529,10 @@ def make_sequence_objects_from_csv(input_csv, barcode_start, barcode_end, fasta,
 
             barcode_start = df.at[x, "Barcode5"]
             barcode_end = df.at[x, "Barcode3"]
-            bc = seq[barcode_start:barcode_end]
+            bc = seq[barcode_start-1:barcode_end]
             rev_barcode = reverse_compliment(bc)
-            rev_bc_start = rev_seq.index(rev_barcode)
-            rev_bc_end = rev_bc_start + len(rev_barcode)
+            rev_bc_start = rev_seq.index(rev_barcode) + 1
+            rev_bc_end = rev_bc_start + len(rev_barcode) - 1
 
             if ("Secondary_Signature_Start" in cols):
                 secondary_sign_start = df.at[x, "Secondary_Signature_Start"]
@@ -577,18 +577,18 @@ def make_sequence_objects_from_csv(input_csv, barcode_start, barcode_end, fasta,
 
 
 """
-seqkit grep is 1 indexed and inclusive of the final value of its range 
+seqkit grep is 1 indexed and inclusive of the final value of its range
 
 
 
-clipped int that represents how much 
+clipped int that represents how much
 fastq_id fastq 1 or fastq 2
 """
 
 """
 runs grep and accepts a clipped argument and appends the set to the main dictionary
 
-index tolerence can only apply to the initial but there are cases where that could false 
+index tolerence can only apply to the initial but there are cases where that could false
 """
 
 
@@ -792,7 +792,7 @@ def grep_both_fastq(sequence_object: Sequence_Obj, clipped: int, rev_clipped: in
 def parallel_grepping(sequence_objects: dict, fwd_clips: int, rev_clips: int, index_tolerence: int, delete_fastq: bool,
                       paired: bool = True, mismatches: int = 0, threads=10, iteration: int = 0, overwrite: bool = True):
     """
-    runs grep in parallel 
+    runs grep in parallel
     """
     itr_val = iteration
     print("iteration value:XXX ", itr_val)
@@ -864,7 +864,7 @@ def parallel_grepping(sequence_objects: dict, fwd_clips: int, rev_clips: int, in
 def regular_grepping(sequence_objects: dict, fwd_clips: int, rev_clips: int, index_tolerence: int, delete_fastq: bool,
                      paired: bool = True, mismatches: int = 0, iteration: int = 0, overwrite: bool = False):
     """
-    runs grep in parallel 
+    runs grep in parallel
     """
     print("regular grepping")
     itr_val = iteration
@@ -891,14 +891,14 @@ def regular_grepping(sequence_objects: dict, fwd_clips: int, rev_clips: int, ind
 
 
 """
-checks each sequence for a grepped.txt and returns true if found 
+checks each sequence for a grepped.txt and returns true if found
 """
 
 
 def finds_multigrepped_reads(sequence_objects: dict, remove: bool = True, resolve: bool = False,
                              print_multi_grep_dict: bool = True, demultiplex_workspace: str = None) -> dict:
     """
-    filters reads based on weather or not they map to multiple constructs 
+    filters reads based on weather or not they map to multiple constructs
     returns a dictionary mapping each read to a list of the reads it mapped to
     """
     union_dictionary = {}
@@ -919,7 +919,7 @@ def finds_multigrepped_reads(sequence_objects: dict, remove: bool = True, resolv
         # joint set of ids from complete sets of fqs
         union_dictionary[k] = fq1_complete_set.union(fq2_complete_set)
         """
-        now that all reads are collected into a big dictionary of sets 
+        now that all reads are collected into a big dictionary of sets
         we can see which ones are mapped to multiple reads
         """
     used_reads = {}
@@ -983,7 +983,7 @@ def create_report(sequence_objects: dict, fq1: str, fq2: str, working_directory:
             fastqs[fq] = fq1
         else:
             fastqs[fq] = fq2
-
+        print(fastqs)
         mixed_total_dict[fq] = set(makes_dict_from_fastq(fastqs[fq]))
         orginal_len[fq] = len(mixed_total_dict[fq])
         print("orginal len: ", orginal_len[fq])
@@ -1030,9 +1030,9 @@ def create_report(sequence_objects: dict, fq1: str, fq2: str, working_directory:
 
 """
 split is default to 10. disregarding extremes, the higher the split the lighter the memeory load
-mask_regions_file csv 
-    each construct must have a secondary signiture start index and len in order to process, 
-    barcode given in main arguements 
+mask_regions_file csv
+    each construct must have a secondary signiture start index and len in order to process,
+    barcode given in main arguements
 """
 
 
@@ -1063,7 +1063,7 @@ def demultiplex_run(refs_file_csv, demulti_workspace, report_folder, fq_unit: Fa
     os.makedirs(temp_ws, exist_ok=True)
     # print("tempworkspace: ",temp_ws)
     """
-    all the little stuff gets stored per sequence here, at least temporarily 
+    all the little stuff gets stored per sequence here, at least temporarily
     """
     seq_data_folder = temp_ws + "sequence_data/"
 
@@ -1101,7 +1101,7 @@ def demultiplex_run(refs_file_csv, demulti_workspace, report_folder, fq_unit: Fa
         raise Exception("Fastq ids do not match, please verify that the file")
 
     """
-    runs grep in parallel 
+    runs grep in parallel
     """
     if (parallel):
         parallel_grepping(sequence_objects=sequence_objects, fwd_clips=clipped, rev_clips=rev_clipped,
@@ -1114,7 +1114,7 @@ def demultiplex_run(refs_file_csv, demulti_workspace, report_folder, fq_unit: Fa
     # print(cum+plus)
 
     """
-    filters reads based on weather or not they map to multiple constructs 
+    filters reads based on weather or not they map to multiple constructs
     default is to delete multigrepped reads
 
     """

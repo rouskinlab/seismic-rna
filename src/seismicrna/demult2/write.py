@@ -2,18 +2,25 @@ from typing import Iterable
 import numpy as np
 import gzip
 import shutil
-
+from collections import defaultdict
+from itertools import zip_longest
 from datetime import datetime
 from pathlib import Path
-from ..align.fqunit import FastqUnit, DuplicateSampleReferenceError
+from ..align.fqunit import FastqUnit, DuplicateSampleReferenceError, fastq_gz
 from ..core.logs import logger
 from ..core import path
 from ..core.seq import parse_fasta
-from ..core.extern.shell import args_to_cmd, run_cmd, SEQKIT_CMD, UMI_TOOLS_CMD, UMI_TOOLS_EXTRACT_CMD
+from ..core.extern.shell import args_to_cmd, run_cmd, SEQKIT_CMD
 from ..core.task import dispatch, as_list_of_tuples
 from ..core.tmp import get_release_working_dirs, release_to_out
+from ..core.path import symlink_if_needed, mkdir_if_needed
 from ..core.seq import DNA
 from .barcode import RefBarcodes
+from tqdm import tqdm
+
+
+# import ahocorasick
+# import pickle
 
 PART_STR = ".part_"
 
@@ -154,10 +161,12 @@ def demult_samples(fq_units: list[FastqUnit],
         barcodes = RefBarcodes(ref_seqs=parse_fasta(fasta, DNA),
                                refs_meta_file=refs_meta,
                                coords=coords,
-                               bcs=barcode)
+                               bcs=barcode,
+                               mismatches=mismatch_tolerance,
+                               index_tolerance=index_tolerance)
 
     # List all demultiplexed FASTQs and check for duplicates.
-    demult_fqs = list_demult(fq_units, refs | barcodes.names)
+    demult_fqs = list_demult(fq_units, refs | barcodes.uniq_names)
 
     if force:
         # force all alignments.
@@ -200,7 +209,7 @@ def demult_fqs_pipeline(fq_units: list[FastqUnit],
                         max_procs: int,
                         tmp_dir: Path,
                         **kwargs) -> list[Path]:
-    """ Run all stages of alignment for one or more FASTQ files or pairs
+    """ Run all stages of demultiplexing for one or more FASTQ files or pairs
     of mated FASTQ files. """
     logger.routine("Began running the demultiplexing pipeline")
     # Validate the maximum number of processes.
@@ -209,34 +218,15 @@ def demult_fqs_pipeline(fq_units: list[FastqUnit],
         max_procs = 1
     # Make the arguments for each demultiplexing task.
     iter_args: list[tuple[FastqUnit, str, str]] = list()
-    bcs = barcodes.barcodes
-    rc_bcs = barcodes.rc_barcodes
-    bcs = list(map(str, bcs))
-    rc_bcs = list(map(str, rc_bcs))
 
-    sub_patterns = list()
-
-    bc_len = len(bcs[0])
-
-    for read_pos, bc_list in barcodes.by_pos.items():
-        bc_str = "|".join(map(str, bc_list))
-        sub_patterns.append(f"(.{{{to_range(read_pos, index_tolerance)}}}(?P<umi_1>{bc_str}){{s<={mismatch_tolerance}}})")
-        # sub_patterns.append(f"(.{{{to_range(read_pos, index_tolerance)}}}(?P<umi_1>.{{{bc_len}}}){{s<={mismatch_tolerance}}})")
-    for rc_read_pos, rc_bc_list in barcodes.rc_by_pos.items():
-        rc_bc_str = "|".join(map(str, rc_bc_list))
-        sub_patterns.append(f"(.{{{to_range(rc_read_pos, index_tolerance)}}}(?P<umi_1>{rc_bc_str}){{s<={mismatch_tolerance}}})")
-        # sub_patterns.append(f"(.{{{to_range(rc_read_pos, index_tolerance)}}}(?P<umi_1>.{{{bc_len}}}){{s<={mismatch_tolerance}}})")
-
-    bc_pattern = "|".join(sub_patterns)
-    bc_pattern2 = bc_pattern # TODO: Implement different barcodes for each read
-    # One demultiplexing task will be created for each FASTQ unit.
     for fq_unit in fq_units:
-            iter_args.append((fq_unit, bc_pattern, bc_pattern2, barcodes))
+            iter_args.append((fq_unit, barcodes))
             # Add these arguments to the lists of arguments that
             # will be passed to fq_pipeline.
     # Generate demultiplexed FASTQ files.
     fq_dirs = dispatch(demult_fq_pipeline,
                        max_procs,
+                       parallel=False,
                        args=iter_args,
                        kwargs=dict(tmp_dir=tmp_dir, **kwargs))
     logger.routine("Ended running the demultiplexing pipeline")
@@ -245,8 +235,6 @@ def demult_fqs_pipeline(fq_units: list[FastqUnit],
 
 
 def demult_fq_pipeline(fq_inp: FastqUnit,
-                       bc_pattern: str,
-                       bc_pattern2: str,
                        barcodes: RefBarcodes,
                        *,
                        out_dir: Path,
@@ -261,16 +249,14 @@ def demult_fq_pipeline(fq_inp: FastqUnit,
     logger.routine(f"Began processing {fq_inp} through the demult pipeline")
     # Get attributes of the sample and references.
 
-    # fq1, fq2 = fq_inp.paths.values()
-    # run_ahocorasick(fq_path=fq1, fq2_path=fq2, barcodes=barcodes)
-    # return "Done"
-    split_fqs = split_fq(fq_inp, working_dir, batch_size=10000, n_procs=n_procs)
+    num_split = n_procs-1
+    split_fqs = split_fq(fq_inp, working_dir, batch_size=10000, num_split=num_split)
 
-    barcodes = barcodes.as_dict
-    args = [(fq_inp, fqs, bc_pattern, bc_pattern2, barcodes) for fqs in split_fqs]
+    args = [(fq_inp, fqs, barcodes) for fqs in split_fqs]
     demult_parts = dispatch(process_fq_part,
                             n_procs,
                             args=args,
+                            pass_n_procs=False,
                             kwargs=dict(release_dir=release_dir,
                                         **kwargs))
 
@@ -285,9 +271,11 @@ def demult_fq_pipeline(fq_inp: FastqUnit,
             parts = [fq_mates[mate][part] for fq_mates in demult_parts]
             assembled_parts.append(parts)
 
+    arg_parts = [arg_part for arg_part in assembled_parts if any(fq.exists() for fq in arg_part)]
+
     dispatch(merge_parts,
              n_procs,
-             args=as_list_of_tuples(assembled_parts),
+             args=as_list_of_tuples(arg_parts),
              pass_n_procs=False)
 
     out_path = release_to_out(out_dir=out_dir, release_dir=release_dir, initial_path=release_dir/Path(fq_inp.sample)/"demult")
@@ -298,28 +286,41 @@ def demult_fq_pipeline(fq_inp: FastqUnit,
 def split_fq(fq_inp: FastqUnit,
              working_dir: Path,
              batch_size: int,
-             n_procs: int):
+             num_split: int):
+    split_dir = working_dir/fq_inp.sample/"split"
     for fq in fq_inp.paths.values():
-        split_dir = working_dir/fq_inp.sample/"split"
-        args = [
-                SEQKIT_CMD,
-                "split2",
-                "-p", str(n_procs), #str(min(n_procs, fq_inp.n_reads/batch_size)),
-                "-j", str(n_procs),
-                str(fq),
-                "-O", split_dir
-            ]
-        cmd = args_to_cmd(args)
-        run_cmd(cmd)
-    return get_split_paths(split_dir, fq_inp, n_procs)
+        fq = Path(fq)
+        num_split = max(num_split, 1)
+        if num_split == 1:
+            split_path = (split_dir / strip_all_suffixes(fq.name)).with_suffix(".part_001"+"".join(fq.suffixes))
+            mkdir_if_needed(split_path.parent)
+            # Rather than "splitting" into 1 file, symlink the original file.
+            symlink_if_needed(split_path, fq)
+        else:
+            args = [
+                    SEQKIT_CMD,
+                    "split2",
+                    "-p", str(num_split), #str(min(n_procs, fq_inp.n_reads/batch_size)),
+                    "-j", str(num_split),
+                    str(fq),
+                    "-O", split_dir
+                ]
+            cmd = args_to_cmd(args)
+            run_cmd(cmd)
+    return get_split_paths(split_dir, fq_inp, num_split)
 
-
-def rename_fq_part(fq_path: Path) -> Path:
-    suffixes = fq_path.suffixes
-    base_name = fq_path.name
+def strip_all_suffixes(path: str | Path):
+    path = Path(path)
+    suffixes = path.suffixes
+    base_name = path.name
     for s in reversed(suffixes):
         if base_name.endswith(s):
             base_name = base_name[:-len(s)]
+    return base_name
+
+def rename_fq_part(fq_path: Path) -> Path:
+    suffixes = fq_path.suffixes
+    base_name = strip_all_suffixes(fq_path)
     part = next((s for s in suffixes if s.startswith(PART_STR)), None)
     if part is None:
         return fq_path
@@ -345,72 +346,6 @@ def get_split_paths(split_dir, fq_inp, num_parts):
     ]
 
 
-def run_ahocorasick(fq_path: Path,
-                    fq2_path: Path,
-                    barcodes: RefBarcodes):
-
-    if fq_path.suffix == ".gz":
-        open_func = gzip.open
-    else:
-        open_func = open
-
-    with open_func(fq_path, "rt") as fq1:
-        with open_func(fq2_path, "rt") as fq2:
-            n = 0
-            while True:
-                # print(n)
-                fq1_lines = [fq1.readline() for _ in range(4)]
-                fq2_lines = [fq2.readline() for _ in range(4)]
-                if not fq1_lines[0]:
-                    break
-                header = fq1_lines[0].strip()
-                name = header.split()[0]
-                seq = fq1_lines[1] + fq2_lines[1]
-                for end_index, name in barcodes.automaton.iter(seq):
-                    pass
-                    # print((end_index, name))
-                    # logger.error((start_index, end_index, (insert_order, original_value)))
-                n+=1
-
-
-
-def extract_barcodes(fq_paths: tuple[Path, ...],
-                     bc_pattern: str,
-                     bc_pattern2: str):
-    """
-    Run umi_tools extract on the given FASTQ(s).
-    """
-    ext_fq_paths = tuple([fq.parent.parent/"extracted"/fq.name for fq in fq_paths]) # TODO: Improve path logic
-    path.mkdir_if_needed(ext_fq_paths[0].parent)
-    args = [
-        UMI_TOOLS_CMD,
-        UMI_TOOLS_EXTRACT_CMD,
-        "--extract-method=regex",
-        "--either-read",
-        f"--bc-pattern='{bc_pattern}'",
-        "-I", fq_paths[0],
-        "-S", ext_fq_paths[0]
-        ]
-
-    if len(fq_paths) > 1:
-        assert(len(fq_paths) == 2)
-        args.extend([
-        f"--bc-pattern2='{bc_pattern2}'",
-        "--read2-in", fq_paths[1],
-        "--read2-out", ext_fq_paths[1]
-    ])
-    logger.action(f"Extracting barcodes from {fq_paths}")
-    args = list(map(str, args))
-    cmd = " ".join(args)
-    cmd = args
-
-    run_cmd(cmd, shell=False)
-
-    # Clean up input paths to save disk space.
-    for fq in fq_paths:
-        fq.unlink()
-    return ext_fq_paths
-
 def get_part(fq_path: Path):
     return fq_path.name.split("_")[0]
 
@@ -423,89 +358,146 @@ def remove_suffixes(path: Path):
 
 def process_fq_part(fq_inp: FastqUnit,
                     fqs: tuple[Path, ...],
-                    bc_pattern: str,
-                    bc_pattern2: str,
-                    barcodes: dict[str, DNA],
+                    barcodes: RefBarcodes,
                     *,
                     release_dir: Path,
                     branches: dict[str, str],
-                    n_procs: int,
                     **kwargs):
+    # Define segment patterns and corresponding mappings.
+    fq_seg_patterns = [path.Fastq1Seg, path.Fastq2Seg, path.FastqSeg]
+    fq_seg_map = {
+        path.Fastq1Seg: path.DMFASTQ1_SEGS2,
+        path.Fastq2Seg: path.DMFASTQ2_SEGS2,
+        path.FastqSeg:  path.DMFASTQ_SEGS2,
+    }
 
-    ext_fqs = extract_barcodes(fqs,
-                               bc_pattern,
-                               bc_pattern2)
+    # Build FastqUnit using the provided FASTQ paths.
+    fq_unit_args = dict(zip(fq_inp.paths.keys(), fqs))
+    fq_unit_part = FastqUnit(**fq_unit_args,
+                             phred_enc=fq_inp.phred_enc,
+                             one_ref=fq_inp.one_ref)
 
-    fq_seg_patterns = [path.Fastq1Seg,
-                       path.Fastq2Seg,
-                       path.FastqSeg]
-    fq_seg_map = {path.Fastq1Seg: path.DMFASTQ1_SEGS2,
-                  path.Fastq2Seg: path.DMFASTQ2_SEGS2,
-                  path.FastqSeg: path.DMFASTQ_SEGS2}
-
-    args = list()
-    for fq_path in ext_fqs:
+    # Prepare output paths mapping for each barcode.
+    out_fq_unit_args = defaultdict(dict)
+    for fq_type, fq_path in fq_unit_part.paths.items():
+        # Get the complete extension (e.g. '.fastq.gz')
         fq_extension = "".join(fq_path.suffixes)
-        seg_pattern = next((pattern for pattern in fq_seg_patterns if path.path_matches(fq_path.name, [pattern])), None)
+        seg_pattern = next((pattern for pattern in fq_seg_patterns
+                            if path.path_matches(fq_path.name, [pattern])), None)
         if not seg_pattern:
             logger.error(f"{fq_path} does not match any known FASTQ pattern.")
-        out_paths = dict()
-        for ref, barcode in barcodes.items():
-            dm_fastq_segs = fq_seg_map[seg_pattern]
-            tmp_fq_path = path.buildpar(dm_fastq_segs,
-                                        {path.TOP: release_dir,
-                                         path.SAMPLE:fq_inp.sample,
-                                         path.STEP: path.DEMULT_STEP,
-                                         path.BRANCHES: branches,
-                                         path.REF: f"{get_part(fq_path)}_{ref}",
-                                         path.EXT: dm_fastq_segs[-1].exts[0]})
-            # Ensure suffix is the same as input suffix (in case gzipped).
+            continue
+
+        dm_fastq_segs = fq_seg_map[seg_pattern]
+        # Process only the first three barcode items.
+        for name in barcodes.uniq_names:
+            tmp_fq_path = path.buildpar(
+                dm_fastq_segs,
+                {
+                    path.TOP: release_dir,
+                    path.SAMPLE: fq_inp.sample,
+                    path.STEP: path.DEMULT_STEP,
+                    path.BRANCHES: branches,
+                    path.REF: f"{get_part(fq_path)}_{name}",
+                    path.EXT: dm_fastq_segs[-1].exts[0],
+                }
+            )
+            # Ensure the output file retains the original suffix (e.g., gzipped)
             out_fq_path = remove_suffixes(tmp_fq_path).with_suffix(fq_extension)
-            out_paths[barcode] = out_fq_path
-        args.append((fq_path, out_paths))
-    demult_fqs = dispatch(demult_fq,
-                          n_procs,
-                          args=args,
-                          pass_n_procs=False,
-                          kwargs=kwargs)
+            out_fq_unit_args[name][fq_type] = out_fq_path
+
+    # Build output FastqUnit objects per barcode.
+    out_fqs = {
+            name: FastqUnit(**paths,
+                            phred_enc=fq_inp.phred_enc,
+                            one_ref=fq_inp.one_ref)
+            for name, paths in out_fq_unit_args.items()
+    }
+
+    demult_fqs = demult_ahocorasick(fq_unit_part, out_fqs, barcodes)
+
     return demult_fqs
 
-def demult_fq(fq_path: Path,
-              out_paths: dict[str, DNA],
-              **kwargs):
+def get_open_func(fq_path: Path):
+    return gzip.open if fastq_gz(fq_path) else open
 
-    if fq_path.suffix == ".gz":
-        open_func = gzip.open
+
+def check_matches(matches: Iterable[tuple[tuple[int, str, set]]], barcodes):
+    samples = set()
+    for match in matches:
+        for read in match:
+            if read is not None:
+                end_index, barcode_id = read
+                name = barcodes.name_map[barcode_id]
+                valid_ends = barcodes.valid_positions[barcode_id]
+                # print(end_index, valid_ends)
+                if end_index in valid_ends:
+                    samples.add(name)
+    if not samples:
+        return None
+
+    if len(samples) > 1:
+        # print(matches)
+        # logger.warning(f"Read matched more than one sample {samples}")
+        # raise ValueError(f"Read matched more than one sample {samples}")
+        return None
     else:
-        open_func = open
+        return samples.pop()
 
-    out_streams = dict()
-    for barcode in out_paths:
-        out_streams[barcode] = open_func(out_paths[barcode], "wt")
-    with open_func(fq_path, "rt") as fq:
-        while True:
-            fq_lines = [fq.readline() for _ in range(4)]
-            if not fq_lines[0]:
-                break
-            header = fq_lines[0].strip()
-            name = header.split()[0]
-            if "_" in name:
-                read_bc = DNA(name.rsplit("_", 1)[1])
-            else:
-                read_bc = "unknown"
-            if read_bc in out_streams:
-                out_streams[read_bc].writelines(fq_lines)
-            elif read_bc.rc in out_streams:
-                out_streams[read_bc.rc].writelines(fq_lines)
-            else:
-                pass
-                # logger.warning(f"Unknown barcode encountered {read_bc}")
-    for handle in out_streams.values():
-        handle.close()
-    return list(out_paths.values())
+def demult_ahocorasick(fq_unit: FastqUnit,
+                       out_fqs: dict[int, FastqUnit],
+                       barcodes: RefBarcodes,
+                       buffer_limit: int = 1000):
+    read_buffer = defaultdict(list)
+
+    # Choose the appropriate open function based on file suffix.
+    open_funcs = dict()
+    for fq in fq_unit.paths.values():
+        open_func = gzip.open if fastq_gz(fq) else open
+        open_funcs[fq] = open_func
+
+    automaton = barcodes.automaton
+    rc_automaton = barcodes.rc_automaton
+    # Process FASTQ records using FastqUnit.iter_records()
+    count = 0
+    total = 0
+    for segs, recs in tqdm(fq_unit.iter_records(segments=[barcodes.read_pos_range, barcodes.rc_read_pos_range]), total=fq_unit.n_reads):
+        seqs = [" ".join(seg) for seg in segs]
+        # print(recs)
+        # print(seqs)
+        bcs = [(match, match_rc) for match, match_rc in zip_longest(automaton.iter(seqs[0]), rc_automaton.iter(seqs[1]))]
+        name = check_matches(bcs, barcodes)
+        if name:
+            # print(name)
+            for fq_lines, fq_path in zip(recs, out_fqs[name].paths.values()):
+                read_buffer[fq_path].append(fq_lines)
+                # Flush if the buffer for this barcode is large.
+                if len(read_buffer[fq_path]) >= buffer_limit:
+                    with open_func(fq_path, "at") as out_file:
+                        out_file.write("\n".join("\n".join(record) for record in read_buffer[fq_path]) + "\n")
+                    read_buffer[fq_path].clear()
+            count += 1
+        else:
+            pass
+            # print("No match")
+        total += 1
+    # Write remaining buffered records.
+    for fq_path, records in read_buffer.items():
+        if records:
+            with open_func(fq_path, "at") as out_file:
+                out_file.write("\n".join("\n".join(record) for record in records) + "\n")
+
+    logger.warning(f"Identified {count} out of {total} reads ({100*(count/total):.3f}%)")
+
+    return tuple((tuple(out_fqs[name].paths.values()) for name in barcodes.uniq_names))
+
 
 def merge_parts(parts = list[Path]):
 
+    parts = [part for part in parts if part.exists()]
+    if len(parts) == 0:
+        logger.warning("No files to merge")
+        return None
     base_name = parts[0].name.split('_', 1)[1]
     if not all(
         ('_' in part.name and part.name.split('_', 1)[1] == base_name)
