@@ -1,7 +1,3 @@
-"""
-Comparisons of arbitrary numbers of mutation rates.
-"""
-
 from functools import wraps
 from typing import Callable
 
