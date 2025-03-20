@@ -426,16 +426,15 @@ def run_seqkit_grep_function(pattern: str,
 
     """
     append_char = ">>" if append_bool else ">"
-
     if (search_start_ind - tolerance < 0):
         search_start_ind = 0
     else:
         search_start_ind -= tolerance
-    search_end_index += tolerance
+    search_end_index += tolerance # Double adding tolerance to end index?
     if (search_start_ind < 1):
         search_end_index += abs(search_start_ind) + 1
         search_start_ind = 1
-    cmd = f'seqkit --threads {threads} grep -s -R {search_start_ind}:{search_end_index + tolerance} -p "{pattern}" -m {mismatch_threshhold} -P {fastq_to_search} > {fastq_to_write}'
+    cmd = f'seqkit --threads {threads} grep -s -R {search_start_ind}:{search_end_index} -p "{pattern}" -m {mismatch_threshhold} -P {fastq_to_search} > {fastq_to_write}'
     print(cmd)  # debug-
     return_code = os.system(cmd)  # debug
     if (delete_fq):

@@ -452,7 +452,10 @@ def demult_ahocorasick(fq_unit: FastqUnit,
 
     # Choose the appropriate open function based on file suffix.
     open_funcs = dict()
+
     for fq in fq_unit.paths.values():
+        if not fq.exists(): # TODO Make sure this works
+            return (tuple(),)
         open_func = gzip.open if fastq_gz(fq) else open
         open_funcs[fq] = open_func
 
