@@ -219,9 +219,9 @@ def cluster(dataset: MaskMutsDataset | JoinMaskMutsDataset, *,
                                        path.BRANCHES: branches,
                                        path.REF: dataset.ref,
                                        path.REG: dataset.region.name})
-        if dataset.min_mut_gap != 3:
+        if dataset.min_mut_gap != 4:
             logger.warning("For clustering, it is highly recommended to use "
-                           "the observer bias correction with min_mut_gap=3, "
+                           "the observer bias correction with min_mut_gap=4, "
                            f"but got min_mut_gap={dataset.min_mut_gap}")
         uniq_reads = UniqReads.from_dataset_contig(dataset, branch)
         # Run clustering for every number of clusters.

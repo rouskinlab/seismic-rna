@@ -742,7 +742,7 @@ opt_max_fmut_read = Option(
 opt_min_mut_gap = Option(
     ("--min-mut-gap",),
     type=int,
-    default=3,
+    default=4,
     help="Mask reads with two mutations separated by fewer than this many bases"
 )
 
