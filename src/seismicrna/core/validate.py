@@ -158,6 +158,20 @@ def require_atleast(
                      classes, error_type)
 
 
+def require_greater(
+        name: str,
+        value: Any,
+        other_value: Any,
+        other_name: str = "",
+        classes: type | tuple[type | tuple[Any, ...], ...] = object,
+        error_type: Type[ValueError] = ValueError
+):
+    """ Require that value > other_value. """
+    _require_compare(name, value, gt,
+                     other_name, "other", other_value,
+                     classes, error_type)
+
+
 def require_atmost(
         name: str,
         value: Any,
@@ -166,9 +180,23 @@ def require_atmost(
         classes: type | tuple[type | tuple[Any, ...], ...] = object,
         error_type: Type[ValueError] = ValueError
 ):
-    """ Require that value ≤ other_value. """
+    """ Require that value ≤ maximum_value. """
     _require_compare(name, value, le,
                      maximum_name, "maximum", maximum_value,
+                     classes, error_type)
+
+
+def require_less(
+        name: str,
+        value: Any,
+        other_value: Any,
+        other_name: str = "",
+        classes: type | tuple[type | tuple[Any, ...], ...] = object,
+        error_type: Type[ValueError] = ValueError
+):
+    """ Require that value < other_value. """
+    _require_compare(name, value, lt,
+                     other_name, "less", other_value,
                      classes, error_type)
 
 
@@ -179,18 +207,24 @@ def require_between(
         maximum_value: Any | None,
         minimum_name: str = "",
         maximum_name: str = "",
+        inclusive: bool = True,
         classes: type | tuple[type | tuple[Any, ...], ...] = object,
         error_type: Type[ValueError] = ValueError
 ):
-    """ Require that value ≥ minimum_value and ≤ maximum_value. """
+    """ Require that value is in [minimum_value, maximum_value] if
+    inclusive is True, otherwise in (minimum_value, maximum_value). """
     if minimum_value is not None:
-        require_atleast(
-            name, value, minimum_value, minimum_name, classes, error_type
-        )
+        min_args = name, value, minimum_value, minimum_name, classes, error_type
+        if inclusive:
+            require_atleast(*min_args)
+        else:
+            require_greater(*min_args)
     if maximum_value is not None:
-        require_atmost(
-            name, value, maximum_value, maximum_name, classes, error_type
-        )
+        max_args = name, value, maximum_value, maximum_name, classes, error_type
+        if inclusive:
+            require_atmost(*max_args)
+        else:
+            require_less(*max_args)
 
 
 def require_fraction(
