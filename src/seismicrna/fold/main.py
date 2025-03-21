@@ -32,7 +32,6 @@ from ..core.arg import (CMD_FOLD,
                         extra_defaults)
 from ..core.extern import (RNASTRUCTURE_FOLD_CMD,
                            require_dependency)
-from ..core.logs import logger
 from ..core.rna import RNAProfile, ct_to_db
 from ..core.run import run_func
 from ..core.seq import DNA, RefRegions, RefSeqs, Region
@@ -78,7 +77,7 @@ def fold_region(rna: RNAProfile, *,
                                          path.PROFILE: rna.profile})
     if need_write(report_file, force):
         began = datetime.now()
-        rna.to_varna_color_file(out_dir, branch)
+        rna.write_varna_color_file(out_dir, branch)
         ct_file = fold(rna,
                        out_dir=out_dir,
                        tmp_dir=tmp_dir,
@@ -153,12 +152,12 @@ def run(input_path: Iterable[str | Path], *,
     # Check for the dependencies and the DATAPATH environment variable.
     require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
     require_data_path()
-    # Reactivities must be normalized before using them to fold.
+    """    # Reactivities must be normalized before using them to fold.
     if quantile <= 0.:
         logger.warning(f"Fold needs normalized mutation rates, "
                        f"but got quantile = {quantile}; "
                        f"setting quantile to {DEFAULT_QUANTILE}")
-        quantile = DEFAULT_QUANTILE
+        quantile = DEFAULT_QUANTILE"""  # FIXME
     # List the tables.
     tables = list(load_foldable_tables(input_path, verify_times=verify_times))
     # Get the regions to fold for every reference sequence.
