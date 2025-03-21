@@ -405,8 +405,7 @@ def fold(rna: RNAProfile, *,
     # Mutation rates file for the RNA.
     mus_file = rna.write_mus(tmp_dir, branch)
     # Beta parameters file for the RNA.
-    beta_params_file = None
-    # beta_params_file = rna.write_beta_params(tmp_dir, branch)  FIXME
+    beta_params_file = rna.write_beta_params(tmp_dir, branch)
     try:
         # Run the command.
         fold_cmds = {
