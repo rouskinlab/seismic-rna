@@ -338,7 +338,8 @@ def require_data_path():
 
 def make_fold_cmd(fasta_file: Path,
                   ct_file: Path, *,
-                  dms_file: Path | None,
+                  mus_file: Path | None,
+                  beta_params_file: Path | None,
                   fold_constraint: Path | None,
                   fold_temp: float,
                   fold_md: int,
@@ -353,9 +354,12 @@ def make_fold_cmd(fasta_file: Path,
     else:
         # Fold with one thread using the Fold program.
         cmd = [RNASTRUCTURE_FOLD_CMD]
-    if dms_file is not None:
-        # File of DMS reactivities.
-        cmd.extend(["--DMS", dms_file])
+    if mus_file is not None:
+        # File of mutation rates.
+        cmd.extend(["--DMSNT", mus_file])
+    if beta_params_file is not None:
+        # File of beta distribution parameters.
+        cmd.extend(["--DMSNTparams", beta_params_file])
     if fold_constraint is not None:
         # File of constraints.
         cmd.extend(["--constraint", fold_constraint])
@@ -395,17 +399,21 @@ def fold(rna: RNAProfile, *,
     logger.routine(f"Began folding {rna}")
     ct_out = rna.get_ct_file(out_dir, branch)
     # Temporary FASTA file for the RNA.
-    fasta_tmp = rna.to_fasta(tmp_dir, branch)
+    fasta_tmp = rna.write_fasta(tmp_dir, branch)
     # Path of the temporary CT file.
     ct_tmp = rna.get_ct_file(tmp_dir, branch)
-    # DMS reactivities file for the RNA.
-    dms_file = rna.to_dms(tmp_dir, branch)
+    # Mutation rates file for the RNA.
+    mus_file = rna.write_mus(tmp_dir, branch)
+    # Beta parameters file for the RNA.
+    beta_params_file = None
+    # beta_params_file = rna.write_beta_params(tmp_dir, branch)  FIXME
     try:
         # Run the command.
         fold_cmds = {
             smp: args_to_cmd(make_fold_cmd(fasta_tmp,
                                            ct_tmp,
-                                           dms_file=dms_file,
+                                           mus_file=mus_file,
+                                           beta_params_file=beta_params_file,
                                            fold_constraint=fold_constraint,
                                            fold_temp=fold_temp,
                                            fold_md=fold_md,
@@ -430,7 +438,7 @@ def fold(rna: RNAProfile, *,
         if not keep_tmp:
             # Delete the temporary files.
             fasta_tmp.unlink(missing_ok=True)
-            dms_file.unlink(missing_ok=True)
+            mus_file.unlink(missing_ok=True)
             if ct_tmp != ct_out:
                 ct_tmp.unlink(missing_ok=True)
     logger.routine(f"Ended folding {rna}")

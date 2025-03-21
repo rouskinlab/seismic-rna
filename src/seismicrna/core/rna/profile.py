@@ -5,7 +5,15 @@ import pandas as pd
 
 from .base import RNARegion
 from .. import path
-from ..seq import write_fasta
+from ..logs import logger
+from ..mu import (PAIRED_ALPHA,
+                  PAIRED_BETA,
+                  UNPAIRED_ALPHA,
+                  UNPAIRED_BETA,
+                  DEFAULT_MEAN_A,
+                  DEFAULT_COV_A,
+                  fit_beta_mixture_model)
+from ..seq import BASE_NAME, RNA, write_fasta
 
 
 class RNAProfile(RNARegion):
@@ -63,6 +71,18 @@ class RNAProfile(RNARegion):
     def profile(self):
         """ Name of the mutational profile. """
         return f"{self.data_reg}__{self.data_name}"
+
+    @cached_property
+    def beta_params(self):
+        """ Beta parameters for the mutational profile. """
+        beta_params = dict()
+        for base in RNA.four():
+            logger.detail(f"Fitting parameters for base {repr(base)}")
+            is_base = self.data.index.get_level_values(BASE_NAME) == base
+            beta_params[base] = fit_beta_mixture_model(self.data.loc[is_base],
+                                                       DEFAULT_MEAN_A,
+                                                       DEFAULT_COV_A)
+        return pd.DataFrame.from_dict(beta_params, orient="index")
 
     def _get_dir_fields(self, top: Path, branch: str):
         """ Get the path fields for the directory of this RNA.
@@ -125,13 +145,21 @@ class RNAProfile(RNARegion):
                               {path.PROFILE: self.profile,
                                path.EXT: path.DOT_EXTS[0]})
 
-    def get_dms_file(self, top: Path, branch: str):
-        """ Get the path to the DMS data file. """
+    def get_mus_file(self, top: Path, branch: str):
+        """ Get the path to the mutation rate data file. """
         return self._get_file(top,
                               branch,
-                              path.DmsReactsSeg,
+                              path.FoldMusSeg,
                               {path.PROFILE: self.profile,
-                               path.EXT: path.DMS_EXT})
+                               path.EXT: path.FOLD_MUS_EXT})
+
+    def get_beta_file(self, top: Path, branch: str):
+        """ Get the path to the beta parameter data file. """
+        return self._get_file(top,
+                              branch,
+                              path.FoldBetaSeg,
+                              {path.PROFILE: self.profile,
+                               path.EXT: path.FOLD_BETA_EXT})
 
     def get_varna_color_file(self, top: Path, branch: str):
         """ Get the path to the VARNA color file. """
@@ -141,27 +169,42 @@ class RNAProfile(RNARegion):
                               {path.PROFILE: self.profile,
                                path.EXT: path.TXT_EXT})
 
-    def to_fasta(self, top: Path, branch: str):
+    def write_fasta(self, top: Path, branch: str):
         """ Write the RNA sequence to a FASTA file. """
         fasta = self.get_fasta(top, branch)
         write_fasta(fasta, [self.seq_record])
         return fasta
 
-    def to_dms(self, top: Path, branch: str):
-        """ Write the DMS reactivities to a DMS file. """
-        # The DMS reactivities must be numbered starting from 1 at the
+    def write_mus(self, top: Path, branch: str):
+        """ Write the mutation rates to a file. """
+        # The mutation rates must be numbered starting from 1 at the
         # beginning of the region, even if the region does not start
         # at 1. Renumber the region from 1.
-        dms = self.data.copy()
-        dms.index = self.region.range_one
+        mus = self.data.copy()
+        mus.index = self.region.range_one
         # Drop bases with missing data to make RNAstructure ignore them.
-        dms.dropna(inplace=True)
-        # Write the DMS reactivities to the DMS file.
-        dms_file = self.get_dms_file(top, branch)
-        dms.to_csv(dms_file, sep="\t", header=False)
-        return dms_file
+        mus.dropna(inplace=True)
+        # Write the mutation rates to the file.
+        mus_file = self.get_mus_file(top, branch)
+        mus.to_csv(mus_file, sep="\t", header=False)
+        return mus_file
 
-    def to_varna_color_file(self, top: Path, branch: str):
+    def write_beta_params(self, top: Path, branch: str):
+        """ Write the beta parameters to a file. """
+        lines = ["# Parameters: "
+                 "A paired alpha, beta; A unpaired alpha, beta; "
+                 "C paired alpha, beta; C unpaired alpha, beta; "
+                 "G paired alpha, beta; G unpaired alpha, beta; "
+                 "U paired alpha, beta; U unpaired alpha, beta"]
+        for base, params in self.beta_params.iterrows():
+            lines.extend([f"{params[PAIRED_ALPHA]} {params[PAIRED_BETA]}",
+                          f"{params[UNPAIRED_ALPHA]} {params[UNPAIRED_BETA]}"])
+        beta_params_file = self.get_beta_file(top, branch)
+        with open(beta_params_file, "x") as f:
+            f.write("\n".join(lines))
+        return beta_params_file
+
+    def write_varna_color_file(self, top: Path, branch: str):
         """ Write the VARNA colors to a file. """
         # Fill missing reactivities with -1, to signify no data.
         varna_color = self.data.fillna(-1.)

@@ -73,7 +73,7 @@ def fold_region(region: Region, *,
             # Predict the RNA structure.
             run_cmd(args_to_cmd(make_fold_cmd(fasta_tmp,
                                               ct_tmp,
-                                              dms_file=None,
+                                              mus_file=None,
                                               fold_constraint=fold_constraint,
                                               fold_temp=fold_temp,
                                               fold_md=fold_md,

@@ -124,7 +124,8 @@ DB_EXT = ".db"
 DBN_EXT = ".dbn"
 DOT_EXT = ".dot"
 DOT_EXTS = DB_EXT, DBN_EXT, DOT_EXT
-DMS_EXT = ".dms"
+FOLD_MUS_EXT = ".mus"
+FOLD_BETA_EXT = ".beta"
 KTS_EXT = ".kts"
 HTML_EXT = ".html"
 SVG_EXT = ".svg"
@@ -442,7 +443,8 @@ Fastq2Ext = PathField(str, FQ2_EXTS, is_ext=True)
 XamExt = PathField(str, XAM_EXTS, is_ext=True)
 ConnectTableExt = PathField(str, [CT_EXT], is_ext=True)
 DotBracketExt = PathField(str, DOT_EXTS, is_ext=True)
-DmsReactsExt = PathField(str, [DMS_EXT], is_ext=True)
+FoldMusExt = PathField(str, [FOLD_MUS_EXT], is_ext=True)
+FoldBetaExt = PathField(str, [FOLD_BETA_EXT], is_ext=True)
 GraphExt = PathField(str, GRAPH_EXTS, is_ext=True)
 WebAppFileExt = PathField(str, [JSON_EXT], is_ext=True)
 SvgExt = PathField(str, [SVG_EXT], is_ext=True)
@@ -706,8 +708,10 @@ ConnectTableSeg = PathSegment("rna-ct",
                               {PROFILE: NameField, EXT: ConnectTableExt})
 DotBracketSeg = PathSegment("rna-dot",
                             {PROFILE: NameField, EXT: DotBracketExt})
-DmsReactsSeg = PathSegment("dms-reacts",
-                           {PROFILE: NameField, EXT: DmsReactsExt})
+FoldMusSeg = PathSegment("fold-mus",
+                         {PROFILE: NameField, EXT: FoldMusExt})
+FoldBetaSeg = PathSegment("fold-beta",
+                          {PROFILE: NameField, EXT: FoldBetaExt})
 VarnaColorSeg = PathSegment("varna-color",
                             {PROFILE: NameField, EXT: TextExt},
                             frmt="{profile}__varna-color{ext}")
