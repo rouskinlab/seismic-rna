@@ -18,7 +18,6 @@ from ..core.arg import (CMD_FOLD,
                         opt_fold_coords,
                         opt_fold_primers,
                         opt_fold_full,
-                        opt_quantile,
                         opt_fold_temp,
                         opt_fold_constraint,
                         opt_fold_md,
@@ -40,8 +39,6 @@ from ..core.tmp import with_tmp_dir
 from ..core.write import need_write
 from ..mask.table import MaskPositionTableLoader
 
-DEFAULT_QUANTILE = 0.95
-
 
 def load_foldable_tables(input_path: Iterable[str | Path], **kwargs):
     """ Load tables that can be folded. """
@@ -57,7 +54,6 @@ def fold_region(rna: RNAProfile, *,
                 out_dir: Path,
                 tmp_dir: Path,
                 branch: str,
-                quantile: float,
                 fold_temp: float,
                 fold_constraint: Path | None,
                 fold_md: int,
@@ -97,7 +93,6 @@ def fold_region(rna: RNAProfile, *,
                             ref=rna.ref,
                             reg=rna.reg,
                             profile=rna.profile,
-                            quantile=quantile,
                             fold_temp=fold_temp,
                             fold_md=fold_md,
                             fold_mfe=fold_mfe,
@@ -109,11 +104,10 @@ def fold_region(rna: RNAProfile, *,
     return report_file
 
 
-def fold_profile(table: MaskPositionTableLoader | ClusterPositionTableLoader,
-                 regions: list[Region],
-                 quantile: float,
-                 num_cpus: int,
-                 **kwargs):
+def fold_table(table: MaskPositionTableLoader | ClusterPositionTableLoader,
+               regions: list[Region],
+               num_cpus: int,
+               **kwargs):
     """ Fold an RNA molecule from one table of reactivities. """
     return dispatch(fold_region,
                     num_cpus=num_cpus,
@@ -121,12 +115,10 @@ def fold_profile(table: MaskPositionTableLoader | ClusterPositionTableLoader,
                     as_list=True,
                     ordered=False,
                     raise_on_error=False,
-                    args=as_list_of_tuples(table.iter_profiles(
-                        regions=regions, quantile=quantile)
+                    args=as_list_of_tuples(
+                        table.iter_profiles(regions=regions)
                     ),
-                    kwargs=dict(out_dir=table.top,
-                                quantile=quantile,
-                                **kwargs))
+                    kwargs=dict(out_dir=table.top, **kwargs))
 
 
 @run_func(CMD_FOLD, extra_defaults=extra_defaults)
@@ -136,7 +128,6 @@ def run(input_path: Iterable[str | Path], *,
         fold_primers: Iterable[tuple[str, DNA, DNA]],
         fold_regions_file: str | None,
         fold_full: bool,
-        quantile: float,
         fold_temp: float,
         fold_constraint: str | None,
         fold_md: int,
@@ -152,12 +143,6 @@ def run(input_path: Iterable[str | Path], *,
     # Check for the dependencies and the DATAPATH environment variable.
     require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
     require_data_path()
-    """    # Reactivities must be normalized before using them to fold.
-    if quantile <= 0.:
-        logger.warning(f"Fold needs normalized mutation rates, "
-                       f"but got quantile = {quantile}; "
-                       f"setting quantile to {DEFAULT_QUANTILE}")
-        quantile = DEFAULT_QUANTILE"""  # FIXME
     # List the tables.
     tables = list(load_foldable_tables(input_path, verify_times=verify_times))
     # Get the regions to fold for every reference sequence.
@@ -177,7 +162,7 @@ def run(input_path: Iterable[str | Path], *,
             for table in tables]
     # Fold the RNA profiles.
     return list(chain(*dispatch(
-        fold_profile,
+        fold_table,
         num_cpus=num_cpus,
         pass_num_cpus=True,
         as_list=False,
@@ -187,7 +172,6 @@ def run(input_path: Iterable[str | Path], *,
         kwargs=dict(branch=branch,
                     tmp_pfx=tmp_pfx,
                     keep_tmp=keep_tmp,
-                    quantile=quantile,
                     fold_temp=fold_temp,
                     fold_constraint=optional_path(fold_constraint),
                     fold_md=fold_md,
@@ -205,7 +189,6 @@ params = [
     opt_fold_coords,
     opt_fold_primers,
     opt_fold_full,
-    opt_quantile,
     opt_fold_temp,
     opt_fold_constraint,
     opt_fold_md,
