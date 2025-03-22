@@ -59,7 +59,6 @@ from .arg import (opt_phred_enc,
                   opt_fold_mfe,
                   opt_fold_max,
                   opt_fold_percent,
-                  opt_quantile,
                   opt_quick_unbias,
                   opt_quick_unbias_thresh,
                   opt_min_ncov_read,
@@ -539,7 +538,6 @@ JoinedClustersF = ReportField("joined_clusters",
 # Fold fields
 
 ProfileF = ReportField("profile", "Profile", str)
-Quantile = OptionReportField(opt_quantile)
 FoldTempF = OptionReportField(opt_fold_temp)
 FoldMaxDistF = OptionReportField(opt_fold_md)
 FoldMinFreeEnergyF = OptionReportField(opt_fold_mfe)
