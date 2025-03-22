@@ -11,16 +11,29 @@ PAIRED_BETA = "paired_beta"
 UNPAIRED_ALPHA = "unpaired_alpha"
 UNPAIRED_BETA = "unpaired_beta"
 
-# Distribution parameters:
+# Log-normal distributions of beta distribution parameters:
 # - mutation rate paired, alpha
 # - mutation rate paired, beta
 # - mutation rate unpaired, alpha
 # - mutation rate unpaired, beta
-# For log-normal distribution with mean μ and variance σ² in original space:
-# - mean in log space = log(μ) - σ²/2
-# - variance in log space = log(1 + σ²/μ²)
-DEFAULT_MEAN_A = np.log([2., 98., 4., 36.]) - 0.5  # Assuming σ²=1 for simplicity
-DEFAULT_COV_A = np.eye(DEFAULT_MEAN_A.size)  # Identity covariance matrix in log space
+DEFAULT_MEAN = {
+    "A": np.array([0.96840305, 4.29863156, 0.99577563, 2.93661852]),
+    "C": np.array([0.0876577, 4.24180112, 0.58733017, 3.0101812]),
+    "G": np.zeros(4, dtype=float),
+    "U": np.zeros(4, dtype=float),
+}
+DEFAULT_COV = {
+    "A": np.array([[0.58644712, 0.71820091, -0.0571787, -0.0259409],
+                   [0.71820091, 1.14207828, -0.23066215, -0.18849103],
+                   [-0.0571787, -0.23066215, 0.62674425, 0.77603233],
+                   [-0.0259409, -0.18849103, 0.77603233, 1.03752344]]),
+    "C": np.array([[0.31930847, 0.44803436, 0.03254687, 0.03724127],
+                   [0.44803436, 0.90628132, 0.01834366, 0.06622688],
+                   [0.03254687, 0.01834366, 0.45718167, 0.50894237],
+                   [0.03724127, 0.06622688, 0.50894237, 0.72425371]]),
+    "G": np.eye(4, dtype=float),
+    "U": np.eye(4, dtype=float),
+}
 
 
 @auto_remove_nan
@@ -231,25 +244,3 @@ def plot_beta_mixture(mus, params):
     plt.legend()
     plt.grid(alpha=0.3)
     plt.show()
-
-
-# Example usage
-def example():
-    # Generate synthetic data from a mixture of two beta distributions
-    n_samples = 0
-
-    # True parameters
-    true_weight1 = 0.6
-    true_alpha1, true_beta1 = 1, 99  # Paired bases: low mutation rates
-    true_alpha2, true_beta2 = 10, 30  # Unpaired bases: high mutation rates
-
-    # Generate samples
-    component = np.random.choice([0, 1], size=n_samples, p=[true_weight1, 1 - true_weight1])
-    data = np.zeros(n_samples)
-    data[component == 0] = np.random.beta(true_alpha1, true_beta1, size=np.sum(component == 0))
-    data[component == 1] = np.random.beta(true_alpha2, true_beta2, size=np.sum(component == 1))
-
-    # Fit the model
-    result = fit_beta_mixture_model(data, DEFAULT_MEAN_A, DEFAULT_COV_A)
-    print("RESULT", result)
-    plot_beta_mixture(data, result)

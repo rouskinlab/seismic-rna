@@ -10,8 +10,8 @@ from ..mu import (PAIRED_ALPHA,
                   PAIRED_BETA,
                   UNPAIRED_ALPHA,
                   UNPAIRED_BETA,
-                  DEFAULT_MEAN_A,
-                  DEFAULT_COV_A,
+                  DEFAULT_MEAN,
+                  DEFAULT_COV,
                   fit_beta_mixture_model)
 from ..seq import BASE_NAME, RNA, write_fasta
 
@@ -80,8 +80,8 @@ class RNAProfile(RNARegion):
             logger.detail(f"Fitting parameters for base {repr(base)}")
             is_base = self.data.index.get_level_values(BASE_NAME) == base
             beta_params[base] = fit_beta_mixture_model(self.data.loc[is_base],
-                                                       DEFAULT_MEAN_A,
-                                                       DEFAULT_COV_A)
+                                                       DEFAULT_MEAN[base],
+                                                       DEFAULT_COV[base])
         return pd.DataFrame.from_dict(beta_params, orient="index")
 
     def _get_dir_fields(self, top: Path, branch: str):
