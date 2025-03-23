@@ -1,4 +1,5 @@
 from datetime import datetime
+from functools import cached_property
 from pathlib import Path
 from typing import Iterable
 
@@ -108,9 +109,9 @@ class RelationWriter(object):
     """ Compute and write relationships for all reads from one sample
     aligned to one reference sequence. """
 
-    def __init__(self, xam_view: XamViewer, refseq: DNA):
+    def __init__(self, xam_view: XamViewer, fasta_file: str | Path):
         self._xam = xam_view
-        self.refseq = refseq
+        self._fasta = fasta_file
 
     @property
     def sample(self):
@@ -119,6 +120,10 @@ class RelationWriter(object):
     @property
     def ref(self):
         return self._xam.ref
+
+    @cached_property
+    def refseq(self):
+        return get_fasta_seq(self._fasta, DNA, self.ref)
 
     @property
     def num_reads(self):
@@ -280,7 +285,7 @@ class RelationWriter(object):
         return report_file.parent
 
     def __str__(self):
-        return f"Relate {self._xam}"
+        return f"{type(self).__name__}:{self._xam}"
 
 
 def relate_xam(xam_file: Path, *,
@@ -292,11 +297,10 @@ def relate_xam(xam_file: Path, *,
                **kwargs):
     """ Write the batches of relationships for one XAM file. """
     release_dir, working_dir = get_release_working_dirs(tmp_dir)
-    ref = path.parse(xam_file, path.XAM_SEGS)[path.REF]
     writer = RelationWriter(XamViewer(xam_file,
                                       working_dir,
                                       branch,
                                       batch_size,
                                       num_cpus=num_cpus),
-                            get_fasta_seq(fasta, DNA, ref))
+                            fasta)
     return writer.write(**kwargs, num_cpus=num_cpus, release_dir=release_dir)
