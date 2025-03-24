@@ -170,7 +170,8 @@ class RefBarcodes(object):
                  coords: Iterable[tuple[str, int, int, int]] = (),
                  bcs: Iterable[tuple[str, DNA, int]] = (),
                  mismatches: int = 0,
-                 index_tolerance: int = 0):
+                 index_tolerance: int = 0,
+                 allow_n: bool = False):
         ref_seqs = RefSeqs(ref_seqs)
         # Group coordinates and primers by reference.
         cli_coords = get_coords_by_name(coords)
@@ -201,6 +202,7 @@ class RefBarcodes(object):
         self._bcs = cli_bcs | meta_bcs | bcs_from_coords
         self.mismatches = mismatches
         self.index_tolerance = index_tolerance
+        self.allow_n = allow_n
         self.rc = True # TODO Handle optional RC for barcodes
 
         self.num_refs = len(self.ref_lengths)
@@ -324,7 +326,7 @@ class RefBarcodes(object):
             if (name, barcode) in sets:
                 raise ValueError(f"Already encountered {(name, barcode)}")
             if self.mismatches:
-                barcode_set = get_neighbors(barcode, max_mismatches=self.mismatches)
+                barcode_set = get_neighbors(barcode, max_mismatches=self.mismatches, allow_n=self.allow_n)
             else:
                 barcode_set = set([barcode])
             for barcode in barcode_set:

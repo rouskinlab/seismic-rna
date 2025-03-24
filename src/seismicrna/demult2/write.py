@@ -126,6 +126,7 @@ def demult_samples(fq_units: list[FastqUnit],
                    barcode_end: int,
                    mismatch_tolerance: int,
                    index_tolerance: int,
+                   allow_n: bool,
                    read_pos: int | None,
                    barcode: tuple[tuple[str, DNA, int]],
                    out_dir: Path,
@@ -163,7 +164,8 @@ def demult_samples(fq_units: list[FastqUnit],
                                coords=coords,
                                bcs=barcode,
                                mismatches=mismatch_tolerance,
-                               index_tolerance=index_tolerance)
+                               index_tolerance=index_tolerance,
+                               allow_n=allow_n)
 
     # List all demultiplexed FASTQs and check for duplicates.
     demult_fqs = list_demult(fq_units, refs | barcodes.uniq_names)

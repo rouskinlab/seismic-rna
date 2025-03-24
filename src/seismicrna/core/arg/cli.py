@@ -177,13 +177,15 @@ opt_parallel_demultiplexing = Option(
     type=bool,
     default=False,
     help="Whether to run demultiplexing at maximum speed by submitting multithreaded "
-         "grep functions")
+         "grep functions"
+)
 
 opt_clipped_demultiplexing = Option(
     ("--clipped",),
     type=int,
     default=0,
-    help="Designates the amount of clipped patterns to search for in the sample, will raise compution time")
+    help="Designates the amount of clipped patterns to search for in the sample, will raise compution time"
+)
 
 opt_mismatch_tolerence = Option(
     ("--mismatch-tolerence",),
@@ -191,14 +193,16 @@ opt_mismatch_tolerence = Option(
     default=0,
     help="Designates the allowable amount of mismatches allowed in a string and still be considered a valid pattern "
          "find. will increase non-parallel computation at a factorial rate. use caution going above 2 mismatches. "
-         "does not apply to clipped sequences.")
+         "does not apply to clipped sequences."
+)
 
 opt_index_tolerence = Option(
     ("--index-tolerence",),
     type=int,
     default=0,
     help="Designates the allowable amount of distance you allow the pattern to be found in a read from the reference "
-         "index")
+         "index"
+)
 
 
 opt_mismatch_tolerance = Option(
@@ -207,15 +211,24 @@ opt_mismatch_tolerance = Option(
     default=0,
     help="Designates the allowable amount of mismatches allowed in a string and still be considered a valid pattern "
          "find. will increase non-parallel computation at a factorial rate. use caution going above 2 mismatches. "
-         "does not apply to clipped sequences.")
+         "does not apply to clipped sequences."
+)
+
 
 opt_index_tolerance = Option(
     ("--index-tolerance",),
     type=int,
     default=0,
     help="Designates the allowable amount of distance you allow the pattern to be found in a read from the reference "
-         "index")
+         "index"
+)
 
+opt_allow_n = Option(
+    ("--allow-n/--no-allow-n",),
+    type=bool,
+    default=False,
+    help="Allow N as a valid mismatch when --mismatch-tolerance ≥ 1. Increases memory consumption."
+)
 
 opt_barcode = Option(
     ("--barcode",),
@@ -1359,6 +1372,23 @@ opt_mutdist_null = Option(
     type=bool,
     default=True,
     help="Include the null distribution of distances between mutations"
+)
+
+# Collate
+
+opt_group = Option(
+    ("--group",),
+    type=str,
+    default="sample",
+    help="Group collated graphs by one of 'sample', 'graph', 'branches', or 'reg'."
+)
+
+opt_portable = Option(
+    ("--portable/--no-portable",),
+    type=bool,
+    default=False,
+    help=("Embed collated graphs into the output HTML file for "
+          "portability at the expense of live updates and file size.")
 )
 
 # CT renumbering
