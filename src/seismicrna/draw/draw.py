@@ -321,9 +321,11 @@ class RNArtistRun(object):
 
     @property
     def table_file(self):
+        table_branches = self.branches.copy()
+        table_branches.pop("fold", None)
         return (self.table_class.build_path({path.TOP: self.top,
                                              path.SAMPLE: self.sample,
-                                             path.BRANCHES: self.branches,
+                                             path.BRANCHES: table_branches,
                                              path.REF: self.ref,
                                              path.REG: self.data_reg})
                 if self.table_class else None)
