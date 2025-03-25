@@ -190,6 +190,46 @@ def sanitize_segment_ends(seg_end5s: np.ndarray,
     return np.asarray(seg_end5s, dtype), np.asarray(seg_end3s, dtype)
 
 
+def _roll_unmasked(values: np.ndarray, mask: np.ndarray):
+    assert isinstance(values, np.ndarray)
+    assert isinstance(mask, np.ndarray)
+    assert values.ndim == 2
+    assert mask.ndim == 2
+    assert values.shape == mask.shape
+    # Copy values to hold the result after rolling.
+    rolled = values.copy()
+    # Get the row and column indices for valid entries.
+    valid_rows, valid_cols = np.nonzero(np.logical_not(mask))
+    # Count the valid entries in each row.
+    valid_counts = np.bincount(valid_rows, minlength=values.shape[0])
+    # Calculate what index the first valid value in each row would have
+    # if all valid values were put in order into a flattened (1D) array.
+    row_offsets = np.concatenate([[0], np.cumsum(valid_counts)[:-1]])
+
+    # Compute the global (flattened) indices for the valid values.
+    global_idx = np.arange(valid_rows.size)
+
+    # Compute the "local" index within each row for every valid entry.
+    # For an element at flattened position j (which comes from row rows[j]),
+    # its local index in that row is:
+    local_idx = global_idx - row_offsets[valid_rows]
+
+    # For each valid element, compute its new local index after a roll by one.
+    # That is, for each row, the new index is (local_index - 1) modulo the number of valid entries.
+    new_local_idx = (local_idx - 1) % valid_counts[valid_rows]
+
+    # Map the new local index back to a global index.
+    # For each valid element from row i, the new global index is the row’s offset plus new_local_idx.
+    source_idx = row_offsets[valid_rows] + new_local_idx
+
+    # Get the rolled valid values.
+    rolled_values = values[valid_rows[source_idx], valid_cols[source_idx]]
+
+    # Place the rolled values back into R at the positions of valid entries.
+    rolled[valid_rows, valid_cols] = rolled_values
+    return rolled
+
+
 def sort_segment_ends(seg_end5s: np.ndarray,
                       seg_end3s: np.ndarray,
                       seg_ends_mask: np.ndarray | None):
@@ -207,9 +247,11 @@ def sort_segment_ends(seg_end5s: np.ndarray,
 
     Returns
     -------
-    tuple[np.ndarray, np.ndarray, np.ndarray]
+    tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
         - Sorted 5' and 3' coordinates of the segments in each read
         - Labels of whether each coordinate is a 5' end of a segment
+        - Labels of whether each coordinate is a 5' end of a contiguous
+          segment
         - Labels of whether each coordinate is a 3' end of a contiguous
           segment
     """
@@ -233,13 +275,23 @@ def sort_segment_ends(seg_end5s: np.ndarray,
     is_contig_end3 = np.logical_not(np.cumsum(np.where(is_seg_end5, 1, -1),
                                               axis=1))
     if seg_ends_mask is not None:
-        # Apply the mask that seg_ends_sorted has to is_seg_end5 and
-        # is_contig_end3.
+        # Apply the mask that seg_ends_sorted has to is_seg_end5,
+        # is_contig_end5, and is_contig_end3.
         mask_sorted = np.take_along_axis(seg_ends_mask, sort_order, axis=1)
         mask_indexes = np.nonzero(mask_sorted)
         is_seg_end5[mask_indexes] = False
         is_contig_end3[mask_indexes] = False
-    return seg_ends_sorted, is_seg_end5, is_contig_end3
+        is_contig_end5 = _roll_unmasked(is_contig_end3, mask_sorted)
+        is_contig_end5[mask_indexes] = False
+    else:
+        is_contig_end5 = np.roll(is_contig_end3, 1, axis=1)
+    # Every contiguous 5' end must be the 5' end of a segment.
+    assert np.all(is_seg_end5 | ~is_contig_end5)
+    # In every read, the number of 5' and 3' ends of contiguous segments
+    # must be equal.
+    assert np.all(np.equal(np.count_nonzero(is_contig_end5, axis=1),
+                           np.count_nonzero(is_contig_end3, axis=1)))
+    return seg_ends_sorted, is_seg_end5, is_contig_end5, is_contig_end3
 
 
 def find_contiguous_reads(seg_end5s: np.ndarray,
@@ -254,9 +306,9 @@ def find_contiguous_reads(seg_end5s: np.ndarray,
         return np.ones(num_reads, dtype=bool)
     # For contiguous reads, only the last coordinate (when sorted) will
     # be the end of a contiguous segment.
-    _, _, is_contig_end3 = sort_segment_ends(seg_end5s,
-                                             seg_end3s,
-                                             seg_ends_mask)
+    _, _, _, is_contig_end3 = sort_segment_ends(seg_end5s,
+                                                seg_end3s,
+                                                seg_ends_mask)
     return np.logical_not(np.count_nonzero(is_contig_end3[:, :-1], axis=1))
 
 

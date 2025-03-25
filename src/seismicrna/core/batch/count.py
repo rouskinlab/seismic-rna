@@ -83,8 +83,8 @@ def _calc_uniq_read_weights(read_weights: np.ndarray,
     return uniq_weights
 
 
-@jit()
 def _calc_coverage(ends_sorted: np.ndarray,
+                   is_contig_end5: np.ndarray,
                    is_contig_end3: np.ndarray,
                    read_weights: np.ndarray,
                    base_count: np.ndarray):
@@ -96,6 +96,9 @@ def _calc_coverage(ends_sorted: np.ndarray,
         Array (reads x ends) of the 5' and 3' ends of the segments in
         each read; must be sorted ascendingly over axis 1, with 5' and
         3' ends intermixed; 5' ends must be 0-indexed.
+    is_contig_end5: np.ndarray
+        Array (reads x ends) indicating whether each coordinate in
+        `ends_sorted` is the 5' end of a contiguous segment.
     is_contig_end3: np.ndarray
         Array (reads x ends) indicating whether each coordinate in
         `ends_sorted` is the 3' end of a contiguous segment.
@@ -109,24 +112,51 @@ def _calc_coverage(ends_sorted: np.ndarray,
     _, num_clusters = read_weights.shape
     inc_pos, num_bases = base_count.shape
     num_pos = inc_pos - 1
-    # Initialize coverage per position and per read.
+    
+    # Initialize coverage arrays
     per_pos = np.zeros((num_pos, num_clusters))
     per_read = np.zeros((num_reads, num_bases), dtype=np.int64)
-    for i in range(num_reads):
-        # Find the coordinates of the contiguous segments.
-        end3_indices = np.flatnonzero(is_contig_end3[i])
-        end5_indices = np.roll(end3_indices + 1, 1)
-        end5_indices[0] = 0
-        end5_coords = ends_sorted[i, end5_indices]
-        end3_coords = ends_sorted[i, end3_indices]
-        # Increment the coverage for the covered positions.
-        for end5, end3 in zip(end5_coords, end3_coords):
-            per_pos[end5: end3] += read_weights[i]
-        # Count the bases in each segment, then sum the segments.
-        per_read[i] = np.sum(
-            base_count[end3_coords] - base_count[end5_coords],
-            axis=0
-        )
+    
+    # Get row indices and column indices for contiguous ends
+    row_indices_5, col_indices_5 = np.nonzero(is_contig_end5)
+    row_indices_3, col_indices_3 = np.nonzero(is_contig_end3)
+    
+    # Get the actual end coordinates
+    end5_coords = ends_sorted[row_indices_5, col_indices_5]
+    end3_coords = ends_sorted[row_indices_3, col_indices_3]
+    
+    # Compute per_read: Count bases for each segment and sum by read
+    # Calculate base difference for all segments
+    base_diffs = base_count[end3_coords] - base_count[end5_coords]
+    
+    # Sum these differences for each read
+    np.add.at(per_read, row_indices_5, base_diffs)
+    
+    # Create a mask for valid segments (where start < end)
+    valid_mask = end5_coords < end3_coords
+    
+    # Filter to only valid segments
+    valid_read_idx = row_indices_5[valid_mask]
+    valid_start = end5_coords[valid_mask]
+    valid_end = np.minimum(end3_coords[valid_mask], num_pos)
+    
+    # Process each cluster separately
+    for c in range(num_clusters):
+        # Get weights for this cluster
+        weights_c = read_weights[valid_read_idx, c]
+        
+        # Create a difference array for this cluster
+        pos_diff = np.zeros(num_pos + 1)
+        
+        # Add weights at start positions
+        np.add.at(pos_diff, valid_start, weights_c)
+        
+        # Subtract weights at end positions
+        np.add.at(pos_diff, valid_end, -weights_c)
+        
+        # Compute cumulative sum to get coverage
+        per_pos[:, c] = np.cumsum(pos_diff[:-1])
+    
     return per_pos, per_read
 
 
@@ -173,7 +203,7 @@ def calc_coverage(pos_index: pd.Index,
     # Clip the end coordinates to the minimum and maximum positions.
     # Sort the end coordinates and label the 3' end of each contiguous
     # segment.
-    ends_sorted, _, is_contig_end3 = sort_segment_ends(
+    ends_sorted, _, is_contig_end5, is_contig_end3 = sort_segment_ends(
         seg_end5s.clip(min_pos, max_pos + 1),
         seg_end3s.clip(min_pos - 1, max_pos),
         seg_ends_mask
@@ -189,6 +219,7 @@ def calc_coverage(pos_index: pd.Index,
     base_count = np.stack(base_count, axis=1)
     # Compute the coverage per position and per read.
     cover_per_pos, cover_per_read = _calc_coverage(ends_sorted,
+                                                   is_contig_end5,
                                                    is_contig_end3,
                                                    (read_weights.values
                                                     if read_weights is not None

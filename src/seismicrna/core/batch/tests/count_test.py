@@ -752,7 +752,7 @@ class TestCalcCoverage(ut.TestCase):
         """
         01234567890123
 
-         [---]
+            [---]
         ][
 
          [---]
@@ -797,7 +797,7 @@ class TestCalcCoverage(ut.TestCase):
                          [True, False],
                          [True, False],
                          [True, False]])
-        end5s = np.array([[1, 1],
+        end5s = np.array([[4, 1],
                           [1, 2],
                           [1, 5],
                           [1, 6],
@@ -806,7 +806,7 @@ class TestCalcCoverage(ut.TestCase):
                           [2, 1],
                           [5, 1],
                           [6, 1]])
-        end3s = np.array([[5, 0],
+        end3s = np.array([[8, 0],
                           [5, 1],
                           [5, 4],
                           [5, 5],
@@ -821,21 +821,21 @@ class TestCalcCoverage(ut.TestCase):
             "C2": pd.Series([0.2, 0.3, 0.8, 0.9, 0.7, 0.5, 0.6, 0.1, 0.4])
         })
         exp_per_pos = pd.DataFrame.from_dict({
-            "C1": pd.Series([9.0, 9.0, 9.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+            "C1": pd.Series([8.0, 9.0, 9.0, 2.0, 2.0, 1.0, 1.0, 0.0],
                             pos_index),
-            "C2": pd.Series([4.5, 4.5, 4.5, 0.7, 0.7, 0.7, 0.7, 0.0],
+            "C2": pd.Series([4.3, 4.5, 4.5, 0.9, 0.9, 0.7, 0.7, 0.0],
                             pos_index),
         })
         exp_per_read = {
-            "A": pd.Series([1, 1, 1, 1, 2, 1, 1, 1, 1],
+            "A": pd.Series([2, 1, 1, 1, 2, 1, 1, 1, 1],
                            read_nums),
             "C": pd.Series([1, 1, 1, 1, 1, 1, 1, 1, 1],
                            read_nums),
-            "G": pd.Series([1, 1, 1, 1, 2, 1, 1, 1, 1],
-                           read_nums),
-            "T": pd.Series([0, 0, 0, 0, 2, 0, 0, 0, 0],
-                           read_nums),
             "N": pd.Series([0, 0, 0, 0, 0, 0, 0, 0, 0],
+                           read_nums),
+            "G": pd.Series([0, 1, 1, 1, 2, 1, 1, 1, 1],
+                           read_nums),
+            "T": pd.Series([1, 0, 0, 0, 2, 0, 0, 0, 0],
                            read_nums)
         }
         res_per_pos, res_per_read = calc_coverage(pos_index,
