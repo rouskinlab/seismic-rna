@@ -162,8 +162,7 @@ def calc_coverage(pos_index: pd.Index,
         dim_names.append((READS, CLUSTERS))
         arrays.append(read_weights.values)
         names.append("read_weights")
-    dims = find_dims(dim_names, arrays, names)
-    n_reads = dims[READS]
+    find_dims(dim_names, arrays, names)
     # Clip the end coordinates to the minimum and maximum positions.
     # Sort the end coordinates and label the 3' end of each contiguous
     # segment.
