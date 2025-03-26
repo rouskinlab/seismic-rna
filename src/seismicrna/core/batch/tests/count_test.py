@@ -5,7 +5,6 @@ import pandas as pd
 
 from seismicrna.core.array import calc_inverse
 from seismicrna.core.batch.count import (calc_coverage,
-                                         _calc_uniq_read_weights,
                                          count_end_coords,
                                          calc_rels_per_pos,
                                          calc_rels_per_read,
@@ -121,56 +120,6 @@ class TestCountEndCoords(ut.TestCase):
                               ["a", "b"])
         self.assertIsInstance(result, pd.DataFrame)
         self.assertTrue(result.equals(expect))
-
-
-class TestCalcUniqReadWeights(ut.TestCase):
-
-    def test_0_reads(self):
-        for ncls in range(4):
-            read_weights = np.ones((0, ncls), dtype=float)
-            uniq_inverse = np.array([], dtype=int)
-            num_uniq = 0
-            expect = np.ones((0, ncls), dtype=float)
-            result = _calc_uniq_read_weights(read_weights,
-                                             uniq_inverse,
-                                             num_uniq)
-            self.assertTrue(np.array_equal(result, expect))
-
-    def test_1_read(self):
-        for ncls in range(4):
-            read_weights = np.ones((1, ncls), dtype=float)
-            uniq_inverse = np.array([0])
-            num_uniq = 1
-            expect = np.ones((1, ncls), dtype=float)
-            result = _calc_uniq_read_weights(read_weights,
-                                             uniq_inverse,
-                                             num_uniq)
-            self.assertTrue(np.array_equal(result, expect))
-
-    def test_2_reads_1_uniq(self):
-        read_weights = np.array([[0.1, 0.2],
-                                 [0.3, 0.4]])
-        uniq_inverse = np.array([0, 0])
-        num_uniq = 1
-        expect = np.array([[0.4, 0.6]])
-        result = _calc_uniq_read_weights(read_weights,
-                                         uniq_inverse,
-                                         num_uniq)
-        self.assertEqual(result.shape, expect.shape)
-        self.assertTrue(np.allclose(result, expect))
-
-    def test_2_reads_2_uniq(self):
-        read_weights = np.array([[0.1, 0.2],
-                                 [0.3, 0.4]])
-        uniq_inverse = np.array([1, 0])
-        num_uniq = 2
-        expect = np.array([[0.3, 0.4],
-                           [0.1, 0.2]])
-        result = _calc_uniq_read_weights(read_weights,
-                                         uniq_inverse,
-                                         num_uniq)
-        self.assertEqual(result.shape, expect.shape)
-        self.assertTrue(np.allclose(result, expect))
 
 
 class TestCalcCoverage(ut.TestCase):

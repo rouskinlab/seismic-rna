@@ -3,7 +3,6 @@ from functools import partial
 
 import numpy as np
 import pandas as pd
-from numba import jit
 
 from .ends import (END_COORDS,
                    match_reads_segments,
@@ -56,39 +55,12 @@ def count_end_coords(end5s: np.ndarray,
     return _count_end_coords(end5s, end3s)
 
 
-@jit()
-def _calc_uniq_read_weights(read_weights: np.ndarray,
-                            uniq_inverse: np.ndarray,
-                            num_uniq: int):
-    """ Calculate the weight for each unique read.
-
-    Parameters
-    ----------
-    read_weights: np.ndarray
-        Weight of each read in each cluster.
-    uniq_inverse: np.ndarray
-        Unique read corresponding to each read.
-    num_uniq: int
-        Number of unique reads.
-
-    Returns
-    -------
-    np.ndarray
-        Weight of each unique read in each cluster.
-    """
-    num_reads, num_clusters = read_weights.shape
-    uniq_weights = np.zeros((num_uniq, num_clusters))
-    for uniq, weight in zip(uniq_inverse, read_weights):
-        uniq_weights[uniq] += weight
-    return uniq_weights
-
-
 def _calc_coverage(ends_sorted: np.ndarray,
                    is_contig_end5: np.ndarray,
                    is_contig_end3: np.ndarray,
-                   read_weights: np.ndarray,
+                   read_weights: int | float | np.ndarray,
                    base_count: np.ndarray):
-    """ Count one kind of base in the given reads.
+    """ Calculate the coverage per position and per read.
 
     Parameters
     ----------
@@ -102,61 +74,53 @@ def _calc_coverage(ends_sorted: np.ndarray,
     is_contig_end3: np.ndarray
         Array (reads x ends) indicating whether each coordinate in
         `ends_sorted` is the 3' end of a contiguous segment.
-    read_weights: np.ndarray
+    read_weights: int | float | np.ndarray
         Array (reads x clusters) of the weight of each read per cluster.
     base_count: np.ndarray
         Array ((positions + 1) x bases) of the cumulative count of this
         kind of base up to each position.
     """
     num_reads, _ = ends_sorted.shape
-    _, num_clusters = read_weights.shape
+    if isinstance(read_weights, np.ndarray):
+        assert read_weights.ndim == 2
+        _, num_clusters = read_weights.shape
+        assert num_clusters >= 1
+    else:
+        assert isinstance(read_weights, (int, float))
+        num_clusters = 1
     inc_pos, num_bases = base_count.shape
     num_pos = inc_pos - 1
-    
-    # Initialize coverage arrays
+    # Initialize coverage arrays.
     per_pos = np.zeros((num_pos, num_clusters))
     per_read = np.zeros((num_reads, num_bases), dtype=np.int64)
-    
-    # Get row indices and column indices for contiguous ends
+    # Get row indices and column indices for contiguous ends.
     row_indices_5, col_indices_5 = np.nonzero(is_contig_end5)
     row_indices_3, col_indices_3 = np.nonzero(is_contig_end3)
-    
-    # Get the actual end coordinates
+    assert np.array_equal(row_indices_5, row_indices_3)
+    # Get the actual end coordinates.
     end5_coords = ends_sorted[row_indices_5, col_indices_5]
     end3_coords = ends_sorted[row_indices_3, col_indices_3]
-    
-    # Compute per_read: Count bases for each segment and sum by read
-    # Calculate base difference for all segments
-    base_diffs = base_count[end3_coords] - base_count[end5_coords]
-    
-    # Sum these differences for each read
-    np.add.at(per_read, row_indices_5, base_diffs)
-    
-    # Create a mask for valid segments (where start < end)
-    valid_mask = end5_coords < end3_coords
-    
-    # Filter to only valid segments
-    valid_read_idx = row_indices_5[valid_mask]
-    valid_start = end5_coords[valid_mask]
-    valid_end = np.minimum(end3_coords[valid_mask], num_pos)
-    
-    # Process each cluster separately
-    for c in range(num_clusters):
-        # Get weights for this cluster
-        weights_c = read_weights[valid_read_idx, c]
-        
-        # Create a difference array for this cluster
+    assert np.all(end5_coords <= end3_coords)
+    assert np.all(end3_coords <= num_pos)
+    # Calculate coverate per read for each type of base.
+    np.add.at(per_read,
+              row_indices_5,
+              base_count[end3_coords] - base_count[end5_coords])
+    # Process each cluster separately.
+    for cluster in range(num_clusters):
+        # Get weights for this cluster.
+        if isinstance(read_weights, np.ndarray):
+            weights_cluster = read_weights[row_indices_5, cluster]
+        else:
+            weights_cluster = read_weights
+        # Create a difference array for this cluster.
         pos_diff = np.zeros(num_pos + 1)
-        
-        # Add weights at start positions
-        np.add.at(pos_diff, valid_start, weights_c)
-        
-        # Subtract weights at end positions
-        np.add.at(pos_diff, valid_end, -weights_c)
-        
-        # Compute cumulative sum to get coverage
-        per_pos[:, c] = np.cumsum(pos_diff[:-1])
-    
+        # Add weights at 5' positions
+        np.add.at(pos_diff, end5_coords, weights_cluster)
+        # Subtract weights at 3' positions.
+        np.add.at(pos_diff, end3_coords, -weights_cluster)
+        # Compute cumulative sum to get coverage.
+        per_pos[:, cluster] = np.cumsum(pos_diff[:-1])
     return per_pos, per_read
 
 
@@ -166,7 +130,7 @@ def calc_coverage(pos_index: pd.Index,
                   seg_end3s: np.ndarray,
                   seg_ends_mask: np.ndarray | None,
                   read_weights: pd.DataFrame | None = None):
-    """ Number of positions covered by each read. """
+    """ Calculate the coverage per position and per read. """
     logger.routine("Began calculating coverage per position and per read")
     match_reads_segments(seg_end5s, seg_end3s, seg_ends_mask)
     # Find the positions in use.
@@ -223,7 +187,7 @@ def calc_coverage(pos_index: pd.Index,
                                                    is_contig_end3,
                                                    (read_weights.values
                                                     if read_weights is not None
-                                                    else np.ones((n_reads, 1))),
+                                                    else 1),
                                                    base_count)
     cover_per_pos = cover_per_pos.round(PRECISION)
     # Reformat the coverage into pandas objects.
