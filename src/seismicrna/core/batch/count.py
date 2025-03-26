@@ -238,7 +238,7 @@ def calc_rels_per_pos(mutations: dict[int, dict[int, np.ndarray]],
                                  f"but got {read_indexes.ndim}")
         else:
             raise TypeError(f"Expected read_indexes to be {np.ndarray}, "
-                            f"bot got {type(read_indexes)}")
+                            f"but got {type(read_indexes)}")
         if not clusters.equals(num_reads.index):
             raise ValueError(f"Clusters differ between the number of reads "
                              f"({num_reads.index}) and the weights "
@@ -258,7 +258,16 @@ def calc_rels_per_pos(mutations: dict[int, dict[int, np.ndarray]],
                             f"but got {array_type}")
         array_indexes = dict(index=pos_index)
     counts = defaultdict(partial(array_type, zero, **array_indexes))
-    for pos_base in cover_per_pos.index:
+    # Determine covered positions.
+    if isinstance(cover_per_pos, pd.DataFrame):
+        # A row is covered if its sum (across all clusters) > 0.
+        covered = cover_per_pos.sum(axis=1) > 0
+    else:
+        covered = cover_per_pos > 0
+
+    cov_indices = cover_per_pos[covered].index
+    nocov_indices = cover_per_pos[~covered].index
+    for pos_base in cov_indices:
         pos, base = pos_base
         num_reads_pos = slice_type(zero, **slice_indexes)
         for mut, reads in mutations.get(pos, dict()).items():
@@ -288,6 +297,16 @@ def calc_rels_per_pos(mutations: dict[int, dict[int, np.ndarray]],
             raise ValueError("Number of non-covered positions must be ≥ 0, "
                              f"but got {counts[NOCOV].loc[pos_base]} "
                              f"at position {pos}")
+    counts[MATCH].loc[nocov_indices] = 0
+    if isinstance(cover_per_pos, pd.DataFrame):
+        tot_reads = pd.DataFrame(
+            np.repeat(num_reads.values[np.newaxis, :], len(nocov_indices), axis=0),
+            index=nocov_indices,
+            columns=num_reads.index
+        )
+    else:
+        tot_reads = num_reads
+    counts[NOCOV].loc[nocov_indices] = tot_reads
     return dict(counts)
 
 
@@ -339,16 +358,18 @@ def calc_count_per_pos(pattern: RelPattern,
     pos_index = cover_per_pos.index
     if array_type is pd.Series:
         zero = 0
+        cov_pos_index = cover_per_pos[cover_per_pos > 0].index
         indexes = dict(index=pos_index)
     elif array_type is pd.DataFrame:
         zero = 0.
+        cov_pos_index = cover_per_pos.index[cover_per_pos.sum(axis=1) > 0]
         indexes = dict(index=pos_index, columns=cover_per_pos.columns)
     else:
         raise TypeError(f"Expected cover_per_pos to be {pd.Series} or "
                         f"{pd.DataFrame}, but got {array_type}")
     info = array_type(zero, **indexes)
     fits = array_type(zero, **indexes)
-    for base, index in iter_base_types(pos_index):
+    for base, index in iter_base_types(cov_pos_index):
         for rel, counts in rels_per_pos.items():
             is_info, is_fits = pattern.fits(base, rel)
             if is_info:
