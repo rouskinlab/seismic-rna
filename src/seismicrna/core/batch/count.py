@@ -166,7 +166,7 @@ def calc_coverage(pos_index: pd.Index,
     # Clip the end coordinates to the minimum and maximum positions.
     # Sort the end coordinates and label the 3' end of each contiguous
     # segment.
-    ends_sorted, _, is_contig_end5, is_contig_end3 = sort_segment_ends(
+    ends_sorted, is_contig_end5, is_contig_end3 = sort_segment_ends(
         seg_end5s.clip(min_pos, max_pos + 1),
         seg_end3s.clip(min_pos - 1, max_pos),
         seg_ends_mask

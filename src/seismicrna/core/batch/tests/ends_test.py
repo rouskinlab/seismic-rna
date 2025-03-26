@@ -256,18 +256,14 @@ class TestSortSegmentEnds(ut.TestCase):
                           []])
         expect_ends = np.array([[],
                                 []])
-        expect_seg = np.array([[],
-                               []])
         expect_contig5 = np.array([[],
                                    []])
         expect_contig3 = np.array([[],
                                    []])
-        result_ends, result_seg, result_contig5, result_contig3 = sort_segment_ends(
-            end5s,
-            end3s,
-            None)
+        result_ends, result_contig5, result_contig3 = sort_segment_ends(end5s,
+                                                                        end3s,
+                                                                        None)
         self.assertTrue(np.array_equal(result_ends, expect_ends))
-        self.assertTrue(np.array_equal(result_seg, expect_seg))
         self.assertTrue(np.array_equal(result_contig5, expect_contig5))
         self.assertTrue(np.array_equal(result_contig3, expect_contig3))
 
@@ -278,17 +274,14 @@ class TestSortSegmentEnds(ut.TestCase):
                           [4]])
         expect_ends = np.array([[0, 3],
                                 [1, 4]])
-        expect_seg = np.array([[True, False],
-                               [True, False]])
         expect_contig5 = np.array([[True, False],
                                    [True, False]])
         expect_contig3 = np.array([[False, True],
                                    [False, True]])
-        result_ends, result_seg, result_contig5, result_contig3 = sort_segment_ends(end5s,
-                                                                                    end3s,
-                                                                                    None)
+        result_ends, result_contig5, result_contig3 = sort_segment_ends(end5s,
+                                                                        end3s,
+                                                                        None)
         self.assertTrue(np.array_equal(result_ends, expect_ends))
-        self.assertTrue(np.array_equal(result_seg, expect_seg))
         self.assertTrue(np.array_equal(result_contig5, expect_contig5))
         self.assertTrue(np.array_equal(result_contig3, expect_contig3))
 
@@ -301,17 +294,14 @@ class TestSortSegmentEnds(ut.TestCase):
                           [0]])
         expect_ends = np.array([[0, 3],
                                 [0, 0]])
-        expect_seg = np.array([[True, False],
-                               [False, False]])
         expect_contig5 = np.array([[True, False],
                                    [False, False]])
         expect_contig3 = np.array([[False, True],
                                    [False, False]])
-        result_ends, result_seg, result_contig5, result_contig3 = sort_segment_ends(end5s,
-                                                                                    end3s,
-                                                                                    mask)
+        result_ends, result_contig5, result_contig3 = sort_segment_ends(end5s,
+                                                                        end3s,
+                                                                        mask)
         self.assertTrue(np.array_equal(result_ends, expect_ends))
-        self.assertTrue(np.array_equal(result_seg, expect_seg))
         self.assertTrue(np.array_equal(result_contig5, expect_contig5))
         self.assertTrue(np.array_equal(result_contig3, expect_contig3))
 
@@ -337,13 +327,6 @@ class TestSortSegmentEnds(ut.TestCase):
                                 [0, 1, 2, 3],
                                 [0, 2, 2, 4],
                                 [0, 2, 3, 5]])
-        expect_seg = np.array([[True, False, True, False],
-                               [True, True, False, False],
-                               [True, True, False, False],
-                               [True, True, False, False],
-                               [True, True, False, False],
-                               [True, True, False, False],
-                               [True, False, True, False]])
         expect_contig5 = np.array([[True, False, True, False],
                                    [True, False, False, False],
                                    [True, False, False, False],
@@ -358,11 +341,10 @@ class TestSortSegmentEnds(ut.TestCase):
                                    [False, False, False, True],
                                    [False, False, False, True],
                                    [False, True, False, True]])
-        result_ends, result_seg, result_contig5, result_contig3 = sort_segment_ends(end5s,
-                                                                                    end3s,
-                                                                                    None)
+        result_ends, result_contig5, result_contig3 = sort_segment_ends(end5s,
+                                                                        end3s,
+                                                                        None)
         self.assertTrue(np.array_equal(result_ends, expect_ends))
-        self.assertTrue(np.array_equal(result_seg, expect_seg))
         self.assertTrue(np.array_equal(result_contig3, expect_contig3))
         self.assertTrue(np.array_equal(result_contig5, expect_contig5))
 
@@ -407,16 +389,6 @@ class TestSortSegmentEnds(ut.TestCase):
                                 [0, 0, 3, 5],
                                 [0, 0, 2, 4],
                                 [0, 0, 2, 4]])
-        expect_seg = np.array([[False, False, True, False],
-                               [False, False, True, False],
-                               [False, False, True, False],
-                               [False, True, False, False],
-                               [True, False, False, False],
-                               [False, False, True, False],
-                               [False, False, True, False],
-                               [False, False, True, False],
-                               [False, False, True, False],
-                               [False, False, True, False]])
         expect_contig5 = np.array([[False, False, True, False],
                                    [False, False, True, False],
                                    [False, False, True, False],
@@ -437,20 +409,16 @@ class TestSortSegmentEnds(ut.TestCase):
                                    [False, False, False, True],
                                    [False, False, False, True],
                                    [False, False, False, True]])
-        result_ends, result_seg, result_contig5, result_contig3 = sort_segment_ends(end5s,
-                                                                                    end3s,
-                                                                                    mask)
+        result_ends, result_contig5, result_contig3 = sort_segment_ends(end5s,
+                                                                        end3s,
+                                                                        mask)
         self.assertTrue(np.array_equal(result_ends, expect_ends))
-        self.assertTrue(np.array_equal(result_seg, expect_seg))
         self.assertTrue(np.array_equal(result_contig5, expect_contig5))
         self.assertTrue(np.array_equal(result_contig3, expect_contig3))
 
     def test_n_segments_contig(self):
         for n in range(1, 10):
             ends = rng.permutation(np.arange(1, n + 1))[np.newaxis, :]
-            expect_seg = np.array([True]
-                                  + [True, False] * (n - 1)
-                                  + [False])[np.newaxis, :]
             expect_contig5 = np.array([True]
                                       + [False] * (2 * n - 1))[np.newaxis, :]
             expect_contig3 = np.array([False] * (2 * n - 1)
@@ -458,26 +426,23 @@ class TestSortSegmentEnds(ut.TestCase):
             expect_ends = np.concatenate([[0]]
                                          + [[i, i] for i in range(1, n)]
                                          + [[n]])[np.newaxis, :]
-            result_ends, result_seg, result_contig5, result_contig3 = sort_segment_ends(ends,
-                                                                                        ends,
-                                                                                        None)
+            result_ends, result_contig5, result_contig3 = sort_segment_ends(ends,
+                                                                            ends,
+                                                                            None)
             self.assertTrue(np.array_equal(result_ends, expect_ends))
-            self.assertTrue(np.array_equal(result_seg, expect_seg))
             self.assertTrue(np.array_equal(result_contig5, expect_contig5))
             self.assertTrue(np.array_equal(result_contig3, expect_contig3))
 
     def test_n_segments_discontig(self):
         for n in range(1, 10):
             ends = rng.permutation(np.arange(1, n + 1) * 2)[np.newaxis, :]
-            expect_seg = np.array([True, False] * n)[np.newaxis, :]
-            expect_contig5 = expect_seg
-            expect_contig3 = np.logical_not(expect_seg)
+            expect_contig5 = np.array([True, False] * n)[np.newaxis, :]
+            expect_contig3 = np.logical_not(expect_contig5)
             expect_ends = np.arange(1, 2 * n + 1)[np.newaxis, :]
-            result_ends, result_seg, result_contig5, result_contig3 = sort_segment_ends(ends,
-                                                                                        ends,
-                                                                                        None)
+            result_ends, result_contig5, result_contig3 = sort_segment_ends(ends,
+                                                                            ends,
+                                                                            None)
             self.assertTrue(np.array_equal(result_ends, expect_ends))
-            self.assertTrue(np.array_equal(result_seg, expect_seg))
             self.assertTrue(np.array_equal(result_contig5, expect_contig5))
             self.assertTrue(np.array_equal(result_contig3, expect_contig3))
 
