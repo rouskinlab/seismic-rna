@@ -20,7 +20,7 @@ DEFAULT_MEAN = {
     "A": np.array([+0.987601, +4.307069, +0.958335, +2.893603]),
     "C": np.array([+0.088802, +4.228603, +0.580111, +2.962363]),
     "G": np.zeros(4, dtype=float),
-    "U": np.zeros(4, dtype=float),
+    "T": np.zeros(4, dtype=float),
 }
 DEFAULT_COV = {
     "A": np.array([[+0.649940, +0.815070, -0.059535, -0.007325],
@@ -32,7 +32,7 @@ DEFAULT_COV = {
                    [+0.008293, -0.000711, +0.478951, +0.541135],
                    [+0.037922, +0.095237, +0.541135, +0.787187]]),
     "G": np.eye(4, dtype=float),
-    "U": np.eye(4, dtype=float),
+    "T": np.eye(4, dtype=float),
 }
 
 
@@ -62,7 +62,7 @@ def fit_beta_mixture_model(mus: np.ndarray | pd.Series,
     fpaired_beta: float
         Beta parameter for the beta distribution of the fraction of paired bases
     eps: float
-        Number of optimization attempts with different random initial parameters
+        Clip all mus < eps to eps, and all mus > (1 - eps) to (1 - eps).
     n_trials: int
         Number of optimization attempts with different random initial parameters
     maxiter: int
@@ -79,7 +79,7 @@ def fit_beta_mixture_model(mus: np.ndarray | pd.Series,
     """
     logger.routine("Began fitting beta mixture model")
     from scipy.stats import beta, multivariate_normal
-    from scipy.optimize import minimize
+    from scipy.optimize import OptimizeResult, minimize
     # Beta distributions cannot handle 0 and 1, so clip the mutation
     # rates to eps and (1 - eps).
     require_between("eps", eps, 0., 1., inclusive=False, classes=float)
@@ -152,6 +152,30 @@ def fit_beta_mixture_model(mus: np.ndarray | pd.Series,
         pa_pb_ua_ub_log_prior = ab_params_dist.logpdf(np.log(x[1:]))
         return log_likelihood + fp_log_prior + pa_pb_ua_ub_log_prior
 
+    def succeeded(r: OptimizeResult):
+        """ Check if optimization succeeded. """
+        if not isinstance(r, OptimizeResult):
+            return False
+        if not r.success:
+            return False
+        fpaired_, pa_, pb_, ua_, ub_ = r.x
+        assert eps <= fpaired_ <= 1. - eps
+        assert eps <= pa_ <= 1. / eps
+        assert eps <= pb_ <= 1. / eps
+        assert eps <= ua_ <= 1. / eps
+        assert eps <= ub_ <= 1. / eps
+        # Unpaired bases should have a higher mean.
+        mean_paired = pa_ / (pa_ + pb_)
+        mean_unpaired = ua_ / (ua_ + ub_)
+        if mean_paired >= mean_unpaired:
+            return False
+        # The pseudoenergy (proporional to the log of unpaired divided
+        # by paired PDF) must increase monotonically. A necessary and
+        # sufficient condition is that pa ≤ ua and pb ≥ ub.
+        if pa_ > ua_ or pb_ < ub_:
+            return False
+        return True
+
     # Run the optimization n_trials times with different random initial
     # parameters.
     best_result = None
@@ -164,14 +188,14 @@ def fit_beta_mixture_model(mus: np.ndarray | pd.Series,
         # Run the optimization.
         result = minimize(lambda x: -calc_log_posterior(x),
                           x0,
-                          bounds=[(eps, 1. - eps)] + [(eps, None)] * 4,
+                          bounds=[(eps, 1. - eps)] + [(eps, 1. / eps)] * 4,
                           method="L-BFGS-B",
                           options={"maxiter": maxiter,
                                    "ftol": ftol,
                                    "gtol": gtol})
-        # If the optimization was successful, check if the log posterior
-        # is the best so far.
-        if result.success:
+        if succeeded(result):
+            # If the optimization was successful, then check if the log
+            # posterior is the best so far.
             log_posterior = calc_log_posterior(result.x)
             logger.detail(f"Trial {i} succeeded: {log_posterior}; {result.x}")
             if log_posterior > best_log_posterior:
@@ -191,6 +215,7 @@ def fit_beta_mixture_model(mus: np.ndarray | pd.Series,
               UNPAIRED_BETA: ub}
     logger.detail(f"Fit beta mixture model parameters: {params}")
     logger.routine("Ended fitting beta mixture model")
+    plot_beta_mixture(mus, params)
     return params
 
 
@@ -214,12 +239,13 @@ def plot_beta_mixture(mus, params):
     weight2 = 1. - weight1
 
     # Create grid for plotting
-    x_grid = np.linspace(0, 1, 1000)
+    x_grid = np.linspace(0, 1, 10000)
 
     # Compute component densities and mixture density
     pdf1 = beta.pdf(x_grid, alpha1, beta1)
     pdf2 = beta.pdf(x_grid, alpha2, beta2)
     mixture_pdf = weight1 * pdf1 + weight2 * pdf2
+    energy = -0.61597 * np.log(pdf1 / pdf2)
 
     # Create the plot
     plt.figure(figsize=(10, 6))
@@ -231,6 +257,7 @@ def plot_beta_mixture(mus, params):
     plt.plot(x_grid, weight1 * pdf1, 'r--', label=f'Component 1 (α={alpha1:.2f}, β={beta1:.2f}, p={weight1:.2f})')
     plt.plot(x_grid, weight2 * pdf2, 'g--', label=f'Component 2 (α={alpha2:.2f}, β={beta2:.2f}, p={weight2:.2f})')
     plt.plot(x_grid, mixture_pdf, 'b-', label='Mixture')
+    plt.plot(x_grid, energy, "k-", label="Pseudoenergy")
 
     # Add annotations
     mean1 = alpha1 / (alpha1 + beta1)

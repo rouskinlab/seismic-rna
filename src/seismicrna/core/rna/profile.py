@@ -12,7 +12,8 @@ from ..mu import (PAIRED_ALPHA,
                   UNPAIRED_BETA,
                   DEFAULT_MEAN,
                   DEFAULT_COV,
-                  fit_beta_mixture_model)
+                  fit_beta_mixture_model,
+                  plot_beta_mixture)
 from ..seq import BASE_NAME, RNA, write_fasta
 
 
@@ -82,6 +83,8 @@ class RNAProfile(RNARegion):
             beta_params[base] = fit_beta_mixture_model(self.data.loc[is_base],
                                                        DEFAULT_MEAN[base],
                                                        DEFAULT_COV[base])
+            print("BASE", base)
+            plot_beta_mixture(self.data.loc[is_base], beta_params[base])
         return pd.DataFrame.from_dict(beta_params, orient="index")
 
     def _get_dir_fields(self, top: Path, branch: str):
@@ -175,7 +178,7 @@ class RNAProfile(RNARegion):
         write_fasta(fasta, [self.seq_record])
         return fasta
 
-    def write_mus(self, top: Path, branch: str):
+    def write_mus(self, top: Path, branch: str, min_mu: float = 0.005):
         """ Write the mutation rates to a file. """
         # The mutation rates must be numbered starting from 1 at the
         # beginning of the region, even if the region does not start
@@ -184,6 +187,15 @@ class RNAProfile(RNARegion):
         mus.index = self.region.range_one
         # Drop bases with missing data to make RNAstructure ignore them.
         mus.dropna(inplace=True)
+        # Set every mutation rate that is less than min_mu to min_mu.
+        # Otherwise, bases that have very low mutation rates can get
+        # extremely large (negative) pseudoenergies, effectively forcing
+        # them to be paired, which can lead to inaccurate structures.
+        if 0. < min_mu < 1.:
+            mus.loc[mus < min_mu] = min_mu
+        else:
+            logger.warning(f"Cannot clip mutation rates with min_mu={min_mu}; "
+                           f"the structure prediction may be less accurate")
         # Write the mutation rates to the file.
         mus_file = self.get_mus_file(top, branch)
         mus.to_csv(mus_file, sep="\t", header=False)

@@ -144,7 +144,6 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
                              - {"get_batch_count_all", "num_batches"})
             kwargs = {kw: getattr(self.dataset, kw) for kw in init_keywords}
             tabulator = tabulator_type(batch_counts=counts,
-                                       count_ends=True,
                                        count_pos=True,
                                        count_read=False,
                                        **kwargs)
