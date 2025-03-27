@@ -324,7 +324,7 @@ class Region(object):
 
     def __init__(self,
                  ref: str,
-                 seq: DNA, *,
+                 seq: str | DNA, *,
                  seq5: int = 1,
                  reflen: int | None = None,
                  end5: int | None = None,
@@ -335,7 +335,7 @@ class Region(object):
         ----------
         ref: str
             Name of the reference sequence.
-        seq: DNA
+        seq: str | DNA
             The full reference sequence or a part of it.
         seq5: int = 1
             Positional number to assign the 5' end of the given part of

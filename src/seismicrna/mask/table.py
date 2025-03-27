@@ -120,22 +120,25 @@ class PartialTabulator(Tabulator, ABC):
                  min_mut_gap: int,
                  quick_unbias: bool,
                  quick_unbias_thresh: float,
-                 count_ends: bool = True,
                  **kwargs):
-        # Partial tabulators must count 5'/3' ends or else calculating
-        # self.p_ends_given_clust_noclose will fail.
-        if not count_ends:
-            logger.warning(f"count_ends must be True for {type(self.__name__)}")
-        super().__init__(region=region, count_ends=True, **kwargs)
+        # Partial tabulators must count 5'/3' ends if min_mut_gap > 0
+        # or else calculating self._adjusted will fail.
+        self.min_mut_gap = min_mut_gap
+        super().__init__(region=region, count_ends=self.correct_bias, **kwargs)
         self.refseq = refseq
         self.pattern = pattern
-        self.min_mut_gap = min_mut_gap
         self.quick_unbias = quick_unbias
         self.quick_unbias_thresh = quick_unbias_thresh
+
+    @property
+    def correct_bias(self):
+        return self.min_mut_gap > 0
 
     @cached_property
     def p_ends_given_clust_noclose(self):
         """ Probability of each end coordinate. """
+        if not self.correct_bias:
+            return None
         # Ensure end_counts has 2 dimensions.
         if self.end_counts.ndim == 1:
             end_counts = self.end_counts.values[:, np.newaxis]
@@ -153,7 +156,7 @@ class PartialTabulator(Tabulator, ABC):
     @cached_property
     def _adjusted(self):
         table_per_pos = super().data_per_pos
-        if self.min_mut_gap > 0:
+        if self.correct_bias:
             if self.region.length > np.sqrt(1_000_000_000):
                 logger.warning("Using bias correction on a region with "
                                f"{self.region.length} positions requires "
