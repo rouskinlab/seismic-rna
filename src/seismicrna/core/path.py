@@ -172,22 +172,25 @@ def fill_whitespace(path: str | pathlib.Path,
 
 def sanitize(path: str | pathlib.Path, strict: bool = False):
     """ Sanitize a path-like object by ensuring it is an absolute path,
-    eliminating symbolic links and redundant path separators/references,
-    and returning a Path object.
+    eliminating redundant path separators/references, and returning a
+    Path object.
 
     Parameters
     ----------
     path: str | pathlib.Path
         Path to sanitize.
-    strict: bool = False
+    strict: bool
         Require the path to exist and contain no symbolic link loops.
 
     Returns
     -------
     pathlib.Path
-        Absolute, normalized, symlink-free path.
+        Normalized absolute path.
     """
-    return pathlib.Path(path).resolve(strict=strict)
+    sanitized = pathlib.Path(os.path.abspath(path))
+    if strict:
+        os.path.realpath(sanitized, strict=strict)
+    return sanitized
 
 
 @cache
@@ -961,7 +964,7 @@ def get_fields_in_seg_types(segment_types: Iterable[PathSegment],
     return {TOP: TopField, **fields_no_top} if include_top else fields_no_top
 
 
-def deduplicate(paths: Iterable[str | pathlib.Path], warn: bool = True):
+def deduplicate(paths: Iterable[str | pathlib.Path], warn: bool = False):
     """ Yield the non-redundant paths. """
     total = 0
     seen = set()
