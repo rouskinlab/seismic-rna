@@ -130,34 +130,29 @@ class RNAStructure(RNARegion):
         """ Whether each base is between two other base pairs with no
         bulges separating them. """
         is_middle = self.is_paired.copy()
-        print(0)
-        print(is_middle)
         # A base can be between two other base pairs only if both bases
         # to its 5' and its 3' are paired.
         paired5 = np.concatenate([[False], is_middle.values[:-1]])
         paired3 = np.concatenate([is_middle.values[1:], [False]])
         is_middle &= (paired5 & paired3)
-        print(1)
-        print(is_middle)
         # A base can be between two other base pairs only if its partner
         # is also between two base pairs.
-        print(self.table[is_middle])
-        print(is_middle.loc[self.table[is_middle]].values)
-        print(is_middle.loc[self.table[is_middle]].values.dtype)
-        print(is_middle[is_middle])
         is_middle_index = is_middle[is_middle].index
         is_middle.loc[is_middle_index] = (
             is_middle.loc[is_middle_index]
             &
             is_middle.loc[self.table[is_middle]].values
         )
-        print(2)
-        print(is_middle)
         # To handle pseudoknots, a base can be between two other base
         # pairs only if its 5' base and partner's 3' base are partners,
         # and its 3' base and partner's 5' base are partners.
         is_middle_pos = is_middle[is_middle].index.get_level_values(POS_NAME)
-
+        middle_partners = self.table.loc[is_middle_pos]
+        pseudoknot = (np.logical_or(
+            middle_partners - 1 != self.table.loc[is_middle_pos + 1].values,
+            middle_partners + 1 != self.table.loc[is_middle_pos - 1].values
+        ))
+        is_middle.loc[pseudoknot[pseudoknot].index] = False
         return is_middle
 
     def _subregion_kwargs(self,
