@@ -3,7 +3,7 @@ from pathlib import Path
 from subprocess import CompletedProcess
 
 from ..error import DuplicateValueError
-from ..extern import SAMTOOLS_CMD, args_to_cmd, ShellCommand
+from ..extern import SAMTOOLS_CMD, args_to_cmd, run_cmd, ShellCommand
 from ..logs import logger
 
 # SAM file format specifications
@@ -68,6 +68,27 @@ def index_xam_cmd(bam: Path, *, num_cpus: int = 1):
 run_index_xam = ShellCommand("indexing alignment map",
                              index_xam_cmd,
                              opath=False)
+
+
+def need_sort_xam(xam_inp: Path, *, name: bool = False) -> bool:
+    """
+    Check if an alignment file (SAM or BAM) needs sorting.
+
+    Uses `samtools view -H` to read the header and looks for the sort order tag.
+    Returns True if sorting is needed (i.e. the expected tag is not found).
+    """
+    try:
+        cmd = args_to_cmd([SAMTOOLS_CMD, "view", "-H", str(xam_inp)])
+        process = run_cmd(cmd)
+        expected_tag = "SO:queryname" if name else "SO:coordinate"
+        for line in process.stdout.splitlines():
+            if line.startswith("@HD") and expected_tag in line:
+                # Already sorted, so no need to sort.
+                return False
+        return True
+    except Exception as e:
+        logger.warning(f"Could not determine sort order for {xam_inp}: {e}. Assuming sorting is needed.")
+        return True
 
 
 def sort_xam_cmd(xam_inp: Path | None,

@@ -8,6 +8,7 @@ from .fqunit import FastqUnit, DuplicateSampleReferenceError
 from .report import AlignRefReport, AlignSampleReport
 from .xamops import (FASTP_PHRED_OUT,
                      run_bowtie2_build,
+                     run_star_genomegen,
                      get_bowtie2_index_paths,
                      run_export,
                      run_flags,
@@ -188,7 +189,8 @@ def separate_strands(xam_file: Path,
         write_fasta(fasta_rev, [(ref_rev, refseq.rc)])
         # Index the reverse-strand reference.
         index_rev = fasta_rev.with_suffix("")
-        run_bowtie2_build(fasta_rev, index_rev, num_cpus=num_cpus)
+        # run_bowtie2_build(fasta_rev, index_rev, num_cpus=num_cpus)
+        run_star_genomegen(fasta_rev, index_rev, num_cpus=num_cpus)
         # Re-align the reads that had aligned to the reverse strand of
         # the forward-strand reference to the reverse-strand reference.
         bam_rev = out_dir.joinpath(ref_rev).with_suffix(path.BAM_EXT)

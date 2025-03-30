@@ -3,7 +3,8 @@ from itertools import product
 from pathlib import Path
 from typing import Iterable
 
-from click import command
+from click import command, pass_context
+from click.core import ParameterSource
 
 from .write import mask_region
 from ..core.arg import (CMD_MASK,
@@ -30,6 +31,7 @@ from ..core.arg import (CMD_MASK,
                         opt_min_ncov_read,
                         opt_min_finfo_read,
                         opt_max_fmut_read,
+                        opt_unbias,
                         opt_min_mut_gap,
                         opt_min_ninfo_pos,
                         opt_max_fmut_pos,
@@ -42,6 +44,7 @@ from ..core.arg import (CMD_MASK,
                         opt_force,
                         optional_path,
                         extra_defaults)
+from ..core.error import IncompatibleOptionsError
 from ..core.logs import logger
 from ..core.run import run_func
 from ..core.seq import DNA, RefRegions
@@ -193,6 +196,7 @@ params = [
     opt_min_ncov_read,
     opt_min_finfo_read,
     opt_max_fmut_read,
+    opt_unbias,
     opt_min_mut_gap,
     # Observer bias correction
     opt_quick_unbias,
@@ -212,6 +216,15 @@ params = [
 
 
 @command(CMD_MASK, params=params)
-def cli(*args, **kwargs):
+@pass_context
+def cli(ctx, *args, **kwargs):
     """ Define mutations and regions to filter reads and positions. """
+    get_src = ctx.get_parameter_source
+    unbias = kwargs.pop("unbias", True)
+    print(get_src("min_mut_gap"))
+    if not unbias:
+        if get_src("min_mut_gap") == ParameterSource.DEFAULT:
+            kwargs["min_mut_gap"] = 0
+        elif kwargs.get("min_mut_gap", None) != 0:
+            raise IncompatibleOptionsError("--no-unbias and --min-mut-gap are mutually exclusive options")
     return run(*args, **kwargs)

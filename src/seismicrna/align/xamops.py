@@ -212,6 +212,15 @@ def bowtie2_build_cmd(fasta: Path, prefix: Path, *, num_cpus: int = 1):
 run_bowtie2_build = ShellCommand("building Bowtie 2 index for",
                                  bowtie2_build_cmd)
 
+def star_genomegen_cmd(fasta: Path, prefix: Path, *, num_cpus: int = 1):
+    """ Build a STAR genome from a FASTA file. """
+    # Generate and run the command.
+    args = ["STAR", "--runMode genomeGenerate", "--runThreadN", num_cpus, "--genomeFastaFiles", fasta, "--genomeDir", prefix]
+    return args_to_cmd(args)
+
+
+run_star_genomegen = ShellCommand("building STAR genome for",
+                                 star_genomegen_cmd)
 
 def _get_from_fq_inp(fq_inp: FastqUnit | None, attr: str):
     if fq_inp is None:
@@ -303,6 +312,24 @@ def bowtie2_cmd(fq_inp: FastqUnit | None,
         # To provide paired-end reads on standard input, SEISMIC-RNA
         # only supports interleaved mates.
         args.extend(["--interleaved" if paired else "-U", "-"])
+    return args_to_cmd(args)
+
+
+def star_cmd(fq_inp: FastqUnit | None,
+                sam_out: Path | None, *,
+                index_pfx: Path,
+                num_cpus: int,
+                **kwargs):
+    args = ["STAR",
+            # Resources
+            "--runThreadN", num_cpus,
+            "--genomeDir", index_pfx,
+            "--outSAMstrandField", "intronMotif",
+            "--outFilterIntronMotifs", "RemoveNoncanonical"
+            "--readFilesIn", list(fq_inp.paths.values())[0], list(fq_inp.paths.values())[1],
+            "--readFilesCommand", "zcat",
+            "--outSAMtype", "BAM", "SortedByCoordinate",
+            "--outSAMmode", "Full"]
     return args_to_cmd(args)
 
 
@@ -571,13 +598,19 @@ def realign_cmd(xam_inp: Path,
     # Convert the reads to FASTQ format.
     cmds.append(xam_to_fastq_cmd(None, None))
     # Re-align the reads from the BAM file using Bowtie2.
-    cmds.append(bowtie2_cmd(None,
+    # cmds.append(bowtie2_cmd(None,
+    #                         None,
+    #                         paired=paired,
+    #                         num_cpus=num_cpus_bowtie2,
+    #                         **kwargs))
+    cmds.append(star_cmd(None,
                             None,
                             paired=paired,
                             num_cpus=num_cpus_bowtie2,
                             **kwargs))
     # Filter low-quality alignments.
     cmds.append(view_xam_cmd(None, xam_out, min_mapq=min_mapq))
+    logger.error(cmds_to_pipe(cmds))
     return cmds_to_pipe(cmds)
 
 

@@ -1,7 +1,8 @@
 from pathlib import Path
 from typing import Iterable
 
-from click import command
+from click import command, pass_context
+from click.core import ParameterSource
 
 from . import (demult as demultiplex_mod,
                align as align_mod,
@@ -45,6 +46,7 @@ from .core.arg import (CMD_WORKFLOW,
                        opt_graph_mutdist,
                        opt_mutdist_null,
                        extra_defaults)
+from .core.error import IncompatibleOptionsError
 from .core.run import run_func
 from .core.seq import DNA
 from .core.table import (DELET_REL,
@@ -662,6 +664,15 @@ params = merge_params([opt_demultiplex],
 
 
 @command(CMD_WORKFLOW, params=params)
-def cli(*args, **kwargs):
+@pass_context
+def cli(ctx, *args, **kwargs):
     """ Run the entire workflow. """
+    get_src = ctx.get_parameter_source
+    unbias = kwargs.pop("unbias", True)
+    print(get_src("min_mut_gap"))
+    if not unbias:
+        if get_src("min_mut_gap") == ParameterSource.DEFAULT:
+            kwargs["min_mut_gap"] = 0
+        elif kwargs.get("min_mut_gap", None) != 0:
+            raise IncompatibleOptionsError("--no-unbias and --min-mut-gap are mutually exclusive options")
     return run(*args, **kwargs)

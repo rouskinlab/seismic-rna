@@ -47,6 +47,7 @@ from ..core.extern import (BOWTIE2_CMD,
 from ..core.io import calc_sha512_path
 from ..core.logs import logger
 from ..core.ngs import (run_flagstat,
+                        need_sort_xam,
                         run_sort_xam,
                         run_index_xam,
                         xam_paired)
@@ -86,7 +87,10 @@ def split_xam_file(xam_file: Path,
                                     path.BRANCHES: branches,
                                     path.REF: fasta.stem,
                                     path.EXT: xam_file.suffix})
-        run_sort_xam(xam_file, xam_sorted, num_cpus=num_cpus)
+        if need_sort_xam(xam_file):
+            run_sort_xam(xam_file, xam_sorted, num_cpus=num_cpus)
+        else:
+            path.symlink_if_needed(xam_sorted, xam_file)
         run_index_xam(xam_sorted, num_cpus=num_cpus)
         # Split the XAM file into one file for each reference.
         release_dir = tmp_dir.joinpath("release")

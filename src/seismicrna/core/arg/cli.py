@@ -739,6 +739,14 @@ opt_max_fmut_read = Option(
     help="Mask reads with more than this fraction of mutated base calls"
 )
 
+opt_unbias = Option(
+    ("--unbias/--no-unbias",),
+    type=bool,
+    default=True,
+    help=("Correct observer bias in DMS data. "
+          "--no-unbias is equivalent to --min-mut-gap 0")
+)
+
 opt_min_mut_gap = Option(
     ("--min-mut-gap",),
     type=int,
