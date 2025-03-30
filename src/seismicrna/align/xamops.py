@@ -63,6 +63,8 @@ from ..core.extern import (BOWTIE2_CMD,
                            FASTP_CMD,
                            ShellCommand,
                            args_to_cmd,
+                           cmds_to_series,
+                           cmds_to_simul,
                            cmds_to_pipe,
                            cmds_to_subshell)
 from ..core.logs import logger
@@ -320,21 +322,27 @@ def bowtie2_cmd(fq_inp: FastqUnit | None,
     return args_to_cmd(args)
 
 
+def mkfifo_cmd(tmp_files: Iterable[Path]):
+    args = ["mkfifo"]
+    args.extend(tmp_files)
+    return args_to_cmd(args)
+
+
 def star_cmd(fq_inp: FastqUnit | None,
-                sam_out: Path | None, *,
-                index_pfx: Path,
-                num_cpus: int,
-                **kwargs):
+             sam_out: Path | None, *,
+             index_pfx: Path,
+             num_cpus: int,
+             **kwargs):
     args = ["STAR",
             # Resources
             "--runThreadN", num_cpus,
             "--genomeDir", index_pfx,
             "--outSAMstrandField", "intronMotif",
-            "--outFilterIntronMotifs", "RemoveNoncanonical"
-            "--readFilesIn", list(fq_inp.paths.values())[0], list(fq_inp.paths.values())[1],
-            "--readFilesCommand", "zcat",
-            "--outSAMtype", "BAM", "SortedByCoordinate",
-            "--outSAMmode", "Full"]
+            "--outFilterIntronMotifs", "RemoveNoncanonical",
+            "--readFilesIn", index_pfx.parent.parent/"temp_1.fq", index_pfx.parent.parent/"temp_2.fq",
+            "--outSAMtype", "SAM",
+            "--outStd", "SAM",
+            "--outFileNamePrefix", index_pfx.parent]
     return args_to_cmd(args)
 
 
@@ -601,22 +609,32 @@ def realign_cmd(xam_inp: Path,
                       flags_req=flags_req,
                       flags_exc=flags_exc)
     # Convert the reads to FASTQ format.
-    cmds.append(xam_to_fastq_cmd(None, None))
+    # cmds.append(xam_to_fastq_cmd(None, None))
+    index_pfx = kwargs.get("index_pfx")
+    prefix_cmds = mkfifo_cmd([index_pfx.parent.parent/fq for fq in ["temp_1.fq", "temp_2.fq"]])
+    cmds.append(xam_to_fastq_cmd(None, None,
+                                 fq_1_out=index_pfx.parent.parent/"temp_1.fq",
+                                 fq_2_out=index_pfx.parent.parent/"temp_2.fq"))
     # Re-align the reads from the BAM file using Bowtie2.
     # cmds.append(bowtie2_cmd(None,
     #                         None,
     #                         paired=paired,
     #                         num_cpus=num_cpus_bowtie2,
     #                         **kwargs))
-    cmds.append(star_cmd(None,
+    aln_cmds = list()
+    aln_cmds.append(star_cmd(None,
                             None,
                             paired=paired,
                             num_cpus=num_cpus_bowtie2,
                             **kwargs))
     # Filter low-quality alignments.
-    cmds.append(view_xam_cmd(None, xam_out, min_mapq=min_mapq))
-    logger.error(cmds_to_pipe(cmds))
-    return cmds_to_pipe(cmds)
+    #cmds.append(view_xam_cmd(None, xam_out, min_mapq=min_mapq))
+    aln_cmds.append(view_xam_cmd(None, xam_out, min_mapq=min_mapq))
+    # cmds = cmds_to_simul([cmds_to_pipe(cmds), cmds_to_pipe(aln_cmds)])
+    final_cmd = cmds_to_series([prefix_cmds, cmds_to_simul([cmds_to_pipe(cmds), cmds_to_pipe(aln_cmds)])])
+    # return cmds_to_pipe(cmds)
+    return final_cmd
+
 
 
 run_realign = ShellCommand("filtering, collating, realigning, and formatting",

@@ -372,6 +372,8 @@ def xam_to_fastq_cmd(xam_inp: Path | None,
                      flags_req: int | None = None,
                      flags_exc: int | None = None,
                      label_12: bool = False,
+                     fq_1_out: Path | None = None,
+                     fq_2_out: Path | None = None,
                      num_cpus: int = 1):
     """ Convert XAM format to FASTQ format, and filter by flags. """
     args = [SAMTOOLS_CMD, "fastq",
@@ -386,6 +388,10 @@ def xam_to_fastq_cmd(xam_inp: Path | None,
         # Do not add /1 or /2 labels to names of paired-end reads.
         args.append("-n")
     args.append(xam_inp if xam_inp is not None else "-")
-    if fq_out is not None:
+    if fq_1_out:
+        args.extend(["-1", fq_1_out])
+    if fq_2_out:
+        args.extend(["-2", fq_2_out])
+    if fq_out is not None and fq_1_out is not None and fq_2_out is not None:
         args.extend([">", fq_out])
     return args_to_cmd(args)

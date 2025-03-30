@@ -45,6 +45,10 @@ def cmds_to_subshell(cmds: list[str]):
     return f"( {cmds_to_series(cmds)} )"
 
 
+def cmds_to_simul(cmds: list[str]):
+    return " & ".join(cmds)
+
+
 def run_cmd(cmd: str, text: bool | None = True):
     """ Run a command via subprocess.run(), with logging. """
     # Log the command with which the process was run.
