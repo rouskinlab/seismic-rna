@@ -222,7 +222,13 @@ def star_genomegen_cmd(fasta: Path, prefix: Path, *, num_cpus: int = 1):
     # Generate and run the command.
     _, refseq = next(parse_fasta(fasta, DNA))
     sa_len = min(14, math.log2(len(refseq))/2 - 1)
-    args = ["STAR", "--runMode", "genomeGenerate", "--runThreadN", num_cpus, "--genomeFastaFiles", fasta, "--genomeSAindexNbases", sa_len, "--genomeDir", prefix]
+    args = ["STAR",
+            "--runMode", "genomeGenerate",
+            "--runThreadN", num_cpus,
+            "--genomeFastaFiles", fasta,
+            "--genomeSAindexNbases", sa_len,
+            "--genomeDir", prefix,
+            "--outTmpDir", prefix.parent/"STAR_tmp"]
     return args_to_cmd(args)
 
 
