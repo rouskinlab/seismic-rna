@@ -212,10 +212,15 @@ def bowtie2_build_cmd(fasta: Path, prefix: Path, *, num_cpus: int = 1):
 run_bowtie2_build = ShellCommand("building Bowtie 2 index for",
                                  bowtie2_build_cmd)
 
+from ..core.seq.fasta import parse_fasta
+from ..core.seq.xna import DNA
+import math
 def star_genomegen_cmd(fasta: Path, prefix: Path, *, num_cpus: int = 1):
     """ Build a STAR genome from a FASTA file. """
     # Generate and run the command.
-    args = ["STAR", "--runMode", "genomeGenerate", "--runThreadN", num_cpus, "--genomeFastaFiles", fasta, "--genomeSAindexNbases", 7, "--genomeDir", prefix]
+    _, refseq = next(parse_fasta(fasta, DNA))
+    sa_len = min(14, math.log2(len(refseq))/2 - 1)
+    args = ["STAR", "--runMode", "genomeGenerate", "--runThreadN", num_cpus, "--genomeFastaFiles", fasta, "--genomeSAindexNbases", sa_len, "--genomeDir", prefix]
     return args_to_cmd(args)
 
 
