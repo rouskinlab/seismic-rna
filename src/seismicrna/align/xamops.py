@@ -215,7 +215,7 @@ run_bowtie2_build = ShellCommand("building Bowtie 2 index for",
 def star_genomegen_cmd(fasta: Path, prefix: Path, *, num_cpus: int = 1):
     """ Build a STAR genome from a FASTA file. """
     # Generate and run the command.
-    args = ["STAR", "--runMode genomeGenerate", "--runThreadN", num_cpus, "--genomeFastaFiles", fasta, "--genomeDir", prefix]
+    args = ["STAR", "--runMode", "genomeGenerate", "--runThreadN", num_cpus, "--genomeFastaFiles", fasta, "--genomeSAindexNbases", 7, "--genomeDir", prefix]
     return args_to_cmd(args)
 
 

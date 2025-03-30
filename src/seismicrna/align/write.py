@@ -272,7 +272,8 @@ def extract_reference(ref: str,
                                        num_cpus=num_cpus,
                                        **kwargs)
             xam_files.append(xam_rev)
-        except Exception:
+        except Exception as e:
+            raise(e)
             # Delete the XAM file containing both strands because its
             # name is the same as the file of only forward-strand reads.
             # If not deleted, it would remain in the output directory
