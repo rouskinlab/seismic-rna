@@ -13,7 +13,7 @@ from matplotlib.patches import Rectangle
 from seismicrna.core.array import find_dims
 from seismicrna.core.random import stochastic_round
 from seismicrna.core.rel import NOCOV, MATCH, DELET, SUB_A, SUB_C, SUB_G, SUB_T
-from seismicrna.core.rna import RNAStructure, parse_db_structure
+from seismicrna.core.rna import RNAStructure, parse_db_string
 from seismicrna.core.seq import DNA, Region, BASEA, BASEC, BASEG, BASET
 from seismicrna.graph.color import get_cmap, RelColorMap, SeqColorMap
 from seismicrna.core.table import (COVER_REL,
@@ -337,7 +337,7 @@ def calc_is_paired(seq: DNA, ss_dbs: Iterable[str]):
     return np.stack(
         [RNAStructure(region=region,
                       title=str(k),
-                      pairs=parse_db_structure(ss)).is_paired.values
+                      pairs=parse_db_string(ss)).is_paired.values
          for k, ss in enumerate(ss_dbs)],
         axis=1
     )

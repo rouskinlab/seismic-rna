@@ -30,6 +30,20 @@ class TestRNAStructure(ut.TestCase):
                                region=region,
                                pairs=[(1, 6), (2, 4)])
 
+    def test_from_db_string(self):
+        struct = RNAStructure.from_db_string(".((...).)",
+                                             "ACGATACAG",
+                                             seq5=11,
+                                             ref="myref",
+                                             reg="myreg",
+                                             title="mystruct",
+                                             branch="mybranch")
+        self.assertEqual(struct.title, "mystruct")
+        self.assertEqual(struct.branch, "mybranch")
+        self.assertEqual(struct.region,
+                         Region("myref", "ACGATACAG", seq5=11, name="myreg"))
+        self.assertSetEqual(struct.pairs, {(12, 19), (13, 17)})
+
     def test_is_paired(self):
         # Test case 1: Simple structure with some paired and unpaired bases
         region = Region("myref", "ACCGT")

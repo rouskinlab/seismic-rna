@@ -67,7 +67,7 @@ def load_regions(input_path: Iterable[str | Path],
                           for ref_datasets in datasets.values()
                           for dataset in ref_datasets},
                          regs_file=regions_file,
-                         coords=coords,
+                         ends=coords,
                          primers=primers,
                          primer_gap=primer_gap,
                          exclude_primers=True)

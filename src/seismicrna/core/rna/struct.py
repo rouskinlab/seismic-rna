@@ -5,14 +5,14 @@ import numpy as np
 import pandas as pd
 
 from .base import RNARegion
-from .db import DB_NAME_MARK, format_db_structure
+from .db import DB_NAME_MARK, format_db_string, parse_db_string
 from .pair import (UNPAIRED,
                    find_root_pairs,
                    pairs_to_dict,
                    pairs_to_table,
                    renumber_pairs,
                    table_to_pairs)
-from ..seq import POS_NAME, intersect
+from ..seq import POS_NAME, DNA, RNA, Region, intersect
 
 IDX_FIELD = "Index"
 BASE_FIELD = "Base"
@@ -75,6 +75,19 @@ class Rna2dStemLoop(RnaJunction):
 
 class RNAStructure(RNARegion):
     """ Secondary structure of an RNA. """
+
+    @classmethod
+    def from_db_string(cls,
+                       db_string: str,
+                       seq: DNA | RNA | str, *,
+                       seq5: int = 1,
+                       ref: str,
+                       reg: str,
+                       **kwargs):
+        """ Create an RNAStructure from a dot-bracket string. """
+        return cls(pairs=parse_db_string(db_string, seq5),
+                   region=Region(ref, seq, seq5=seq5, name=reg),
+                   **kwargs)
 
     def __init__(self, *,
                  title: str,
@@ -152,8 +165,14 @@ class RNAStructure(RNARegion):
             middle_partners - 1 != self.table.loc[is_middle_pos + 1].values,
             middle_partners + 1 != self.table.loc[is_middle_pos - 1].values
         ))
-        is_middle.loc[pseudoknot[pseudoknot].index] = False
+        is_middle.loc[pseudoknot.loc[pseudoknot].index] = False
         return is_middle
+
+    @cached_property
+    def is_margin(self):
+        """ Whether each base is paired and on the margin (not middle)
+        of a stem. """
+        return self.is_paired & ~self.is_middle
 
     def _subregion_kwargs(self,
                           end5: int,
@@ -214,16 +233,16 @@ class RNAStructure(RNARegion):
         return f"{DB_NAME_MARK}{self.title}"
 
     @cached_property
-    def db_structure(self):
+    def db_string(self):
         """ Dot-bracket string (structure only). """
-        return format_db_structure(self.pairs,
-                                   self.region.length,
-                                   self.region.end5)
+        return format_db_string(self.pairs,
+                                self.region.length,
+                                self.region.end5)
 
     def get_db_text(self, sequence: bool):
         """ Dot-bracket record. """
         lines = [self.db_title]
         if sequence:
             lines.append(str(self.seq))
-        lines.append(self.db_structure)
+        lines.append(self.db_string)
         return "".join([f"{line}\n" for line in lines])
