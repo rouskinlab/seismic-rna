@@ -184,7 +184,7 @@ def separate_strands(xam_file: Path,
         # Write the reverse-strand reference sequence to a FASTA file.
         index_dir = tmp_dir.joinpath("index")
         index_dir.mkdir()
-        fasta_rev = index_dir.joinpath(ref_rev).with_suffix(path.FASTA_EXTS[0])
+        fasta_rev = index_dir.joinpath(ref_rev + path.FASTA_EXTS[0])
         refseq = get_fasta_seq(fasta, DNA, ref)
         write_fasta(fasta_rev, [(ref_rev, refseq.rc)])
         # Index the reverse-strand reference.
@@ -193,7 +193,7 @@ def separate_strands(xam_file: Path,
         run_star_genomegen(fasta_rev, index_rev, num_cpus=num_cpus)
         # Re-align the reads that had aligned to the reverse strand of
         # the forward-strand reference to the reverse-strand reference.
-        bam_rev = out_dir.joinpath(ref_rev).with_suffix(path.BAM_EXT)
+        bam_rev = out_dir.joinpath(ref_rev + path.BAM_EXT)
         realign_dir = tmp_dir.joinpath("realign")
         realign_dir.mkdir()
         run_realign(xam_file,
