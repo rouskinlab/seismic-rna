@@ -124,7 +124,7 @@ def run(fasta: str | Path, *,
                          regs_file=(Path(fold_regions_file)
                                     if fold_regions_file
                                     else None),
-                         coords=fold_coords,
+                         ends=fold_coords,
                          primers=fold_primers)
     return dispatch(fold_region,
                     num_cpus=num_cpus,

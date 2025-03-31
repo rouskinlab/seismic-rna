@@ -13,45 +13,48 @@ PAIRED_MARKS = {")": "(",
                 "}": "{"}
 
 
-def _parse_db_header(header_line: str):
+def _parse_db_file_header(header_line: str):
     if not header_line.startswith(DB_NAME_MARK):
         raise ValueError(f"Header line {repr(header_line)} does not start with "
                          f"{repr(DB_NAME_MARK)}")
     return header_line[len(DB_NAME_MARK):].rstrip("\n")
 
 
-def _parse_db_string(db_file: TextIO, seq: RNA | None):
+def _parse_db_file_next_record(db_file: TextIO, seq: RNA | None):
     if seq is None:
-        seq = RNA(db_file.readline().rstrip("\n"))
-    struct = db_file.readline().rstrip("\n")
-    if len(struct) != len(seq):
-        raise ValueError(f"Lengths of structure {repr(struct)} ({len(struct)}) "
-                         f"and sequence {seq} ({len(seq)}) do not match")
-    return seq, struct
+        seq = RNA.from_any_seq(db_file.readline().rstrip("\n"))
+    db_string = db_file.readline().rstrip("\n")
+    if len(db_string) != len(seq):
+        raise ValueError(
+            f"Lengths of structure {repr(db_string)} ({len(db_string)}) "
+            f"and sequence {seq} ({len(seq)}) do not match"
+        )
+    return seq, db_string
 
 
-def parse_db_strings(db_path: str | Path):
-    """ Return the sequence and structures from a dot-bracket file. """
+def parse_db_file_as_strings(db_path: str | Path):
+    """ Return the sequence and dot-bracket strings from a dot-bracket
+    file. """
     seq = None
-    structs = dict()
+    db_strings = dict()
     with open(db_path) as file:
         while header_line := file.readline():
             # Get the header of the current structure.
-            header = _parse_db_header(header_line)
+            header = _parse_db_file_header(header_line)
             # Determine the sequence and base pairs.
-            seq, struct = _parse_db_string(file, seq)
-            structs[header] = struct
+            seq, db_string = _parse_db_file_next_record(file, seq)
+            db_strings[header] = db_string
     if seq is None:
         raise ValueError(f"File {db_path} contained no sequence")
-    return seq, structs
+    return seq, db_strings
 
 
-def parse_db_structure(struct: str, seq5: int = 1):
-    """ Parse a dot-bracket structure into a list of base pairs. """
+def parse_db_string(db_string: str, seq5: int = 1):
+    """ Parse a dot-bracket string into a list of base pairs. """
     stacks: dict[str, list[int]] = defaultdict(list)
     pairs = list()
     opening_marks = "".join(PAIRED_MARKS.values())
-    for pos, mark in enumerate(struct, start=seq5):
+    for pos, mark in enumerate(db_string, start=seq5):
         if mark != UNPAIRED_MARK:
             if mark in opening_marks:
                 stacks[mark].append(pos)
@@ -74,12 +77,7 @@ def parse_db_structure(struct: str, seq5: int = 1):
     return sorted(pairs)
 
 
-def _parse_db_record(db_file: TextIO, seq: RNA | None, seq5: int):
-    seq, struct = _parse_db_string(db_file, seq)
-    return seq, parse_db_structure(struct, seq5)
-
-
-def parse_db(db_path: str | Path, seq5: int = 1):
+def parse_db_file_as_pairs(db_path: str | Path, seq5: int = 1):
     """ Yield the title, region, and base pairs for each structure in a
     dot-bracket (DB) file.
 
@@ -100,21 +98,22 @@ def parse_db(db_path: str | Path, seq5: int = 1):
     reg = fields[path.REG]
     # Parse each structure in the CT file.
     seq = None
-    with open(db_path) as file:
-        while header_line := file.readline():
+    with open(db_path) as db_file:
+        while header_line := db_file.readline():
             # Get the header of the current structure.
-            title = _parse_db_header(header_line)
+            title = _parse_db_file_header(header_line)
             # Determine the sequence and base pairs.
-            seq, pairs = _parse_db_record(file, seq, seq5)
+            seq, db_string = _parse_db_file_next_record(db_file, seq)
+            pairs = parse_db_string(db_string, seq5)
             # Make a region from the sequence.
             region = Region(ref, seq.rt(), seq5=seq5, name=reg)
             # Yield the title, region, and base pairs.
             yield title, region, pairs
 
 
-def format_db_structure(pairs: Iterable[tuple[int, int]],
-                        length: int,
-                        seq5: int = 1):
+def format_db_string(pairs: Iterable[tuple[int, int]],
+                     length: int,
+                     seq5: int = 1):
     """ Create a dot-bracket string from a list of base pairs. """
     db = [UNPAIRED_MARK] * length
     for pos5, pos3 in sorted(pairs):

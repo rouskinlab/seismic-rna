@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 from .refs import RefSeqs
-from .xna import BASEA, BASEC, BASEN, DNA
+from .xna import BASEA, BASEC, BASEN, DNA, RNA
 from ..logs import logger
 
 # Names of the region index levels.
@@ -28,12 +28,12 @@ FIELD_PREV = "Reverse Primer"
 RegionTuple = namedtuple("RegionTuple", ("pos5", "pos3"))
 
 
-def get_reg_coords_primers(regs_file: Path):
+def get_reg_ends_primers(regs_file: Path):
     """
     Parse a file defining each region by the name of its reference and
-    either its 5' and 3' coordinates or its forward and reverse primer
-    sequences. Return one map from each reference and 5'/3' coordinate
-    pair to the name of the corresponding region, and another from each
+    either its 5' and 3' end positions or its forward and reverse primer
+    sequences. Return one map from each reference and pair of 5'/3' ends
+    to the name of the corresponding region, and another from each
     reference and primer pair to the name of the corresponding region.
 
     Parameters
@@ -47,16 +47,16 @@ def get_reg_coords_primers(regs_file: Path):
     -------
     tuple[dict[tuple[str, int, int], str],
           dict[tuple[str, DNA, DNA], str]]
-        Two mappings, the first from (ref name, 5' coord, 3' coord) to
-        each region, the second from (ref name, fwd primer, rev primer)
-        to each region. If the region is named in the "Region" column
-        of the table, then that name will be used as the region name.
+        Two mappings, the first from (ref name, 5' end, 3' end) to each
+        region, the second from (ref name, fwd primer, rev primer) to
+        each region. If the region is named in the "Region" column of
+        the table, then that name will be used as the region name.
         Otherwise, the region name will be an empty string.
     """
 
-    # Initialize dictionaries mapping references and coordinates/primers
+    # Initialize dictionaries mapping references and positions/primers
     # to region names.
-    coords: dict[tuple[str, int, int], str] = dict()
+    ends: dict[tuple[str, int, int], str] = dict()
     primers: dict[tuple[str, DNA, DNA], str] = dict()
 
     def map_reg(mapping: dict[tuple, str], key: tuple, value: str):
@@ -100,25 +100,25 @@ def get_reg_coords_primers(regs_file: Path):
                 raise ValueError(
                     f"A region cannot be given the name {repr(FULL_NAME)}, "
                     "which reserved for when a reference is automatically "
-                    "given a full region in the absence of coordinates/primers"
+                    "given a full region in the absence of ends/primers"
                 )
-            # Check whether coordinates or primers were given.
-            has_coords = not (pd.isnull(end5) or pd.isnull(end3))
+            # Check whether end positions or primers were given.
+            has_ends = not (pd.isnull(end5) or pd.isnull(end3))
             has_primers = not (pd.isnull(fwd) or pd.isnull(rev))
-            if has_coords and has_primers:
-                raise ValueError(f"Got both coordinates ({end5}, {end3}) "
-                                 f"and primers ({fwd}, {rev})")
-            elif has_coords:
-                # Map the reference and coordinates to the region.
-                map_reg(coords, (ref, int(end5), int(end3)), reg)
+            if has_ends and has_primers:
+                raise ValueError(f"Got both 5'/3' ends ({end5}, {end3}) "
+                                 f"and fwd/rev primers ({fwd}, {rev})")
+            elif has_ends:
+                # Map the reference and end positions to the region.
+                map_reg(ends, (ref, int(end5), int(end3)), reg)
             elif has_primers:
                 # Map the reference and primers to the region.
                 map_reg(primers, (ref, DNA(fwd), DNA(rev)), reg)
             else:
-                raise ValueError("Got neither coordinates nor primers")
+                raise ValueError("Got neither 5'/3' ends nor fwd/rev primers")
         except Exception as error:
             logger.error(error)
-    return coords, primers
+    return ends, primers
 
 
 def seq_pos_to_index(seq: DNA, positions: Sequence[int], start: int):
@@ -316,7 +316,7 @@ def hyphenate_ends(end5: int, end3: int):
 
 
 class Region(object):
-    """ Region of a reference sequence between two coordinates. """
+    """ Region of a sequence between 5' and 3' end positions. """
 
     MASK_POLYA = "pos-polya"
     MASK_GU = "pos-gu"
@@ -324,7 +324,7 @@ class Region(object):
 
     def __init__(self,
                  ref: str,
-                 seq: str | DNA, *,
+                 seq: str | DNA | RNA, *,
                  seq5: int = 1,
                  reflen: int | None = None,
                  end5: int | None = None,
@@ -335,8 +335,8 @@ class Region(object):
         ----------
         ref: str
             Name of the reference sequence.
-        seq: str | DNA
-            The full reference sequence or a part of it.
+        seq: str | DNA | RNA
+            The full reference sequence, or a part of it.
         seq5: int = 1
             Positional number to assign the 5' end of the given part of
             the reference sequence. Must be ≥ 1.
@@ -344,11 +344,9 @@ class Region(object):
             Length of the full reference sequence. Must be ≥ 0. If None,
             defaults to the 3' end position in `seq`.
         end5: int | None = None
-            Coordinate of the reference sequence at which the region's
-            5' end is located.
+            Position in the reference sequence of the region's 5' end.
         end3: int | None = None
-            Coordinate of the reference sequence at which the region's
-            3' end is located.
+            Position in the reference sequence of the region's 3' end.
         name: str | None = None
             Name of the region. If None, defaults to `self.range`.
         """
@@ -383,19 +381,21 @@ class Region(object):
                              f"but got {self.end5} > {self.end3 + 1}")
         # Determine the sequence of the region and whether it is the
         # full reference sequence.
-        self.seq = DNA(seq[self.end5 - seq5: self.end3 - (seq5 - 1)])
+        self.seq = DNA.from_any_seq(
+            seq[self.end5 - seq5: self.end3 - (seq5 - 1)]
+        )
         self.full = self.end5 == 1 and self.end3 == reflen
         # Assign the name of the region.
         if name is None:
             # Default to "full" if the region spans the full reference
-            # sequence and neither the 5' nor 3' coordinate was given.
-            # Otherwise, default to the hyphenated coordinates.
+            # sequence and neither the 5' nor 3' end was given.
+            # Otherwise, default to the hyphenated 5' and 3' ends.
             self.name = (FULL_NAME
                          if self.full and end5 is None and end3 is None
                          else self.hyphen)
         elif isinstance(name, str):
             # Use the given name unless it is an empty string, in which
-            # case default to the hyphenated coordinates.
+            # case default to the hyphenated 5'.
             self.name = name if name else self.hyphen
         else:
             raise TypeError(f"name must be a str, but got {repr(name)}")
@@ -408,8 +408,8 @@ class Region(object):
         return self.end3 - self.end5 + 1
 
     @cached_property
-    def coord(self):
-        """ Tuple of the 5' and 3' coordinates. """
+    def ends(self):
+        """ Tuple of the 5' and 3' ends. """
         return self.end5, self.end3
 
     @cached_property
@@ -692,7 +692,7 @@ def intersect(*regions: Region, name: str | None = None):
     if len(refs) != 1:
         raise ValueError(f"Expected exactly one reference, but got {refs}")
     ref = refs[0]
-    # Compute the 5' and 3' coordinates of the intersection.
+    # Compute the 5' and 3' ends of the intersection.
     end5 = max(region.end5 for region in regions)
     end3 = min(region.end3 for region in regions)
     if end5 <= end3:
@@ -758,7 +758,7 @@ def unite(*regions: Region,
     if len(refs) != 1:
         raise ValueError(f"Expected exactly one reference, but got {refs}")
     ref = refs[0]
-    # Compute the 5' and 3' coordinates of the union.
+    # Compute the 5' and 3' ends of the union.
     end5 = min(region.end5 for region in regions)
     end3 = max(region.end3 for region in regions)
     # Determine the coverage and sequence of the union.
@@ -807,9 +807,8 @@ class RegionFinder(Region):
     but if the sample is of an amplicon (i.e. generated by RT-PCR using
     site-specific primers), then it is often more convenient to enter
     the sequences of the PCR primers and have the software determine the
-    coordinates. RegionFinder accepts 5' and 3' coordinates given as
-    integers or primers, validates them, and stores the coordinates as
-    integers, as follows:
+    5'/3' ends. RegionFinder accepts 5' and 3' ends given as integers or
+    primers, validates them, and stores the ends as integers:
 
     end5 = end5 if end5 is given, else the 3' end of the forward primer
            + (primer_gap + 1) if fwd is given, else 1
@@ -839,11 +838,9 @@ class RegionFinder(Region):
             Positional number to assign the 5' end of the given part of
             the reference sequence. Must be ≥ 1.
         end5: int | None = None
-            Coordinate of the reference sequence at which the region's
-            5' end is located.
+            Position in the reference sequence of the region's 5' end.
         end3: int | None = None
-            Coordinate of the reference sequence at which the region's
-            3' end is located.
+            Position in the reference sequence of the region's 3' end.
         fwd: DNA | None = None
             (For amplicons only) Sequence of the forward PCR primer
             that was used to generate the amplicon
@@ -852,12 +849,12 @@ class RegionFinder(Region):
             that was used to generate the amplicon (the actual sequence,
             not its reverse complement)
         primer_gap: int = 1
-            (For coordinates specified by fwd/rev only) Number of
+            For 5'/3' ends specified by fwd/rev only, the number of
             positions 3' of the forward primer and 5' of the reverse
-            primer to exclude from the region. Coordinates within 1 - 2
+            primer to exclude from the region. Positions within 1 - 2
             nucleotides of each primer may contain DMS reactivity
             artifacts. If primer_gap = 0, then end5 and end3 are set,
-            respectively, to the coordinates immediately adjacent to
+            respectively, to the positions immediately adjacent to
             (i.e. 1 nucleotide 3' and 5' of) the 3' end of the forward
             and reverse primers.
         exclude_primers: bool = False
@@ -870,7 +867,7 @@ class RegionFinder(Region):
                              "that you gave the right reference sequence file "
                              "and spelled the name of the reference correctly.")
         if end5 is None:
-            # No 5' end coordinate was given.
+            # No 5' end was given.
             if fwd is not None:
                 # Locate the forward primer.
                 primer_site = self.locate(seq, fwd, seq5)
@@ -883,7 +880,7 @@ class RegionFinder(Region):
                     # the reverse primer.
                     end5 = primer_site.pos5
         if end3 is None:
-            # No 3' end coordinate was given.
+            # No 3' end was given.
             if rev is not None:
                 # Locate the reverse primer.
                 primer_site = self.locate(seq, rev.rc, seq5)
@@ -920,7 +917,7 @@ class RegionFinder(Region):
         RegionTuple
             Named tuple of the first and last positions that the primer
             occupies in the reference sequence. Positions are 1-indexed
-            and include the first and last coordinates.
+            and include the first and last positions.
         """
         matches = list(re.finditer(str(primer), str(seq)))
         if not matches:
@@ -933,15 +930,15 @@ class RegionFinder(Region):
         return RegionTuple(pos5, pos3)
 
 
-def get_coords_by_ref(coords: Iterable[tuple[str, int | DNA, int | DNA]]):
-    ref_coords: dict[str, set[tuple[int | DNA, int | DNA]]] = defaultdict(set)
-    for ref, end5, end3 in coords:
-        coord = end5, end3
-        if coord in ref_coords[ref]:
-            logger.warning(f"Skipping duplicate coordinates: {coord}")
+def get_ends_by_ref(ends: Iterable[tuple[str, int | DNA, int | DNA]]):
+    refs_ends: dict[str, set[tuple[int | DNA, int | DNA]]] = defaultdict(set)
+    for ref, end5, end3 in ends:
+        ref_ends = end5, end3
+        if ref_ends in refs_ends[ref]:
+            logger.warning(f"Skipping duplicate 5'/3' ends: {ref_ends}")
         else:
-            ref_coords[ref].add(coord)
-    return ref_coords
+            refs_ends[ref].add(ref_ends)
+    return refs_ends
 
 
 class RefRegions(object):
@@ -950,35 +947,33 @@ class RefRegions(object):
     def __init__(self,
                  ref_seqs: Iterable[tuple[str, DNA]], *,
                  regs_file: Path | None = None,
-                 coords: Iterable[tuple[str, int, int]] = (),
+                 ends: Iterable[tuple[str, int, int]] = (),
                  primers: Iterable[tuple[str, DNA, DNA]] = (),
                  primer_gap: int = 0,
                  exclude_primers: bool = False,
                  default_full: bool = True):
         # Get the names of the regions from the regions file, if any.
-        reg_coords = dict()
+        reg_ends = dict()
         reg_primers = dict()
         if regs_file is not None:
             try:
-                reg_coords, reg_primers = get_reg_coords_primers(regs_file)
-                # Combines the coordinates from the regs_file and from the
-                # coord parameter.
+                reg_ends, reg_primers = get_reg_ends_primers(regs_file)
             except Exception as error:
                 logger.error(error)
             else:
-                coords = list(coords) + list(reg_coords)
+                ends = list(ends) + list(reg_ends)
                 primers = list(primers) + list(reg_primers)
-        # Group coordinates and primers by reference.
-        ref_coords = get_coords_by_ref(coords)
-        ref_primers = get_coords_by_ref(primers)
-        # For each reference, generate regions from the coordinates.
+        # Group 5'/3' ends and primers by reference.
+        ref_ends = get_ends_by_ref(ends)
+        ref_primers = get_ends_by_ref(primers)
+        # For each reference, generate regions from the 5'/3' ends.
         self._regions: dict[str, dict[tuple[int, int], Region]] = dict()
         for ref, refseq in RefSeqs(ref_seqs):
             assert ref not in self._regions
             self._regions[ref] = dict()
-            for end5, end3 in ref_coords[ref]:
-                # Add a region for each pair of 5' and 3' coordinates.
-                reg = reg_coords.get((ref, end5, end3))
+            for end5, end3 in ref_ends[ref]:
+                # Add a region for each pair of 5'/3' ends.
+                reg = reg_ends.get((ref, end5, end3))
                 self._add_region(ref,
                                  refseq,
                                  end5=end5,
@@ -1007,9 +1002,9 @@ class RefRegions(object):
             logger.error(error)
         else:
             # Check if the region was seen already.
-            if (seen := self._regions[region.ref].get(region.coord)) is None:
+            if (seen := self._regions[region.ref].get(region.ends)) is None:
                 # The region was not seen already: add it.
-                self._regions[region.ref][region.coord] = region
+                self._regions[region.ref][region.ends] = region
             elif seen.name == region.name:
                 # The region was seen already with the same name.
                 logger.warning(f"Got duplicate region: {region}")

@@ -151,7 +151,7 @@ def run(input_path: Iterable[str | Path], *,
         ref_seqs.add(table.ref, table.refseq)
     fold_regions = RefRegions(ref_seqs,
                               regs_file=optional_path(fold_regions_file),
-                              coords=fold_coords,
+                              ends=fold_coords,
                               primers=fold_primers,
                               default_full=fold_full).dict
     # For each table whose reference had no regions defined, default to

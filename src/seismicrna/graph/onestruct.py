@@ -138,7 +138,7 @@ class StructOneTableWriter(OneTableRelClusterGroupWriter, ABC):
             # Add the regions from the given coordinates/primers.
             ref_regions = RefRegions([(self.table.ref, self.table.refseq)],
                                      regs_file=optional_path(fold_regions_file),
-                                     coords=fold_coords,
+                                     ends=fold_coords,
                                      primers=fold_primers,
                                      default_full=fold_full)
             fold_regs = [region.name
