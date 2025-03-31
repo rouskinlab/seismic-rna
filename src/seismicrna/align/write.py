@@ -210,7 +210,7 @@ def separate_strands(xam_file: Path,
         if not keep_tmp:
             rmtree(index_dir)
         # Extract the reads that had aligned to the forward strand.
-        bam_fwd = realign_dir.joinpath(ref).with_suffix(path.BAM_EXT)
+        bam_fwd = realign_dir.joinpath(ref + path.BAM_EXT)
         run_flags(xam_file,
                   bam_fwd,
                   tmp_pfx=realign_dir.joinpath(ref),
@@ -272,8 +272,7 @@ def extract_reference(ref: str,
                                        num_cpus=num_cpus,
                                        **kwargs)
             xam_files.append(xam_rev)
-        except Exception as e:
-            raise(e)
+        except Exception:
             # Delete the XAM file containing both strands because its
             # name is the same as the file of only forward-strand reads.
             # If not deleted, it would remain in the output directory
