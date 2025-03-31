@@ -64,7 +64,7 @@ from ..core.extern import (BOWTIE2_CMD,
                            ShellCommand,
                            args_to_cmd,
                            cmds_to_series,
-                           cmds_to_simul,
+                        #    cmds_to_simul,
                            cmds_to_pipe,
                            cmds_to_subshell)
 from ..core.logs import logger
@@ -617,7 +617,7 @@ def realign_cmd(xam_inp: Path,
     # Convert the reads to FASTQ format.
     # cmds.append(xam_to_fastq_cmd(None, None))
     index_pfx = kwargs.get("index_pfx")
-    prefix_cmds = mkfifo_cmd([index_pfx.parent.parent/fq for fq in ["temp_1.fq", "temp_2.fq"]])
+    # prefix_cmds = mkfifo_cmd([index_pfx.parent.parent/fq for fq in ["temp_1.fq", "temp_2.fq"]])
     cmds.append(xam_to_fastq_cmd(None, None,
                                  fq_1_out=index_pfx.parent.parent/"temp_1.fq",
                                  fq_2_out=index_pfx.parent.parent/"temp_2.fq"))
@@ -637,7 +637,8 @@ def realign_cmd(xam_inp: Path,
     #cmds.append(view_xam_cmd(None, xam_out, min_mapq=min_mapq))
     aln_cmds.append(view_xam_cmd(None, xam_out, min_mapq=min_mapq))
     # cmds = cmds_to_simul([cmds_to_pipe(cmds), cmds_to_pipe(aln_cmds)])
-    final_cmd = cmds_to_series([prefix_cmds, cmds_to_simul([cmds_to_pipe(cmds), cmds_to_pipe(aln_cmds)])])
+    # final_cmd = cmds_to_series([prefix_cmds, cmds_to_simul([cmds_to_pipe(cmds), cmds_to_pipe(aln_cmds)])])
+    final_cmd = cmds_to_series([cmds_to_pipe(cmds), cmds_to_pipe(aln_cmds)])
     # return cmds_to_pipe(cmds)
     return final_cmd
 
