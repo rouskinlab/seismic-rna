@@ -45,7 +45,7 @@ class TestRNAStructure(ut.TestCase):
         self.assertSetEqual(struct.pairs, {(12, 19), (13, 17)})
 
     def test_is_paired(self):
-        # Test case 1: Simple structure with some paired and unpaired bases
+        # Simple structure with some paired and unpaired bases
         region = Region("myref", "ACCGT")
         structure = RNAStructure(title="mystructure",
                                  region=region,
@@ -53,14 +53,14 @@ class TestRNAStructure(ut.TestCase):
         expected = pd.Series([True, True, False, True, True], region.range)
         self.assertTrue(structure.is_paired.equals(expected))
 
-        # Test case 2: All bases unpaired
+        # All bases unpaired
         structure = RNAStructure(title="mystructure",
                                  region=region,
                                  pairs=[])
         expected = pd.Series([False, False, False, False, False], region.range)
         self.assertTrue(structure.is_paired.equals(expected))
 
-        # Test case 4: Longer sequence with nested pairs
+        # Longer sequence with nested pairs
         region = Region("myref", "ACCGTACCGT")
         structure = RNAStructure(
             title="mystructure",
@@ -72,7 +72,7 @@ class TestRNAStructure(ut.TestCase):
                              region.range)
         self.assertTrue(structure.is_paired.equals(expected))
 
-        # Test case 5: Pseudoknot structure
+        # Pseudoknot structure
         region = Region("myref", "ACCGTACCGT")
         structure = RNAStructure(
             title="mystructure",
@@ -84,9 +84,9 @@ class TestRNAStructure(ut.TestCase):
                              region.range)
         self.assertTrue(structure.is_paired.equals(expected))
 
-    def test_is_middle(self):
-        # Simple structure with three middle positions (3,8), (4,7) and (5,6) 
-        # in stack (2,9)-(3,8)-(4,7)-(5,6)
+    def test_is_paired_internally(self):
+        # Simple structure with three internal pairs (3,8), (4,7) and
+        # (5,6) in stack (2,9)-(3,8)-(4,7)-(5,6)
         region = Region("myref", "ACCGTACCGT")
         structure = RNAStructure(title="mystructure",
                                  region=region,
@@ -94,9 +94,9 @@ class TestRNAStructure(ut.TestCase):
         expected = pd.Series([False, False, True, True, True,
                               True, True, True, False, False],
                              region.range)
-        self.assertTrue(structure.is_middle.equals(expected))
+        self.assertTrue(structure.is_paired_internally.equals(expected))
 
-        # Simple structure with two middle positions (2,9) and (3,8) 
+        # Simple structure with two internal pairs (2,9) and (3,8)
         # in stack (1,10)-(2,9)-(3,8)-(4,7)
         structure = RNAStructure(title="mystructure",
                                  region=region,
@@ -104,9 +104,9 @@ class TestRNAStructure(ut.TestCase):
         expected = pd.Series([False, True, True, False, False,
                               False, False, True, True, False],
                              region.range)
-        self.assertTrue(structure.is_middle.equals(expected))
+        self.assertTrue(structure.is_paired_internally.equals(expected))
 
-        # Simple structure with one middle position (3,7) in stack 
+        # Simple structure with one internal pair (3,7) in stack
         # (2,8)-(3,7)-(4,6)
         structure = RNAStructure(title="mystructure",
                                  region=region,
@@ -114,27 +114,27 @@ class TestRNAStructure(ut.TestCase):
         expected = pd.Series([False, False, True, False, False,
                               False, True, False, False, False],
                              region.range)
-        self.assertTrue(structure.is_middle.equals(expected))
+        self.assertTrue(structure.is_paired_internally.equals(expected))
 
-        # No middle positions (all unpaired)
+        # No internal pairs (all unpaired)
         structure = RNAStructure(title="mystructure",
                                  region=region,
                                  pairs=[])
         expected = pd.Series([False, False, False, False, False,
                               False, False, False, False, False],
                              region.range)
-        self.assertTrue(structure.is_middle.equals(expected))
+        self.assertTrue(structure.is_paired_internally.equals(expected))
 
-        # No middle positions (only two consecutive pairs)
+        # No internal pairs (only two consecutive pairs)
         structure = RNAStructure(title="mystructure",
                                  region=region,
                                  pairs=[(2, 8), (3, 7)])
         expected = pd.Series([False, False, False, False, False,
                               False, False, False, False, False],
                              region.range)
-        self.assertTrue(structure.is_middle.equals(expected))
+        self.assertTrue(structure.is_paired_internally.equals(expected))
 
-        # Multiple middle positions in a longer sequence
+        # Multiple internal pairs in a longer sequence
         structure = RNAStructure(
             title="mystructure",
             region=region,
@@ -143,9 +143,9 @@ class TestRNAStructure(ut.TestCase):
         expected = pd.Series([False, True, True, True, True,
                               True, True, True, True, False],
                              region.range)
-        self.assertTrue(structure.is_middle.equals(expected))
+        self.assertTrue(structure.is_paired_internally.equals(expected))
 
-        # Pseudoknot structure with no middle positions
+        # Pseudoknot structure with no internal pairs
         structure = RNAStructure(
             title="mystructure",
             region=region,
@@ -154,7 +154,18 @@ class TestRNAStructure(ut.TestCase):
         expected = pd.Series([False, False, False, False, False,
                               False, False, False, False, False],
                              region.range)
-        self.assertTrue(structure.is_middle.equals(expected))
+        self.assertTrue(structure.is_paired_internally.equals(expected))
+
+        # Pseudoknot structure with no internal pairs: [((({])))}
+        structure = RNAStructure(
+            title="mystructure",
+            region=region,
+            pairs=[(1, 6), (2, 9), (3, 8), (4, 7), (5, 10)]
+        )
+        expected = pd.Series([False, False, True, False, False,
+                              False, False, True, False, False],
+                             region.range)
+        self.assertTrue(structure.is_paired_internally.equals(expected))
 
 
 if __name__ == "__main__":

@@ -1,5 +1,3 @@
-from functools import cached_property
-
 from .profile import RNAProfile
 from .roc import compute_auc, compute_roc_curve, compute_rolling_auc
 from .struct import RNAStructure
@@ -30,13 +28,51 @@ class RNAState(RNAStructure, RNAProfile):
                    data_name=profile.data_name,
                    data=profile.data)
 
-    @cached_property
-    def roc(self):
-        return compute_roc_curve(self.is_paired, self.data)
+    def _get_structs_args(self, terminal_pairs: bool):
+        if terminal_pairs:
+            return self.is_paired,
+        return self.is_paired_internally, self.is_unpaired
 
-    @cached_property
-    def auc(self):
-        return compute_auc(*self.roc)
+    def calc_roc(self, terminal_pairs: bool = True):
+        """ Calculate the receiver operating characteristic (ROC) curve.
 
-    def rolling_auc(self, size: int, min_data: int = 2):
-        return compute_rolling_auc(self.is_paired, self.data, size, min_data)
+        Parameters
+        ----------
+        terminal_pairs: bool
+            Whether to count terminal base pairs as paired (if True)
+            or as neither paired nor unpaired (if False).
+        """
+        return compute_roc_curve(self.data,
+                                 *self._get_structs_args(terminal_pairs))
+
+    def calc_auc(self, terminal_pairs: bool = True):
+        """ Calculate the area under the ROC curve (AUC-ROC).
+
+        Parameters
+        ----------
+        terminal_pairs: bool
+            Whether to count terminal base pairs as paired (if True)
+            or as neither paired nor unpaired (if False).
+        """
+        return compute_auc(*self.calc_roc(terminal_pairs))
+
+    def calc_auc_rolling(self,
+                         size: int,
+                         min_data: int = 2,
+                         terminal_pairs: bool = True):
+        """ Calculate the area under the ROC curve (AUC-ROC).
+
+        Parameters
+        ----------
+        size: int
+            Size of the window.
+        min_data: int = 2
+            Minimum number of data in a window to use it, otherwise NaN.
+        terminal_pairs: bool
+            Whether to count terminal base pairs as paired (if True)
+            or as neither paired nor unpaired (if False).
+        """
+        return compute_rolling_auc(self.data,
+                                   *self._get_structs_args(terminal_pairs),
+                                   size=size,
+                                   min_data=min_data)

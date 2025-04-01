@@ -139,40 +139,47 @@ class RNAStructure(RNARegion):
         return self.table != UNPAIRED
 
     @cached_property
-    def is_middle(self):
-        """ Whether each base is between two other base pairs with no
-        bulges separating them. """
-        is_middle = self.is_paired.copy()
+    def is_unpaired(self):
+        """ Whether each base is unpaired. """
+        return ~self.is_paired
+
+    @cached_property
+    def is_paired_internally(self):
+        """ Whether each base is paired and between two other base pairs
+        (no bulges or other unpaired bases next to it). """
+        is_internal = self.is_paired.copy()
         # A base can be between two other base pairs only if both bases
         # to its 5' and its 3' are paired.
-        paired5 = np.concatenate([[False], is_middle.values[:-1]])
-        paired3 = np.concatenate([is_middle.values[1:], [False]])
-        is_middle &= (paired5 & paired3)
+        paired5 = np.concatenate([[False], is_internal.values[:-1]])
+        paired3 = np.concatenate([is_internal.values[1:], [False]])
+        is_internal &= (paired5 & paired3)
         # A base can be between two other base pairs only if its partner
         # is also between two base pairs.
-        is_middle_index = is_middle[is_middle].index
-        is_middle.loc[is_middle_index] = (
-            is_middle.loc[is_middle_index]
+        is_internal_index = is_internal[is_internal].index
+        is_internal.loc[is_internal_index] = (
+            is_internal.loc[is_internal_index]
             &
-            is_middle.loc[self.table[is_middle]].values
+            is_internal.loc[self.table[is_internal]].values
         )
         # To handle pseudoknots, a base can be between two other base
         # pairs only if its 5' base and partner's 3' base are partners,
         # and its 3' base and partner's 5' base are partners.
-        is_middle_pos = is_middle[is_middle].index.get_level_values(POS_NAME)
-        middle_partners = self.table.loc[is_middle_pos]
+        is_internal_pos = is_internal[is_internal].index.get_level_values(
+            POS_NAME
+        )
+        internal_partners = self.table.loc[is_internal_pos]
         pseudoknot = (np.logical_or(
-            middle_partners - 1 != self.table.loc[is_middle_pos + 1].values,
-            middle_partners + 1 != self.table.loc[is_middle_pos - 1].values
+            internal_partners - 1 != self.table.loc[is_internal_pos + 1].values,
+            internal_partners + 1 != self.table.loc[is_internal_pos - 1].values
         ))
-        is_middle.loc[pseudoknot.loc[pseudoknot].index] = False
-        return is_middle
+        is_internal.loc[pseudoknot.loc[pseudoknot].index] = False
+        return is_internal
 
     @cached_property
-    def is_margin(self):
-        """ Whether each base is paired and on the margin (not middle)
-        of a stem. """
-        return self.is_paired & ~self.is_middle
+    def is_paired_terminally(self):
+        """ Whether each base is paired and terminates a consecutive
+        stretch of base pairs (i.e. is not internally paired). """
+        return self.is_paired & ~self.is_paired_internally
 
     def _subregion_kwargs(self,
                           end5: int,

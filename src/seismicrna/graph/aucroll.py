@@ -39,7 +39,7 @@ class RollingAUCGraph(StructOneTableGraph, RollingGraph):
             key = state.data_name, state.title
             if key in data:
                 raise ValueError(f"Duplicate RNA state: {key}")
-            data[key] = state.rolling_auc(self._size, self._min_count)
+            data[key] = state.calc_auc_rolling(self._size, self._min_count)
         if not data:
             raise ValueError(f"Got no data for {self}")
         # Covert the data into a DataFrame and rename the column levels.
