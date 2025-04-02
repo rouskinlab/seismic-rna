@@ -1,8 +1,9 @@
 import unittest as ut
 
+import numpy as np
 import pandas as pd
 
-from seismicrna.core.rna.struct import RNAStructure
+from seismicrna.core.rna.struct import RNAStructure, calc_wfmi
 from seismicrna.core.seq.region import Region
 
 
@@ -85,14 +86,14 @@ class TestRNAStructure(ut.TestCase):
         self.assertTrue(structure.is_paired.equals(expected))
 
     def test_is_paired_internally(self):
-        # Simple structure with three internal pairs (3,8), (4,7) and
-        # (5,6) in stack (2,9)-(3,8)-(4,7)-(5,6)
+        # Simple structure with two internal pairs (3,8) and (4,7)
+        # in stack (2,9)-(3,8)-(4,7)-(5,6)
         region = Region("myref", "ACCGTACCGT")
         structure = RNAStructure(title="mystructure",
                                  region=region,
                                  pairs=[(2, 9), (3, 8), (4, 7), (5, 6)])
-        expected = pd.Series([False, False, True, True, True,
-                              True, True, True, False, False],
+        expected = pd.Series([False, False, True, True, False,
+                              False, True, True, False, False],
                              region.range)
         self.assertTrue(structure.is_paired_internally.equals(expected))
 
@@ -140,8 +141,8 @@ class TestRNAStructure(ut.TestCase):
             region=region,
             pairs=[(1, 10), (2, 9), (3, 8), (4, 7), (5, 6)]
         )
-        expected = pd.Series([False, True, True, True, True,
-                              True, True, True, True, False],
+        expected = pd.Series([False, True, True, True, False,
+                              False, True, True, True, False],
                              region.range)
         self.assertTrue(structure.is_paired_internally.equals(expected))
 
@@ -166,6 +167,116 @@ class TestRNAStructure(ut.TestCase):
                               False, False, True, False, False],
                              region.range)
         self.assertTrue(structure.is_paired_internally.equals(expected))
+
+
+class TestCalcWfmi(ut.TestCase):
+    def test_identical_structures(self):
+        region = Region("myref", "ACCGTACCGT")
+        struct1 = RNAStructure(title="struct1", region=region,
+                               pairs=[(1, 10), (2, 9), (3, 8), (4, 7), (5, 6)])
+        struct2 = RNAStructure(title="struct2", region=region,
+                               pairs=[(1, 10), (2, 9), (3, 8), (4, 7), (5, 6)])
+        wfmi = calc_wfmi(struct1, struct2)
+        self.assertEqual(wfmi, 1.0)
+
+    def test_completely_different_structures(self):
+        region = Region("myref", "ACCGTACCGT")
+        struct1 = RNAStructure(title="struct1", region=region,
+                               pairs=[(1, 10), (2, 9), (3, 8), (4, 7), (5, 6)])
+        struct2 = RNAStructure(title="struct2", region=region,
+                               pairs=[(1, 5), (2, 6), (3, 7), (4, 8), (9, 10)])
+        wfmi = calc_wfmi(struct1, struct2)
+        self.assertEqual(wfmi, 0.0)
+
+    def test_all_unpaired(self):
+        region = Region("myref", "ACCGTACCGT")
+        struct1 = RNAStructure(title="struct1", region=region, pairs=[])
+        struct2 = RNAStructure(title="struct2", region=region, pairs=[])
+        wfmi = calc_wfmi(struct1, struct2)
+        self.assertEqual(wfmi, 1.0)
+
+    def test_one_empty_one_paired(self):
+        region = Region("myref", "ACCGTACCGT")
+        struct1 = RNAStructure(title="struct1", region=region, pairs=[])
+        struct2 = RNAStructure(title="struct2", region=region,
+                               pairs=[(1, 10), (2, 9), (3, 8), (4, 7), (5, 6)])
+        wfmi = calc_wfmi(struct1, struct2)
+        self.assertEqual(wfmi, 0.0)
+
+    def test_internal_pairs_only(self):
+        region = Region("myref", "ACCGTACCGT")
+        struct1 = RNAStructure(title="struct1", region=region,
+                               pairs=[(2, 9), (3, 8), (4, 7), (5, 6)])
+        struct2 = RNAStructure(title="struct2", region=region,
+                               pairs=[(2, 9), (3, 8), (4, 7), (5, 6)])
+        wfmi = calc_wfmi(struct1, struct2, terminal_pairs=False)
+        self.assertEqual(wfmi, 1.0)
+
+    def test_different_regions(self):
+        region1 = Region("myref", "ACCGT")
+        region2 = Region("myref", "GCTAC")
+        struct1 = RNAStructure(title="struct1", region=region1,
+                               pairs=[(1, 5), (2, 4)])
+        struct2 = RNAStructure(title="struct2", region=region2,
+                               pairs=[(1, 5), (2, 4)])
+        with self.assertRaises(ValueError):
+            calc_wfmi(struct1, struct2)
+
+    def test_mixed_paired_unpaired(self):
+        region = Region("myref", "ACCGTACCGT")
+        struct1 = RNAStructure(title="struct1", region=region,
+                               pairs=[(1, 10), (2, 9), (3, 8)])
+        struct2 = RNAStructure(title="struct2", region=region,
+                               pairs=[(1, 10), (2, 9), (4, 7)])
+        wfmi = calc_wfmi(struct1, struct2)
+        self.assertAlmostEqual(wfmi, 0.2 + 0.8 * 2/3, places=3)
+
+    def test_mixed_paired_unpaired_subset(self):
+        region = Region("myref", "ACCGTACCGT")
+        struct1 = RNAStructure(title="struct1", region=region,
+                               pairs=[(1, 10), (2, 9), (3, 8)])
+        struct2 = RNAStructure(title="struct2", region=region,
+                               pairs=[(1, 10), (2, 9)])
+        wfmi = calc_wfmi(struct1, struct2)
+        self.assertAlmostEqual(wfmi, 0.4 + 0.6 * (2/3)**0.5, places=3)
+
+    def test_pseudoknot_structures(self):
+        region = Region("myref", "ACCGTACCGT")
+        struct1 = RNAStructure(title="struct1", region=region,
+                               pairs=[(1, 5), (2, 6), (3, 7), (4, 8), (9, 10)])
+        struct2 = RNAStructure(title="struct2", region=region,
+                               pairs=[(1, 5), (2, 6), (3, 7), (4, 8), (9, 10)])
+        wfmi = calc_wfmi(struct1, struct2)
+        self.assertEqual(wfmi, 1.0)
+
+    def test_all_vs_internal_pairs_1(self):
+        region = Region("myref", "ACCGTACCGT")
+        struct1 = RNAStructure(title="struct1", region=region,
+                               pairs=[(3, 8), (4, 7), (5, 6)])
+        struct2 = RNAStructure(title="struct2", region=region,
+                               pairs=[(2, 9), (3, 8), (4, 7)])
+        wfmi = calc_wfmi(struct1, struct2, terminal_pairs=True)
+        self.assertAlmostEqual(wfmi, 2/10 + 8/10 * 2/3, places=3)
+        wfmi = calc_wfmi(struct1, struct2, terminal_pairs=False)
+        self.assertAlmostEqual(wfmi, 2/6, places=3)
+
+    def test_all_vs_internal_pairs_2(self):
+        region = Region("myref", "ACCGTACCGTAA")
+        struct1 = RNAStructure(title="struct1", region=region,
+                               pairs=[(2, 9), (3, 8), (4, 7), (5, 6)])
+        struct2 = RNAStructure(title="struct2", region=region,
+                               pairs=[(1, 10), (2, 9), (3, 8), (4, 7)])
+        wfmi = calc_wfmi(struct1, struct2, terminal_pairs=True)
+        self.assertAlmostEqual(wfmi, 2/12 + 10/12 * 3/4, places=3)
+        wfmi = calc_wfmi(struct1, struct2, terminal_pairs=False)
+        self.assertAlmostEqual(wfmi, 2/8 + 6/8 * 1/2, places=3)
+
+    def test_empty_region(self):
+        region = Region("myref", "")
+        struct1 = RNAStructure(title="struct1", region=region, pairs=[])
+        struct2 = RNAStructure(title="struct2", region=region, pairs=[])
+        wfmi = calc_wfmi(struct1, struct2, terminal_pairs=True)
+        self.assertTrue(np.isnan(wfmi))
 
 
 if __name__ == "__main__":
