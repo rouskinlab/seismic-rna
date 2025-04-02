@@ -15,6 +15,7 @@ from ..core.arg import (opt_struct_file,
                         opt_fold_coords,
                         opt_fold_primers,
                         opt_fold_full,
+                        opt_terminal_pairs,
                         optional_path)
 from ..core.logs import logger
 from ..core.rna import RNAState, from_ct
@@ -28,11 +29,13 @@ class StructOneTableGraph(OneTableRelClusterGroupGraph, OneRelGraph, ABC):
     def __init__(self, *,
                  struct_file: Path | None,
                  struct_reg: str | None,
+                 terminal_pairs: bool,
                  branch: str,
                  **kwargs):
         super().__init__(**kwargs)
         self._struct_file = struct_file
         self._struct_reg = struct_reg
+        self._terminal_pairs = terminal_pairs
         self.branch = branch
 
     @property
@@ -88,6 +91,18 @@ class StructOneTableGraph(OneTableRelClusterGroupGraph, OneRelGraph, ABC):
                 f"in {self.title_action_sample} "
                 f"over region {repr(self.reg)}"]
 
+    @cached_property
+    def details(self):
+        return super().details + [
+            f"{'in' if self._terminal_pairs else 'ex'}cl. terminal pairs"
+        ]
+
+    @cached_property
+    def predicate(self):
+        return super().predicate + [
+            "incl-term" if self._terminal_pairs else "excl-term"
+        ]
+
     def iter_profiles(self):
         """ Yield each RNAProfile from the table. """
         yield from self.table.iter_profiles(quantile=self.quantile,
@@ -113,7 +128,6 @@ class StructOneTableWriter(OneTableRelClusterGroupWriter, ABC):
                     rels: list[str],
                     cgroup: str,
                     struct_file: Iterable[str | Path] = (),
-                    branch: str = "",
                     fold_coords: Iterable[tuple[str, int, int]] = (),
                     fold_primers: Iterable[tuple[str, DNA, DNA]] = (),
                     fold_regions_file: str | None = None,
@@ -154,13 +168,11 @@ class StructOneTableWriter(OneTableRelClusterGroupWriter, ABC):
                     yield self.get_graph(rels_group,
                                          struct_file=file,
                                          struct_reg=None,
-                                         branch=branch,
                                          **kwparams)
                 for reg in fold_regs:
                     yield self.get_graph(rels_group,
                                          struct_file=None,
                                          struct_reg=reg,
-                                         branch=branch,
                                          **kwparams)
 
 
@@ -177,4 +189,5 @@ class StructOneTableRunner(OneTableRelClusterGroupRunner, ABC):
                                            opt_fold_regions_file,
                                            opt_fold_coords,
                                            opt_fold_primers,
-                                           opt_fold_full]
+                                           opt_fold_full,
+                                           opt_terminal_pairs]

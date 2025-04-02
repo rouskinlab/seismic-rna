@@ -66,7 +66,7 @@ class RNAState(RNAStructure, RNAProfile):
         ----------
         size: int
             Size of the window.
-        min_data: int = 2
+        min_data: int
             Minimum number of data in a window to use it, otherwise NaN.
         terminal_pairs: bool
             Whether to count terminal base pairs as paired (if True)

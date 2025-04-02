@@ -1190,6 +1190,13 @@ opt_metric = Option(
           f"{repr(KEY_MARCD)} = mean arcsine distance (MARCD)")
 )
 
+opt_terminal_pairs = Option(
+    ("--terminal-pairs/--no-terminal-pairs",),
+    type=bool,
+    default=True,
+    help="Include terminal base pairs (at the ends of stems) in ROC curves"
+)
+
 opt_struct_file = Option(
     ("--struct-file",),
     type=Path(exists=True, dir_okay=True),
@@ -1301,14 +1308,14 @@ opt_graph_roc = Option(
     ("--graph-roc/--no-graph-roc",),
     type=bool,
     default=True,
-    help="Graph receiver operating characteristic curves"
+    help="Graph receiver operating characteristic (ROC) curves"
 )
 
 opt_graph_aucroll = Option(
     ("--graph-aucroll/--no-graph-aucroll",),
     type=bool,
     default=False,
-    help="Graph rolling areas under receiver operating characteristic curves"
+    help="Graph rolling areas under ROC curves (AUC-ROC)"
 )
 
 opt_graph_poscorr = Option(
