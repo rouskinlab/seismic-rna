@@ -1,8 +1,6 @@
 from pathlib import Path
 from typing import Iterable
-
 from click import command
-
 from . import (demult as demultiplex_mod,
                align as align_mod,
                relate as relate_mod,
@@ -10,6 +8,7 @@ from . import (demult as demultiplex_mod,
                cluster as cluster_mod,
                fold as fold_mod,
                draw as draw_mod,
+               collate as collate_mod,
                export as export_mod)
 from .core.arg import (CMD_WORKFLOW,
                        merge_params,
@@ -44,6 +43,7 @@ from .core.arg import (CMD_WORKFLOW,
                        opt_graph_poscorr,
                        opt_graph_mutdist,
                        opt_mutdist_null,
+                       opt_collate,
                        extra_defaults)
 from .core.run import run_func
 from .core.seq import DNA
@@ -72,6 +72,12 @@ MUTAT_RELS = "".join(REL_NAMES[code] for code in [SUB_A_REL,
                                                   DELET_REL,
                                                   INSRT_REL])
 
+def flatten(nested):
+    for item in nested:
+        if isinstance(item, (list, tuple)):
+            yield from flatten(item)
+        else:
+            yield item
 
 @run_func(CMD_WORKFLOW,
           default=None,
@@ -250,7 +256,16 @@ def run(fasta: str | Path,
         graph_aucroll: bool,
         graph_poscorr: bool,
         graph_mutdist: bool,
-        mutdist_null: bool):
+        mutdist_null: bool,
+        # Collate options
+        collate: bool,
+        name: str,
+        verbose_name: bool,
+        include_svg: bool,
+        include_graph: bool,
+        group: str,
+        portable: bool,
+        collate_out_dir: str | Path | None = None):
     """ Run the entire workflow. """
     # Ensure that each iterable argument is a list rather than an
     # exhaustible generator.
@@ -291,7 +306,7 @@ def run(fasta: str | Path,
         # Clear the input FASTQ files once the demultiplexed FASTQ files
         # have been generated.
         fastqx = list()
-    input_path.extend(align_mod.run(
+    input_path.extend(flatten(align_mod.run(
         out_dir=out_dir,
         tmp_pfx=tmp_pfx,
         keep_tmp=keep_tmp,
@@ -342,8 +357,8 @@ def run(fasta: str | Path,
         sep_strands=sep_strands,
         f1r2_fwd=f1r2_fwd,
         rev_label=rev_label,
-    ))
-    input_path.extend(relate_mod.run(
+    )))
+    input_path.extend(flatten(relate_mod.run(
         fasta=fasta,
         input_path=input_path,
         out_dir=out_dir,
@@ -368,8 +383,8 @@ def run(fasta: str | Path,
         num_cpus=num_cpus,
         brotli_level=brotli_level,
         force=force,
-    ))
-    input_path.extend(mask_mod.run(
+    )))
+    input_path.extend(flatten(mask_mod.run(
         input_path=input_path,
         tmp_pfx=tmp_pfx,
         keep_tmp=keep_tmp,
@@ -402,11 +417,11 @@ def run(fasta: str | Path,
         brotli_level=brotli_level,
         num_cpus=num_cpus,
         force=force,
-    ))
+    )))
     if (cluster
             or min_clusters != opt_min_clusters.default
             or max_clusters != opt_max_clusters.default):
-        input_path.extend(cluster_mod.run(
+        input_path.extend(flatten(cluster_mod.run(
             input_path=input_path,
             tmp_pfx=tmp_pfx,
             keep_tmp=keep_tmp,
@@ -435,9 +450,9 @@ def run(fasta: str | Path,
             brotli_level=brotli_level,
             num_cpus=num_cpus,
             force=force,
-        ))
+        )))
     if fold:
-        input_path.extend(fold_mod.run(
+        input_path.extend(flatten(fold_mod.run(
             input_path=input_path,
             fold_regions_file=fold_regions_file,
             fold_coords=fold_coords,
@@ -454,49 +469,52 @@ def run(fasta: str | Path,
             keep_tmp=keep_tmp,
             num_cpus=num_cpus,
             force=force,
-        ))
+        )))
         if graph_roc:
-            ROCRunner.run(input_path=input_path,
-                          rels=[REL_NAMES[MUTAT_REL]],
-                          use_ratio=True,
-                          quantile=0.,
-                          struct_file=struct_file,
-                          fold_regions_file=fold_regions_file,
-                          fold_coords=fold_coords,
-                          fold_primers=fold_primers,
-                          fold_full=fold_full,
-                          cgroup=cgroup,
-                          csv=csv,
-                          html=html,
-                          svg=svg,
-                          pdf=pdf,
-                          png=png,
-                          verify_times=verify_times,
-                          num_cpus=num_cpus,
-                          force=force)
+            input_path.extend(flatten(ROCRunner.run(
+                input_path=input_path,
+                rels=[REL_NAMES[MUTAT_REL]],
+                use_ratio=True,
+                quantile=0.,
+                struct_file=struct_file,
+                fold_regions_file=fold_regions_file,
+                fold_coords=fold_coords,
+                fold_primers=fold_primers,
+                fold_full=fold_full,
+                cgroup=cgroup,
+                csv=csv,
+                html=html,
+                svg=svg,
+                pdf=pdf,
+                png=png,
+                verify_times=verify_times,
+                num_cpus=num_cpus,
+                force=force
+            )))
         if graph_aucroll:
-            RollingAUCRunner.run(input_path=input_path,
-                                 rels=[REL_NAMES[MUTAT_REL]],
-                                 use_ratio=True,
-                                 quantile=0.,
-                                 struct_file=struct_file,
-                                 fold_regions_file=fold_regions_file,
-                                 fold_coords=fold_coords,
-                                 fold_primers=fold_primers,
-                                 fold_full=fold_full,
-                                 window=window,
-                                 winmin=winmin,
-                                 cgroup=cgroup,
-                                 csv=csv,
-                                 html=html,
-                                 svg=svg,
-                                 pdf=pdf,
-                                 png=png,
-                                 verify_times=verify_times,
-                                 num_cpus=num_cpus,
-                                 force=force)
+            input_path.extend(flatten(RollingAUCRunner.run(input_path=input_path,
+                rels=[REL_NAMES[MUTAT_REL]],
+                use_ratio=True,
+                quantile=0.,
+                struct_file=struct_file,
+                fold_regions_file=fold_regions_file,
+                fold_coords=fold_coords,
+                fold_primers=fold_primers,
+                fold_full=fold_full,
+                window=window,
+                winmin=winmin,
+                cgroup=cgroup,
+                csv=csv,
+                html=html,
+                svg=svg,
+                pdf=pdf,
+                png=png,
+                verify_times=verify_times,
+                num_cpus=num_cpus,
+                force=force
+        )))
     if draw:
-        draw_mod.run(
+        input_path.extend(flatten(draw_mod.run(
             input_path=input_path,
             struct_num=struct_num,
             color=color,
@@ -507,108 +525,133 @@ def run(fasta: str | Path,
             keep_tmp=keep_tmp,
             num_cpus=num_cpus,
             force=force,
-        )
+        )))
     if graph_mprof or graph_tmprof:
         rels = list()
         if graph_mprof:
             rels.append(REL_NAMES[MUTAT_REL])
         if graph_tmprof:
             rels.append(MUTAT_RELS)
-        ProfileRunner.run(input_path=input_path,
-                          rels=rels,
-                          use_ratio=True,
-                          quantile=0.,
-                          cgroup=cgroup,
-                          csv=csv,
-                          html=html,
-                          svg=svg,
-                          pdf=pdf,
-                          png=png,
-                          verify_times=verify_times,
-                          num_cpus=num_cpus,
-                          force=force)
+        input_path.extend(flatten(ProfileRunner.run(input_path=input_path,
+            rels=rels,
+            use_ratio=True,
+            quantile=0.,
+            cgroup=cgroup,
+            csv=csv,
+            html=html,
+            svg=svg,
+            pdf=pdf,
+            png=png,
+            verify_times=verify_times,
+            num_cpus=num_cpus,
+            force=force
+        )))
     if graph_ncov:
-        ProfileRunner.run(input_path=input_path,
-                          rels=[REL_NAMES[INFOR_REL]],
-                          use_ratio=False,
-                          quantile=0.,
-                          cgroup=cgroup,
-                          csv=csv,
-                          html=html,
-                          svg=svg,
-                          pdf=pdf,
-                          png=png,
-                          verify_times=verify_times,
-                          num_cpus=num_cpus,
-                          force=force)
+        input_path.extend(flatten(ProfileRunner.run(
+            input_path=input_path,
+            rels=[REL_NAMES[INFOR_REL]],
+            use_ratio=False,
+            quantile=0.,
+            cgroup=cgroup,
+            csv=csv,
+            html=html,
+            svg=svg,
+            pdf=pdf,
+            png=png,
+            verify_times=verify_times,
+            num_cpus=num_cpus,
+            force=force
+    )))
     if graph_mhist:
-        ReadHistogramRunner.run(input_path=input_path,
-                                rels=[REL_NAMES[MUTAT_REL]],
-                                use_ratio=False,
-                                quantile=0.,
-                                cgroup=cgroup,
-                                hist_bins=hist_bins,
-                                hist_margin=hist_margin,
-                                csv=csv,
-                                html=html,
-                                svg=svg,
-                                pdf=pdf,
-                                png=png,
-                                verify_times=verify_times,
-                                num_cpus=num_cpus,
-                                force=force)
+        input_path.extend(flatten(ReadHistogramRunner.run(
+            input_path=input_path,
+            rels=[REL_NAMES[MUTAT_REL]],
+            use_ratio=False,
+            quantile=0.,
+            cgroup=cgroup,
+            hist_bins=hist_bins,
+            hist_margin=hist_margin,
+            csv=csv,
+            html=html,
+            svg=svg,
+            pdf=pdf,
+            png=png,
+            verify_times=verify_times,
+            num_cpus=num_cpus,
+            force=force
+        )))
     if graph_abundance:
-        ClusterAbundanceRunner.run(input_path=input_path,
-                                   use_ratio=True,
-                                   csv=csv,
-                                   html=html,
-                                   svg=svg,
-                                   pdf=pdf,
-                                   png=png,
-                                   verify_times=verify_times,
-                                   num_cpus=num_cpus,
-                                   force=force)
+        input_path.extend(flatten(ClusterAbundanceRunner.run(
+            input_path=input_path,
+            use_ratio=True,
+            csv=csv,
+            html=html,
+            svg=svg,
+            pdf=pdf,
+            png=png,
+            verify_times=verify_times,
+            num_cpus=num_cpus,
+            force=force
+        )))
     if graph_giniroll:
-        RollingGiniRunner.run(input_path=input_path,
-                              rels=[REL_NAMES[MUTAT_REL]],
-                              use_ratio=True,
-                              quantile=0.,
-                              window=window,
-                              winmin=winmin,
-                              cgroup=cgroup,
-                              csv=csv,
-                              html=html,
-                              svg=svg,
-                              pdf=pdf,
-                              png=png,
-                              verify_times=verify_times,
-                              num_cpus=num_cpus,
-                              force=force)
+        input_path.extend(flatten(RollingGiniRunner.run(
+            input_path=input_path,
+            rels=[REL_NAMES[MUTAT_REL]],
+            use_ratio=True,
+            quantile=0.,
+            window=window,
+            winmin=winmin,
+            cgroup=cgroup,
+            csv=csv,
+            html=html,
+            svg=svg,
+            pdf=pdf,
+            png=png,
+            verify_times=verify_times,
+            num_cpus=num_cpus,
+            force=force
+        )))
     if graph_poscorr:
-        PositionCorrelationRunner.run(input_path=input_path,
-                                      rels=[REL_NAMES[MUTAT_REL]],
-                                      cgroup=cgroup,
-                                      verify_times=verify_times,
-                                      csv=csv,
-                                      html=html,
-                                      svg=svg,
-                                      pdf=pdf,
-                                      png=png,
-                                      num_cpus=num_cpus,
-                                      force=force)
+        input_path.extend(flatten(PositionCorrelationRunner.run(
+            input_path=input_path,
+            rels=[REL_NAMES[MUTAT_REL]],
+            cgroup=cgroup,
+            verify_times=verify_times,
+            csv=csv,
+            html=html,
+            svg=svg,
+            pdf=pdf,
+            png=png,
+            num_cpus=num_cpus,
+            force=force
+        )))
     if graph_mutdist:
-        MutationDistanceRunner.run(input_path=input_path,
-                                   rels=[REL_NAMES[MUTAT_REL]],
-                                   cgroup=cgroup,
-                                   verify_times=verify_times,
-                                   mutdist_null=mutdist_null,
-                                   csv=csv,
-                                   html=html,
-                                   svg=svg,
-                                   pdf=pdf,
-                                   png=png,
-                                   num_cpus=num_cpus,
-                                   force=force)
+        input_path.extend(flatten(MutationDistanceRunner.run(
+            input_path=input_path,
+            rels=[REL_NAMES[MUTAT_REL]],
+            cgroup=cgroup,
+            verify_times=verify_times,
+            mutdist_null=mutdist_null,
+            csv=csv,
+            html=html,
+            svg=svg,
+            pdf=pdf,
+            png=png,
+            num_cpus=num_cpus,
+            force=force
+        )))
+    if collate:
+        collate_mod.run(
+            input_path=input_path,
+            name=name,
+            verbose_name=verbose_name,
+            include_svg=include_svg,
+            include_graph=include_graph,
+            group=group,
+            portable=portable,
+            collate_out_dir=collate_out_dir,
+            force=force
+        )
     if export:
         export_mod.run(
             input_path=input_path,
@@ -658,6 +701,8 @@ params = merge_params([opt_demultiplex],
                       [opt_export],
                       export_mod.params,
                       graph_options,
+                      [opt_collate],
+                      collate_mod.params,
                       exclude=[opt_branch])
 
 
