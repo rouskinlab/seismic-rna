@@ -1,10 +1,12 @@
 import io
 import math
-
-import numpy as np
 import matplotlib
+
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
+import numpy as np
+
+from pathlib import Path
 
 matplotlib.use('Agg')
 
@@ -19,7 +21,7 @@ def compute_arc_points(center, radius, theta1, theta2, n=100):
     return np.column_stack((x, y))
 
 def draw_seismic_logo(report: bool = False,
-                      out_svg: bool | None = None,
+                      out_svg: str | Path | None = None,
                       dpi: int = 300):
     fig, ax = plt.subplots()
 
