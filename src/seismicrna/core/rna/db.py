@@ -21,13 +21,19 @@ def _parse_db_header(header_line: str):
 
 
 def _parse_db_string(db_file: TextIO, seq: RNA | None):
+    energy = None
     if seq is None:
         seq = RNA(db_file.readline().rstrip("\n"))
     struct = db_file.readline().rstrip("\n")
+    # Sanitize vienna files where the energy follows the db string
+    if " " in struct:
+        struct_parts = struct.split(" ")
+        struct = struct_parts[0]
+        energy = struct_parts[-1].strip("()")
     if len(struct) != len(seq):
         raise ValueError(f"Lengths of structure {repr(struct)} ({len(struct)}) "
                          f"and sequence {seq} ({len(seq)}) do not match")
-    return seq, struct
+    return seq, struct, energy
 
 
 def parse_db_strings(db_path: str | Path):
@@ -39,7 +45,9 @@ def parse_db_strings(db_path: str | Path):
             # Get the header of the current structure.
             header = _parse_db_header(header_line)
             # Determine the sequence and base pairs.
-            seq, struct = _parse_db_string(file, seq)
+            seq, struct, energy = _parse_db_string(file, seq)
+            if energy is not None:
+                header = f"ENERGY = {energy} {header}"
             structs[header] = struct
     if seq is None:
         raise ValueError(f"File {db_path} contained no sequence")
@@ -75,8 +83,8 @@ def parse_db_structure(struct: str, seq5: int = 1):
 
 
 def _parse_db_record(db_file: TextIO, seq: RNA | None, seq5: int):
-    seq, struct = _parse_db_string(db_file, seq)
-    return seq, parse_db_structure(struct, seq5)
+    seq, struct, energy = _parse_db_string(db_file, seq)
+    return seq, parse_db_structure(struct, seq5), energy
 
 
 def parse_db(db_path: str | Path, seq5: int = 1):
@@ -98,14 +106,16 @@ def parse_db(db_path: str | Path, seq5: int = 1):
     fields = path.parse(db_path, path.DB_FILE_LAST_SEGS)
     ref = fields[path.REF]
     reg = fields[path.REG]
-    # Parse each structure in the CT file.
+    # Parse each structure in the DB file.
     seq = None
     with open(db_path) as file:
         while header_line := file.readline():
             # Get the header of the current structure.
             title = _parse_db_header(header_line)
             # Determine the sequence and base pairs.
-            seq, pairs = _parse_db_record(file, seq, seq5)
+            seq, pairs, energy = _parse_db_record(file, seq, seq5)
+            if energy is not None:
+                title = f"ENERGY = {energy} {title}"
             # Make a region from the sequence.
             region = Region(ref, seq.rt(), seq5=seq5, name=reg)
             # Yield the title, region, and base pairs.

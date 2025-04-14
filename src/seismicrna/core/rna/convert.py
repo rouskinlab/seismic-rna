@@ -35,7 +35,7 @@ def run_db_to_ct(input_path: Iterable[str | Path], *,
                  force: bool,
                  num_cpus: int):
     """ Convert dot-bracket (DB) to connectivity table (CT) files. """
-    db_files = list(path.find_files_chain(input_path, [path.DotBracketSeg]))
+    db_files = list(path.find_files_chain(input_path, [path.DotBracketSeg, path.ViennaSeg]))
     return dispatch(db_to_ct,
                     num_cpus=num_cpus,
                     pass_num_cpus=False,

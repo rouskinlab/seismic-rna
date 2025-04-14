@@ -1038,6 +1038,13 @@ opt_quantile = Option(
     help="Normalize and winsorize ratios to this quantile (0.0 disables)"
 )
 
+opt_vienna = Option(
+    ("--use-vienna/--no-vienna",),
+    type=bool,
+    default=False,
+    help="Use RNAfold from ViennaRNA as the folding engine"
+)
+
 opt_fold_temp = Option(
     ("--fold-temp",),
     type=float,

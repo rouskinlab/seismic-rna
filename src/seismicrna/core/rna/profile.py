@@ -117,6 +117,14 @@ class RNAProfile(RNARegion):
                               {path.PROFILE: self.profile,
                                path.EXT: path.CT_EXT})
 
+    def get_vienna_file(self, top: Path, branch: str):
+        """ Get the path to the vienna file. """
+        return self._get_file(top,
+                              branch,
+                              path.ViennaSeg,
+                              {path.PROFILE: self.profile,
+                               path.EXT: path.VIENNA_EXT})
+
     def get_db_file(self, top: Path, branch: str):
         """ Get the path to the dot-bracket (DB) file. """
         return self._get_file(top,

@@ -7,6 +7,7 @@ from click import command
 
 from .report import FoldReport
 from .rnastructure import fold, require_data_path
+from .viennarna import rnafold
 from ..cluster.data import ClusterPositionTableLoader
 from ..core import path
 from ..core.arg import (CMD_FOLD,
@@ -19,6 +20,7 @@ from ..core.arg import (CMD_FOLD,
                         opt_fold_primers,
                         opt_fold_full,
                         opt_quantile,
+                        opt_vienna,
                         opt_fold_temp,
                         opt_fold_constraint,
                         opt_fold_md,
@@ -67,6 +69,7 @@ def fold_region(rna: RNAProfile, *,
                 fold_percent: float,
                 force: bool,
                 num_cpus: int,
+                use_vienna: bool,
                 **kwargs):
     """ Fold a region of an RNA from one mutational profile. """
     branches = path.add_branch(path.FOLD_STEP, branch, rna.branches)
@@ -79,7 +82,8 @@ def fold_region(rna: RNAProfile, *,
     if need_write(report_file, force):
         began = datetime.now()
         rna.to_varna_color_file(out_dir, branch)
-        ct_file = fold(rna,
+        fold_func = fold if not use_vienna else rnafold
+        ct_file = fold_func(rna,
                        out_dir=out_dir,
                        tmp_dir=tmp_dir,
                        branch=branch,
@@ -138,6 +142,7 @@ def run(input_path: Iterable[str | Path], *,
         fold_regions_file: str | None,
         fold_full: bool,
         quantile: float,
+        use_vienna: bool,
         fold_temp: float,
         fold_constraint: str | None,
         fold_md: int,
@@ -195,6 +200,7 @@ def run(input_path: Iterable[str | Path], *,
                     fold_mfe=fold_mfe,
                     fold_max=fold_max,
                     fold_percent=fold_percent,
+                    use_vienna=use_vienna,
                     force=force)
     )))
 
@@ -207,6 +213,7 @@ params = [
     opt_fold_primers,
     opt_fold_full,
     opt_quantile,
+    opt_vienna,
     opt_fold_temp,
     opt_fold_constraint,
     opt_fold_md,
