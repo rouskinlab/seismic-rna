@@ -148,6 +148,14 @@ class RNAProfile(RNARegion):
                               {path.PROFILE: self.profile,
                                path.EXT: path.DOT_EXTS[0]})
 
+    def get_vienna_file(self, top: Path, branch: str):
+         """ Get the path to the vienna file. """
+         return self._get_file(top,
+                               branch,
+                               path.ViennaSeg,
+                               {path.PROFILE: self.profile,
+                                path.EXT: path.VIENNA_EXT})
+
     def get_mus_file(self, top: Path, branch: str):
         """ Get the path to the mutation rate data file. """
         return self._get_file(top,

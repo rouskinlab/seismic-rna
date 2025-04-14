@@ -1031,6 +1031,13 @@ opt_fold_primers = Option(
     help="Fold a region of a reference given its forward and reverse primers"
 )
 
+opt_vienna = Option(
+     ("--use-vienna/--no-vienna",),
+     type=bool,
+     default=False,
+     help="Use RNAfold from ViennaRNA as the folding engine"
+ )
+
 opt_quantile = Option(
     ("--quantile", "-q"),
     type=float,

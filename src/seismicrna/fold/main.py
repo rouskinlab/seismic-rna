@@ -7,6 +7,7 @@ from click import command
 
 from .report import FoldReport
 from .rnastructure import fold, require_data_path
+from .viennarna import rnafold
 from ..cluster.data import ClusterPositionTableLoader
 from ..core import path
 from ..core.arg import (CMD_FOLD,
@@ -18,6 +19,7 @@ from ..core.arg import (CMD_FOLD,
                         opt_fold_coords,
                         opt_fold_primers,
                         opt_fold_full,
+                        opt_vienna,
                         opt_fold_temp,
                         opt_fold_constraint,
                         opt_fold_md,
@@ -54,6 +56,7 @@ def fold_region(rna: RNAProfile, *,
                 out_dir: Path,
                 tmp_dir: Path,
                 branch: str,
+                use_vienna: bool,
                 fold_temp: float,
                 fold_constraint: Path | None,
                 fold_md: int,
@@ -74,18 +77,19 @@ def fold_region(rna: RNAProfile, *,
     if need_write(report_file, force):
         began = datetime.now()
         rna.write_varna_color_file(out_dir, branch)
-        ct_file = fold(rna,
-                       out_dir=out_dir,
-                       tmp_dir=tmp_dir,
-                       branch=branch,
-                       fold_temp=fold_temp,
-                       fold_constraint=fold_constraint,
-                       fold_md=fold_md,
-                       fold_mfe=fold_mfe,
-                       fold_max=fold_max,
-                       fold_percent=fold_percent,
-                       num_cpus=num_cpus,
-                       **kwargs)
+        fold_func = fold if not use_vienna else rnafold
+        ct_file = fold_func(rna,
+                            out_dir=out_dir,
+                            tmp_dir=tmp_dir,
+                            branch=branch,
+                            fold_temp=fold_temp,
+                            fold_constraint=fold_constraint,
+                            fold_md=fold_md,
+                            fold_mfe=fold_mfe,
+                            fold_max=fold_max,
+                            fold_percent=fold_percent,
+                            num_cpus=num_cpus,
+                            **kwargs)
         ct_to_db(ct_file, force=True)
         ended = datetime.now()
         report = FoldReport(branches=branches,
@@ -128,6 +132,7 @@ def run(input_path: Iterable[str | Path], *,
         fold_primers: Iterable[tuple[str, DNA, DNA]],
         fold_regions_file: str | None,
         fold_full: bool,
+        use_vienna: bool,
         fold_temp: float,
         fold_constraint: str | None,
         fold_md: int,
@@ -172,6 +177,7 @@ def run(input_path: Iterable[str | Path], *,
         kwargs=dict(branch=branch,
                     tmp_pfx=tmp_pfx,
                     keep_tmp=keep_tmp,
+                    use_vienna=use_vienna,
                     fold_temp=fold_temp,
                     fold_constraint=optional_path(fold_constraint),
                     fold_md=fold_md,
@@ -189,6 +195,7 @@ params = [
     opt_fold_coords,
     opt_fold_primers,
     opt_fold_full,
+    opt_vienna,
     opt_fold_temp,
     opt_fold_constraint,
     opt_fold_md,
