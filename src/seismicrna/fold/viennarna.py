@@ -100,10 +100,10 @@ def rnafold(rna: RNAProfile, *,
     # Drop bases with missing data to make RNAstructure ignore them.
     dms.dropna(inplace=True)
     #TODO Reimplement builtin method
-    dms_data = pd.DataFrame()
+    dms_data = pd.DataFrame(index=dms.index)
     dms = dms.to_numpy()
     _, _, pseudoenergies = calc_rnastructure_defaults(dms)
-    dms_data["Cordero"] = [pseudoenergies[i] for i in range(len(dms))]
+    dms_data["Cordero"] = [pseudoenergies[i] for i in range(len(dms_data.index))]
     b = min(dms_data["Cordero"])
     m = (max(dms_data["Cordero"]) - b)/math.log(2)
     shape_method = f"Dm{m}b{b}"
