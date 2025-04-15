@@ -99,6 +99,7 @@ def rnafold(rna: RNAProfile, *,
     #TODO Reimplement builtin method
     dms_data = pd.read_table(dms_file, header=None, index_col=0, names=["Position", "Reactivity"])
     dms = dms_data["Reactivity"].to_numpy()
+    print(dms.dtype)
     _, _, pseudoenergies = calc_rnastructure_defaults(dms)
     dms_data["Cordero"] = [pseudoenergies[i] for i in range(len(dms_data.index))]
     b = min(dms_data["Cordero"])
