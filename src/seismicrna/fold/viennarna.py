@@ -6,6 +6,8 @@ import os
 import math
 import numpy as np
 import pandas as pd
+import shutil
+
 from pathlib import Path
 
 from .rnastructure import retitle_ct
@@ -68,11 +70,85 @@ def make_fold_cmd(fasta_file: Path,
     return cmd
 
 
+def calc_bp_pseudoenergy(seq_len: int,
+                         pseudoenergies: pd.Series,
+                         out_file: Path):
+    """
+    Identify (i, j) pairs, with j >= i + 3, where the sum of pseudoenergies is non-zero.
+
+    The output file will have lines formatted as ViennaRNA commands:
+      "E i j 1 <bp_pseudoenergy>"
+
+    Parameters:
+      seq_len: The total length of the sequence. Positions are assumed to be numbered 1..seq_len.
+      pseudoenergies: A pandas Series where each key is a position and its value is the energy.
+                      If a position is missing, it is assumed to have energy 0.
+      out_file: Path to the file where the results will be written.
+    """
+    # Create a full array of energies with default 0, for positions 1..seq_len.
+    energies_full = np.zeros(seq_len, dtype=np.float64)
+    # The Series index uses 1-indexing; fill in available energies.
+    indices = np.array(pseudoenergies.index)
+    energies_full[indices - 1] = pseudoenergies.values
+
+    outputs = []  # Collect valid rows from all valid offsets.
+
+    # Loop over allowed offsets (j - i) starting from 3 (i.e., j >= i + 3).
+    for offset in range(3, seq_len):
+        # Generate starting positions: 1, 2, …, seq_len - offset.
+        i_vals = np.arange(1, seq_len - offset + 1)
+        j_vals = i_vals + offset
+
+        # Compute energy sums for each (i, j) pair using vectorized slicing.
+        energy_sum = energies_full[i_vals - 1] + energies_full[j_vals - 1]
+
+        # Filter pairs that have a positive energy sum.
+        valid = energy_sum > 0
+        if valid.any():
+            valid_i = i_vals[valid]
+            valid_j = j_vals[valid]
+            valid_sum = energy_sum[valid]
+            # Prepare data as columns: "E i j 1 valid_sum".
+            data = np.column_stack((
+                valid_i,
+                valid_j,
+                np.ones(valid_i.shape[0], dtype=int),
+                valid_sum
+            ))
+            outputs.append(data)
+
+    # If there are valid pairs, write them to file.
+    if outputs:
+        result = np.vstack(outputs)
+
+        # Determine mode: append if file exists, else write.
+        mode = "a" if out_file.exists() else "w"
+
+        # If appending, check if we need to add a starting newline.
+        need_newline = False
+        if mode == "a" and out_file.stat().st_size > 0:
+            with open(out_file, "rb") as f:
+                # Move to the last character of the file.
+                f.seek(-1, 2)
+                last_char = f.read(1)
+            if last_char != b'\n':
+                need_newline = True
+
+        with open(out_file, mode) as f:
+            if need_newline:
+                f.write("\n")
+            # Write the result with the format: "E i j 1 <energy>".
+            np.savetxt(f, result, fmt="E %d %d %d %.6f")
+
+    return out_file
+
+
 @docdef.auto()
 def rnafold(rna: RNAProfile, *,
          branch: str,
          fold_temp: float,
          fold_constraint: Path | None = None,
+         fold_commands: Path | None = None,
          fold_md: int,
          fold_mfe: bool,
          fold_max: int,
@@ -93,6 +169,8 @@ def rnafold(rna: RNAProfile, *,
     db_tmp = rna.get_db_file(tmp_dir, branch)
     # Path of the temporary vienna file.
     vienna_tmp = rna.get_vienna_file(tmp_dir, branch)
+    # Path of the temporary command file.
+    command_tmp = rna.get_command_file(tmp_dir, branch)
     # DMS reactivities file for the RNA.
     dms_file = rna.write_mus(tmp_dir, branch)
     dms = rna.data.copy()
@@ -104,14 +182,24 @@ def rnafold(rna: RNAProfile, *,
     dms = dms.to_numpy()
     _, _, pseudoenergies = calc_rnastructure_defaults(dms)
     dms_data["Cordero"] = [pseudoenergies[i] for i in range(len(dms_data.index))]
-    b = min(dms_data["Cordero"])
-    m = (max(dms_data["Cordero"]) - b)/math.log(2)
+    dms_data["Half_Cordero"] = dms_data["Cordero"] / 2 # Divide pseudoenergies by 2 to avoid double counting
+    b = min(dms_data["Half_Cordero"])
+    m = (max(dms_data["Half_Cordero"]) - b)/math.log(2)
     shape_method = f"Dm{m}b{b}"
-    dms_data["Scaled Reactivity"] = (np.expm1((dms_data["Cordero"] - b) / m))
+    dms_data["Scaled Reactivity"] = (np.expm1((dms_data["Half_Cordero"] - b) / m))
     dms_data["Scaled Reactivity"].to_csv(dms_file, sep='\t', header=False)
     dms_data["Deigan_Transformed"] = (m * np.log1p(dms_data["Scaled Reactivity"])) + b
-    assert np.allclose(dms_data["Cordero"], dms_data["Deigan_Transformed"])
-    fold_commands = None # TODO: enable command files
+    assert np.allclose(dms_data["Half_Cordero"], dms_data["Deigan_Transformed"])
+
+    apply_all_paired = True
+
+    if fold_commands:
+        shutil.copy2(fold_commands, command_tmp)
+    if apply_all_paired:
+        dms_file = None
+        command_file = calc_bp_pseudoenergy(len(rna.seq), dms_data["Cordero"], command_tmp)
+    else:
+        command_file = None
     try:
         # Run the command.
         fold_cmds = {
@@ -121,7 +209,7 @@ def rnafold(rna: RNAProfile, *,
                                dms_file=dms_file,
                                shape_method=shape_method,
                                fold_constraint=fold_constraint,
-                               fold_commands=fold_commands,
+                               fold_commands=command_file,
                                fold_temp=fold_temp-273.15,
                                fold_md=fold_md,
                                fold_mfe=fold_mfe,

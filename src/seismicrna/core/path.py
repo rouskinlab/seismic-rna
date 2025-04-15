@@ -120,6 +120,7 @@ CRAM_EXT = ".cram"
 XAM_EXTS = SAM_EXT, BAM_EXT, CRAM_EXT
 FAI_EXT = ".fai"
 VIENNA_EXT = ".vienna"
+COMMAND_EXT = ".cmd"
 CT_EXT = ".ct"
 DB_EXT = ".db"
 DBN_EXT = ".dbn"
@@ -443,6 +444,7 @@ Fastq1Ext = PathField(str, FQ1_EXTS, is_ext=True)
 Fastq2Ext = PathField(str, FQ2_EXTS, is_ext=True)
 XamExt = PathField(str, XAM_EXTS, is_ext=True)
 ViennaExt = PathField(str, [VIENNA_EXT], is_ext=True)
+CommandExt = PathField(str, [COMMAND_EXT], is_ext=True)
 ConnectTableExt = PathField(str, [CT_EXT], is_ext=True)
 DotBracketExt = PathField(str, DOT_EXTS, is_ext=True)
 FoldMusExt = PathField(str, [FOLD_MUS_EXT], is_ext=True)
@@ -708,6 +710,8 @@ FoldRepSeg = PathSegment("fold-rep",
                          frmt="{profile}__fold-report{ext}")
 ViennaSeg = PathSegment("rna-vienna",
                                {PROFILE: NameField, EXT: ViennaExt})
+CommandSeg = PathSegment("rna-command",
+                               {PROFILE: NameField, EXT: CommandExt})
 ConnectTableSeg = PathSegment("rna-ct",
                               {PROFILE: NameField, EXT: ConnectTableExt})
 DotBracketSeg = PathSegment("rna-dot",

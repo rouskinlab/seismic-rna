@@ -172,6 +172,14 @@ class RNAProfile(RNARegion):
                               {path.PROFILE: self.profile,
                                path.EXT: path.FOLD_BETA_EXT})
 
+    def get_command_file(self, top: Path, branch: str):
+         """ Get the path to the vienna command file. """
+         return self._get_file(top,
+                               branch,
+                               path.CommandSeg,
+                               {path.PROFILE: self.profile,
+                                path.EXT: path.COMMAND_EXT})
+
     def get_varna_color_file(self, top: Path, branch: str):
         """ Get the path to the VARNA color file. """
         return self._get_file(top,

@@ -1058,6 +1058,12 @@ opt_fold_constraint = Option(
     help="Force bases to be paired/unpaired from a file of constraints"
 )
 
+opt_fold_commands = Option(
+    ("--fold-commands",),
+    type=Path(exists=True, dir_okay=False),
+    help="Command file for ViennaRNA"
+)
+
 opt_fold_md = Option(
     ("--fold-md",),
     type=int,
