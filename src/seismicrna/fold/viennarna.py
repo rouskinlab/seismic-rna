@@ -95,13 +95,15 @@ def rnafold(rna: RNAProfile, *,
     vienna_tmp = rna.get_vienna_file(tmp_dir, branch)
     # DMS reactivities file for the RNA.
     dms_file = rna.write_mus(tmp_dir, branch)
-
+    dms = rna.data.copy()
+    dms.index = rna.region.range_one
+    # Drop bases with missing data to make RNAstructure ignore them.
+    dms.dropna(inplace=True)
     #TODO Reimplement builtin method
-    dms_data = pd.read_table(dms_file, header=None, index_col=0, names=["Position", "Reactivity"])
-    dms = dms_data["Reactivity"].to_numpy()
-    print(dms.dtype)
+    dms_data = pd.DataFrame()
+    dms = dms.to_numpy()
     _, _, pseudoenergies = calc_rnastructure_defaults(dms)
-    dms_data["Cordero"] = [pseudoenergies[i] for i in range(len(dms_data.index))]
+    dms_data["Cordero"] = [pseudoenergies[i] for i in range(len(dms))]
     b = min(dms_data["Cordero"])
     m = (max(dms_data["Cordero"]) - b)/math.log(2)
     shape_method = f"Dm{m}b{b}"
