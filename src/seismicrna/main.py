@@ -93,7 +93,6 @@ for module in [wf,
 
 cli.add_command(rna.convert.cli_ct2db)
 cli.add_command(rna.convert.cli_db2ct)
-cli.add_command(fold.cli_fit)
 cli.add_command(fold.cli_datapath)
 cli.add_command(cli_docs)
 cli.add_command(cli_github)
