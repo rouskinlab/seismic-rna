@@ -1,85 +1,8 @@
 import numpy as np
 import pandas as pd
 
-from .dim import count_pos
 from .frame import auto_reframe
 from .nan import auto_remove_nan
-
-
-@auto_remove_nan
-@auto_reframe
-def calc_quantile(mus: np.ndarray | pd.Series | pd.DataFrame, quantile: float):
-    """ Calculate the mutation rate at a quantile, ignoring NaNs.
-
-    Parameters
-    ----------
-    mus: numpy.ndarray | pandas.Series | pandas.DataFrame
-        Mutation rates. Multiple sets of mutation rates can be given as
-        columns of a multidimensional array or DataFrame.
-    quantile: float
-        Quantile to return from the mutation rates; must be in [0, 1].
-
-    Returns
-    -------
-    float | numpy.ndarray | pandas.Series
-        Value of the quantile from the mutation rates.
-    """
-    if not isinstance(quantile, float):
-        # Although numpy.quantile supports array-like values for the
-        # quantile argument, get_quantile does not because the result
-        # would have one or more extra dimensions.
-        raise TypeError("Expected quantile to be float, "
-                        f"but got {type(quantile).__name__}")
-    if count_pos(mus) == 0:
-        # If there are no positions, then return an all-NaN array with
-        # the same dimensions as the input but without axis 0, instead
-        # of raising an error, which np.quantile would do.
-        return np.full(mus.shape[1:], np.nan)
-    # Return the quantile by reducing along axis 0.
-    return np.quantile(mus, quantile, axis=0)
-
-
-def normalize(mus: np.ndarray | pd.Series | pd.DataFrame, quantile: float):
-    """ Normalize the mutation rates to a quantile, so that the value of
-    the quantile is scaled to 1 and all other mutation rates are scaled
-    by the same factor. If quantile is 0, then do not normalize.
-
-    Parameters
-    ----------
-    mus: numpy.ndarray | pandas.Series | pandas.DataFrame
-        Mutation rates. Multiple sets of mutation rates can be given as
-        columns of a multidimensional array or DataFrame.
-    quantile: float
-        Quantile for normalizing the mutation rates; must be in [0, 1].
-
-    Returns
-    -------
-    numpy.ndarray | pandas.Series | pandas.DataFrame
-        Normalized mutation rates.
-    """
-    return mus / calc_quantile(mus, quantile) if quantile > 0. else mus
-
-
-@auto_reframe
-def winsorize(mus: np.ndarray | pd.Series | pd.DataFrame, quantile: float):
-    """ Normalize and winsorize the mutation rates to a quantile so that
-    all mutation rates greater than or equal to the mutation rate at the
-    quantile are set to 1, and lesser mutation rates are normalized.
-
-    Parameters
-    ----------
-    mus: numpy.ndarray | pandas.Series | pandas.DataFrame
-        Mutation rates. Multiple sets of mutation rates can be given as
-        columns of a multidimensional array or DataFrame.
-    quantile: float
-        Quantile for normalizing the mutation rates; must be in [0, 1].
-
-    Returns
-    -------
-    numpy.ndarray | pandas.Series | pandas.DataFrame
-        Normalized and winsorized mutation rates.
-    """
-    return np.clip(normalize(mus, quantile), 0., 1.)
 
 
 @auto_remove_nan

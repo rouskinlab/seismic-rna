@@ -73,7 +73,7 @@ class ROCGraph(StructOneTableGraph):
         fpr = dict()
         tpr = dict()
         for state in self.iter_states():
-            key = state.data_name, state.title
+            key = state.mus_name, state.title
             if key in fpr or key in tpr:
                 raise ValueError(f"Duplicate RNA state: {key}")
             fpr[key], tpr[key] = state.roc

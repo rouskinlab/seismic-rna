@@ -72,12 +72,14 @@ MUTAT_RELS = "".join(REL_NAMES[code] for code in [SUB_A_REL,
                                                   DELET_REL,
                                                   INSRT_REL])
 
+
 def flatten(nested):
     for item in nested:
         if isinstance(item, (list, tuple)):
             yield from flatten(item)
         else:
             yield item
+
 
 @run_func(CMD_WORKFLOW,
           default=None,
@@ -215,8 +217,8 @@ def run(fasta: str | Path,
         fold_primers: Iterable[tuple[str, DNA, DNA]],
         fold_regions_file: str | None,
         fold_full: bool,
-        quantile: float,
         fold_temp: float,
+        fold_fpaired: float,
         fold_constraint: str | None,
         fold_md: int,
         fold_mfe: bool,
@@ -458,8 +460,8 @@ def run(fasta: str | Path,
             fold_coords=fold_coords,
             fold_primers=fold_primers,
             fold_full=fold_full,
-            quantile=quantile,
             fold_temp=fold_temp,
+            fold_fpaired=fold_fpaired,
             fold_constraint=fold_constraint,
             fold_md=fold_md,
             fold_mfe=fold_mfe,
@@ -475,7 +477,6 @@ def run(fasta: str | Path,
                 input_path=input_path,
                 rels=[REL_NAMES[MUTAT_REL]],
                 use_ratio=True,
-                quantile=0.,
                 struct_file=struct_file,
                 fold_regions_file=fold_regions_file,
                 fold_coords=fold_coords,
@@ -492,10 +493,10 @@ def run(fasta: str | Path,
                 force=force
             )))
         if graph_aucroll:
-            input_path.extend(flatten(RollingAUCRunner.run(input_path=input_path,
+            input_path.extend(flatten(RollingAUCRunner.run(
+                input_path=input_path,
                 rels=[REL_NAMES[MUTAT_REL]],
                 use_ratio=True,
-                quantile=0.,
                 struct_file=struct_file,
                 fold_regions_file=fold_regions_file,
                 fold_coords=fold_coords,
@@ -512,7 +513,7 @@ def run(fasta: str | Path,
                 verify_times=verify_times,
                 num_cpus=num_cpus,
                 force=force
-        )))
+            )))
     if draw:
         input_path.extend(flatten(draw_mod.run(
             input_path=input_path,
@@ -532,10 +533,10 @@ def run(fasta: str | Path,
             rels.append(REL_NAMES[MUTAT_REL])
         if graph_tmprof:
             rels.append(MUTAT_RELS)
-        input_path.extend(flatten(ProfileRunner.run(input_path=input_path,
+        input_path.extend(flatten(ProfileRunner.run(
+            input_path=input_path,
             rels=rels,
             use_ratio=True,
-            quantile=0.,
             cgroup=cgroup,
             csv=csv,
             html=html,
@@ -551,7 +552,6 @@ def run(fasta: str | Path,
             input_path=input_path,
             rels=[REL_NAMES[INFOR_REL]],
             use_ratio=False,
-            quantile=0.,
             cgroup=cgroup,
             csv=csv,
             html=html,
@@ -561,13 +561,12 @@ def run(fasta: str | Path,
             verify_times=verify_times,
             num_cpus=num_cpus,
             force=force
-    )))
+        )))
     if graph_mhist:
         input_path.extend(flatten(ReadHistogramRunner.run(
             input_path=input_path,
             rels=[REL_NAMES[MUTAT_REL]],
             use_ratio=False,
-            quantile=0.,
             cgroup=cgroup,
             hist_bins=hist_bins,
             hist_margin=hist_margin,
@@ -598,7 +597,6 @@ def run(fasta: str | Path,
             input_path=input_path,
             rels=[REL_NAMES[MUTAT_REL]],
             use_ratio=True,
-            quantile=0.,
             window=window,
             winmin=winmin,
             cgroup=cgroup,

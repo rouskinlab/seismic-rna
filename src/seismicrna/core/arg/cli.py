@@ -1010,7 +1010,7 @@ opt_fold = Option(
 )
 
 opt_fold_regions_file = Option(
-    ("--fold-regions-file", "-f"),
+    ("--fold-regions-file", "-F"),
     type=Path(exists=True, dir_okay=False),
     help="Fold regions of references from coordinates/primers in a CSV file"
 )
@@ -1031,11 +1031,11 @@ opt_fold_primers = Option(
     help="Fold a region of a reference given its forward and reverse primers"
 )
 
-opt_quantile = Option(
-    ("--quantile", "-q"),
+opt_fold_fpaired = Option(
+    ("--fold-fpaired", "-f"),
     type=float,
-    default=0.,
-    help="Normalize and winsorize ratios to this quantile (0.0 disables)"
+    default=0.5,
+    help="Scale mutation rates assuming this is the fraction of paired bases"
 )
 
 opt_fold_temp = Option(

@@ -26,17 +26,21 @@ class RNAState(RNAStructure, RNAProfile):
                    branches=path.add_branch(path.FOLD_STEP,
                                             struct.branch,
                                             profile.branches),
-                   data_reg=profile.data_reg,
-                   data_name=profile.data_name,
-                   data=profile.data)
+                   mus_reg=profile.mus_reg,
+                   mus_name=profile.mus_name,
+                   mus=profile.mus,
+                   fold_temp=profile.fold_temp,
+                   fold_fpaired=(struct.is_paired.mean()
+                                 if struct.is_paired.size > 0
+                                 else profile.fold_fpaired))
 
     @cached_property
     def roc(self):
-        return compute_roc_curve(self.is_paired, self.data)
+        return compute_roc_curve(self.is_paired, self.mus)
 
     @cached_property
     def auc(self):
         return compute_auc(*self.roc)
 
     def rolling_auc(self, size: int, min_data: int = 2):
-        return compute_rolling_auc(self.is_paired, self.data, size, min_data)
+        return compute_rolling_auc(self.is_paired, self.mus, size, min_data)

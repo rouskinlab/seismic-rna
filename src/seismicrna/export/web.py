@@ -146,8 +146,8 @@ def get_db_structs(table: PositionTable,
             except Exception as error:
                 logger.error(error)
             else:
-                structs[profile.data_name] = struct
-                energies[profile.data_name] = energy
+                structs[profile.mus_name] = struct
+                energies[profile.mus_name] = energy
         else:
             logger.warning(f"No structure model available for {profile}: "
                            f"{db_file} does not exist")

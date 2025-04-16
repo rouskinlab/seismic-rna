@@ -338,13 +338,15 @@ def require_data_path():
 
 def make_fold_cmd(fasta_file: Path,
                   ct_file: Path, *,
-                  dms_file: Path | None,
-                  fold_constraint: Path | None,
-                  fold_temp: float,
-                  fold_md: int,
-                  fold_mfe: bool,
-                  fold_max: int,
-                  fold_percent: float,
+                  fold_constraint: Path | None = None,
+                  shape_file: Path | None = None,
+                  shape_intercept: float | None = None,
+                  shape_slope: float | None = None,
+                  fold_temp: float | None = None,
+                  fold_md: int = 0,
+                  fold_mfe: bool = False,
+                  fold_max: int = 0,
+                  fold_percent: float = 0.,
                   num_cpus: int = 1):
     if num_cpus > 1:
         # Fold with multiple threads using the Fold-smp program.
@@ -353,14 +355,21 @@ def make_fold_cmd(fasta_file: Path,
     else:
         # Fold with one thread using the Fold program.
         cmd = [RNASTRUCTURE_FOLD_CMD]
-    if dms_file is not None:
-        # File of DMS reactivities.
-        cmd.extend(["--DMS", dms_file])
     if fold_constraint is not None:
         # File of constraints.
         cmd.extend(["--constraint", fold_constraint])
-    # Temperature of folding (Kelvin).
-    cmd.extend(["--temperature", fold_temp])
+    if shape_file is not None:
+        # File of SHAPE reactivities.
+        cmd.extend(["--SHAPE", shape_file])
+    if shape_intercept is not None:
+        # SHAPE intercept parameter (kcal/mol).
+        cmd.extend(["--SHAPEintercept", shape_intercept])
+    if shape_slope is not None:
+        # SHAPE slope parameter (kcal/mol).
+        cmd.extend(["--SHAPEslope", shape_slope])
+    if fold_temp is not None:
+        # Temperature of folding (Kelvin).
+        cmd.extend(["--temperature", fold_temp])
     if fold_md > 0:
         # Maximum distance between paired bases.
         cmd.extend(["--maxdistance", fold_md])
@@ -368,20 +377,20 @@ def make_fold_cmd(fasta_file: Path,
         # Predict only the minimum free energy structure.
         cmd.append("--MFE")
     else:
-        # Maximum number of structures.
-        cmd.extend(["--maximum", fold_max])
-        # Maximum % difference between free energies of structures.
-        cmd.extend(["--percent", fold_percent])
+        if fold_max > 0:
+            # Maximum number of structures.
+            cmd.extend(["--maximum", fold_max])
+        if fold_percent > 0.:
+            # Maximum % difference between free energies of structures.
+            cmd.extend(["--percent", fold_percent])
     # Input and output files.
-    cmd.append(fasta_file)
-    cmd.append(ct_file)
+    cmd.extend([fasta_file, ct_file])
     return cmd
 
 
 @docdef.auto()
 def fold(rna: RNAProfile, *,
          branch: str,
-         fold_temp: float,
          fold_constraint: Path | None = None,
          fold_md: int,
          fold_mfe: bool,
@@ -398,16 +407,18 @@ def fold(rna: RNAProfile, *,
     fasta_tmp = rna.to_fasta(tmp_dir, branch)
     # Path of the temporary CT file.
     ct_tmp = rna.get_ct_file(tmp_dir, branch)
-    # DMS reactivities file for the RNA.
-    dms_file = rna.to_dms(tmp_dir, branch)
+    # Pseudo-mutation rates file for the RNA.
+    pseudomus_file = rna.to_pseudomus(tmp_dir, branch)
     try:
         # Run the command.
         fold_cmds = {
             smp: args_to_cmd(make_fold_cmd(fasta_tmp,
                                            ct_tmp,
-                                           dms_file=dms_file,
                                            fold_constraint=fold_constraint,
-                                           fold_temp=fold_temp,
+                                           shape_file=pseudomus_file,
+                                           shape_slope=rna.slope_param,
+                                           shape_intercept=rna.intercept_param,
+                                           fold_temp=rna.fold_temp,
                                            fold_md=fold_md,
                                            fold_mfe=fold_mfe,
                                            fold_max=fold_max,
@@ -430,7 +441,7 @@ def fold(rna: RNAProfile, *,
         if not keep_tmp:
             # Delete the temporary files.
             fasta_tmp.unlink(missing_ok=True)
-            dms_file.unlink(missing_ok=True)
+            pseudomus_file.unlink(missing_ok=True)
             if ct_tmp != ct_out:
                 ct_tmp.unlink(missing_ok=True)
     logger.routine(f"Ended folding {rna}")

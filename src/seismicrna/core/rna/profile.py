@@ -5,7 +5,10 @@ import pandas as pd
 
 from .base import RNARegion
 from .. import path
+from ..arg import opt_fold_fpaired, opt_fold_temp
+from ..mu import calc_pseudoenergies
 from ..seq import write_fasta
+from ..validate import require_isinstance, require_between
 
 
 class RNAProfile(RNARegion):
@@ -14,9 +17,11 @@ class RNAProfile(RNARegion):
     def __init__(self, *,
                  sample: str,
                  branches: dict[str, str],
-                 data_reg: str,
-                 data_name: str,
-                 data: pd.Series,
+                 mus_reg: str,
+                 mus_name: str,
+                 mus: pd.Series,
+                 fold_temp: float | int = opt_fold_temp.default,
+                 fold_fpaired: float | int = opt_fold_fpaired.default,
                  **kwargs):
         """
         Parameters
@@ -25,44 +30,80 @@ class RNAProfile(RNARegion):
             Name of the sample from which the mutational profile comes.
         branches: dict[str, str]
             Branches of the workflow.
-        data_reg: str
+        mus_reg: str
             Name of the region from which the mutational profile comes.
-        data_name: str
+        mus_name: str
             Name of the mutational profile (e.g. "cluster_2-1").
-        data: pandas.Series
+        mus: pd.Series
             Data for the mutational profile (i.e. mutation rates).
+        fold_temp: float | int
+            Predict structures at this temperature (Kelvin).
+        fold_fpaired: float | int
+            Assume this is the fraction of paired bases.
         """
         super().__init__(**kwargs)
         self.sample = sample
         self.branches = branches
-        self.data_reg = data_reg
-        self.data_name = data_name
-        if not isinstance(data, pd.Series):
-            raise TypeError(
-                f"Expected data to be a Series, but got {type(data).__name__}"
-            )
-        if data.min() < 0. or data.max() > 1.:
-            raise ValueError(f"Got mutation rates outside [0, 1]:\n{data}")
-        self.data = data.reindex(self.region.range)
+        self.mus_reg = mus_reg
+        self.mus_name = mus_name
+        self.fold_temp = fold_temp
+        self.fold_fpaired = fold_fpaired
+        require_isinstance("data", mus, pd.Series)
+        if mus.size > 0:
+            require_between("data.min()", mus.min(), 0., 1.)
+            require_between("data.max()", mus.max(), 0., 1.)
+        self.mus = mus.reindex(self.region.range)
 
     @cached_property
     def init_args(self):
         return super().init_args | dict(sample=self.sample,
                                         branches=self.branches,
-                                        data_reg=self.data_reg,
-                                        data_name=self.data_name,
-                                        data=self.data)
+                                        mus_reg=self.mus_reg,
+                                        mus_name=self.mus_name,
+                                        mus=self.mus)
 
     def _renumber_from_args(self, seq5: int):
         return super()._renumber_from_args(seq5) | dict(
-            data=pd.Series(self.data.values,
+            data=pd.Series(self.mus.values,
                            index=self.region.renumber_from(seq5).range)
         )
 
     @property
     def profile(self):
         """ Name of the mutational profile. """
-        return f"{self.data_reg}__{self.data_name}"
+        return f"{self.mus_reg}__{self.mus_name}"
+    
+    @cached_property
+    def pseudoenergies(self):
+        """ Pseudoenergies (kcal/mol) for structure prediction. """
+        return calc_pseudoenergies(self.mus.dropna(),
+                                   self.fold_temp,
+                                   self.fold_fpaired).reindex(self.mus.index)
+    
+    @cached_property
+    def intercept_param(self):
+        """ Intercept parameter (kcal/mol) for structure prediction. """
+        if self.pseudoenergies.size == 0:
+            return 0.
+        return float(self.pseudoenergies.min())
+    
+    @cached_property
+    def slope_param(self):
+        """ Slope parameter (kcal/mol) for structure prediction. """
+        if self.pseudoenergies.size == 0:
+            return 1.
+        return float(self.pseudoenergies.max()) - self.intercept_param
+
+    @cached_property
+    def pseudomus(self):
+        """ Pseudo-mutation rates for structure prediction. """
+        if self.slope_param == 0.:
+            # This happens if all pseudoenergies equal the intercept.
+            return self.pseudoenergies - self.intercept_param
+        # During folding, the pseudoenergies will be calculated as:
+        # pseudoenergies = slope * pseudodata + intercept
+        # Thus: pseudodata = (pseudoenergies - intercept) / slope
+        return (self.pseudoenergies - self.intercept_param) / self.slope_param
 
     def _get_dir_fields(self, top: Path, branch: str):
         """ Get the path fields for the directory of this RNA.
@@ -125,13 +166,13 @@ class RNAProfile(RNARegion):
                               {path.PROFILE: self.profile,
                                path.EXT: path.DOT_EXTS[0]})
 
-    def get_dms_file(self, top: Path, branch: str):
-        """ Get the path to the DMS data file. """
+    def get_pseudodata_file(self, top: Path, branch: str):
+        """ Get the path to the pseudo-mutation rates file. """
         return self._get_file(top,
                               branch,
-                              path.DmsReactsSeg,
+                              path.PseudoMusSeg,
                               {path.PROFILE: self.profile,
-                               path.EXT: path.DMS_EXT})
+                               path.EXT: path.PSEUDOMUS_EXT})
 
     def get_varna_color_file(self, top: Path, branch: str):
         """ Get the path to the VARNA color file. """
@@ -147,24 +188,24 @@ class RNAProfile(RNARegion):
         write_fasta(fasta, [self.seq_record])
         return fasta
 
-    def to_dms(self, top: Path, branch: str):
-        """ Write the DMS reactivities to a DMS file. """
-        # The DMS reactivities must be numbered starting from 1 at the
-        # beginning of the region, even if the region does not start
+    def to_pseudomus(self, top: Path, branch: str):
+        """ Write the pseudo-mutation rates to a file. """
+        # The pseudo-mutation rates must be numbered starting from 1 at
+        # the beginning of the region, even if the region does not start
         # at 1. Renumber the region from 1.
-        dms = self.data.copy()
-        dms.index = self.region.range_one
+        pseudomus = self.pseudomus.copy()
+        pseudomus.index = self.region.range_one
         # Drop bases with missing data to make RNAstructure ignore them.
-        dms.dropna(inplace=True)
-        # Write the DMS reactivities to the DMS file.
-        dms_file = self.get_dms_file(top, branch)
-        dms.to_csv(dms_file, sep="\t", header=False)
-        return dms_file
+        pseudomus.dropna(inplace=True)
+        # Write the pseudo-mutation rates to the pseudo-mutation rates file.
+        pseudodata_file = self.get_pseudodata_file(top, branch)
+        pseudomus.to_csv(pseudodata_file, sep="\t", header=False)
+        return pseudodata_file
 
     def to_varna_color_file(self, top: Path, branch: str):
         """ Write the VARNA colors to a file. """
         # Fill missing reactivities with -1, to signify no data.
-        varna_color = self.data.fillna(-1.)
+        varna_color = self.mus.fillna(-1.)
         # Write the values to the VARNA color file.
         varna_color_file = self.get_varna_color_file(top, branch)
         varna_color.to_csv(varna_color_file,
