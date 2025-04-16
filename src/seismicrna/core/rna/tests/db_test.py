@@ -1,8 +1,8 @@
 import unittest as ut
 
 from seismicrna.core.rna.db import (PAIRED_MARKS,
-                                    format_db_structure,
-                                    parse_db_structure)
+                                    format_db_string,
+                                    parse_db_string)
 
 
 class TestPairedMarks(ut.TestCase):
@@ -12,7 +12,7 @@ class TestPairedMarks(ut.TestCase):
                          list(map(tuple, [")(", "><", "][", "}{"])))
 
 
-class TestParseDbStructure(ut.TestCase):
+class TestParseDbString(ut.TestCase):
 
     def test_no_pairs(self):
         expect = []
@@ -20,7 +20,7 @@ class TestParseDbStructure(ut.TestCase):
             struct = "." * length
             for seq5 in range(1, 5):
                 with self.subTest(length=length, seq5=seq5):
-                    self.assertEqual(parse_db_structure(struct, seq5),
+                    self.assertEqual(parse_db_string(struct, seq5),
                                      expect)
 
     def test_deep_pairs(self):
@@ -34,7 +34,7 @@ class TestParseDbStructure(ut.TestCase):
                                       seq5=seq5):
                         expect = [(seq5 + i, 2 * length + seq5 - (i + 1))
                                   for i in range(length)]
-                        self.assertEqual(parse_db_structure(struct, seq5),
+                        self.assertEqual(parse_db_string(struct, seq5),
                                          expect)
 
     def test_shallow_pairs(self):
@@ -48,46 +48,46 @@ class TestParseDbStructure(ut.TestCase):
                                       seq5=seq5):
                         expect = [(seq5 + 2 * i, seq5 + 2 * i + 1)
                                   for i in range(length)]
-                        self.assertEqual(parse_db_structure(struct, seq5),
+                        self.assertEqual(parse_db_string(struct, seq5),
                                          expect)
 
     def test_multi_marks(self):
         struct = ".(.[<.{..}>.]{.})."
         expect = [(2, 17), (4, 13), (5, 11), (7, 10), (14, 16)]
-        self.assertEqual(parse_db_structure(struct), expect)
+        self.assertEqual(parse_db_string(struct), expect)
 
     def test_pseudoknot(self):
         struct = ".((<).>)"
         expect = [(2, 8), (3, 5), (4, 7)]
-        self.assertEqual(parse_db_structure(struct), expect)
+        self.assertEqual(parse_db_string(struct), expect)
 
     def test_multi_pseudoknot(self):
         struct = "(<{[)>}]"
         expect = [(1, 5), (2, 6), (3, 7), (4, 8)]
-        self.assertEqual(parse_db_structure(struct), expect)
+        self.assertEqual(parse_db_string(struct), expect)
 
     def test_dangling_opener(self):
         struct = ".{.(.)."
         self.assertRaisesRegex(ValueError,
                                "Position 2 has an unmatched '{'",
-                               parse_db_structure,
+                               parse_db_string,
                                struct)
 
     def test_dangling_closer(self):
         struct = ".[.].>."
         self.assertRaisesRegex(ValueError,
                                "Position 13 has an unmatched '>'",
-                               parse_db_structure,
+                               parse_db_string,
                                struct, 8)
 
 
-class TestFormatDbStructure(ut.TestCase):
+class TestFormatDbString(ut.TestCase):
 
     def test_no_pairs(self):
         for length in range(5):
             pairs = []
             expect = "." * length
-            self.assertEqual(format_db_structure(pairs, length), expect)
+            self.assertEqual(format_db_string(pairs, length), expect)
 
     def test_one_pair(self):
         for length in range(11, 20):
@@ -106,9 +106,9 @@ class TestFormatDbStructure(ut.TestCase):
                                 ")",
                                 "." * (length - (position - seq5 + gap + 2))
                             ])
-                            self.assertEqual(format_db_structure(pairs,
-                                                                 length,
-                                                                 seq5),
+                            self.assertEqual(format_db_string(pairs,
+                                                              length,
+                                                              seq5),
                                              expect)
 
     def test_deep_pairs(self):
@@ -118,9 +118,9 @@ class TestFormatDbStructure(ut.TestCase):
                 pairs = [(seq5 + i, 2 * length + seq5 - (i + 1))
                          for i in range(length)]
                 with self.subTest(length=length, seq5=seq5):
-                    self.assertEqual(format_db_structure(pairs,
-                                                         length * 2,
-                                                         seq5),
+                    self.assertEqual(format_db_string(pairs,
+                                                      length * 2,
+                                                      seq5),
                                      expect)
 
     def test_shallow_pairs(self):
@@ -130,26 +130,26 @@ class TestFormatDbStructure(ut.TestCase):
                 with self.subTest(length=length, seq5=seq5):
                     pairs = [(seq5 + 2 * i, seq5 + 2 * i + 1)
                              for i in range(length)]
-                    self.assertEqual(format_db_structure(pairs,
-                                                         length * 2,
-                                                         seq5),
+                    self.assertEqual(format_db_string(pairs,
+                                                      length * 2,
+                                                      seq5),
                                      expect)
 
     def test_pseudoknot(self):
         pairs = [(2, 8), (3, 5), (4, 7)]
         expect = ".((<).>)"
-        self.assertEqual(format_db_structure(pairs, len(expect)), expect)
+        self.assertEqual(format_db_string(pairs, len(expect)), expect)
 
     def test_multi_pseudoknot(self):
         pairs = [(1, 5), (2, 6), (3, 7), (4, 8)]
         expect = "(<[{)>]}"
-        self.assertEqual(format_db_structure(pairs, len(expect)), expect)
+        self.assertEqual(format_db_string(pairs, len(expect)), expect)
 
     def test_excess_pseudoknot(self):
         pairs = [(1, 6), (2, 7), (3, 8), (4, 9), (5, 10)]
         self.assertRaisesRegex(ValueError,
                                "Cannot write base-pair",
-                               format_db_structure,
+                               format_db_string,
                                pairs, 10)
 
     def test_invalid_pos5(self):
@@ -157,7 +157,7 @@ class TestFormatDbStructure(ut.TestCase):
         for seq5 in range(1, 5):
             self.assertRaisesRegex(ValueError,
                                    f"5' partner must be ≥ {seq5}, but got 0",
-                                   format_db_structure,
+                                   format_db_string,
                                    pairs, 10, seq5)
 
     def test_invalid_pair(self):
@@ -165,32 +165,32 @@ class TestFormatDbStructure(ut.TestCase):
         self.assertRaisesRegex(ValueError,
                                "5' partner must be less than 3' partner, "
                                "but got 5 ≥ 3",
-                               format_db_structure,
+                               format_db_string,
                                pairs, 10)
 
     def test_invalid_pos3(self):
         pairs = [(2, 8), (3, 5), (4, 7)]
         self.assertRaisesRegex(ValueError,
                                "3' partner must be ≤ 7, but got 8",
-                               format_db_structure,
+                               format_db_string,
                                pairs, 7, 1)
         self.assertRaisesRegex(ValueError,
                                "3' partner must be ≤ 7, but got 8",
-                               format_db_structure,
+                               format_db_string,
                                pairs, 6, 2)
 
     def test_repeat_pos5(self):
         pairs = [(2, 8), (2, 5), (4, 7)]
         self.assertRaisesRegex(ValueError,
                                "Got >1 base pair for position 2",
-                               format_db_structure,
+                               format_db_string,
                                pairs, 8)
 
     def test_repeat_pos3(self):
         pairs = [(2, 8), (3, 4), (4, 7)]
         self.assertRaisesRegex(ValueError,
                                "Got >1 base pair for position 4",
-                               format_db_structure,
+                               format_db_string,
                                pairs, 8)
 
 

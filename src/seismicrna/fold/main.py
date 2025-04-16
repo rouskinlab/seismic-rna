@@ -7,6 +7,7 @@ from click import command
 
 from .report import FoldReport
 from .rnastructure import fold, require_data_path
+from .viennarna import rnafold
 from ..cluster.data import ClusterPositionTableLoader
 from ..core import path
 from ..core.arg import (CMD_FOLD,
@@ -18,9 +19,11 @@ from ..core.arg import (CMD_FOLD,
                         opt_fold_coords,
                         opt_fold_primers,
                         opt_fold_full,
+                        opt_vienna,
                         opt_fold_temp,
                         opt_fold_fpaired,
                         opt_fold_constraint,
+                        opt_fold_commands,
                         opt_fold_md,
                         opt_fold_mfe,
                         opt_fold_max,
@@ -55,7 +58,9 @@ def fold_region(rna: RNAProfile, *,
                 out_dir: Path,
                 tmp_dir: Path,
                 branch: str,
+                use_vienna: bool,
                 fold_constraint: Path | None,
+                fold_commands: Path | None,
                 fold_md: int,
                 fold_mfe: bool,
                 fold_max: int,
@@ -74,6 +79,7 @@ def fold_region(rna: RNAProfile, *,
     if need_write(report_file, force):
         began = datetime.now()
         rna.to_varna_color_file(out_dir, branch)
+        fold_func = fold if not use_vienna else rnafold
         ct_file = fold(rna,
                        out_dir=out_dir,
                        tmp_dir=tmp_dir,
@@ -104,12 +110,12 @@ def fold_region(rna: RNAProfile, *,
     return report_file
 
 
-def fold_profile(table: MaskPositionTableLoader | ClusterPositionTableLoader,
-                 regions: list[Region],
-                 fold_temp: float,
-                 fold_fpaired: float,
-                 num_cpus: int,
-                 **kwargs):
+def fold_table(table: MaskPositionTableLoader | ClusterPositionTableLoader,
+               regions: list[Region],
+               fold_temp: float,
+               fold_fpaired: float,
+               num_cpus: int,
+               **kwargs):
     """ Fold an RNA molecule from one table of reactivities. """
     return dispatch(fold_region,
                     num_cpus=num_cpus,
@@ -133,9 +139,11 @@ def run(input_path: Iterable[str | Path], *,
         fold_primers: Iterable[tuple[str, DNA, DNA]],
         fold_regions_file: str | None,
         fold_full: bool,
+        use_vienna: bool,
         fold_temp: float,
         fold_fpaired: float,
         fold_constraint: str | None,
+        fold_commands: str | None,
         fold_md: int,
         fold_mfe: bool,
         fold_max: int,
@@ -157,7 +165,7 @@ def run(input_path: Iterable[str | Path], *,
         ref_seqs.add(table.ref, table.refseq)
     fold_regions = RefRegions(ref_seqs,
                               regs_file=optional_path(fold_regions_file),
-                              coords=fold_coords,
+                              ends=fold_coords,
                               primers=fold_primers,
                               default_full=fold_full).dict
     # For each table whose reference had no regions defined, default to
@@ -168,7 +176,7 @@ def run(input_path: Iterable[str | Path], *,
             for table in tables]
     # Fold the RNA profiles.
     return list(chain(*dispatch(
-        fold_profile,
+        fold_table,
         num_cpus=num_cpus,
         pass_num_cpus=True,
         as_list=False,
@@ -178,9 +186,11 @@ def run(input_path: Iterable[str | Path], *,
         kwargs=dict(branch=branch,
                     tmp_pfx=tmp_pfx,
                     keep_tmp=keep_tmp,
+                    use_vienna=use_vienna,
                     fold_temp=fold_temp,
                     fold_fpaired=fold_fpaired,
                     fold_constraint=optional_path(fold_constraint),
+                    fold_commands=optional_path(fold_commands),
                     fold_md=fold_md,
                     fold_mfe=fold_mfe,
                     fold_max=fold_max,
@@ -196,9 +206,11 @@ params = [
     opt_fold_coords,
     opt_fold_primers,
     opt_fold_full,
+    opt_vienna,
     opt_fold_temp,
     opt_fold_fpaired,
     opt_fold_constraint,
+    opt_fold_commands,
     opt_fold_md,
     opt_fold_mfe,
     opt_fold_max,

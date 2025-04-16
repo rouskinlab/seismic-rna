@@ -10,7 +10,7 @@ from .meta import combine_metadata
 from ..core import path
 from ..core.header import format_clust_name
 from ..core.logs import logger
-from ..core.rna import parse_db_strings
+from ..core.rna import parse_db_file_as_strings
 from ..core.write import need_write, write_mode
 from ..fold.rnastructure import parse_energy
 from ..mask.dataset import MaskMutsDataset
@@ -138,7 +138,7 @@ def get_db_structs(table: PositionTable,
         if db_file.is_file():
             try:
                 # Parse all structures in the dot-bracket file.
-                seq, profile_structs = parse_db_strings(db_file)
+                seq, profile_structs = parse_db_file_as_strings(db_file)
                 # Keep only the first (minimum free energy) structure.
                 header, struct = list(profile_structs.items())[0]
                 # Parse the minimum free energy of folding.

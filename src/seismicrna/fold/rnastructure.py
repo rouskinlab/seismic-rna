@@ -404,7 +404,7 @@ def fold(rna: RNAProfile, *,
     logger.routine(f"Began folding {rna}")
     ct_out = rna.get_ct_file(out_dir, branch)
     # Temporary FASTA file for the RNA.
-    fasta_tmp = rna.to_fasta(tmp_dir, branch)
+    fasta_tmp = rna.write_fasta(tmp_dir, branch)
     # Path of the temporary CT file.
     ct_tmp = rna.get_ct_file(tmp_dir, branch)
     # Pseudo-mutation rates file for the RNA.

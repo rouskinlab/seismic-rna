@@ -105,6 +105,20 @@ class RNAProfile(RNARegion):
         # Thus: pseudodata = (pseudoenergies - intercept) / slope
         return (self.pseudoenergies - self.intercept_param) / self.slope_param
 
+    @cached_property
+    def beta_params(self):
+        """ Beta parameters for the mutational profile. """
+        beta_params = dict()
+        for base in RNA.four():
+            logger.detail(f"Fitting parameters for base {repr(base)}")
+            is_base = self.data.index.get_level_values(BASE_NAME) == base
+            beta_params[base] = fit_beta_mixture_model(self.data.loc[is_base],
+                                                       DEFAULT_MEAN[base],
+                                                       DEFAULT_COV[base])
+            print("BASE", base)
+            plot_beta_mixture(self.data.loc[is_base], beta_params[base])
+        return pd.DataFrame.from_dict(beta_params, orient="index")
+
     def _get_dir_fields(self, top: Path, branch: str):
         """ Get the path fields for the directory of this RNA.
 
@@ -174,6 +188,22 @@ class RNAProfile(RNARegion):
                               {path.PROFILE: self.profile,
                                path.EXT: path.PSEUDOMUS_EXT})
 
+    def get_vienna_file(self, top: Path, branch: str):
+         """ Get the path to the vienna file. """
+         return self._get_file(top,
+                               branch,
+                               path.ViennaSeg,
+                               {path.PROFILE: self.profile,
+                                path.EXT: path.VIENNA_EXT})
+
+    def get_command_file(self, top: Path, branch: str):
+         """ Get the path to the vienna command file. """
+         return self._get_file(top,
+                               branch,
+                               path.CommandSeg,
+                               {path.PROFILE: self.profile,
+                                path.EXT: path.COMMAND_EXT})
+
     def get_varna_color_file(self, top: Path, branch: str):
         """ Get the path to the VARNA color file. """
         return self._get_file(top,
@@ -182,7 +212,7 @@ class RNAProfile(RNARegion):
                               {path.PROFILE: self.profile,
                                path.EXT: path.TXT_EXT})
 
-    def to_fasta(self, top: Path, branch: str):
+    def write_fasta(self, top: Path, branch: str):
         """ Write the RNA sequence to a FASTA file. """
         fasta = self.get_fasta(top, branch)
         write_fasta(fasta, [self.seq_record])

@@ -76,7 +76,11 @@ class TestConsistentVersion(ut.TestCase):
         project_dir = get_seismicrna_project_dir()
         if project_dir is not None:
             meson_build_file = project_dir.joinpath("meson.build")
-            expect = f"project('seismic-rna', 'c', version: '{__version__}')\n"
+            args = ", ".join(["'seismic-rna'",
+                              "'c'",
+                              f"version: '{__version__}'",
+                              "default_options: ['c_std=c99']"])
+            expect = f"project({args})"
             with open(meson_build_file) as f:
                 line = f.readline()
             self.assertEqual(line, expect)

@@ -14,8 +14,12 @@ FASTP_CMD = "fastp"
 BOWTIE2_CMD = "bowtie2"
 BOWTIE2_BUILD_CMD = "bowtie2-build"
 SAMTOOLS_CMD = "samtools"
+# FIXME: hardcoded path
+# RNASTRUCTURE_FOLD_CMD = "/Users/mfa/db/RNAstructure/exe/Fold"
 RNASTRUCTURE_FOLD_CMD = "Fold"
 RNASTRUCTURE_FOLD_SMP_CMD = "Fold-smp"
+VIENNA_RNAFOLD_CMD = "RNAfold"
+VIENNA_RNASUBOPT_CMD = "RNAsubopt"
 JAVA_CMD = "java"
 JAR_CMD = "-jar"
 JGO_CMD = "jgo"
@@ -39,6 +43,13 @@ def cmds_to_series(cmds: list[str]):
     """ Run commands in series. """
     return " ; ".join(cmds)
 
+def cmds_to_redirect_in(cmds: list[str]):
+     """ Run commands in series. """
+     return " < ".join(cmds)
+
+def cmds_to_redirect_out(cmds: list[str]):
+    """ Run commands in series. """
+    return " > ".join(cmds)
 
 def cmds_to_subshell(cmds: list[str]):
     """ Run commands in a subshell. """

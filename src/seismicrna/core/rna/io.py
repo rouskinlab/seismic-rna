@@ -2,8 +2,8 @@ from functools import partial
 from pathlib import Path
 from typing import Callable, Iterable
 
-from .ct import parse_ct
-from .db import parse_db
+from .ct import parse_ct_file
+from .db import parse_db_file_as_pairs
 from .struct import RNAStructure
 from ..logs import logger
 from ..path import CT_EXT, DB_EXT
@@ -44,7 +44,7 @@ def from_ct(ct_path: str | Path, branch: str = ""):
     Generator[RNAStructure, Any, None]
         RNA secondary structures from the CT file.
     """
-    yield from _from_file(ct_path, parse_ct, branch=branch)
+    yield from _from_file(ct_path, parse_ct_file, branch=branch)
 
 
 def from_db(db_path: str | Path, branch: str = "", seq5: int = 1):
@@ -65,7 +65,7 @@ def from_db(db_path: str | Path, branch: str = "", seq5: int = 1):
     Generator[RNAStructure, Any, None]
         RNA secondary structures from the CT file.
     """
-    yield from _from_file(db_path, parse_db, branch=branch, seq5=seq5)
+    yield from _from_file(db_path, parse_db_file_as_pairs, branch=branch, seq5=seq5)
 
 
 def find_ct_region(ct_path: Path) -> Region:

@@ -1031,6 +1031,15 @@ opt_fold_primers = Option(
     help="Fold a region of a reference given its forward and reverse primers"
 )
 
+
+opt_vienna = Option(
+     ("--use-vienna/--no-vienna",),
+     type=bool,
+     default=False,
+     help="Use RNAfold from ViennaRNA as the folding engine"
+)
+
+
 opt_fold_fpaired = Option(
     ("--fold-fpaired", "-f"),
     type=float,
@@ -1049,6 +1058,12 @@ opt_fold_constraint = Option(
     ("--fold-constraint",),
     type=Path(exists=True, dir_okay=False),
     help="Force bases to be paired/unpaired from a file of constraints"
+)
+
+opt_fold_commands = Option(
+    ("--fold-commands",),
+    type=Path(exists=True, dir_okay=False),
+    help="Command file for ViennaRNA"
 )
 
 opt_fold_md = Option(
@@ -1190,6 +1205,13 @@ opt_metric = Option(
           f"{repr(KEY_MARCD)} = mean arcsine distance (MARCD)")
 )
 
+opt_terminal_pairs = Option(
+    ("--terminal-pairs/--no-terminal-pairs",),
+    type=bool,
+    default=True,
+    help="Include terminal base pairs (at the ends of stems) in ROC curves"
+)
+
 opt_struct_file = Option(
     ("--struct-file",),
     type=Path(exists=True, dir_okay=True),
@@ -1301,14 +1323,14 @@ opt_graph_roc = Option(
     ("--graph-roc/--no-graph-roc",),
     type=bool,
     default=True,
-    help="Graph receiver operating characteristic curves"
+    help="Graph receiver operating characteristic (ROC) curves"
 )
 
 opt_graph_aucroll = Option(
     ("--graph-aucroll/--no-graph-aucroll",),
     type=bool,
     default=False,
-    help="Graph rolling areas under receiver operating characteristic curves"
+    help="Graph rolling areas under ROC curves (AUC-ROC)"
 )
 
 opt_graph_poscorr = Option(

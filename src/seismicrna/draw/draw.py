@@ -573,7 +573,7 @@ class RNArtistRun(object):
                 from_ct(self.get_ct_file(self.top))):
             if struct_num in self.struct_num or -1 in self.struct_num:
                 structs[struct_num] = dict(seq=struct.seq,
-                                           value=struct.db_structure)
+                                           value=struct.db_string)
         args = [(f"{self.profile}-{struct_num}",
                  struct,
                  self.get_svg_file(self.top, struct=struct_num),
