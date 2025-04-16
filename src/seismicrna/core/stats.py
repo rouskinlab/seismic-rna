@@ -2,6 +2,8 @@ import numpy as np
 
 from .array import ensure_same_length, get_length
 
+from .validate import require_greater, require_between
+
 
 def _validate_alpha(alpha: np.ndarray):
     if (length := get_length(alpha, "alpha")) < 2:
@@ -114,3 +116,60 @@ def calc_beta_params(mean: float, variance: float):
     alpha, beta = calc_dirichlet_params(np.array([mean, 1. - mean]),
                                         np.array([variance, variance]))
     return float(alpha), float(beta)
+
+
+def kumaraswamy_pdf(x: np.ndarray, a: float | int, b: float | int):
+    """ Kumaraswamy distribution probability density function (PDF).
+
+    Parameters
+    ----------
+    x: np.ndarray
+        Input values; must be in the interval [0, 1].
+    a: float | int
+        Shape parameter a; must be > 0.
+    b: float | int
+        Shape parameter b; must be > 0.
+
+    Returns
+    -------
+    np.ndarray
+        Kumaraswamy distribution PDF at input values.
+    """
+    require_greater("a", a, 0., classes=(float, int))
+    require_greater("b", b, 0., classes=(float, int))
+    return ((a * b)
+            * np.power(x, a - 1.)
+            * np.power(1. - np.power(x, a), b - 1.))
+
+
+def double_kumaraswamy_pdf(x: np.ndarray, 
+                           w: float | int, 
+                           a1: float | int, 
+                           b1: float | int, 
+                           a2: float | int, 
+                           b2: float | int):
+    """ Double Kumaraswamy distribution probability density function
+    (PDF).
+
+    Parameters
+    ----------
+    x: np.ndarray
+        Input values; must be in the interval [0, 1].
+    w: float | int
+        Weight for distribution 1; must be in the interval [0, 1].
+    a1: float | int
+        Shape parameter a for distribution 1; must be > 0.
+    b1: float | int
+        Shape parameter b for distribution 1; must be > 0.
+    a2: float | int
+        Shape parameter a for distribution 2; must be > 0.
+    b2: float | int
+        Shape parameter b for distribution 2; must be > 0.
+
+    Returns
+    -------
+    np.ndarray
+        Double Kumaraswamy distribution PDF at input values.
+    """
+    require_between("w", w, 0., 1., classes=(float, int))
+    return w * kumaraswamy_pdf(x, a1, b1) + (1 - w) * kumaraswamy_pdf(x, a2, b2)

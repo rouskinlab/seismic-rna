@@ -24,9 +24,13 @@ class RNAState(RNAStructure, RNAProfile):
                    branches=path.add_branch(path.FOLD_STEP,
                                             struct.branch,
                                             profile.branches),
-                   data_reg=profile.data_reg,
-                   data_name=profile.data_name,
-                   data=profile.data)
+                   mus_reg=profile.mus_reg,
+                   mus_name=profile.mus_name,
+                   mus=profile.mus,
+                   fold_temp=profile.fold_temp,
+                   fold_fpaired=(struct.is_paired.mean()
+                                 if struct.is_paired.size > 0
+                                 else profile.fold_fpaired))
 
     def _get_structs_args(self, terminal_pairs: bool):
         if terminal_pairs:
@@ -61,7 +65,7 @@ class RNAState(RNAStructure, RNAProfile):
                          min_data: int = 2,
                          terminal_pairs: bool = True):
         """ Calculate the area under the ROC curve (AUC-ROC).
-
+        
         Parameters
         ----------
         size: int

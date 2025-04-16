@@ -7,6 +7,7 @@ from ..core.io import RegFileIO
 from ..core.report import (RegReport,
                            ProfileF,
                            FoldTempF,
+                           FoldFPairedF,
                            FoldMaxDistF,
                            FoldMinFreeEnergyF,
                            FoldMaxStructsF,
@@ -30,6 +31,7 @@ class FoldReport(RegReport, FoldIO, ABC):
     def get_param_report_fields(cls):
         return [ProfileF,
                 FoldTempF,
+                FoldFPairedF,
                 FoldMaxDistF,
                 FoldMinFreeEnergyF,
                 FoldMaxStructsF,

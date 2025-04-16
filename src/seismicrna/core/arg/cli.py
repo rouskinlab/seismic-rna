@@ -1010,7 +1010,7 @@ opt_fold = Option(
 )
 
 opt_fold_regions_file = Option(
-    ("--fold-regions-file", "-f"),
+    ("--fold-regions-file", "-F"),
     type=Path(exists=True, dir_okay=False),
     help="Fold regions of references from coordinates/primers in a CSV file"
 )
@@ -1031,18 +1031,20 @@ opt_fold_primers = Option(
     help="Fold a region of a reference given its forward and reverse primers"
 )
 
+
 opt_vienna = Option(
      ("--use-vienna/--no-vienna",),
      type=bool,
      default=False,
      help="Use RNAfold from ViennaRNA as the folding engine"
- )
+)
 
-opt_quantile = Option(
-    ("--quantile", "-q"),
+
+opt_fold_fpaired = Option(
+    ("--fold-fpaired", "-f"),
     type=float,
-    default=0.,
-    help="Normalize and winsorize ratios to this quantile (0.0 disables)"
+    default=0.5,
+    help="Scale mutation rates assuming this is the fraction of paired bases"
 )
 
 opt_fold_temp = Option(
@@ -1350,6 +1352,66 @@ opt_mutdist_null = Option(
     type=bool,
     default=True,
     help="Include the null distribution of distances between mutations"
+)
+
+# Collate
+
+opt_collate = Option(
+    ("--collate/--no-collate",),
+    type=bool,
+    default=True,
+    help=("Collate HTML graphs and SVG drawings into an HTML report file.")
+)
+
+opt_group = Option(
+    ("--group",),
+    type=str,
+    default="sample",
+    help="Group collated graphs by one of 'sample', 'graph', 'branches', 'region', or 'all'."
+)
+
+opt_portable = Option(
+    ("--portable/--no-portable",),
+    type=bool,
+    default=False,
+    help=("Embed collated graphs into the output HTML file for "
+          "portability at the expense of live updates and file size.")
+)
+
+opt_name = Option(
+    ("--name",),
+    type=str,
+    default="collated",
+    help=("Prefix the HTML report with this name.")
+)
+
+opt_verbose_name = Option(
+    ("--verbose-name/--no-verbose-name",),
+    type=bool,
+    default=False,
+    help=("Add collated file information to report name.")
+)
+
+opt_collate_out_dir = Option(
+    ("--collate-out-dir",),
+    type=Path(file_okay=False),
+    default=None,
+    help=("Write collated report to this directory. "
+          "By default, write to the lowest level directory common to all input graphs.")
+)
+
+opt_include_svg = Option(
+    ("--include-svg/--no-include-svg",),
+    type=bool,
+    default=True,
+    help=("Include RNA structure drawings from the draw module.")
+)
+
+opt_include_graph = Option(
+    ("--include-graph/--no-include-graph",),
+    type=bool,
+    default=True,
+    help=("Include graphs from the graph module.")
 )
 
 # CT renumbering

@@ -5,16 +5,10 @@ import pandas as pd
 
 from .base import RNARegion
 from .. import path
-from ..logs import logger
-from ..mu import (PAIRED_ALPHA,
-                  PAIRED_BETA,
-                  UNPAIRED_ALPHA,
-                  UNPAIRED_BETA,
-                  DEFAULT_MEAN,
-                  DEFAULT_COV,
-                  fit_beta_mixture_model,
-                  plot_beta_mixture)
-from ..seq import BASE_NAME, RNA, write_fasta
+from ..arg import opt_fold_fpaired, opt_fold_temp
+from ..mu import calc_pseudoenergies
+from ..seq import write_fasta
+from ..validate import require_isinstance, require_between
 
 
 class RNAProfile(RNARegion):
@@ -23,9 +17,11 @@ class RNAProfile(RNARegion):
     def __init__(self, *,
                  sample: str,
                  branches: dict[str, str],
-                 data_reg: str,
-                 data_name: str,
-                 data: pd.Series,
+                 mus_reg: str,
+                 mus_name: str,
+                 mus: pd.Series,
+                 fold_temp: float | int = opt_fold_temp.default,
+                 fold_fpaired: float | int = opt_fold_fpaired.default,
                  **kwargs):
         """
         Parameters
@@ -34,44 +30,80 @@ class RNAProfile(RNARegion):
             Name of the sample from which the mutational profile comes.
         branches: dict[str, str]
             Branches of the workflow.
-        data_reg: str
+        mus_reg: str
             Name of the region from which the mutational profile comes.
-        data_name: str
+        mus_name: str
             Name of the mutational profile (e.g. "cluster_2-1").
-        data: pandas.Series
+        mus: pd.Series
             Data for the mutational profile (i.e. mutation rates).
+        fold_temp: float | int
+            Predict structures at this temperature (Kelvin).
+        fold_fpaired: float | int
+            Assume this is the fraction of paired bases.
         """
         super().__init__(**kwargs)
         self.sample = sample
         self.branches = branches
-        self.data_reg = data_reg
-        self.data_name = data_name
-        if not isinstance(data, pd.Series):
-            raise TypeError(
-                f"Expected data to be a Series, but got {type(data).__name__}"
-            )
-        if data.min() < 0. or data.max() > 1.:
-            raise ValueError(f"Got mutation rates outside [0, 1]:\n{data}")
-        self.data = data.reindex(self.region.range)
+        self.mus_reg = mus_reg
+        self.mus_name = mus_name
+        self.fold_temp = fold_temp
+        self.fold_fpaired = fold_fpaired
+        require_isinstance("data", mus, pd.Series)
+        if mus.size > 0:
+            require_between("data.min()", mus.min(), 0., 1.)
+            require_between("data.max()", mus.max(), 0., 1.)
+        self.mus = mus.reindex(self.region.range)
 
     @cached_property
     def init_args(self):
         return super().init_args | dict(sample=self.sample,
                                         branches=self.branches,
-                                        data_reg=self.data_reg,
-                                        data_name=self.data_name,
-                                        data=self.data)
+                                        mus_reg=self.mus_reg,
+                                        mus_name=self.mus_name,
+                                        mus=self.mus)
 
     def _renumber_from_args(self, seq5: int):
         return super()._renumber_from_args(seq5) | dict(
-            data=pd.Series(self.data.values,
+            data=pd.Series(self.mus.values,
                            index=self.region.renumber_from(seq5).range)
         )
 
     @property
     def profile(self):
         """ Name of the mutational profile. """
-        return f"{self.data_reg}__{self.data_name}"
+        return f"{self.mus_reg}__{self.mus_name}"
+    
+    @cached_property
+    def pseudoenergies(self):
+        """ Pseudoenergies (kcal/mol) for structure prediction. """
+        return calc_pseudoenergies(self.mus.dropna(),
+                                   self.fold_temp,
+                                   self.fold_fpaired).reindex(self.mus.index)
+    
+    @cached_property
+    def intercept_param(self):
+        """ Intercept parameter (kcal/mol) for structure prediction. """
+        if self.pseudoenergies.size == 0:
+            return 0.
+        return float(self.pseudoenergies.min())
+    
+    @cached_property
+    def slope_param(self):
+        """ Slope parameter (kcal/mol) for structure prediction. """
+        if self.pseudoenergies.size == 0:
+            return 1.
+        return float(self.pseudoenergies.max()) - self.intercept_param
+
+    @cached_property
+    def pseudomus(self):
+        """ Pseudo-mutation rates for structure prediction. """
+        if self.slope_param == 0.:
+            # This happens if all pseudoenergies equal the intercept.
+            return self.pseudoenergies - self.intercept_param
+        # During folding, the pseudoenergies will be calculated as:
+        # pseudoenergies = slope * pseudodata + intercept
+        # Thus: pseudodata = (pseudoenergies - intercept) / slope
+        return (self.pseudoenergies - self.intercept_param) / self.slope_param
 
     @cached_property
     def beta_params(self):
@@ -148,6 +180,14 @@ class RNAProfile(RNARegion):
                               {path.PROFILE: self.profile,
                                path.EXT: path.DOT_EXTS[0]})
 
+    def get_pseudodata_file(self, top: Path, branch: str):
+        """ Get the path to the pseudo-mutation rates file. """
+        return self._get_file(top,
+                              branch,
+                              path.PseudoMusSeg,
+                              {path.PROFILE: self.profile,
+                               path.EXT: path.PSEUDOMUS_EXT})
+
     def get_vienna_file(self, top: Path, branch: str):
          """ Get the path to the vienna file. """
          return self._get_file(top,
@@ -155,22 +195,6 @@ class RNAProfile(RNARegion):
                                path.ViennaSeg,
                                {path.PROFILE: self.profile,
                                 path.EXT: path.VIENNA_EXT})
-
-    def get_mus_file(self, top: Path, branch: str):
-        """ Get the path to the mutation rate data file. """
-        return self._get_file(top,
-                              branch,
-                              path.FoldMusSeg,
-                              {path.PROFILE: self.profile,
-                               path.EXT: path.FOLD_MUS_EXT})
-
-    def get_beta_file(self, top: Path, branch: str):
-        """ Get the path to the beta parameter data file. """
-        return self._get_file(top,
-                              branch,
-                              path.FoldBetaSeg,
-                              {path.PROFILE: self.profile,
-                               path.EXT: path.FOLD_BETA_EXT})
 
     def get_command_file(self, top: Path, branch: str):
          """ Get the path to the vienna command file. """
@@ -194,48 +218,24 @@ class RNAProfile(RNARegion):
         write_fasta(fasta, [self.seq_record])
         return fasta
 
-    def write_mus(self, top: Path, branch: str, min_mu: float = 0.005):
-        """ Write the mutation rates to a file. """
-        # The mutation rates must be numbered starting from 1 at the
-        # beginning of the region, even if the region does not start
+    def to_pseudomus(self, top: Path, branch: str):
+        """ Write the pseudo-mutation rates to a file. """
+        # The pseudo-mutation rates must be numbered starting from 1 at
+        # the beginning of the region, even if the region does not start
         # at 1. Renumber the region from 1.
-        mus = self.data.copy()
-        mus.index = self.region.range_one
+        pseudomus = self.pseudomus.copy()
+        pseudomus.index = self.region.range_one
         # Drop bases with missing data to make RNAstructure ignore them.
-        mus.dropna(inplace=True)
-        # Set every mutation rate that is less than min_mu to min_mu.
-        # Otherwise, bases that have very low mutation rates can get
-        # extremely large (negative) pseudoenergies, effectively forcing
-        # them to be paired, which can lead to inaccurate structures.
-        if 0. < min_mu < 1.:
-            mus.loc[mus < min_mu] = min_mu
-        else:
-            logger.warning(f"Cannot clip mutation rates with min_mu={min_mu}; "
-                           f"the structure prediction may be less accurate")
-        # Write the mutation rates to the file.
-        mus_file = self.get_mus_file(top, branch)
-        mus.to_csv(mus_file, sep="\t", header=False)
-        return mus_file
+        pseudomus.dropna(inplace=True)
+        # Write the pseudo-mutation rates to the pseudo-mutation rates file.
+        pseudodata_file = self.get_pseudodata_file(top, branch)
+        pseudomus.to_csv(pseudodata_file, sep="\t", header=False)
+        return pseudodata_file
 
-    def write_beta_params(self, top: Path, branch: str):
-        """ Write the beta parameters to a file. """
-        lines = ["# Parameters: "
-                 "A paired alpha, beta; A unpaired alpha, beta; "
-                 "C paired alpha, beta; C unpaired alpha, beta; "
-                 "G paired alpha, beta; G unpaired alpha, beta; "
-                 "U paired alpha, beta; U unpaired alpha, beta"]
-        for base, params in self.beta_params.iterrows():
-            lines.extend([f"{params[PAIRED_ALPHA]} {params[PAIRED_BETA]}",
-                          f"{params[UNPAIRED_ALPHA]} {params[UNPAIRED_BETA]}"])
-        beta_params_file = self.get_beta_file(top, branch)
-        with open(beta_params_file, "x") as f:
-            f.write("\n".join(lines))
-        return beta_params_file
-
-    def write_varna_color_file(self, top: Path, branch: str):
+    def to_varna_color_file(self, top: Path, branch: str):
         """ Write the VARNA colors to a file. """
         # Fill missing reactivities with -1, to signify no data.
-        varna_color = self.data.fillna(-1.)
+        varna_color = self.mus.fillna(-1.)
         # Write the values to the VARNA color file.
         varna_color_file = self.get_varna_color_file(top, branch)
         varna_color.to_csv(varna_color_file,

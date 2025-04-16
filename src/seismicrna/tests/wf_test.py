@@ -131,8 +131,7 @@ class TestWorkflow(ut.TestCase):
                             num_cpus=1,
                             force=False)
         rel_graph_kwargs = graph_kwargs | dict(rels=("m",),
-                                               use_ratio=True,
-                                               quantile=0.0)
+                                               use_ratio=True)
         clust_rel_graph_kwargs = rel_graph_kwargs | {"cgroup": GROUP_ALL,
                                                      K_CLUST_KEY: [(1, 1),
                                                                    (2, 2)],
@@ -163,7 +162,6 @@ class TestWorkflow(ut.TestCase):
                min_em_runs=2,
                jackpot=True,
                fold=True,
-               quantile=0.95,
                export=True,
                graph_mprof=True,
                graph_tmprof=True,
@@ -525,8 +523,7 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
             self.assertTrue(cjoin_report.is_file())
             self.assertEqual(cjoin_dir, cjoin_report.parent)
         # Fold mask and cluster reports.
-        fold_reports = run_fold(mask_dirs + cluster_dirs,
-                                quantile=1.0)
+        fold_reports = run_fold(mask_dirs + cluster_dirs)
         expect_fold_reports = list()
         for region in ["5-50"]:
             for profile in ["average", "cluster-1-1"]:

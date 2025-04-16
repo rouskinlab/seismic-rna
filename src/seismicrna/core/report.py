@@ -55,6 +55,7 @@ from .arg import (opt_phred_enc,
                   opt_clip_end5,
                   opt_clip_end3,
                   opt_fold_temp,
+opt_fold_fpaired,
                   opt_fold_md,
                   opt_fold_mfe,
                   opt_fold_max,
@@ -539,6 +540,7 @@ JoinedClustersF = ReportField("joined_clusters",
 
 ProfileF = ReportField("profile", "Profile", str)
 FoldTempF = OptionReportField(opt_fold_temp)
+FoldFPairedF = OptionReportField(opt_fold_fpaired)
 FoldMaxDistF = OptionReportField(opt_fold_md)
 FoldMinFreeEnergyF = OptionReportField(opt_fold_mfe)
 FoldMaxStructsF = OptionReportField(opt_fold_max)

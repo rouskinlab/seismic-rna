@@ -7,7 +7,7 @@ from .base import BaseGraph, BaseRunner, BaseWriter
 from .rel import RelGraph, RelRunner
 from ..cluster.data import (ClusterPositionTableLoader,
                             ClusterAbundanceTableLoader)
-from ..core.arg import opt_use_ratio, opt_quantile, opt_verify_times
+from ..core.arg import opt_use_ratio, opt_verify_times
 from ..core.table import Table, PositionTable
 from ..mask.table import MaskPositionTableLoader, MaskReadTableLoader
 from ..relate.table import RelatePositionTableLoader, RelateReadTableLoader
@@ -37,18 +37,6 @@ class TableGraph(BaseGraph, ABC):
 
 class RelTableGraph(TableGraph, RelGraph, ABC):
 
-    def __init__(self, *, quantile: float, **kwargs):
-        """
-        Parameters
-        ----------
-        quantile: float
-            If `use_ratio` is True, then normalize the ratios to this
-            quantile and then winsorize them to the interval [0, 1].
-            Passing 0.0 disables normalization and winsorization.
-        """
-        super().__init__(**kwargs)
-        self.quantile = quantile
-
     @cached_property
     def _fetch_kwargs(self) -> dict[str, Any]:
         """ Keyword arguments for self._fetch_data. """
@@ -57,7 +45,7 @@ class RelTableGraph(TableGraph, RelGraph, ABC):
     def _fetch_data(self, table: PositionTable, **kwargs):
         """ Fetch data from the table. """
         kwargs = self._fetch_kwargs | kwargs
-        return (table.fetch_ratio(quantile=self.quantile, **kwargs)
+        return (table.fetch_ratio(**kwargs)
                 if self.use_ratio
                 else table.fetch_count(**kwargs))
 
@@ -70,17 +58,8 @@ class RelTableGraph(TableGraph, RelGraph, ABC):
                 f"region {repr(self.reg)}"]
 
     @cached_property
-    def details(self):
-        return super().details + ([f"quantile = {round(self.quantile, 3)}"]
-                                  if self.use_ratio
-                                  else list())
-
-    @cached_property
     def predicate(self):
-        fields = [self.codestring, self.data_kind]
-        if self.use_ratio:
-            fields.append(f"q{round(self.quantile * 100.)}")
-        return super().predicate + ["-".join(fields)]
+        return super().predicate + ["-".join([self.codestring, self.data_kind])]
 
 
 class TableWriter(BaseWriter, ABC):
@@ -133,10 +112,7 @@ class TableRunner(BaseRunner, ABC):
 
 
 class RelTableRunner(RelRunner, TableRunner, ABC):
-
-    @classmethod
-    def get_var_params(cls):
-        return super().get_var_params() + [opt_quantile]
+    pass
 
 
 class PositionTableRunner(RelTableRunner, ABC):

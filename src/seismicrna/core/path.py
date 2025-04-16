@@ -126,8 +126,7 @@ DB_EXT = ".db"
 DBN_EXT = ".dbn"
 DOT_EXT = ".dot"
 DOT_EXTS = DB_EXT, DBN_EXT, DOT_EXT
-FOLD_MUS_EXT = ".mus"
-FOLD_BETA_EXT = ".beta"
+PSEUDOMUS_EXT = ".pmu"
 KTS_EXT = ".kts"
 HTML_EXT = ".html"
 SVG_EXT = ".svg"
@@ -412,6 +411,7 @@ class BranchesPathField(PathField):
 # Fields
 TopField = PathField(pathlib.Path)
 NameField = PathField(str)
+InfoField = PathField(str)
 StepField = PathField(str,
                       [ALIGN_STEP,
                        RELATE_STEP,
@@ -447,13 +447,13 @@ ViennaExt = PathField(str, [VIENNA_EXT], is_ext=True)
 CommandExt = PathField(str, [COMMAND_EXT], is_ext=True)
 ConnectTableExt = PathField(str, [CT_EXT], is_ext=True)
 DotBracketExt = PathField(str, DOT_EXTS, is_ext=True)
-FoldMusExt = PathField(str, [FOLD_MUS_EXT], is_ext=True)
-FoldBetaExt = PathField(str, [FOLD_BETA_EXT], is_ext=True)
+PseudoMusExt = PathField(str, [PSEUDOMUS_EXT], is_ext=True)
 GraphExt = PathField(str, GRAPH_EXTS, is_ext=True)
 WebAppFileExt = PathField(str, [JSON_EXT], is_ext=True)
 SvgExt = PathField(str, [SVG_EXT], is_ext=True)
 PngExt = PathField(str, [PNG_EXT], is_ext=True)
 KtsExt = PathField(str, [KTS_EXT], is_ext=True)
+HtmlExt = PathField(str, [HTML_EXT], is_ext=True)
 
 
 def check_file_extension(file: str | pathlib.Path,
@@ -603,6 +603,8 @@ NCLUST = "k"
 RUN = "run"
 PROFILE = "profile"
 GRAPH = "graph"
+COLLATE_NAME = "collate_name"
+COLLATE_INFO = "collate_info"
 EXT = "ext"
 STRUCT = "struct"
 
@@ -716,10 +718,8 @@ ConnectTableSeg = PathSegment("rna-ct",
                               {PROFILE: NameField, EXT: ConnectTableExt})
 DotBracketSeg = PathSegment("rna-dot",
                             {PROFILE: NameField, EXT: DotBracketExt})
-FoldMusSeg = PathSegment("fold-mus",
-                         {PROFILE: NameField, EXT: FoldMusExt})
-FoldBetaSeg = PathSegment("fold-beta",
-                          {PROFILE: NameField, EXT: FoldBetaExt})
+PseudoMusSeg = PathSegment("pseudomus",
+                           {PROFILE: NameField, EXT: PseudoMusExt})
 VarnaColorSeg = PathSegment("varna-color",
                             {PROFILE: NameField, EXT: TextExt},
                             frmt="{profile}__varna-color{ext}")
@@ -737,6 +737,16 @@ KtsSeg = PathSegment("kts",
 
 # Graphs
 GraphSeg = PathSegment("graph", {GRAPH: NameField, EXT: GraphExt})
+HtmlSeg = PathSegment("graph", {GRAPH: NameField, EXT: HtmlExt})
+
+# Collate
+CollateSeg = PathSegment("collate", {COLLATE_NAME: NameField,
+                                     EXT: HtmlExt},
+                         frmt="{collate_name}{ext}")
+CollateInfoSeg = PathSegment("collate", {COLLATE_NAME: NameField,
+                                     COLLATE_INFO:InfoField,
+                                     EXT: HtmlExt},
+                         frmt="{collate_name}_{collate_info}{ext}")
 
 # Web App Export
 WebAppFileSeg = PathSegment("webapp",
@@ -756,6 +766,7 @@ FASTQ2_SEGS = Fastq2Seg,
 DMFASTQ_SEGS = SampSeg, DmFastqSeg
 DMFASTQ1_SEGS = SampSeg, DmFastq1Seg
 DMFASTQ2_SEGS = SampSeg, DmFastq2Seg
+GRAPH_SEGS = REG_DIR_SEGS + (GraphSeg,)
 XAM_SEGS = STEP_DIR_SEGS + (XamSeg,)
 XAM_STAGE_SEGS = STAGE_DIR_SEGS + (XamSeg,)
 CLUST_TAB_SEGS = REG_DIR_SEGS + (ClustParamsDirSeg, ClustParamsFileSeg)
@@ -763,6 +774,7 @@ CT_FILE_ALL_SEGS = REG_DIR_SEGS + (ConnectTableSeg,)
 CT_FILE_LAST_SEGS = CT_FILE_ALL_SEGS[-3:]
 DB_FILE_ALL_SEGS = REG_DIR_SEGS + (DotBracketSeg,)
 DB_FILE_LAST_SEGS = DB_FILE_ALL_SEGS[-3:]
+DRAW_SEGS = REG_DIR_SEGS + (SvgSeg,)
 VIENNA_FILE_ALL_SEGS = REG_DIR_SEGS + (ViennaSeg,)
 VIENNA_FILE_LAST_SEGS = VIENNA_FILE_ALL_SEGS[-3:]
 

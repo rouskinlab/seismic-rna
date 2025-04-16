@@ -38,10 +38,10 @@ class RelatePositionTable(RelateTable, PositionTable, ABC):
 
     def _iter_profiles(self, *,
                        regions: Iterable[Region] | None,
-                       quantile: float,
                        rel: str,
                        k: int | None,
-                       clust: int | None):
+                       clust: int | None,
+                       **kwargs):
         # Relate tables have unfiltered reads and are thus unsuitable
         # for making RNA profiles: do not generate any.
         yield from ()
