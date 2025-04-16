@@ -23,10 +23,11 @@ from ..core.logs import logger
 from ..core.rna import RNAProfile, renumber_ct, db_to_ct
 from ..core.write import need_write, write_mode
 
-from .parameterize_archiveii import calc_rnastructure_defaults
-
 ENERGY_UNIT = "kcal/mol"
 RNAFOLD_NUM_THREADS = "OMP_NUM_THREADS"
+
+
+ZERO_CELSIUS = 273.15  # Kelvin
 
 
 def make_fold_cmd(fasta_file: Path,
@@ -58,8 +59,8 @@ def make_fold_cmd(fasta_file: Path,
     if fold_commands is not None:
         # File of commands.
         cmd.extend(["--commands", fold_commands])
-    # Temperature of folding (Kelvin).
-    cmd.extend(["--temp", fold_temp])
+    # Temperature of folding (convert Kelvin to Celsius).
+    cmd.extend(["--temp", fold_temp - ZERO_CELSIUS])
     if fold_md > 0:
         # Maximum distance between paired bases.
         cmd.extend(["--maxBPspan", fold_md])
@@ -145,19 +146,17 @@ def calc_bp_pseudoenergy(seq_len: int,
 
 @docdef.auto()
 def rnafold(rna: RNAProfile, *,
-         branch: str,
-         fold_temp: float,
-         fold_constraint: Path | None = None,
-         fold_commands: Path | None = None,
-         fold_md: int,
-         fold_mfe: bool,
-         fold_max: int,
-         fold_percent: float,
-         out_dir: Path,
-         tmp_dir: Path,
-         keep_tmp: bool,
-         num_cpus: int,
-         **kwargs):
+            branch: str,
+            fold_constraint: Path | None = None,
+            fold_commands: Path | None = None,
+            fold_md: int,
+            fold_mfe: bool,
+            fold_max: int,
+            fold_percent: float,
+            out_dir: Path,
+            tmp_dir: Path,
+            keep_tmp: bool,
+            num_cpus: int):
     """ Run the 'RNAFold' or 'RNAsubopt' program of ViennaRNA. """
     logger.routine(f"Began folding {rna}")
     ct_out = rna.get_ct_file(out_dir, branch)
@@ -172,19 +171,19 @@ def rnafold(rna: RNAProfile, *,
     # Path of the temporary command file.
     command_tmp = rna.get_command_file(tmp_dir, branch)
     # DMS reactivities file for the RNA.
-    dms_file = rna.write_mus(tmp_dir, branch)
-    dms = rna.data.copy()
+    dms_file = rna.to_pseudomus(tmp_dir, branch)
+    dms = rna.mus.copy()
     dms.index = rna.region.range_one
     # Drop bases with missing data to make RNAstructure ignore them.
     dms.dropna(inplace=True)
-    #TODO Reimplement builtin method
+    # TODO Reimplement builtin method
     dms_data = pd.DataFrame(index=dms.index)
     dms = dms.to_numpy()
-    _, _, pseudoenergies = calc_rnastructure_defaults(dms)
+    pseudoenergies = rna.pseudoenergies
     dms_data["Cordero"] = [pseudoenergies[i] for i in range(len(dms_data.index))]
-    dms_data["Half_Cordero"] = dms_data["Cordero"] / 2 # Divide pseudoenergies by 2 to avoid double counting
+    dms_data["Half_Cordero"] = dms_data["Cordero"] / 2  # Divide pseudoenergies by 2 to avoid double counting
     b = min(dms_data["Half_Cordero"])
-    m = (max(dms_data["Half_Cordero"]) - b)/math.log(2)
+    m = (max(dms_data["Half_Cordero"]) - b) / math.log(2)
     shape_method = f"Dm{m}b{b}"
     dms_data["Scaled Reactivity"] = (np.expm1((dms_data["Half_Cordero"] - b) / m))
     dms_data["Scaled Reactivity"].to_csv(dms_file, sep='\t', header=False)
@@ -205,12 +204,12 @@ def rnafold(rna: RNAProfile, *,
         fold_cmds = {
             smp: make_fold_cmd(fasta_tmp,
                                vienna_tmp,
-                               fold_delta_e=5, #TODO set default
+                               fold_delta_e=5,  # TODO set default
                                dms_file=dms_file,
                                shape_method=shape_method,
                                fold_constraint=fold_constraint,
                                fold_commands=command_file,
-                               fold_temp=fold_temp-273.15,
+                               fold_temp=rna.fold_temp,
                                fold_md=fold_md,
                                fold_mfe=fold_mfe,
                                fold_max=fold_max,

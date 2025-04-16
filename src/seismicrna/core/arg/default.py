@@ -18,5 +18,6 @@ extra_defaults = dict(fastp_adapter_fasta=None,
                       join_clusts=None,
                       fold_regions_file=None,
                       fold_constraint=None,
+                      fold_commands=None,
                       samples_meta=None,
                       refs_meta=None)

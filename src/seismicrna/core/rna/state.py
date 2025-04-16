@@ -46,7 +46,7 @@ class RNAState(RNAStructure, RNAProfile):
             Whether to count terminal base pairs as paired (if True)
             or as neither paired nor unpaired (if False).
         """
-        return compute_roc_curve(self.data,
+        return compute_roc_curve(self.mus,
                                  *self._get_structs_args(terminal_pairs))
 
     def calc_auc(self, terminal_pairs: bool = True):
@@ -76,7 +76,7 @@ class RNAState(RNAStructure, RNAProfile):
             Whether to count terminal base pairs as paired (if True)
             or as neither paired nor unpaired (if False).
         """
-        return compute_rolling_auc(self.data,
+        return compute_rolling_auc(self.mus,
                                    *self._get_structs_args(terminal_pairs),
                                    size=size,
                                    min_data=min_data)

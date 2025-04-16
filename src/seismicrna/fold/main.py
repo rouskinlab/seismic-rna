@@ -66,8 +66,8 @@ def fold_region(rna: RNAProfile, *,
                 fold_max: int,
                 fold_percent: float,
                 force: bool,
-                num_cpus: int,
-                **kwargs):
+                keep_tmp: bool,
+                num_cpus: int):
     """ Fold a region of an RNA from one mutational profile. """
     branches = path.add_branch(path.FOLD_STEP, branch, rna.branches)
     report_file = FoldReport.build_path({path.TOP: out_dir,
@@ -79,18 +79,31 @@ def fold_region(rna: RNAProfile, *,
     if need_write(report_file, force):
         began = datetime.now()
         rna.to_varna_color_file(out_dir, branch)
-        fold_func = fold if not use_vienna else rnafold
-        ct_file = fold(rna,
-                       out_dir=out_dir,
-                       tmp_dir=tmp_dir,
-                       branch=branch,
-                       fold_constraint=fold_constraint,
-                       fold_md=fold_md,
-                       fold_mfe=fold_mfe,
-                       fold_max=fold_max,
-                       fold_percent=fold_percent,
-                       num_cpus=num_cpus,
-                       **kwargs)
+        if use_vienna:
+            ct_file = rnafold(rna,
+                              out_dir=out_dir,
+                              tmp_dir=tmp_dir,
+                              branch=branch,
+                              fold_constraint=fold_constraint,
+                              fold_commands=fold_commands,
+                              fold_md=fold_md,
+                              fold_mfe=fold_mfe,
+                              fold_max=fold_max,
+                              fold_percent=fold_percent,
+                              keep_tmp=keep_tmp,
+                              num_cpus=num_cpus)
+        else:
+            ct_file = fold(rna,
+                           out_dir=out_dir,
+                           tmp_dir=tmp_dir,
+                           branch=branch,
+                           fold_constraint=fold_constraint,
+                           fold_md=fold_md,
+                           fold_mfe=fold_mfe,
+                           fold_max=fold_max,
+                           fold_percent=fold_percent,
+                           keep_tmp=keep_tmp,
+                           num_cpus=num_cpus)
         ct_to_db(ct_file, force=True)
         ended = datetime.now()
         report = FoldReport(branches=branches,

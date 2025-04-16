@@ -73,7 +73,7 @@ class TestWorkflow(ut.TestCase):
     def setUp(self):
         self.maxDiff = 10000
         self._config = get_config()
-        set_config(verbosity=Level.ERROR,
+        set_config(verbosity=Level.DETAIL,
                    log_file_path=None,
                    exit_on_error=True)
         self.SIM_DIR.mkdir()
