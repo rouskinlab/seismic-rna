@@ -1,6 +1,7 @@
 from functools import cached_property
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from .base import RNARegion
@@ -48,10 +49,10 @@ class RNAProfile(RNARegion):
         self.mus_name = mus_name
         self.fold_temp = fold_temp
         self.fold_fpaired = fold_fpaired
-        require_isinstance("data", mus, pd.Series)
-        if mus.size > 0:
-            require_between("data.min()", mus.min(), 0., 1.)
-            require_between("data.max()", mus.max(), 0., 1.)
+        require_isinstance("mus", mus, pd.Series)
+        if np.count_nonzero(np.isnan(mus)) < mus.size:
+            require_between("mus.min()", mus.min(), 0., 1.)
+            require_between("mus.max()", mus.max(), 0., 1.)
         self.mus = mus.reindex(self.region.range)
 
     @cached_property
@@ -72,52 +73,41 @@ class RNAProfile(RNARegion):
     def profile(self):
         """ Name of the mutational profile. """
         return f"{self.mus_reg}__{self.mus_name}"
-    
+
     @cached_property
     def pseudoenergies(self):
         """ Pseudoenergies (kcal/mol) for structure prediction. """
         return calc_pseudoenergies(self.mus.dropna(),
                                    self.fold_temp,
                                    self.fold_fpaired).reindex(self.mus.index)
-    
+
     @cached_property
-    def intercept_param(self):
+    def intercept(self):
         """ Intercept parameter (kcal/mol) for structure prediction. """
-        if self.pseudoenergies.size == 0:
+        pseudoenergies = self.pseudoenergies[np.isfinite(self.pseudoenergies)]
+        if pseudoenergies.size == 0:
             return 0.
-        return float(self.pseudoenergies.min())
-    
+        return float(pseudoenergies.min())
+
     @cached_property
-    def slope_param(self):
+    def slope(self):
         """ Slope parameter (kcal/mol) for structure prediction. """
-        if self.pseudoenergies.size == 0:
-            return 1.
-        return float(self.pseudoenergies.max()) - self.intercept_param
+        pseudoenergies = self.pseudoenergies[np.isfinite(self.pseudoenergies)]
+        if pseudoenergies.size == 0:
+            return 0.
+        return float((pseudoenergies.max() - self.intercept) / np.log(2.))
 
     @cached_property
     def pseudomus(self):
         """ Pseudo-mutation rates for structure prediction. """
-        if self.slope_param == 0.:
+        if self.slope == 0.:
             # This happens if all pseudoenergies equal the intercept.
-            return self.pseudoenergies - self.intercept_param
+            return pd.Series(0., self.pseudoenergies.index)
         # During folding, the pseudoenergies will be calculated as:
-        # pseudoenergies = slope * pseudodata + intercept
-        # Thus: pseudodata = (pseudoenergies - intercept) / slope
-        return (self.pseudoenergies - self.intercept_param) / self.slope_param
-
-    @cached_property
-    def beta_params(self):
-        """ Beta parameters for the mutational profile. """
-        beta_params = dict()
-        for base in RNA.four():
-            logger.detail(f"Fitting parameters for base {repr(base)}")
-            is_base = self.data.index.get_level_values(BASE_NAME) == base
-            beta_params[base] = fit_beta_mixture_model(self.data.loc[is_base],
-                                                       DEFAULT_MEAN[base],
-                                                       DEFAULT_COV[base])
-            print("BASE", base)
-            plot_beta_mixture(self.data.loc[is_base], beta_params[base])
-        return pd.DataFrame.from_dict(beta_params, orient="index")
+        # pseudoenergies = slope * log(pseudomus + 1) + intercept
+        # Therefore:
+        # pseudomus = exp((pseudoenergies - intercept) / slope) - 1
+        return np.expm1((self.pseudoenergies - self.intercept) / self.slope)
 
     def _get_dir_fields(self, top: Path, branch: str):
         """ Get the path fields for the directory of this RNA.
@@ -189,20 +179,20 @@ class RNAProfile(RNARegion):
                                path.EXT: path.PSEUDOMUS_EXT})
 
     def get_vienna_file(self, top: Path, branch: str):
-         """ Get the path to the vienna file. """
-         return self._get_file(top,
-                               branch,
-                               path.ViennaSeg,
-                               {path.PROFILE: self.profile,
-                                path.EXT: path.VIENNA_EXT})
+        """ Get the path to the vienna file. """
+        return self._get_file(top,
+                              branch,
+                              path.ViennaSeg,
+                              {path.PROFILE: self.profile,
+                               path.EXT: path.VIENNA_EXT})
 
     def get_command_file(self, top: Path, branch: str):
-         """ Get the path to the vienna command file. """
-         return self._get_file(top,
-                               branch,
-                               path.CommandSeg,
-                               {path.PROFILE: self.profile,
-                                path.EXT: path.COMMAND_EXT})
+        """ Get the path to the vienna command file. """
+        return self._get_file(top,
+                              branch,
+                              path.CommandSeg,
+                              {path.PROFILE: self.profile,
+                               path.EXT: path.COMMAND_EXT})
 
     def get_varna_color_file(self, top: Path, branch: str):
         """ Get the path to the VARNA color file. """
