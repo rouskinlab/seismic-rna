@@ -55,7 +55,10 @@ from .arg import (opt_phred_enc,
                   opt_clip_end5,
                   opt_clip_end3,
                   opt_fold_temp,
-opt_fold_fpaired,
+                  opt_fold_vienna,
+                  opt_fold_commands,
+                  opt_fold_constraint,
+                  opt_fold_fpaired,
                   opt_fold_md,
                   opt_fold_mfe,
                   opt_fold_max,
@@ -541,10 +544,21 @@ JoinedClustersF = ReportField("joined_clusters",
 ProfileF = ReportField("profile", "Profile", str)
 FoldTempF = OptionReportField(opt_fold_temp)
 FoldFPairedF = OptionReportField(opt_fold_fpaired)
+FoldViennaF = OptionReportField(opt_fold_vienna)
+FoldConstraintsF = OptionReportField(opt_fold_constraint)
+FoldCommandF = OptionReportField(opt_fold_commands)
 FoldMaxDistF = OptionReportField(opt_fold_md)
 FoldMinFreeEnergyF = OptionReportField(opt_fold_mfe)
 FoldMaxStructsF = OptionReportField(opt_fold_max)
 FoldPercent = OptionReportField(opt_fold_percent)
+CommandsChecksumF = ReportField("commands_checksum",
+                                "Checksum of the ViennaRNA command file (SHA-512)",
+                                str,
+                                default="")
+ConstraintChecksumF = ReportField("constraint_checksum",
+                                "Checksum of the constraints file (SHA-512)",
+                                str,
+                                default="")
 
 
 # Field exceptions

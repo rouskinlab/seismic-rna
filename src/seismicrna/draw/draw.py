@@ -180,18 +180,21 @@ def build_jinja_data(struct: str,
                      draw_svg: bool,
                      draw_png: bool,
                      highlight_pos: Iterable[int] = None):
+    color_values = color_dict.values()
+    max_data = max(color_values)
+    quartile = max_data/4
     color_blocks = [ColorBlock("N", "#caccce"),
                     ColorBlock("n", "black"),
                     ColorBlock("N", "#88CCEE", "#7287D9",
-                               {"between": (0.0, 0.2)}),
+                               {"between": (0.0, quartile)}),
                     ColorBlock("N", "#7287D9", "#8750D1",
-                               {"between": (0.2, 0.4)}),
+                               {"between": (quartile, quartile*2)}),
                     ColorBlock("N", "#8750D1", "#852075",
-                               {"between": (0.4, 0.8)}),
+                               {"between": (quartile*2, quartile*3)}),
                     ColorBlock("N", "#852075", "#661100",
-                               {"between": (0.8, 1.0)}),
-                    ColorBlock("n", "white", "white", {"between": (0.2, 1.0)}),
-                    ColorBlock("n", "black", "black", {"between": (0.0, 0.2)})]
+                               {"between": (quartile*3, max_data)}),
+                    ColorBlock("n", "white", "white", {"between": (0.2*max_data, max_data)}),
+                    ColorBlock("n", "black", "black", {"between": (0.0, 0.2*max_data)})]
 
     if highlight_pos:
         for pos in highlight_pos:
@@ -465,8 +468,8 @@ class RNArtistRun(object):
             if self.profile == profile.profile:
                 for struct_num, struct in enumerate(structs):
                     state = RNAState.from_struct_profile(struct, profile)
-                    if state.auc > max_auc:
-                        max_auc = state.auc
+                    if state.calc_auc() > max_auc:
+                        max_auc = state.calc_auc()
                         best_auc = struct_num
         return best_auc
 

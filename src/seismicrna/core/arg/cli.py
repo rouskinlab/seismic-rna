@@ -1032,8 +1032,8 @@ opt_fold_primers = Option(
 )
 
 
-opt_vienna = Option(
-     ("--use-vienna/--no-vienna",),
+opt_fold_vienna = Option(
+     ("--fold-vienna/--no-fold-vienna",),
      type=bool,
      default=False,
      help="Use RNAfold from ViennaRNA as the folding engine"

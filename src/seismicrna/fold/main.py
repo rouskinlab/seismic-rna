@@ -19,7 +19,7 @@ from ..core.arg import (CMD_FOLD,
                         opt_fold_coords,
                         opt_fold_primers,
                         opt_fold_full,
-                        opt_vienna,
+                        opt_fold_vienna,
                         opt_fold_temp,
                         opt_fold_fpaired,
                         opt_fold_constraint,
@@ -35,6 +35,7 @@ from ..core.arg import (CMD_FOLD,
                         extra_defaults)
 from ..core.extern import (RNASTRUCTURE_FOLD_CMD,
                            require_dependency)
+from ..core.io import calc_sha512_path
 from ..core.rna import RNAProfile, ct_to_db
 from ..core.run import run_func
 from ..core.seq import DNA, RefRegions, RefSeqs, Region
@@ -58,7 +59,7 @@ def fold_region(rna: RNAProfile, *,
                 out_dir: Path,
                 tmp_dir: Path,
                 branch: str,
-                use_vienna: bool,
+                fold_vienna: bool,
                 fold_constraint: Path | None,
                 fold_commands: Path | None,
                 fold_md: int,
@@ -79,7 +80,7 @@ def fold_region(rna: RNAProfile, *,
     if need_write(report_file, force):
         began = datetime.now()
         rna.to_varna_color_file(out_dir, branch)
-        if use_vienna:
+        if fold_vienna:
             ct_file = rnafold(rna,
                               out_dir=out_dir,
                               tmp_dir=tmp_dir,
@@ -106,17 +107,22 @@ def fold_region(rna: RNAProfile, *,
                            num_cpus=num_cpus)
         ct_to_db(ct_file, force=True)
         ended = datetime.now()
+        constraint_checksum = calc_sha512_path(fold_constraint) if fold_constraint else ''
+        commands_checksum = calc_sha512_path(fold_commands) if fold_commands else ''
         report = FoldReport(branches=branches,
                             sample=rna.sample,
                             ref=rna.ref,
                             reg=rna.reg,
                             profile=rna.profile,
+                            fold_vienna=fold_vienna,
                             fold_temp=rna.fold_temp,
                             fold_fpaired=rna.fold_fpaired,
                             fold_md=fold_md,
                             fold_mfe=fold_mfe,
                             fold_max=fold_max,
                             fold_percent=fold_percent,
+                            constraint_checksum=constraint_checksum,
+                            commands_checksum=commands_checksum,
                             began=began,
                             ended=ended)
         report.save(out_dir, force=True)
@@ -152,7 +158,7 @@ def run(input_path: Iterable[str | Path], *,
         fold_primers: Iterable[tuple[str, DNA, DNA]],
         fold_regions_file: str | None,
         fold_full: bool,
-        use_vienna: bool,
+        fold_vienna: bool,
         fold_temp: float,
         fold_fpaired: float,
         fold_constraint: str | None,
@@ -199,7 +205,7 @@ def run(input_path: Iterable[str | Path], *,
         kwargs=dict(branch=branch,
                     tmp_pfx=tmp_pfx,
                     keep_tmp=keep_tmp,
-                    use_vienna=use_vienna,
+                    fold_vienna=fold_vienna,
                     fold_temp=fold_temp,
                     fold_fpaired=fold_fpaired,
                     fold_constraint=optional_path(fold_constraint),
@@ -219,7 +225,7 @@ params = [
     opt_fold_coords,
     opt_fold_primers,
     opt_fold_full,
-    opt_vienna,
+    opt_fold_vienna,
     opt_fold_temp,
     opt_fold_fpaired,
     opt_fold_constraint,

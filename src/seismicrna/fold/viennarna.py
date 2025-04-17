@@ -3,7 +3,6 @@ University of Vienna: https://www.tbi.univie.ac.at/RNA/
 """
 
 import os
-import math
 import numpy as np
 import pandas as pd
 import shutil
@@ -172,31 +171,14 @@ def rnafold(rna: RNAProfile, *,
     command_tmp = rna.get_command_file(tmp_dir, branch)
     # DMS reactivities file for the RNA.
     dms_file = rna.to_pseudomus(tmp_dir, branch)
-    dms = rna.mus.copy()
-    dms.index = rna.region.range_one
-    # Drop bases with missing data to make RNAstructure ignore them.
-    dms.dropna(inplace=True)
-    # TODO Reimplement builtin method
-    dms_data = pd.DataFrame(index=dms.index)
-    dms = dms.to_numpy()
-    pseudoenergies = rna.pseudoenergies
-    dms_data["Cordero"] = [pseudoenergies[i] for i in range(len(dms_data.index))]
-    dms_data["Half_Cordero"] = dms_data["Cordero"] / 2  # Divide pseudoenergies by 2 to avoid double counting
-    b = min(dms_data["Half_Cordero"])
-    m = (max(dms_data["Half_Cordero"]) - b) / math.log(2)
-    shape_method = f"Dm{m}b{b}"
-    dms_data["Scaled Reactivity"] = (np.expm1((dms_data["Half_Cordero"] - b) / m))
-    dms_data["Scaled Reactivity"].to_csv(dms_file, sep='\t', header=False)
-    dms_data["Deigan_Transformed"] = (m * np.log1p(dms_data["Scaled Reactivity"])) + b
-    assert np.allclose(dms_data["Half_Cordero"], dms_data["Deigan_Transformed"])
 
-    apply_all_paired = True
+    apply_all_paired = False
 
     if fold_commands:
         shutil.copy2(fold_commands, command_tmp)
     if apply_all_paired:
         dms_file = None
-        command_file = calc_bp_pseudoenergy(len(rna.seq), dms_data["Cordero"], command_tmp)
+        command_file = calc_bp_pseudoenergy(len(rna.seq), rna.pseudoenergies, command_tmp)
     else:
         command_file = None
     try:
@@ -206,7 +188,7 @@ def rnafold(rna: RNAProfile, *,
                                vienna_tmp,
                                fold_delta_e=5,  # TODO set default
                                dms_file=dms_file,
-                               shape_method=shape_method,
+                               shape_method=rna.shape_method,
                                fold_constraint=fold_constraint,
                                fold_commands=command_file,
                                fold_temp=rna.fold_temp,
