@@ -44,11 +44,11 @@ def cmds_to_series(cmds: list[str]):
     return " ; ".join(cmds)
 
 def cmds_to_redirect_in(cmds: list[str]):
-     """ Run commands in series. """
+     """ Run commands with a leftward redirect. """
      return " < ".join(cmds)
 
 def cmds_to_redirect_out(cmds: list[str]):
-    """ Run commands in series. """
+    """ Run commands with a rightward redirect. """
     return " > ".join(cmds)
 
 def cmds_to_subshell(cmds: list[str]):
