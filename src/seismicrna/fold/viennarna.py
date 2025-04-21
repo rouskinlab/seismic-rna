@@ -11,6 +11,7 @@ from pathlib import Path
 
 from .rnastructure import retitle_ct
 
+from .profile import RNAFoldProfile
 from ..core.arg import docdef
 from ..core.extern import (VIENNA_RNAFOLD_CMD,
                            VIENNA_RNASUBOPT_CMD,
@@ -22,7 +23,7 @@ from ..core.extern import (VIENNA_RNAFOLD_CMD,
                            run_cmd)
 from ..core.logs import logger
 from ..core.path import VIENNA_EXT, VIENNA_SUBOPT_EXT
-from ..core.rna import RNAProfile, renumber_ct, db_to_ct
+from ..core.rna import renumber_ct, db_to_ct
 from ..core.write import need_write, write_mode
 
 ENERGY_UNIT = "kcal/mol"
@@ -132,7 +133,7 @@ def calc_bp_pseudoenergy(seq_len: int,
 
 
 @docdef.auto()
-def rnafold(rna: RNAProfile, *,
+def rnafold(rna: RNAFoldProfile, *,
             branch: str,
             fold_constraint: Path | None = None,
             fold_commands: Path | None = None,
