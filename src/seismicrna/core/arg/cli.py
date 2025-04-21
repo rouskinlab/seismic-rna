@@ -1054,6 +1054,13 @@ opt_fold_temp = Option(
     help="Predict structures at this temperature (Kelvin)"
 )
 
+opt_fold_mu_eps = Option(
+    ("--fold-mu-eps",),
+    type=float,
+    default=0.005,
+    help="Clip folding mutation rates to [eps, 1 - eps] to avoid division by 0"
+)
+
 opt_fold_constraint = Option(
     ("--fold-constraint",),
     type=Path(exists=True, dir_okay=False),

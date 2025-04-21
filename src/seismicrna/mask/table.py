@@ -48,8 +48,7 @@ class PartialPositionTable(PartialTable, PositionTable, ABC):
                        regions: Iterable[Region] | None,
                        rel: str,
                        k: int | None,
-                       clust: int | None,
-                       **kwargs):
+                       clust: int | None):
         """ Yield RNA mutational profiles from a table. """
         if regions is not None:
             regions = list(regions)
@@ -68,8 +67,7 @@ class PartialPositionTable(PartialTable, PositionTable, ABC):
                                      mus=self.fetch_ratio(rel=rel,
                                                           k=hk,
                                                           clust=hc,
-                                                          squeeze=True),
-                                     **kwargs)
+                                                          squeeze=True))
 
 
 class PartialReadTable(PartialTable, ReadTable, ABC):

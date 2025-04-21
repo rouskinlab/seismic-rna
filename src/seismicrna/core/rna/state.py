@@ -26,11 +26,7 @@ class RNAState(RNAStructure, RNAProfile):
                                             profile.branches),
                    mus_reg=profile.mus_reg,
                    mus_name=profile.mus_name,
-                   mus=profile.mus,
-                   fold_temp=profile.fold_temp,
-                   fold_fpaired=(struct.is_paired.mean()
-                                 if struct.is_paired.size > 0
-                                 else profile.fold_fpaired))
+                   mus=profile.mus)
 
     def _get_structs_args(self, terminal_pairs: bool):
         if terminal_pairs:

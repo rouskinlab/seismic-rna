@@ -5,6 +5,7 @@ from typing import Iterable
 
 from click import command
 
+from .profile import RNAFoldProfile
 from .report import FoldReport
 from .rnastructure import fold, require_data_path
 from .viennarna import rnafold
@@ -22,6 +23,7 @@ from ..core.arg import (CMD_FOLD,
                         opt_fold_vienna,
                         opt_fold_temp,
                         opt_fold_fpaired,
+                        opt_fold_mu_eps,
                         opt_fold_constraint,
                         opt_fold_commands,
                         opt_fold_md,
@@ -36,7 +38,7 @@ from ..core.arg import (CMD_FOLD,
 from ..core.extern import (RNASTRUCTURE_FOLD_CMD,
                            require_dependency)
 from ..core.io import calc_sha512_path
-from ..core.rna import RNAProfile, ct_to_db
+from ..core.rna import ct_to_db
 from ..core.run import run_func
 from ..core.seq import DNA, RefRegions, RefSeqs, Region
 from ..core.task import as_list_of_tuples, dispatch
@@ -55,7 +57,7 @@ def load_foldable_tables(input_path: Iterable[str | Path], **kwargs):
 
 
 @with_tmp_dir(pass_keep_tmp=True)
-def fold_region(rna: RNAProfile, *,
+def fold_region(rna: RNAFoldProfile, *,
                 out_dir: Path,
                 tmp_dir: Path,
                 branch: str,
@@ -117,6 +119,7 @@ def fold_region(rna: RNAProfile, *,
                             fold_vienna=fold_vienna,
                             fold_temp=rna.fold_temp,
                             fold_fpaired=rna.fold_fpaired,
+                            fold_mu_eps=rna.mu_eps,
                             fold_md=fold_md,
                             fold_mfe=fold_mfe,
                             fold_max=fold_max,
@@ -133,6 +136,7 @@ def fold_table(table: MaskPositionTableLoader | ClusterPositionTableLoader,
                regions: list[Region],
                fold_temp: float,
                fold_fpaired: float,
+               fold_mu_eps: float,
                num_cpus: int,
                **kwargs):
     """ Fold an RNA molecule from one table of reactivities. """
@@ -143,9 +147,13 @@ def fold_table(table: MaskPositionTableLoader | ClusterPositionTableLoader,
                     ordered=False,
                     raise_on_error=False,
                     args=as_list_of_tuples(
-                        table.iter_profiles(regions=regions,
-                                            fold_temp=fold_temp,
-                                            fold_fpaired=fold_fpaired)
+                        RNAFoldProfile.from_profile(
+                            profile,
+                            fold_temp=fold_temp,
+                            fold_fpaired=fold_fpaired,
+                            mu_eps=fold_mu_eps,
+                        )
+                        for profile in table.iter_profiles(regions=regions)
                     ),
                     kwargs=dict(out_dir=table.top,
                                 **kwargs))
@@ -161,6 +169,7 @@ def run(input_path: Iterable[str | Path], *,
         fold_vienna: bool,
         fold_temp: float,
         fold_fpaired: float,
+        fold_mu_eps: float,
         fold_constraint: str | None,
         fold_commands: str | None,
         fold_md: int,
@@ -208,6 +217,7 @@ def run(input_path: Iterable[str | Path], *,
                     fold_vienna=fold_vienna,
                     fold_temp=fold_temp,
                     fold_fpaired=fold_fpaired,
+                    fold_mu_eps=fold_mu_eps,
                     fold_constraint=optional_path(fold_constraint),
                     fold_commands=optional_path(fold_commands),
                     fold_md=fold_md,
@@ -228,6 +238,7 @@ params = [
     opt_fold_vienna,
     opt_fold_temp,
     opt_fold_fpaired,
+    opt_fold_mu_eps,
     opt_fold_constraint,
     opt_fold_commands,
     opt_fold_md,

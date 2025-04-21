@@ -373,22 +373,19 @@ class PositionTable(RelTypeTable, ABC):
                        regions: Iterable[Region] | None,
                        rel: str,
                        k: int | None,
-                       clust: int | None,
-                       **kwargs) -> Generator[RNAProfile, Any, Any]:
+                       clust: int | None) -> Generator[RNAProfile, Any, Any]:
         """ Yield RNA mutational profiles from the table. """
 
     def iter_profiles(self, *,
                       regions: Iterable[Region] | None = None,
                       rel: str = MUTAT_REL,
                       k: int | None = None,
-                      clust: int | None = None,
-                      **kwargs):
+                      clust: int | None = None):
         """ Yield RNA mutational profiles from the table. """
         yield from self._iter_profiles(regions=regions,
                                        rel=rel,
                                        k=k,
-                                       clust=clust,
-                                       **kwargs)
+                                       clust=clust)
 
     def _compute_ci(self,
                     confidence: float,

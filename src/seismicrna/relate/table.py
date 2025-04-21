@@ -40,8 +40,7 @@ class RelatePositionTable(RelateTable, PositionTable, ABC):
                        regions: Iterable[Region] | None,
                        rel: str,
                        k: int | None,
-                       clust: int | None,
-                       **kwargs):
+                       clust: int | None):
         # Relate tables have unfiltered reads and are thus unsuitable
         # for making RNA profiles: do not generate any.
         yield from ()

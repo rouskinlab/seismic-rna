@@ -7,13 +7,14 @@ import re
 from pathlib import Path
 from shutil import which
 
+from .profile import RNAFoldProfile
 from ..core.arg import docdef
 from ..core.extern import (RNASTRUCTURE_FOLD_CMD,
                            RNASTRUCTURE_FOLD_SMP_CMD,
                            args_to_cmd,
                            run_cmd)
 from ..core.logs import logger
-from ..core.rna import RNAProfile, renumber_ct
+from ..core.rna import renumber_ct
 from ..core.write import need_write, write_mode
 
 ENERGY_UNIT = "kcal/mol"
@@ -389,7 +390,7 @@ def make_fold_cmd(fasta_file: Path,
 
 
 @docdef.auto()
-def fold(rna: RNAProfile, *,
+def fold(rna: RNAFoldProfile, *,
          branch: str,
          fold_constraint: Path | None = None,
          fold_md: int,
