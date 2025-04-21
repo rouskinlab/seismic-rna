@@ -36,6 +36,8 @@ from ..core.arg import (CMD_FOLD,
                         optional_path,
                         extra_defaults)
 from ..core.extern import (RNASTRUCTURE_FOLD_CMD,
+                           VIENNA_RNAFOLD_CMD,
+                           VIENNA_RNASUBOPT_CMD,
                            require_dependency)
 from ..core.io import calc_sha512_path
 from ..core.rna import ct_to_db
@@ -183,8 +185,12 @@ def run(input_path: Iterable[str | Path], *,
         force: bool):
     """ Predict RNA secondary structures using mutation rates. """
     # Check for the dependencies and the DATAPATH environment variable.
-    require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
-    require_data_path()
+    if not fold_vienna:
+        require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
+        require_data_path()
+    else:
+        require_dependency(VIENNA_RNAFOLD_CMD, __name__)
+        require_dependency(VIENNA_RNASUBOPT_CMD, __name__)
     # List the tables.
     tables = list(load_foldable_tables(input_path, verify_times=verify_times))
     # Get the regions to fold for every reference sequence.

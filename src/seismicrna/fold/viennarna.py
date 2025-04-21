@@ -11,16 +11,18 @@ from pathlib import Path
 
 from .rnastructure import retitle_ct
 
-from .profile import RNAFoldProfile
 from ..core.arg import docdef
 from ..core.extern import (VIENNA_RNAFOLD_CMD,
                            VIENNA_RNASUBOPT_CMD,
+                           cmds_to_pipe,
+                           cmds_to_series,
                            cmds_to_redirect_in,
                            cmds_to_redirect_out,
                            args_to_cmd,
                            run_cmd)
 from ..core.logs import logger
-from ..core.rna import renumber_ct, db_to_ct
+from ..core.path import VIENNA_EXT, VIENNA_SUBOPT_EXT
+from ..core.rna import RNAProfile, renumber_ct, db_to_ct
 from ..core.write import need_write, write_mode
 
 ENERGY_UNIT = "kcal/mol"
@@ -42,110 +44,95 @@ def make_fold_cmd(fasta_file: Path,
                   fold_mfe: bool,
                   num_cpus: int = 1,
                   **kwargs):
-    if fold_mfe:
-        cmd = [VIENNA_RNAFOLD_CMD]
-    else:
-        cmd = [VIENNA_RNASUBOPT_CMD, "-e", fold_delta_e]
-        os.environ[RNAFOLD_NUM_THREADS] = str(num_cpus)
-    cmd.append("--noLP")
-    if dms_file is not None:
-        # File of DMS reactivities.
-        assert shape_method is not None
-        cmd.extend(["--shape", dms_file,
-                    "--shapeMethod", shape_method])
-    if fold_constraint is not None:
-        # File of constraints.
-        cmd.extend(["--constraint", fold_constraint])
-    if fold_commands is not None:
-        # File of commands.
-        cmd.extend(["--commands", fold_commands])
-    # Temperature of folding (convert Kelvin to Celsius).
-    cmd.extend(["--temp", fold_temp - ZERO_CELSIUS])
-    if fold_md > 0:
-        # Maximum distance between paired bases.
-        cmd.extend(["--maxBPspan", fold_md])
-    # Input and output files.
-    cmd = args_to_cmd(cmd)
-    cmd = cmds_to_redirect_in([cmd, str(fasta_file)])
-    cmd = cmds_to_redirect_out([cmd, str(vienna_file)])
-    return cmd
+    os.environ[RNAFOLD_NUM_THREADS] = str(num_cpus)
+    final_cmds = list()
+    cmds = [[VIENNA_RNAFOLD_CMD]]
+    if not fold_mfe:
+        cmds.append([VIENNA_RNASUBOPT_CMD])
+    for cmd in cmds:
+        cmd.append("--noLP")
+        if VIENNA_RNAFOLD_CMD in cmd:
+            cmd.append("--noPS")
+        else:
+            cmd.extend(["--sorted", "--en-only"])
+        if dms_file is not None:
+            # File of DMS reactivities.
+            assert shape_method is not None
+            cmd.extend(["--shape", dms_file,
+                        "--shapeMethod", shape_method])
+        if fold_constraint is not None:
+            # File of constraints.
+            cmd.extend(["--constraint", fold_constraint])
+        if fold_commands is not None:
+            # File of commands.
+            cmd.extend(["--commands", fold_commands])
+        # Temperature of folding (convert Kelvin to Celsius).
+        cmd.extend(["--temp", fold_temp - ZERO_CELSIUS])
+        if fold_md > 0:
+            # Maximum distance between paired bases.
+            cmd.extend(["--maxBPspan", fold_md])
+        # Input and output files.
+        cmd = args_to_cmd(cmd)
+        cmd = cmds_to_redirect_in([cmd, str(fasta_file)])
+        vienna_suffix = VIENNA_SUBOPT_EXT if VIENNA_RNASUBOPT_CMD in cmd else VIENNA_EXT
+        num_structs = 5 #TODO: Fixme
+        cmd = cmds_to_pipe([cmd, f"head -n {num_structs+1}"])
+        cmd = cmds_to_redirect_out([cmd, str(vienna_file.with_suffix(vienna_suffix))])
+        final_cmds.append(cmd)
+    final_cmd = cmds_to_series(final_cmds)
+    return final_cmd
 
 
 def calc_bp_pseudoenergy(seq_len: int,
                          pseudoenergies: pd.Series,
                          out_file: Path):
     """
-    Identify (i, j) pairs, with j >= i + 3, where the sum of pseudoenergies is non-zero.
+    Identify (i, j) pairs, with j >= i + 3, where the sum of pseudoenergies is non-zero,
+    and write them in ViennaRNA command format:
 
-    The output file will have lines formatted as ViennaRNA commands:
       "E i j 1 <bp_pseudoenergy>"
 
     Parameters:
       seq_len: The total length of the sequence. Positions are assumed to be numbered 1..seq_len.
-      pseudoenergies: A pandas Series where each key is a position and its value is the energy.
-                      If a position is missing, it is assumed to have energy 0.
+      pseudoenergies: A pandas Series of pseudoenergies, indexed with multiindex (Position, Base).
       out_file: Path to the file where the results will be written.
     """
-    # Create a full array of energies with default 0, for positions 1..seq_len.
+    # Extract Position level and drop NaNs
+    pos_idx = pseudoenergies.index.get_level_values("Position").astype(int)
+    energy_vals = pseudoenergies.values
+    mask = ~pd.isna(energy_vals)
+
+    # Full-length energy array, default zero
     energies_full = np.zeros(seq_len, dtype=np.float64)
-    # The Series index uses 1-indexing; fill in available energies.
-    indices = np.array(pseudoenergies.index)
-    energies_full[indices - 1] = pseudoenergies.values
+    energies_full[pos_idx[mask] - 1] = energy_vals[mask]
 
-    outputs = []  # Collect valid rows from all valid offsets.
-
-    # Loop over allowed offsets (j - i) starting from 3 (i.e., j >= i + 3).
+    # Collect valid (i, j) pairs
+    parts = []
     for offset in range(3, seq_len):
-        # Generate starting positions: 1, 2, …, seq_len - offset.
         i_vals = np.arange(1, seq_len - offset + 1)
         j_vals = i_vals + offset
-
-        # Compute energy sums for each (i, j) pair using vectorized slicing.
-        energy_sum = energies_full[i_vals - 1] + energies_full[j_vals - 1]
-
-        # Filter pairs that have a positive energy sum.
-        valid = energy_sum > 0
+        sums = energies_full[i_vals - 1] + energies_full[j_vals - 1]
+        valid = np.abs(sums) > 0
         if valid.any():
-            valid_i = i_vals[valid]
-            valid_j = j_vals[valid]
-            valid_sum = energy_sum[valid]
-            # Prepare data as columns: "E i j 1 valid_sum".
-            data = np.column_stack((
-                valid_i,
-                valid_j,
-                np.ones(valid_i.shape[0], dtype=int),
-                valid_sum
-            ))
-            outputs.append(data)
+            block = np.column_stack([
+                i_vals[valid],
+                j_vals[valid],
+                np.ones(valid.sum(), dtype=int),
+                sums[valid]
+            ])
+            parts.append(block)
 
-    # If there are valid pairs, write them to file.
-    if outputs:
-        result = np.vstack(outputs)
-
-        # Determine mode: append if file exists, else write.
-        mode = "a" if out_file.exists() else "w"
-
-        # If appending, check if we need to add a starting newline.
-        need_newline = False
-        if mode == "a" and out_file.stat().st_size > 0:
-            with open(out_file, "rb") as f:
-                # Move to the last character of the file.
-                f.seek(-1, 2)
-                last_char = f.read(1)
-            if last_char != b'\n':
-                need_newline = True
-
-        with open(out_file, mode) as f:
-            if need_newline:
-                f.write("\n")
-            # Write the result with the format: "E i j 1 <energy>".
+    if parts:
+        logger.warning(parts)
+        result = np.vstack(parts)
+        with open(out_file, 'w') as f:
             np.savetxt(f, result, fmt="E %d %d %d %.6f")
 
     return out_file
 
 
 @docdef.auto()
-def rnafold(rna: RNAFoldProfile, *,
+def rnafold(rna: RNAProfile, *,
             branch: str,
             fold_constraint: Path | None = None,
             fold_commands: Path | None = None,
@@ -173,40 +160,35 @@ def rnafold(rna: RNAFoldProfile, *,
     # DMS reactivities file for the RNA.
     dms_file = rna.to_pseudomus(tmp_dir, branch)
 
-    apply_all_paired = False
+    apply_all_paired = True
 
     if fold_commands:
         shutil.copy2(fold_commands, command_tmp)
     if apply_all_paired:
-        dms_file = None
-        command_file = calc_bp_pseudoenergy(len(rna.seq), rna.pseudoenergies, command_tmp)
+        probe_file = None
     else:
         command_file = None
+        probe_file = dms_file
     try:
         # Run the command.
-        fold_cmds = {
-            smp: make_fold_cmd(fasta_tmp,
-                               vienna_tmp,
-                               fold_delta_e=5,  # TODO set default
-                               dms_file=dms_file,
-                               shape_method=rna.shape_method,
-                               fold_constraint=fold_constraint,
-                               fold_commands=command_file,
-                               fold_temp=rna.fold_temp,
-                               fold_md=fold_md,
-                               fold_mfe=fold_mfe,
-                               fold_max=fold_max,
-                               fold_percent=fold_percent,
-                               num_cpus=(num_cpus if smp else 1))
-            for smp in [True, False]
-        }
-        try:
-            run_cmd(fold_cmds[True])
-        except RuntimeError as error:
-            logger.warning(error)
-            run_cmd(fold_cmds[False])
+        fold_cmd = make_fold_cmd(fasta_tmp,
+                                 vienna_tmp,
+                                 fold_delta_e=5,  # TODO set default
+                                 dms_file=probe_file,
+                                 shape_method=rna.shape_method,
+                                 fold_constraint=fold_constraint,
+                                 fold_commands=command_file,
+                                 fold_temp=rna.fold_temp,
+                                 fold_md=fold_md,
+                                 fold_mfe=fold_mfe,
+                                 fold_max=fold_max,
+                                 fold_percent=fold_percent,
+                                 num_cpus=num_cpus)
+        run_cmd(fold_cmd)
         # Extract energy values from vienna file to DB file.
         extract_energies(vienna_tmp, db_tmp, force=True)
+        if not fold_mfe:
+            get_subopt(vienna_tmp.with_suffix(VIENNA_SUBOPT_EXT), db_tmp)
         # Convert DB file to CT
         db_to_ct(db_tmp, force=True)
         # Reformat the CT file title lines so that each is unique.
@@ -226,8 +208,31 @@ def rnafold(rna: RNAFoldProfile, *,
     return ct_out
 
 
+def get_subopt(subopt_out: Path,
+               db_target: Path):
+    """ Extract suboptimal structures from the output of RNAsubopt and add them to a vienna file. """
+    lines = list()
+    with open(subopt_out) as f:
+        while line := f.readline():
+            if line.startswith(">"):
+                seq_title = line.split(" ")[0]
+                seq_line = f.readline()
+                continue
+            assert line.count(" ") == 1
+            struct, energy = line.split(" ")
+            struct = struct + "\n"
+            energy = energy.strip("\n").strip("()")
+            title_line = f">ENERGY = {energy} {seq_title.strip('>')}\n"
+            lines.extend([title_line, struct])
+    text = "".join(lines)
+    with open(db_target, mode="a") as f:
+            f.write(text)
+    logger.routine(f"Suboptimal structures from {subopt_out} written"
+                       + f" to {db_target}")
+
+
 def extract_energies(vienna_input: Path, db_output: Path, force: bool = False):
-    """ Extract the free energies from a vienna file and prepend them to the file name.
+    """ Extract the free energies from a vienna file and prepend them to the reference name.
 
     The title will follow this format:
 
