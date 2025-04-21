@@ -120,6 +120,7 @@ CRAM_EXT = ".cram"
 XAM_EXTS = SAM_EXT, BAM_EXT, CRAM_EXT
 FAI_EXT = ".fai"
 VIENNA_EXT = ".vienna"
+VIENNA_SUBOPT_EXT = ".subopt-vienna"
 COMMAND_EXT = ".cmd"
 CT_EXT = ".ct"
 DB_EXT = ".db"
