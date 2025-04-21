@@ -80,6 +80,11 @@ class RNAFoldProfile(RNAProfile):
         return float((pseudoenergies.max() - self.intercept) / np.log(2.))
 
     @cached_property
+    def shape_method(self):
+        """shapeMethod string for ViennaRNA. Slope and intercept are halved to avoid double counting"""
+        return f"Dm{self.slope/2}b{self.intercept/2}"
+
+    @cached_property
     def pseudomus(self):
         """ Pseudo-mutation rates for structure prediction. """
         if self.slope == 0.:

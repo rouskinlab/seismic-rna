@@ -124,12 +124,19 @@ def calc_bp_pseudoenergy(seq_len: int,
             parts.append(block)
 
     if parts:
-        logger.warning(parts)
         result = np.vstack(parts)
         with open(out_file, 'w') as f:
             np.savetxt(f, result, fmt="E %d %d %d %.6f")
 
     return out_file
+
+
+def append_or_copy(source: Path, dest: Path):
+    if dest.exists():
+        with source.open('rb') as fsrc, dest.open('ab') as fdst:
+            shutil.copyfileobj(fsrc, fdst)
+    else:
+        shutil.copy2(source, dest)
 
 
 @docdef.auto()
@@ -163,13 +170,16 @@ def rnafold(rna: RNAFoldProfile, *,
 
     apply_all_paired = True
 
-    if fold_commands:
-        shutil.copy2(fold_commands, command_tmp)
     if apply_all_paired:
+        command_file = calc_bp_pseudoenergy(len(rna.seq), rna.pseudoenergies, command_tmp)
         probe_file = None
     else:
         command_file = None
         probe_file = dms_file
+
+    if fold_commands:
+        append_or_copy(fold_commands, command_tmp)
+
     try:
         # Run the command.
         fold_cmd = make_fold_cmd(fasta_tmp,
