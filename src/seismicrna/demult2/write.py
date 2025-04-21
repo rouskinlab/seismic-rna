@@ -119,6 +119,7 @@ def list_demult(fq_units: list[FastqUnit], refs: set[str]):
     logger.routine("Ended listing demultiplexed FASTQs")
     return demult_fqs
 
+
 def demult_samples(fq_units: list[FastqUnit],
                    fasta: Path, *,
                    refs_meta: Path,
@@ -196,12 +197,14 @@ def demult_samples(fq_units: list[FastqUnit],
     # Merge the existing and new FASTQ paths into a tuple of strings.
     return list({fq.parent for fq in demult_fqs_extant} | fq_dirs_new)
 
+
 def to_range(pos: int, tolerance: int):
     if tolerance > 0:
         range = f"{pos-tolerance},{pos+tolerance}"
     else:
         range = str(pos)
     return range
+
 
 def demult_fqs_pipeline(fq_units: list[FastqUnit],
                         fasta: Path,
@@ -311,6 +314,7 @@ def split_fq(fq_inp: FastqUnit,
             run_cmd(cmd)
     return get_split_paths(split_dir, fq_inp, num_split)
 
+
 def strip_all_suffixes(path: str | Path):
     path = Path(path)
     suffixes = path.suffixes
@@ -319,6 +323,7 @@ def strip_all_suffixes(path: str | Path):
         if base_name.endswith(s):
             base_name = base_name[:-len(s)]
     return base_name
+
 
 def rename_fq_part(fq_path: Path) -> Path:
     suffixes = fq_path.suffixes
@@ -420,6 +425,7 @@ def process_fq_part(fq_inp: FastqUnit,
 
     return demult_fqs
 
+
 def get_open_func(fq_path: Path):
     return gzip.open if fastq_gz(fq_path) else open
 
@@ -445,6 +451,7 @@ def check_matches(matches: Iterable[tuple[tuple[int, str, set]]], barcodes):
         return None
     else:
         return samples.pop()
+
 
 def demult_ahocorasick(fq_unit: FastqUnit,
                        out_fqs: dict[int, FastqUnit],

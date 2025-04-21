@@ -133,5 +133,5 @@ params = [
 
 @command(CMD_DEMULT2, params=params)
 def cli(*args, **kwargs):
-    """ Trim FASTQ files and align them to reference sequences. """
+    """ Demultiplex sequencing reads by their barcode. """
     return run(*args, **kwargs)

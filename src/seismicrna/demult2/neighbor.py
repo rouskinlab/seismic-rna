@@ -3,10 +3,7 @@ from numba.typed import List
 
 from ..core.seq.xna import DNA
 
-# --------------------------
-# 2-bit encoding functions
-# (for when substitutions to N are NOT allowed)
-# --------------------------
+
 def encode_barcode_2bit(barcode: DNA):
     """
     Encode a DNA barcode (string) into an integer using 2-bit encoding per base.
@@ -21,6 +18,7 @@ def encode_barcode_2bit(barcode: DNA):
         value = (value << 2) | mapping[base]
     return value
 
+
 def decode_barcode_2bit(barcode: int, length: int):
     """
     Decode the 2-bit encoded integer back into a DNA string.
@@ -31,6 +29,7 @@ def decode_barcode_2bit(barcode: int, length: int):
         bases.append(mapping[barcode & 0b11])
         barcode >>= 2
     return ''.join(reversed(bases))
+
 
 @njit(cache=False)
 def rec_neighbors_2bit(orig: int,
@@ -58,6 +57,7 @@ def rec_neighbors_2bit(orig: int,
                 candidate = current | (base << shift)
                 rec_neighbors_2bit(orig, length, max_mismatches, pos + 1, mismatches + 1, candidate, out)
 
+
 @njit(cache=False)
 def generate_neighbors_2bit(orig: int, length: int, max_mismatches: int):
     """
@@ -66,6 +66,7 @@ def generate_neighbors_2bit(orig: int, length: int, max_mismatches: int):
     out = List.empty_list(types.int64)
     rec_neighbors_2bit(orig, length, max_mismatches, 0, 0, 0, out)
     return out
+
 
 def _get_neighbors_2bit(barcode: DNA, max_mismatches: int):
     """
@@ -76,10 +77,7 @@ def _get_neighbors_2bit(barcode: DNA, max_mismatches: int):
     neighbors_int = generate_neighbors_2bit(original, length, max_mismatches)
     return set([decode_barcode_2bit(n, length) for n in neighbors_int])
 
-# --------------------------
-# 3-bit encoding functions
-# (for when substitutions to N are allowed)
-# --------------------------
+
 def encode_barcode_3bit(barcode: DNA):
     """
     Encode a DNA barcode (string) into an integer using 3-bit encoding per base.
@@ -95,6 +93,7 @@ def encode_barcode_3bit(barcode: DNA):
         value = (value << 3) | mapping[base]
     return value
 
+
 def decode_barcode_3bit(barcode: int, length: int):
     """
     Decode the 3-bit encoded integer back into a DNA string.
@@ -106,6 +105,7 @@ def decode_barcode_3bit(barcode: int, length: int):
         bases.append(mapping[barcode & 0b111])
         barcode >>= 3
     return ''.join(reversed(bases))
+
 
 @njit(cache=False)
 def rec_neighbors_3bit(orig: int,
@@ -134,6 +134,7 @@ def rec_neighbors_3bit(orig: int,
                 candidate = current | (base << shift)
                 rec_neighbors_3bit(orig, length, max_mismatches, pos + 1, mismatches + 1, candidate, out)
 
+
 @njit(cache=False)
 def generate_neighbors_3bit(orig: int, length: int, max_mismatches: int):
     """
@@ -142,6 +143,7 @@ def generate_neighbors_3bit(orig: int, length: int, max_mismatches: int):
     out = List.empty_list(types.int64)
     rec_neighbors_3bit(orig, length, max_mismatches, 0, 0, 0, out)
     return out
+
 
 def _get_neighbors_3bit(barcode: DNA, max_mismatches: int):
     """
@@ -152,9 +154,7 @@ def _get_neighbors_3bit(barcode: DNA, max_mismatches: int):
     neighbors_int = generate_neighbors_3bit(original, length, max_mismatches)
     return set([decode_barcode_3bit(n, length) for n in neighbors_int])
 
-# --------------------------
-# Public API: get_neighbors
-# --------------------------
+
 def get_neighbors(barcode: DNA, max_mismatches: int, allow_n: bool):
     """
     Get all DNA barcodes within max_mismatches.
