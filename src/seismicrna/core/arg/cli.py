@@ -1102,6 +1102,15 @@ opt_fold_percent = Option(
          "this value (overriden by --fold-mfe)"
 )
 
+opt_pseudoenergy_all = Option(
+    ("--pseudoenergy-all/--pseudoenergy-stacked",),
+    type=bool,
+    default=True,
+    help=("Apply pseudoenergy constraints from chemical probing data "
+          "to all base pairs or only stacked base pairs. "
+          "--pseudoenergy-stacked requires --fold-vienna")
+)
+
 # Draw
 
 opt_draw = Option(

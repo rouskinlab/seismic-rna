@@ -30,11 +30,13 @@ from ..core.arg import (CMD_FOLD,
                         opt_fold_mfe,
                         opt_fold_max,
                         opt_fold_percent,
+                        opt_pseudoenergy_all,
                         opt_verify_times,
                         opt_num_cpus,
                         opt_force,
                         optional_path,
                         extra_defaults)
+from ..core.error import IncompatibleOptionsError
 from ..core.extern import (RNASTRUCTURE_FOLD_CMD,
                            VIENNA_RNAFOLD_CMD,
                            VIENNA_RNASUBOPT_CMD,
@@ -70,6 +72,7 @@ def fold_region(rna: RNAFoldProfile, *,
                 fold_mfe: bool,
                 fold_max: int,
                 fold_percent: float,
+                pseudoenergy_all: bool,
                 force: bool,
                 keep_tmp: bool,
                 num_cpus: int):
@@ -95,6 +98,7 @@ def fold_region(rna: RNAFoldProfile, *,
                               fold_mfe=fold_mfe,
                               fold_max=fold_max,
                               fold_percent=fold_percent,
+                              pseudoenergy_all=pseudoenergy_all,
                               keep_tmp=keep_tmp,
                               num_cpus=num_cpus)
         else:
@@ -178,6 +182,7 @@ def run(input_path: Iterable[str | Path], *,
         fold_mfe: bool,
         fold_max: int,
         fold_percent: float,
+        pseudoenergy_all: bool,
         tmp_pfx: str | Path,
         keep_tmp: bool,
         verify_times: bool,
@@ -186,6 +191,8 @@ def run(input_path: Iterable[str | Path], *,
     """ Predict RNA secondary structures using mutation rates. """
     # Check for the dependencies and the DATAPATH environment variable.
     if not fold_vienna:
+        if not pseudoenergy_all:
+            raise IncompatibleOptionsError("--pseudoenergy-stacked requires --fold-vienna")
         require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
         require_data_path()
     else:
@@ -230,6 +237,7 @@ def run(input_path: Iterable[str | Path], *,
                     fold_mfe=fold_mfe,
                     fold_max=fold_max,
                     fold_percent=fold_percent,
+                    pseudoenergy_all=pseudoenergy_all,
                     force=force)
     )))
 
@@ -251,6 +259,7 @@ params = [
     opt_fold_mfe,
     opt_fold_max,
     opt_fold_percent,
+    opt_pseudoenergy_all,
     opt_tmp_pfx,
     opt_keep_tmp,
     opt_verify_times,

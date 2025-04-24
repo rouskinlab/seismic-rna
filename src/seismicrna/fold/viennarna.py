@@ -148,6 +148,7 @@ def rnafold(rna: RNAFoldProfile, *,
             fold_mfe: bool,
             fold_max: int,
             fold_percent: float,
+            pseudoenergy_all: bool,
             out_dir: Path,
             tmp_dir: Path,
             keep_tmp: bool,
@@ -168,9 +169,7 @@ def rnafold(rna: RNAFoldProfile, *,
     # DMS reactivities file for the RNA.
     dms_file = rna.to_pseudomus(tmp_dir, branch)
 
-    apply_all_paired = True
-
-    if apply_all_paired:
+    if pseudoenergy_all:
         command_file = calc_bp_pseudoenergy(len(rna.seq), rna.pseudoenergies, command_tmp)
         probe_file = None
     else:
