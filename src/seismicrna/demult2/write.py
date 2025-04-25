@@ -13,16 +13,17 @@ from ..core.seq import parse_fasta
 from ..core.extern.shell import args_to_cmd, run_cmd, SEQKIT_CMD
 from ..core.task import dispatch, as_list_of_tuples
 from ..core.tmp import get_release_working_dirs, release_to_out
-from ..core.path import symlink_if_needed, mkdir_if_needed
+from ..core.path import symlink_if_needed, mkdir_if_needed, FQ_ALL_EXTS
 from ..core.seq import DNA
 from .barcode import RefBarcodes
 from tqdm import tqdm
 
-
-# import ahocorasick
-# import pickle
-
 PART_STR = ".part_"
+ALLOWED_SUFFIXES = sorted(
+    (ext for ext in FQ_ALL_EXTS if ext.startswith('.')),
+    key=len,
+    reverse=True
+)
 
 def check_demult_fqs(demult_fqs: dict[tuple[str, str], FastqUnit],
                      out_dir: Path,
@@ -297,7 +298,7 @@ def split_fq(fq_inp: FastqUnit,
         fq = Path(fq)
         num_split = max(num_split, 1)
         if num_split == 1:
-            split_path = (split_dir / strip_all_suffixes(fq.name)).with_suffix(".part_001"+"".join(fq.suffixes))
+            split_path = (split_dir / strip_all_fq_suffixes(fq.name)).with_suffix(".part_001"+"".join(fq.suffixes))
             mkdir_if_needed(split_path.parent)
             # Rather than "splitting" into 1 file, symlink the original file.
             symlink_if_needed(split_path, fq)
@@ -315,19 +316,21 @@ def split_fq(fq_inp: FastqUnit,
     return get_split_paths(split_dir, fq_inp, num_split)
 
 
-def strip_all_suffixes(path: str | Path):
-    path = Path(path)
-    suffixes = path.suffixes
-    base_name = path.name
-    for s in reversed(suffixes):
-        if base_name.endswith(s):
-            base_name = base_name[:-len(s)]
-    return base_name
+def strip_all_fq_suffixes(path: str | Path):
+    name = Path(path).name
+    for ext in ALLOWED_SUFFIXES:
+        if name.endswith(ext):
+            name = name[:-len(ext)]
+            # Aditionally strip the .part_ suffix from split fastqs
+            suffix = Path(name).suffix
+            if suffix.startswith(PART_STR):
+                name = name[:-len(suffix)]
+            return name
 
 
 def rename_fq_part(fq_path: Path) -> Path:
     suffixes = fq_path.suffixes
-    base_name = strip_all_suffixes(fq_path)
+    base_name = strip_all_fq_suffixes(fq_path)
     part = next((s for s in suffixes if s.startswith(PART_STR)), None)
     if part is None:
         return fq_path
@@ -339,10 +342,12 @@ def rename_fq_part(fq_path: Path) -> Path:
 
 
 def get_split_paths(split_dir, fq_inp, num_parts):
-    fq_parts = [
-        (Path(p).name.rsplit(".", maxsplit=2)[0], "".join(Path(p).suffixes)) # Can FASTQs processed by SEISMIC have periods in their names?
-        for p in fq_inp.paths.values()
-    ]
+    fq_parts = []
+    for inp_path in fq_inp.paths.values():
+        p = Path(inp_path)
+        suffix = get_fq_suffix(p)
+        base_name = strip_all_fq_suffixes(p)
+        fq_parts.append((base_name, suffix))
     split_paths = [
         tuple(split_dir / f"{stem}.part_{i:03d}{ext}" for stem, ext in fq_parts)
         for i in range(1, num_parts + 1)
@@ -362,6 +367,13 @@ def remove_suffixes(path: Path):
         path = path.with_suffix("")
     return path
 
+
+def get_fq_suffix(path: Path):
+    name = path.name
+    for ext in sorted(ALLOWED_SUFFIXES, key=len, reverse=True):
+        if name.endswith(ext):
+            return ext
+    return ""
 
 def process_fq_part(fq_inp: FastqUnit,
                     fqs: tuple[Path, ...],

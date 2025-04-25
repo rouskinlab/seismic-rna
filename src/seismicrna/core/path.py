@@ -115,6 +115,7 @@ FQ1_EXTS = tuple(template.format(1, ext) for template, ext in
                  product(FQ_PAIRED_EXTS_TEMPLATES, FQ_EXTS))
 FQ2_EXTS = tuple(template.format(2, ext) for template, ext in
                  product(FQ_PAIRED_EXTS_TEMPLATES, FQ_EXTS))
+FQ_ALL_EXTS = FQ1_EXTS + FQ2_EXTS + FQ_EXTS
 SAM_EXT = ".sam"
 BAM_EXT = ".bam"
 CRAM_EXT = ".cram"
