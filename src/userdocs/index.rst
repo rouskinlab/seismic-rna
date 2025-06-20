@@ -13,6 +13,7 @@ Clustering of RNA
     works/index
     install/index
     tutorials/index
+    examples/index
     manual/index
     cli
     api/seismicrna
