@@ -104,6 +104,10 @@ class ClusterMutsDataset(ClusterDataset, MultistepDataset, UnbiasDataset):
     def region(self):
         return self.dataset1.region
 
+    @region.setter
+    def region(self, region):
+        self.dataset1.region = region
+
     @property
     def min_mut_gap(self):
         return getattr(self.dataset1, "min_mut_gap")

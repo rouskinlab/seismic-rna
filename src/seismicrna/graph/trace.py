@@ -219,7 +219,7 @@ def get_pairwise_position_trace(data: pd.Series, end5: int, end3: int):
 
 
 def iter_stack_bar_traces(data: pd.DataFrame):
-    for column_label, column in data.items():
+    for column_label, column in reversed(list(data.items())):
         yield go.Bar(name=f"{data.columns.name} {column_label}",
                      x=data.index,
                      y=column,
