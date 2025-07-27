@@ -288,11 +288,15 @@ def cluster(dataset: MaskMutsDataset | JoinMaskMutsDataset, *,
         report_saved = report.save(tmp_dir)
         release_to_out(dataset.top, tmp_dir, report_saved.parent)
         # Write the tables.
-        ClusterDatasetTabulator(
-            dataset=ClusterMutsDataset(report_file,
-                                       verify_times=verify_times),
-            count_pos=cluster_pos_table,
-            count_read=False,
-            num_cpus=num_cpus,
-        ).write_tables(pos=cluster_pos_table, clust=cluster_abundance_table)
+        if cluster_pos_table or cluster_abundance_table:
+            ClusterDatasetTabulator(
+                dataset=ClusterMutsDataset(report_file,
+                                           verify_times=verify_times),
+                # count_pos must be True because counting positions is
+                # required to adjust the counts, which are used by both
+                # cluster_pos_table and cluster_abundance_table.
+                count_pos=True,
+                count_read=False,
+                num_cpus=num_cpus,
+            ).write_tables(pos=cluster_pos_table, clust=cluster_abundance_table)
     return report_file.parent

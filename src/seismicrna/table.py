@@ -36,7 +36,7 @@ def tabulate(dataset: MutsDataset,
              force: bool,
              num_cpus: int):
     files = tabulator_type(dataset=dataset,
-                           count_pos=pos_table,
+                           count_pos=(pos_table or clust_table),
                            count_read=read_table,
                            num_cpus=num_cpus).write_tables(pos=pos_table,
                                                            read=read_table,
