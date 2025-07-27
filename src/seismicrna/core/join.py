@@ -87,10 +87,11 @@ def _join_attrs(attrs: dict[str, Any],
                                            add_attrs[SEG_END3S],
                                            None)
     seg_ends_shape = num_reads, num_segs
+    add_seg_ends_shape = num_reads, add_num_segs
     seg_end5s = np.full(seg_ends_shape, default_end5, dtype=dtype)
     seg_end3s = np.full(seg_ends_shape, default_end3, dtype=dtype)
-    add_seg_end5s = np.full(seg_ends_shape, default_end5, dtype=dtype)
-    add_seg_end3s = np.full(seg_ends_shape, default_end3, dtype=dtype)
+    add_seg_end5s = np.full(add_seg_ends_shape, default_end5, dtype=dtype)
+    add_seg_end3s = np.full(add_seg_ends_shape, default_end3, dtype=dtype)
     seg_end5s[read_indexes] = attrs[SEG_END5S]
     seg_end3s[read_indexes] = attrs[SEG_END3S]
     add_seg_end5s[add_read_indexes] = add_attrs[SEG_END5S]
