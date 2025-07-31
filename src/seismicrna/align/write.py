@@ -206,7 +206,9 @@ def separate_strands(xam_file: Path,
                     num_cpus=num_cpus,
                     **kwargs)
         if not keep_tmp:
-            rmtree(index_dir)
+            # Ignore errors to avoid crash on slow networked file systems.
+            # Deletion of tmp_dir at the end will clean up.
+            rmtree(index_dir, ignore_errors=True)
         # Extract the reads that had aligned to the forward strand.
         bam_fwd = realign_dir.joinpath(ref + path.BAM_EXT)
         run_flags(xam_file,
