@@ -181,7 +181,10 @@ def build_jinja_data(struct: str,
                      draw_png: bool,
                      highlight_pos: Iterable[int] = None):
     color_values = color_dict.values()
-    max_data = max(color_values)
+    if not color_values:
+        max_data = 0
+    else:
+        max_data = max(color_values)
     quartile = max_data/4
     color_blocks = [ColorBlock("N", "#caccce"),
                     ColorBlock("n", "black"),
