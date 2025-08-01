@@ -224,7 +224,8 @@ def get_shared_index(indexes: Iterable[pd.MultiIndex], empty_ok: bool = False):
         The shared index.
     """
     # Ensure indexes is a list-like object.
-    indexes = list(indexes)
+    indexes = [index.copy(deep=True).remove_unused_levels()
+               for index in indexes]
     try:
         # Get the first index.
         index = indexes[0]
