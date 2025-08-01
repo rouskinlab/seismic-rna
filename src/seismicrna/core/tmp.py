@@ -1,6 +1,9 @@
+import errno
+
 from functools import wraps
 from inspect import Parameter, Signature
 from pathlib import Path
+from shutil import move
 from typing import Callable
 
 from .logs import logger
@@ -41,7 +44,19 @@ def release_to_out(out_dir: Path,
             )
         try:
             # Move the initial path to the output location.
-            initial_path.rename(out_path)
+            try:
+                initial_path.rename(out_path)
+            except OSError as e:
+                if e.errno == errno.EXDEV:
+                    logger.warning(
+                        "Non-atomic move: temporary and output are on "
+                        f"different filesystems; moving {initial_path} to "
+                        f"{out_path} via copy-delete; data loss may occur "
+                        "if interrupted"
+                    )
+                    move(initial_path, out_path)
+                else:
+                    raise
             logger.action(
                 f"Moved initial path {initial_path} to output path {out_path}"
             )
