@@ -264,7 +264,6 @@ def calc_rels_per_pos(mutations: dict[int, dict[int, np.ndarray]],
         covered = cover_per_pos.sum(axis=1) > 0
     else:
         covered = cover_per_pos > 0
-
     cov_indices = cover_per_pos[covered].index
     nocov_indices = cover_per_pos[~covered].index
     for pos_base in cov_indices:

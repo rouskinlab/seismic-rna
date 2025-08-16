@@ -1,4 +1,5 @@
 from .accum import *
+from .confusion import *
 from .count import *
 from .ends import *
 from .index import *

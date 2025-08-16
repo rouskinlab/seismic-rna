@@ -1159,20 +1159,21 @@ class TestUnite(ut.TestCase):
 
     def test_empty_invalid(self):
         self.assertRaisesRegex(ValueError,
-                               "Cannot unite zero regions",
-                               unite)
+                               "Cannot unite 0 regions",
+                               unite,
+                               [])
 
     def test_one_full(self):
         seq = DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCTACTCTT")
         region = Region("myref", seq)
-        union = unite(region)
+        union = unite([region])
         self.assertIsNot(union, region)
         self.assertEqual(union, region)
 
     def test_one_full_named(self):
         seq = DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCTACTCTT")
         region = Region("myref", seq)
-        union = unite(region, name="myunion")
+        union = unite([region], name="myunion")
         self.assertEqual(union.seq, region.seq)
         self.assertEqual(union.end5, region.end5)
         self.assertEqual(union.end3, region.end3)
@@ -1182,7 +1183,7 @@ class TestUnite(ut.TestCase):
     def test_one_slice(self):
         seq = DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCTACTCTT")
         region = Region("myref", seq, end5=13, end3=33)
-        union = unite(region)
+        union = unite([region])
         self.assertIsNot(union, region)
         self.assertEqual(union, region)
 
@@ -1190,7 +1191,7 @@ class TestUnite(ut.TestCase):
         seq = DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCTACTCTT")
         region1 = Region("myref", seq)
         region2 = Region("myref", seq)
-        union = unite(region1, region2)
+        union = unite([region1, region2])
         self.assertIsNot(union, region1)
         self.assertIsNot(union, region2)
         self.assertEqual(union, region1)
@@ -1200,7 +1201,7 @@ class TestUnite(ut.TestCase):
         seq = DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCTACTCTT")
         region1 = Region("myref", seq, end5=12, end3=31)
         region2 = Region("myref", seq, end5=4, end3=23)
-        union = unite(region1, region2)
+        union = unite([region1, region2])
         self.assertEqual(union.seq, seq[4 - 1: 31])
         self.assertEqual(union.end5, 4)
         self.assertEqual(union.end3, 31)
@@ -1212,14 +1213,14 @@ class TestUnite(ut.TestCase):
         seq = DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCTACTCTT")
         region1 = Region("myref", seq, end5=12, end3=31)
         region2 = Region("myref", seq, end5=4, end3=23)
-        self.assertEqual(unite(region1, region2, refseq=seq),
-                         unite(region1, region2))
+        self.assertEqual(unite([region1, region2], refseq=seq),
+                         unite([region1, region2]))
 
     def test_two_disjoint(self):
         seq = DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCTACTCTT")
         region1 = Region("myref", seq, end5=23, end3=31)
         region2 = Region("myref", seq, end5=4, end3=12)
-        union = unite(region1, region2)
+        union = unite([region1, region2])
         self.assertEqual(union.seq, DNA("TCTCGTAGTNNNNNNNNNNGTCTCTCTA"))
         self.assertEqual(union.end5, 4)
         self.assertEqual(union.end3, 31)
@@ -1231,7 +1232,7 @@ class TestUnite(ut.TestCase):
         seq = DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCTACTCTT")
         region1 = Region("myref", seq, end5=23, end3=31)
         region2 = Region("myref", seq, end5=4, end3=12)
-        union = unite(region1, region2, refseq=seq)
+        union = unite([region1, region2], refseq=seq)
         self.assertEqual(union.seq, seq[4 - 1: 31])
         self.assertEqual(union.end5, 4)
         self.assertEqual(union.end3, 31)
@@ -1243,22 +1244,20 @@ class TestUnite(ut.TestCase):
         seq = DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCTACTCTT")
         region1 = Region("myref", seq, end5=23, end3=31)
         region2 = Region("myref", seq, end5=4, end3=12)
-        union = unite(region1,
-                      region2,
+        union = unite([region1, region2],
                       refseq=DNA("CATTCTCGTAGTCAACTATCGCGTCTCTCTACTCTT"))
         self.assertEqual(union.seq, DNA("TCTCGTAGTCAACTATCGCGTCTCTCTA"))
         self.assertRaisesRegex(ValueError,
                                "Expected exactly one sequence",
                                unite,
-                               region1,
-                               region2,
+                               [region1, region2],
                                refseq=DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCTGCTCTT"))
 
     def test_one_masked(self):
         seq = DNA.random(30)
         region = Region("myref", seq)
         region.add_mask("mask1", [19, 13, 26])
-        union = unite(region)
+        union = unite([region])
         self.assertEqual(union.masked_int.tolist(), [13, 19, 26])
 
     def test_two_masked(self):
@@ -1267,7 +1266,7 @@ class TestUnite(ut.TestCase):
         region2 = Region("myref", seq, end5=9, end3=28)
         region1.add_mask("mask1", [5, 6, 7, 8, 9, 10, 20])
         region2.add_mask("mask2", [10, 15, 20, 25])
-        union = unite(region1, region2)
+        union = unite([region1, region2])
         self.assertEqual(union.end5, 3)
         self.assertEqual(union.end3, 28)
         self.assertEqual(union.masked_int.tolist(), [5, 6, 7, 8, 10, 20, 25])
@@ -1279,8 +1278,7 @@ class TestUnite(ut.TestCase):
         self.assertRaisesRegex(ValueError,
                                "Expected exactly one reference",
                                unite,
-                               region1,
-                               region2)
+                               [region1, region2])
 
     def test_diff_seqs(self):
         seq1 = DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCT")
@@ -1290,11 +1288,10 @@ class TestUnite(ut.TestCase):
         self.assertRaisesRegex(ValueError,
                                "Sequences differ",
                                unite,
-                               region1,
-                               region2)
+                               [region1, region2])
         region1 = Region("myref", seq1, end3=10)
         region2 = Region("myref", seq2, end3=10)
-        self.assertEqual(unite(region1, region2).seq,
+        self.assertEqual(unite([region1, region2]).seq,
                          DNA("CATTCTCGTA"))
 
 

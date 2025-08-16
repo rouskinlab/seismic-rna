@@ -730,14 +730,14 @@ def intersect(*regions: Region, name: str | None = None):
     return intersection
 
 
-def unite(*regions: Region,
+def unite(regions: Iterable[Region],
           name: str | None = None,
           refseq: DNA | None = None):
     """ Unite one or more regions.
 
     Parameters
     ----------
-    *regions: Region
+    regions: Iterable[Region]
         Regions to unite.
     name: str | None = None
         Name for the region to return.
@@ -752,8 +752,9 @@ def unite(*regions: Region,
     Region
         Union of all given regions.
     """
+    regions = list(regions)
     if not regions:
-        raise ValueError("Cannot unite zero regions")
+        raise ValueError("Cannot unite 0 regions")
     # Confirm that all reference names match.
     refs = list(set(region.ref for region in regions))
     if len(refs) != 1:

@@ -569,7 +569,7 @@ class WideDataset(MergedRegionDataset, ABC):
 
     @cached_property
     def region(self):
-        return unite(*self._list_dataset_attr("region"),
+        return unite(self._list_dataset_attr("region"),
                      name=self.report.get_field(RegF),
                      refseq=self.refseq)
 

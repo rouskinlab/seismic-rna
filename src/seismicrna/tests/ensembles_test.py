@@ -12,7 +12,8 @@ from seismicrna.core.rna.convert import db_to_ct
 from seismicrna.core.seq.fasta import write_fasta
 from seismicrna.core.seq.region import FULL_NAME
 from seismicrna.core.seq.xna import DNA
-from seismicrna.ensembles import (calc_regions,
+from seismicrna.ensembles import (_calc_mask_regions,
+                                  _merge_intervals,
                                   run as run_ensembles)
 from seismicrna.sim.params import run as sim_params
 from seismicrna.sim.relate import run as sim_relate
@@ -30,29 +31,91 @@ class TestCalcRegions(ut.TestCase):
         set_config(self._config)
 
     def test_region_min_overlap_25(self):
-        result = calc_regions(41, 145, 60, 0.25)
+        result = _calc_mask_regions(41, 145, 60, 0.25)
         expect = [(41, 100), (86, 145)]
         self.assertEqual(result, expect)
 
     def test_region_min_overlap_75(self):
-        result = calc_regions(41, 145, 60, 0.75)
+        result = _calc_mask_regions(41, 145, 60, 0.75)
         expect = [(41, 100), (56, 115), (71, 130), (86, 145)]
         self.assertEqual(result, expect)
 
     def test_region_not_divisible(self):
-        result = calc_regions(41, 170, 60, 0.25)
+        result = _calc_mask_regions(41, 170, 60, 0.25)
         expect = [(41, 100), (76, 135), (111, 170)]
         self.assertEqual(result, expect)
 
     def test_region_length_larger(self):
-        result = calc_regions(41, 49, 52, 0.9)
+        result = _calc_mask_regions(41, 49, 52, 0.9)
         expect = [(41, 49)]
         self.assertEqual(result, expect)
 
     def test_total_region_length_1(self):
-        result = calc_regions(41, 41, 52, 0.9)
+        result = _calc_mask_regions(41, 41, 52, 0.9)
         expect = [(41, 41)]
         self.assertEqual(result, expect)
+
+
+class TestMergeIntervals(ut.TestCase):
+
+    def test_empty(self):
+        intervals = []
+        result = list(_merge_intervals(intervals))
+        expect = []
+        self.assertListEqual(result, expect)
+
+    def test_chained_overlaps(self):
+        intervals = [(1, 10),
+                     (3, 15),
+                     (12, 19),
+                     (19, 30),
+                     (30, 40)]
+        result = list(_merge_intervals(intervals))
+        expect = [(1, 40)]
+        self.assertListEqual(result, expect)
+
+    def test_disjoint(self):
+        intervals = [(1, 10),
+                     (12, 19),
+                     (30, 40)]
+        result = list(_merge_intervals(intervals))
+        expect = intervals
+        self.assertListEqual(result, expect)
+
+    def test_single_overlap(self):
+        intervals = [(1, 10),
+                     (10, 19)]
+        result = list(_merge_intervals(intervals))
+        expect = [(1, 19)]
+        self.assertListEqual(result, expect)
+
+    def test_abutting(self):
+        intervals = [(1, 10),
+                     (11, 19)]
+        result = list(_merge_intervals(intervals))
+        expect = intervals
+        self.assertListEqual(result, expect)
+
+    def test_nested(self):
+        intervals = [(2, 15),
+                     (3, 8),
+                     (5, 7),
+                     (20, 30),
+                     (24, 27)]
+        result = list(_merge_intervals(intervals))
+        expect = [(2, 15), (20, 30)]
+        self.assertListEqual(result, expect)
+
+    def test_complex_nested(self):
+        intervals = [(1, 40),
+                     (2, 15),
+                     (3, 8),
+                     (5, 7),
+                     (20, 30),
+                     (24, 27)]
+        result = list(_merge_intervals(intervals))
+        expect = [(1, 40)]
+        self.assertListEqual(result, expect)
 
 
 @ut.skip("Takes a very long time")

@@ -987,7 +987,7 @@ opt_region_length = Option(
 opt_region_min_overlap = Option(
     ("--region-min-overlap", "-O"),
     type=float,
-    default=(2. / 3.),
+    default=0.5,
     help="Make adjacent regions overlap by at least this fraction of length",
 )
 
