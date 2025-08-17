@@ -40,8 +40,11 @@ from .core.seq import (POS_NAME,
                        unite)
 from .core.task import as_list_of_tuples, dispatch
 from .mask.dataset import MaskMutsDataset, load_mask_dataset
+from .mask.io import MaskBatchIO
 from .mask.main import load_regions
+from .mask.report import MaskReport
 from .relate.dataset import load_relate_dataset
+from .relate.report import RelateReport
 
 
 def _get_batch_read_lengths(batch_num: int,
@@ -168,16 +171,16 @@ def _calc_ref_tiled_regions(ref: str, *,
     return [(ref, end5, end3) for end5, end3 in tiles]
 
 
-def _calc_tiled_regions(input_path: Iterable[str | Path],
-                        coords: Iterable[tuple[str, int, int]],
-                        primers: Iterable[tuple[str, DNA, DNA]],
-                        primer_gap: int,
-                        regions_file: str | None,
-                        region_length: int,
-                        region_min_overlap: float,
-                        num_cpus: int):
+def _calc_tiled_coords(relate_report_files: Iterable[str | Path],
+                       coords: Iterable[tuple[str, int, int]],
+                       primers: Iterable[tuple[str, DNA, DNA]],
+                       primer_gap: int,
+                       regions_file: str | None,
+                       region_length: int,
+                       region_min_overlap: float,
+                       num_cpus: int):
     """ Calculate the tiled regions for all references. """
-    datasets, total_regions = load_regions(input_path,
+    datasets, total_regions = load_regions(relate_report_files,
                                            coords,
                                            primers,
                                            primer_gap,
@@ -495,6 +498,7 @@ def _run_group(relate_report_files: list[Path], *,
                min_pair_fraction: float,
                min_cluster_length: int,
                ensembles_gap_fill: str,
+               delete_tiles: bool,
                # Mask options
                mask_coords: Iterable[tuple[str, int, int]],
                mask_primers: Iterable[tuple[str, DNA, DNA]],
@@ -546,8 +550,8 @@ def _run_group(relate_report_files: list[Path], *,
                cluster_abundance_table: bool,
                verify_times: bool):
     """ Run a group of datasets. """
-    # Divide the reference into overlapping regions.
-    tiled_regions = _calc_tiled_regions(
+    # Divide each reference into overlapping tiles.
+    tiled_coords = _calc_tiled_coords(
         relate_report_files,
         coords=mask_coords,
         primers=mask_primers,
@@ -562,7 +566,7 @@ def _run_group(relate_report_files: list[Path], *,
         branch=branch,
         tmp_pfx=tmp_pfx,
         keep_tmp=keep_tmp,
-        mask_coords=tuple(tiled_regions),
+        mask_coords=tiled_coords,
         mask_primers=(),
         primer_gap=0,
         mask_regions_file=None,
@@ -586,8 +590,8 @@ def _run_group(relate_report_files: list[Path], *,
         quick_unbias=quick_unbias,
         quick_unbias_thresh=quick_unbias_thresh,
         max_mask_iter=max_mask_iter,
-        mask_pos_table=mask_pos_table,
-        mask_read_table=mask_read_table,
+        mask_pos_table=False,
+        mask_read_table=False,
         brotli_level=brotli_level,
         num_cpus=num_cpus,
         force=force
@@ -601,8 +605,33 @@ def _run_group(relate_report_files: list[Path], *,
         ensembles_gap_fill=ensembles_gap_fill,
         num_cpus=num_cpus
     )
+    if delete_tiles:
+        # Delete the mask reports and batches of the tiles.
+        logger.routine("Began deleting tiled reports and batches")
+        for file in path.find_files_chain(tiled_dirs,
+                                          MaskReport.get_path_seg_types()):
+            file.unlink(missing_ok=True)
+        for file in path.find_files_chain(tiled_dirs,
+                                          MaskBatchIO.get_path_seg_types()):
+            file.unlink(missing_ok=True)
+        logger.routine("Ended deleting tiled reports and batches")
+    # Drop each relate report whose reference contained no correlated
+    # base pairs; otherwise, it will default to clustering the full
+    # reference, which is not what seismic ensembles is for.
+    refs_with_correlated_pairs = {ref for ref, end5, end3 in correl_regions}
+    logger.detail(f"Found {len(refs_with_correlated_pairs)} references with "
+                  f"correlated pairs: {sorted(refs_with_correlated_pairs)}")
+    relate_report_files_with_correlated_pairs = list()
+    for file in relate_report_files:
+        ref = path.parse(file, RelateReport.get_path_seg_types())[path.REF]
+        if ref in refs_with_correlated_pairs:
+            relate_report_files_with_correlated_pairs.append(file)
+    logger.detail(f"Found {len(relate_report_files_with_correlated_pairs)} "
+                  "relate report files with correlated pairs, out of "
+                  f"{len(relate_report_files)} total relate report files")
+    # Cluster the regions spanned by correlated base pairs.
     correl_dirs = mask_mod.run(
-        input_path=relate_report_files,
+        input_path=relate_report_files_with_correlated_pairs,
         branch=branch,
         tmp_pfx=tmp_pfx,
         keep_tmp=keep_tmp,
@@ -636,7 +665,6 @@ def _run_group(relate_report_files: list[Path], *,
         num_cpus=num_cpus,
         force=force
     )
-    # Cluster the regions spanned by correlated base pairs.
     cluster_dirs = cluster_mod.run(
         input_path=correl_dirs,
         tmp_pfx=tmp_pfx,
@@ -757,6 +785,7 @@ def run(input_path: Iterable[str | Path], *,
                   min_pair_fraction=0.0005,  # TODO: make this an option
                   min_cluster_length=30,  # TODO: make this an option
                   ensembles_gap_fill="none",  # TODO: make this an option
+                  delete_tiles=True,  # TODO: make this an option
                   # Mask options
                   mask_coords=mask_coords,
                   mask_primers=mask_primers,
