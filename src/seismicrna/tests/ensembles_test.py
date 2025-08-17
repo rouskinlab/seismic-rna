@@ -31,12 +31,12 @@ class TestCalcTiles(ut.TestCase):
     def tearDown(self):
         set_config(self._config)
 
-    def test_region_min_overlap_25(self):
+    def test_tile_min_overlap_25(self):
         result = _calc_tiles(41, 145, 60, 0.25)
         expect = [(41, 100), (86, 145)]
         self.assertEqual(result, expect)
 
-    def test_region_min_overlap_75(self):
+    def test_tile_min_overlap_75(self):
         result = _calc_tiles(41, 145, 60, 0.75)
         expect = [(41, 100), (56, 115), (71, 130), (86, 145)]
         self.assertEqual(result, expect)
@@ -46,12 +46,12 @@ class TestCalcTiles(ut.TestCase):
         expect = [(41, 100), (76, 135), (111, 170)]
         self.assertEqual(result, expect)
 
-    def test_region_length_larger(self):
+    def test_tile_length_larger(self):
         result = _calc_tiles(41, 49, 52, 0.9)
         expect = [(41, 49)]
         self.assertEqual(result, expect)
 
-    def test_total_region_length_1(self):
+    def test_total_tile_length_1(self):
         result = _calc_tiles(41, 41, 52, 0.9)
         expect = [(41, 41)]
         self.assertEqual(result, expect)
@@ -204,16 +204,16 @@ class TestEnsembles(ut.TestCase):
 
     def run_ensembles(self,
                       relate_dirs: list[Path],
-                      region_length: int,
-                      region_min_overlap: float,
+                      tile_length: int,
+                      tile_min_overlap: float,
                       expect_ks: list[int],
                       expect_regions: list[list[str]],
                       **kwargs):
-        joined = f"ensembles-{region_length}_"
+        joined = f"ensembles-{tile_length}_"
         join_dirs = run_ensembles(relate_dirs,
                                   joined=joined,
-                                  region_length=region_length,
-                                  region_min_overlap=region_min_overlap,
+                                  tile_length=tile_length,
+                                  tile_min_overlap=tile_min_overlap,
                                   mask_pos_table=False,
                                   mask_read_table=False,
                                   # Calculating the cluster tables here

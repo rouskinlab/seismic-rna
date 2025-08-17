@@ -10,20 +10,21 @@ from click import command
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
-from . import (mask as mask_mod,
-               cluster as cluster_mod,
-               join as join_mod)
+from . import mask as mask_mod, cluster as cluster_mod
 from .core import path
 from .core.arg import (CMD_ENSEMBLES,
-                       ENSEMBLES_GAP_FILL_NONE,
-                       ENSEMBLES_GAP_FILL_INSERT,
-                       ENSEMBLES_GAP_FILL_EXPAND,
+                       GAP_MODE_OMIT,
+                       GAP_MODE_INSERT,
+                       GAP_MODE_EXPAND,
                        merge_params,
                        extra_defaults,
-                       opt_join_clusts,
-                       opt_region_length,
-                       opt_region_min_overlap,
-                       opt_max_marcd_join)
+                       opt_tile_length,
+                       opt_tile_min_overlap,
+                       opt_erase_tiles,
+                       opt_pair_fdr,
+                       opt_min_pair_fraction,
+                       opt_min_cluster_length,
+                       opt_gap_mode)
 from .core.batch import (accumulate_confusion_matrices,
                          calc_confusion_pvals,
                          calc_confusion_phi,
@@ -76,8 +77,8 @@ def _ends_arrays_to_tuples(end5s: Iterable, end3s: Iterable):
 
 def _calc_tiles(total_end5: int,
                 total_end3: int,
-                region_length: int,
-                region_min_overlap: float):
+                tile_length: int,
+                tile_min_overlap: float):
     if not isinstance(total_end5, int):
         raise TypeError(total_end5)
     if not isinstance(total_end3, int):
@@ -88,46 +89,46 @@ def _calc_tiles(total_end5: int,
                                       f"and total_end3={total_end3}")
     total_length = total_end3 - total_end5 + 1
     assert total_length >= 1
-    if not isinstance(region_length, int):
-        raise TypeError(region_length)
-    if region_length < 1:
+    if not isinstance(tile_length, int):
+        raise TypeError(tile_length)
+    if tile_length < 1:
         raise OutOfBoundsError(
-            f"region_length must be ≥ 1, but got {region_length}"
+            f"tile_length must be ≥ 1, but got {tile_length}"
         )
-    if region_length > total_length:
-        logger.warning(f"region_length ({region_length}) is greater than "
+    if tile_length > total_length:
+        logger.warning(f"tile_length ({tile_length}) is greater than "
                        f"total length of region ({total_length}): "
-                       f"using region_length of {total_length}")
+                       f"using tile_length of {total_length}")
         return [(total_end5, total_end3)]
-    assert 1 <= region_length <= total_length <= total_end3
-    if not isinstance(region_min_overlap, float):
-        raise TypeError(region_min_overlap)
-    if not 0. < region_min_overlap < 1.:
-        raise OutOfBoundsError("region_min_overlap must be > 0 and < 1, "
-                               f"but got {region_min_overlap}")
-    max_step_size = int(region_length * (1. - region_min_overlap))
-    assert 0 <= max_step_size < region_length
+    assert 1 <= tile_length <= total_length <= total_end3
+    if not isinstance(tile_min_overlap, float):
+        raise TypeError(tile_min_overlap)
+    if not 0. < tile_min_overlap < 1.:
+        raise OutOfBoundsError("tile_min_overlap must be > 0 and < 1, "
+                               f"but got {tile_min_overlap}")
+    max_step_size = int(tile_length * (1. - tile_min_overlap))
+    assert 0 <= max_step_size < tile_length
     if max_step_size == 0:
         raise IncompatibleValuesError(
-            f"Cannot have region_length={region_length} "
-            f"with region_min_overlap={region_min_overlap}"
+            f"Cannot have tile_length={tile_length} "
+            f"with tile_min_overlap={tile_min_overlap}"
         )
-    num_regions = 1 + ceil((total_length - region_length) / max_step_size)
+    num_regions = 1 + ceil((total_length - tile_length) / max_step_size)
     region_end5s = np.asarray(
         np.round(np.linspace(total_end5,
-                             total_end3 - region_length + 1,
+                             total_end3 - tile_length + 1,
                              num_regions)),
         dtype=int
     )
-    region_end3s = region_end5s + (region_length - 1)
+    region_end3s = region_end5s + (tile_length - 1)
     return _ends_arrays_to_tuples(region_end5s, region_end3s)
 
 
 def _calc_ref_tiled_regions(ref: str, *,
                             datasets: dict[str, list[MutsDataset]],
                             total_regions: RefRegions,
-                            region_length: int,
-                            region_min_overlap: float,
+                            tile_length: int,
+                            tile_min_overlap: float,
                             num_cpus: int):
     """ Calculate the tiles for one reference. """
     logger.routine(f"Began calculating tiles for reference {repr(ref)}")
@@ -137,9 +138,9 @@ def _calc_ref_tiled_regions(ref: str, *,
     if len(ref_total_regions) > 1:
         raise DuplicateReferenceNameError(ref)
     ref_total_region = ref_total_regions[0]
-    if region_length > 0:
+    if tile_length > 0:
         # Use a prespecified region length.
-        ref_region_length = region_length
+        ref_tile_length = tile_length
     else:
         # Set the region length to twice the median read length.
         logger.routine("Began calculating optimal tile length")
@@ -158,15 +159,15 @@ def _calc_ref_tiled_regions(ref: str, *,
             raise ValueError("The median read length must be ≥ 1, "
                              f"but got {median_read_length}")
         logger.detail(f"The median read length is {median_read_length}")
-        ref_region_length = round(2 * median_read_length)
+        ref_tile_length = round(2 * median_read_length)
         logger.routine(
-            f"Ended calculating optimal tile length: {ref_region_length}"
+            f"Ended calculating optimal tile length: {ref_tile_length}"
         )
     # Calculate the tiles for this reference.
     tiles = _calc_tiles(ref_total_region.end5,
                         ref_total_region.end3,
-                        ref_region_length,
-                        region_min_overlap)
+                        ref_tile_length,
+                        tile_min_overlap)
     logger.routine(f"Ended calculating tiles for reference {repr(ref)}")
     return [(ref, end5, end3) for end5, end3 in tiles]
 
@@ -176,8 +177,8 @@ def _calc_tiled_coords(relate_report_files: Iterable[str | Path],
                        primers: Iterable[tuple[str, DNA, DNA]],
                        primer_gap: int,
                        regions_file: str | None,
-                       region_length: int,
-                       region_min_overlap: float,
+                       tile_length: int,
+                       tile_min_overlap: float,
                        num_cpus: int):
     """ Calculate the tiled regions for all references. """
     datasets, total_regions = load_regions(relate_report_files,
@@ -195,8 +196,8 @@ def _calc_tiled_coords(relate_report_files: Iterable[str | Path],
         args=as_list_of_tuples(total_regions.refs),
         kwargs=dict(datasets=datasets,
                     total_regions=total_regions,
-                    region_length=region_length,
-                    region_min_overlap=region_min_overlap)
+                    tile_length=tile_length,
+                    tile_min_overlap=tile_min_overlap)
     )
     return [region
             for ref_tiled_regions in tiled_regions
@@ -387,7 +388,7 @@ def _expand_regions_into_gaps(ends: list[tuple[int, int]],
 def _calc_ref_cluster_regions(datasets: list[MaskMutsDataset],
                               min_pair_fraction: float,
                               min_cluster_length: int,
-                              ensembles_gap_fill: str,
+                              gap_mode: str,
                               num_cpus: int,
                               **kwargs):
     """ Calculate the cluster regions for one reference. """
@@ -431,12 +432,12 @@ def _calc_ref_cluster_regions(datasets: list[MaskMutsDataset],
     end3s = end3s[sufficient_length]
     # Determine what to do with gaps between regions.
     ends = _ends_arrays_to_tuples(end5s, end3s)
-    if ensembles_gap_fill == ENSEMBLES_GAP_FILL_INSERT:
+    if gap_mode == GAP_MODE_INSERT:
         ends = _insert_regions_into_gaps(ends, region.end5, region.end3)
-    elif ensembles_gap_fill == ENSEMBLES_GAP_FILL_EXPAND:
+    elif gap_mode == GAP_MODE_EXPAND:
         ends = _expand_regions_into_gaps(ends, region.end5, region.end3)
-    elif ensembles_gap_fill != ENSEMBLES_GAP_FILL_NONE:
-        raise ValueError(ensembles_gap_fill)
+    elif gap_mode != GAP_MODE_OMIT:
+        raise ValueError(gap_mode)
     # Save the pair fractions as a CSV.
     ref_dir = datasets[0].report_file.parent.parent
     csv_file = ref_dir.joinpath("pair_fractions.csv")
@@ -492,13 +493,13 @@ def _run_group(relate_report_files: list[Path], *,
                force: bool,
                num_cpus: int,
                # Ensembles options
-               region_length: int,
-               region_min_overlap: float,
+               tile_length: int,
+               tile_min_overlap: float,
+               erase_tiles: bool,
                pair_fdr: float,
                min_pair_fraction: float,
                min_cluster_length: int,
-               ensembles_gap_fill: str,
-               delete_tiles: bool,
+               gap_mode: str,
                # Mask options
                mask_coords: Iterable[tuple[str, int, int]],
                mask_primers: Iterable[tuple[str, DNA, DNA]],
@@ -557,8 +558,8 @@ def _run_group(relate_report_files: list[Path], *,
         primers=mask_primers,
         primer_gap=primer_gap,
         regions_file=mask_regions_file,
-        region_length=region_length,
-        region_min_overlap=region_min_overlap,
+        tile_length=tile_length,
+        tile_min_overlap=tile_min_overlap,
         num_cpus=num_cpus
     )
     tiled_dirs = mask_mod.run(
@@ -602,10 +603,10 @@ def _run_group(relate_report_files: list[Path], *,
         pair_fdr=pair_fdr,
         min_pair_fraction=min_pair_fraction,
         min_cluster_length=min_cluster_length,
-        ensembles_gap_fill=ensembles_gap_fill,
+        gap_mode=gap_mode,
         num_cpus=num_cpus
     )
-    if delete_tiles:
+    if erase_tiles:
         # Delete the mask reports and batches of the tiles.
         logger.routine("Began deleting tiled reports and batches")
         for file in path.find_files_chain(tiled_dirs,
@@ -707,6 +708,14 @@ def run(input_path: Iterable[str | Path], *,
         brotli_level: int,
         force: bool,
         num_cpus: int,
+        # Ensembles options
+        tile_length: int,
+        tile_min_overlap: float,
+        erase_tiles: bool,
+        pair_fdr: float,
+        min_pair_fraction: float,
+        min_cluster_length: int,
+        gap_mode: str,
         # Mask options
         mask_coords: Iterable[tuple[str, int, int]],
         mask_primers: Iterable[tuple[str, DNA, DNA]],
@@ -756,12 +765,7 @@ def run(input_path: Iterable[str | Path], *,
         write_all_ks: bool,
         cluster_pos_table: bool,
         cluster_abundance_table: bool,
-        verify_times: bool,
-        # Ensembles options
-        joined: str,
-        region_length: int,
-        region_min_overlap: float,
-        max_marcd_join: float):
+        verify_times: bool):
     """ Infer independent structure ensembles along an entire RNA. """
     # Group reports by sample and branches.
     seg_types = load_relate_dataset.report_path_seg_types
@@ -779,13 +783,13 @@ def run(input_path: Iterable[str | Path], *,
                   force=force,
                   num_cpus=num_cpus,
                   # Ensembles options
-                  region_length=region_length,
-                  region_min_overlap=region_min_overlap,
-                  pair_fdr=0.05,  # TODO: make this an option
-                  min_pair_fraction=0.0005,  # TODO: make this an option
-                  min_cluster_length=30,  # TODO: make this an option
-                  ensembles_gap_fill="none",  # TODO: make this an option
-                  delete_tiles=True,  # TODO: make this an option
+                  tile_length=tile_length,
+                  tile_min_overlap=tile_min_overlap,
+                  erase_tiles=erase_tiles,
+                  pair_fdr=pair_fdr,
+                  min_pair_fraction=min_pair_fraction,
+                  min_cluster_length=min_cluster_length,
+                  gap_mode=gap_mode,
                   # Mask options
                   mask_coords=mask_coords,
                   mask_primers=mask_primers,
@@ -848,11 +852,13 @@ def run(input_path: Iterable[str | Path], *,
 
 params = merge_params(mask_mod.params,
                       cluster_mod.params,
-                      join_mod.params,
-                      [opt_region_length,
-                       opt_region_min_overlap,
-                       opt_max_marcd_join],
-                      exclude=[opt_join_clusts])
+                      [opt_tile_length,
+                       opt_tile_min_overlap,
+                       opt_erase_tiles,
+                       opt_pair_fdr,
+                       opt_min_pair_fraction,
+                       opt_min_cluster_length,
+                       opt_gap_mode])
 
 
 @command(CMD_ENSEMBLES, params=params)
