@@ -2,6 +2,7 @@ from itertools import combinations
 
 import numpy as np
 import pandas as pd
+from numba import jit
 
 from .count import calc_reads_per_pos
 from ..logs import logger
@@ -48,6 +49,30 @@ def init_confusion_matrix(pos_index: pd.Index,
     return n, a, b, ab
 
 
+@jit
+def _count_intersection(x: np.ndarray, y: np.ndarray):
+    """ Count how many elements are in both x and y, assuming x and y
+    are both NumPy arrays where all elements are unique and sorted from
+    smallest to largest. """
+    nx = x.size
+    ny = y.size
+    i = 0
+    j = 0
+    count = 0
+    while i < nx and j < ny:
+        xi = x[i]
+        yj = y[j]
+        if xi == yj:
+            count += 1
+            i += 1
+            j += 1
+        elif xi < yj:
+            i += 1
+        else:
+            j += 1
+    return count
+
+
 def calc_confusion_matrix(pattern: RelPattern,
                           mutations: dict[int, dict[int, np.ndarray]],
                           pos_index: pd.Index,
@@ -68,6 +93,8 @@ def calc_confusion_matrix(pattern: RelPattern,
     And return .., A., .B, AB in that order.
     """
     logger.routine("Began calculating confusion matrix")
+    if not np.array_equal(read_nums, np.unique(read_nums)):
+        raise ValueError("read_nums is not unique and sorted")
     # Find which reads cover and are mutated at each position.
     mutated_reads = calc_reads_per_pos(pattern, mutations, pos_index)
     covering_reads = dict()
@@ -80,16 +107,15 @@ def calc_confusion_matrix(pattern: RelPattern,
         assert np.all(np.isin(mutated_reads[pos],
                               covering_reads[pos],
                               assume_unique=True))
-
-    def _count_intersection(x: np.ndarray, y: np.ndarray):
-        return np.count_nonzero(np.isin(x, y, assume_unique=True))
-
     # Calculate the confusion matrix.
     n, a, b, ab = init_confusion_matrix(pos_index,
                                         (read_weights.columns
                                          if read_weights is not None
                                          else None))
     for pos_pair in ab.index:
+        # Note that this method of counting the intersection is faster
+        # than matrix multiplications, even though this method needs to
+        # loop over every pair.
         pos5, pos3 = pos_pair
         # Count the reads in each category.
         if read_weights is None:
@@ -236,6 +262,9 @@ def label_significant_pvals(pvals: np.ndarray | pd.Series,
     is_valid = ~np.isnan(pvals)
     pvals_valid = pvals[is_valid]
     m = pvals_valid.size
+    if m == 0:
+        # No p-values are valid, so none are significant.
+        return np.logical_and(False, pvals.astype(bool))
     ranks = np.empty_like(pvals_valid, dtype=int)
     ranks[np.argsort(pvals_valid, kind="stable")] = np.arange(1, m + 1)
     # Determine the largest p-value that is ≤ (alpha / m) * rank.
