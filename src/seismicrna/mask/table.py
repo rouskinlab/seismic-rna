@@ -325,7 +325,7 @@ def adjust_counts(table_per_pos: pd.DataFrame,
             # have no two mutations too close.
             p_noclose = float(np.vdot(p_noclose_given_clust[ki], p_clust[ki]))
             # Compute the number of reads in each cluster.
-            n_clust.loc[k] = (n_reads_noclose / p_noclose) * p_clust[ki]
+            n_clust.at[k] = (n_reads_noclose / p_noclose) * p_clust[ki]
     else:
         raise TypeError("n_reads_clust must be an int or Series, "
                         f"but got {type(n_reads_clust).__name__}")

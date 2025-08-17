@@ -38,7 +38,7 @@ class RollingStatGraph(OneTableRelClusterGroupGraph,
             for center, (window,) in iter_windows(cluster_data,
                                                   size=self._size,
                                                   min_count=self._min_count):
-                cluster_stat.loc[center] = stat_func(window)
+                cluster_stat.at[center] = stat_func(window)
             if isinstance(cluster, tuple):
                 _, k, clust = cluster
                 label = format_clust_name(k, clust)

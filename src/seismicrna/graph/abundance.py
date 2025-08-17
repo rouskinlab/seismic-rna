@@ -69,7 +69,7 @@ class ClusterAbundanceGraph(OneTableGraph):
             table_data = self.table.data
         data_dict = defaultdict(dict)
         for k, clust in table_data.index:
-            data_dict[k][clust] = table_data.loc[(k, clust)]
+            data_dict[k][clust] = table_data.at[(k, clust)]
         data_frame = pd.DataFrame.from_dict(data_dict, orient="index")
         data_frame.index.name = NUM_CLUSTS_NAME
         data_frame.columns.name = CLUST_NAME

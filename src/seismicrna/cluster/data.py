@@ -245,7 +245,7 @@ def _join_regions_k(region_params: dict[str, pd.DataFrame]):
             # Use total arcsine distances as the costs.
             cost = calc_sum_arcsine_distance(df1.loc[overlap, cluster1],
                                              df2.loc[overlap, cluster2])
-            cost_matrix.loc[cluster1, cluster2] = cost
+            cost_matrix.at[cluster1, cluster2] = cost
         logger.detail(f"Regions {repr(reg1)} and {repr(reg2)} "
                       f"have a cost matrix of\n{cost_matrix}")
         assert not np.any(np.isnan(cost_matrix))
@@ -258,7 +258,7 @@ def _join_regions_k(region_params: dict[str, pd.DataFrame]):
     hyperedges = [tuple(zip(region_names, cluster_nums, strict=True))
                   for cluster_nums in product(clusters, repeat=n)]
     hyperedge_costs = np.array(
-        [sum(cost_matrices[reg1, reg2].loc[clust1, clust2]
+        [sum(cost_matrices[reg1, reg2].at[clust1, clust2]
              for ((reg1, clust1), (reg2, clust2))
              in combinations(hyperedge, 2))
          for hyperedge in hyperedges]
