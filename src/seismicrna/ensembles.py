@@ -7,12 +7,17 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 from click import command
+from plotly import graph_objects as go
+from plotly.subplots import make_subplots
 
 from . import (mask as mask_mod,
                cluster as cluster_mod,
                join as join_mod)
 from .core import path
 from .core.arg import (CMD_ENSEMBLES,
+                       ENSEMBLES_GAP_FILL_NONE,
+                       ENSEMBLES_GAP_FILL_INSERT,
+                       ENSEMBLES_GAP_FILL_EXPAND,
                        merge_params,
                        extra_defaults,
                        opt_join_clusts,
@@ -36,25 +41,40 @@ from .core.seq import (POS_NAME,
 from .core.task import as_list_of_tuples, dispatch
 from .mask.dataset import MaskMutsDataset, load_mask_dataset
 from .mask.main import load_regions
-from .relate.dataset import (load_relate_dataset)
+from .relate.dataset import load_relate_dataset
 
 
-def _group_reports(input_path: Iterable[str | Path]):
-    """ Group relate reports by sample and branches. """
-    seg_types = load_relate_dataset.report_path_seg_types
-    groups = defaultdict(list)
-    for relate_report_file in path.find_files_chain(input_path, seg_types):
-        fields = path.parse(relate_report_file, seg_types)
-        sample = fields[path.SAMPLE]
-        branches = tuple(fields[path.BRANCHES])
-        groups[sample, branches].append(relate_report_file)
-    return groups
+def _get_batch_read_lengths(batch_num: int,
+                            dataset: MutsDataset):
+    batch = dataset.get_batch(batch_num)
+    return batch.read_lengths
 
 
-def _calc_mask_regions(total_end5: int,
-                       total_end3: int,
-                       region_length: int,
-                       region_min_overlap: float):
+def _get_dataset_read_lengths(dataset: MutsDataset, *,
+                              num_cpus: int):
+    read_lengths = dispatch(_get_batch_read_lengths,
+                            num_cpus=num_cpus,
+                            pass_num_cpus=False,
+                            as_list=True,
+                            ordered=False,
+                            raise_on_error=True,
+                            args=as_list_of_tuples(dataset.batch_nums),
+                            kwargs=dict(dataset=dataset))
+    if sum(a.size for a in read_lengths) == 0:
+        raise ValueError(f"{dataset} has 0 reads")
+    return np.concatenate(read_lengths, axis=0)
+
+
+def _ends_arrays_to_tuples(end5s: Iterable, end3s: Iterable):
+    # The end5s and end3s arrays must be mapped to Python integers,
+    # otherwise they will cause an error during JSON serialization.
+    return list(zip(map(int, end5s), map(int, end3s), strict=True))
+
+
+def _calc_tiles(total_end5: int,
+                total_end3: int,
+                region_length: int,
+                region_min_overlap: float):
     if not isinstance(total_end5, int):
         raise TypeError(total_end5)
     if not isinstance(total_end3, int):
@@ -97,59 +117,17 @@ def _calc_mask_regions(total_end5: int,
         dtype=int
     )
     region_end3s = region_end5s + (region_length - 1)
-    return [(int(end5), int(end3))
-            for end5, end3 in zip(region_end5s, region_end3s, strict=True)]
+    return _ends_arrays_to_tuples(region_end5s, region_end3s)
 
 
-def _get_batch_read_lengths(batch_num: int,
-                            dataset: MutsDataset):
-    batch = dataset.get_batch(batch_num)
-    return batch.read_lengths
-
-
-def _get_dataset_read_lengths(dataset: MutsDataset, *,
-                              num_cpus: int):
-    read_lengths = dispatch(_get_batch_read_lengths,
-                            num_cpus=num_cpus,
-                            pass_num_cpus=False,
-                            as_list=True,
-                            ordered=False,
-                            raise_on_error=True,
-                            args=as_list_of_tuples(dataset.batch_nums),
-                            kwargs=dict(dataset=dataset))
-    if sum(a.size for a in read_lengths) == 0:
-        raise ValueError(f"{dataset} has 0 reads")
-    return np.concatenate(read_lengths, axis=0)
-
-
-def _calc_ref_region_length(datasets: Iterable[MutsDataset],
+def _calc_ref_tiled_regions(ref: str, *,
+                            datasets: dict[str, list[MutsDataset]],
+                            total_regions: RefRegions,
+                            region_length: int,
+                            region_min_overlap: float,
                             num_cpus: int):
-    """ Calculate twice the median read length. """
-    logger.routine("Began calculating optimal region length")
-    read_lengths = dispatch(_get_dataset_read_lengths,
-                            num_cpus=num_cpus,
-                            pass_num_cpus=True,
-                            as_list=True,
-                            ordered=False,
-                            raise_on_error=True,
-                            args=as_list_of_tuples(datasets))
-    if sum(a.size for a in read_lengths) == 0:
-        raise ValueError("Datasets have 0 reads")
-    read_lengths = np.concatenate(read_lengths, axis=0)
-    median_length = np.median(read_lengths)
-    logger.detail(f"The median read length is {median_length}")
-    region_length = round(2 * median_length)
-    logger.routine(f"Ended calculating optimal region length: {region_length}")
-    return region_length
-
-
-def _calc_ref_mask_regions(ref: str, *,
-                           datasets: dict[str, list[MutsDataset]],
-                           total_regions: RefRegions,
-                           region_length: int,
-                           region_min_overlap: float,
-                           num_cpus: int):
-    logger.routine(f"Began calculating regions for reference {repr(ref)}")
+    """ Calculate the tiles for one reference. """
+    logger.routine(f"Began calculating tiles for reference {repr(ref)}")
     ref_total_regions = total_regions.dict[ref]
     # Get the region for this reference.
     assert len(ref_total_regions) > 0
@@ -161,33 +139,51 @@ def _calc_ref_mask_regions(ref: str, *,
         ref_region_length = region_length
     else:
         # Set the region length to twice the median read length.
-        ref_region_length = _calc_ref_region_length(datasets[ref],
-                                                    num_cpus=num_cpus)
-    # Calculate and add the regions for this reference.
-    ref_regions = _calc_mask_regions(ref_total_region.end5,
-                                     ref_total_region.end3,
-                                     ref_region_length,
-                                     region_min_overlap)
-    logger.routine(f"Ended calculating regions for reference {repr(ref)}")
-    return [(ref, end5, end3) for end5, end3 in ref_regions]
+        logger.routine("Began calculating optimal tile length")
+        read_lengths = dispatch(_get_dataset_read_lengths,
+                                num_cpus=num_cpus,
+                                pass_num_cpus=True,
+                                as_list=True,
+                                ordered=False,
+                                raise_on_error=True,
+                                args=as_list_of_tuples(datasets[ref]))
+        if sum(a.size for a in read_lengths) == 0:
+            raise ValueError("Datasets have 0 reads")
+        read_lengths = np.concatenate(read_lengths, axis=0)
+        median_read_length = np.median(read_lengths)
+        if median_read_length < 1:
+            raise ValueError("The median read length must be ≥ 1, "
+                             f"but got {median_read_length}")
+        logger.detail(f"The median read length is {median_read_length}")
+        ref_region_length = round(2 * median_read_length)
+        logger.routine(
+            f"Ended calculating optimal tile length: {ref_region_length}"
+        )
+    # Calculate the tiles for this reference.
+    tiles = _calc_tiles(ref_total_region.end5,
+                        ref_total_region.end3,
+                        ref_region_length,
+                        region_min_overlap)
+    logger.routine(f"Ended calculating tiles for reference {repr(ref)}")
+    return [(ref, end5, end3) for end5, end3 in tiles]
 
 
-def _generate_tiled_regions(input_path: Iterable[str | Path],
-                            coords: Iterable[tuple[str, int, int]],
-                            primers: Iterable[tuple[str, DNA, DNA]],
-                            primer_gap: int,
-                            regions_file: str | None,
-                            region_length: int,
-                            region_min_overlap: float,
-                            num_cpus: int):
-    """ For each reference, list the regions over which to mask. """
+def _calc_tiled_regions(input_path: Iterable[str | Path],
+                        coords: Iterable[tuple[str, int, int]],
+                        primers: Iterable[tuple[str, DNA, DNA]],
+                        primer_gap: int,
+                        regions_file: str | None,
+                        region_length: int,
+                        region_min_overlap: float,
+                        num_cpus: int):
+    """ Calculate the tiled regions for all references. """
     datasets, total_regions = load_regions(input_path,
                                            coords,
                                            primers,
                                            primer_gap,
                                            regions_file)
-    mask_regions = dispatch(
-        _calc_ref_mask_regions,
+    tiled_regions = dispatch(
+        _calc_ref_tiled_regions,
         num_cpus=num_cpus,
         pass_num_cpus=True,
         as_list=False,
@@ -200,12 +196,12 @@ def _generate_tiled_regions(input_path: Iterable[str | Path],
                     region_min_overlap=region_min_overlap)
     )
     return [region
-            for ref_mask_regions in mask_regions
-            for region in ref_mask_regions]
+            for ref_tiled_regions in tiled_regions
+            for region in ref_tiled_regions]
 
 
 def _find_correlated_pairs(dataset: MaskMutsDataset,
-                           alpha: float,
+                           pair_fdr: float,
                            num_cpus: int):
     # Calculate the confusion matrix for the region.
     n, a, b, ab = accumulate_confusion_matrices(
@@ -217,9 +213,9 @@ def _find_correlated_pairs(dataset: MaskMutsDataset,
         num_cpus=num_cpus
     )
     # Determine which pairs of positions correlate significantly at a
-    # false discovery rate of alpha.
+    # false discovery rate of pair_fdr.
     pvals = calc_confusion_pvals(n, a, b, ab)
-    is_significant = label_significant_pvals(pvals, alpha)
+    is_significant = label_significant_pvals(pvals, pair_fdr)
     pairs = n.index[is_significant].to_list()
     # Save the confusion matrix as a table and graph.
     table_file = dataset.report_file.with_name("correlation-matrix.csv")
@@ -231,26 +227,176 @@ def _find_correlated_pairs(dataset: MaskMutsDataset,
          "Both Mutated": ab,
          "Phi Correlation": phi,
          "Raw P-Value": pvals,
-         f"Significant at alpha={alpha}": is_significant},
+         f"Significant at FDR={pair_fdr}": is_significant},
     )
     confusion_matrix.to_csv(table_file)
     return pairs
 
 
-def _generate_cluster_intervals(datasets: list[MaskMutsDataset],
-                                min_pair_fraction: float,
-                                min_cluster_length: int,
-                                num_cpus: int,
-                                **kwargs):
+def _graph_ref_cluster_regions(combined_positions: np.ndarray,
+                               pairs: list[tuple[int, int]],
+                               pair_fraction: np.ndarray,
+                               min_pair_fraction: float,
+                               html_file: str | Path):
+    # Create a subplot with two rows: top for pair_fraction, bottom for correlated pairs
+    fig = make_subplots(
+        rows=2, cols=1,
+        shared_xaxes=True,
+        vertical_spacing=0.0,
+        row_heights=[0.5, 0.5],
+    )
+    # Indicate the minimum pair fraction.
+    min_pos = combined_positions[0]
+    max_pos = combined_positions[-1]
+    fig.add_trace(
+        go.Scatter(
+            x=[min_pos, max_pos],
+            y=[min_pair_fraction, min_pair_fraction],
+            mode='lines',
+            line=dict(color="#56B4E9"),
+            name="Minimum Pair Fraction",
+            showlegend=True,
+        ),
+        row=1, col=1
+    )
+    # Graph the pair fraction.
+    fig.add_trace(
+        go.Bar(
+            x=combined_positions,
+            y=pair_fraction,
+            showlegend=False,
+            marker_color="#0072B2"
+        ),
+        row=1, col=1
+    )
+    # Graph the pairs as a scatter plot.
+    pos_a, pos_b = list(map(np.array, zip(*pairs)))
+    x_scatter = (pos_a + pos_b) / 2  # midpoint
+    y_scatter = pos_a - pos_b  # distance
+    # Above each pair, add a triangle.
+    for (a, b), x, y in zip(pairs, x_scatter, y_scatter, strict=True):
+        # Vertices of the triangle
+        x_triangle = [a, b, x, a]
+        y_triangle = [0, 0, y, 0]
+        fig.add_trace(
+            go.Scatter(
+                x=x_triangle,
+                y=y_triangle,
+                mode='none',
+                fill='toself',
+                fillcolor=f'rgba(230,159,0,0.02)',
+                showlegend=False,
+                hoverinfo='skip',
+            ),
+            row=2, col=1
+        )
+    # Plot the correlated pairs as points
+    fig.add_trace(
+        go.Scatter(
+            x=x_scatter,
+            y=y_scatter,
+            mode='markers',
+            showlegend=False,
+            marker=dict(color="#D55E00"),
+            text=list(map(str, pairs)),
+            hovertemplate='%{text}<extra></extra>',
+        ),
+        row=2, col=1
+    )
+    # Finish the layout.
+    fig.update_xaxes(title_text=None,
+                     showgrid=True,
+                     row=1, col=1)
+    fig.update_xaxes(title_text='Position',
+                     showgrid=True,
+                     row=2, col=1)
+    fig.update_yaxes(title_text='Pair Fraction',
+                     row=1, col=1,
+                     range=[0.0, max(pair_fraction.max(),
+                                     min_pair_fraction) * 1.05])
+    fig.update_yaxes(title_text='Correlated Pairs',
+                     row=2, col=1,
+                     range=[y_scatter.min() * 1.05, 0.0])
+    # Save the figure.
+    fig.write_html(html_file)
+
+
+def _insert_regions_into_gaps(ends: list[tuple[int, int]],
+                              global_end5: int,
+                              global_end3: int):
+    """ Turn every gap between regions into a new region. """
+    assert 1 <= global_end5 <= global_end3
+    new_ends = list()
+    prev_end3 = global_end5 - 1
+    # ends is assumed to be sorted.
+    for end5, end3 in ends:
+        assert global_end5 <= end5 <= end3 <= global_end3
+        # Here, no two regions are allowed to overlap.
+        assert end5 > prev_end3
+        if end5 > prev_end3 + 1:
+            # There is a gap between this region and the previous.
+            # Create a new region to fill the gap.
+            new_ends.append(((prev_end3 + 1), (end5 - 1)))
+        new_ends.append((end5, end3))
+        prev_end3 = end3
+    if prev_end3 < global_end3:
+        # There is a gap between the last region and total_end3.
+        # Create a new region to fill the gap.
+        new_ends.append(((prev_end3 + 1), global_end3))
+    return new_ends
+
+
+def _expand_regions_into_gaps(ends: list[tuple[int, int]],
+                              global_end5: int,
+                              global_end3: int):
+    """
+    Given sorted, non-overlapping inclusive integer intervals (end5 <= end3),
+    expand intervals so that they fill all gaps, while:
+      - splitting each internal gap as evenly as possible,
+      - extending the first interval to start at total_end5,
+      - extending the last interval to end at total_end3,
+
+    Example:
+      [(1, 5), (10, 20)] with [1, 20] -> [(1, 7), (8, 20)]
+    """
+    assert 1 <= global_end5 <= global_end3
+    if not ends:
+        return list()
+    # Make mutable end5/end3 arrays.
+    end5s, end3s = list(map(list, zip(*ends)))
+    assert 1 <= len(ends) == len(end5s) == len(end3s)
+    # Expand to cover the global ends.
+    end5s[0] = global_end5
+    end3s[-1] = global_end3
+    # Split each internal gap: left gets floor, right gets ceil
+    for i in range(len(ends) - 1):
+        left_end3 = end3s[i]
+        right_end5 = end5s[i + 1]
+        gap = right_end5 - left_end3 - 1
+        if gap > 0:
+            expand_left = gap // 2
+            expand_right = gap - expand_left
+            end3s[i] = left_end3 + expand_left
+            end5s[i + 1] = right_end5 - expand_right
+    return _ends_arrays_to_tuples(end5s, end3s)
+
+
+def _calc_ref_cluster_regions(datasets: list[MaskMutsDataset],
+                              min_pair_fraction: float,
+                              min_cluster_length: int,
+                              ensembles_gap_fill: str,
+                              num_cpus: int,
+                              **kwargs):
+    """ Calculate the cluster regions for one reference. """
     # Find pairs of bases that correlate significantly in any region.
-    pairs = chain(*dispatch(_find_correlated_pairs,
-                            num_cpus=num_cpus,
-                            pass_num_cpus=True,
-                            as_list=False,
-                            ordered=False,
-                            raise_on_error=True,
-                            args=as_list_of_tuples(datasets),
-                            kwargs=kwargs))
+    pairs = list(chain(*dispatch(_find_correlated_pairs,
+                                 num_cpus=num_cpus,
+                                 pass_num_cpus=True,
+                                 as_list=False,
+                                 ordered=False,
+                                 raise_on_error=True,
+                                 args=as_list_of_tuples(datasets),
+                                 kwargs=kwargs)))
     # Count correlated pairs that overlap each position in the region.
     region = unite([dataset.region for dataset in datasets])
     combined_positions = region.unmasked_int
@@ -262,50 +408,76 @@ def _generate_cluster_intervals(datasets: list[MaskMutsDataset],
     max_pairs = pd.Series(0, index=combined_positions)
     for dataset in datasets:
         dataset_positions = dataset.region.unmasked_int
-        size = dataset_positions.size
-        counts = np.arange(1, size + 1) * np.arange(size, 0, -1)
+        num_pos = dataset_positions.size
+        counts = np.arange(1, num_pos + 1) * np.arange(num_pos, 0, -1)
         max_pairs.loc[dataset_positions] += counts
     # Determine for which positions the ratio of correlated pairs to
     # maximum possible pairs is at least min_pair_fraction.
-    pair_fraction = num_pairs / max_pairs
-    adequate_pair_fraction = pair_fraction >= min_pair_fraction
-    # Find the intervals with adequate fractions of correlated pairs.
+    pair_fractions = num_pairs / max_pairs
+    adequate_pair_fraction = pair_fractions >= min_pair_fraction
+    # Find the regions with adequate fractions of correlated pairs.
     boundaries = np.flatnonzero(np.diff(np.concatenate([[False],
                                                         adequate_pair_fraction,
                                                         [False]])))
     assert boundaries.size % 2 == 0
     end5s = combined_positions[boundaries[::2]]
     end3s = combined_positions[boundaries[1::2] - 1]
-    # Remove intervals that are too short.
+    # Remove regions that are too short.
     sufficient_length = end3s - end5s >= min_cluster_length - 1
     end5s = end5s[sufficient_length]
     end3s = end3s[sufficient_length]
-    # The end5s and end3s arrays must be converted to Python integers,
-    # otherwise they will cause an error during JSON serialization.
-    return list(zip(map(int, end5s), map(int, end3s), strict=True))
+    # Determine what to do with gaps between regions.
+    ends = _ends_arrays_to_tuples(end5s, end3s)
+    if ensembles_gap_fill == ENSEMBLES_GAP_FILL_INSERT:
+        ends = _insert_regions_into_gaps(ends, region.end5, region.end3)
+    elif ensembles_gap_fill == ENSEMBLES_GAP_FILL_EXPAND:
+        ends = _expand_regions_into_gaps(ends, region.end5, region.end3)
+    elif ensembles_gap_fill != ENSEMBLES_GAP_FILL_NONE:
+        raise ValueError(ensembles_gap_fill)
+    # Save the pair fractions as a CSV.
+    ref_dir = datasets[0].report_file.parent.parent
+    csv_file = ref_dir.joinpath("pair_fractions.csv")
+    pair_data = pd.DataFrame.from_dict({
+        "Number of Pairs": num_pairs,
+        "Potential Pairs": max_pairs,
+        "Fraction of Pairs": pair_fractions,
+    })
+    pair_data.to_csv(csv_file)
+    # Graph the results.
+    html_file = ref_dir.joinpath("pair_fractions.html")
+    try:
+        _graph_ref_cluster_regions(combined_positions,
+                                   pairs,
+                                   pair_fractions,
+                                   min_pair_fraction,
+                                   html_file)
+    except Exception as error:
+        logger.error(error)
+    return ends
 
 
-def _generate_cluster_regions(mask_dirs: list[Path],
-                              num_cpus: int,
-                              **kwargs):
+def _calc_cluster_regions(mask_dirs: list[Path],
+                          num_cpus: int,
+                          **kwargs):
+    """ Calculate the cluster regions for all references. """
     # Group the datasets by reference.
     groups = defaultdict(list)
     for dataset in load_mask_dataset.iterate(mask_dirs):
         ref = dataset.ref
         groups[ref].append(dataset)
-    # Generate intervals for each group.
-    intervals = dispatch(_generate_cluster_intervals,
-                         num_cpus=num_cpus,
-                         pass_num_cpus=True,
-                         as_list=False,
-                         ordered=True,
-                         raise_on_error=True,
-                         args=as_list_of_tuples(groups.values()),
-                         kwargs=kwargs)
-    # Generate regions for each group.
+    # Calculate regions for each reference.
+    regions = dispatch(_calc_ref_cluster_regions,
+                       num_cpus=num_cpus,
+                       pass_num_cpus=True,
+                       as_list=False,
+                       ordered=True,
+                       raise_on_error=True,
+                       args=as_list_of_tuples(groups.values()),
+                       kwargs=kwargs)
+    # Format the regions so that they can be passed into the mask step.
     return [(ref, end5, end3)
-            for ref, ref_intervals in zip(groups.keys(), intervals)
-            for end5, end3 in ref_intervals]
+            for ref, ref_regions in zip(groups.keys(), regions)
+            for end5, end3 in ref_regions]
 
 
 def _run_group(relate_report_files: list[Path], *,
@@ -319,9 +491,10 @@ def _run_group(relate_report_files: list[Path], *,
                # Ensembles options
                region_length: int,
                region_min_overlap: float,
-               alpha: float,
+               pair_fdr: float,
                min_pair_fraction: float,
                min_cluster_length: int,
+               ensembles_gap_fill: str,
                # Mask options
                mask_coords: Iterable[tuple[str, int, int]],
                mask_primers: Iterable[tuple[str, DNA, DNA]],
@@ -374,7 +547,7 @@ def _run_group(relate_report_files: list[Path], *,
                verify_times: bool):
     """ Run a group of datasets. """
     # Divide the reference into overlapping regions.
-    tiled_regions = _generate_tiled_regions(
+    tiled_regions = _calc_tiled_regions(
         relate_report_files,
         coords=mask_coords,
         primers=mask_primers,
@@ -420,11 +593,12 @@ def _run_group(relate_report_files: list[Path], *,
         force=force
     )
     # Find regions spanned by correlated base pairs.
-    correl_regions = _generate_cluster_regions(
+    correl_regions = _calc_cluster_regions(
         tiled_dirs,
-        alpha=alpha,
+        pair_fdr=pair_fdr,
         min_pair_fraction=min_pair_fraction,
         min_cluster_length=min_cluster_length,
+        ensembles_gap_fill=ensembles_gap_fill,
         num_cpus=num_cpus
     )
     correl_dirs = mask_mod.run(
@@ -555,13 +729,21 @@ def run(input_path: Iterable[str | Path], *,
         cluster_pos_table: bool,
         cluster_abundance_table: bool,
         verify_times: bool,
-        # Join options
+        # Ensembles options
         joined: str,
         region_length: int,
         region_min_overlap: float,
         max_marcd_join: float):
     """ Infer independent structure ensembles along an entire RNA. """
-    groups = _group_reports(input_path)
+    # Group reports by sample and branches.
+    seg_types = load_relate_dataset.report_path_seg_types
+    groups = defaultdict(list)
+    for relate_report_file in path.find_files_chain(input_path, seg_types):
+        fields = path.parse(relate_report_file, seg_types)
+        sample = fields[path.SAMPLE]
+        branches = tuple(fields[path.BRANCHES])
+        groups[sample, branches].append(relate_report_file)
+    # Process each group separately.
     kwargs = dict(branch=branch,
                   tmp_pfx=tmp_pfx,
                   keep_tmp=keep_tmp,
@@ -571,9 +753,10 @@ def run(input_path: Iterable[str | Path], *,
                   # Ensembles options
                   region_length=region_length,
                   region_min_overlap=region_min_overlap,
-                  alpha=0.05,  # TODO: make this an option
-                  min_pair_fraction=0.001,  # TODO: make this an option
+                  pair_fdr=0.05,  # TODO: make this an option
+                  min_pair_fraction=0.0005,  # TODO: make this an option
                   min_cluster_length=30,  # TODO: make this an option
+                  ensembles_gap_fill="none",  # TODO: make this an option
                   # Mask options
                   mask_coords=mask_coords,
                   mask_primers=mask_primers,

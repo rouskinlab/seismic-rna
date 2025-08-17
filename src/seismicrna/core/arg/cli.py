@@ -37,6 +37,13 @@ CLIP_END5_DEFAULT = BOWTIE2_GBAR_DEFAULT
 CLIP_END3_DEFAULT = BOWTIE2_GBAR_DEFAULT
 MIN_READ_LENGTH_DEFAULT = CLIP_END5_DEFAULT + CLIP_END3_DEFAULT + 1
 
+ENSEMBLES_GAP_FILL_NONE = "none"
+ENSEMBLES_GAP_FILL_INSERT = "insert"
+ENSEMBLES_GAP_FILL_EXPAND = "expand"
+ENSEMBLES_GAP_FILL = (ENSEMBLES_GAP_FILL_NONE,
+                      ENSEMBLES_GAP_FILL_INSERT,
+                      ENSEMBLES_GAP_FILL_EXPAND)
+
 NO_GROUP = "c"
 GROUP_BY_K = "k"
 GROUP_ALL = "a"
@@ -1471,7 +1478,7 @@ opt_center_fmean = Option(
 opt_center_fvar = Option(
     ("--center-fvar",),
     type=float,
-    default=1/3,
+    default=1 / 3,
     help="Set the variance of the read center as a fraction of its maximum"
 )
 
@@ -1485,7 +1492,7 @@ opt_length_fmean = Option(
 opt_length_fvar = Option(
     ("--length-fvar",),
     type=float,
-    default=1/81,
+    default=1 / 81,
     help="Set the variance of the read length as a fraction of its maximum"
 )
 

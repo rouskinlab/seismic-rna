@@ -12,8 +12,9 @@ from seismicrna.core.rna.convert import db_to_ct
 from seismicrna.core.seq.fasta import write_fasta
 from seismicrna.core.seq.region import FULL_NAME
 from seismicrna.core.seq.xna import DNA
-from seismicrna.ensembles import (_calc_mask_regions,
-                                  _merge_intervals,
+from seismicrna.ensembles import (_calc_tiles,
+                                  _insert_regions_into_gaps,
+                                  _expand_regions_into_gaps,
                                   run as run_ensembles)
 from seismicrna.sim.params import run as sim_params
 from seismicrna.sim.relate import run as sim_relate
@@ -21,7 +22,7 @@ from seismicrna.sim.relate import run as sim_relate
 rng = np.random.default_rng()
 
 
-class TestCalcRegions(ut.TestCase):
+class TestCalcTiles(ut.TestCase):
 
     def setUp(self):
         self._config = get_config()
@@ -31,90 +32,100 @@ class TestCalcRegions(ut.TestCase):
         set_config(self._config)
 
     def test_region_min_overlap_25(self):
-        result = _calc_mask_regions(41, 145, 60, 0.25)
+        result = _calc_tiles(41, 145, 60, 0.25)
         expect = [(41, 100), (86, 145)]
         self.assertEqual(result, expect)
 
     def test_region_min_overlap_75(self):
-        result = _calc_mask_regions(41, 145, 60, 0.75)
+        result = _calc_tiles(41, 145, 60, 0.75)
         expect = [(41, 100), (56, 115), (71, 130), (86, 145)]
         self.assertEqual(result, expect)
 
     def test_region_not_divisible(self):
-        result = _calc_mask_regions(41, 170, 60, 0.25)
+        result = _calc_tiles(41, 170, 60, 0.25)
         expect = [(41, 100), (76, 135), (111, 170)]
         self.assertEqual(result, expect)
 
     def test_region_length_larger(self):
-        result = _calc_mask_regions(41, 49, 52, 0.9)
+        result = _calc_tiles(41, 49, 52, 0.9)
         expect = [(41, 49)]
         self.assertEqual(result, expect)
 
     def test_total_region_length_1(self):
-        result = _calc_mask_regions(41, 41, 52, 0.9)
+        result = _calc_tiles(41, 41, 52, 0.9)
         expect = [(41, 41)]
         self.assertEqual(result, expect)
 
 
-class TestMergeIntervals(ut.TestCase):
+class TestInsertRegionsIntoGaps(ut.TestCase):
 
-    def test_empty(self):
-        intervals = []
-        result = list(_merge_intervals(intervals))
+    def test_zero(self):
+        result = _insert_regions_into_gaps([], 3, 9)
+        expect = [(3, 9)]
+        self.assertListEqual(result, expect)
+
+    def test_one(self):
+        result = _insert_regions_into_gaps([(3, 9)], 3, 9)
+        expect = [(3, 9)]
+        self.assertListEqual(result, expect)
+        result = _insert_regions_into_gaps([(4, 9)], 3, 9)
+        expect = [(3, 3), (4, 9)]
+        self.assertListEqual(result, expect)
+        result = _insert_regions_into_gaps([(3, 8)], 3, 9)
+        expect = [(3, 8), (9, 9)]
+        self.assertListEqual(result, expect)
+        result = _insert_regions_into_gaps([(4, 8)], 3, 9)
+        expect = [(3, 3), (4, 8), (9, 9)]
+        self.assertListEqual(result, expect)
+
+    def test_two(self):
+        result = _insert_regions_into_gaps([(2, 10), (11, 20)], 2, 20)
+        expect = [(2, 10), (11, 20)]
+        self.assertListEqual(result, expect)
+        result = _insert_regions_into_gaps([(3, 10), (11, 20)], 2, 20)
+        expect = [(2, 2), (3, 10), (11, 20)]
+        self.assertListEqual(result, expect)
+        result = _insert_regions_into_gaps([(2, 10), (12, 20)], 2, 20)
+        expect = [(2, 10), (11, 11), (12, 20)]
+        self.assertListEqual(result, expect)
+        result = _insert_regions_into_gaps([(2, 10), (11, 19)], 2, 20)
+        expect = [(2, 10), (11, 19), (20, 20)]
+        self.assertListEqual(result, expect)
+        result = _insert_regions_into_gaps([(3, 9), (11, 19)], 2, 20)
+        expect = [(2, 2), (3, 9), (10, 10), (11, 19), (20, 20)]
+        self.assertListEqual(result, expect)
+
+
+class TestExpandRegionsIntoGaps(ut.TestCase):
+
+    def test_zero(self):
+        result = _expand_regions_into_gaps([], 3, 9)
         expect = []
         self.assertListEqual(result, expect)
 
-    def test_chained_overlaps(self):
-        intervals = [(1, 10),
-                     (3, 15),
-                     (12, 19),
-                     (19, 30),
-                     (30, 40)]
-        result = list(_merge_intervals(intervals))
-        expect = [(1, 40)]
+    def test_one(self):
+        expect = [(3, 9)]
+        result = _expand_regions_into_gaps([(3, 9)], 3, 9)
+        self.assertListEqual(result, expect)
+        result = _expand_regions_into_gaps([(4, 9)], 3, 9)
+        self.assertListEqual(result, expect)
+        result = _expand_regions_into_gaps([(3, 8)], 3, 9)
+        self.assertListEqual(result, expect)
+        result = _expand_regions_into_gaps([(5, 7)], 3, 9)
         self.assertListEqual(result, expect)
 
-    def test_disjoint(self):
-        intervals = [(1, 10),
-                     (12, 19),
-                     (30, 40)]
-        result = list(_merge_intervals(intervals))
-        expect = intervals
+    def test_two(self):
+        result = _expand_regions_into_gaps([(2, 10), (11, 20)], 2, 20)
+        expect = [(2, 10), (11, 20)]
         self.assertListEqual(result, expect)
-
-    def test_single_overlap(self):
-        intervals = [(1, 10),
-                     (10, 19)]
-        result = list(_merge_intervals(intervals))
-        expect = [(1, 19)]
+        result = _expand_regions_into_gaps([(4, 9), (11, 18)], 2, 20)
+        expect = [(2, 9), (10, 20)]
         self.assertListEqual(result, expect)
-
-    def test_abutting(self):
-        intervals = [(1, 10),
-                     (11, 19)]
-        result = list(_merge_intervals(intervals))
-        expect = intervals
+        result = _expand_regions_into_gaps([(5, 9), (12, 17)], 2, 20)
+        expect = [(2, 10), (11, 20)]
         self.assertListEqual(result, expect)
-
-    def test_nested(self):
-        intervals = [(2, 15),
-                     (3, 8),
-                     (5, 7),
-                     (20, 30),
-                     (24, 27)]
-        result = list(_merge_intervals(intervals))
-        expect = [(2, 15), (20, 30)]
-        self.assertListEqual(result, expect)
-
-    def test_complex_nested(self):
-        intervals = [(1, 40),
-                     (2, 15),
-                     (3, 8),
-                     (5, 7),
-                     (20, 30),
-                     (24, 27)]
-        result = list(_merge_intervals(intervals))
-        expect = [(1, 40)]
+        result = _expand_regions_into_gaps([(6, 6), (10, 10)], 2, 20)
+        expect = [(2, 7), (8, 20)]
         self.assertListEqual(result, expect)
 
 
