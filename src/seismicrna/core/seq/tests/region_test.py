@@ -1541,7 +1541,9 @@ class TestGetSharedIndex(ut.TestCase):
         index = pd.MultiIndex.from_arrays([[4, 6, 10, 11, 12],
                                            ["A", "C", "G", "T", "N"]],
                                           names=SEQ_INDEX_NAMES)
-        self.assertIs(get_shared_index([index]), index)
+        result = get_shared_index([index])
+        self.assertTrue(result.equals(index))
+        self.assertTrue(result.equal_levels(index))
 
     def test_one_invalid(self):
         index = pd.MultiIndex.from_arrays([[4, 6, 10, 11, 12],
@@ -1559,7 +1561,9 @@ class TestGetSharedIndex(ut.TestCase):
         index1 = pd.MultiIndex.from_arrays([[4, 6, 10, 11, 12],
                                             ["A", "C", "G", "T", "N"]],
                                            names=SEQ_INDEX_NAMES)
-        self.assertIs(get_shared_index([index0, index1]), index0)
+        result = get_shared_index([index0, index1])
+        self.assertTrue(result.equals(index0))
+        self.assertTrue(result.equal_levels(index0))
 
     def test_two_invalid(self):
         index0 = pd.MultiIndex.from_arrays([[4, 6, 10, 11, 12],
