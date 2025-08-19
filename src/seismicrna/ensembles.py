@@ -22,7 +22,9 @@ from .core.arg import (CMD_ENSEMBLES,
                        opt_tile_min_overlap,
                        opt_erase_tiles,
                        opt_pair_fdr,
+                       opt_min_pairs,
                        opt_min_cluster_length,
+                       opt_max_cluster_length,
                        opt_gap_mode)
 from .core.batch import (accumulate_confusion_matrices,
                          calc_confusion_pvals,
@@ -477,9 +479,27 @@ def _expand_modules_into_gaps(modules: list[tuple[int, int]],
     return _ends_arrays_to_tuples(end5s, end3s)
 
 
+def _filter_modules_min_pairs(modules: list[tuple[int, int]],
+                              pairs: list[tuple[int, int]],
+                              min_pairs: int):
+    """ Remove modules supported by too few correlated pairs. """
+    return [(end5, end3) for end5, end3 in modules
+            if len(_select_pairs(pairs, end5, end3)) >= min_pairs]
+
+
+def _filter_modules_length(modules: list[tuple[int, int]],
+                           min_length: int | float = 1,
+                           max_length: int | float = np.inf):
+    """ Remove modules that are too short or too long. """
+    return [(end5, end3) for end5, end3 in modules
+            if min_length <= (end3 - end5 + 1) <= max_length]
+
+
 def _calc_ref_cluster_modules(datasets: list[MaskMutsDataset],
                               pair_fdr: float,
-                              min_cluster_length: int,
+                              min_pairs: int,
+                              min_length: int,
+                              max_length: int,
                               gap_mode: str,
                               num_cpus: int):
     """ Calculate the cluster regions for one reference. """
@@ -496,9 +516,7 @@ def _calc_ref_cluster_modules(datasets: list[MaskMutsDataset],
                                        kwargs=dict(pair_fdr=pair_fdr)))))
     # Find modules of correlated pairs.
     modules = _calc_modules_from_pairs(pairs, pair_fdr)
-    # Remove modules that are too short.
-    modules = [(end5, end3) for end5, end3 in modules
-               if end3 - end5 + 1 >= min_cluster_length]
+    modules = _filter_modules_min_pairs(modules, pairs, min_pairs)
     # Determine what to do with gaps between regions.
     if gap_mode == GAP_MODE_INSERT:
         modules = _insert_modules_into_gaps(modules, region.end5, region.end3)
@@ -506,6 +524,7 @@ def _calc_ref_cluster_modules(datasets: list[MaskMutsDataset],
         modules = _expand_modules_into_gaps(modules, region.end5, region.end3)
     elif gap_mode != GAP_MODE_OMIT:
         raise ValueError(gap_mode)
+    modules = _filter_modules_length(modules, min_length, max_length)
     # Graph the correlated pairs and modules.
     ref_dir = datasets[0].report_file.parent.parent
     html_file = ref_dir.joinpath("pairs-and-modules.html")
@@ -557,7 +576,9 @@ def _run_group(relate_report_files: list[Path], *,
                tile_min_overlap: float,
                erase_tiles: bool,
                pair_fdr: float,
+               min_pairs: int,
                min_cluster_length: int,
+               max_cluster_length: int,
                gap_mode: str,
                # Mask options
                mask_coords: Iterable[tuple[str, int, int]],
@@ -660,7 +681,9 @@ def _run_group(relate_report_files: list[Path], *,
     module_coords = _calc_cluster_modules(
         tiled_dirs,
         pair_fdr=pair_fdr,
-        min_cluster_length=min_cluster_length,
+        min_pairs=min_pairs,
+        min_length=min_cluster_length,
+        max_length=max_cluster_length,
         gap_mode=gap_mode,
         num_cpus=num_cpus
     )
@@ -771,7 +794,9 @@ def run(input_path: Iterable[str | Path], *,
         tile_min_overlap: float,
         erase_tiles: bool,
         pair_fdr: float,
+        min_pairs: int,
         min_cluster_length: int,
+        max_cluster_length: int,
         gap_mode: str,
         # Mask options
         mask_coords: Iterable[tuple[str, int, int]],
@@ -844,7 +869,9 @@ def run(input_path: Iterable[str | Path], *,
                   tile_min_overlap=tile_min_overlap,
                   erase_tiles=erase_tiles,
                   pair_fdr=pair_fdr,
+                  min_pairs=min_pairs,
                   min_cluster_length=min_cluster_length,
+                  max_cluster_length=max_cluster_length,
                   gap_mode=gap_mode,
                   # Mask options
                   mask_coords=mask_coords,
@@ -912,7 +939,9 @@ params = merge_params(mask_mod.params,
                        opt_tile_min_overlap,
                        opt_erase_tiles,
                        opt_pair_fdr,
+                       opt_min_pairs,
                        opt_min_cluster_length,
+                       opt_max_cluster_length,
                        opt_gap_mode])
 
 

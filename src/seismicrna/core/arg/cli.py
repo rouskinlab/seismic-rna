@@ -1009,12 +1009,25 @@ opt_pair_fdr = Option(
     help="Find correlated pairs at this false discovery rate (FDR)",
 )
 
+opt_min_pairs = Option(
+    ("--min-pairs",),
+    type=int,
+    default=2,
+    help="Cluster only the regions with at least this many correlated pairs",
+)
 
 opt_min_cluster_length = Option(
     ("--min-cluster-length",),
     type=int,
-    default=30,
+    default=20,
     help="Cluster only the regions with at least this many positions",
+)
+
+opt_max_cluster_length = Option(
+    ("--max-cluster-length",),
+    type=int,
+    default=1200,
+    help="Cluster only the regions with no more than this many positions",
 )
 
 opt_gap_mode = Option(
