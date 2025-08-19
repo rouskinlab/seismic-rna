@@ -237,8 +237,8 @@ def _find_correlated_pairs(dataset: MaskMutsDataset,
     # false discovery rate of pair_fdr.
     pvals = calc_confusion_pvals(n, a, b, ab)
     is_significant = label_significant_pvals(pvals, pair_fdr)
-    # Save the confusion matrix as a table and graph.
-    table_file = dataset.report_file.with_name("correlation-matrix.csv")
+    # Save the confusion matrix as a CSV file.
+    csv_file = dataset.report_file.with_name("confusion-matrix.csv")
     phi = calc_confusion_phi(n, a, b, ab)
     confusion_matrix = pd.DataFrame.from_dict(
         {"Neither Mutated": n - (a + b - ab),
@@ -249,7 +249,7 @@ def _find_correlated_pairs(dataset: MaskMutsDataset,
          "Raw P-Value": pvals,
          f"Significant at FDR={pair_fdr}": is_significant},
     )
-    confusion_matrix.to_csv(table_file)
+    confusion_matrix.to_csv(csv_file)
     # Return the significantly correlated pairs.
     pairs = n.index
     pairs_significant = pairs[is_significant].to_list()
@@ -280,6 +280,7 @@ def _aggregate_pairs(pairs: list[tuple[int, int]]) -> list[tuple[int, int]]:
 
 
 def _select_pairs(pairs: list[tuple[int, int]], end5: int, end3: int):
+    assert 1 <= end5 <= end3
     return [(pos5, pos3) for pos5, pos3 in pairs
             if end5 <= pos5 and pos3 <= end3]
 
@@ -297,24 +298,21 @@ def _calc_null_span_per_pos(pairs: list[tuple[int, int]], end5: int, end3: int):
     assert 1 <= end5 <= end3
     null_spans_per_pos = pd.Series(0., index=range(end5, end3 + 1))
     num_pos = null_spans_per_pos.size
-    ramp = np.minimum(np.arange(1, num_pos + 1), np.arange(num_pos, 0, -1))
+    ramp = np.minimum(np.arange(1, num_pos + 1),
+                      np.arange(num_pos, 0, -1))
     fraction_overlap_cache = dict()
     for pos5, pos3 in pairs:
         assert end5 <= pos5 <= pos3 <= end3
         length = pos3 - pos5 + 1
-        if length == num_pos:
-            # The pair spans the entire module.
-            null_spans_per_pos += 1.
-        else:
-            fraction_overlap = fraction_overlap_cache.get(length)
-            if fraction_overlap is None:
-                # Number of locations to which the pair could be moved.
-                num_loc = num_pos - length + 1
-                assert num_loc >= 0
-                max_overlap = np.minimum(ramp, min(length, num_loc))
-                fraction_overlap = max_overlap / num_loc
-                fraction_overlap_cache[length] = fraction_overlap
-            null_spans_per_pos += fraction_overlap
+        fraction_overlap = fraction_overlap_cache.get(length)
+        if fraction_overlap is None:
+            # Number of locations to which the pair could be moved.
+            num_loc = num_pos - length + 1
+            assert num_loc >= 1
+            max_overlap = np.minimum(ramp, min(length, num_loc))
+            fraction_overlap = max_overlap / num_loc
+            fraction_overlap_cache[length] = fraction_overlap
+        null_spans_per_pos += fraction_overlap
     return null_spans_per_pos
 
 
@@ -331,8 +329,6 @@ def _list_intervals(sufficient_spans_per_pos: pd.Series):
 def _calc_modules_from_pairs(pairs: list[tuple[int, int]],
                              pair_fdr: float,
                              max_iter: int = 1000):
-    """ 
-    """
     logger.routine("Began calculating modules")
     # First, naively aggregate all pairs that overlap.
     modules = _aggregate_pairs(pairs)
@@ -386,11 +382,10 @@ def _graph_pairs_and_modules(pairs: list[tuple[int, int]],
     end5s, end3s = _tuples_to_ends_arrays(modules)
     modules_midpoints, modules_distances = _calc_midpoints_distances(end5s,
                                                                      end3s)
-    for a, b, x, y in zip(end5s,
-                          end3s,
-                          modules_midpoints,
-                          modules_distances,
-                          strict=True):
+    for (a, b), x, y in zip(modules,
+                            modules_midpoints,
+                            modules_distances,
+                            strict=True):
         fig.add_trace(go.Scatter(x=[a, b, x, a],
                                  y=[0, 0, y, 0],
                                  mode='none',

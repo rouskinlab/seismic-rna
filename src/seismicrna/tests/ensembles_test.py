@@ -1,9 +1,12 @@
 import shutil
 import unittest as ut
+from functools import reduce
 from itertools import product
+from operator import add
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 
 from seismicrna.cluster.data import JoinClusterMutsDataset
 from seismicrna.core.arg.cli import opt_sim_dir
@@ -14,9 +17,15 @@ from seismicrna.core.seq.region import FULL_NAME
 from seismicrna.core.seq.xna import DNA
 from seismicrna.ensembles import (_calc_tiles,
                                   _aggregate_pairs,
+                                  _select_pairs,
+                                  _calc_span_per_pos,
+                                  _calc_null_span_per_pos,
                                   _list_intervals,
+                                  _calc_modules_from_pairs,
                                   _insert_modules_into_gaps,
                                   _expand_modules_into_gaps,
+                                  _filter_modules_min_pairs,
+                                  _filter_modules_length,
                                   run as run_ensembles)
 from seismicrna.sim.params import run as sim_params
 from seismicrna.sim.relate import run as sim_relate
@@ -70,12 +79,12 @@ class TestAggregatePairs(ut.TestCase):
         result = _aggregate_pairs([(3, 9)])
         expect = [(3, 9)]
         self.assertListEqual(result, expect)
-    
+
     def test_two_serial(self):
         result = _aggregate_pairs([(3, 10), (10, 15)])
         expect = [(3, 15)]
         self.assertListEqual(result, expect)
-    
+
     def test_two_nested(self):
         result = _aggregate_pairs([(3, 15), (9, 10)])
         expect = [(3, 15)]
@@ -85,20 +94,268 @@ class TestAggregatePairs(ut.TestCase):
         result = _aggregate_pairs([(3, 9), (10, 15)])
         expect = [(3, 9), (10, 15)]
         self.assertListEqual(result, expect)
-    
+
     def test_three_serial(self):
         result = _aggregate_pairs([(3, 10), (9, 15), (15, 20)])
         expect = [(3, 20)]
         self.assertListEqual(result, expect)
-    
+
     def test_three_nested(self):
         result = _aggregate_pairs([(3, 20), (7, 11), (14, 16)])
         expect = [(3, 20)]
         self.assertListEqual(result, expect)
-    
+
     def test_three_disjoint(self):
         result = _aggregate_pairs([(3, 6), (7, 11), (14, 16)])
         expect = [(3, 6), (7, 11), (14, 16)]
+        self.assertListEqual(result, expect)
+
+
+class TestSelectPairs(ut.TestCase):
+
+    def test_select_pairs(self):
+        pairs = [(1, 11), (5, 15), (9, 19)]
+        result = _select_pairs(pairs, 1, 19)
+        self.assertListEqual(result, pairs)
+        result = _select_pairs(pairs, 2, 18)
+        self.assertListEqual(result, [(5, 15)])
+
+
+class TestCalcSpanPerPos(ut.TestCase):
+
+    def test_calc_span_per_pos(self):
+        pairs = [(5, 10), (9, 9), (3, 11)]
+        result = _calc_span_per_pos(pairs, 3, 11)
+        expect = pd.Series({3: 1,
+                            4: 1,
+                            5: 2,
+                            6: 2,
+                            7: 2,
+                            8: 2,
+                            9: 3,
+                            10: 2,
+                            11: 1})
+        self.assertIsInstance(result, pd.Series)
+        self.assertTrue(result.equals(expect))
+        self.assertTrue(result.index.equals(expect.index))
+
+
+class TestCalcNullSpanPerPos(ut.TestCase):
+
+    def _run_test(self,
+                  pairs: list[tuple[int, int]],
+                  end5: int,
+                  end3: int,
+                  expect: pd.Series):
+        result = _calc_null_span_per_pos(pairs, end5, end3)
+        self.assertIsInstance(result, pd.Series)
+        self.assertTrue(np.allclose(result, expect))
+        self.assertTrue(result.index.equals(expect.index))
+
+    def test_no_pairs(self):
+        expect = pd.Series({4: 0., 5: 0., 6: 0., 7: 0.})
+        self._run_test([], 4, 7, expect)
+
+    def test_ref_4_read_1(self):
+        expect = pd.Series({4: 0.25, 5: 0.25, 6: 0.25, 7: 0.25})
+        self._run_test([(5, 5)], 4, 7, expect)
+
+    def test_ref_4_read_2(self):
+        expect = pd.Series({4: 1 / 3, 5: 2 / 3, 6: 2 / 3, 7: 1 / 3})
+        self._run_test([(6, 7)], 4, 7, expect)
+
+    def test_ref_4_read_3(self):
+        expect = pd.Series({4: 0.5, 5: 1., 6: 1., 7: 0.5})
+        self._run_test([(4, 6)], 4, 7, expect)
+
+    def test_ref_4_read_4(self):
+        expect = pd.Series({4: 1., 5: 1., 6: 1., 7: 1.})
+        self._run_test([(4, 7)], 4, 7, expect)
+
+    def test_ref_5_read_1(self):
+        expect = pd.Series({4: 0.2, 5: 0.2, 6: 0.2, 7: 0.2, 8: 0.2})
+        self._run_test([(7, 7)], 4, 8, expect)
+
+    def test_ref_5_read_2(self):
+        expect = pd.Series({4: 0.25, 5: 0.5, 6: 0.5, 7: 0.5, 8: 0.25})
+        self._run_test([(5, 6)], 4, 8, expect)
+
+    def test_ref_5_read_3(self):
+        expect = pd.Series({4: 1 / 3, 5: 2 / 3, 6: 1., 7: 2 / 3, 8: 1 / 3})
+        self._run_test([(5, 7)], 4, 8, expect)
+
+    def test_ref_5_read_4(self):
+        expect = pd.Series({4: 0.5, 5: 1., 6: 1., 7: 1., 8: 0.5})
+        self._run_test([(4, 7)], 4, 8, expect)
+
+    def test_ref_5_read_5(self):
+        expect = pd.Series({4: 1., 5: 1., 6: 1., 7: 1., 8: 1.})
+        self._run_test([(4, 8)], 4, 8, expect)
+
+    def test_multiple_reads(self):
+        pairs = [(6, 7), (5, 5), (4, 8)]
+        expect = reduce(add,
+                        [_calc_null_span_per_pos([pair], 4, 8)
+                         for pair in pairs])
+        self._run_test(pairs, 4, 8, expect)
+
+
+class TestListIntervals(ut.TestCase):
+
+    def test_empty(self):
+        result = _list_intervals(pd.Series([]))
+        expect = []
+        self.assertListEqual(result, expect)
+
+    def test_all_false(self):
+        for end5, end3 in [(1, 9), (8, 8), (8, 9)]:
+            result = _list_intervals(pd.Series(False, range(end5, end3 + 1)))
+            expect = []
+            self.assertListEqual(result, expect)
+
+    def test_all_true(self):
+        for end5, end3 in [(1, 9), (8, 8), (8, 9)]:
+            result = _list_intervals(pd.Series(True, range(end5, end3 + 1)))
+            expect = [(end5, end3)]
+            self.assertListEqual(result, expect)
+
+    def test_ends_true(self):
+        result = _list_intervals(pd.Series({4: True,
+                                            5: False}))
+        expect = [(4, 4)]
+        self.assertListEqual(result, expect)
+        result = _list_intervals(pd.Series({4: False,
+                                            5: True}))
+        expect = [(5, 5)]
+        self.assertListEqual(result, expect)
+        result = _list_intervals(pd.Series({4: True,
+                                            5: True,
+                                            6: False,
+                                            7: True,
+                                            8: True}))
+        expect = [(4, 5), (7, 8)]
+        self.assertListEqual(result, expect)
+
+    def test_1_block_true(self):
+        result = _list_intervals(pd.Series({4: False,
+                                            5: True,
+                                            6: True,
+                                            7: False,
+                                            8: False}))
+        expect = [(5, 6)]
+        self.assertListEqual(result, expect)
+
+    def test_2_blocks_true(self):
+        result = _list_intervals(pd.Series({4: False,
+                                            5: True,
+                                            6: False,
+                                            7: True,
+                                            8: False}))
+        expect = [(5, 5), (7, 7)]
+        self.assertListEqual(result, expect)
+
+
+class TestCalcModulesFromPairs(ut.TestCase):
+
+    def test_1_module(self):
+        pairs = [(11, 21),
+                 (11, 31),
+                 (11, 71),
+                 (21, 31),
+                 (51, 61),
+                 (51, 71),
+                 (61, 71)]
+        result = _calc_modules_from_pairs(pairs, 0.05)
+        expect = [(11, 71)]
+        self.assertListEqual(result, expect)
+
+    def test_2_modules(self):
+        pairs = [(11, 21),
+                 (11, 31),
+                 (21, 31),
+                 (51, 61),
+                 (51, 71),
+                 (61, 71)]
+        result = _calc_modules_from_pairs(pairs, 0.05)
+        expect = [(11, 31), (51, 71)]
+        self.assertListEqual(result, expect)
+
+    def test_split_modules(self):
+        pairs = [(11, 21),
+                 (11, 31),
+                 (11, 71),
+                 (21, 31),
+                 (51, 61),
+                 (51, 71),
+                 (61, 71)]
+        result = _calc_modules_from_pairs(pairs, 0.35)
+        expect = [(11, 31), (51, 71)]
+        self.assertListEqual(result, expect)
+
+
+class TestFilterModulesMinPairs(ut.TestCase):
+
+    def test_filter_min_pairs(self):
+        modules = [(5, 20), (25, 30)]
+        pairs = [(1, 10),
+                 (1, 35),
+                 (4, 16),
+                 (6, 18),
+                 (20, 25),
+                 (25, 26),
+                 (25, 30),
+                 (27, 28),
+                 (27, 31)]
+        result = _filter_modules_min_pairs(modules, pairs, 1)
+        expect = modules
+        self.assertListEqual(result, expect)
+        result = _filter_modules_min_pairs(modules, pairs, 2)
+        expect = [(25, 30)]
+        self.assertListEqual(result, expect)
+        result = _filter_modules_min_pairs(modules, pairs, 3)
+        expect = [(25, 30)]
+        self.assertListEqual(result, expect)
+        result = _filter_modules_min_pairs(modules, pairs, 4)
+        expect = []
+        self.assertListEqual(result, expect)
+
+
+class TestFilterModulesLength(ut.TestCase):
+
+    def test_filter_default_length(self):
+        modules = [(5, 20), (25, 30)]
+        result = _filter_modules_length(modules)
+        expect = modules
+        self.assertListEqual(result, expect)
+
+    def test_filter_min_length(self):
+        modules = [(5, 20), (25, 30)]
+        result = _filter_modules_length(modules, min_length=6)
+        expect = modules
+        self.assertListEqual(result, expect)
+        result = _filter_modules_length(modules, min_length=7)
+        expect = [(5, 20)]
+        self.assertListEqual(result, expect)
+        result = _filter_modules_length(modules, min_length=16)
+        expect = [(5, 20)]
+        self.assertListEqual(result, expect)
+        result = _filter_modules_length(modules, min_length=17)
+        expect = []
+        self.assertListEqual(result, expect)
+
+    def test_filter_max_length(self):
+        modules = [(5, 20), (25, 30)]
+        result = _filter_modules_length(modules, max_length=5)
+        expect = []
+        self.assertListEqual(result, expect)
+        result = _filter_modules_length(modules, max_length=6)
+        expect = [(25, 30)]
+        self.assertListEqual(result, expect)
+        result = _filter_modules_length(modules, max_length=15)
+        expect = [(25, 30)]
+        self.assertListEqual(result, expect)
+        result = _filter_modules_length(modules, max_length=16)
+        expect = modules
         self.assertListEqual(result, expect)
 
 
