@@ -22,7 +22,6 @@ from .core.arg import (CMD_ENSEMBLES,
                        opt_tile_min_overlap,
                        opt_erase_tiles,
                        opt_pair_fdr,
-                       opt_min_pair_fraction,
                        opt_min_cluster_length,
                        opt_gap_mode)
 from .core.batch import (accumulate_confusion_matrices,
@@ -73,6 +72,21 @@ def _ends_arrays_to_tuples(end5s: Iterable, end3s: Iterable):
     # The end5s and end3s arrays must be mapped to Python integers,
     # otherwise they will cause an error during JSON serialization.
     return list(zip(map(int, end5s), map(int, end3s), strict=True))
+
+
+def _tuples_to_ends_arrays(pairs: list[tuple[int, int]]):
+    if not pairs:
+        return np.array([], dtype=int), np.array([], dtype=int)
+    end5s, end3s = map(np.array, zip(*pairs))
+    return end5s, end3s
+
+
+def _calc_midpoints_distances(end5s: np.ndarray, end3s: np.ndarray):
+    assert end5s.shape == end3s.shape
+    assert np.all(end5s <= end3s)
+    midpoints = (end5s + end3s) / 2
+    distances = end3s - end5s
+    return midpoints, distances
 
 
 def _calc_tiles(total_end5: int,
@@ -214,13 +228,13 @@ def _find_correlated_pairs(dataset: MaskMutsDataset,
         dataset.pattern,
         dataset.region.unmasked.get_level_values(POS_NAME),
         None,
+        min_gap=dataset.min_mut_gap,
         num_cpus=num_cpus
     )
     # Determine which pairs of positions correlate significantly at a
     # false discovery rate of pair_fdr.
     pvals = calc_confusion_pvals(n, a, b, ab)
     is_significant = label_significant_pvals(pvals, pair_fdr)
-    pairs = n.index[is_significant].to_list()
     # Save the confusion matrix as a table and graph.
     table_file = dataset.report_file.with_name("correlation-matrix.csv")
     phi = calc_confusion_phi(n, a, b, ab)
@@ -234,146 +248,224 @@ def _find_correlated_pairs(dataset: MaskMutsDataset,
          f"Significant at FDR={pair_fdr}": is_significant},
     )
     confusion_matrix.to_csv(table_file)
-    return pairs
+    # Return the significantly correlated pairs.
+    pairs = n.index
+    pairs_significant = pairs[is_significant].to_list()
+    logger.detail(f"{dataset} has {len(pairs_significant)} pairs with "
+                  f"significant correlations out of {len(pairs)} total pairs")
+    return pairs_significant
 
 
-def _graph_ref_cluster_regions(combined_positions: np.ndarray,
-                               pairs: list[tuple[int, int]],
-                               pair_fraction: np.ndarray,
-                               min_pair_fraction: float,
-                               html_file: str | Path):
-    # Create a subplot with two rows: top for pair_fraction, bottom for correlated pairs
-    fig = make_subplots(
-        rows=2, cols=1,
-        shared_xaxes=True,
-        vertical_spacing=0.0,
-        row_heights=[0.5, 0.5],
-    )
-    # Indicate the minimum pair fraction.
-    min_pos = combined_positions[0]
-    max_pos = combined_positions[-1]
-    fig.add_trace(
-        go.Scatter(
-            x=[min_pos, max_pos],
-            y=[min_pair_fraction, min_pair_fraction],
-            mode='lines',
-            line=dict(color="#56B4E9"),
-            name="Minimum Pair Fraction",
-            showlegend=True,
-        ),
-        row=1, col=1
-    )
-    # Graph the pair fraction.
-    fig.add_trace(
-        go.Bar(
-            x=combined_positions,
-            y=pair_fraction,
-            showlegend=False,
-            marker_color="#0072B2"
-        ),
-        row=1, col=1
-    )
-    # Graph the pairs as a scatter plot.
-    pos_a, pos_b = list(map(np.array, zip(*pairs)))
-    x_scatter = (pos_a + pos_b) / 2  # midpoint
-    y_scatter = pos_a - pos_b  # distance
-    # Above each pair, add a triangle.
-    for (a, b), x, y in zip(pairs, x_scatter, y_scatter, strict=True):
-        # Vertices of the triangle
-        x_triangle = [a, b, x, a]
-        y_triangle = [0, 0, y, 0]
-        fig.add_trace(
-            go.Scatter(
-                x=x_triangle,
-                y=y_triangle,
-                mode='none',
-                fill='toself',
-                fillcolor=f'rgba(230,159,0,0.02)',
-                showlegend=False,
-                hoverinfo='skip',
-            ),
-            row=2, col=1
-        )
-    # Plot the correlated pairs as points
-    fig.add_trace(
-        go.Scatter(
-            x=x_scatter,
-            y=y_scatter,
-            mode='markers',
-            showlegend=False,
-            marker=dict(color="#D55E00"),
-            text=list(map(str, pairs)),
-            hovertemplate='%{text}<extra></extra>',
-        ),
-        row=2, col=1
-    )
+def _aggregate_pairs(pairs: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    """ Aggregate pairs that overlap. """
+    if not pairs:
+        return list()
+    assert len(pairs[0]) == 2
+    aggregates = [pairs[0]]
+    for pos5, pos3 in pairs[1:]:
+        assert 1 <= pos5 <= pos3
+        assert pos5 >= aggregates[-1][0]
+        if pos5 <= aggregates[-1][1]:
+            # This pair overlaps with the previous aggregate.
+            if pos3 > aggregates[-1][1]:
+                # This pair extends the previous aggregate.
+                aggregates[-1] = (aggregates[-1][0], pos3)
+        else:
+            # This pair does not overlap with the previous aggregate.
+            # Create a new aggregate.
+            aggregates.append((pos5, pos3))
+    return aggregates
+
+
+def _select_pairs(pairs: list[tuple[int, int]], end5: int, end3: int):
+    return [(pos5, pos3) for pos5, pos3 in pairs
+            if end5 <= pos5 and pos3 <= end3]
+
+
+def _calc_span_per_pos(pairs: list[tuple[int, int]], end5: int, end3: int):
+    assert 1 <= end5 <= end3
+    spans_per_pos = pd.Series(0, index=range(end5, end3 + 1))
+    for pos5, pos3 in pairs:
+        assert end5 <= pos5 <= pos3 <= end3
+        spans_per_pos.loc[pos5: pos3] += 1
+    return spans_per_pos
+
+
+def _calc_null_span_per_pos(pairs: list[tuple[int, int]], end5: int, end3: int):
+    assert 1 <= end5 <= end3
+    null_spans_per_pos = pd.Series(0., index=range(end5, end3 + 1))
+    num_pos = null_spans_per_pos.size
+    ramp = np.minimum(np.arange(1, num_pos + 1), np.arange(num_pos, 0, -1))
+    fraction_overlap_cache = dict()
+    for pos5, pos3 in pairs:
+        assert end5 <= pos5 <= pos3 <= end3
+        length = pos3 - pos5 + 1
+        if length == num_pos:
+            # The pair spans the entire module.
+            null_spans_per_pos += 1.
+        else:
+            fraction_overlap = fraction_overlap_cache.get(length)
+            if fraction_overlap is None:
+                # Number of locations to which the pair could be moved.
+                num_loc = num_pos - length + 1
+                assert num_loc >= 0
+                max_overlap = np.minimum(ramp, min(length, num_loc))
+                fraction_overlap = max_overlap / num_loc
+                fraction_overlap_cache[length] = fraction_overlap
+            null_spans_per_pos += fraction_overlap
+    return null_spans_per_pos
+
+
+def _list_intervals(sufficient_spans_per_pos: pd.Series):
+    boundaries = np.flatnonzero(np.diff(np.concatenate(
+        [[False], sufficient_spans_per_pos, [False]]
+    )))
+    assert boundaries.size % 2 == 0
+    end5s = sufficient_spans_per_pos.index[boundaries[::2]]
+    end3s = sufficient_spans_per_pos.index[boundaries[1::2] - 1]
+    return _ends_arrays_to_tuples(end5s, end3s)
+
+
+def _calc_modules_from_pairs(pairs: list[tuple[int, int]],
+                             pair_fdr: float,
+                             max_iter: int = 1000):
+    """ 
+    """
+    logger.routine("Began calculating modules")
+    # First, naively aggregate all pairs that overlap.
+    modules = _aggregate_pairs(pairs)
+    for i in range(max_iter):
+        logger.detail(f"Modules at iteration {i}: {modules}")
+        new_modules = list()
+        for end5, end3 in modules:
+            # For each module, count the pairs contained by the module
+            # and how many span each position.
+            module_pairs = _select_pairs(pairs, end5, end3)
+            spans_per_pos = _calc_span_per_pos(module_pairs, end5, end3)
+            null_spans_per_pos = _calc_null_span_per_pos(module_pairs,
+                                                         end5,
+                                                         end3)
+            # Divide the module where the number of spanning pairs is
+            # less than or equal to the number expected with the given
+            # false discovery rate (pair_fdr).
+            threshold_span_per_pos = null_spans_per_pos * pair_fdr
+            sufficient_spans_per_pos = spans_per_pos > threshold_span_per_pos
+            if sufficient_spans_per_pos.all():
+                # All positions have enough pairs spanning them: keep
+                # the module as is.
+                new_modules.append((end5, end3))
+            elif sufficient_spans_per_pos.any():
+                # Some but not all positions have enough pairs spanning
+                # them: split the module into intervals where the number
+                # of spanning pairs is greater than the threshold.
+                new_modules.extend(_list_intervals(sufficient_spans_per_pos))
+            else:
+                # No positions have enough pairs spanning them: omit
+                # this module.
+                pass
+        if new_modules == modules:
+            break
+        modules = new_modules
+    else:
+        logger.warning(f"Modules did not converge in {max_iter} iterations")
+    logger.routine(f"Ended calculating modules: {modules}")
+    return modules
+
+
+def _graph_pairs_and_modules(pairs: list[tuple[int, int]],
+                             modules: list[tuple[int, int]],
+                             end5: int,
+                             end3: int,
+                             html_file: str | Path):
+    # Create a subplot with two rows: top for pair_fraction,
+    # bottom for correlated pairs
+    fig = make_subplots(rows=1, cols=1)
+    # Graph the modules as triangles.
+    end5s, end3s = _tuples_to_ends_arrays(modules)
+    modules_midpoints, modules_distances = _calc_midpoints_distances(end5s,
+                                                                     end3s)
+    for a, b, x, y in zip(end5s,
+                          end3s,
+                          modules_midpoints,
+                          modules_distances,
+                          strict=True):
+        fig.add_trace(go.Scatter(x=[a, b, x, a],
+                                 y=[0, 0, y, 0],
+                                 mode='none',
+                                 fill='toself',
+                                 fillcolor=f'rgba(230,159,0,0.5)',
+                                 showlegend=False,
+                                 text=list(map(str, modules)),
+                                 hovertemplate='Module %{text}<extra></extra>'))
+    # Plot the correlated pairs as points.
+    pos5s, pos3s = _tuples_to_ends_arrays(pairs)
+    pairs_midpoints, pairs_distances = _calc_midpoints_distances(pos5s,
+                                                                 pos3s)
+    fig.add_trace(go.Scatter(x=pairs_midpoints,
+                             y=pairs_distances,
+                             mode='markers',
+                             showlegend=False,
+                             marker=dict(color="#D55E00"),
+                             text=list(map(str, pairs)),
+                             hovertemplate='Pair %{text}<extra></extra>'))
     # Finish the layout.
-    fig.update_xaxes(title_text=None,
-                     showgrid=True,
-                     row=1, col=1)
+    assert end5 <= end3
+    x_range = [end5 - 0.5, end3 + 0.5]
     fig.update_xaxes(title_text='Position',
                      showgrid=True,
-                     row=2, col=1)
-    fig.update_yaxes(title_text='Pair Fraction',
-                     row=1, col=1,
-                     range=[0.0, max(pair_fraction.max(),
-                                     min_pair_fraction) * 1.05])
-    fig.update_yaxes(title_text='Correlated Pairs',
-                     row=2, col=1,
-                     range=[y_scatter.min() * 1.05, 0.0])
+                     range=x_range)
+    if modules_distances.size > 0 or pairs_distances.size > 0:
+        y_range = [0.0, 1.05 * np.max(np.concatenate([modules_distances,
+                                                      pairs_distances]))]
+    else:
+        y_range = [0.0, 1.0]
+    fig.update_yaxes(title_text='Distance',
+                     showgrid=True,
+                     range=y_range)
     # Save the figure.
     fig.write_html(html_file)
 
 
-def _insert_regions_into_gaps(ends: list[tuple[int, int]],
+def _insert_modules_into_gaps(modules: list[tuple[int, int]],
                               global_end5: int,
                               global_end3: int):
-    """ Turn every gap between regions into a new region. """
+    """ Turn every gap between modules into a new module. """
     assert 1 <= global_end5 <= global_end3
-    new_ends = list()
-    prev_end3 = global_end5 - 1
-    # ends is assumed to be sorted.
-    for end5, end3 in ends:
+    new_modules = list()
+    prev_pos3 = global_end5 - 1
+    # modules is assumed to be sorted.
+    for end5, end3 in modules:
         assert global_end5 <= end5 <= end3 <= global_end3
         # Here, no two regions are allowed to overlap.
-        assert end5 > prev_end3
-        if end5 > prev_end3 + 1:
+        assert end5 > prev_pos3
+        if end5 > prev_pos3 + 1:
             # There is a gap between this region and the previous.
             # Create a new region to fill the gap.
-            new_ends.append(((prev_end3 + 1), (end5 - 1)))
-        new_ends.append((end5, end3))
-        prev_end3 = end3
-    if prev_end3 < global_end3:
+            new_modules.append(((prev_pos3 + 1), (end5 - 1)))
+        new_modules.append((end5, end3))
+        prev_pos3 = end3
+    if prev_pos3 < global_end3:
         # There is a gap between the last region and total_end3.
         # Create a new region to fill the gap.
-        new_ends.append(((prev_end3 + 1), global_end3))
-    return new_ends
+        new_modules.append(((prev_pos3 + 1), global_end3))
+    return new_modules
 
 
-def _expand_regions_into_gaps(ends: list[tuple[int, int]],
+def _expand_modules_into_gaps(modules: list[tuple[int, int]],
                               global_end5: int,
                               global_end3: int):
-    """
-    Given sorted, non-overlapping inclusive integer intervals (end5 <= end3),
-    expand intervals so that they fill all gaps, while:
-      - splitting each internal gap as evenly as possible,
-      - extending the first interval to start at total_end5,
-      - extending the last interval to end at total_end3,
-
-    Example:
-      [(1, 5), (10, 20)] with [1, 20] -> [(1, 7), (8, 20)]
-    """
+    """ Expand every module to fill gaps on either side. """
     assert 1 <= global_end5 <= global_end3
-    if not ends:
+    if not modules:
         return list()
-    # Make mutable end5/end3 arrays.
-    end5s, end3s = list(map(list, zip(*ends)))
-    assert 1 <= len(ends) == len(end5s) == len(end3s)
+    # Make mutable end5s/end3s arrays.
+    end5s, end3s = map(list, zip(*modules))
+    assert 1 <= len(modules) == len(end5s) == len(end3s)
     # Expand to cover the global ends.
     end5s[0] = global_end5
     end3s[-1] = global_end3
     # Split each internal gap: left gets floor, right gets ceil
-    for i in range(len(ends) - 1):
+    for i in range(len(modules) - 1):
         left_end3 = end3s[i]
         right_end5 = end5s[i + 1]
         gap = right_end5 - left_end3 - 1
@@ -385,82 +477,50 @@ def _expand_regions_into_gaps(ends: list[tuple[int, int]],
     return _ends_arrays_to_tuples(end5s, end3s)
 
 
-def _calc_ref_cluster_regions(datasets: list[MaskMutsDataset],
-                              min_pair_fraction: float,
+def _calc_ref_cluster_modules(datasets: list[MaskMutsDataset],
+                              pair_fdr: float,
                               min_cluster_length: int,
                               gap_mode: str,
-                              num_cpus: int,
-                              **kwargs):
+                              num_cpus: int):
     """ Calculate the cluster regions for one reference. """
-    # Find pairs of bases that correlate significantly in any region.
-    pairs = list(chain(*dispatch(_find_correlated_pairs,
-                                 num_cpus=num_cpus,
-                                 pass_num_cpus=True,
-                                 as_list=False,
-                                 ordered=False,
-                                 raise_on_error=True,
-                                 args=as_list_of_tuples(datasets),
-                                 kwargs=kwargs)))
-    # Count correlated pairs that overlap each position in the region.
     region = unite([dataset.region for dataset in datasets])
-    combined_positions = region.unmasked_int
-    num_pairs = pd.Series(0, index=combined_positions)
-    for end5, end3 in pairs:
-        num_pairs.loc[end5: end3] += 1
-    # Calculate the maximum number of pairs that could overlap each
-    # position (i.e. if all pairs were correlated).
-    max_pairs = pd.Series(0, index=combined_positions)
-    for dataset in datasets:
-        dataset_positions = dataset.region.unmasked_int
-        num_pos = dataset_positions.size
-        counts = np.arange(1, num_pos + 1) * np.arange(num_pos, 0, -1)
-        max_pairs.loc[dataset_positions] += counts
-    # Determine for which positions the ratio of correlated pairs to
-    # maximum possible pairs is at least min_pair_fraction.
-    pair_fractions = num_pairs / max_pairs
-    adequate_pair_fraction = pair_fractions >= min_pair_fraction
-    # Find the regions with adequate fractions of correlated pairs.
-    boundaries = np.flatnonzero(np.diff(np.concatenate([[False],
-                                                        adequate_pair_fraction,
-                                                        [False]])))
-    assert boundaries.size % 2 == 0
-    end5s = combined_positions[boundaries[::2]]
-    end3s = combined_positions[boundaries[1::2] - 1]
-    # Remove regions that are too short.
-    sufficient_length = end3s - end5s >= min_cluster_length - 1
-    end5s = end5s[sufficient_length]
-    end3s = end3s[sufficient_length]
+    # Find pairs of bases that correlate significantly in any region.
+    # Use sorted(set()) to ensure pairs are unique and sorted.
+    pairs = sorted(set(chain(*dispatch(_find_correlated_pairs,
+                                       num_cpus=num_cpus,
+                                       pass_num_cpus=True,
+                                       as_list=False,
+                                       ordered=False,
+                                       raise_on_error=True,
+                                       args=as_list_of_tuples(datasets),
+                                       kwargs=dict(pair_fdr=pair_fdr)))))
+    # Find modules of correlated pairs.
+    modules = _calc_modules_from_pairs(pairs, pair_fdr)
+    # Remove modules that are too short.
+    modules = [(end5, end3) for end5, end3 in modules
+               if end3 - end5 + 1 >= min_cluster_length]
     # Determine what to do with gaps between regions.
-    ends = _ends_arrays_to_tuples(end5s, end3s)
     if gap_mode == GAP_MODE_INSERT:
-        ends = _insert_regions_into_gaps(ends, region.end5, region.end3)
+        modules = _insert_modules_into_gaps(modules, region.end5, region.end3)
     elif gap_mode == GAP_MODE_EXPAND:
-        ends = _expand_regions_into_gaps(ends, region.end5, region.end3)
+        modules = _expand_modules_into_gaps(modules, region.end5, region.end3)
     elif gap_mode != GAP_MODE_OMIT:
         raise ValueError(gap_mode)
-    # Save the pair fractions as a CSV.
+    # Graph the correlated pairs and modules.
     ref_dir = datasets[0].report_file.parent.parent
-    csv_file = ref_dir.joinpath("pair_fractions.csv")
-    pair_data = pd.DataFrame.from_dict({
-        "Number of Pairs": num_pairs,
-        "Potential Pairs": max_pairs,
-        "Fraction of Pairs": pair_fractions,
-    })
-    pair_data.to_csv(csv_file)
-    # Graph the results.
-    html_file = ref_dir.joinpath("pair_fractions.html")
+    html_file = ref_dir.joinpath("pairs-and-modules.html")
     try:
-        _graph_ref_cluster_regions(combined_positions,
-                                   pairs,
-                                   pair_fractions,
-                                   min_pair_fraction,
-                                   html_file)
+        _graph_pairs_and_modules(pairs,
+                                 modules,
+                                 region.end5,
+                                 region.end3,
+                                 html_file)
     except Exception as error:
         logger.error(error)
-    return ends
+    return modules
 
 
-def _calc_cluster_regions(mask_dirs: list[Path],
+def _calc_cluster_modules(mask_dirs: list[Path],
                           num_cpus: int,
                           **kwargs):
     """ Calculate the cluster regions for all references. """
@@ -470,7 +530,7 @@ def _calc_cluster_regions(mask_dirs: list[Path],
         ref = dataset.ref
         groups[ref].append(dataset)
     # Calculate regions for each reference.
-    regions = dispatch(_calc_ref_cluster_regions,
+    regions = dispatch(_calc_ref_cluster_modules,
                        num_cpus=num_cpus,
                        pass_num_cpus=True,
                        as_list=False,
@@ -497,7 +557,6 @@ def _run_group(relate_report_files: list[Path], *,
                tile_min_overlap: float,
                erase_tiles: bool,
                pair_fdr: float,
-               min_pair_fraction: float,
                min_cluster_length: int,
                gap_mode: str,
                # Mask options
@@ -598,10 +657,9 @@ def _run_group(relate_report_files: list[Path], *,
         force=force
     )
     # Find regions spanned by correlated base pairs.
-    correl_regions = _calc_cluster_regions(
+    module_coords = _calc_cluster_modules(
         tiled_dirs,
         pair_fdr=pair_fdr,
-        min_pair_fraction=min_pair_fraction,
         min_cluster_length=min_cluster_length,
         gap_mode=gap_mode,
         num_cpus=num_cpus
@@ -619,7 +677,7 @@ def _run_group(relate_report_files: list[Path], *,
     # Drop each relate report whose reference contained no correlated
     # base pairs; otherwise, it will default to clustering the full
     # reference, which is not what seismic ensembles is for.
-    refs_with_correlated_pairs = {ref for ref, end5, end3 in correl_regions}
+    refs_with_correlated_pairs = {ref for ref, end5, end3 in module_coords}
     logger.detail(f"Found {len(refs_with_correlated_pairs)} references with "
                   f"correlated pairs: {sorted(refs_with_correlated_pairs)}")
     relate_report_files_with_correlated_pairs = list()
@@ -631,12 +689,12 @@ def _run_group(relate_report_files: list[Path], *,
                   "relate report files with correlated pairs, out of "
                   f"{len(relate_report_files)} total relate report files")
     # Cluster the regions spanned by correlated base pairs.
-    correl_dirs = mask_mod.run(
+    module_dirs = mask_mod.run(
         input_path=relate_report_files_with_correlated_pairs,
         branch=branch,
         tmp_pfx=tmp_pfx,
         keep_tmp=keep_tmp,
-        mask_coords=tuple(correl_regions),
+        mask_coords=tuple(module_coords),
         mask_primers=(),
         primer_gap=0,
         mask_regions_file=None,
@@ -667,7 +725,7 @@ def _run_group(relate_report_files: list[Path], *,
         force=force
     )
     cluster_dirs = cluster_mod.run(
-        input_path=correl_dirs,
+        input_path=module_dirs,
         tmp_pfx=tmp_pfx,
         keep_tmp=keep_tmp,
         min_clusters=min_clusters,
@@ -713,7 +771,6 @@ def run(input_path: Iterable[str | Path], *,
         tile_min_overlap: float,
         erase_tiles: bool,
         pair_fdr: float,
-        min_pair_fraction: float,
         min_cluster_length: int,
         gap_mode: str,
         # Mask options
@@ -787,7 +844,6 @@ def run(input_path: Iterable[str | Path], *,
                   tile_min_overlap=tile_min_overlap,
                   erase_tiles=erase_tiles,
                   pair_fdr=pair_fdr,
-                  min_pair_fraction=min_pair_fraction,
                   min_cluster_length=min_cluster_length,
                   gap_mode=gap_mode,
                   # Mask options
@@ -856,7 +912,6 @@ params = merge_params(mask_mod.params,
                        opt_tile_min_overlap,
                        opt_erase_tiles,
                        opt_pair_fdr,
-                       opt_min_pair_fraction,
                        opt_min_cluster_length,
                        opt_gap_mode])
 

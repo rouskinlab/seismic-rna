@@ -6,7 +6,7 @@ import pandas as pd
 from seismicrna.core.batch.confusion import (init_confusion_matrix,
                                              calc_confusion_matrix,
                                              calc_confusion_phi,
-_count_intersection,
+                                             _count_intersection,
                                              label_significant_pvals)
 from seismicrna.core.rel.code import DELET, SUB_A, SUB_C, SUB_G, SUB_T
 from seismicrna.core.rel.pattern import RelPattern
@@ -66,6 +66,22 @@ class TestInitConfusionMatrix(ut.TestCase):
                                                  names=["Position A",
                                                         "Position B"])
         n, a, b, ab = init_confusion_matrix(pos_index)
+        for entry in [n, a, b, ab]:
+            self.assertIsInstance(entry, pd.Series)
+            self.assertTrue(entry.index.equals(expect_index))
+            self.assertTrue(entry.index.equal_levels(expect_index))
+            self.assertTrue(np.all(entry == 0))
+
+    def test_no_clusters_min_gap(self):
+        pos_index = pd.MultiIndex.from_arrays([[2, 4, 7, 9],
+                                               ["C", "C", "A", "A"]],
+                                              names=[POS_NAME,
+                                                     BASE_NAME])
+        expect_index = pd.MultiIndex.from_arrays([[2, 2, 4, 4],
+                                                  [7, 9, 7, 9]],
+                                                 names=["Position A",
+                                                        "Position B"])
+        n, a, b, ab = init_confusion_matrix(pos_index, min_gap=2)
         for entry in [n, a, b, ab]:
             self.assertIsInstance(entry, pd.Series)
             self.assertTrue(entry.index.equals(expect_index))

@@ -349,6 +349,22 @@ def calc_reads_per_pos(pattern: RelPattern,
     return reads
 
 
+def calc_covered_reads_per_pos(pos_index: pd.Index,
+                               read_nums: np.ndarray,
+                               seg_end5s: np.ndarray,
+                               seg_end3s: np.ndarray,
+                               seg_ends_mask: np.ndarray | None):
+    """ For each position, find all reads covering it. """
+    covering_reads = dict()
+    for pos in pos_index.get_level_values(POS_NAME):
+        covering_segs = np.logical_and(seg_end5s <= pos,
+                                       seg_end3s >= pos)
+        if seg_ends_mask is not None:
+            covering_segs &= ~seg_ends_mask
+        covering_reads[pos] = read_nums[covering_segs.any(axis=1)]
+    return covering_reads
+
+
 def calc_count_per_pos(pattern: RelPattern,
                        cover_per_pos: pd.Series | pd.DataFrame,
                        rels_per_pos: dict[int, pd.Series | pd.DataFrame]):

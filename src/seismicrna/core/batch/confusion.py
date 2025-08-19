@@ -1,12 +1,8 @@
-from itertools import combinations
-
 import numpy as np
 import pandas as pd
 from numba import jit
 
-from .count import calc_reads_per_pos
 from ..logs import logger
-from ..rel import RelPattern
 from ..seq import POS_NAME
 from ..validate import require_isinstance, require_between
 
@@ -15,7 +11,8 @@ POSITION_B = "Position B"
 
 
 def init_confusion_matrix(pos_index: pd.Index,
-                          clusters: pd.Index | None = None):
+                          clusters: pd.Index | None = None,
+                          min_gap: int = 0):
     """ For every pair of positions, initialize the confusion matrix:
 
     +----+----+
@@ -27,10 +24,13 @@ def init_confusion_matrix(pos_index: pd.Index,
 
     And return .., A., .B, AB in that order.
     """
-    pos_pairs = pd.MultiIndex.from_tuples(
-        combinations(pos_index.get_level_values(POS_NAME), 2),
-        names=[POSITION_A, POSITION_B]
-    )
+    positions = pos_index.get_level_values(POS_NAME)
+    idx_a, idx_b = np.triu_indices(positions.size, k=1)
+    pos_a = positions[idx_a]
+    pos_b = positions[idx_b]
+    select = pos_b - pos_a > min_gap
+    pos_pairs = pd.MultiIndex.from_arrays((pos_a[select], pos_b[select]),
+                                          names=[POSITION_A, POSITION_B])
     if clusters is None:
         # There are no clusters.
         array_type = pd.Series
@@ -73,14 +73,11 @@ def _count_intersection(x: np.ndarray, y: np.ndarray):
     return count
 
 
-def calc_confusion_matrix(pattern: RelPattern,
-                          mutations: dict[int, dict[int, np.ndarray]],
-                          pos_index: pd.Index,
-                          read_nums: np.ndarray,
-                          seg_end5s: np.ndarray,
-                          seg_end3s: np.ndarray,
-                          seg_ends_mask: np.ndarray | None,
-                          read_weights: pd.DataFrame | None = None):
+def calc_confusion_matrix(pos_index: pd.Index,
+                          covering_reads: dict[int, np.ndarray],
+                          mutated_reads: dict[int, np.ndarray],
+                          read_weights: pd.DataFrame | None = None,
+                          min_gap: int = 0):
     """ For every pair of positions, calculate the confusion matrix:
 
     +----+----+
@@ -93,40 +90,31 @@ def calc_confusion_matrix(pattern: RelPattern,
     And return .., A., .B, AB in that order.
     """
     logger.routine("Began calculating confusion matrix")
-    if not np.array_equal(read_nums, np.unique(read_nums)):
-        raise ValueError("read_nums is not unique and sorted")
-    # Find which reads cover and are mutated at each position.
-    mutated_reads = calc_reads_per_pos(pattern, mutations, pos_index)
-    covering_reads = dict()
     for pos in pos_index.get_level_values(POS_NAME):
-        covering_segs = np.logical_and(seg_end5s <= pos,
-                                       seg_end3s >= pos)
-        if seg_ends_mask is not None:
-            covering_segs &= ~seg_ends_mask
-        covering_reads[pos] = read_nums[covering_segs.any(axis=1)]
         assert np.all(np.isin(mutated_reads[pos],
                               covering_reads[pos],
                               assume_unique=True))
-    # Calculate the confusion matrix.
+    # Initialize the confusion matrix.
     n, a, b, ab = init_confusion_matrix(pos_index,
                                         (read_weights.columns
                                          if read_weights is not None
-                                         else None))
-    for pos_pair in ab.index:
+                                         else None),
+                                        min_gap=min_gap)
+    # For each pair of positions, count the reads in each category.
+    for i, (pos5, pos3) in enumerate(n.index):
         # Note that this method of counting the intersection is faster
         # than matrix multiplications, even though this method needs to
-        # loop over every pair.
-        pos5, pos3 = pos_pair
-        # Count the reads in each category.
+        # loop over every pair. For speed, use x.values[i] instead of
+        # x.at[(pos5, pos3)].
         if read_weights is None:
-            n.at[pos_pair] = _count_intersection(covering_reads[pos5],
-                                                 covering_reads[pos3])
-            a.at[pos_pair] = _count_intersection(mutated_reads[pos5],
-                                                 covering_reads[pos3])
-            b.at[pos_pair] = _count_intersection(covering_reads[pos5],
-                                                 mutated_reads[pos3])
-            ab.at[pos_pair] = _count_intersection(mutated_reads[pos5],
-                                                  mutated_reads[pos3])
+            n.values[i] = _count_intersection(covering_reads[pos5],
+                                              covering_reads[pos3])
+            a.values[i] = _count_intersection(mutated_reads[pos5],
+                                              covering_reads[pos3])
+            b.values[i] = _count_intersection(covering_reads[pos5],
+                                              mutated_reads[pos3])
+            ab.values[i] = _count_intersection(mutated_reads[pos5],
+                                               mutated_reads[pos3])
         else:
             raise NotImplementedError
     logger.routine("Ended calculating confusion matrix")
@@ -223,7 +211,7 @@ def calc_confusion_phi(n: pd.Series | pd.DataFrame,
         phi = np.exp(log_phi_pos) - np.exp(log_phi_neg)
     phi.loc[np.asarray(n < min_cover)] = np.nan
     # Ensure all phi values are in [-1, 1]; values may be slightly out
-    # of bounds due to floating-point rounding, especially due to the
+    # of bounds due to floating-point rounding, especially after the
     # logarithmic transformation.
     phi_lo = np.asarray(phi < -1.)
     if np.any(phi_lo):
@@ -238,17 +226,25 @@ def calc_confusion_phi(n: pd.Series | pd.DataFrame,
     return phi
 
 
-def calc_confusion_pvals(n: pd.Series | pd.DataFrame,
-                         a: pd.Series | pd.DataFrame,
-                         b: pd.Series | pd.DataFrame,
-                         ab: pd.Series | pd.DataFrame, *,
+def calc_confusion_pvals(n: pd.Series,
+                         a: pd.Series,
+                         b: pd.Series,
+                         ab: pd.Series, *,
                          validate: bool = True):
     """ Calculate the p-value of each element of the confusion matrix
-    using Fisher's exact test (one-sided). """
+    using a two-sided Fisher exact test. """
     if validate:
         validate_confusion_matrix(n, a, b, ab)
+    # Calculate the p-values of the overlap being ≤ (le) or ≥ (ge) the
+    # observed overlap (ab).
     from scipy.stats import hypergeom
-    return hypergeom.sf(k=(ab - 1), M=n, n=a, N=b)
+    dist = hypergeom(n, b, a)
+    pvals_le = dist.cdf(ab)
+    pvals_ge = dist.sf(ab - 1)
+    # Approximate the overall two-sided p-value as 2x the smaller tail,
+    # capped at 1.
+    pvals = np.minimum(2.0 * np.minimum(pvals_le, pvals_ge), 1.0)
+    return pvals
 
 
 def label_significant_pvals(pvals: np.ndarray | pd.Series,

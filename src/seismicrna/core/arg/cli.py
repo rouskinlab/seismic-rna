@@ -1009,21 +1009,12 @@ opt_pair_fdr = Option(
     help="Find correlated pairs at this false discovery rate (FDR)",
 )
 
-opt_min_pair_fraction = Option(
-    ("--min-pair-fraction",),
-    type=float,
-    default=0.0005,
-    help="Mark positions as clusterable if their pair fractions (correlated "
-         "pairs that span the position divided by total pairs that span the "
-         "position) are at least this fraction",
-)
 
 opt_min_cluster_length = Option(
     ("--min-cluster-length",),
     type=int,
     default=30,
-    help="Cluster only the regions with at least this number of consecutive "
-         "positions whose pair fractions are at least min_pair_fraction",
+    help="Cluster only the regions with at least this many positions",
 )
 
 opt_gap_mode = Option(

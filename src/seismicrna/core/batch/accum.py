@@ -158,9 +158,10 @@ def accumulate_batches(
 
 def _calc_batch_confusion_matrix(batch_num: int, *,
                                  get_batch: Callable[[int], RegionMutsBatch],
-                                 pattern: RelPattern):
+                                 pattern: RelPattern,
+                                 min_gap: int):
     batch = get_batch(batch_num)
-    return batch.calc_confusion_matrix(pattern)
+    return batch.calc_confusion_matrix(pattern, min_gap)
 
 
 def accumulate_confusion_matrices(
@@ -169,12 +170,13 @@ def accumulate_confusion_matrices(
         pattern: RelPattern,
         pos_index: pd.Index,
         clusters: pd.Index | None,
+        min_gap: int = 0,
         num_cpus: int = 1
 ):
     logger.routine(
         f"Began accumulating confusion matrices of {num_batches} batches"
     )
-    n, a, b, ab = init_confusion_matrix(pos_index, clusters)
+    n, a, b, ab = init_confusion_matrix(pos_index, clusters, min_gap)
     for (n_batch, a_batch, b_batch, ab_batch) in dispatch(
             _calc_batch_confusion_matrix,
             num_cpus=num_cpus,
@@ -184,7 +186,8 @@ def accumulate_confusion_matrices(
             raise_on_error=True,
             args=as_list_of_tuples(range(num_batches)),
             kwargs=dict(get_batch=get_batch,
-                        pattern=pattern)
+                        pattern=pattern,
+                        min_gap=min_gap)
     ):
         n += n_batch
         a += a_batch

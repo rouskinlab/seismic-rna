@@ -13,8 +13,10 @@ from seismicrna.core.seq.fasta import write_fasta
 from seismicrna.core.seq.region import FULL_NAME
 from seismicrna.core.seq.xna import DNA
 from seismicrna.ensembles import (_calc_tiles,
-                                  _insert_regions_into_gaps,
-                                  _expand_regions_into_gaps,
+                                  _aggregate_pairs,
+                                  _list_intervals,
+                                  _insert_modules_into_gaps,
+                                  _expand_modules_into_gaps,
                                   run as run_ensembles)
 from seismicrna.sim.params import run as sim_params
 from seismicrna.sim.relate import run as sim_relate
@@ -57,41 +59,84 @@ class TestCalcTiles(ut.TestCase):
         self.assertEqual(result, expect)
 
 
+class TestAggregatePairs(ut.TestCase):
+
+    def test_zero(self):
+        result = _aggregate_pairs([])
+        expect = []
+        self.assertListEqual(result, expect)
+
+    def test_one(self):
+        result = _aggregate_pairs([(3, 9)])
+        expect = [(3, 9)]
+        self.assertListEqual(result, expect)
+    
+    def test_two_serial(self):
+        result = _aggregate_pairs([(3, 10), (10, 15)])
+        expect = [(3, 15)]
+        self.assertListEqual(result, expect)
+    
+    def test_two_nested(self):
+        result = _aggregate_pairs([(3, 15), (9, 10)])
+        expect = [(3, 15)]
+        self.assertListEqual(result, expect)
+
+    def test_two_disjoint(self):
+        result = _aggregate_pairs([(3, 9), (10, 15)])
+        expect = [(3, 9), (10, 15)]
+        self.assertListEqual(result, expect)
+    
+    def test_three_serial(self):
+        result = _aggregate_pairs([(3, 10), (9, 15), (15, 20)])
+        expect = [(3, 20)]
+        self.assertListEqual(result, expect)
+    
+    def test_three_nested(self):
+        result = _aggregate_pairs([(3, 20), (7, 11), (14, 16)])
+        expect = [(3, 20)]
+        self.assertListEqual(result, expect)
+    
+    def test_three_disjoint(self):
+        result = _aggregate_pairs([(3, 6), (7, 11), (14, 16)])
+        expect = [(3, 6), (7, 11), (14, 16)]
+        self.assertListEqual(result, expect)
+
+
 class TestInsertRegionsIntoGaps(ut.TestCase):
 
     def test_zero(self):
-        result = _insert_regions_into_gaps([], 3, 9)
+        result = _insert_modules_into_gaps([], 3, 9)
         expect = [(3, 9)]
         self.assertListEqual(result, expect)
 
     def test_one(self):
-        result = _insert_regions_into_gaps([(3, 9)], 3, 9)
+        result = _insert_modules_into_gaps([(3, 9)], 3, 9)
         expect = [(3, 9)]
         self.assertListEqual(result, expect)
-        result = _insert_regions_into_gaps([(4, 9)], 3, 9)
+        result = _insert_modules_into_gaps([(4, 9)], 3, 9)
         expect = [(3, 3), (4, 9)]
         self.assertListEqual(result, expect)
-        result = _insert_regions_into_gaps([(3, 8)], 3, 9)
+        result = _insert_modules_into_gaps([(3, 8)], 3, 9)
         expect = [(3, 8), (9, 9)]
         self.assertListEqual(result, expect)
-        result = _insert_regions_into_gaps([(4, 8)], 3, 9)
+        result = _insert_modules_into_gaps([(4, 8)], 3, 9)
         expect = [(3, 3), (4, 8), (9, 9)]
         self.assertListEqual(result, expect)
 
     def test_two(self):
-        result = _insert_regions_into_gaps([(2, 10), (11, 20)], 2, 20)
+        result = _insert_modules_into_gaps([(2, 10), (11, 20)], 2, 20)
         expect = [(2, 10), (11, 20)]
         self.assertListEqual(result, expect)
-        result = _insert_regions_into_gaps([(3, 10), (11, 20)], 2, 20)
+        result = _insert_modules_into_gaps([(3, 10), (11, 20)], 2, 20)
         expect = [(2, 2), (3, 10), (11, 20)]
         self.assertListEqual(result, expect)
-        result = _insert_regions_into_gaps([(2, 10), (12, 20)], 2, 20)
+        result = _insert_modules_into_gaps([(2, 10), (12, 20)], 2, 20)
         expect = [(2, 10), (11, 11), (12, 20)]
         self.assertListEqual(result, expect)
-        result = _insert_regions_into_gaps([(2, 10), (11, 19)], 2, 20)
+        result = _insert_modules_into_gaps([(2, 10), (11, 19)], 2, 20)
         expect = [(2, 10), (11, 19), (20, 20)]
         self.assertListEqual(result, expect)
-        result = _insert_regions_into_gaps([(3, 9), (11, 19)], 2, 20)
+        result = _insert_modules_into_gaps([(3, 9), (11, 19)], 2, 20)
         expect = [(2, 2), (3, 9), (10, 10), (11, 19), (20, 20)]
         self.assertListEqual(result, expect)
 
@@ -99,32 +144,32 @@ class TestInsertRegionsIntoGaps(ut.TestCase):
 class TestExpandRegionsIntoGaps(ut.TestCase):
 
     def test_zero(self):
-        result = _expand_regions_into_gaps([], 3, 9)
+        result = _expand_modules_into_gaps([], 3, 9)
         expect = []
         self.assertListEqual(result, expect)
 
     def test_one(self):
         expect = [(3, 9)]
-        result = _expand_regions_into_gaps([(3, 9)], 3, 9)
+        result = _expand_modules_into_gaps([(3, 9)], 3, 9)
         self.assertListEqual(result, expect)
-        result = _expand_regions_into_gaps([(4, 9)], 3, 9)
+        result = _expand_modules_into_gaps([(4, 9)], 3, 9)
         self.assertListEqual(result, expect)
-        result = _expand_regions_into_gaps([(3, 8)], 3, 9)
+        result = _expand_modules_into_gaps([(3, 8)], 3, 9)
         self.assertListEqual(result, expect)
-        result = _expand_regions_into_gaps([(5, 7)], 3, 9)
+        result = _expand_modules_into_gaps([(5, 7)], 3, 9)
         self.assertListEqual(result, expect)
 
     def test_two(self):
-        result = _expand_regions_into_gaps([(2, 10), (11, 20)], 2, 20)
+        result = _expand_modules_into_gaps([(2, 10), (11, 20)], 2, 20)
         expect = [(2, 10), (11, 20)]
         self.assertListEqual(result, expect)
-        result = _expand_regions_into_gaps([(4, 9), (11, 18)], 2, 20)
+        result = _expand_modules_into_gaps([(4, 9), (11, 18)], 2, 20)
         expect = [(2, 9), (10, 20)]
         self.assertListEqual(result, expect)
-        result = _expand_regions_into_gaps([(5, 9), (12, 17)], 2, 20)
+        result = _expand_modules_into_gaps([(5, 9), (12, 17)], 2, 20)
         expect = [(2, 10), (11, 20)]
         self.assertListEqual(result, expect)
-        result = _expand_regions_into_gaps([(6, 6), (10, 10)], 2, 20)
+        result = _expand_modules_into_gaps([(6, 6), (10, 10)], 2, 20)
         expect = [(2, 7), (8, 20)]
         self.assertListEqual(result, expect)
 
