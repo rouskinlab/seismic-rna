@@ -618,6 +618,10 @@ def realign_cmd(xam_inp: Path,
     # cmds.append(xam_to_fastq_cmd(None, None))
     index_pfx = kwargs.get("index_pfx")
     # prefix_cmds = mkfifo_cmd([index_pfx.parent.parent/fq for fq in ["temp_1.fq", "temp_2.fq"]])
+    # Filter low-quality alignments before converting to fastq
+    if min_mapq is not None:
+        cmds.append(view_xam_cmd(None, None,
+                                 min_mapq=min_mapq))
     cmds.append(xam_to_fastq_cmd(None, None,
                                  fq_1_out=index_pfx.parent.parent/"temp_1.fq",
                                  fq_2_out=index_pfx.parent.parent/"temp_2.fq"))
