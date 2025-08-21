@@ -19,12 +19,11 @@ from seismicrna.ensembles import (_calc_tiles,
                                   _aggregate_pairs,
                                   _select_pairs,
                                   _calc_span_per_pos,
-                                  _calc_null_span_per_pos,
-                                  _list_intervals,
+                                  _calc_null_span_per_pos_keep_dists,
+                                  _calc_null_span_per_pos_rand_dists,
                                   _calc_modules_from_pairs,
                                   _insert_modules_into_gaps,
                                   _expand_modules_into_gaps,
-                                  _filter_modules_min_pairs,
                                   _filter_modules_length,
                                   run as run_ensembles)
 from seismicrna.sim.params import run as sim_params
@@ -140,14 +139,14 @@ class TestCalcSpanPerPos(ut.TestCase):
         self.assertTrue(result.index.equals(expect.index))
 
 
-class TestCalcNullSpanPerPos(ut.TestCase):
+class TestCalcNullSpanPerPosKeepDists(ut.TestCase):
 
     def _run_test(self,
                   pairs: list[tuple[int, int]],
                   end5: int,
                   end3: int,
                   expect: pd.Series):
-        result = _calc_null_span_per_pos(pairs, end5, end3)
+        result = _calc_null_span_per_pos_keep_dists(pairs, end5, end3)
         self.assertIsInstance(result, pd.Series)
         self.assertTrue(np.allclose(result, expect))
         self.assertTrue(result.index.equals(expect.index))
@@ -155,6 +154,10 @@ class TestCalcNullSpanPerPos(ut.TestCase):
     def test_no_pairs(self):
         expect = pd.Series({4: 0., 5: 0., 6: 0., 7: 0.})
         self._run_test([], 4, 7, expect)
+
+    def test_ref_1_read_1(self):
+        expect = pd.Series({5: 1.})
+        self._run_test([(5, 5)], 5, 5, expect)
 
     def test_ref_4_read_1(self):
         expect = pd.Series({4: 0.25, 5: 0.25, 6: 0.25, 7: 0.25})
@@ -195,64 +198,107 @@ class TestCalcNullSpanPerPos(ut.TestCase):
     def test_multiple_reads(self):
         pairs = [(6, 7), (5, 5), (4, 8)]
         expect = reduce(add,
-                        [_calc_null_span_per_pos([pair], 4, 8)
+                        [_calc_null_span_per_pos_keep_dists([pair], 4, 8)
                          for pair in pairs])
         self._run_test(pairs, 4, 8, expect)
 
 
-class TestListIntervals(ut.TestCase):
+class TestCalcNullSpanPerPosRandDists(ut.TestCase):
 
-    def test_empty(self):
-        result = _list_intervals(pd.Series([]))
-        expect = []
-        self.assertListEqual(result, expect)
+    @staticmethod
+    def _calc_expect(pairs: list[tuple[int, int]],
+                     end5: int,
+                     end3: int,
+                     min_mut_gap: int):
+        positions = np.arange(end5, end3 + 1)
+        counts = pd.Series(0, index=positions)
+        num_intervals = 0
+        for a in positions:
+            for b in positions:
+                gap = b - a - 1
+                if gap >= min_mut_gap:
+                    counts.loc[a: b] += 1
+                    num_intervals += 1
+        if num_intervals > 0:
+            factor = len(pairs) / num_intervals
+        else:
+            factor = 0.
+        return factor * counts
 
-    def test_all_false(self):
-        for end5, end3 in [(1, 9), (8, 8), (8, 9)]:
-            result = _list_intervals(pd.Series(False, range(end5, end3 + 1)))
-            expect = []
-            self.assertListEqual(result, expect)
+    def _compare(self, result: pd.Series, expect: pd.Series):
+        self.assertIsInstance(result, pd.Series)
+        self.assertTrue(np.allclose(result, expect))
+        self.assertTrue(result.index.equals(expect.index))
 
-    def test_all_true(self):
-        for end5, end3 in [(1, 9), (8, 8), (8, 9)]:
-            result = _list_intervals(pd.Series(True, range(end5, end3 + 1)))
-            expect = [(end5, end3)]
-            self.assertListEqual(result, expect)
+    def _run_test(self,
+                  pairs: list[tuple[int, int]],
+                  end5: int,
+                  end3: int,
+                  min_mut_gap: int):
+        result = _calc_null_span_per_pos_rand_dists(pairs,
+                                                    end5,
+                                                    end3,
+                                                    min_mut_gap)
+        expect = self._calc_expect(pairs,
+                                   end5,
+                                   end3,
+                                   min_mut_gap)
+        self._compare(result, expect)
 
-    def test_ends_true(self):
-        result = _list_intervals(pd.Series({4: True,
-                                            5: False}))
-        expect = [(4, 4)]
-        self.assertListEqual(result, expect)
-        result = _list_intervals(pd.Series({4: False,
-                                            5: True}))
-        expect = [(5, 5)]
-        self.assertListEqual(result, expect)
-        result = _list_intervals(pd.Series({4: True,
-                                            5: True,
-                                            6: False,
-                                            7: True,
-                                            8: True}))
-        expect = [(4, 5), (7, 8)]
-        self.assertListEqual(result, expect)
+    def test_no_pairs(self):
+        self._run_test([], 4, 7, 0)
 
-    def test_1_block_true(self):
-        result = _list_intervals(pd.Series({4: False,
-                                            5: True,
-                                            6: True,
-                                            7: False,
-                                            8: False}))
-        expect = [(5, 6)]
-        self.assertListEqual(result, expect)
+    def test_1_pair(self):
+        for end5 in range(1, 4):
+            for end3 in range(end5, 7):
+                for min_mut_gap in range(5):
+                    self._run_test([(end5, end3)],
+                                   end5,
+                                   end3,
+                                   min_mut_gap)
 
-    def test_2_blocks_true(self):
-        result = _list_intervals(pd.Series({4: False,
-                                            5: True,
-                                            6: False,
-                                            7: True,
-                                            8: False}))
-        expect = [(5, 5), (7, 7)]
-        self.assertListEqual(result, expect)
+    def test_2_pairs(self):
+        end5, end3 = 2, 7
+        min_mut_gap = 0
+        expect = (2 / 15) * pd.Series([5, 9, 11, 11, 9, 5],
+                                      index=range(end5, end3 + 1))
+        result = _calc_null_span_per_pos_rand_dists([(end5, end3),
+                                                     (end5, end3)],
+                                                    end5, end3, min_mut_gap)
+        self._compare(result, expect)
+        min_mut_gap = 1
+        expect = (2 / 10) * pd.Series([4, 7, 9, 9, 7, 4],
+                                      index=range(end5, end3 + 1))
+        result = _calc_null_span_per_pos_rand_dists([(end5, end3),
+                                                     (end5, end3)],
+                                                    end5, end3, min_mut_gap)
+        self._compare(result, expect)
+        min_mut_gap = 2
+        expect = (2 / 6) * pd.Series([3, 5, 6, 6, 5, 3],
+                                     index=range(end5, end3 + 1))
+        result = _calc_null_span_per_pos_rand_dists([(end5, end3),
+                                                     (end5, end3)],
+                                                    end5, end3, min_mut_gap)
+        self._compare(result, expect)
+        min_mut_gap = 3
+        expect = (2 / 3) * pd.Series([2, 3, 3, 3, 3, 2],
+                                     index=range(end5, end3 + 1))
+        result = _calc_null_span_per_pos_rand_dists([(end5, end3),
+                                                     (end5, end3)],
+                                                    end5, end3, min_mut_gap)
+        self._compare(result, expect)
+        min_mut_gap = 4
+        expect = pd.Series(2, index=range(end5, end3 + 1))
+        result = _calc_null_span_per_pos_rand_dists([(end5, end3),
+                                                     (end5, end3)],
+                                                    end5, end3, min_mut_gap)
+        self._compare(result, expect)
+        min_mut_gap = 5
+        expect = pd.Series(0, index=range(end5, end3 + 1))
+        result = _calc_null_span_per_pos_rand_dists([(end5, end3),
+                                                     (end5, end3)],
+                                                    end5, end3, min_mut_gap)
+        self._compare(result, expect)
 
 
 class TestCalcModulesFromPairs(ut.TestCase):
@@ -265,7 +311,7 @@ class TestCalcModulesFromPairs(ut.TestCase):
                  (51, 61),
                  (51, 71),
                  (61, 71)]
-        result = _calc_modules_from_pairs(pairs, 0.05)
+        result = _calc_modules_from_pairs(pairs, 0.05, 4)
         expect = [(11, 71)]
         self.assertListEqual(result, expect)
 
@@ -276,7 +322,7 @@ class TestCalcModulesFromPairs(ut.TestCase):
                  (51, 61),
                  (51, 71),
                  (61, 71)]
-        result = _calc_modules_from_pairs(pairs, 0.05)
+        result = _calc_modules_from_pairs(pairs, 0.05, 4)
         expect = [(11, 31), (51, 71)]
         self.assertListEqual(result, expect)
 
@@ -288,35 +334,8 @@ class TestCalcModulesFromPairs(ut.TestCase):
                  (51, 61),
                  (51, 71),
                  (61, 71)]
-        result = _calc_modules_from_pairs(pairs, 0.35)
+        result = _calc_modules_from_pairs(pairs, 0.35, 4)
         expect = [(11, 31), (51, 71)]
-        self.assertListEqual(result, expect)
-
-
-class TestFilterModulesMinPairs(ut.TestCase):
-
-    def test_filter_min_pairs(self):
-        modules = [(5, 20), (25, 30)]
-        pairs = [(1, 10),
-                 (1, 35),
-                 (4, 16),
-                 (6, 18),
-                 (20, 25),
-                 (25, 26),
-                 (25, 30),
-                 (27, 28),
-                 (27, 31)]
-        result = _filter_modules_min_pairs(modules, pairs, 1)
-        expect = modules
-        self.assertListEqual(result, expect)
-        result = _filter_modules_min_pairs(modules, pairs, 2)
-        expect = [(25, 30)]
-        self.assertListEqual(result, expect)
-        result = _filter_modules_min_pairs(modules, pairs, 3)
-        expect = [(25, 30)]
-        self.assertListEqual(result, expect)
-        result = _filter_modules_min_pairs(modules, pairs, 4)
-        expect = []
         self.assertListEqual(result, expect)
 
 
