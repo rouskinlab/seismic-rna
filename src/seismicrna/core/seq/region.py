@@ -244,8 +244,18 @@ def get_shared_index(indexes: Iterable[pd.MultiIndex], empty_ok: bool = False):
         )
     # Ensure all indexes are identical.
     for i, other in enumerate(indexes[1:], start=1):
-        if not index.equals(other) or not index.equal_levels(other):
+        if not index.equals(other):
             raise ValueError(f"Indexes 0 and {i} differ: {index} ≠ {other}")
+        if index.nlevels != other.nlevels:
+            raise ValueError(f"Indexes 0 and {i} have {index.nlevels} and "
+                             f"{other.nlevels} levels, respectively")
+        for level in range(index.nlevels):
+            # Compare sets because order does not matter.
+            ilevel = index.levels[level]
+            olevel = other.levels[level]
+            if set(ilevel) != set(olevel):
+                raise ValueError(f"Indexes 0 and {i} level {level} is "
+                                 f"{ilevel} and {olevel}, respectively")
     return index
 
 
