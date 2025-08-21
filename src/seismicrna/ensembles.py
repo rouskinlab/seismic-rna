@@ -4,6 +4,7 @@ from math import ceil
 from pathlib import Path
 from typing import Iterable
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from click import command
@@ -26,6 +27,7 @@ from .core.arg import (CMD_ENSEMBLES,
                        opt_min_cluster_length,
                        opt_max_cluster_length,
                        opt_gap_mode)
+from .core.array import triangular
 from .core.batch import (accumulate_confusion_matrices,
                          calc_confusion_pvals,
                          calc_confusion_phi,
@@ -41,6 +43,7 @@ from .core.seq import (POS_NAME,
                        RefRegions,
                        unite)
 from .core.task import as_list_of_tuples, dispatch
+from .core.validate import require_atleast
 from .mask.dataset import MaskMutsDataset, load_mask_dataset
 from .mask.io import MaskBatchIO
 from .mask.main import load_regions
@@ -300,10 +303,12 @@ def _calc_null_span_per_pos(pairs: list[tuple[int, int]], end5: int, end3: int):
     num_pos = null_spans_per_pos.size
     ramp = np.minimum(np.arange(1, num_pos + 1),
                       np.arange(num_pos, 0, -1))
+    length_counts = defaultdict(int)
     fraction_overlap_cache = dict()
     for pos5, pos3 in pairs:
         assert end5 <= pos5 <= pos3 <= end3
         length = pos3 - pos5 + 1
+        length_counts[length] += 1
         fraction_overlap = fraction_overlap_cache.get(length)
         if fraction_overlap is None:
             # Number of locations to which the pair could be moved.
@@ -313,7 +318,46 @@ def _calc_null_span_per_pos(pairs: list[tuple[int, int]], end5: int, end3: int):
             fraction_overlap = max_overlap / num_loc
             fraction_overlap_cache[length] = fraction_overlap
         null_spans_per_pos += fraction_overlap
+    length_counts = pd.Series(length_counts)
+    possible = (num_pos + 1) - length_counts.index
+    if length_counts.size > 0:
+        plt.hist(length_counts / possible, bins=np.linspace(0, 1, 51))
+        plt.show()
     return null_spans_per_pos
+
+
+def _calc_null_span_per_pos(pairs: list[tuple[int, int]],
+                            end5: int,
+                            end3: int,
+                            pair_fdr: float,
+                            min_mut_gap: int):
+    assert 1 <= end5 <= end3
+    positions = np.arange(end5, end3 + 1)
+    num_pos = positions.size
+    # Count all intervals (a, b) such that end5 ≤ a ≤ k ≤ b ≤ end3 and
+    # b - a > min_mut_gap.
+    require_atleast("min_mut_gap", min_mut_gap, 0, classes=int)
+    num_intervals = triangular(num_pos - (min_mut_gap + 1))
+    # For each position, count all possible intervals (a, b) such that
+    # end5 ≤ a ≤ k ≤ b ≤ end3.
+    counts = (positions - (end5 - 1)) * ((end3 + 1) - positions)
+    # Remove intervals for which b - a ≤ min_mut_gap.
+    ramp = np.minimum(np.arange(1, num_pos + 1),
+                      np.arange(num_pos, 0, -1))
+    for length in range(1, min(min_mut_gap + 1, num_pos) + 1):
+        # Number of locations at which the interval could be located.
+        num_loc = num_pos - length + 1
+        counts -= np.minimum(ramp, min(length, num_loc))
+    assert np.all(counts >= 0)
+    # Calculate the expected number of false positive pairs.
+    expected_fp_pairs = pair_fdr * len(pairs)
+    # Calculate the expected number of false positive pairs that
+    # overlap each position.
+    if num_intervals > 0:
+        fp_fraction = expected_fp_pairs / num_intervals
+    else:
+        fp_fraction = 0.
+    return pd.Series(counts * fp_fraction, index=positions)
 
 
 def _list_intervals(sufficient_spans_per_pos: pd.Series):
@@ -328,39 +372,49 @@ def _list_intervals(sufficient_spans_per_pos: pd.Series):
 
 def _calc_modules_from_pairs(pairs: list[tuple[int, int]],
                              pair_fdr: float,
+                             min_mut_gap: int,
                              max_iter: int = 1000):
     logger.routine("Began calculating modules")
+    finished = set()
     # First, naively aggregate all pairs that overlap.
     modules = _aggregate_pairs(pairs)
     for i in range(max_iter):
         logger.detail(f"Modules at iteration {i}: {modules}")
         new_modules = list()
-        for end5, end3 in modules:
+        for module in modules:
+            if module in finished:
+                new_modules.append(module)
+                continue
+            end5, end3 = module
             # For each module, count the pairs contained by the module
             # and how many span each position.
             module_pairs = _select_pairs(pairs, end5, end3)
             spans_per_pos = _calc_span_per_pos(module_pairs, end5, end3)
             null_spans_per_pos = _calc_null_span_per_pos(module_pairs,
                                                          end5,
-                                                         end3)
-            # Divide the module where the number of spanning pairs is
-            # less than or equal to the number expected with the given
-            # false discovery rate (pair_fdr).
-            threshold_span_per_pos = null_spans_per_pos * pair_fdr
-            sufficient_spans_per_pos = spans_per_pos > threshold_span_per_pos
+                                                         end3,
+                                                         pair_fdr,
+                                                         min_mut_gap)
+            sufficient_spans_per_pos = spans_per_pos > null_spans_per_pos
             if sufficient_spans_per_pos.all():
                 # All positions have enough pairs spanning them: keep
                 # the module as is.
                 new_modules.append((end5, end3))
             elif sufficient_spans_per_pos.any():
                 # Some but not all positions have enough pairs spanning
-                # them: split the module into intervals where the number
-                # of spanning pairs is greater than the threshold.
-                new_modules.extend(_list_intervals(sufficient_spans_per_pos))
+                # them: split the module at the position where the ratio
+                # of spanning pairs to null pairs is smallest.
+                span_ratio = spans_per_pos / null_spans_per_pos
+                split_pos = int(span_ratio.index[np.argmin(span_ratio)])
+                if split_pos > end5:
+                    new_modules.append((end5, split_pos - 1))
+                if split_pos < end3:
+                    new_modules.append((split_pos + 1, end3))
             else:
                 # No positions have enough pairs spanning them: omit
                 # this module.
                 pass
+            finished.add(module)
         if new_modules == modules:
             break
         modules = new_modules
@@ -492,6 +546,7 @@ def _filter_modules_length(modules: list[tuple[int, int]],
 
 def _calc_ref_cluster_modules(datasets: list[MaskMutsDataset],
                               pair_fdr: float,
+                              min_mut_gap: int,
                               min_pairs: int,
                               min_length: int,
                               max_length: int,
@@ -510,7 +565,7 @@ def _calc_ref_cluster_modules(datasets: list[MaskMutsDataset],
                                        args=as_list_of_tuples(datasets),
                                        kwargs=dict(pair_fdr=pair_fdr)))))
     # Find modules of correlated pairs.
-    modules = _calc_modules_from_pairs(pairs, pair_fdr)
+    modules = _calc_modules_from_pairs(pairs, pair_fdr, min_mut_gap)
     modules = _filter_modules_min_pairs(modules, pairs, min_pairs)
     # Determine what to do with gaps between regions.
     if gap_mode == GAP_MODE_INSERT:
@@ -676,6 +731,7 @@ def _run_group(relate_report_files: list[Path], *,
     module_coords = _calc_cluster_modules(
         tiled_dirs,
         pair_fdr=pair_fdr,
+        min_mut_gap=min_mut_gap,
         min_pairs=min_pairs,
         min_length=min_cluster_length,
         max_length=max_cluster_length,
