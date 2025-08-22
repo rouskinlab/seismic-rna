@@ -255,7 +255,9 @@ def cluster(dataset: MaskMutsDataset | JoinMaskMutsDataset, *,
         elif (best_k := find_best_k(runs_ks_list)) >= 1:
             write_ks = [runs_ks[best_k]]
         else:
-            write_ks = []
+            logger.warning(f"No Ks passed filters for {dataset}: "
+                           f"defaulting to ensemble average (K = 1)")
+            write_ks = [runs_ks[1]]
         # Output the cluster memberships in batches of reads.
         batch_writer = ClusterBatchWriter(dataset,
                                           write_ks,

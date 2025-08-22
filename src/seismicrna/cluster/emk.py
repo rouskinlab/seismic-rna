@@ -275,17 +275,17 @@ def find_best_k(ks: Iterable[EMRunsK], **kwargs):
     # For the largest number of clusters, underclustering can be allowed
     # to permit this number to be identified as the best number so far;
     # for all other numbers, use all filters.
-    ks = [runs for runs in ks[:-1] if runs.passing()] + (
-        [ks[-1]] if ks[-1].passing(**kwargs) else []
-    )
-    if not ks:
+    ks_passing = [runs for runs in ks[:-1] if runs.passing()]
+    if ks[-1].passing(**kwargs):
+        ks_passing.append(ks[-1])
+    if not ks_passing:
         logger.warning("No numbers of clusters pass the filters")
         return 0
     # Of the remaining numbers of clusters, find the number that gives
     # the smallest BIC.
-    ks = sorted(ks, key=lambda runs: runs.best.bic)
+    ks_passing = sorted(ks_passing, key=lambda runs: runs.best.bic)
     # Return that number of clusters.
-    return ks[0].k
+    return ks_passing[0].k
 
 
 def assign_clusterings(mus1: np.ndarray, mus2: np.ndarray):
