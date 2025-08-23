@@ -11,4 +11,4 @@ dependencies:
   - rnastructure >=6.4
   - samtools >=1.20
   - brotli-python >=1.0
-  - python-kaleido >=0.2.1
+  - python-kaleido ==0.2.1
