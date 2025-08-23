@@ -255,7 +255,9 @@ def cluster(dataset: MaskMutsDataset | JoinMaskMutsDataset, *,
         elif (best_k := find_best_k(runs_ks_list)) >= 1:
             write_ks = [runs_ks[best_k]]
         else:
-            write_ks = []
+            logger.warning(f"No Ks passed filters for {dataset}: "
+                           f"defaulting to ensemble average (K = 1)")
+            write_ks = [runs_ks[1]]
         # Output the cluster memberships in batches of reads.
         batch_writer = ClusterBatchWriter(dataset,
                                           write_ks,
@@ -288,11 +290,15 @@ def cluster(dataset: MaskMutsDataset | JoinMaskMutsDataset, *,
         report_saved = report.save(tmp_dir)
         release_to_out(dataset.top, tmp_dir, report_saved.parent)
         # Write the tables.
-        ClusterDatasetTabulator(
-            dataset=ClusterMutsDataset(report_file,
-                                       verify_times=verify_times),
-            count_pos=cluster_pos_table,
-            count_read=False,
-            num_cpus=num_cpus,
-        ).write_tables(pos=cluster_pos_table, clust=cluster_abundance_table)
+        if cluster_pos_table or cluster_abundance_table:
+            ClusterDatasetTabulator(
+                dataset=ClusterMutsDataset(report_file,
+                                           verify_times=verify_times),
+                # count_pos must be True because counting positions is
+                # required to adjust the counts, which are used by both
+                # cluster_pos_table and cluster_abundance_table.
+                count_pos=True,
+                count_read=False,
+                num_cpus=num_cpus,
+            ).write_tables(pos=cluster_pos_table, clust=cluster_abundance_table)
     return report_file.parent

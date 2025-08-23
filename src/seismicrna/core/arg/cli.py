@@ -37,6 +37,11 @@ CLIP_END5_DEFAULT = BOWTIE2_GBAR_DEFAULT
 CLIP_END3_DEFAULT = BOWTIE2_GBAR_DEFAULT
 MIN_READ_LENGTH_DEFAULT = CLIP_END5_DEFAULT + CLIP_END3_DEFAULT + 1
 
+GAP_MODE_OMIT = "omit"
+GAP_MODE_INSERT = "insert"
+GAP_MODE_EXPAND = "expand"
+GAP_MODE = GAP_MODE_OMIT, GAP_MODE_INSERT, GAP_MODE_EXPAND
+
 NO_GROUP = "c"
 GROUP_BY_K = "k"
 GROUP_ALL = "a"
@@ -473,7 +478,7 @@ opt_bt2_dpad = Option(
 opt_bt2_orient = Option(
     ("--bt2-orient",),
     type=Choice(BOWTIE2_ORIENT, case_sensitive=False),
-    default=BOWTIE2_ORIENT[0],
+    default=BOWTIE2_ORIENT_FR,
     help="Require paired mates to have this orientation"
 )
 
@@ -976,28 +981,62 @@ opt_join_clusts = Option(
 
 # Ensembles options
 
-opt_region_length = Option(
-    ("--region-length", "-L",),
+opt_tile_length = Option(
+    ("--tile-length", "-L",),
     type=int,
     default=0,
-    help="Make each region this length (if 0, then calculate the length over "
-         "which the average read has 2 mutations)",
+    help="Make each tile this length (if 0, use 2x the median read length)",
 )
 
-opt_region_min_overlap = Option(
-    ("--region-min-overlap", "-O"),
+opt_tile_min_overlap = Option(
+    ("--tile-min-overlap", "-O"),
     type=float,
-    default=(2. / 3.),
-    help="Make adjacent regions overlap by at least this fraction of length",
+    default=0.5,
+    help="Make adjacent tiles overlap by at least this fraction of length",
 )
 
-opt_max_marcd_join = Option(
-    ("--max-marcd-join",),
+opt_erase_tiles = Option(
+    ("--erase-tiles/--keep-tiles",),
+    type=bool,
+    default=True,
+    help="Erase the mask reports/batches from the tiling step"
+)
+
+opt_pair_fdr = Option(
+    ("--pair-fdr",),
     type=float,
-    default=0.016,
-    help="Join regions with the same numbers of clusters only if the mean "
-         "arcsine distance (MARCD) of their mutation rates and proportions "
-         "does not exceed this threshold"
+    default=0.05,
+    help="Find correlated pairs at this false discovery rate (FDR)",
+)
+
+opt_min_pairs = Option(
+    ("--min-pairs",),
+    type=int,
+    default=2,
+    help="Cluster only the regions with at least this many correlated pairs",
+)
+
+opt_min_cluster_length = Option(
+    ("--min-cluster-length",),
+    type=int,
+    default=20,
+    help="Cluster only the regions with at least this many positions",
+)
+
+opt_max_cluster_length = Option(
+    ("--max-cluster-length",),
+    type=int,
+    default=1200,
+    help="Cluster only the regions with no more than this many positions",
+)
+
+opt_gap_mode = Option(
+    ("--gap-mode",),
+    type=Choice(GAP_MODE, case_sensitive=False),
+    default=GAP_MODE_OMIT,
+    help="If there are gaps between regions to cluster, OMIT (do not cluster) "
+         "the gaps, INSERT a new region into each gap, or EXPAND the existing "
+         "regions to fill the gaps"
 )
 
 # Fold
@@ -1144,7 +1183,7 @@ opt_compself = Option(
 
 opt_cgroup = Option(
     ("--cgroup",),
-    type=Choice(GROUP_CLUST_OPTIONS),
+    type=Choice(GROUP_CLUST_OPTIONS, case_sensitive=False),
     default=GROUP_BY_K,
     help="Put each Cluster in its own file, each K in its own file, "
          "or All clusters in one file"
@@ -1471,7 +1510,7 @@ opt_center_fmean = Option(
 opt_center_fvar = Option(
     ("--center-fvar",),
     type=float,
-    default=1/3,
+    default=1 / 3,
     help="Set the variance of the read center as a fraction of its maximum"
 )
 
@@ -1485,7 +1524,7 @@ opt_length_fmean = Option(
 opt_length_fvar = Option(
     ("--length-fvar",),
     type=float,
-    default=1/81,
+    default=1 / 81,
     help="Set the variance of the read length as a fraction of its maximum"
 )
 

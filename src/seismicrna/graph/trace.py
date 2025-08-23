@@ -210,12 +210,14 @@ def get_pairwise_position_trace(data: pd.Series, end5: int, end3: int):
     matrix_index = pd.RangeIndex(end5, end3 + 1)
     matrix = pd.DataFrame(np.nan, matrix_index, matrix_index)
     for (pos_x, pos_y), value in data.items():
-        matrix.loc[(pos_x, pos_y)] = value
-        matrix.loc[(pos_y, pos_x)] = value
+        matrix.at[(pos_x, pos_y)] = value
+        matrix.at[(pos_y, pos_x)] = value
     return go.Heatmap(x=matrix_index,
                       y=matrix_index,
                       z=matrix,
-                      hoverongaps=False)
+                      hoverongaps=False,
+                      colorscale="rdbu_r",
+                      zmid=0)
 
 
 def iter_stack_bar_traces(data: pd.DataFrame):

@@ -78,10 +78,14 @@ class RelateMutsDataset(RelateDataset, LoadedDataset, MutsDataset):
         return relate_batch.to_region_batch(self.region)
 
 
-class PoolDataset(RelateDataset,
-                  TallDataset,
-                  MutsDataset,
-                  MergedRegionDataset):
+class PoolDataset(TallDataset, ABC):
+    """ Pooled dataset of relationships. """
+
+
+class PoolMutsDataset(RelateDataset,
+                      PoolDataset,
+                      MutsDataset,
+                      MergedRegionDataset):
     """ Load pooled batches of relationships. """
 
     @classmethod
@@ -120,7 +124,7 @@ class ReadNamesDataset(NamesDataset, LoadedDataset):
         return None
 
 
-class PoolReadNamesDataset(NamesDataset, TallDataset):
+class PoolReadNamesDataset(NamesDataset, PoolDataset):
     """ Pooled Dataset of read names. """
 
     @classmethod
@@ -132,5 +136,5 @@ class PoolReadNamesDataset(NamesDataset, TallDataset):
         return load_read_names_dataset
 
 
-load_relate_dataset = LoadFunction(RelateMutsDataset, PoolDataset)
+load_relate_dataset = LoadFunction(RelateMutsDataset, PoolMutsDataset)
 load_read_names_dataset = LoadFunction(ReadNamesDataset, PoolReadNamesDataset)

@@ -3,7 +3,9 @@ from typing import Any, Callable, Iterable
 import numpy as np
 import pandas as pd
 
+from .confusion import init_confusion_matrix
 from .ends import END_COORDS
+from .muts import RegionMutsBatch
 from ..header import make_header
 from ..logs import logger
 from ..rel import RelPattern
@@ -152,3 +154,46 @@ def accumulate_batches(
                                      validate=validate)
     logger.routine(f"Ended accumulating counts of {num_batches} batches")
     return accum_counts
+
+
+def _calc_batch_confusion_matrix(batch_num: int, *,
+                                 get_batch: Callable[[int], RegionMutsBatch],
+                                 pattern: RelPattern,
+                                 min_gap: int):
+    batch = get_batch(batch_num)
+    return batch.calc_confusion_matrix(pattern, min_gap)
+
+
+def accumulate_confusion_matrices(
+        get_batch: Callable[[int], RegionMutsBatch],
+        num_batches: int,
+        pattern: RelPattern,
+        pos_index: pd.Index,
+        clusters: pd.Index | None,
+        min_gap: int = 0,
+        num_cpus: int = 1
+):
+    logger.routine(
+        f"Began accumulating confusion matrices of {num_batches} batches"
+    )
+    n, a, b, ab = init_confusion_matrix(pos_index, clusters, min_gap)
+    for (n_batch, a_batch, b_batch, ab_batch) in dispatch(
+            _calc_batch_confusion_matrix,
+            num_cpus=num_cpus,
+            pass_num_cpus=False,
+            as_list=False,
+            ordered=False,
+            raise_on_error=True,
+            args=as_list_of_tuples(range(num_batches)),
+            kwargs=dict(get_batch=get_batch,
+                        pattern=pattern,
+                        min_gap=min_gap)
+    ):
+        n += n_batch
+        a += a_batch
+        b += b_batch
+        ab += ab_batch
+    logger.routine(
+        f"Ended accumulating confusion matrices of {num_batches} batches"
+    )
+    return n, a, b, ab

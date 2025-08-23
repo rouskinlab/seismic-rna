@@ -91,9 +91,11 @@ def write_tmp_ref_files(tmp_dir: Path,
 def calc_flags_sep_strands(f1r2_fwd: bool, paired: bool, bt2_mixed: bool):
     """ Calculate flags for separating strands. """
     if paired:
-        flags_req_fwd = [FLAG_FIRST | FLAG_PAIRED, FLAG_SECOND | FLAG_PAIRED]
+        flags_req_fwd = [FLAG_FIRST | FLAG_PAIRED | FLAG_PROPER,
+                         FLAG_SECOND | FLAG_PAIRED | FLAG_PROPER]
         flags_exc_fwd = [FLAG_SECOND, FLAG_FIRST]
-        flags_req_rev = [FLAG_FIRST | FLAG_PAIRED, FLAG_SECOND | FLAG_PAIRED]
+        flags_req_rev = [FLAG_FIRST | FLAG_PAIRED | FLAG_PROPER,
+                         FLAG_SECOND | FLAG_PAIRED | FLAG_PROPER]
         flags_exc_rev = [FLAG_SECOND, FLAG_FIRST]
         if bt2_mixed:
             # When using mixed mode, some paired-end reads may not have
@@ -116,10 +118,6 @@ def calc_flags_sep_strands(f1r2_fwd: bool, paired: bool, bt2_mixed: bool):
                            "strand separation (--sep-strands), any paired-end "
                            "read that failed to align properly with its mate "
                            "will be dropped, not aligned to the reverse strand")
-            flags_req_fwd[0] |= FLAG_PROPER
-            flags_req_fwd[1] |= FLAG_PROPER
-            flags_req_rev[0] |= FLAG_PROPER
-            flags_req_rev[1] |= FLAG_PROPER
     else:
         flags_req_fwd = [0]
         flags_exc_fwd = [FLAG_PAIRED]

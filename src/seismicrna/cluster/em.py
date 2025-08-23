@@ -521,8 +521,8 @@ class EMRun(object):
     def max_arcd_vs_ens_avg(self):
         """ Maximum arcsine distance between the mutation rates of the
         clusters and the ensemble average. """
-        return np.max(calc_arcsine_distance(self.mus.values,
-                                            self.mus_ens_avg.values))
+        arcd = calc_arcsine_distance(self.mus.values, self.mus_ens_avg.values)
+        return np.max(arcd) if arcd.size > 0 else np.nan
 
     @cached_property
     def max_gini(self):

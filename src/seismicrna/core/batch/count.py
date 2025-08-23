@@ -264,7 +264,6 @@ def calc_rels_per_pos(mutations: dict[int, dict[int, np.ndarray]],
         covered = cover_per_pos.sum(axis=1) > 0
     else:
         covered = cover_per_pos > 0
-
     cov_indices = cover_per_pos[covered].index
     nocov_indices = cover_per_pos[~covered].index
     for pos_base in cov_indices:
@@ -346,8 +345,26 @@ def calc_reads_per_pos(pattern: RelPattern,
         pos_reads = [pos_mut_reads for mut, pos_mut_reads
                      in mutations.get(pos, dict()).items()
                      if all(pattern.fits(base, mut))]
-        reads[pos] = np.hstack(pos_reads) if pos_reads else np.array([], int)
+        reads[pos] = (np.unique(np.hstack(pos_reads))
+                      if pos_reads
+                      else np.array([], int))
     return reads
+
+
+def calc_covered_reads_per_pos(pos_index: pd.Index,
+                               read_nums: np.ndarray,
+                               seg_end5s: np.ndarray,
+                               seg_end3s: np.ndarray,
+                               seg_ends_mask: np.ndarray | None):
+    """ For each position, find all reads covering it. """
+    covering_reads = dict()
+    for pos in pos_index.get_level_values(POS_NAME):
+        covering_segs = np.logical_and(seg_end5s <= pos,
+                                       seg_end3s >= pos)
+        if seg_ends_mask is not None:
+            covering_segs &= ~seg_ends_mask
+        covering_reads[pos] = read_nums[covering_segs.any(axis=1)]
+    return covering_reads
 
 
 def calc_count_per_pos(pattern: RelPattern,

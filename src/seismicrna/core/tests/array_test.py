@@ -7,6 +7,7 @@ from seismicrna.core.array import (calc_inverse,
                                    find_dims,
                                    get_length,
                                    locate_elements,
+intersect1d_unique_sorted,
                                    triangular)
 
 rng = np.random.default_rng()
@@ -218,6 +219,79 @@ class TestLocateElements(ut.TestCase):
                                locate_elements,
                                collection,
                                elements)
+
+
+class TestIntersect1dUniqueSorted(ut.TestCase):
+
+    def test_both_empty(self):
+        x = np.array([], dtype=int)
+        y = np.array([], dtype=int)
+        expect = np.array([], dtype=int)
+        result = intersect1d_unique_sorted(x, y)
+        self.assertTrue(np.array_equal(result, expect))
+
+    def test_x_empty(self):
+        x = np.array([], dtype=int)
+        y = np.array([3], dtype=int)
+        expect = np.array([], dtype=int)
+        result = intersect1d_unique_sorted(x, y)
+        self.assertTrue(np.array_equal(result, expect))
+
+    def test_y_empty(self):
+        x = np.array([3], dtype=int)
+        y = np.array([], dtype=int)
+        expect = np.array([], dtype=int)
+        result = intersect1d_unique_sorted(x, y)
+        self.assertTrue(np.array_equal(result, expect))
+
+    def test_xy_1_element_same(self):
+        x = np.array([3], dtype=int)
+        y = np.array([3], dtype=int)
+        expect = np.array([3], dtype=int)
+        result = intersect1d_unique_sorted(x, y)
+        self.assertTrue(np.array_equal(result, expect))
+
+    def test_xy_1_element_diff(self):
+        x = np.array([3], dtype=int)
+        y = np.array([4], dtype=int)
+        expect = np.array([], dtype=int)
+        result = intersect1d_unique_sorted(x, y)
+        self.assertTrue(np.array_equal(result, expect))
+
+    def test_xy_2_elements_same(self):
+        x = np.array([8, 12], dtype=int)
+        y = np.array([8, 12], dtype=int)
+        expect = np.array([8, 12], dtype=int)
+        result = intersect1d_unique_sorted(x, y)
+        self.assertTrue(np.array_equal(result, expect))
+
+    def test_xy_2_elements_part(self):
+        x = np.array([9, 12], dtype=int)
+        y = np.array([8, 12], dtype=int)
+        expect = np.array([12], dtype=int)
+        result = intersect1d_unique_sorted(x, y)
+        self.assertTrue(np.array_equal(result, expect))
+
+    def test_xy_2_elements_diff(self):
+        x = np.array([9, 12], dtype=int)
+        y = np.array([8, 13], dtype=int)
+        expect = np.array([], dtype=int)
+        result = intersect1d_unique_sorted(x, y)
+        self.assertTrue(np.array_equal(result, expect))
+
+    def test_xy_longer(self):
+        x = np.array([0, 6, 10, 11, 12, 19, 24, 25, 26, 38], dtype=int)
+        y = np.array([8, 12, 13, 14, 25, 38, 40, 42], dtype=int)
+        expect = np.array([12, 25, 38], dtype=int)
+        result = intersect1d_unique_sorted(x, y)
+        self.assertTrue(np.array_equal(result, expect))
+
+    def test_random(self):
+        for _ in range(1000):
+            x = np.unique(rng.integers(100, size=100))
+            y = np.unique(rng.integers(100, size=100))
+            self.assertTrue(np.array_equal(intersect1d_unique_sorted(x, y),
+                                           np.intersect1d(x, y)))
 
 
 class TestFindDims(ut.TestCase):

@@ -224,7 +224,8 @@ def get_shared_index(indexes: Iterable[pd.MultiIndex], empty_ok: bool = False):
         The shared index.
     """
     # Ensure indexes is a list-like object.
-    indexes = list(indexes)
+    indexes = [index.copy(deep=True).remove_unused_levels()
+               for index in indexes]
     try:
         # Get the first index.
         index = indexes[0]
@@ -243,8 +244,18 @@ def get_shared_index(indexes: Iterable[pd.MultiIndex], empty_ok: bool = False):
         )
     # Ensure all indexes are identical.
     for i, other in enumerate(indexes[1:], start=1):
-        if not index.equals(other) or not index.equal_levels(other):
+        if not index.equals(other):
             raise ValueError(f"Indexes 0 and {i} differ: {index} ≠ {other}")
+        if index.nlevels != other.nlevels:
+            raise ValueError(f"Indexes 0 and {i} have {index.nlevels} and "
+                             f"{other.nlevels} levels, respectively")
+        for level in range(index.nlevels):
+            # Compare sets because order does not matter.
+            ilevel = index.levels[level]
+            olevel = other.levels[level]
+            if set(ilevel) != set(olevel):
+                raise ValueError(f"Indexes 0 and {i} level {level} is "
+                                 f"{ilevel} and {olevel}, respectively")
     return index
 
 
@@ -729,14 +740,14 @@ def intersect(*regions: Region, name: str | None = None):
     return intersection
 
 
-def unite(*regions: Region,
+def unite(regions: Iterable[Region],
           name: str | None = None,
           refseq: DNA | None = None):
     """ Unite one or more regions.
 
     Parameters
     ----------
-    *regions: Region
+    regions: Iterable[Region]
         Regions to unite.
     name: str | None = None
         Name for the region to return.
@@ -751,8 +762,9 @@ def unite(*regions: Region,
     Region
         Union of all given regions.
     """
+    regions = list(regions)
     if not regions:
-        raise ValueError("Cannot unite zero regions")
+        raise ValueError("Cannot unite 0 regions")
     # Confirm that all reference names match.
     refs = list(set(region.ref for region in regions))
     if len(refs) != 1:

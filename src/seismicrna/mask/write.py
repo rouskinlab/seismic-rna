@@ -26,7 +26,7 @@ from ..core.table import MUTAT_REL, INFOR_REL
 from ..core.tmp import release_to_out, with_tmp_dir
 from ..core.write import need_write
 from ..relate.dataset import (RelateMutsDataset,
-                              PoolDataset,
+                              PoolMutsDataset,
                               load_read_names_dataset)
 
 
@@ -53,7 +53,7 @@ class Masker(object):
     # out @docdef.auto() when developing the source code.
     @docdef.auto()
     def __init__(self,
-                 dataset: RelateMutsDataset | PoolDataset,
+                 dataset: RelateMutsDataset | PoolMutsDataset,
                  region: Region,
                  pattern: RelPattern, *,
                  max_mask_iter: int,
@@ -640,7 +640,7 @@ def get_pattern(mask_del: bool,
 
 
 @with_tmp_dir(pass_keep_tmp=False)
-def mask_region(dataset: RelateMutsDataset | PoolDataset,
+def mask_region(dataset: RelateMutsDataset | PoolMutsDataset,
                 region: Region, *,
                 branch: str,
                 tmp_dir: Path,

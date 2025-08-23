@@ -150,17 +150,17 @@ def get_clust_params(dataset: ClusterMutsDataset, num_cpus: int = 1):
                    path.REF: dataset.ref,
                    path.REG: dataset.region.name}
     pos_table_file = ClusterPositionTableLoader.build_path(path_fields)
-    try:
+    if pos_table_file.is_file():
         pos_table = ClusterPositionTableLoader(pos_table_file)
         logger.detail(f"Position table {pos_table_file} exists")
-    except FileNotFoundError:
+    else:
         pos_table = None
         logger.detail(f"Position table {pos_table_file} does not exist")
     abundance_table_file = ClusterAbundanceTableLoader.build_path(path_fields)
-    try:
+    if abundance_table_file.is_file():
         abundance_table = ClusterAbundanceTableLoader(abundance_table_file)
         logger.detail(f"Abundance table {abundance_table_file} exists")
-    except FileNotFoundError:
+    else:
         abundance_table = None
         logger.detail(f"Abundance table {abundance_table_file} does not exist")
     # If either table file does not exist, then calculate the tables.
@@ -171,6 +171,7 @@ def get_clust_params(dataset: ClusterMutsDataset, num_cpus: int = 1):
         tabulator = ClusterBatchTabulator(
             top=dataset.top,
             sample=dataset.sample,
+            branches=dataset.branches,
             region=dataset.region,
             refseq=dataset.refseq,
             pattern=dataset.pattern,
@@ -244,7 +245,7 @@ def _join_regions_k(region_params: dict[str, pd.DataFrame]):
             # Use total arcsine distances as the costs.
             cost = calc_sum_arcsine_distance(df1.loc[overlap, cluster1],
                                              df2.loc[overlap, cluster2])
-            cost_matrix.loc[cluster1, cluster2] = cost
+            cost_matrix.at[cluster1, cluster2] = cost
         logger.detail(f"Regions {repr(reg1)} and {repr(reg2)} "
                       f"have a cost matrix of\n{cost_matrix}")
         assert not np.any(np.isnan(cost_matrix))
@@ -257,7 +258,7 @@ def _join_regions_k(region_params: dict[str, pd.DataFrame]):
     hyperedges = [tuple(zip(region_names, cluster_nums, strict=True))
                   for cluster_nums in product(clusters, repeat=n)]
     hyperedge_costs = np.array(
-        [sum(cost_matrices[reg1, reg2].loc[clust1, clust2]
+        [sum(cost_matrices[reg1, reg2].at[clust1, clust2]
              for ((reg1, clust1), (reg2, clust2))
              in combinations(hyperedge, 2))
          for hyperedge in hyperedges]
@@ -286,8 +287,9 @@ def _join_regions_k(region_params: dict[str, pd.DataFrame]):
     # Require every possible edge to occur zero or one time.
     integrality = np.ones(len(hyperedges), dtype=bool)
     edge_bounds = Bounds(0, 1)
-    logger.detail("Created mixed-integer linear program: min_x(cx), subject to "
-                  f"Ax = 1, x ∈ {0, 1}; c and x are length {len(hyperedges)}, "
+    logger.detail("Created mixed-integer linear program: "
+                  "min_x(cx), subject to Ax = 1, x ∈ {0, 1}; "
+                  f"c and x are length {len(hyperedges)}, "
                   f"and A has dimensions {incidence_matrix.shape}")
     # Find the edges that give the smallest cost.
     logger.detail("Began solving mixed-integer linear program "

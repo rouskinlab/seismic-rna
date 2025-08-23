@@ -26,25 +26,25 @@ class TestCalcPoolSize(ut.TestCase):
     def test_multiple(self):
         self.assertTupleEqual(calc_pool_size(num_tasks=2,
                                              num_cpus=2),
-                              (1, 2))
+                              (2, 1))
         self.assertTupleEqual(calc_pool_size(num_tasks=2,
                                              num_cpus=3),
                               (2, 1))
         self.assertTupleEqual(calc_pool_size(num_tasks=2,
                                              num_cpus=4),
-                              (2, 1))
+                              (2, 2))
         self.assertTupleEqual(calc_pool_size(num_tasks=2,
                                              num_cpus=5),
                               (2, 2))
         self.assertTupleEqual(calc_pool_size(num_tasks=3,
                                              num_cpus=2),
-                              (1, 2))
-        self.assertTupleEqual(calc_pool_size(num_tasks=3,
-                                             num_cpus=3),
                               (2, 1))
         self.assertTupleEqual(calc_pool_size(num_tasks=3,
-                                             num_cpus=6),
+                                             num_cpus=3),
                               (3, 1))
+        self.assertTupleEqual(calc_pool_size(num_tasks=3,
+                                             num_cpus=6),
+                              (3, 2))
         self.assertTupleEqual(calc_pool_size(num_tasks=3,
                                              num_cpus=7),
                               (3, 2))
