@@ -27,7 +27,9 @@ from .core.arg import (CMD_ENSEMBLES,
                        opt_max_cluster_length,
                        opt_gap_mode)
 from .core.array import triangular
-from .core.batch import (accumulate_confusion_matrices,
+from .core.batch import (POSITION_A,
+                         POSITION_B,
+                         accumulate_confusion_matrices,
                          calc_confusion_pvals,
                          calc_confusion_phi,
                          label_significant_pvals)
@@ -439,27 +441,31 @@ def _graph_pairs_and_modules(pairs: list[tuple[int, int]],
                             strict=True):
         fig.add_trace(go.Scatter(x=[a, b, x, a],
                                  y=[0, 0, y, 0],
-                                 mode='none',
-                                 fill='toself',
-                                 fillcolor=f'rgba(230,159,0,0.5)',
+                                 mode="none",
+                                 fill="toself",
+                                 fillcolor=f"rgba(230,159,0,0.5)",
                                  showlegend=False,
-                                 text=list(map(str, modules)),
-                                 hovertemplate='Module %{text}<extra></extra>'))
+                                 name=None,
+                                 hoverinfo="text",
+                                 text=f"Module {a, b}",
+                                 hovertemplate="%{text}<extra></extra>"))
     # Plot the correlated pairs as points.
     pos5s, pos3s = _tuples_to_ends_arrays(pairs)
     pairs_midpoints, pairs_distances = _calc_midpoints_distances(pos5s,
                                                                  pos3s)
     fig.add_trace(go.Scatter(x=pairs_midpoints,
                              y=pairs_distances,
-                             mode='markers',
+                             mode="markers",
                              showlegend=False,
                              marker=dict(color="#D55E00"),
-                             text=list(map(str, pairs)),
-                             hovertemplate='Pair %{text}<extra></extra>'))
+                             name=None,
+                             hoverinfo="text",
+                             text=[f"Pair {pair}" for pair in pairs],
+                             hovertemplate="%{text}<extra></extra>"))
     # Finish the layout.
     assert end5 <= end3
     x_range = [end5 - 0.5, end3 + 0.5]
-    fig.update_xaxes(title_text='Position',
+    fig.update_xaxes(title_text="Midpoint Position",
                      showgrid=True,
                      range=x_range)
     if modules_distances.size > 0 or pairs_distances.size > 0:
@@ -467,7 +473,7 @@ def _graph_pairs_and_modules(pairs: list[tuple[int, int]],
                                                       pairs_distances]))]
     else:
         y_range = [0.0, 1.0]
-    fig.update_yaxes(title_text='Distance',
+    fig.update_yaxes(title_text="Length of Span",
                      showgrid=True,
                      range=y_range)
     # Save the figure.
@@ -533,6 +539,15 @@ def _filter_modules_length(modules: list[tuple[int, int]],
             if min_length <= (end3 - end5 + 1) <= max_length]
 
 
+def _write_pairs_to_csv(pairs: list[tuple[int, int]],
+                        csv_file: str | Path):
+    """ Write the pairs to a CSV file. """
+    pos5s, pos3s = _tuples_to_ends_arrays(pairs)
+    df = pd.DataFrame.from_dict({POSITION_A: pos5s, POSITION_B: pos3s},
+                                orient="columns")
+    df.to_csv(csv_file, index=False)
+
+
 def _calc_ref_cluster_modules(datasets: list[MaskMutsDataset],
                               pair_fdr: float,
                               min_mut_gap: int,
@@ -567,8 +582,11 @@ def _calc_ref_cluster_modules(datasets: list[MaskMutsDataset],
         modules = _filter_modules_length(modules, min_length, max_length)
     else:
         raise ValueError(gap_mode)
-    # Graph the correlated pairs and modules.
+    # Write the pairs and modules to CSV files.
     ref_dir = datasets[0].report_file.parent.parent
+    _write_pairs_to_csv(pairs, ref_dir.joinpath("pairs.csv"))
+    _write_pairs_to_csv(modules, ref_dir.joinpath("modules.csv"))
+    # Graph the correlated pairs and modules.
     html_file = ref_dir.joinpath("pairs-and-modules.html")
     try:
         _graph_pairs_and_modules(pairs,
