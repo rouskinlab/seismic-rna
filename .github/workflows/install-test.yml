@@ -40,6 +40,8 @@ jobs:
         run: |
           pip install .
       - name: Run the test suite
+        env:
+          LOGISTRO_DISABLE_CLI: "1"
         run: |
           echo "Running tests for $(seismic --version)"
           seismic --log "" --exit-on-error test -vv

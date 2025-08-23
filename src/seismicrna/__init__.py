@@ -1,7 +1,3 @@
-# Prevent logistro from parsing command line arguments
-import os
-os.environ['LOGISTRO_DISABLE_CLI'] = '1'
-
 from .core.version import __version__
 
 ########################################################################
