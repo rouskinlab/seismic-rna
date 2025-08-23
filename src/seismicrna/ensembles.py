@@ -36,8 +36,7 @@ from .core.error import (IncompatibleValuesError,
                          OutOfBoundsError)
 from .core.logs import logger
 from .core.run import run_func
-from .core.seq import (POS_NAME,
-                       DNA,
+from .core.seq import (DNA,
                        DuplicateReferenceNameError,
                        RefRegions,
                        unite)
@@ -230,7 +229,7 @@ def _find_correlated_pairs(dataset: MaskMutsDataset,
         dataset.get_batch,
         dataset.num_batches,
         dataset.pattern,
-        dataset.region.unmasked.get_level_values(POS_NAME),
+        dataset.region.unmasked,
         None,
         min_gap=dataset.min_mut_gap,
         num_cpus=num_cpus

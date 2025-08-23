@@ -8,7 +8,6 @@ from .dataset import DatasetGraph, DatasetWriter, DatasetRunner
 from .trace import get_pairwise_position_trace
 from ..core.batch import POSITION_A, POSITION_B, accumulate_confusion_matrices
 from ..core.header import NO_CLUST, NO_CLUSTS, NUM_CLUSTS_NAME, CLUST_NAME
-from ..core.seq import POS_NAME
 
 
 class PositionPairGraph(DatasetGraph, ABC):
@@ -45,7 +44,7 @@ class PositionPairGraph(DatasetGraph, ABC):
             self.dataset.get_batch,
             self.dataset.num_batches,
             self.pattern,
-            self.dataset.region.unmasked.get_level_values(POS_NAME),
+            self.dataset.region.unmasked,
             clusters,
             num_cpus=self.num_cpus
         ))

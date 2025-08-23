@@ -450,7 +450,7 @@ class TestExpandRegionsIntoGaps(ut.TestCase):
         self.assertListEqual(result, expect)
 
 
-@ut.skip("Takes a very long time")
+#@ut.skip("Takes a very long time")
 class TestEnsembles(ut.TestCase):
     SIM_DIR = Path(opt_sim_dir.default).absolute()
     SAMPLE = "test_sample"
@@ -530,9 +530,7 @@ class TestEnsembles(ut.TestCase):
                       expect_ks: list[int],
                       expect_regions: list[list[str]],
                       **kwargs):
-        joined = f"ensembles-{tile_length}_"
         join_dirs = run_ensembles(relate_dirs,
-                                  joined=joined,
                                   tile_length=tile_length,
                                   tile_min_overlap=tile_min_overlap,
                                   mask_pos_table=False,
