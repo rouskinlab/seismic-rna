@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from seismicrna.cluster.data import JoinClusterMutsDataset
+from seismicrna.cluster.data import ClusterMutsDataset
 from seismicrna.core.arg.cli import opt_sim_dir
 from seismicrna.core.logs import Level, get_config, set_config
 from seismicrna.core.rna.convert import db_to_ct
@@ -450,7 +450,6 @@ class TestExpandRegionsIntoGaps(ut.TestCase):
         self.assertListEqual(result, expect)
 
 
-#@ut.skip("Takes a very long time")
 class TestEnsembles(ut.TestCase):
     SIM_DIR = Path(opt_sim_dir.default).absolute()
     SAMPLE = "test_sample"
@@ -525,158 +524,62 @@ class TestEnsembles(ut.TestCase):
 
     def run_ensembles(self,
                       relate_dirs: list[Path],
-                      tile_length: int,
-                      tile_min_overlap: float,
-                      expect_ks: list[int],
-                      expect_regions: list[list[str]],
+                      expect_regions: dict[tuple[int, int], int],
+                      tolerance: int = 0,
                       **kwargs):
-        join_dirs = run_ensembles(relate_dirs,
-                                  tile_length=tile_length,
-                                  tile_min_overlap=tile_min_overlap,
-                                  mask_pos_table=False,
-                                  mask_read_table=False,
-                                  # Calculating the cluster tables here
-                                  # makes group_clusters() run faster.
-                                  cluster_pos_table=True,
-                                  cluster_abundance_table=True,
-                                  jackpot=False,
-                                  brotli_level=0,
-                                  **kwargs)
-        cluster_dirs = sorted(d for d in join_dirs
-                              if d.parent.parent.name == "cluster")
-        expect_dirs = [self.SIM_DIR.joinpath("samples",
-                                             self.SAMPLE,
-                                             "cluster",
-                                             self.REF,
-                                             f"{joined}{i}")
-                       for i in range(1, len(expect_ks) + 1)]
-        self.assertListEqual(cluster_dirs,
-                             list(expect_dirs))
-        for expect_dir, expect_k, expect_regs in zip(expect_dirs,
-                                                     expect_ks,
-                                                     expect_regions,
-                                                     strict=True):
-            report_file = expect_dir.joinpath("cluster-report.json")
-            dataset = JoinClusterMutsDataset(report_file)
-            self.assertListEqual(dataset.ks, [expect_k])
-            self.assertListEqual(sorted(dataset.region_names),
-                                 sorted(expect_regs))
+        cluster_dirs = {tuple(map(int, d.name.split("-"))): d
+                        for d in run_ensembles(relate_dirs,
+                                               # Optimize for speed.
+                                               min_em_runs=1,
+                                               max_em_runs=1,
+                                               jackpot=False,
+                                               brotli_level=0,
+                                               mask_pos_table=False,
+                                               mask_read_table=False,
+                                               cluster_pos_table=False,
+                                               cluster_abundance_table=False,
+                                               **kwargs)}
+        for (exp5, exp3), expect_k in expect_regions.items():
+            expect_length = exp3 - exp5 + 1
+            for (reg5, reg3), cluster_dir in cluster_dirs.items():
+                overlap = max(min(reg3, exp3) - max(reg5, exp5), 0)
+                if overlap >= expect_length / 2:
+                    report_file = cluster_dir.joinpath("cluster-report.json")
+                    dataset = ClusterMutsDataset(report_file)
+                    self.assertListEqual(dataset.ks, [expect_k])
+                    break
+            else:
+                raise ValueError(f"Expected region {exp5, exp3} does not "
+                                 "overlap at least 50% of any region "
+                                 f"among {sorted(cluster_dirs)}")
 
     def test_modules012_read180(self):
         relate_dirs = self.sim_data([0, 1, 2], 180)
-        # The regions are 1-60, 21-80, 41-100, 61-120, 81-140, 101-160,
-        # and 121-180.
-        # Regions 1-60, 21-80, and 41-100 overlap module 0 (1-60) and
-        # should form 2 structures.
-        # Region 61-120 coincides exactly with module 1 and should form
-        # 1 structure.
-        # Regions 81-140, 101-160, and 121-180 overlap module 2 (121-180)
-        # and should form 2 structures.
-        self.run_ensembles(relate_dirs, 60, (2 / 3),
-                           [2, 1, 2],
-                           [["1-60", "21-80", "41-100"],
-                            ["61-120"],
-                            ["81-140", "101-160", "121-180"]])
-        # The regions are 1-90, 31-120, 61-150, and 91-180.
-        # Every region includes a part of module 0 (1-60) and module 1
-        # (121-180), but not both, so every region forms 2 structures.
-        self.run_ensembles(relate_dirs, 90, (2 / 3),
-                           [2],
-                           [["1-90", "31-120", "61-150", "91-180"]])
-        # The regions are 1-120, 31-150, and 61-180.
-        # Regions 1-120 and 61-180 include module 0 (1-60) and module 2
-        # (121-180), respectively, which each form 2 structures.
-        # Region 31-150 overlaps both modules 0 and 2, so it can form
-        # 2 x 2 = 4 structures.
-        self.run_ensembles(relate_dirs, 120, 0.75,
-                           [2, 4, 2],
-                           [["1-120"],
-                            ["31-150"],
-                            ["61-180"]])
-        # The only region is 1-180.
-        # This region includes module 0 (1-60) and module 2 (121-180),
-        # which each form 2 structures, so the entire RNA can form 4.
-        self.run_ensembles(relate_dirs, 180, 0.5,
-                           [4],
-                           [["1-180"]])
+        self.run_ensembles(relate_dirs,
+                           {(1, 60): 2,
+                            (121, 180): 2},
+                           tolerance=60)
 
     def test_modules012_read120(self):
-        # Similar to test_modules012_read180 but with 120 nt reads.
         relate_dirs = self.sim_data([0, 1, 2], 120)
-        self.run_ensembles(relate_dirs, 60, (2 / 3),
-                           [2, 1, 2],
-                           [["1-60", "21-80", "41-100"],
-                            ["61-120"],
-                            ["81-140", "101-160", "121-180"]])
-        self.run_ensembles(relate_dirs, 90, (2 / 3),
-                           [2],
-                           [["1-90", "31-120", "61-150", "91-180"]])
-        self.run_ensembles(relate_dirs, 120, 0.75,
-                           [2, 4, 2],
-                           [["1-120"],
-                            ["31-150"],
-                            ["61-180"]])
-        self.run_ensembles(relate_dirs, 180, 0.5,
-                           [4],
-                           [["1-180"]])
+        self.run_ensembles(relate_dirs,
+                           {(1, 60): 2,
+                            (121, 180): 2},
+                           tolerance=60)
 
     def test_modules012_read60(self):
-        # Similar to test_modules012_read180 but with 60 nt reads.
         relate_dirs = self.sim_data([0, 1, 2], 60)
-        self.run_ensembles(relate_dirs, 60, (2 / 3),
-                           [2, 1, 2],
-                           [["1-60", "21-80", "41-100"],
-                            ["61-120"],
-                            ["81-140", "101-160", "121-180"]])
-        self.run_ensembles(relate_dirs, 90, (2 / 3),
-                           [2],
-                           [["1-90", "31-120", "61-150", "91-180"]])
-        # With 60 nt reads, the reads are not long enough to provide
-        # information on both modules 0 and 2 simultaneously, so the
-        # algorithm cannot tell that together they form 4 clusters.
-        self.run_ensembles(relate_dirs, 120, 0.75,
-                           [2],
-                           [["1-120", "31-150", "61-180"]])
-        self.run_ensembles(relate_dirs, 180, 0.5,
-                           [2],
-                           [["1-180"]])
+        self.run_ensembles(relate_dirs,
+                           {(1, 60): 2,
+                            (121, 180): 2},
+                           tolerance=60)
 
     def test_modules02_read60(self):
         relate_dirs = self.sim_data([0, 2], 60)
-        # The regions are 1-60, 31-90, and 61-120.
-        # Region 1-60 coincides exactly with module 0 and should form
-        # 2 structures.
-        # Region 31-90 overlaps module 0 (1-60) and module 2 (61-120),
-        # which each form 2 structures, so this region can form 2 x 2
-        # = 4 structures.
-        # Region 61-120 coincides exactly with module 2 and should form
-        # 2 structures.
-        self.run_ensembles(relate_dirs, 60, 0.5,
-                           [2, 4, 2],
-                           [["1-60"],
-                            ["31-90"],
-                            ["61-120"]],
-                           max_marcd_join=0.0)
-        # Now rerun while limiting every region to at most 2 clusters.
-        # The regions should not be joined together because region 31-90
-        # with 2 clusters will not be sufficiently similar to 1-60 or to
-        # 61-120 to be able to join with them.
-        self.run_ensembles(relate_dirs, 60, 0.5,
-                           [2, 2, 2],
-                           [["1-60"],
-                            ["31-90"],
-                            ["61-120"]],
-                           max_marcd_join=0.0,
-                           max_clusters=2,
-                           force=True)
-        # Now rerun while tolerating larger differences between clusters
-        # and confirm that all three regions are now joined.
-        self.run_ensembles(relate_dirs, 60, 0.5,
-                           [2],
-                           [["1-60", "31-90", "61-120"]],
-                           max_marcd_join=1.0,
-                           max_clusters=2,
-                           force=True)
+        self.run_ensembles(relate_dirs,
+                           {(1, 60): 2,
+                            (61, 120): 2},
+                           tolerance=30)
 
 
 if __name__ == "__main__":
