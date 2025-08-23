@@ -471,7 +471,7 @@ class TestEnsembles(ut.TestCase):
 
     def setUp(self):
         self._config = get_config()
-        set_config(verbosity=Level.DETAIL,
+        set_config(verbosity=Level.ERROR,
                    log_file_path=None,
                    exit_on_error=True)
         self.SIM_DIR.mkdir()
