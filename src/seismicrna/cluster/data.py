@@ -151,14 +151,20 @@ def get_clust_params(dataset: ClusterMutsDataset, num_cpus: int = 1):
                    path.REG: dataset.region.name}
     pos_table_file = ClusterPositionTableLoader.build_path(path_fields)
     if pos_table_file.is_file():
-        pos_table = ClusterPositionTableLoader(pos_table_file)
+        pos_table = ClusterPositionTableLoader(
+            pos_table_file,
+            verify_times=dataset.verify_times
+        )
         logger.detail(f"Position table {pos_table_file} exists")
     else:
         pos_table = None
         logger.detail(f"Position table {pos_table_file} does not exist")
     abundance_table_file = ClusterAbundanceTableLoader.build_path(path_fields)
     if abundance_table_file.is_file():
-        abundance_table = ClusterAbundanceTableLoader(abundance_table_file)
+        abundance_table = ClusterAbundanceTableLoader(
+            abundance_table_file,
+            verify_times=dataset.verify_times
+        )
         logger.detail(f"Abundance table {abundance_table_file} exists")
     else:
         abundance_table = None
