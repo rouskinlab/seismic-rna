@@ -35,6 +35,8 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Checkout this GitHub repository
+        uses: actions/checkout@v4
       # Set the Python version to the latest with which SEISMIC-RNA is compatible.
       - name: Set up Python 3.13
         uses: actions/setup-python@v5
@@ -42,8 +44,6 @@ jobs:
           python-version: '3.13'
           check-latest: true  # Get the latest patch of that version.
           cache: 'pip'  # Cache with pip for speed.
-      - name: Checkout this GitHub repository
-        uses: actions/checkout@v4
       - name: Install SEISMIC-RNA from this repository
         run: |
           pip install .
