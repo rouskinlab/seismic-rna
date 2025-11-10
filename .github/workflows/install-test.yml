@@ -35,7 +35,7 @@ jobs:
           activate-environment: seismic
           environment-file: environment.yml
           condarc-file: condarc.yml
-          python-version: 3.12
+          python-version: 3.13
       - name: Install SEISMIC-RNA from source
         run: |
           pip install .
