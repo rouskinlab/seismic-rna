@@ -17,7 +17,7 @@ Download example files
 Paired-end FASTQ files were generated using ``seismic sim``. The files, with
 their corresponding reference fasta file and the regions file, can be
 downloaded here:
-https://raw.githubusercontent.com/rouskinlab/seismic-rna/main/src/userdocs/examples/MultiSample/fq/RegionsFile.zip
+https://raw.githubusercontent.com/rouskinlab/seismic-rna/main/src/userdocs/examples/RegionsFile/fq/RegionsFile.zip
 
 Run the SEISMIC-RNA workflow
 --------------------------------------------------------------------------------
