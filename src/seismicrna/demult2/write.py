@@ -168,6 +168,13 @@ def demult_samples(fq_units: list[FastqUnit],
                                mismatches=mismatch_tolerance,
                                index_tolerance=index_tolerance,
                                allow_n=allow_n)
+    else:
+        barcodes = RefBarcodes(ref_seqs=parse_fasta(fasta, DNA),
+                               coords=coords,
+                               bcs=barcode,
+                               mismatches=mismatch_tolerance,
+                               index_tolerance=index_tolerance,
+                               allow_n=allow_n)
 
     # List all demultiplexed FASTQs and check for duplicates.
     demult_fqs = list_demult(fq_units, refs | barcodes.uniq_names)
@@ -450,15 +457,13 @@ def check_matches(matches: Iterable[tuple[tuple[int, str, set]]], barcodes):
                 end_index, barcode_id = read
                 name = barcodes.name_map[barcode_id]
                 valid_ends = barcodes.valid_positions[barcode_id]
-                # print(end_index, valid_ends)
                 if end_index in valid_ends:
                     samples.add(name)
     if not samples:
         return None
 
     if len(samples) > 1:
-        # print(matches)
-        # logger.warning(f"Read matched more than one sample {samples}")
+        logger.warning(f"Read matched more than one sample {samples}")
         # raise ValueError(f"Read matched more than one sample {samples}")
         return None
     else:
@@ -485,14 +490,11 @@ def demult_ahocorasick(fq_unit: FastqUnit,
     # Process FASTQ records using FastqUnit.iter_records()
     count = 0
     total = 0
-    for segs, recs in tqdm(fq_unit.iter_records(segments=[barcodes.read_pos_range, barcodes.rc_read_pos_range]), total=fq_unit.n_reads):
+    for segs, recs in fq_unit.iter_records(segments=[barcodes.read_pos_range, barcodes.rc_read_pos_range]): # tqdm(fq_unit.iter_records(segments=[barcodes.read_pos_range, barcodes.rc_read_pos_range], total=fq_unit.n_reads))
         seqs = [" ".join(seg) for seg in segs]
-        # print(recs)
-        # print(seqs)
         bcs = [(match, match_rc) for match, match_rc in zip_longest(automaton.iter(seqs[0]), rc_automaton.iter(seqs[1]))]
         name = check_matches(bcs, barcodes)
         if name:
-            # print(name)
             for fq_lines, fq_path in zip(recs, out_fqs[name].paths.values()):
                 read_buffer[fq_path].append(fq_lines)
                 # Flush if the buffer for this barcode is large.
@@ -503,7 +505,6 @@ def demult_ahocorasick(fq_unit: FastqUnit,
             count += 1
         else:
             pass
-            # print("No match")
         total += 1
     # Write remaining buffered records.
     for fq_path, records in read_buffer.items():

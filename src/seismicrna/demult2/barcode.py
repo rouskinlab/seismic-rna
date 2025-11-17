@@ -1,5 +1,4 @@
 import ahocorasick
-from tqdm import tqdm
 from functools import cached_property
 
 from collections import namedtuple, defaultdict
@@ -79,14 +78,25 @@ def get_ref_barcodes(ref_meta_file: Path):
 
     # Read every row of the regions file.
     refs_meta = pd.read_csv(ref_meta_file)
-    lines = zip(refs_meta[FIELD_REF],
-                refs_meta[FIELD_BARCODE5],
-                refs_meta[FIELD_BARCODE3],
-                refs_meta[FIELD_NAME],
-                refs_meta[FIELD_BARCODE],
-                refs_meta[FIELD_READ_POS])
+    fields = [field for field in [FIELD_REF,
+                                  FIELD_BARCODE5,
+                                  FIELD_BARCODE3,
+                                  FIELD_NAME,
+                                  FIELD_BARCODE,
+                                  FIELD_READ_POS]
+              if field in refs_meta.columns]
+    lines = zip(*(refs_meta[field] for field in fields))
     refs = set()
-    for i, (ref, end5, end3, name, bc, read_pos) in enumerate(lines, start=1):
+    for i, meta in enumerate(lines, start=1):
+        meta_dict = dict()
+        for j, field in enumerate(fields):
+            meta_dict[field] = meta[j]
+        ref = meta_dict.get(FIELD_REF)
+        end5 = meta_dict.get(FIELD_BARCODE5)
+        end3 = meta_dict.get(FIELD_BARCODE3)
+        name = meta_dict.get(FIELD_NAME)
+        bc = meta_dict.get(FIELD_BARCODE)
+        read_pos = meta_dict.get(FIELD_READ_POS)
         end5 -= 1
         if not pd.isnull(ref):
             if ref in refs:
@@ -110,8 +120,15 @@ def get_ref_barcodes(ref_meta_file: Path):
             else:
                 raise ValueError(f"Either {FIELD_REF} or {FIELD_NAME} column must be filled")
 
+            if (not pd.isnull(end5)) and (not pd.isnull(read_pos)):
+                raise ValueError(f"Only one of {FIELD_BARCODE5} or {FIELD_READ_POS} columns may be filled")
+
             if pd.isnull(read_pos):
-                read_pos = end5 # TODO: Fix this
+                # TODO: Fix this
+                if pd.isnull(end5):
+                    read_pos = 1
+                else:
+                    read_pos = end5
 
             # Check whether coordinates or primers were given.
             has_coords = not (pd.isnull(end5) or pd.isnull(end3))
@@ -124,7 +141,7 @@ def get_ref_barcodes(ref_meta_file: Path):
                 map_bc(coords, ref, (int(end5), int(end3), int(read_pos)))
             elif has_bc:
                 # Map the reference and primers to the region.
-                map_bc(bcs, ref, (DNA(bc), read_pos))
+                map_bc(bcs, ref, (DNA(bc), read_pos-1))
             else:
                 raise ValueError("Got neither coordinates nor barcodes")
         except Exception as error:
@@ -200,6 +217,7 @@ class RefBarcodes(object):
 
         self.ref_lengths = {ref: len(seq) for ref, seq in ref_seqs.iter()}
         self._bcs = cli_bcs | meta_bcs | bcs_from_coords
+        self._bcs = {ref: (bc.pop() if isinstance(bc, set) else bc) for ref, bc in self._bcs.items()}
         self.mismatches = mismatches
         self.index_tolerance = index_tolerance
         self.allow_n = allow_n
@@ -261,7 +279,7 @@ class RefBarcodes(object):
     @property
     def rc_read_positions(self):
         """ List all reverse complement barcode positions. """
-        return [self.ref_lengths.get(name, 0)-(read_pos+len(bc)) for name, (bc, read_pos) in self._bcs.items()] #TODO: Fix rc indexing of non-ref barcodes
+        return [self.ref_lengths.get(name, 0)-(read_pos+len(bc)) for name, (bc, read_pos) in self._bcs.items()] # TODO: Fix rc indexing of non-ref barcodes
 
 
     @property
@@ -321,7 +339,7 @@ class RefBarcodes(object):
         collisions = dict()
         sets = set()
         orig_set = set()
-        for barcode_idx, (name, barcode) in tqdm(enumerate(barcodes)):
+        for barcode_idx, (name, barcode) in enumerate(barcodes):
             orig_set.add(str(barcode))
             if (name, barcode) in sets:
                 raise ValueError(f"Already encountered {(name, barcode)}")
