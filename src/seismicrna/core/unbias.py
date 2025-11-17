@@ -84,51 +84,6 @@ def _normalize(x: np.ndarray):
 
 
 @jit()
-def _triu_log(a: np.ndarray):
-    """ Calculate the logarithm of the upper triangle(s) of array `a`.
-
-    This function is meant to be called by another function that has
-    validated the arguments; hence, this function makes assumptions:
-
-    -   `a` has at least 2 dimensions.
-    -   The first two dimensions of `a` have equal length.
-
-    Parameters
-    ----------
-    a: np.ndarray
-        Array of whose upper triangle to compute the logarithm.
-
-    Returns
-    -------
-    np.ndarray
-        Logarithm of the upper triangle(s) of `a`.
-    """
-    log = np.empty_like(a)
-    for j in range(a.shape[0]):
-        log[j, j:] = np.log(a[j, j:])
-    return log
-
-
-def triu_log(a: np.ndarray):
-    """ Calculate the logarithm of the upper triangle(s) of array `a`.
-    In the result, elements below the main diagonal are undefined.
-
-    Parameters
-    ----------
-    a: np.ndarray
-        Array (≥ 2 dimensions) of whose upper triangle to compute the
-        logarithm; the first 2 dimensions must have equal lengths.
-
-    Returns
-    -------
-    np.ndarray
-        Logarithm of the upper triangle(s) of `a`.
-    """
-    require_square_atleast2d("a", a)
-    return _triu_log(a)
-
-
-@jit()
 def _triu_sum(a: np.ndarray):
     """ Calculate the sum over the upper triangle(s) of array `a`.
 

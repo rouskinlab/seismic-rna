@@ -6,7 +6,6 @@ import numpy as np
 from seismicrna.core.unbias import (_clip,
                                     _normalize,
                                     _adjust_min_gap,
-                                    triu_log,
                                     triu_sum,
                                     _triu_cumsum,
                                     _triu_norm,
@@ -321,30 +320,6 @@ class TestNormalize(ut.TestCase):
                     self.assertTrue(np.isclose(result.sum(), 1.))
                     ratio = x / result
                     self.assertTrue(np.allclose(ratio, ratio[(0,) * ndim]))
-
-
-class TestTriuLog(ut.TestCase):
-
-    def compare(self, result: np.ndarray, expect: np.ndarray):
-        self.assertEqual(result.shape, expect.shape)
-        self.assertTrue(np.all(np.logical_or(np.isclose(result, expect),
-                                             np.isnan(expect))))
-
-    def test_2d(self):
-        a = np.array([[1., 2.],
-                      [0., 3.]])
-        expect = np.array([[0., np.log(2.)],
-                           [np.nan, np.log(3.)]])
-        result = triu_log(a)
-        self.compare(result, expect)
-
-    def test_3d(self):
-        a = np.array([[[1., 4.], [2., 5.]],
-                      [[0., 1.], [3., 6.]]])
-        expect = np.array([[[0., np.log(4.)], [np.log(2.), np.log(5.)]],
-                           [[np.nan, np.nan], [np.log(3.), np.log(6.)]]])
-        result = triu_log(a)
-        self.compare(result, expect)
 
 
 class TestTriuAllClose(ut.TestCase):
