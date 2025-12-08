@@ -7,10 +7,14 @@ from click import command
 
 from .write import mask_region
 from ..core.arg import (CMD_MASK,
+                        PROBES,
+                        PROBE_DMS,
+                        PROBE_ETC,
                         arg_input_path,
                         opt_tmp_pfx,
                         opt_branch,
                         opt_keep_tmp,
+                        opt_probe,
                         opt_mask_coords,
                         opt_mask_primers,
                         opt_primer_gap,
@@ -21,7 +25,10 @@ from ..core.arg import (CMD_MASK,
                         opt_mask_mut,
                         opt_count_mut,
                         opt_mask_polya,
-                        opt_mask_gu,
+                        opt_mask_a,
+                        opt_mask_c,
+                        opt_mask_g,
+                        opt_mask_u,
                         opt_mask_pos,
                         opt_mask_pos_file,
                         opt_mask_read,
@@ -47,6 +54,25 @@ from ..core.run import run_func
 from ..core.seq import DNA, RefRegions
 from ..core.task import dispatch
 from ..relate.dataset import load_relate_dataset
+
+
+def set_mask_acgu(probe: str,
+                  mask_a: bool | None,
+                  mask_c: bool | None,
+                  mask_g: bool | None,
+                  mask_u: bool | None):
+    probe = probe.lower()
+    if probe not in PROBES:
+        raise ValueError(f"Invalid probe type: {repr(probe)}")
+    if mask_a is None:
+        mask_a = probe in [PROBE_ETC]
+    if mask_c is None:
+        mask_c = probe in [PROBE_ETC]
+    if mask_g is None:
+        mask_g = probe in [PROBE_DMS]
+    if mask_u is None:
+        mask_u = probe in [PROBE_DMS]
+    return mask_a, mask_c, mask_g, mask_u
 
 
 def load_regions(input_path: Iterable[str | Path],
@@ -90,8 +116,12 @@ def run(input_path: Iterable[str | Path], *,
         mask_mut: Iterable[str],
         count_mut: Iterable[str],
         # Filtering
+        probe: str,
+        mask_a: bool | None,
+        mask_c: bool | None,
+        mask_g: bool | None,
+        mask_u: bool | None,
         mask_polya: int,
-        mask_gu: bool,
         mask_pos: Iterable[tuple[str, int]],
         mask_pos_file: Iterable[str | Path],
         mask_read: Iterable[str],
@@ -118,6 +148,11 @@ def run(input_path: Iterable[str | Path], *,
         # Effort
         force: bool) -> list[Path]:
     """ Define mutations and regions to filter reads and positions. """
+    mask_a, mask_c, mask_g, mask_u = set_mask_acgu(probe,
+                                                   mask_a,
+                                                   mask_c,
+                                                   mask_g,
+                                                   mask_u)
     datasets, regions = load_regions(
         input_path,
         coords=mask_coords,
@@ -143,7 +178,10 @@ def run(input_path: Iterable[str | Path], *,
                                 mask_mut=mask_mut,
                                 count_mut=count_mut,
                                 mask_polya=mask_polya,
-                                mask_gu=mask_gu,
+                                mask_a=mask_a,
+                                mask_c=mask_c,
+                                mask_g=mask_g,
+                                mask_u=mask_u,
                                 mask_pos=list(mask_pos),
                                 mask_pos_file=list(mask_pos_file),
                                 mask_read=list(mask_read),
@@ -181,8 +219,12 @@ params = [
     opt_mask_mut,
     opt_count_mut,
     # Filtering
+    opt_probe,
+    opt_mask_a,
+    opt_mask_c,
+    opt_mask_g,
+    opt_mask_u,
     opt_mask_polya,
-    opt_mask_gu,
     opt_mask_pos,
     opt_mask_pos_file,
     opt_min_ninfo_pos,

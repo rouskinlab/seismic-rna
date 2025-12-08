@@ -88,7 +88,10 @@ from .arg import (opt_phred_enc,
                   opt_max_marcd_vs_best,
                   opt_try_all_ks,
                   opt_write_all_ks,
-                  opt_mask_gu,
+                  opt_mask_a,
+                  opt_mask_c,
+                  opt_mask_g,
+                  opt_mask_u,
                   opt_mask_polya,
                   opt_mask_discontig,
                   opt_min_phred)
@@ -392,13 +395,16 @@ CountRefsF = ReportField("count_refs",
                          HalfRelPattern,
                          iconv=HalfRelPattern.from_report_format,
                          oconv=HalfRelPattern.to_report_format)
-ExclPolyAF = OptionReportField(opt_mask_polya)
-ExclGUF = OptionReportField(opt_mask_gu)
-ExclListPosF = ReportField("mask_pos",
-                           "Mask additional positions from a list",
-                           np.ndarray,
-                           iconv=iconv_array_int,
-                           oconv=get_oconv_list(int))
+MaskPolyAF = OptionReportField(opt_mask_polya)
+MaskAF = OptionReportField(opt_mask_a)
+MaskCF = OptionReportField(opt_mask_c)
+MaskGF = OptionReportField(opt_mask_g)
+MaskUF = OptionReportField(opt_mask_u)
+MaskPosF = ReportField("mask_pos",
+                       "Mask additional positions from a list",
+                       np.ndarray,
+                       iconv=iconv_array_int,
+                       oconv=get_oconv_list(int))
 MinNInfoPosF = OptionReportField(opt_min_ninfo_pos)
 MaxFMutPosF = OptionReportField(opt_max_fmut_pos)
 MinNCovReadF = OptionReportField(opt_min_ncov_read)
@@ -414,11 +420,31 @@ PosCutPolyAF = ReportField("pos_polya",
                            np.ndarray,
                            iconv=iconv_array_int,
                            oconv=get_oconv_list(int))
-PosCutGUF = ReportField("pos_gu",
-                        "Positions with G or U bases",
-                        np.ndarray,
-                        iconv=iconv_array_int,
-                        oconv=get_oconv_list(int))
+PosCutAF = ReportField("pos_a",
+                       "Positions masked for having base A",
+                       np.ndarray,
+                       iconv=iconv_array_int,
+                       oconv=get_oconv_list(int))
+PosCutCF = ReportField("pos_c",
+                       "Positions masked for having base C",
+                       np.ndarray,
+                       iconv=iconv_array_int,
+                       oconv=get_oconv_list(int))
+PosCutGF = ReportField("pos_g",
+                       "Positions masked for having base G",
+                       np.ndarray,
+                       iconv=iconv_array_int,
+                       oconv=get_oconv_list(int))
+PosCutUF = ReportField("pos_u",
+                       "Positions masked for having base U",
+                       np.ndarray,
+                       iconv=iconv_array_int,
+                       oconv=get_oconv_list(int))
+PosCutNF = ReportField("pos_n",
+                       "Positions masked for having base N",
+                       np.ndarray,
+                       iconv=iconv_array_int,
+                       oconv=get_oconv_list(int))
 PosCutListF = ReportField("pos_list",
                           "Positions masked from a list",
                           np.ndarray,
@@ -446,9 +472,21 @@ NumPosCutPolyAF = ReportField("n_pos_polya",
                               "Number of positions in stretches of consecutive "
                               "A bases",
                               int)
-NumPosCutGUF = ReportField("n_pos_gu",
-                           "Number of positions with G or U bases",
-                           int)
+NumPosCutAF = ReportField("n_pos_a",
+                          "Number of positions masked for having base A",
+                          int)
+NumPosCutCF = ReportField("n_pos_c",
+                          "Number of positions masked for having base C",
+                          int)
+NumPosCutGF = ReportField("n_pos_g",
+                          "Number of positions masked for having base G",
+                          int)
+NumPosCutUF = ReportField("n_pos_u",
+                          "Number of positions masked for having base U",
+                          int)
+NumPosCutNF = ReportField("n_pos_n",
+                          "Number of positions masked for having base N",
+                          int)
 NumPosCutListF = ReportField("n_pos_list",
                              "Number of positions masked from a list",
                              int)

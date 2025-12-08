@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 from .refs import RefSeqs
-from .xna import BASEA, BASEC, BASEN, DNA
+from .xna import BASEA, BASEC, BASEG, BASET, BASEN, DNA
 from ..logs import logger
 
 # Names of the region index levels.
@@ -330,7 +330,6 @@ class Region(object):
     """ Region of a reference sequence between two coordinates. """
 
     MASK_POLYA = "pos-polya"
-    MASK_GU = "pos-gu"
     MASK_LIST = "pos-list"
 
     def __init__(self,
@@ -522,9 +521,14 @@ class Region(object):
                 copied.add_mask(name, masked)
         return copied
 
-    def get_mask(self, name: str):
+    def get_mask(self, name: str, missing_ok: bool = False):
         """ Get the positions masked under the given name. """
-        return self._masks[name]
+        try:
+            return self._masks[name]
+        except KeyError:
+            if missing_ok:
+                return np.array([], dtype=int)
+            raise
 
     def add_mask(self,
                  name: str,
@@ -569,17 +573,31 @@ class Region(object):
             if not missing_ok:
                 raise
 
-    def _find_gu(self) -> np.ndarray:
-        """ Array of each position whose base is neither A nor C. """
-        # Mark whether each position is neither A nor C.
-        gu_pos = np.logical_and(self.seq.array != BASEA,
-                                self.seq.array != BASEC)
-        # Return the integer positions.
-        return self.range_int[gu_pos]
+    def _mask_base(self, base: str):
+        if base not in self.seq.alph():
+            raise ValueError(f"Invalid {type(self.seq).__name__} base: "
+                             f"{repr(base)}")
+        return self.add_mask(base, self.range_int[self.seq.array == base])
 
-    def mask_gu(self):
-        """ Mask positions whose base is neither A nor C. """
-        return self.add_mask(self.MASK_GU, self._find_gu())
+    def mask_a(self):
+        """ Mask out every A. """
+        return self._mask_base(BASEA)
+
+    def mask_c(self):
+        """ Mask out every C. """
+        return self._mask_base(BASEC)
+
+    def mask_g(self):
+        """ Mask out every G. """
+        return self._mask_base(BASEG)
+
+    def mask_t(self):
+        """ Mask out every T or U. """
+        return self._mask_base(BASET)
+
+    def mask_n(self):
+        """ Mask out every N. """
+        return self._mask_base(BASEN)
 
     def _find_polya(self, min_length: int) -> np.ndarray:
         """ Array of each position within a stretch of `min_length` or

@@ -37,6 +37,12 @@ CLIP_END5_DEFAULT = BOWTIE2_GBAR_DEFAULT
 CLIP_END3_DEFAULT = BOWTIE2_GBAR_DEFAULT
 MIN_READ_LENGTH_DEFAULT = CLIP_END5_DEFAULT + CLIP_END3_DEFAULT + 1
 
+PROBE_DMS = "dms"
+PROBE_SHAPE = "shape"
+PROBE_ETC = "etc"
+PROBE_NONE = "none"
+PROBES = PROBE_DMS, PROBE_SHAPE, PROBE_ETC, PROBE_NONE
+
 GAP_MODE_OMIT = "omit"
 GAP_MODE_INSERT = "insert"
 GAP_MODE_EXPAND = "expand"
@@ -611,6 +617,13 @@ opt_pooled = Option(
 
 # Mask
 
+opt_probe = Option(
+    ("--probe",),
+    type=Choice(PROBES, case_sensitive=False),
+    default=PROBE_DMS,
+    help="Use default mask options for this chemical probe"
+)
+
 opt_mask_regions_file = Option(
     ("--mask-regions-file", "-i"),
     type=Path(exists=True, dir_okay=False),
@@ -677,11 +690,32 @@ opt_mask_polya = Option(
     help="Mask stretches of at least this many consecutive A bases (0 disables)"
 )
 
-opt_mask_gu = Option(
-    ("--mask-gu/--keep-gu",),
+opt_mask_a = Option(
+    ("--mask-a/--keep-a",),
     type=bool,
-    default=True,
-    help="Mask G and U bases"
+    default=None,
+    help="Mask positions with base A"
+)
+
+opt_mask_c = Option(
+    ("--mask-c/--keep-c",),
+    type=bool,
+    default=None,
+    help="Mask positions with base C"
+)
+
+opt_mask_g = Option(
+    ("--mask-g/--keep-g",),
+    type=bool,
+    default=None,
+    help="Mask positions with base G"
+)
+
+opt_mask_u = Option(
+    ("--mask-u/--keep-u",),
+    type=bool,
+    default=None,
+    help="Mask positions with base U"
 )
 
 opt_mask_pos = Option(

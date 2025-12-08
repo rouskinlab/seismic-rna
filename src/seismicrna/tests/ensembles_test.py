@@ -525,7 +525,6 @@ class TestEnsembles(ut.TestCase):
     def run_ensembles(self,
                       relate_dirs: list[Path],
                       expect_regions: dict[tuple[int, int], int],
-                      tolerance: int = 0,
                       **kwargs):
         cluster_dirs = {tuple(map(int, d.name.split("-"))): d
                         for d in run_ensembles(relate_dirs,
@@ -557,29 +556,25 @@ class TestEnsembles(ut.TestCase):
         relate_dirs = self.sim_data([0, 1, 2], 180)
         self.run_ensembles(relate_dirs,
                            {(1, 60): 2,
-                            (121, 180): 2},
-                           tolerance=60)
+                            (121, 180): 2})
 
     def test_modules012_read120(self):
         relate_dirs = self.sim_data([0, 1, 2], 120)
         self.run_ensembles(relate_dirs,
                            {(1, 60): 2,
-                            (121, 180): 2},
-                           tolerance=60)
+                            (121, 180): 2})
 
     def test_modules012_read60(self):
         relate_dirs = self.sim_data([0, 1, 2], 60)
         self.run_ensembles(relate_dirs,
                            {(1, 60): 2,
-                            (121, 180): 2},
-                           tolerance=60)
+                            (121, 180): 2})
 
     def test_modules02_read60(self):
         relate_dirs = self.sim_data([0, 2], 60)
         self.run_ensembles(relate_dirs,
                            {(1, 60): 2,
-                            (61, 120): 2},
-                           tolerance=30)
+                            (61, 120): 2})
 
 
 if __name__ == "__main__":
