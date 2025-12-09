@@ -816,28 +816,52 @@ class TestRegionMaskList(ut.TestCase):
                                        np.array([19, 23, 24])))
 
 
-class TestRegionMaskGU(ut.TestCase):
+class TestRegionMaskACGT(ut.TestCase):
 
-    def test_find_gu(self):
-        seq = DNA("GAACCGTNACGGATCTCGCAATGT")
-        seq5 = 8
-        end5 = 17
-        end3 = 26
-        region = Region("myref", seq, seq5=seq5, end5=end5, end3=end3)
-        gu_pos = region._find_gu()
-        self.assertIsInstance(gu_pos, np.ndarray)
-        self.assertIs(gu_pos.dtype, np.dtype('int64'))
-        self.assertTrue(np.array_equal(gu_pos, np.array([18, 19, 21, 23, 25])))
+    SEQ5 = 8
+    END5 = 17
+    END3 = 26
 
-    def test_mask_gu(self):
+    @classmethod
+    def _get_region(cls):
         seq = DNA("GAACCGTNACGGATCTCGCAATGT")
-        seq5 = 8
-        end5 = 17
-        end3 = 26
-        region = Region("myref", seq, seq5=seq5, end5=end5, end3=end3)
-        region.mask_gu()
-        self.assertTrue(np.array_equal(region._masks[region.MASK_GU],
-                                       region._find_gu()))
+        return Region("myref", seq, seq5=cls.SEQ5, end5=cls.END5, end3=cls.END3)
+
+    def test_mask_a(self):
+        region = self._get_region()
+        region.mask_a()
+        self.assertTrue(np.array_equal(
+            region.get_mask("A"),
+            np.array([i for i, n in enumerate(region.seq, start=self.END5)
+                      if n == "A"])
+        ))
+
+    def test_mask_c(self):
+        region = self._get_region()
+        region.mask_c()
+        self.assertTrue(np.array_equal(
+            region.get_mask("C"),
+            np.array([i for i, n in enumerate(region.seq, start=self.END5)
+                      if n == "C"])
+        ))
+
+    def test_mask_g(self):
+        region = self._get_region()
+        region.mask_g()
+        self.assertTrue(np.array_equal(
+            region.get_mask("G"),
+            np.array([i for i, n in enumerate(region.seq, start=self.END5)
+                      if n == "G"])
+        ))
+
+    def test_mask_t(self):
+        region = self._get_region()
+        region.mask_t()
+        self.assertTrue(np.array_equal(
+            region.get_mask("T"),
+            np.array([i for i, n in enumerate(region.seq, start=self.END5)
+                      if n == "T"])
+        ))
 
 
 class TestRegionMaskPolyA(ut.TestCase):
