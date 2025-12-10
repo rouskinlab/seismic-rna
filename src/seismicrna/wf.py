@@ -100,14 +100,14 @@ def run(fasta: str | Path,
         fastqx: Iterable[str | Path],
         phred_enc: int,
         # Demultiplexing options
-        demulti_overwrite: bool,
-        demult_on: bool,
-        parallel_demultiplexing: bool,
-        clipped: int,
-        mismatch_tolerence: int,
-        index_tolerance: int,
+        demult: bool,
         barcode_start: int,
         barcode_end: int,
+        read_pos: int,
+        barcode: tuple[tuple[str, DNA, int]],
+        mismatch_tolerance: int,
+        index_tolerance: int,
+        allow_n: bool,
         # Align options
         dmfastqz: Iterable[str | Path],
         dmfastqy: Iterable[str | Path],
@@ -292,21 +292,23 @@ def run(fasta: str | Path,
     fold_primers = list(fold_primers)
     struct_num = list(struct_num)
     struct_file = list(struct_file)
-    if demult_on:
-        for dmz, dmy, dmx in demultiplex_mod.run_dm(
+    if demult:
+        for dmz, dmy, dmx in demultiplex_mod.run(
                 fasta=fasta,
                 refs_meta=refs_meta,
                 out_dir=out_dir,
                 tmp_pfx=tmp_pfx,
                 keep_tmp=keep_tmp,
-                demulti_overwrite=demulti_overwrite,
-                fastqx=fastqx,
-                clipped=clipped,
-                index_tolerance=index_tolerance,
-                mismatch_tolerence=mismatch_tolerence,
-                parallel_demultiplexing=parallel_demultiplexing,
                 barcode_start=barcode_start,
                 barcode_end=barcode_end,
+                read_pos=read_pos,
+                barcode=barcode,
+                mismatch_tolerance=mismatch_tolerance,
+                index_tolerance=index_tolerance,
+                allow_n=allow_n,
+                branch=branch,
+                num_cpus=num_cpus,
+                force=force,
                 phred_enc=phred_enc):
             dmfastqz = dmfastqz + dmz
             dmfastqy = dmfastqy + dmy

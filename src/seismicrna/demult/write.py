@@ -237,7 +237,11 @@ def demult_fqs_pipeline(fq_units: list[FastqUnit],
             # will be passed to fq_pipeline.
     # Generate demultiplexed FASTQ files.
     fq_dirs = dispatch(demult_fq_pipeline,
-                       num_cpus,
+                       num_cpus=num_cpus,
+                       pass_num_cpus=True,
+                       as_list=True,
+                       ordered=False,
+                       raise_on_error=False,
                        args=iter_args,
                        kwargs=dict(tmp_dir=tmp_dir, force_serial=True, **kwargs))
     logger.routine("Ended running the demultiplexing pipeline")
@@ -264,9 +268,12 @@ def demult_fq_pipeline(fq_inp: FastqUnit,
 
     args = [(fq_inp, fqs, barcodes) for fqs in split_fqs]
     demult_parts = dispatch(process_fq_part,
-                            num_cpus,
-                            args=args,
+                            num_cpus=num_cpus,
                             pass_num_cpus=False,
+                            as_list=True,
+                            ordered=True,
+                            raise_on_error=False,
+                            args=args,
                             kwargs=dict(release_dir=release_dir,
                                         **kwargs))
 
@@ -284,9 +291,12 @@ def demult_fq_pipeline(fq_inp: FastqUnit,
     arg_parts = [arg_part for arg_part in assembled_parts if any(fq.exists() for fq in arg_part)]
 
     dispatch(merge_parts,
-             num_cpus,
-             args=as_list_of_tuples(arg_parts),
-             pass_num_cpus=False)
+             num_cpus=num_cpus,
+             pass_num_cpus=False,
+             as_list=False,
+             ordered=False,
+             raise_on_error=False,
+             args=as_list_of_tuples(arg_parts))
 
     out_path = release_to_out(out_dir=out_dir, release_dir=release_dir, initial_path=release_dir/Path(fq_inp.sample)/"demult")
 
@@ -508,7 +518,7 @@ def demult_ahocorasick(fq_unit: FastqUnit,
             with open_func(fq_path, "at") as out_file:
                 out_file.write("\n".join("\n".join(record) for record in records) + "\n")
 
-    logger.warning(f"Identified {count} out of {total} reads ({100*(count/total):.3f}%)")
+    logger.detail(f"Identified {count} out of {total} reads ({100*(count/total):.3f}%)")
 
     return tuple((tuple(out_fqs[name].paths.values()) for name in barcodes.uniq_names))
 

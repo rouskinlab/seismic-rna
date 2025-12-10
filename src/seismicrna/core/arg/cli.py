@@ -166,7 +166,7 @@ opt_min_phred = Option(
 # Demultiplexing options
 
 opt_demultiplex = Option(
-    ("--demult-on/--demult-off",),
+    ("--demult/--no-demult",),
     type=bool,
     default=False,
     help="Enable demultiplexing"
