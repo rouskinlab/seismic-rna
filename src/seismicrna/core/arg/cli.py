@@ -172,38 +172,12 @@ opt_demultiplex = Option(
     help="Enable demultiplexing"
 )
 
-opt_parallel_demultiplexing = Option(
-    ("--parallel-demultiplexing",),
-    type=bool,
-    default=False,
-    help="Whether to run demultiplexing at maximum speed by submitting multithreaded "
-         "grep functions"
-)
-
 opt_clipped_demultiplexing = Option(
     ("--clipped",),
     type=int,
     default=0,
     help="Designates the amount of clipped patterns to search for in the sample, will raise compution time"
 )
-
-opt_mismatch_tolerence = Option(
-    ("--mismatch-tolerence",),
-    type=int,
-    default=0,
-    help="Designates the allowable amount of mismatches allowed in a string and still be considered a valid pattern "
-         "find. will increase non-parallel computation at a factorial rate. use caution going above 2 mismatches. "
-         "does not apply to clipped sequences."
-)
-
-opt_index_tolerence = Option(
-    ("--index-tolerence",),
-    type=int,
-    default=0,
-    help="Designates the allowable amount of distance you allow the pattern to be found in a read from the reference "
-         "index"
-)
-
 
 opt_mismatch_tolerance = Option(
     ("--mismatch-tolerance",),
@@ -213,7 +187,6 @@ opt_mismatch_tolerance = Option(
          "find. will increase non-parallel computation at a factorial rate. use caution going above 2 mismatches. "
          "does not apply to clipped sequences."
 )
-
 
 opt_index_tolerance = Option(
     ("--index-tolerance",),
@@ -259,13 +232,6 @@ opt_read_pos = Option(
     help=("Expected position of the barcode in the read (1-indexed). "
           "Defaults to --barcode-start")
 )
-
-opt_demulti_overwrite = Option(
-    ("--demulti-overwrite",),
-    type=bool,
-    default=False,
-    help="Desiginates whether to overwrite the grepped fastq. should only be used if changing setting on the same "
-         "sample")
 
 # Demultiplexed sequencing read (FASTQ) directories
 
