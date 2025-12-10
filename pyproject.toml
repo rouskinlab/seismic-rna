@@ -34,7 +34,6 @@ dependencies = [
     "jinja2 >=3.0",
     "jgo >=1.0",
     "pyahocorasick >=2.2.0",
-    "tqdm >=4.67.1"
 ]
 dynamic = ["version"]
 
