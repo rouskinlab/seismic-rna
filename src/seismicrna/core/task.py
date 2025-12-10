@@ -7,7 +7,7 @@ from .logs import Level, logger, get_config, set_config
 from .validate import require_equal
 
 
-def calc_pool_size(num_tasks: int, num_cpus: int):
+def calc_pool_size(num_tasks: int, num_cpus: int, force_serial: bool = False):
     """ Calculate the size of a process pool.
 
     Parameters
@@ -16,6 +16,11 @@ def calc_pool_size(num_tasks: int, num_cpus: int):
         Number of tasks to parallelize. Must be ≥ 1.
     num_cpus: int
         Number of CPUs available. Must be ≥ 1.
+    force_serial: bool
+        If False, tasks are run in parallel (reserving one processor for the
+        parent process and distributing the remaining processors among tasks).
+        If True, tasks run serially, but each task can still use the remaining
+        processors (i.e. max_procs - 1, at minimum 1).
 
     Returns
     -------
@@ -37,7 +42,7 @@ def calc_pool_size(num_tasks: int, num_cpus: int):
     # managing the process pool.
     num_cpus_for_tasks = max(num_cpus - 1, 1)
     num_simultaneous_tasks = min(num_tasks, num_cpus_for_tasks)
-    if num_simultaneous_tasks > 1:
+    if num_simultaneous_tasks > 1 and not force_serial:
         # Parallelize the tasks, controlled by the parent process, and
         # distribute the child processors evenly among the pooled tasks.
         pool_size = num_simultaneous_tasks
@@ -48,6 +53,7 @@ def calc_pool_size(num_tasks: int, num_cpus: int):
         pool_size = 1
         num_cpus_per_task = num_cpus
     return pool_size, num_cpus_per_task
+
 
 
 class Task(object):
@@ -108,6 +114,8 @@ def _dispatch(funcs: Callable | list[Callable], *,
     # Default to an empty dict if kwargs is not given.
     if kwargs is None:
         kwargs = dict()
+    force_serial = kwargs.pop("force_serial", False)
+    pass_force_serial = kwargs.pop("pass_force_serial", False)
     if callable(funcs):
         if isinstance(args, tuple):
             # If args is a tuple, make it the sole element of a list.
@@ -138,7 +146,7 @@ def _dispatch(funcs: Callable | list[Callable], *,
         logger.task("No tasks were given to dispatch")
         return list()
     # Determine how to parallelize each task.
-    pool_size, num_cpus_per_task = calc_pool_size(num_tasks, num_cpus)
+    pool_size, num_cpus_per_task = calc_pool_size(num_tasks, num_cpus, force_serial=force_serial)
     if pass_num_cpus:
         # Add the number of processes as a keyword argument.
         kwargs = {**kwargs, "num_cpus": num_cpus_per_task}
@@ -148,6 +156,8 @@ def _dispatch(funcs: Callable | list[Callable], *,
         logger.detail(f"Calculated size of process pool: {pool_size}")
     # Run the tasks.
     num_failed = 0
+    if pass_force_serial:
+        kwargs = {**kwargs, "force_serial": force_serial}
     if pool_size > 1:
         # Run the tasks in parallel.
         with ProcessPoolExecutor(max_workers=pool_size) as pool:
@@ -239,6 +249,7 @@ def dispatch(funcs: Callable | list[Callable], *,
                         args=args,
                         kwargs=kwargs)
     return list(results) if as_list else iter(results)
+
 
 
 def as_list_of_tuples(args: Iterable[Any]):

@@ -23,6 +23,9 @@ VIENNA_RNASUBOPT_CMD = "RNAsubopt"
 JAVA_CMD = "java"
 JAR_CMD = "-jar"
 JGO_CMD = "jgo"
+UMI_TOOLS_CMD = "umi_tools"
+UMI_TOOLS_EXTRACT_CMD = "extract"
+SEQKIT_CMD = "seqkit"
 
 
 class ShellCommandFailedError(RuntimeError):
@@ -56,13 +59,13 @@ def cmds_to_subshell(cmds: list[str]):
     return f"( {cmds_to_series(cmds)} )"
 
 
-def run_cmd(cmd: str, text: bool | None = True):
+def run_cmd(cmd: str, text: bool | None = True, shell: bool = True):
     """ Run a command via subprocess.run(), with logging. """
     # Log the command with which the process was run.
     logger.action(f"Began running shell command:\n{cmd}")
     # Run the process and capture the output.
     process = run(cmd,
-                  shell=True,
+                  shell=shell,
                   capture_output=text is not None,
                   text=text)
     failed = process.returncode != 0

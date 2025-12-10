@@ -35,6 +35,7 @@ dependencies = [
     "jgo >=1.0",
     "matplotlib >=3.0",
     "viennarna>=2.6"
+    "pyahocorasick >=2.2.0",
 ]
 dynamic = ["version"]
 
