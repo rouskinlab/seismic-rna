@@ -16,7 +16,6 @@ from ..core.tmp import get_release_working_dirs, release_to_out
 from ..core.path import symlink_if_needed, mkdir_if_needed, FQ_ALL_EXTS
 from ..core.seq import DNA
 from .barcode import RefBarcodes
-from tqdm import tqdm
 
 PART_STR = ".part_"
 ALLOWED_SUFFIXES = sorted(
@@ -490,7 +489,7 @@ def demult_ahocorasick(fq_unit: FastqUnit,
     # Process FASTQ records using FastqUnit.iter_records()
     count = 0
     total = 0
-    for segs, recs in fq_unit.iter_records(segments=[barcodes.read_pos_range, barcodes.rc_read_pos_range]): # tqdm(fq_unit.iter_records(segments=[barcodes.read_pos_range, barcodes.rc_read_pos_range], total=fq_unit.n_reads))
+    for segs, recs in fq_unit.iter_records(segments=[barcodes.read_pos_range, barcodes.rc_read_pos_range]):
         seqs = [" ".join(seg) for seg in segs]
         bcs = [(match, match_rc) for match, match_rc in zip_longest(automaton.iter(seqs[0]), rc_automaton.iter(seqs[1]))]
         name = check_matches(bcs, barcodes)
