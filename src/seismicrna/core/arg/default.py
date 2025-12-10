@@ -21,4 +21,5 @@ extra_defaults = dict(fastp_adapter_fasta=None,
                       fold_commands=None,
                       samples_meta=None,
                       refs_meta=None,
-                      read_pos=None)
+                      read_pos=None,
+                      collate_out_dir=None)

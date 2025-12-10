@@ -1419,7 +1419,6 @@ opt_verbose_name = Option(
 opt_collate_out_dir = Option(
     ("--collate-out-dir",),
     type=Path(file_okay=False),
-    default=None,
     help=("Write collated report to this directory. "
           "By default, write to the lowest level directory common to all input graphs.")
 )
