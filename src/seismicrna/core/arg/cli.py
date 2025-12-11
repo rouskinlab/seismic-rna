@@ -37,6 +37,21 @@ CLIP_END5_DEFAULT = BOWTIE2_GBAR_DEFAULT
 CLIP_END3_DEFAULT = BOWTIE2_GBAR_DEFAULT
 MIN_READ_LENGTH_DEFAULT = CLIP_END5_DEFAULT + CLIP_END3_DEFAULT + 1
 
+PROBE_DMS = "dms"
+PROBE_SHAPE = "shape"
+PROBE_ETC = "etc"
+PROBE_NONE = "none"
+PROBES = PROBE_DMS, PROBE_SHAPE, PROBE_ETC, PROBE_NONE
+
+GAP_MODE_OMIT = "omit"
+GAP_MODE_INSERT = "insert"
+GAP_MODE_EXPAND = "expand"
+GAP_MODE = GAP_MODE_OMIT, GAP_MODE_INSERT, GAP_MODE_EXPAND
+
+FOLD_REACT_MODE_NORM = "norm"
+FOLD_REACT_MODE_ENERGY = "energy"
+FOLD_REACT_MODES = FOLD_REACT_MODE_NORM, FOLD_REACT_MODE_ENERGY
+
 NO_GROUP = "c"
 GROUP_BY_K = "k"
 GROUP_ALL = "a"
@@ -481,7 +496,7 @@ opt_bt2_dpad = Option(
 opt_bt2_orient = Option(
     ("--bt2-orient",),
     type=Choice(BOWTIE2_ORIENT, case_sensitive=False),
-    default=BOWTIE2_ORIENT[0],
+    default=BOWTIE2_ORIENT_FR,
     help="Require paired mates to have this orientation"
 )
 
@@ -614,6 +629,13 @@ opt_pooled = Option(
 
 # Mask
 
+opt_probe = Option(
+    ("--probe",),
+    type=Choice(PROBES, case_sensitive=False),
+    default=PROBE_DMS,
+    help="Use default mask options for this chemical probe"
+)
+
 opt_mask_regions_file = Option(
     ("--mask-regions-file", "-i"),
     type=Path(exists=True, dir_okay=False),
@@ -680,11 +702,32 @@ opt_mask_polya = Option(
     help="Mask stretches of at least this many consecutive A bases (0 disables)"
 )
 
-opt_mask_gu = Option(
-    ("--mask-gu/--keep-gu",),
+opt_mask_a = Option(
+    ("--mask-a/--keep-a",),
     type=bool,
-    default=True,
-    help="Mask G and U bases"
+    default=None,
+    help="Mask positions with base A"
+)
+
+opt_mask_c = Option(
+    ("--mask-c/--keep-c",),
+    type=bool,
+    default=None,
+    help="Mask positions with base C"
+)
+
+opt_mask_g = Option(
+    ("--mask-g/--keep-g",),
+    type=bool,
+    default=None,
+    help="Mask positions with base G"
+)
+
+opt_mask_u = Option(
+    ("--mask-u/--keep-u",),
+    type=bool,
+    default=None,
+    help="Mask positions with base U"
 )
 
 opt_mask_pos = Option(
@@ -984,28 +1027,62 @@ opt_join_clusts = Option(
 
 # Ensembles options
 
-opt_region_length = Option(
-    ("--region-length", "-L",),
+opt_tile_length = Option(
+    ("--tile-length", "-L",),
     type=int,
     default=0,
-    help="Make each region this length (if 0, then calculate the length over "
-         "which the average read has 2 mutations)",
+    help="Make each tile this length (if 0, use 2x the median read length)",
 )
 
-opt_region_min_overlap = Option(
-    ("--region-min-overlap", "-O"),
+opt_tile_min_overlap = Option(
+    ("--tile-min-overlap", "-O"),
     type=float,
-    default=(2. / 3.),
-    help="Make adjacent regions overlap by at least this fraction of length",
+    default=0.5,
+    help="Make adjacent tiles overlap by at least this fraction of length",
 )
 
-opt_max_marcd_join = Option(
-    ("--max-marcd-join",),
+opt_erase_tiles = Option(
+    ("--erase-tiles/--keep-tiles",),
+    type=bool,
+    default=True,
+    help="Erase the mask reports/batches from the tiling step"
+)
+
+opt_pair_fdr = Option(
+    ("--pair-fdr",),
     type=float,
-    default=0.016,
-    help="Join regions with the same numbers of clusters only if the mean "
-         "arcsine distance (MARCD) of their mutation rates and proportions "
-         "does not exceed this threshold"
+    default=0.05,
+    help="Find correlated pairs at this false discovery rate (FDR)",
+)
+
+opt_min_pairs = Option(
+    ("--min-pairs",),
+    type=int,
+    default=2,
+    help="Cluster only the regions with at least this many correlated pairs",
+)
+
+opt_min_cluster_length = Option(
+    ("--min-cluster-length",),
+    type=int,
+    default=20,
+    help="Cluster only the regions with at least this many positions",
+)
+
+opt_max_cluster_length = Option(
+    ("--max-cluster-length",),
+    type=int,
+    default=1200,
+    help="Cluster only the regions with no more than this many positions",
+)
+
+opt_gap_mode = Option(
+    ("--gap-mode",),
+    type=Choice(GAP_MODE, case_sensitive=False),
+    default=GAP_MODE_OMIT,
+    help="If there are gaps between regions to cluster, OMIT (do not cluster) "
+         "the gaps, INSERT a new region into each gap, or EXPAND the existing "
+         "regions to fill the gaps"
 )
 
 # Fold
@@ -1014,7 +1091,7 @@ opt_fold = Option(
     ("--fold/--no-fold",),
     type=bool,
     default=False,
-    help="Predict the secondary structure using the RNAstructure Fold program"
+    help="Predict the secondary structure using the reactivities"
 )
 
 opt_fold_regions_file = Option(
@@ -1039,6 +1116,12 @@ opt_fold_primers = Option(
     help="Fold a region of a reference given its forward and reverse primers"
 )
 
+opt_fold_react_mode = Option(
+    ("--fold-react-mode",),
+    type=Choice(FOLD_REACT_MODES, case_sensitive=False),
+    default=FOLD_REACT_MODE_NORM,
+    help="Normalize reactivities for folding using this method"
+)
 
 opt_fold_vienna = Option(
      ("--fold-vienna/--no-fold-vienna",),
@@ -1047,12 +1130,18 @@ opt_fold_vienna = Option(
      help="Use RNAfold from ViennaRNA as the folding engine"
 )
 
-
 opt_fold_fpaired = Option(
     ("--fold-fpaired", "-f"),
     type=float,
     default=0.5,
     help="Scale mutation rates assuming this is the fraction of paired bases"
+)
+
+opt_fold_quantile = Option(
+    ("--fold-quantile",),
+    type=float,
+    default=0.95,
+    help="Normalize and winsorize reactivities to this quantile for folding"
 )
 
 opt_fold_temp = Option(
@@ -1183,7 +1272,7 @@ opt_compself = Option(
 
 opt_cgroup = Option(
     ("--cgroup",),
-    type=Choice(GROUP_CLUST_OPTIONS),
+    type=Choice(GROUP_CLUST_OPTIONS, case_sensitive=False),
     default=GROUP_BY_K,
     help="Put each Cluster in its own file, each K in its own file, "
          "or All clusters in one file"
@@ -1202,6 +1291,13 @@ opt_use_ratio = Option(
     type=bool,
     default=True,
     help="Graph ratios or counts"
+)
+
+opt_graph_quantile = Option(
+    ("--graph-quantile",),
+    type=float,
+    default=0.,
+    help="Normalize and winsorize ratios to this quantile (0 disables)"
 )
 
 opt_window = Option(
@@ -1384,7 +1480,7 @@ opt_collate = Option(
     ("--collate/--no-collate",),
     type=bool,
     default=True,
-    help=("Collate HTML graphs and SVG drawings into an HTML report file.")
+    help="Collate HTML graphs and SVG drawings into an HTML report file."
 )
 
 opt_group = Option(
@@ -1406,35 +1502,35 @@ opt_name = Option(
     ("--name",),
     type=str,
     default="collated",
-    help=("Prefix the HTML report with this name.")
+    help="Prefix the HTML report with this name."
 )
 
 opt_verbose_name = Option(
     ("--verbose-name/--no-verbose-name",),
     type=bool,
     default=False,
-    help=("Add collated file information to report name.")
+    help="Add collated file information to report name."
 )
 
 opt_collate_out_dir = Option(
     ("--collate-out-dir",),
     type=Path(file_okay=False),
-    help=("Write collated report to this directory. "
-          "By default, write to the lowest level directory common to all input graphs.")
+    help=("Write collated report to this directory. By default, write to the "
+          "lowest level directory common to all input graphs.")
 )
 
 opt_include_svg = Option(
     ("--include-svg/--no-include-svg",),
     type=bool,
     default=True,
-    help=("Include RNA structure drawings from the draw module.")
+    help="Include RNA structure drawings from the draw module."
 )
 
 opt_include_graph = Option(
     ("--include-graph/--no-include-graph",),
     type=bool,
     default=True,
-    help=("Include graphs from the graph module.")
+    help="Include graphs from the graph module."
 )
 
 # CT renumbering
@@ -1576,7 +1672,7 @@ opt_center_fmean = Option(
 opt_center_fvar = Option(
     ("--center-fvar",),
     type=float,
-    default=1/3,
+    default=1 / 3,
     help="Set the variance of the read center as a fraction of its maximum"
 )
 
@@ -1590,7 +1686,7 @@ opt_length_fmean = Option(
 opt_length_fvar = Option(
     ("--length-fvar",),
     type=float,
-    default=1/81,
+    default=1 / 81,
     help="Set the variance of the read length as a fraction of its maximum"
 )
 

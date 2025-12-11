@@ -22,6 +22,8 @@ from ..core.arg import (CMD_FOLD,
                         opt_fold_full,
                         opt_fold_vienna,
                         opt_fold_temp,
+                        opt_fold_react_mode,
+                        opt_fold_quantile,
                         opt_fold_fpaired,
                         opt_fold_mu_eps,
                         opt_fold_constraint,
@@ -86,7 +88,7 @@ def fold_region(rna: RNAFoldProfile, *,
                                          path.PROFILE: rna.profile})
     if need_write(report_file, force):
         began = datetime.now()
-        rna.to_varna_color_file(out_dir, branch)
+        rna.write_varna_color_file(out_dir, branch)
         if fold_vienna:
             ct_file = rnafold(rna,
                               out_dir=out_dir,
@@ -115,13 +117,16 @@ def fold_region(rna: RNAFoldProfile, *,
                            num_cpus=num_cpus)
         ct_to_db(ct_file, force=True)
         ended = datetime.now()
-        constraint_checksum = calc_sha512_path(fold_constraint) if fold_constraint else ''
-        commands_checksum = calc_sha512_path(fold_commands) if fold_commands else ''
+        constraint_checksum = (calc_sha512_path(fold_constraint)
+                               if fold_constraint else "")
+        commands_checksum = (calc_sha512_path(fold_commands)
+                             if fold_commands else "")
         report = FoldReport(branches=branches,
                             sample=rna.sample,
                             ref=rna.ref,
                             reg=rna.reg,
                             profile=rna.profile,
+                            fold_quantile=rna.fold_quantile,
                             fold_vienna=fold_vienna,
                             fold_temp=rna.fold_temp,
                             fold_fpaired=rna.fold_fpaired,
@@ -141,6 +146,8 @@ def fold_region(rna: RNAFoldProfile, *,
 def fold_table(table: MaskPositionTableLoader | ClusterPositionTableLoader,
                regions: list[Region],
                fold_temp: float,
+               fold_react_mode: str,
+               fold_quantile: float,
                fold_fpaired: float,
                fold_mu_eps: float,
                num_cpus: int,
@@ -156,6 +163,8 @@ def fold_table(table: MaskPositionTableLoader | ClusterPositionTableLoader,
                         RNAFoldProfile.from_profile(
                             profile,
                             fold_temp=fold_temp,
+                            fold_react_mode=fold_react_mode,
+                            fold_quantile=fold_quantile,
                             fold_fpaired=fold_fpaired,
                             mu_eps=fold_mu_eps,
                         )
@@ -174,6 +183,8 @@ def run(input_path: Iterable[str | Path], *,
         fold_full: bool,
         fold_vienna: bool,
         fold_temp: float,
+        fold_react_mode: str,
+        fold_quantile: float,
         fold_fpaired: float,
         fold_mu_eps: float,
         fold_constraint: str | None,
@@ -192,7 +203,8 @@ def run(input_path: Iterable[str | Path], *,
     # Check for the dependencies and the DATAPATH environment variable.
     if not fold_vienna:
         if not pseudoenergy_all:
-            raise IncompatibleOptionsError("--pseudoenergy-stacked requires --fold-vienna")
+            raise IncompatibleOptionsError("--pseudoenergy-stacked requires "
+                                           "--fold-vienna")
         require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
         require_data_path()
     else:
@@ -229,6 +241,8 @@ def run(input_path: Iterable[str | Path], *,
                     keep_tmp=keep_tmp,
                     fold_vienna=fold_vienna,
                     fold_temp=fold_temp,
+                    fold_react_mode=fold_react_mode,
+                    fold_quantile=fold_quantile,
                     fold_fpaired=fold_fpaired,
                     fold_mu_eps=fold_mu_eps,
                     fold_constraint=optional_path(fold_constraint),
@@ -251,6 +265,8 @@ params = [
     opt_fold_full,
     opt_fold_vienna,
     opt_fold_temp,
+    opt_fold_react_mode,
+    opt_fold_quantile,
     opt_fold_fpaired,
     opt_fold_mu_eps,
     opt_fold_constraint,

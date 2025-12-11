@@ -23,7 +23,7 @@ from .core.run import run_func
 from .core.task import dispatch
 from .core.tmp import release_to_out, with_tmp_dir
 from .core.write import need_write
-from .relate.dataset import PoolDataset, load_relate_dataset
+from .relate.dataset import PoolMutsDataset, load_relate_dataset
 from .relate.report import PoolReport, RelateReport
 from .relate.table import RelateDatasetTabulator
 from .table import tabulate
@@ -174,7 +174,7 @@ def run(input_path: Iterable[str | Path], *,
     for dataset in load_relate_dataset.iterate(input_path,
                                                verify_times=verify_times):
         # Check whether the dataset was pooled.
-        if isinstance(dataset, PoolDataset):
+        if isinstance(dataset, PoolMutsDataset):
             # If so, then use all samples in the pool.
             samples = dataset.samples
         else:

@@ -170,6 +170,7 @@ class TestRNAStructure(ut.TestCase):
 
 
 class TestCalcWfmi(ut.TestCase):
+
     def test_identical_structures(self):
         region = Region("myref", "ACCGTACCGT")
         struct1 = RNAStructure(title="struct1", region=region,

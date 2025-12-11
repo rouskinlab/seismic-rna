@@ -213,5 +213,5 @@ def compute_rolling_auc(profile: pd.Series,
                                        size=size,
                                        min_count=min_data,
                                        include_nan=False):
-        aucrocs.loc[center] = compute_auc_roc(*window)
+        aucrocs.at[center] = compute_auc_roc(*window)
     return aucrocs

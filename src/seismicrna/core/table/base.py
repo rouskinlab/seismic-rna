@@ -10,6 +10,7 @@ from .. import path
 from ..batch import RB_INDEX_NAMES
 from ..dataset import LoadFunction
 from ..header import REL_NAME, Header, parse_header
+from ..mu import winsorize
 from ..rel import HalfRelPattern, RelPattern
 from ..rna import RNAProfile
 from ..seq import DNA, SEQ_INDEX_NAMES, Region, index_to_pos, index_to_seq
@@ -296,6 +297,7 @@ class RelTypeTable(Table, ABC):
                     exclude_masked: bool = False,
                     squeeze: bool = False,
                     precision: int | None = None,
+                    quantile: float = 0.,
                     **kwargs) -> pd.Series | pd.DataFrame:
         """ Fetch ratios of one or more columns. """
         # Fetch the data for the numerator.
@@ -303,7 +305,7 @@ class RelTypeTable(Table, ABC):
         # Fetch the data for the denominator.
         denom = self._fetch_data(_get_denom_cols(numer.columns), exclude_masked)
         # Compute the ratio of the numerator and the denominator.
-        return self._format_data(numer / denom.values,
+        return self._format_data(winsorize(numer / denom.values, quantile),
                                  precision=precision,
                                  squeeze=squeeze)
 
@@ -371,6 +373,7 @@ class PositionTable(RelTypeTable, ABC):
     @abstractmethod
     def _iter_profiles(self, *,
                        regions: Iterable[Region] | None,
+                       quantile: float,
                        rel: str,
                        k: int | None,
                        clust: int | None) -> Generator[RNAProfile, Any, Any]:
@@ -378,11 +381,13 @@ class PositionTable(RelTypeTable, ABC):
 
     def iter_profiles(self, *,
                       regions: Iterable[Region] | None = None,
+                      quantile: float = 0.,
                       rel: str = MUTAT_REL,
                       k: int | None = None,
                       clust: int | None = None):
         """ Yield RNA mutational profiles from the table. """
         yield from self._iter_profiles(regions=regions,
+                                       quantile=quantile,
                                        rel=rel,
                                        k=k,
                                        clust=clust)

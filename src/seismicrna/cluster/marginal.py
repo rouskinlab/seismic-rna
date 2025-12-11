@@ -7,8 +7,7 @@ from ..core.unbias import (READS,
                            calc_p_noclose_given_clust,
                            calc_p_noclose_given_ends_auto,
                            calc_p_ends_given_clust_noclose,
-                           calc_p_clust_given_noclose,
-                           triu_log)
+                           calc_p_clust_given_noclose)
 
 
 def _zero_masked(p_mut: np.ndarray, unmasked: np.ndarray):
@@ -48,14 +47,11 @@ def _calc_logp_joint(p_mut: np.ndarray,
     p_clust_given_noclose = calc_p_clust_given_noclose(p_clust, p_noclose)
     # Compute the probability that a read would have no two mutations
     # too close given its end coordinates.
-    logp_noclose_given_ends = triu_log(calc_p_noclose_given_ends_auto(p_mut, min_mut_gap))
-    # Compute the logs of the parameters.
     with np.errstate(divide="ignore"):
         # Suppress warnings about taking the log of zero, which is a
         # valid mutation rate.
         logp_mut = np.log(p_mut)
     logp_not = np.log(1. - p_mut)
-    logp_ends_given_clust_noclose = triu_log(p_ends_given_clust_noclose)
     logp_clust_given_noclose = np.log(p_clust_given_noclose)
     # For each cluster, calculate the probability that a read up to and
     # including each position would have no mutations.
@@ -72,8 +68,8 @@ def _calc_logp_joint(p_mut: np.ndarray,
     # have no two mutations too close.
     # 2D (unique reads x clusters)
     logp_joint = (logp_clust_given_noclose[np.newaxis, :]
-                  + logp_ends_given_clust_noclose[end5s, end3s]
-                  - logp_noclose_given_ends[end5s, end3s]
+                  + np.log(p_ends_given_clust_noclose[end5s, end3s])
+                  - np.log(p_noclose_given_ends[end5s, end3s])
                   + logp_nomut_given_clust)
     # For each unique read, compute the likelihood of observing it
     # (including its mutations) by adjusting the above likelihood

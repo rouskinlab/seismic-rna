@@ -409,7 +409,7 @@ def fold(rna: RNAFoldProfile, *,
     # Path of the temporary CT file.
     ct_tmp = rna.get_ct_file(tmp_dir, branch)
     # Pseudo-mutation rates file for the RNA.
-    pseudomus_file = rna.to_pseudomus(tmp_dir, branch)
+    pseudomus_file = rna.write_mus_file(tmp_dir, branch)
     try:
         # Run the command.
         fold_cmds = {

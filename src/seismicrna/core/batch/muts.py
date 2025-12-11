@@ -7,9 +7,11 @@ import numpy as np
 import pandas as pd
 from numba import jit
 
+from .confusion import calc_confusion_matrix
 from .count import (calc_count_per_pos,
                     calc_count_per_read,
                     calc_coverage,
+                    calc_covered_reads_per_pos,
                     calc_reads_per_pos,
                     calc_rels_per_pos,
                     calc_rels_per_read,
@@ -231,6 +233,15 @@ class RegionMutsBatch(MutsBatch, ABC):
         """ Number of positions covered by each read. """
         per_pos, per_read = self._coverage
         return per_read
+    
+    @cached_property
+    def covered_reads_per_pos(self):
+        """ Reads covering each position. """
+        return calc_covered_reads_per_pos(self.pos_index,
+                                          self.read_nums,
+                                          self.seg_end5s,
+                                          self.seg_end3s,
+                                          self.seg_ends_mask)
 
     @cached_property
     def rels_per_pos(self):
@@ -363,6 +374,14 @@ class RegionMutsBatch(MutsBatch, ABC):
         min_mut_dist = self.calc_min_mut_dist(pattern)
         return self.read_nums[np.logical_or(min_mut_dist == 0,
                                             min_mut_dist > min_gap)]
+
+    def calc_confusion_matrix(self, pattern: RelPattern, min_gap: int = 0):
+        """ Calculate the confusion matrix of mutations. """
+        return calc_confusion_matrix(self.pos_index,
+                                     self.covered_reads_per_pos,
+                                     self.reads_per_pos(pattern),
+                                     self.read_weights,
+                                     min_gap=min_gap)
 
     def iter_reads(self,
                    pattern: RelPattern,

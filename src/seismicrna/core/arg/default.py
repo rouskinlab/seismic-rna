@@ -15,6 +15,10 @@ cli_defaults = {param.name: param.default
 
 extra_defaults = dict(fastp_adapter_fasta=None,
                       mask_regions_file=None,
+                      mask_a=None,
+                      mask_c=None,
+                      mask_g=None,
+                      mask_u=None,
                       join_clusts=None,
                       fold_regions_file=None,
                       fold_constraint=None,

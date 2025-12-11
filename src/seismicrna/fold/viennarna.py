@@ -167,7 +167,7 @@ def rnafold(rna: RNAFoldProfile, *,
     # Path of the temporary command file.
     command_tmp = rna.get_command_file(tmp_dir, branch)
     # DMS reactivities file for the RNA.
-    dms_file = rna.to_pseudomus(tmp_dir, branch)
+    dms_file = rna.write_mus_file(tmp_dir, branch)
 
     if pseudoenergy_all:
         command_file = calc_bp_pseudoenergy(len(rna.seq), rna.pseudoenergies, command_tmp)

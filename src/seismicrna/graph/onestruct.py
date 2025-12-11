@@ -105,7 +105,8 @@ class StructOneTableGraph(OneTableRelClusterGroupGraph, OneRelGraph, ABC):
 
     def iter_profiles(self):
         """ Yield each RNAProfile from the table. """
-        yield from self.table.iter_profiles(rel=self.rel_name,
+        yield from self.table.iter_profiles(quantile=self.quantile,
+                                            rel=self.rel_name,
                                             k=self.k,
                                             clust=self.clust)
 
@@ -127,6 +128,7 @@ class StructOneTableWriter(OneTableRelClusterGroupWriter, ABC):
                     rels: list[str],
                     cgroup: str,
                     struct_file: Iterable[str | Path] = (),
+                    branch: str = "",
                     fold_coords: Iterable[tuple[str, int, int]] = (),
                     fold_primers: Iterable[tuple[str, DNA, DNA]] = (),
                     fold_regions_file: str | None = None,
@@ -167,11 +169,13 @@ class StructOneTableWriter(OneTableRelClusterGroupWriter, ABC):
                     yield self.get_graph(rels_group,
                                          struct_file=file,
                                          struct_reg=None,
+                                         branch=branch,
                                          **kwparams)
                 for reg in fold_regs:
                     yield self.get_graph(rels_group,
                                          struct_file=None,
                                          struct_reg=reg,
+                                         branch=branch,
                                          **kwparams)
 
 

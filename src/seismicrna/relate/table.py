@@ -38,6 +38,7 @@ class RelatePositionTable(RelateTable, PositionTable, ABC):
 
     def _iter_profiles(self, *,
                        regions: Iterable[Region] | None,
+                       quantile: float,
                        rel: str,
                        k: int | None,
                        clust: int | None):

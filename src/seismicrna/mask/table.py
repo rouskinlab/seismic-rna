@@ -46,6 +46,7 @@ class PartialPositionTable(PartialTable, PositionTable, ABC):
 
     def _iter_profiles(self, *,
                        regions: Iterable[Region] | None,
+                       quantile: float,
                        rel: str,
                        k: int | None,
                        clust: int | None):
@@ -56,15 +57,16 @@ class PartialPositionTable(PartialTable, PositionTable, ABC):
             regions = [self.region]
         for hk, hc in self.header.clusts:
             if (k is None or k == hk) and (clust is None or clust == hc):
-                data_name = path.fill_whitespace(format_clust_name(hk, hc),
-                                                 fill="-")
+                mus_name = path.fill_whitespace(format_clust_name(hk, hc),
+                                                fill="-")
                 for region in regions:
                     yield RNAProfile(region=region,
                                      sample=self.sample,
                                      branches=self.branches,
                                      mus_reg=self.reg,
-                                     mus_name=data_name,
-                                     mus=self.fetch_ratio(rel=rel,
+                                     mus_name=mus_name,
+                                     mus=self.fetch_ratio(quantile=quantile,
+                                                          rel=rel,
                                                           k=hk,
                                                           clust=hc,
                                                           squeeze=True))
@@ -118,13 +120,16 @@ class PartialTabulator(Tabulator, ABC):
                  min_mut_gap: int,
                  quick_unbias: bool,
                  quick_unbias_thresh: float,
+                 count_ends: bool = True,
                  **kwargs):
-        # Partial tabulators must count 5'/3' ends if min_mut_gap > 0
-        # or else calculating self._adjusted will fail.
-        self.min_mut_gap = min_mut_gap
-        super().__init__(region=region, count_ends=self.correct_bias, **kwargs)
+        # Partial tabulators must count 5'/3' ends or else calculating
+        # self.p_ends_given_clust_noclose will fail.
+        if not count_ends:
+            logger.warning(f"count_ends must be True for {type(self.__name__)}")
+        super().__init__(region=region, count_ends=True, **kwargs)
         self.refseq = refseq
         self.pattern = pattern
+        self.min_mut_gap = min_mut_gap
         self.quick_unbias = quick_unbias
         self.quick_unbias_thresh = quick_unbias_thresh
 
@@ -326,7 +331,7 @@ def adjust_counts(table_per_pos: pd.DataFrame,
             # have no two mutations too close.
             p_noclose = float(np.vdot(p_noclose_given_clust[ki], p_clust[ki]))
             # Compute the number of reads in each cluster.
-            n_clust.loc[k] = (n_reads_noclose / p_noclose) * p_clust[ki]
+            n_clust.at[k] = (n_reads_noclose / p_noclose) * p_clust[ki]
     else:
         raise TypeError("n_reads_clust must be an int or Series, "
                         f"but got {type(n_reads_clust).__name__}")

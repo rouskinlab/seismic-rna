@@ -21,12 +21,20 @@ from ..core.lists import PositionList
 from ..core.logs import logger
 from ..core.rel import RelPattern, HalfRelPattern
 from ..core.report import mask_iter_no_convergence
-from ..core.seq import FIELD_REF, POS_NAME, Region, index_to_pos
+from ..core.seq import (BASEA,
+                        BASEC,
+                        BASEG,
+                        BASET,
+                        BASEN,
+                        FIELD_REF,
+                        POS_NAME,
+                        Region,
+                        index_to_pos)
 from ..core.table import MUTAT_REL, INFOR_REL
 from ..core.tmp import release_to_out, with_tmp_dir
 from ..core.write import need_write
 from ..relate.dataset import (RelateMutsDataset,
-                              PoolDataset,
+                              PoolMutsDataset,
                               load_read_names_dataset)
 
 
@@ -53,12 +61,15 @@ class Masker(object):
     # out @docdef.auto() when developing the source code.
     @docdef.auto()
     def __init__(self,
-                 dataset: RelateMutsDataset | PoolDataset,
+                 dataset: RelateMutsDataset | PoolMutsDataset,
                  region: Region,
                  pattern: RelPattern, *,
                  max_mask_iter: int,
                  mask_polya: int,
-                 mask_gu: bool,
+                 mask_a: bool,
+                 mask_c: bool,
+                 mask_g: bool,
+                 mask_u: bool,
                  mask_pos: list[tuple[str, int]],
                  mask_pos_file: list[Path],
                  mask_read: list[str],
@@ -96,7 +107,10 @@ class Masker(object):
                            "RT that causes low reactivity. See Kladwang et al. "
                            "(https://doi.org/10.1021/acs.biochem.0c00020).")
         self.mask_polya = mask_polya
-        self.mask_gu = mask_gu
+        self.mask_a = mask_a
+        self.mask_c = mask_c
+        self.mask_g = mask_g
+        self.mask_u = mask_u
         self.mask_pos = self._get_mask_pos(mask_pos, mask_pos_file)
         self.mask_read = self._get_mask_read(mask_read, mask_read_file)
         # Set the parameters for filtering reads.
@@ -176,11 +190,33 @@ class Masker(object):
 
     # This property can change: do not cache it.
     @property
-    def pos_gu(self):
-        """ Positions masked for having a G or U base. """
-        return (self.region.get_mask(self.region.MASK_GU)
-                if self.mask_gu
-                else np.array([], dtype=int))
+    def pos_a(self):
+        """ Positions masked for having base A. """
+        return self.region.get_mask(BASEA, missing_ok=True)
+
+    # This property can change: do not cache it.
+    @property
+    def pos_c(self):
+        """ Positions masked for having base C. """
+        return self.region.get_mask(BASEC, missing_ok=True)
+
+    # This property can change: do not cache it.
+    @property
+    def pos_g(self):
+        """ Positions masked for having base G. """
+        return self.region.get_mask(BASEG, missing_ok=True)
+
+    # This property can change: do not cache it.
+    @property
+    def pos_u(self):
+        """ Positions masked for having base T or U. """
+        return self.region.get_mask(BASET, missing_ok=True)
+
+    # This property can change: do not cache it.
+    @property
+    def pos_n(self):
+        """ Positions masked for having base N. """
+        return self.region.get_mask(BASEN, missing_ok=True)
 
     # This property can change: do not cache it.
     @property
@@ -380,9 +416,16 @@ class Masker(object):
 
     def _exclude_positions(self):
         """ Pre-exclude positions from the region. """
+        self.region.mask_n()
+        if self.mask_a:
+            self.region.mask_a()
+        if self.mask_c:
+            self.region.mask_c()
+        if self.mask_g:
+            self.region.mask_g()
+        if self.mask_u:
+            self.region.mask_t()
         self.region.mask_polya(self.mask_polya)
-        if self.mask_gu:
-            self.region.mask_gu()
         self.region.mask_list(self.mask_pos)
 
     def _get_batch_num_path(self, batch_num: int):
@@ -579,20 +622,31 @@ class Masker(object):
             n_batches=self.dataset.num_batches,
             count_refs=self.pattern.nos,
             count_muts=self.pattern.yes,
-            mask_gu=self.mask_gu,
+            mask_a=self.mask_a,
+            mask_c=self.mask_c,
+            mask_g=self.mask_g,
+            mask_u=self.mask_u,
             mask_polya=self.mask_polya,
             mask_pos=self.mask_pos,
             min_ninfo_pos=self.min_ninfo_pos,
             max_fmut_pos=self.max_fmut_pos,
             max_mask_iter=self.max_iter,
             n_pos_init=self.region.length,
-            n_pos_gu=self.pos_gu.size,
+            n_pos_a=self.pos_a.size,
+            n_pos_c=self.pos_c.size,
+            n_pos_g=self.pos_g.size,
+            n_pos_u=self.pos_u.size,
+            n_pos_n=self.pos_n.size,
             n_pos_polya=self.pos_polya.size,
             n_pos_list=self.pos_list.size,
             n_pos_min_ninfo=self.pos_min_ninfo.size,
             n_pos_max_fmut=self.pos_max_fmut.size,
             n_pos_kept=self.pos_kept.size,
-            pos_gu=self.pos_gu,
+            pos_a=self.pos_a,
+            pos_c=self.pos_c,
+            pos_g=self.pos_g,
+            pos_u=self.pos_u,
+            pos_n=self.pos_n,
             pos_polya=self.pos_polya,
             pos_list=self.pos_list,
             pos_min_ninfo=self.pos_min_ninfo,
@@ -640,7 +694,7 @@ def get_pattern(mask_del: bool,
 
 
 @with_tmp_dir(pass_keep_tmp=False)
-def mask_region(dataset: RelateMutsDataset | PoolDataset,
+def mask_region(dataset: RelateMutsDataset | PoolMutsDataset,
                 region: Region, *,
                 branch: str,
                 tmp_dir: Path,

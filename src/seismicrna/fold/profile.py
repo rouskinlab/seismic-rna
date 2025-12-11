@@ -5,7 +5,10 @@ import numpy as np
 import pandas as pd
 
 from ..core import path
-from ..core.mu import calc_pseudoenergies
+from ..core.arg import (FOLD_REACT_MODES,
+                        FOLD_REACT_MODE_NORM,
+                        FOLD_REACT_MODE_ENERGY)
+from ..core.mu import winsorize, calc_pseudoenergies
 from ..core.rna import RNAProfile
 from ..core.seq import write_fasta
 from ..core.validate import require_atleast, require_between
@@ -20,6 +23,8 @@ class RNAFoldProfile(RNAProfile):
 
     def __init__(self, *,
                  fold_temp: float | int,
+                 fold_react_mode: str,
+                 fold_quantile: float | int,
                  fold_fpaired: float | int,
                  mu_eps: float | int,
                  **kwargs):
@@ -28,6 +33,10 @@ class RNAFoldProfile(RNAProfile):
         ----------
         fold_temp: float | int
             Predict structures at this temperature (Kelvin).
+        fold_react_mode: str
+            Method for normalizing the reactivities for folding.
+        fold_quantile: float
+            Normalize mutation rates to this quantile, then winsorize.
         fold_fpaired: float | int
             Assume this is the fraction of paired bases.
         mu_eps: float | int
@@ -39,6 +48,11 @@ class RNAFoldProfile(RNAProfile):
             "fold_temp", fold_temp, 0., classes=(float, int)
         )
         self.fold_temp = fold_temp
+        self.fold_react_mode = fold_react_mode
+        require_between(
+            "fold_quantile", fold_quantile, 0., 1., classes=(float, int)
+        )
+        self.fold_quantile = fold_quantile
         require_between(
             "fold_fpaired", fold_fpaired, 0., 1., classes=(float, int)
         )
@@ -81,11 +95,15 @@ class RNAFoldProfile(RNAProfile):
 
     @cached_property
     def shape_method(self):
-        """shapeMethod string for ViennaRNA. Slope and intercept are halved to avoid double counting"""
+        """ shapeMethod string for ViennaRNA. Slope and intercept are
+        halved to avoid double counting"""
         return f"Dm{self.slope/2}b{self.intercept/2}"
 
-    @cached_property
-    def pseudomus(self):
+    def calc_mus_normalized(self):
+        """ Mutation rates after normalizing and winsorizing. """
+        return winsorize(self.mus, self.fold_quantile)
+
+    def calc_pseudomus(self):
         """ Pseudo-mutation rates for structure prediction. """
         if self.slope == 0.:
             # This happens if all pseudoenergies equal the intercept.
@@ -195,24 +213,30 @@ class RNAFoldProfile(RNAProfile):
         write_fasta(fasta, [self.seq_record])
         return fasta
 
-    def to_pseudomus(self, top: Path, branch: str):
-        """ Write the pseudo-mutation rates to a file. """
-        # The pseudo-mutation rates must be numbered starting from 1 at
-        # the beginning of the region, even if the region does not start
+    def write_mus_file(self, top: Path, branch: str):
+        """ Write the mutation rates to a file. """
+        if self.fold_react_mode == FOLD_REACT_MODE_NORM:
+            mus = self.calc_mus_normalized()
+        elif self.fold_react_mode == FOLD_REACT_MODE_ENERGY:
+            mus = self.calc_pseudomus()
+        else:
+            raise ValueError(f"fold_react_mode must be in {FOLD_REACT_MODES}, "
+                             f"but got {repr(self.fold_react_mode)}")
+        # The mutation rates must be numbered starting from 1 at the
+        # beginning of the region, even if the region does not start
         # at 1. Renumber the region from 1.
-        pseudomus = self.pseudomus.copy()
-        pseudomus.index = self.region.range_one
+        mus.index = self.region.range_one
         # Drop bases with missing data to make RNAstructure ignore them.
-        pseudomus.dropna(inplace=True)
+        mus.dropna(inplace=True)
         # Write the pseudo-mutation rates to the pseudo-mutation rates file.
         pseudodata_file = self.get_pseudodata_file(top, branch)
-        pseudomus.to_csv(pseudodata_file, sep="\t", header=False)
+        mus.to_csv(pseudodata_file, sep="\t", header=False)
         return pseudodata_file
 
-    def to_varna_color_file(self, top: Path, branch: str):
+    def write_varna_color_file(self, top: Path, branch: str):
         """ Write the VARNA colors to a file. """
         # Fill missing reactivities with -1, to signify no data.
-        varna_color = self.mus.fillna(-1.)
+        varna_color = self.calc_mus_normalized().fillna(-1.)
         # Write the values to the VARNA color file.
         varna_color_file = self.get_varna_color_file(top, branch)
         varna_color.to_csv(varna_color_file,

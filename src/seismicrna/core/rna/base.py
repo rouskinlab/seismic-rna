@@ -1,6 +1,6 @@
 from functools import cached_property
 
-from ..seq import InvalidBaseError, DNA, RNA, Region
+from ..seq import Region
 
 
 class RNARegion(object):

@@ -11,7 +11,8 @@ from seismicrna.cluster.jackpot import (calc_semi_g_anomaly,
                                         _sim_clusters,
                                         _sim_reads)
 from seismicrna.cluster.uniq import UniqReads
-from seismicrna.core.arg.cli import (opt_max_em_iter,
+from seismicrna.core.arg.cli import (PROBE_DMS,
+                                     opt_max_em_iter,
                                      opt_em_thresh,
                                      opt_jackpot_conf_level,
                                      opt_max_jackpot_quotient)
@@ -316,7 +317,11 @@ class TestBootstrapJackpotScores(ut.TestCase):
                              mask_polya=0,
                              mask_del=False,
                              mask_ins=False,
-                             mask_gu=False,
+                             probe=PROBE_DMS,
+                             mask_a=False,
+                             mask_c=False,
+                             mask_g=False,
+                             mask_u=False,
                              min_mut_gap=min_mut_gap,
                              min_finfo_read=1.,
                              min_ninfo_pos=1,

@@ -222,7 +222,7 @@ class RNArtistRun(object):
 
     def _parse_profile(self):
         match = re.search(r'(.+?)__(?:(average|.+?(?=-)))', self.profile)
-        self.data_reg = match.group(1) if match else None
+        self.mus_reg = match.group(1) if match else None
         self.table_type = match.group(2) if match else None
         if not match:
             logger.warning(f"Could not parse profile: {self.profile}.")
@@ -333,7 +333,7 @@ class RNArtistRun(object):
                                              path.SAMPLE: self.sample,
                                              path.BRANCHES: table_branches,
                                              path.REF: self.ref,
-                                             path.REG: self.data_reg})
+                                             path.REG: self.mus_reg})
                 if self.table_class else None)
 
     @cached_property

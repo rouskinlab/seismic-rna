@@ -223,5 +223,5 @@ def compare_windows(mus1: pd.Series,
                                              mus2,
                                              size=size,
                                              min_count=min_count):
-        values.loc[center] = method(win1, win2)
+        values.at[center] = method(win1, win2)
     return values

@@ -37,10 +37,8 @@ def calc_pool_size(num_tasks: int, num_cpus: int, force_serial: bool = False):
                        f"defaulting to 1")
         num_tasks = 1
     # The number of tasks that can run concurrently is the smallest of
-    # (a) the number of tasks and (b) the number of processors minus 1,
-    # since 1 processor must be reserved for the parent process that is
-    # managing the process pool.
-    num_cpus_for_tasks = max(num_cpus - 1, 1)
+    # (a) the number of tasks and (b) the number of processors.
+    num_cpus_for_tasks = max(num_cpus, 1)
     num_simultaneous_tasks = min(num_tasks, num_cpus_for_tasks)
     if num_simultaneous_tasks > 1 and not force_serial:
         # Parallelize the tasks, controlled by the parent process, and

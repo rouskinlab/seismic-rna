@@ -199,7 +199,11 @@ class TestMask(ut.TestCase, ABC):
                 mask_del: bool = False,
                 mask_ins: bool = False,
                 mask_polya: int = 0,
-                mask_gu: bool = False,
+                probe: str = "NONE",
+                mask_a: bool = None,
+                mask_c: bool = None,
+                mask_g: bool = None,
+                mask_u: bool = None,
                 mask_discontig: bool = False,
                 min_ncov_read: int = 1,
                 min_finfo_read: float = 0.,
@@ -212,7 +216,11 @@ class TestMask(ut.TestCase, ABC):
                              mask_del=mask_del,
                              mask_ins=mask_ins,
                              mask_polya=mask_polya,
-                             mask_gu=mask_gu,
+                             probe=probe,
+                             mask_a=mask_a,
+                             mask_c=mask_c,
+                             mask_g=mask_g,
+                             mask_u=mask_u,
                              mask_discontig=mask_discontig,
                              min_ncov_read=min_ncov_read,
                              min_finfo_read=min_finfo_read,
@@ -285,12 +293,110 @@ class TestMaskSingle1Sample1Batch(TestMaskSingle,
         self.assertListEqual(extract_read_nums(dataset),
                              [[0, 1, 2, 3, 4, 5, 6, 7, 8]])
 
-    def test_mask_gu(self):
-        dataset = self.dataset(mask_gu=True)
+    def test_mask_a(self):
+        dataset = self.dataset(mask_a=True)
+        self.assertListEqual(extract_positions(dataset),
+                             [1, 2, 3, 7, 8])
+        self.assertListEqual(extract_read_nums(dataset),
+                             [[0, 1, 2, 3, 4, 5, 6, 7, 8]])
+
+    def test_mask_c(self):
+        dataset = self.dataset(mask_c=True)
+        self.assertListEqual(extract_positions(dataset),
+                             [2, 4, 5, 6, 7])
+        self.assertListEqual(extract_read_nums(dataset),
+                             [[0, 1, 2, 3, 4, 5, 6, 7, 8]])
+
+    def test_mask_g(self):
+        dataset = self.dataset(mask_g=True)
+        self.assertListEqual(extract_positions(dataset),
+                             [1, 3, 4, 5, 6, 7, 8])
+        self.assertListEqual(extract_read_nums(dataset),
+                             [[0, 1, 2, 3, 4, 5, 6, 7, 8]])
+
+    def test_mask_u(self):
+        dataset = self.dataset(mask_u=True)
+        self.assertListEqual(extract_positions(dataset),
+                             [1, 2, 3, 4, 5, 6, 8])
+        self.assertListEqual(extract_read_nums(dataset),
+                             [[0, 1, 2, 3, 4, 5, 6, 7, 8]])
+
+    def test_mask_shape(self):
+        dataset = self.dataset(probe="SHAPE")
+        self.assertListEqual(extract_positions(dataset),
+                             [1, 2, 3, 4, 5, 6, 7, 8])
+        self.assertListEqual(extract_read_nums(dataset),
+                             [[0, 1, 2, 3, 4, 5, 6, 7, 8]])
+
+    def test_mask_dms(self):
+        dataset = self.dataset(probe="DMS")
         self.assertListEqual(extract_positions(dataset),
                              [1, 3, 4, 5, 6, 8])
         self.assertListEqual(extract_read_nums(dataset),
                              [[0, 1, 2, 3, 4, 5, 6, 7, 8]])
+
+    def test_mask_dms_mask_a(self):
+        dataset = self.dataset(probe="DMS", mask_a=True)
+        self.assertListEqual(extract_positions(dataset),
+                             [1, 3, 8])
+        self.assertListEqual(extract_read_nums(dataset),
+                             [[0, 1, 2, 3, 4, 5, 6, 7, 8]])
+
+    def test_mask_dms_mask_c(self):
+        dataset = self.dataset(probe="DMS", mask_c=True)
+        self.assertListEqual(extract_positions(dataset),
+                             [4, 5, 6])
+        self.assertListEqual(extract_read_nums(dataset),
+                             [[0, 1, 2, 3, 4, 5, 6, 7, 8]])
+
+    def test_mask_dms_nomask_g(self):
+        dataset = self.dataset(probe="DMS", mask_g=False)
+        self.assertListEqual(extract_positions(dataset),
+                             [1, 2, 3, 4, 5, 6, 8])
+        self.assertListEqual(extract_read_nums(dataset),
+                             [[0, 1, 2, 3, 4, 5, 6, 7, 8]])
+
+    def test_mask_dms_nomask_u(self):
+        dataset = self.dataset(probe="DMS", mask_u=False)
+        self.assertListEqual(extract_positions(dataset),
+                             [1, 3, 4, 5, 6, 7, 8])
+        self.assertListEqual(extract_read_nums(dataset),
+                             [[0, 1, 2, 3, 4, 5, 6, 7, 8]])
+
+    def test_mask_etc(self):
+        dataset = self.dataset(probe="ETC")
+        self.assertListEqual(extract_positions(dataset),
+                             [2, 7])
+        self.assertListEqual(extract_read_nums(dataset),
+                             [[0, 1, 2, 3, 4, 5, 6, 7, 8]])
+
+    def test_mask_etc_nomask_a(self):
+        dataset = self.dataset(probe="ETC", mask_a=False)
+        self.assertListEqual(extract_positions(dataset),
+                             [2, 4, 5, 6, 7])
+        self.assertListEqual(extract_read_nums(dataset),
+                             [[0, 1, 2, 3, 4, 5, 6, 7, 8]])
+
+    def test_mask_etc_nomask_c(self):
+        dataset = self.dataset(probe="ETC", mask_c=False)
+        self.assertListEqual(extract_positions(dataset),
+                             [1, 2, 3, 7, 8])
+        self.assertListEqual(extract_read_nums(dataset),
+                             [[0, 1, 2, 3, 4, 5, 6, 7, 8]])
+
+    def test_mask_etc_mask_g(self):
+        dataset = self.dataset(probe="ETC", mask_g=True)
+        self.assertListEqual(extract_positions(dataset),
+                             [7])
+        self.assertListEqual(extract_read_nums(dataset),
+                             [[0, 1, 2, 3, 4, 5, 6, 7, 8]])
+
+    def test_mask_etc_mask_u(self):
+        dataset = self.dataset(probe="ETC", mask_u=True)
+        self.assertListEqual(extract_positions(dataset),
+                             [2])
+        self.assertListEqual(extract_read_nums(dataset),
+                             [[0, 1, 2, 3, 4, 6, 7, 8]])
 
     def test_mask_polya_3(self):
         dataset = self.dataset(mask_polya=3)
@@ -371,7 +477,7 @@ class TestMaskSingle1Sample1Batch(TestMaskSingle,
         with open(mask_pos_file, "x") as f:
             f.write("\n".join(["Reference,Position",
                                f"{REF},8"]))
-        dataset = self.dataset(mask_gu=True,
+        dataset = self.dataset(probe="DMS",
                                mask_polya=3,
                                mask_pos=[(REF, 3)],
                                mask_pos_file=[mask_pos_file])
@@ -463,16 +569,16 @@ class TestMaskSingle1Sample1Batch(TestMaskSingle,
         self.assertListEqual(extract_read_nums(dataset),
                              [[0, 1, 2, 3, 4]])
 
-    def test_mask_gu_min_ncov_read_5(self):
-        dataset = self.dataset(mask_gu=True,
+    def test_dms_min_ncov_read_5(self):
+        dataset = self.dataset(probe="DMS",
                                min_ncov_read=5)
         self.assertListEqual(extract_positions(dataset),
                              [1, 3, 4, 5, 6, 8])
         self.assertListEqual(extract_read_nums(dataset),
                              [[0, 1, 2, 3, 4, 5, 6, 7, 8]])
 
-    def test_mask_gu_min_ncov_read_6(self):
-        dataset = self.dataset(mask_gu=True,
+    def test_dms_min_ncov_read_6(self):
+        dataset = self.dataset(probe="DMS",
                                min_ncov_read=6)
         self.assertListEqual(extract_positions(dataset),
                              [1, 3, 4, 5, 6, 8])

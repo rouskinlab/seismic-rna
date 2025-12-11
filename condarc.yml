@@ -1,4 +1,4 @@
-auto_activate_base: false
+auto_activate: false
 auto_update_conda: true
 solver: libmamba
 channels:

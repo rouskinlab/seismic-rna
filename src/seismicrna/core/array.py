@@ -192,6 +192,26 @@ def locate_elements(collection: np.ndarray,
     return _unpack_tuple(tuple(inverse[e] for e in elements))
 
 
+def intersect1d_unique_sorted(x: np.ndarray, y: np.ndarray):
+    """ Calculate np.intersect1d(x, y) assuming x and y are both unique
+    and sorted, which enables a speedup over np.intersect1d (even with
+    assume_unique=True). """
+    # Calculating the intersection takes about O(y*ln(x)), so it runs
+    # faster if x is larger than y.
+    if x.size < y.size:
+        x, y = y, x
+    # For each y[j], find the indices where it would go in x.
+    i = np.searchsorted(x, y)
+    # Find the number of elements of y that are ≤ the maximum of x.
+    n = np.searchsorted(i, x.size)
+    # Limit y and its indices to that number of elements
+    if n < y.size:
+        y = y[:n]
+        i = i[:n]
+    # Keep only indices where x and y match.
+    return y[x[i] == y]
+
+
 def ensure_same_length(arr1: np.ndarray,
                        arr2: np.ndarray,
                        what1: str = "array1",
