@@ -73,7 +73,7 @@ class TestWorkflow(ut.TestCase):
     def setUp(self):
         self.maxDiff = 10000
         self._config = get_config()
-        set_config(verbosity=Level.DETAIL,
+        set_config(verbosity=Level.ERROR,
                    log_file_path=None,
                    exit_on_error=True)
         self.SIM_DIR.mkdir()
@@ -241,8 +241,8 @@ class TestWorkflow(ut.TestCase):
                     for reg in refs_regions[ref]:
                         for action in list_actions(num_structs):
                             for name in [
-                                f"aucroll_{reg}__{action}_45-9_m-ratio-q0",
-                                f"roc_{reg}__{action}_m-ratio-q0",
+                                f"aucroll_{reg}__{action}_45-9_m-ratio-q0_incl-term",
+                                f"roc_{reg}__{action}_m-ratio-q0_incl-term",
                             ]:
                                 file = graph_full_dir.joinpath(f"{name}{ext}")
                                 with self.subTest(file=file):
