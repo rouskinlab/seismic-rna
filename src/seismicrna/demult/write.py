@@ -37,7 +37,7 @@ def check_demult_fqs(demult_fqs: dict[tuple[str, str], FastqUnit],
         if fq_unit.paired:
             fqs_found = 0
             for exts, segs in zip((path.FQ1_EXTS, path.FQ2_EXTS),
-                                 (path.DMFASTQ1_SEGS2, path.DMFASTQ2_SEGS2)):
+                                 (path.DMFASTQ1_SEGS, path.DMFASTQ2_SEGS)):
                 for ext in exts:
                     demult_expect = path.build(segs,
                                                 {path.TOP: out_dir,
@@ -289,15 +289,13 @@ def demult_fq_pipeline(fq_inp: FastqUnit,
             assembled_parts.append(parts)
 
     arg_parts = [arg_part for arg_part in assembled_parts if any(fq.exists() for fq in arg_part)]
-
     dispatch(merge_parts,
              num_cpus=num_cpus,
              pass_num_cpus=False,
-             as_list=False,
+             as_list=True,
              ordered=False,
              raise_on_error=False,
              args=as_list_of_tuples(arg_parts))
-
     out_path = release_to_out(out_dir=out_dir, release_dir=release_dir, initial_path=release_dir/Path(fq_inp.sample)/"demult")
 
     return out_path
@@ -398,9 +396,9 @@ def process_fq_part(fq_inp: FastqUnit,
     # Define segment patterns and corresponding mappings.
     fq_seg_patterns = [path.Fastq1Seg, path.Fastq2Seg, path.FastqSeg]
     fq_seg_map = {
-        path.Fastq1Seg: path.DMFASTQ1_SEGS2,
-        path.Fastq2Seg: path.DMFASTQ2_SEGS2,
-        path.FastqSeg:  path.DMFASTQ_SEGS2,
+        path.Fastq1Seg: path.DMFASTQ1_SEGS,
+        path.Fastq2Seg: path.DMFASTQ2_SEGS,
+        path.FastqSeg:  path.DMFASTQ_SEGS,
     }
 
     # Build FastqUnit using the provided FASTQ paths.
@@ -524,7 +522,6 @@ def demult_ahocorasick(fq_unit: FastqUnit,
 
 
 def merge_parts(parts = list[Path]):
-
     parts = [part for part in parts if part.exists()]
     if len(parts) == 0:
         logger.warning("No files to merge")
@@ -534,11 +531,10 @@ def merge_parts(parts = list[Path]):
         ('_' in part.name and part.name.split('_', 1)[1] == base_name)
         for part in parts
     ):
-        raise ValueError("To merge parts, all files must have the same base name.")
+        logger.error("To merge parts, all files must have the same base name.")
     sorted_parts = sorted(parts, key=lambda f: int(f.name.split('_', 1)[0]))
 
     merged_path = parts[0].with_name(base_name)
-
     with merged_path.open("wb") as merged:
         for part in sorted_parts:
             with part.open("rb") as part_handle:
