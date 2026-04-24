@@ -129,7 +129,7 @@ DB_EXT = ".db"
 DBN_EXT = ".dbn"
 DOT_EXT = ".dot"
 DOT_EXTS = DB_EXT, DBN_EXT, DOT_EXT
-PSEUDOMUS_EXT = ".pmu"
+MUS_EXT = ".mus"
 KTS_EXT = ".kts"
 HTML_EXT = ".html"
 SVG_EXT = ".svg"
@@ -451,7 +451,7 @@ ViennaExt = PathField(str, [VIENNA_EXT], is_ext=True)
 CommandExt = PathField(str, [COMMAND_EXT], is_ext=True)
 ConnectTableExt = PathField(str, [CT_EXT], is_ext=True)
 DotBracketExt = PathField(str, DOT_EXTS, is_ext=True)
-PseudoMusExt = PathField(str, [PSEUDOMUS_EXT], is_ext=True)
+MusExt = PathField(str, [MUS_EXT], is_ext=True)
 GraphExt = PathField(str, GRAPH_EXTS, is_ext=True)
 WebAppFileExt = PathField(str, [JSON_EXT], is_ext=True)
 SvgExt = PathField(str, [SVG_EXT], is_ext=True)
@@ -719,15 +719,15 @@ FoldRepSeg = PathSegment("fold-rep",
                          {PROFILE: NameField, EXT: ReportExt},
                          frmt="{profile}__fold-report{ext}")
 ViennaSeg = PathSegment("rna-vienna",
-                               {PROFILE: NameField, EXT: ViennaExt})
+                        {PROFILE: NameField, EXT: ViennaExt})
 CommandSeg = PathSegment("rna-command",
-                               {PROFILE: NameField, EXT: CommandExt})
+                         {PROFILE: NameField, EXT: CommandExt})
 ConnectTableSeg = PathSegment("rna-ct",
                               {PROFILE: NameField, EXT: ConnectTableExt})
 DotBracketSeg = PathSegment("rna-dot",
                             {PROFILE: NameField, EXT: DotBracketExt})
-PseudoMusSeg = PathSegment("pseudomus",
-                           {PROFILE: NameField, EXT: PseudoMusExt})
+MusSeg = PathSegment("mus",
+                     {PROFILE: NameField, EXT: MusExt})
 VarnaColorSeg = PathSegment("varna-color",
                             {PROFILE: NameField, EXT: TextExt},
                             frmt="{profile}__varna-color{ext}")
@@ -752,9 +752,9 @@ CollateSeg = PathSegment("collate", {COLLATE_NAME: NameField,
                                      EXT: HtmlExt},
                          frmt="{collate_name}{ext}")
 CollateInfoSeg = PathSegment("collate", {COLLATE_NAME: NameField,
-                                     COLLATE_INFO:InfoField,
-                                     EXT: HtmlExt},
-                         frmt="{collate_name}_{collate_info}{ext}")
+                                         COLLATE_INFO: InfoField,
+                                         EXT: HtmlExt},
+                             frmt="{collate_name}_{collate_info}{ext}")
 
 # Web App Export
 WebAppFileSeg = PathSegment("webapp",

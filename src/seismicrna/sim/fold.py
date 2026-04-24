@@ -33,7 +33,7 @@ from ..core.run import run_func
 from ..core.seq import DNA, RefRegions, Region, parse_fasta, write_fasta
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write
-from ..fold.rnastructure import make_fold_cmd, retitle_ct, require_data_path
+from ..fold.rnastructure import make_rnastructure_cmd, retitle_ct, require_data_path
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -71,16 +71,18 @@ def fold_region(region: Region, *,
                         [(region.ref, region.seq.tr())],
                         force=force)
             # Predict the RNA structure.
-            run_cmd(args_to_cmd(make_fold_cmd(fasta_tmp,
-                                              ct_tmp,
-                                              shape_file=None,
-                                              fold_constraint=fold_constraint,
-                                              fold_temp=fold_temp,
-                                              fold_md=fold_md,
-                                              fold_mfe=fold_mfe,
-                                              fold_max=fold_max,
-                                              fold_percent=fold_percent,
-                                              num_cpus=num_cpus)))
+            run_cmd(args_to_cmd(make_rnastructure_cmd(
+                fasta_tmp,
+                ct_tmp,
+                shape_file=None,
+                fold_constraint=fold_constraint,
+                fold_temp=fold_temp,
+                fold_md=fold_md,
+                fold_mfe=fold_mfe,
+                fold_max=fold_max,
+                fold_percent=fold_percent,
+                num_cpus=num_cpus
+            )))
             # Reformat the CT file title lines so that each is unique.
             retitle_ct(ct_tmp, ct_tmp, force=True)
             # Renumber the CT file so that it has the same numbering

@@ -7,11 +7,14 @@ from click import command
 
 from .profile import RNAFoldProfile
 from .report import FoldReport
-from .rnastructure import fold, require_data_path
+from .rnastructure import fold_shapeknots, require_data_path
 from .viennarna import rnafold
 from ..cluster.data import ClusterPositionTableLoader
 from ..core import path
 from ..core.arg import (CMD_FOLD,
+                        FOLD_BACKEND_FOLD,
+                        FOLD_BACKEND_SHAPEKNOTS,
+                        FOLD_BACKEND_RNAFOLD,
                         arg_input_path,
                         opt_branch,
                         opt_tmp_pfx,
@@ -20,9 +23,11 @@ from ..core.arg import (CMD_FOLD,
                         opt_fold_coords,
                         opt_fold_primers,
                         opt_fold_full,
-                        opt_fold_vienna,
+                        opt_fold_backend,
                         opt_fold_temp,
-                        opt_fold_react_mode,
+                        opt_fold_energy_method,
+                        opt_shape_slope,
+                        opt_shape_intercept,
                         opt_fold_quantile,
                         opt_fold_fpaired,
                         opt_fold_mu_eps,
@@ -40,6 +45,7 @@ from ..core.arg import (CMD_FOLD,
                         extra_defaults)
 from ..core.error import IncompatibleOptionsError
 from ..core.extern import (RNASTRUCTURE_FOLD_CMD,
+                           RNASTRUCTURE_SHAPEKNOTS_CMD,
                            VIENNA_RNAFOLD_CMD,
                            VIENNA_RNASUBOPT_CMD,
                            require_dependency)
@@ -67,7 +73,9 @@ def fold_region(rna: RNAFoldProfile, *,
                 out_dir: Path,
                 tmp_dir: Path,
                 branch: str,
-                fold_vienna: bool,
+                fold_backend: str,
+                shape_slope: float,
+                shape_intercept: float,
                 fold_constraint: Path | None,
                 fold_commands: Path | None,
                 fold_md: int,
@@ -89,45 +97,58 @@ def fold_region(rna: RNAFoldProfile, *,
     if need_write(report_file, force):
         began = datetime.now()
         rna.write_varna_color_file(out_dir, branch)
-        if fold_vienna:
+        if fold_backend == FOLD_BACKEND_RNAFOLD:
             ct_file = rnafold(rna,
                               out_dir=out_dir,
                               tmp_dir=tmp_dir,
                               branch=branch,
+                              shape_slope=shape_slope,
+                              shape_intercept=shape_intercept,
                               fold_constraint=fold_constraint,
                               fold_commands=fold_commands,
                               fold_md=fold_md,
                               fold_mfe=fold_mfe,
                               fold_max=fold_max,
-                              fold_percent=fold_percent,
                               pseudoenergy_all=pseudoenergy_all,
                               keep_tmp=keep_tmp,
                               num_cpus=num_cpus)
+        elif fold_backend in {FOLD_BACKEND_FOLD, FOLD_BACKEND_SHAPEKNOTS}:
+            pseudoknots = fold_backend == FOLD_BACKEND_SHAPEKNOTS
+            ct_file = fold_shapeknots(rna,
+                                      out_dir=out_dir,
+                                      tmp_dir=tmp_dir,
+                                      branch=branch,
+                                      pseudoknots=pseudoknots,
+                                      shape_slope=shape_slope,
+                                      shape_intercept=shape_intercept,
+                                      fold_constraint=fold_constraint,
+                                      fold_md=fold_md,
+                                      fold_mfe=fold_mfe,
+                                      fold_max=fold_max,
+                                      fold_percent=fold_percent,
+                                      keep_tmp=keep_tmp,
+                                      num_cpus=num_cpus)
         else:
-            ct_file = fold(rna,
-                           out_dir=out_dir,
-                           tmp_dir=tmp_dir,
-                           branch=branch,
-                           fold_constraint=fold_constraint,
-                           fold_md=fold_md,
-                           fold_mfe=fold_mfe,
-                           fold_max=fold_max,
-                           fold_percent=fold_percent,
-                           keep_tmp=keep_tmp,
-                           num_cpus=num_cpus)
+            raise ValueError(
+                f"Invalid value for --fold-backend: {repr(fold_backend)}"
+            )
         ct_to_db(ct_file, force=True)
-        ended = datetime.now()
         constraint_checksum = (calc_sha512_path(fold_constraint)
                                if fold_constraint else "")
         commands_checksum = (calc_sha512_path(fold_commands)
                              if fold_commands else "")
+        ended = datetime.now()
         report = FoldReport(branches=branches,
                             sample=rna.sample,
                             ref=rna.ref,
                             reg=rna.reg,
                             profile=rna.profile,
+                            fold_backend=fold_backend,
+                            fold_energy_method=rna.fold_energy_method,
+                            shape_slope=shape_slope,
+                            shape_intercept=shape_intercept,
                             fold_quantile=rna.fold_quantile,
-                            fold_vienna=fold_vienna,
+                            pseudoenergy_all=pseudoenergy_all,
                             fold_temp=rna.fold_temp,
                             fold_fpaired=rna.fold_fpaired,
                             fold_mu_eps=rna.mu_eps,
@@ -146,7 +167,7 @@ def fold_region(rna: RNAFoldProfile, *,
 def fold_table(table: MaskPositionTableLoader | ClusterPositionTableLoader,
                regions: list[Region],
                fold_temp: float,
-               fold_react_mode: str,
+               fold_energy_method: str,
                fold_quantile: float,
                fold_fpaired: float,
                fold_mu_eps: float,
@@ -163,7 +184,7 @@ def fold_table(table: MaskPositionTableLoader | ClusterPositionTableLoader,
                         RNAFoldProfile.from_profile(
                             profile,
                             fold_temp=fold_temp,
-                            fold_react_mode=fold_react_mode,
+                            fold_energy_method=fold_energy_method,
                             fold_quantile=fold_quantile,
                             fold_fpaired=fold_fpaired,
                             mu_eps=fold_mu_eps,
@@ -181,9 +202,11 @@ def run(input_path: Iterable[str | Path], *,
         fold_primers: Iterable[tuple[str, DNA, DNA]],
         fold_regions_file: str | None,
         fold_full: bool,
-        fold_vienna: bool,
+        fold_backend: str,
         fold_temp: float,
-        fold_react_mode: str,
+        fold_energy_method: str,
+        shape_slope: float,
+        shape_intercept: float,
         fold_quantile: float,
         fold_fpaired: float,
         fold_mu_eps: float,
@@ -200,16 +223,27 @@ def run(input_path: Iterable[str | Path], *,
         num_cpus: int,
         force: bool):
     """ Predict RNA secondary structures using mutation rates. """
-    # Check for the dependencies and the DATAPATH environment variable.
-    if not fold_vienna:
-        if not pseudoenergy_all:
-            raise IncompatibleOptionsError("--pseudoenergy-stacked requires "
-                                           "--fold-vienna")
-        require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
-        require_data_path()
-    else:
+    # Check for dependencies.
+    if fold_backend == FOLD_BACKEND_RNAFOLD:
+        # Use ViennaRNA.
         require_dependency(VIENNA_RNAFOLD_CMD, __name__)
         require_dependency(VIENNA_RNASUBOPT_CMD, __name__)
+    else:
+        # Use RNAstructure.
+        require_data_path()
+        if not pseudoenergy_all:
+            raise IncompatibleOptionsError(
+                "--pseudoenergy-stacked requires "
+                f"--fold-backend={FOLD_BACKEND_RNAFOLD}"
+            )
+        if fold_backend == FOLD_BACKEND_FOLD:
+            require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
+        elif fold_backend == FOLD_BACKEND_SHAPEKNOTS:
+            require_dependency(RNASTRUCTURE_SHAPEKNOTS_CMD, __name__)
+        else:
+            raise ValueError(
+                f"Invalid value for --fold-backend: {repr(fold_backend)}"
+            )
     # List the tables.
     tables = list(load_foldable_tables(input_path, verify_times=verify_times))
     # Get the regions to fold for every reference sequence.
@@ -239,9 +273,11 @@ def run(input_path: Iterable[str | Path], *,
         kwargs=dict(branch=branch,
                     tmp_pfx=tmp_pfx,
                     keep_tmp=keep_tmp,
-                    fold_vienna=fold_vienna,
+                    fold_backend=fold_backend,
                     fold_temp=fold_temp,
-                    fold_react_mode=fold_react_mode,
+                    fold_energy_method=fold_energy_method,
+                    shape_slope=shape_slope,
+                    shape_intercept=shape_intercept,
                     fold_quantile=fold_quantile,
                     fold_fpaired=fold_fpaired,
                     fold_mu_eps=fold_mu_eps,
@@ -263,9 +299,11 @@ params = [
     opt_fold_coords,
     opt_fold_primers,
     opt_fold_full,
-    opt_fold_vienna,
+    opt_fold_backend,
     opt_fold_temp,
-    opt_fold_react_mode,
+    opt_fold_energy_method,
+    opt_shape_slope,
+    opt_shape_intercept,
     opt_fold_quantile,
     opt_fold_fpaired,
     opt_fold_mu_eps,

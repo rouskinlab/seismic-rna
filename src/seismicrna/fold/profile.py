@@ -5,13 +5,13 @@ import numpy as np
 import pandas as pd
 
 from ..core import path
-from ..core.arg import (FOLD_REACT_MODES,
-                        FOLD_REACT_MODE_NORM,
-                        FOLD_REACT_MODE_ENERGY)
+from ..core.arg import (FOLD_ENERGY_METHODS,
+                        FOLD_ENERGY_METHOD_CORDERO,
+                        FOLD_ENERGY_METHOD_EDDY)
 from ..core.mu import winsorize, calc_pseudoenergies
 from ..core.rna import RNAProfile
 from ..core.seq import write_fasta
-from ..core.validate import require_atleast, require_between
+from ..core.validate import require_atleast, require_between, require_isin
 
 
 class RNAFoldProfile(RNAProfile):
@@ -23,7 +23,7 @@ class RNAFoldProfile(RNAProfile):
 
     def __init__(self, *,
                  fold_temp: float | int,
-                 fold_react_mode: str,
+                 fold_energy_method: str,
                  fold_quantile: float | int,
                  fold_fpaired: float | int,
                  mu_eps: float | int,
@@ -33,7 +33,7 @@ class RNAFoldProfile(RNAProfile):
         ----------
         fold_temp: float | int
             Predict structures at this temperature (Kelvin).
-        fold_react_mode: str
+        fold_energy_method: str
             Method for normalizing the reactivities for folding.
         fold_quantile: float
             Normalize mutation rates to this quantile, then winsorize.
@@ -48,7 +48,11 @@ class RNAFoldProfile(RNAProfile):
             "fold_temp", fold_temp, 0., classes=(float, int)
         )
         self.fold_temp = fold_temp
-        self.fold_react_mode = fold_react_mode
+        require_isin("fold_energy_method",
+                     fold_energy_method,
+                     FOLD_ENERGY_METHODS,
+                     "FOLD_ENERGY_METHODS")
+        self.fold_energy_method = fold_energy_method
         require_between(
             "fold_quantile", fold_quantile, 0., 1., classes=(float, int)
         )
@@ -71,6 +75,13 @@ class RNAFoldProfile(RNAProfile):
     @cached_property
     def pseudoenergies(self):
         """ Pseudoenergies (kcal/mol) for structure prediction. """
+        require_isin("fold_energy_method",
+                     self.fold_energy_method,
+                     FOLD_ENERGY_METHODS,
+                     "FOLD_ENERGY_METHODS")
+        # Only the Eddy method uses pseudoenergies.
+        if self.fold_energy_method != FOLD_ENERGY_METHOD_EDDY:
+            return None
         return calc_pseudoenergies(
             self.mus_clipped.dropna(),
             self.fold_temp,
@@ -80,6 +91,8 @@ class RNAFoldProfile(RNAProfile):
     @cached_property
     def intercept(self):
         """ Intercept parameter (kcal/mol) for structure prediction. """
+        if self.pseudoenergies is None:
+            return None
         pseudoenergies = self.pseudoenergies[np.isfinite(self.pseudoenergies)]
         if pseudoenergies.size == 0:
             return 0.
@@ -88,16 +101,68 @@ class RNAFoldProfile(RNAProfile):
     @cached_property
     def slope(self):
         """ Slope parameter (kcal/mol) for structure prediction. """
+        if self.pseudoenergies is None:
+            return None
         pseudoenergies = self.pseudoenergies[np.isfinite(self.pseudoenergies)]
         if pseudoenergies.size == 0:
             return 0.
         return float((pseudoenergies.max() - self.intercept) / np.log(2.))
 
-    @cached_property
-    def shape_method(self):
-        """ shapeMethod string for ViennaRNA. Slope and intercept are
+    def get_slope_intercept(self,
+                            default_slope: float | None = None,
+                            default_intercept: float | None = None):
+        """ Get the slope and intercept parameters; defaults are needed
+        if self.slope and self.intercept are None. """
+        if self.slope is not None:
+            slope = self.slope
+        elif default_slope is not None:
+            slope = default_slope
+        else:
+            raise TypeError(
+                "default_slope is required if self.slope is None"
+            )
+        if self.intercept is not None:
+            intercept = self.intercept
+        elif default_intercept is not None:
+            intercept = default_intercept
+        else:
+            raise TypeError(
+                "default_intercept is required if self.intercept is None"
+            )
+        return slope, intercept
+
+    def get_rnastructure_shape_args(self,
+                                    top: Path,
+                                    branch: str,
+                                    default_slope: float | None = None,
+                                    default_intercept: float | None = None):
+        """ Get the SHAPE/DMS arguments for Fold/ShapeKnots. """
+        mus_file = self.get_mus_file(top, branch)
+        if self.fold_energy_method == FOLD_ENERGY_METHOD_CORDERO:
+            # Only the Cordero method uses the DMS file.
+            dms_file = mus_file
+            shape_file = None
+            slope = None
+            intercept = None
+        else:
+            # The other methods use the SHAPE file.
+            shape_file = mus_file
+            dms_file = None
+            slope, intercept = self.get_slope_intercept(default_slope,
+                                                        default_intercept)
+        return dict(dms_file=dms_file,
+                    shape_file=shape_file,
+                    shape_slope=slope,
+                    shape_intercept=intercept)
+
+    def get_rnafold_shape_method(self,
+                                 default_slope: float | None = None,
+                                 default_intercept: float | None = None):
+        """ shapeMethod string for RNAFold. Slope and intercept are
         halved to avoid double counting"""
-        return f"Dm{self.slope/2}b{self.intercept/2}"
+        slope, intercept = self.get_slope_intercept(default_slope,
+                                                    default_intercept)
+        return f"Dm{slope / 2}b{intercept / 2}"
 
     def calc_mus_normalized(self):
         """ Mutation rates after normalizing and winsorizing. """
@@ -105,6 +170,8 @@ class RNAFoldProfile(RNAProfile):
 
     def calc_pseudomus(self):
         """ Pseudo-mutation rates for structure prediction. """
+        if self.pseudoenergies is None:
+            return None
         if self.slope == 0.:
             # This happens if all pseudoenergies equal the intercept.
             return pd.Series(0., self.pseudoenergies.index)
@@ -113,6 +180,14 @@ class RNAFoldProfile(RNAProfile):
         # Therefore:
         # pseudomus = exp((pseudoenergies - intercept) / slope) - 1
         return np.expm1((self.pseudoenergies - self.intercept) / self.slope)
+
+    def calc_mus(self):
+        """ Calculate the normalized mutation rates or pseudo-mutation
+        rates, depending on the energy method. """
+        pseudomus = self.calc_pseudomus()
+        if pseudomus is not None:
+            return pseudomus
+        return self.calc_mus_normalized()
 
     def _get_dir_fields(self, top: Path, branch: str):
         """ Get the path fields for the directory of this RNA.
@@ -175,13 +250,13 @@ class RNAFoldProfile(RNAProfile):
                               {path.PROFILE: self.profile,
                                path.EXT: path.DOT_EXTS[0]})
 
-    def get_pseudodata_file(self, top: Path, branch: str):
-        """ Get the path to the pseudo-mutation rates file. """
+    def get_mus_file(self, top: Path, branch: str):
+        """ Get the path to the mutation rates file. """
         return self._get_file(top,
                               branch,
-                              path.PseudoMusSeg,
+                              path.MusSeg,
                               {path.PROFILE: self.profile,
-                               path.EXT: path.PSEUDOMUS_EXT})
+                               path.EXT: path.MUS_EXT})
 
     def get_vienna_file(self, top: Path, branch: str):
         """ Get the path to the vienna file. """
@@ -215,13 +290,7 @@ class RNAFoldProfile(RNAProfile):
 
     def write_mus_file(self, top: Path, branch: str):
         """ Write the mutation rates to a file. """
-        if self.fold_react_mode == FOLD_REACT_MODE_NORM:
-            mus = self.calc_mus_normalized()
-        elif self.fold_react_mode == FOLD_REACT_MODE_ENERGY:
-            mus = self.calc_pseudomus()
-        else:
-            raise ValueError(f"fold_react_mode must be in {FOLD_REACT_MODES}, "
-                             f"but got {repr(self.fold_react_mode)}")
+        mus = self.calc_mus()
         # The mutation rates must be numbered starting from 1 at the
         # beginning of the region, even if the region does not start
         # at 1. Renumber the region from 1.
@@ -229,9 +298,9 @@ class RNAFoldProfile(RNAProfile):
         # Drop bases with missing data to make RNAstructure ignore them.
         mus.dropna(inplace=True)
         # Write the pseudo-mutation rates to the pseudo-mutation rates file.
-        pseudodata_file = self.get_pseudodata_file(top, branch)
-        mus.to_csv(pseudodata_file, sep="\t", header=False)
-        return pseudodata_file
+        mus_file = self.get_mus_file(top, branch)
+        mus.to_csv(mus_file, sep="\t", header=False)
+        return mus_file
 
     def write_varna_color_file(self, top: Path, branch: str):
         """ Write the VARNA colors to a file. """

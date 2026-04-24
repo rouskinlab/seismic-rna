@@ -48,9 +48,19 @@ GAP_MODE_INSERT = "insert"
 GAP_MODE_EXPAND = "expand"
 GAP_MODE = GAP_MODE_OMIT, GAP_MODE_INSERT, GAP_MODE_EXPAND
 
-FOLD_REACT_MODE_NORM = "norm"
-FOLD_REACT_MODE_ENERGY = "energy"
-FOLD_REACT_MODES = FOLD_REACT_MODE_NORM, FOLD_REACT_MODE_ENERGY
+FOLD_BACKEND_FOLD = "Fold"
+FOLD_BACKEND_SHAPEKNOTS = "ShapeKnots"
+FOLD_BACKEND_RNAFOLD = "RNAFold"
+FOLD_BACKENDS = (FOLD_BACKEND_FOLD,
+                 FOLD_BACKEND_SHAPEKNOTS,
+                 FOLD_BACKEND_RNAFOLD)
+
+FOLD_ENERGY_METHOD_DEIGAN = "Deigan"
+FOLD_ENERGY_METHOD_CORDERO = "Cordero"
+FOLD_ENERGY_METHOD_EDDY = "Eddy"
+FOLD_ENERGY_METHODS = (FOLD_ENERGY_METHOD_DEIGAN,
+                       FOLD_ENERGY_METHOD_CORDERO,
+                       FOLD_ENERGY_METHOD_EDDY)
 
 NO_GROUP = "c"
 GROUP_BY_K = "k"
@@ -1116,18 +1126,36 @@ opt_fold_primers = Option(
     help="Fold a region of a reference given its forward and reverse primers"
 )
 
-opt_fold_react_mode = Option(
-    ("--fold-react-mode",),
-    type=Choice(FOLD_REACT_MODES, case_sensitive=False),
-    default=FOLD_REACT_MODE_NORM,
-    help="Normalize reactivities for folding using this method"
+opt_fold_backend = Option(
+     ("--fold-backend",),
+     type=Choice(FOLD_BACKENDS, case_sensitive=False),
+     default=FOLD_BACKEND_FOLD,
+     help=("Model RNA structures using Fold (RNAstructure), "
+           "ShapeKnots (RNAstructure), or RNAfold (ViennaRNA)")
 )
 
-opt_fold_vienna = Option(
-     ("--fold-vienna/--no-fold-vienna",),
-     type=bool,
-     default=False,
-     help="Use RNAfold from ViennaRNA as the folding engine"
+opt_fold_energy_method = Option(
+    ("--fold-energy-method",),
+    type=Choice(FOLD_ENERGY_METHODS, case_sensitive=False),
+    default=FOLD_ENERGY_METHOD_EDDY,
+    help=("Use this method to incorporate reactivities into folding energies; "
+          "--fold-backend=RNAFold cannot use --fold-energy-method=Cordero")
+)
+
+opt_shape_slope = Option(
+    ("--shape-slope",),
+    type=float,
+    default=1.8,
+    help=(f"Slope for SHAPE restraints (kcal/mol); "
+          f"used only with --fold-energy-method={FOLD_ENERGY_METHOD_DEIGAN}")
+)
+
+opt_shape_intercept = Option(
+    ("--shape-intercept",),
+    type=float,
+    default=-0.6,
+    help=(f"Intercept for SHAPE restraints (kcal/mol); "
+          f"used only with --fold-energy-method={FOLD_ENERGY_METHOD_DEIGAN}")
 )
 
 opt_fold_fpaired = Option(
@@ -1204,8 +1232,8 @@ opt_pseudoenergy_all = Option(
     type=bool,
     default=True,
     help=("Apply pseudoenergy constraints from chemical probing data "
-          "to all base pairs or only stacked base pairs. "
-          "--pseudoenergy-stacked requires --fold-vienna")
+          "to all base pairs or only stacked base pairs; "
+          "--pseudoenergy-stacked requires --fold-backend=RNAFold")
 )
 
 # Draw

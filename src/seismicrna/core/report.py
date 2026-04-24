@@ -54,10 +54,13 @@ from .arg import (opt_phred_enc,
                   opt_overhangs,
                   opt_clip_end5,
                   opt_clip_end3,
-                  opt_fold_react_mode,
+                  opt_fold_energy_method,
                   opt_fold_quantile,
                   opt_fold_temp,
-                  opt_fold_vienna,
+                  opt_fold_backend,
+                  opt_shape_slope,
+                  opt_shape_intercept,
+                  opt_pseudoenergy_all,
                   opt_fold_commands,
                   opt_fold_constraint,
                   opt_fold_fpaired,
@@ -583,8 +586,11 @@ JoinedClustersF = ReportField("joined_clusters",
 # Fold fields
 
 ProfileF = ReportField("profile", "Profile", str)
-FoldViennaF = OptionReportField(opt_fold_vienna)
-FoldReactModeF = OptionReportField(opt_fold_react_mode)
+FoldBackendF = OptionReportField(opt_fold_backend)
+FoldEnergyMethodF = OptionReportField(opt_fold_energy_method)
+ShapeSlopeF = OptionReportField(opt_shape_slope)
+ShapeInterceptF = OptionReportField(opt_shape_intercept)
+PseudoenergyAllF = OptionReportField(opt_pseudoenergy_all)
 FoldQuantileF = OptionReportField(opt_fold_quantile)
 FoldFPairedF = OptionReportField(opt_fold_fpaired)
 FoldTempF = OptionReportField(opt_fold_temp)
