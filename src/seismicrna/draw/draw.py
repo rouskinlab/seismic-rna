@@ -474,6 +474,7 @@ class RNArtistRun(object):
                     if state.calc_auc() > max_auc:
                         max_auc = state.calc_auc()
                         best_auc = struct_num
+        self.max_auc = max_auc
         return best_auc
 
     @cached_property
