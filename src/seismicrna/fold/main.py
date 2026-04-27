@@ -7,7 +7,7 @@ from click import command
 
 from .profile import RNAFoldProfile
 from .report import FoldReport
-from .rnastructure import fold_shapeknots, require_data_path
+from .rnastructure import fold_or_shapeknots, require_data_path
 from .viennarna import rnafold
 from ..cluster.data import ClusterPositionTableLoader
 from ..core import path
@@ -19,6 +19,7 @@ from ..core.arg import (CMD_FOLD,
                         opt_branch,
                         opt_tmp_pfx,
                         opt_keep_tmp,
+                        opt_fold_dry_run,
                         opt_fold_regions_file,
                         opt_fold_coords,
                         opt_fold_primers,
@@ -26,24 +27,21 @@ from ..core.arg import (CMD_FOLD,
                         opt_fold_backend,
                         opt_fold_temp,
                         opt_fold_energy_method,
-                        opt_shape_slope,
-                        opt_shape_intercept,
+                        opt_deigan_slope,
+                        opt_deigan_intercept,
                         opt_fold_quantile,
-                        opt_fold_fpaired,
-                        opt_fold_mu_eps,
                         opt_fold_constraint,
                         opt_fold_commands,
                         opt_fold_md,
                         opt_fold_mfe,
                         opt_fold_max,
                         opt_fold_percent,
-                        opt_pseudoenergy_all,
+                        opt_fold_isolated,
                         opt_verify_times,
                         opt_num_cpus,
                         opt_force,
                         optional_path,
                         extra_defaults)
-from ..core.error import IncompatibleOptionsError
 from ..core.extern import (RNASTRUCTURE_FOLD_CMD,
                            RNASTRUCTURE_SHAPEKNOTS_CMD,
                            VIENNA_RNAFOLD_CMD,
@@ -73,16 +71,15 @@ def fold_region(rna: RNAFoldProfile, *,
                 out_dir: Path,
                 tmp_dir: Path,
                 branch: str,
+                fold_dry_run: bool,
                 fold_backend: str,
-                shape_slope: float,
-                shape_intercept: float,
                 fold_constraint: Path | None,
                 fold_commands: Path | None,
                 fold_md: int,
                 fold_mfe: bool,
                 fold_max: int,
                 fold_percent: float,
-                pseudoenergy_all: bool,
+                fold_isolated: bool,
                 force: bool,
                 keep_tmp: bool,
                 num_cpus: int):
@@ -102,37 +99,32 @@ def fold_region(rna: RNAFoldProfile, *,
                               out_dir=out_dir,
                               tmp_dir=tmp_dir,
                               branch=branch,
-                              shape_slope=shape_slope,
-                              shape_intercept=shape_intercept,
+                              fold_dry_run=fold_dry_run,
                               fold_constraint=fold_constraint,
                               fold_commands=fold_commands,
                               fold_md=fold_md,
                               fold_mfe=fold_mfe,
                               fold_max=fold_max,
-                              pseudoenergy_all=pseudoenergy_all,
+                              fold_isolated=fold_isolated,
                               keep_tmp=keep_tmp,
                               num_cpus=num_cpus)
-        elif fold_backend in {FOLD_BACKEND_FOLD, FOLD_BACKEND_SHAPEKNOTS}:
-            pseudoknots = fold_backend == FOLD_BACKEND_SHAPEKNOTS
-            ct_file = fold_shapeknots(rna,
-                                      out_dir=out_dir,
-                                      tmp_dir=tmp_dir,
-                                      branch=branch,
-                                      pseudoknots=pseudoknots,
-                                      shape_slope=shape_slope,
-                                      shape_intercept=shape_intercept,
-                                      fold_constraint=fold_constraint,
-                                      fold_md=fold_md,
-                                      fold_mfe=fold_mfe,
-                                      fold_max=fold_max,
-                                      fold_percent=fold_percent,
-                                      keep_tmp=keep_tmp,
-                                      num_cpus=num_cpus)
         else:
-            raise ValueError(
-                f"Invalid value for --fold-backend: {repr(fold_backend)}"
-            )
-        ct_to_db(ct_file, force=True)
+            ct_file = fold_or_shapeknots(rna,
+                                         out_dir=out_dir,
+                                         tmp_dir=tmp_dir,
+                                         branch=branch,
+                                         fold_dry_run=fold_dry_run,
+                                         fold_backend=fold_backend,
+                                         fold_constraint=fold_constraint,
+                                         fold_md=fold_md,
+                                         fold_mfe=fold_mfe,
+                                         fold_max=fold_max,
+                                         fold_isolated=fold_isolated,
+                                         fold_percent=fold_percent,
+                                         keep_tmp=keep_tmp,
+                                         num_cpus=num_cpus)
+        if not fold_dry_run:
+            ct_to_db(ct_file, force=True)
         constraint_checksum = (calc_sha512_path(fold_constraint)
                                if fold_constraint else "")
         commands_checksum = (calc_sha512_path(fold_commands)
@@ -143,15 +135,14 @@ def fold_region(rna: RNAFoldProfile, *,
                             ref=rna.ref,
                             reg=rna.reg,
                             profile=rna.profile,
+                            fold_dry_run=fold_dry_run,
                             fold_backend=fold_backend,
                             fold_energy_method=rna.fold_energy_method,
-                            shape_slope=shape_slope,
-                            shape_intercept=shape_intercept,
+                            deigan_slope=rna.deigan_slope,
+                            deigan_intercept=rna.deigan_intercept,
                             fold_quantile=rna.fold_quantile,
-                            pseudoenergy_all=pseudoenergy_all,
-                            fold_temp=rna.fold_temp,
-                            fold_fpaired=rna.fold_fpaired,
-                            fold_mu_eps=rna.mu_eps,
+                            fold_isolated=fold_isolated,
+                            fold_temp=rna.fold_temp_c,
                             fold_md=fold_md,
                             fold_mfe=fold_mfe,
                             fold_max=fold_max,
@@ -169,9 +160,11 @@ def fold_table(table: MaskPositionTableLoader | ClusterPositionTableLoader,
                fold_temp: float,
                fold_energy_method: str,
                fold_quantile: float,
-               fold_fpaired: float,
-               fold_mu_eps: float,
+               deigan_slope: float,
+               deigan_intercept: float,
                num_cpus: int,
+               keep_tmp: bool,
+               fold_dry_run: bool,
                **kwargs):
     """ Fold an RNA molecule from one table of reactivities. """
     return dispatch(fold_region,
@@ -186,12 +179,14 @@ def fold_table(table: MaskPositionTableLoader | ClusterPositionTableLoader,
                             fold_temp=fold_temp,
                             fold_energy_method=fold_energy_method,
                             fold_quantile=fold_quantile,
-                            fold_fpaired=fold_fpaired,
-                            mu_eps=fold_mu_eps,
+                            deigan_slope=deigan_slope,
+                            deigan_intercept=deigan_intercept,
                         )
                         for profile in table.iter_profiles(regions=regions)
                     ),
                     kwargs=dict(out_dir=table.top,
+                                keep_tmp=(keep_tmp or fold_dry_run),
+                                fold_dry_run=fold_dry_run,
                                 **kwargs))
 
 
@@ -202,21 +197,20 @@ def run(input_path: Iterable[str | Path], *,
         fold_primers: Iterable[tuple[str, DNA, DNA]],
         fold_regions_file: str | None,
         fold_full: bool,
+        fold_dry_run: bool,
         fold_backend: str,
-        fold_temp: float,
         fold_energy_method: str,
-        shape_slope: float,
-        shape_intercept: float,
+        deigan_slope: float,
+        deigan_intercept: float,
+        fold_temp: float,
         fold_quantile: float,
-        fold_fpaired: float,
-        fold_mu_eps: float,
         fold_constraint: str | None,
         fold_commands: str | None,
         fold_md: int,
         fold_mfe: bool,
         fold_max: int,
         fold_percent: float,
-        pseudoenergy_all: bool,
+        fold_isolated: bool,
         tmp_pfx: str | Path,
         keep_tmp: bool,
         verify_times: bool,
@@ -228,22 +222,18 @@ def run(input_path: Iterable[str | Path], *,
         # Use ViennaRNA.
         require_dependency(VIENNA_RNAFOLD_CMD, __name__)
         require_dependency(VIENNA_RNASUBOPT_CMD, __name__)
-    else:
-        # Use RNAstructure.
+    elif fold_backend == FOLD_BACKEND_FOLD:
+        # Use RNAstructure Fold.
         require_data_path()
-        if not pseudoenergy_all:
-            raise IncompatibleOptionsError(
-                "--pseudoenergy-stacked requires "
-                f"--fold-backend={FOLD_BACKEND_RNAFOLD}"
-            )
-        if fold_backend == FOLD_BACKEND_FOLD:
-            require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
-        elif fold_backend == FOLD_BACKEND_SHAPEKNOTS:
-            require_dependency(RNASTRUCTURE_SHAPEKNOTS_CMD, __name__)
-        else:
-            raise ValueError(
-                f"Invalid value for --fold-backend: {repr(fold_backend)}"
-            )
+        require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
+    elif fold_backend == FOLD_BACKEND_SHAPEKNOTS:
+        # Use RNAstructure ShapeKnots.
+        require_data_path()
+        require_dependency(RNASTRUCTURE_SHAPEKNOTS_CMD, __name__)
+    else:
+        raise ValueError(
+            f"Invalid value for --fold-backend: {repr(fold_backend)}"
+        )
     # List the tables.
     tables = list(load_foldable_tables(input_path, verify_times=verify_times))
     # Get the regions to fold for every reference sequence.
@@ -273,21 +263,20 @@ def run(input_path: Iterable[str | Path], *,
         kwargs=dict(branch=branch,
                     tmp_pfx=tmp_pfx,
                     keep_tmp=keep_tmp,
+                    fold_dry_run=fold_dry_run,
                     fold_backend=fold_backend,
                     fold_temp=fold_temp,
                     fold_energy_method=fold_energy_method,
-                    shape_slope=shape_slope,
-                    shape_intercept=shape_intercept,
+                    deigan_slope=deigan_slope,
+                    deigan_intercept=deigan_intercept,
                     fold_quantile=fold_quantile,
-                    fold_fpaired=fold_fpaired,
-                    fold_mu_eps=fold_mu_eps,
                     fold_constraint=optional_path(fold_constraint),
                     fold_commands=optional_path(fold_commands),
                     fold_md=fold_md,
                     fold_mfe=fold_mfe,
                     fold_max=fold_max,
                     fold_percent=fold_percent,
-                    pseudoenergy_all=pseudoenergy_all,
+                    fold_isolated=fold_isolated,
                     force=force)
     )))
 
@@ -299,21 +288,20 @@ params = [
     opt_fold_coords,
     opt_fold_primers,
     opt_fold_full,
+    opt_fold_dry_run,
     opt_fold_backend,
-    opt_fold_temp,
     opt_fold_energy_method,
-    opt_shape_slope,
-    opt_shape_intercept,
+    opt_fold_temp,
+    opt_deigan_slope,
+    opt_deigan_intercept,
     opt_fold_quantile,
-    opt_fold_fpaired,
-    opt_fold_mu_eps,
     opt_fold_constraint,
     opt_fold_commands,
     opt_fold_md,
     opt_fold_mfe,
     opt_fold_max,
     opt_fold_percent,
-    opt_pseudoenergy_all,
+    opt_fold_isolated,
     opt_tmp_pfx,
     opt_keep_tmp,
     opt_verify_times,

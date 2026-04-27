@@ -1104,6 +1104,13 @@ opt_fold = Option(
     help="Predict the secondary structure using the reactivities"
 )
 
+opt_fold_dry_run = Option(
+    ("--fold-dry-run/--fold-real-run",),
+    type=bool,
+    default=False,
+    help="Only generate the fold command and input files; do not run folding"
+)
+
 opt_fold_regions_file = Option(
     ("--fold-regions-file", "-F"),
     type=Path(exists=True, dir_okay=False),
@@ -1137,32 +1144,28 @@ opt_fold_backend = Option(
 opt_fold_energy_method = Option(
     ("--fold-energy-method",),
     type=Choice(FOLD_ENERGY_METHODS, case_sensitive=False),
-    default=FOLD_ENERGY_METHOD_EDDY,
-    help=("Use this method to incorporate reactivities into folding energies; "
-          "--fold-backend=RNAFold cannot use --fold-energy-method=Cordero")
+    default=FOLD_ENERGY_METHOD_DEIGAN,
+    help=("Use this method to incorporate reactivities into folding energies. "
+          f"{FOLD_ENERGY_METHOD_EDDY} requires "
+          f"--fold-backend={FOLD_BACKEND_RNAFOLD}; "
+          f"{FOLD_ENERGY_METHOD_CORDERO} requires "
+          f"--fold-backend={FOLD_BACKEND_FOLD} or {FOLD_BACKEND_SHAPEKNOTS}")
 )
 
-opt_shape_slope = Option(
-    ("--shape-slope",),
+opt_deigan_slope = Option(
+    ("--deigan-slope",),
     type=float,
     default=1.8,
-    help=(f"Slope for SHAPE restraints (kcal/mol); "
+    help=(f"Slope (kcal/mol) for SHAPE reactivities using Deigan method; "
           f"used only with --fold-energy-method={FOLD_ENERGY_METHOD_DEIGAN}")
 )
 
-opt_shape_intercept = Option(
-    ("--shape-intercept",),
+opt_deigan_intercept = Option(
+    ("--deigan-intercept",),
     type=float,
     default=-0.6,
-    help=(f"Intercept for SHAPE restraints (kcal/mol); "
+    help=(f"Intercept (kcal/mol) for SHAPE reactivities using Deigan method; "
           f"used only with --fold-energy-method={FOLD_ENERGY_METHOD_DEIGAN}")
-)
-
-opt_fold_fpaired = Option(
-    ("--fold-fpaired", "-f"),
-    type=float,
-    default=0.5,
-    help="Scale mutation rates assuming this is the fraction of paired bases"
 )
 
 opt_fold_quantile = Option(
@@ -1175,15 +1178,8 @@ opt_fold_quantile = Option(
 opt_fold_temp = Option(
     ("--fold-temp",),
     type=float,
-    default=310.15,
-    help="Predict structures at this temperature (Kelvin)"
-)
-
-opt_fold_mu_eps = Option(
-    ("--fold-mu-eps",),
-    type=float,
-    default=0.005,
-    help="Clip folding mutation rates to [eps, 1 - eps] to avoid division by 0"
+    default=37.0,
+    help="Predict structures at this temperature (Celsius)"
 )
 
 opt_fold_constraint = Option(
@@ -1195,7 +1191,14 @@ opt_fold_constraint = Option(
 opt_fold_commands = Option(
     ("--fold-commands",),
     type=Path(exists=True, dir_okay=False),
-    help="Command file for ViennaRNA"
+    help="Command file for RNAFold"
+)
+
+opt_fold_isolated = Option(
+    ("--fold-isolated/--fold-stacked",),
+    type=bool,
+    default=False,
+    help="Allow isolated (non-stacked) base pairs when folding"
 )
 
 opt_fold_md = Option(
@@ -1225,15 +1228,6 @@ opt_fold_percent = Option(
     default=20.,
     help="Stop outputting structures when the % difference in energy exceeds "
          "this value (overriden by --fold-mfe)"
-)
-
-opt_pseudoenergy_all = Option(
-    ("--pseudoenergy-all/--pseudoenergy-stacked",),
-    type=bool,
-    default=True,
-    help=("Apply pseudoenergy constraints from chemical probing data "
-          "to all base pairs or only stacked base pairs; "
-          "--pseudoenergy-stacked requires --fold-backend=RNAFold")
 )
 
 # Draw

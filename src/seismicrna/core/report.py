@@ -54,17 +54,16 @@ from .arg import (opt_phred_enc,
                   opt_overhangs,
                   opt_clip_end5,
                   opt_clip_end3,
+                  opt_fold_dry_run,
                   opt_fold_energy_method,
                   opt_fold_quantile,
                   opt_fold_temp,
                   opt_fold_backend,
-                  opt_shape_slope,
-                  opt_shape_intercept,
-                  opt_pseudoenergy_all,
+                  opt_deigan_slope,
+                  opt_deigan_intercept,
+                  opt_fold_isolated,
                   opt_fold_commands,
                   opt_fold_constraint,
-                  opt_fold_fpaired,
-                  opt_fold_mu_eps,
                   opt_fold_md,
                   opt_fold_mfe,
                   opt_fold_max,
@@ -586,15 +585,14 @@ JoinedClustersF = ReportField("joined_clusters",
 # Fold fields
 
 ProfileF = ReportField("profile", "Profile", str)
+FoldDryRunF = OptionReportField(opt_fold_dry_run)
 FoldBackendF = OptionReportField(opt_fold_backend)
 FoldEnergyMethodF = OptionReportField(opt_fold_energy_method)
-ShapeSlopeF = OptionReportField(opt_shape_slope)
-ShapeInterceptF = OptionReportField(opt_shape_intercept)
-PseudoenergyAllF = OptionReportField(opt_pseudoenergy_all)
+DeiganSlopeF = OptionReportField(opt_deigan_slope)
+DeiganInterceptF = OptionReportField(opt_deigan_intercept)
+FoldIsolatedF = OptionReportField(opt_fold_isolated)
 FoldQuantileF = OptionReportField(opt_fold_quantile)
-FoldFPairedF = OptionReportField(opt_fold_fpaired)
 FoldTempF = OptionReportField(opt_fold_temp)
-FoldMuEpsF = OptionReportField(opt_fold_mu_eps)
 FoldConstraintsF = OptionReportField(opt_fold_constraint)
 FoldCommandF = OptionReportField(opt_fold_commands)
 FoldMaxDistF = OptionReportField(opt_fold_md)

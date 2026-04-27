@@ -3,12 +3,9 @@ University of Vienna: https://www.tbi.univie.ac.at/RNA/
 """
 
 import os
-import shutil
 from pathlib import Path
 
-import numpy as np
-import pandas as pd
-
+from .dryrun import dry_run
 from .profile import RNAFoldProfile
 from .rnastructure import retitle_ct
 from ..core.extern import (VIENNA_RNAFOLD_CMD,
@@ -27,16 +24,15 @@ from ..core.write import need_write, write_mode
 ENERGY_UNIT = "kcal/mol"
 RNAFOLD_NUM_THREADS = "OMP_NUM_THREADS"
 
-ZERO_CELSIUS = 273.15  # Kelvin
-
 
 def make_rnafold_cmd(fasta_file: Path,
                      vienna_file: Path, *,
-                     shape_file: Path | None,
-                     shape_method: str | None,
+                     sp_data: Path | None,
+                     sp_strategy: str | None,
                      fold_constraint: Path | None,
                      fold_commands: Path | None,
-                     fold_temp: float,
+                     fold_temp_c: float,
+                     fold_isolated: bool,
                      fold_md: int,
                      fold_max: int,
                      fold_mfe: bool,
@@ -47,27 +43,26 @@ def make_rnafold_cmd(fasta_file: Path,
     if not fold_mfe:
         cmds.append([VIENNA_RNASUBOPT_CMD])
     for cmd in cmds:
-        cmd.append("--noLP")
         if VIENNA_RNAFOLD_CMD in cmd:
             cmd.append("--noPS")
         else:
             cmd.extend(["--sorted", "--en-only"])
-        if shape_file is not None:
+        if sp_data is not None:
             # File of reactivities.
-            if shape_method is None:
-                raise ValueError(
-                    "shape_method cannot be None if shape_file is not None"
-                )
-            cmd.extend(["--shape", shape_file,
-                        "--shapeMethod", shape_method])
+            cmd.extend(["--sp-data", sp_data])
+            if sp_strategy is not None:
+                cmd.extend(["--sp-strategy", sp_strategy])
         if fold_constraint is not None:
             # File of constraints.
             cmd.extend(["--constraint", fold_constraint])
         if fold_commands is not None:
             # File of commands.
             cmd.extend(["--commands", fold_commands])
-        # Temperature of folding (convert Kelvin to Celsius).
-        cmd.extend(["--temp", fold_temp - ZERO_CELSIUS])
+        # Temperature of folding (Celsius).
+        cmd.extend(["--temp", fold_temp_c])
+        if not fold_isolated:
+            # Forbid isolated pairs.
+            cmd.append("--noLP")
         if fold_md > 0:
             # Maximum distance between paired bases.
             cmd.extend(["--maxBPspan", fold_md])
@@ -82,79 +77,16 @@ def make_rnafold_cmd(fasta_file: Path,
     return final_cmd
 
 
-def calc_bp_pseudoenergy(seq_len: int,
-                         pseudoenergies: pd.Series,
-                         out_file: Path):
-    """
-    Identify (i, j) pairs, with j >= i + 3, where the sum of pseudoenergies is non-zero,
-    and write them in ViennaRNA command format:
-
-      "E i j 1 <bp_pseudoenergy>"
-
-    Parameters:
-      seq_len: The total length of the sequence. Positions are assumed to be numbered 1..seq_len.
-      pseudoenergies: A pandas Series of pseudoenergies, indexed with multiindex (Position, Base).
-      out_file: Path to the file where the results will be written.
-    """
-    # Extract Position level and drop NaNs
-    pos_idx = pseudoenergies.index.get_level_values("Position").astype(int)
-    energy_vals = pseudoenergies.values
-    mask = ~pd.isna(energy_vals)
-
-    # Full-length energy array, default zero
-    energies_full = np.zeros(seq_len, dtype=np.float64)
-    energies_full[pos_idx[mask] - 1] = energy_vals[mask]
-
-    # Collect valid (i, j) pairs
-    parts = []
-    for offset in range(3, seq_len):
-        i_vals = np.arange(1, seq_len - offset + 1)
-        j_vals = i_vals + offset
-        sums = energies_full[i_vals - 1] + energies_full[j_vals - 1]
-        valid = np.abs(sums) > 0
-        if valid.any():
-            block = np.column_stack([
-                i_vals[valid],
-                j_vals[valid],
-                np.ones(valid.sum(), dtype=int),
-                sums[valid]
-            ])
-            parts.append(block)
-
-    if parts:
-        result = np.vstack(parts)
-        with open(out_file, 'w') as f:
-            np.savetxt(f, result, fmt="E %d %d %d %.6f")
-
-    return out_file
-
-
-def append_or_copy(source: Path, dest: Path):
-    if dest.exists():
-        with source.open('rb') as fsrc, dest.open('ab') as fdst:
-            shutil.copyfileobj(fsrc, fdst)
-    else:
-        shutil.copy2(source, dest)
-
-
 def rnafold(rna: RNAFoldProfile, *,
             branch: str,
-            shape_slope: float,
-            shape_intercept: float,
-            fold_constraint: Path | None = None,
-            fold_commands: Path | None = None,
-            fold_md: int,
-            fold_mfe: bool,
-            fold_max: int,
-            pseudoenergy_all: bool,
             out_dir: Path,
             tmp_dir: Path,
             keep_tmp: bool,
-            num_cpus: int):
+            fold_dry_run: bool,
+            fold_mfe: bool,
+            **kwargs):
     """ Run the 'RNAFold' or 'RNAsubopt' program of ViennaRNA. """
     logger.routine(f"Began folding {rna}")
-    shape_method = rna.get_rnafold_shape_method(shape_slope,
-                                                shape_intercept)
     # Output CT file.
     ct_out = rna.get_ct_file(out_dir, branch)
     # Temporary FASTA file for the RNA.
@@ -165,47 +97,34 @@ def rnafold(rna: RNAFoldProfile, *,
     db_tmp = rna.get_db_file(tmp_dir, branch)
     # Path of the temporary vienna file.
     vienna_tmp = rna.get_vienna_file(tmp_dir, branch)
-    # Path of the temporary command file.
-    command_tmp = rna.get_command_file(tmp_dir, branch)
     # DMS reactivities file for the RNA.
     mus_file = rna.write_mus_file(tmp_dir, branch)
     try:
-        # Generate the commands file.
-        if pseudoenergy_all:
-            command_file = calc_bp_pseudoenergy(len(rna.seq),
-                                                rna.pseudoenergies,
-                                                command_tmp)
-            shape_file = None
-        else:
-            command_file = None
-            shape_file = mus_file
-        if fold_commands:
-            append_or_copy(fold_commands, command_tmp)
-        # Run the command.
+        # Generate the command.
         fold_cmd = make_rnafold_cmd(fasta_tmp,
                                     vienna_tmp,
-                                    shape_file=shape_file,
-                                    shape_method=shape_method,
-                                    fold_constraint=fold_constraint,
-                                    fold_commands=command_file,
-                                    fold_temp=rna.fold_temp,
-                                    fold_md=fold_md,
+                                    sp_data=mus_file,
+                                    sp_strategy=rna.rnafold_sp_strategy,
+                                    fold_temp_c=rna.fold_temp_c,
                                     fold_mfe=fold_mfe,
-                                    fold_max=fold_max,
-                                    num_cpus=num_cpus)
-        run_cmd(fold_cmd)
-        # Extract energy values from vienna file to DB file.
-        extract_energies(vienna_tmp, db_tmp, force=True)
-        if not fold_mfe:
-            get_subopt(vienna_tmp.with_suffix(VIENNA_SUBOPT_EXT), db_tmp)
-        # Convert DB file to CT
-        db_to_ct(db_tmp, force=True)
-        # Reformat the CT file title lines so that each is unique.
-        retitle_ct(ct_tmp, ct_tmp, force=True)
-        # Renumber the CT file so that it has the same numbering scheme
-        # as the region, rather than always starting at 1, the latter
-        # of which is always output by the Fold program.
-        renumber_ct(ct_tmp, ct_out, rna.region.end5, force=True)
+                                    **kwargs)
+        if fold_dry_run:
+            dry_run([fold_cmd], ct_tmp.parent)
+        else:
+            # Run the command.
+            run_cmd(fold_cmd)
+            # Extract energy values from vienna file to DB file.
+            extract_energies(vienna_tmp, db_tmp, force=True)
+            if not fold_mfe:
+                get_subopt(vienna_tmp.with_suffix(VIENNA_SUBOPT_EXT), db_tmp)
+            # Convert DB file to CT
+            db_to_ct(db_tmp, force=True)
+            # Reformat the CT file title lines so that each is unique.
+            retitle_ct(ct_tmp, ct_tmp, force=True)
+            # Renumber the CT file so that it has the same numbering
+            # scheme as the region, rather than always starting at 1,
+            # the latter of which is always output by the Fold program.
+            renumber_ct(ct_tmp, ct_out, rna.region.end5, force=True)
     finally:
         if not keep_tmp:
             # Delete the temporary files.
@@ -214,7 +133,6 @@ def rnafold(rna: RNAFoldProfile, *,
                 ct_tmp.unlink(missing_ok=True)
             db_tmp.unlink(missing_ok=True)
             vienna_tmp.unlink(missing_ok=True)
-            command_tmp.unlink(missing_ok=True)
             mus_file.unlink(missing_ok=True)
     logger.routine(f"Ended folding {rna}")
     return ct_out
@@ -228,7 +146,7 @@ def get_subopt(subopt_out: Path,
         while line := f.readline():
             if line.startswith(">"):
                 seq_title = line.split(" ")[0]
-                seq_line = f.readline()
+                f.readline()
                 continue
             assert line.count(" ") == 1
             struct, energy = line.split(" ")
