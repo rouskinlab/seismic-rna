@@ -6,7 +6,8 @@ from click import command
 
 from .ref import get_fasta_path
 from ..core import path
-from ..core.arg import (arg_fasta,
+from ..core.arg import (FOLD_BACKEND_FOLD,
+                        arg_fasta,
                         opt_sim_dir,
                         opt_tmp_pfx,
                         opt_profile_name,
@@ -22,8 +23,7 @@ from ..core.arg import (arg_fasta,
                         opt_keep_tmp,
                         opt_force,
                         opt_num_cpus,
-                        optional_path,
-                        extra_defaults)
+                        optional_path)
 from ..core.extern import (RNASTRUCTURE_FOLD_CMD,
                            require_dependency,
                            args_to_cmd,
@@ -74,10 +74,15 @@ def fold_region(region: Region, *,
             run_cmd(args_to_cmd(make_rnastructure_cmd(
                 fasta_tmp,
                 ct_tmp,
+                fold_backend=FOLD_BACKEND_FOLD,
+                dms_file=None,
                 shape_file=None,
+                deigan_slope=0.,
+                deigan_intercept=0.,
                 fold_constraint=fold_constraint,
                 fold_temp_k=fold_temp,
                 fold_md=fold_md,
+                fold_isolated=False,
                 fold_mfe=fold_mfe,
                 fold_max=fold_max,
                 fold_percent=fold_percent,
@@ -97,10 +102,7 @@ def fold_region(region: Region, *,
     return ct_sim
 
 
-@run_func(COMMAND,
-          with_tmp=True,
-          pass_keep_tmp=True,
-          extra_defaults=extra_defaults)
+@run_func(COMMAND, with_tmp=True, pass_keep_tmp=True)
 def run(fasta: str | Path, *,
         sim_dir: str | Path,
         profile_name: str,

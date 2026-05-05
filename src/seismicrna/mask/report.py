@@ -44,6 +44,7 @@ from ..core.report import (RegReport,
                            MinFInfoReadF,
                            MaxFMutReadF,
                            MinMutGapF,
+                           MutCollisionsF,
                            NumReadsInitF,
                            NumReadCutListF,
                            NumReadsLoNCovF,
@@ -95,6 +96,7 @@ class MaskReport(BatchedReport, BaseMaskReport):
             MinFInfoReadF,
             MaxFMutReadF,
             MinMutGapF,
+            MutCollisionsF,
             # Iterations.
             MaxMaskIterF,
             # Observer bias correction.

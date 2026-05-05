@@ -37,11 +37,50 @@ CLIP_END5_DEFAULT = BOWTIE2_GBAR_DEFAULT
 CLIP_END3_DEFAULT = BOWTIE2_GBAR_DEFAULT
 MIN_READ_LENGTH_DEFAULT = CLIP_END5_DEFAULT + CLIP_END3_DEFAULT + 1
 
-PROBE_DMS = "dms"
-PROBE_SHAPE = "shape"
-PROBE_ETC = "etc"
+# dimethyl sulfate (DMS)
+PROBE_DMS = "DMS"
+# selective 2'-hydroxyl acylation analyzed by primer extension (SHAPE)
+PROBE_SHAPE = "SHAPE"
+# 1-ethyl-3-(3-dimethylaminopropyl) carbodiimide methiodide (ETC)
+PROBE_ETC = "ETC"
+# untreated control with no chemical probe
 PROBE_NONE = "none"
 PROBES = PROBE_DMS, PROBE_SHAPE, PROBE_ETC, PROBE_NONE
+DEFAULT_MIN_MUT_GAPS = {
+    # For DMS-MaPseq with group II intron RTs, there is a bias against
+    # mutations less than 4 nt apart. The formula that corrects the bias
+    # assumes any reads with mutations close by have been dropped.
+    PROBE_DMS: 4,
+    # For other probe types (e.g. SHAPE-MaP) with retroviral RTs, when
+    # the RT encounters a modification, it can make several mutations
+    # for up to 6 nt as it moves 3' to 5'. It's best to merge nearby 
+    # mutations, keeping the 3'-most (the original modification).
+    PROBE_SHAPE: 6,
+    PROBE_ETC: 6,
+    # With no probe, there should be no effect on nearby mutations.
+    PROBE_NONE: 0,
+}
+
+MUT_COLLISIONS_DROP = "drop"
+MUT_COLLISIONS_MERGE = "merge"
+MUT_COLLISIONS_AUTO = "auto"
+MUT_COLLISIONS = (MUT_COLLISIONS_DROP,
+                  MUT_COLLISIONS_MERGE,
+                  MUT_COLLISIONS_AUTO)
+DEFAULT_MUT_COLLISIONS = {
+    # For DMS-MaPseq with group II intron RTs, there is a bias against
+    # mutations less than 4 nt apart. The formula that corrects the bias
+    # assumes any reads with mutations close by have been dropped.
+    PROBE_DMS: MUT_COLLISIONS_DROP,
+    # For other probe types (e.g. SHAPE-MaP) with retroviral RTs, when
+    # the RT encounters a modification, it can make several mutations
+    # for up to 6 nt as it moves 3' to 5'. It's best to merge nearby 
+    # mutations, keeping the 3'-most (the original modification).
+    PROBE_SHAPE: MUT_COLLISIONS_MERGE,
+    PROBE_ETC: MUT_COLLISIONS_MERGE,
+    PROBE_NONE: MUT_COLLISIONS_MERGE
+}
+
 
 GAP_MODE_OMIT = "omit"
 GAP_MODE_INSERT = "insert"
@@ -803,8 +842,16 @@ opt_max_fmut_read = Option(
 opt_min_mut_gap = Option(
     ("--min-mut-gap",),
     type=int,
-    default=4,
+    default=None,
     help="Mask reads with two mutations separated by fewer than this many bases"
+)
+
+opt_mut_collisions = Option(
+    ("--mut-collisions",),
+    type=Choice(MUT_COLLISIONS, case_sensitive=False),
+    default=MUT_COLLISIONS_AUTO,
+    help=("If two mutations are closer than --min-mut-gap positions, MERGE "
+          "the mutations, DROP the read, or AUTO-select based on the probe.")
 )
 
 opt_min_ninfo_pos = Option(

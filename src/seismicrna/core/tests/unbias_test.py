@@ -2,22 +2,22 @@ import unittest as ut
 from itertools import product
 
 import numpy as np
+from numba import jit
 
 from seismicrna.core.unbias import (_clip,
                                     _normalize,
                                     _adjust_min_gap,
-                                    triu_sum,
                                     _triu_cumsum,
+                                    triu_dot,
                                     _triu_norm,
                                     _triu_mul,
-                                    triu_dot,
+                                    _triu_sum,
                                     _triu_div,
-                                    triu_allclose,
                                     calc_p_ends_observed,
                                     calc_p_nomut_window,
                                     calc_p_noclose_given_ends,
                                     calc_p_noclose_given_ends_auto,
-                                    calc_p_mut_given_span_noclose,
+                                    calc_p_mut_given_span_dropped,
                                     calc_p_mut_given_span,
                                     calc_p_ends,
                                     _slice_p_ends,
@@ -30,9 +30,106 @@ from seismicrna.core.unbias import (_clip,
                                     calc_p_clust_given_ends_noclose,
                                     calc_p_clust_given_noclose,
                                     calc_params,
-                                    calc_rectangular_sum)
+                                    calc_rectangular_sum,
+                                    require_square_atleast2d,
+                                    require_same_square_atleast2d,
+                                    _calc_p_mut_given_span_merged,
+                                    _calc_p_mut_given_span_merged_end_b)
+from seismicrna.core.validate import require_equal
 
 rng = np.random.default_rng(seed=0)
+
+
+def triu_sum(a: np.ndarray):
+    """ Calculate the sum over the upper triangle(s) of array `a`.
+
+    Parameters
+    ----------
+    a: np.ndarray
+        Array whose upper triangle to sum.
+
+    Returns
+    -------
+    np.ndarray
+        Sum of the upper triangle(s), with the same shape as the third
+        and subsequent dimensions of `a`.
+    """
+    require_square_atleast2d("a", a)
+    return _triu_sum(a)
+
+
+@jit()
+def _triu_allclose(a: np.ndarray,
+                   b: np.ndarray,
+                   rtol: float = 1.e-3,
+                   atol: float = 1.e-6):
+    """ Whether the upper triangles of `a` and `b` are all close.
+
+    This function is meant to be called by another function that has
+    validated the arguments; hence, this function makes assumptions:
+
+    -   `a` and `b` both have at least 2 dimensions.
+    -   The first and second dimensions of `a` are equal.
+    -   The first and second dimensions of `b` are equal.
+
+    Parameters
+    ----------
+    a: np.ndarray
+        Array 1.
+    b: np.ndarray
+        Array 2.
+    rtol: float = 1.0e-3
+        Relative tolerance.
+    atol: float = 1.0e-6
+        Absolute tolerance.
+
+    Returns
+    -------
+    bool
+        Whether all elements of the upper triangles of `a` and `b` are
+        close using the function `np.allclose`.
+    """
+    for j in range(a.shape[0]):
+        if not np.allclose(a[j, j:], b[j, j:], rtol=rtol, atol=atol):
+            return False
+    return True
+
+
+def triu_allclose(a: np.ndarray | float,
+                  b: np.ndarray | float,
+                  rtol: float = 1.e-3,
+                  atol: float = 1.e-6):
+    """ Whether the upper triangles of `a` and `b` are all close.
+
+    Parameters
+    ----------
+    a: np.ndarray | float
+        Array 1.
+    b: np.ndarray | float
+        Array 2.
+    rtol: float = 1.0e-3
+        Relative tolerance.
+    atol: float = 1.0e-6
+        Absolute tolerance.
+
+    Returns
+    -------
+    bool
+        Whether all elements of the upper triangles of `a` and `b` are
+        close using the function `np.allclose`.
+    """
+    # Ensure a and b are arrays with the same dimensions.
+    a, b = np.broadcast_arrays(np.asarray(a), np.asarray(b))
+    # Explicitly set the writeable flag to False in order to suppress
+    # "FutureWarning: future versions will not create a writeable array
+    # from broadcast_array. Set the writable flag explicitly to avoid
+    # this warning."
+    # These lines may not be necessary with a future version of NumPy.
+    a.flags.writeable = False
+    b.flags.writeable = False
+    # Ensure a and b are both square in their first 2 dimensions.
+    require_same_square_atleast2d(a, b)
+    return _triu_allclose(a, b, rtol, atol)
 
 
 def no_close_muts(read: np.ndarray, min_gap: int):
@@ -57,6 +154,38 @@ def label_no_close_muts(muts: np.ndarray, min_gap: int):
     return np.fromiter((no_close_muts(muts[i], min_gap)
                         for i in range(n_reads)),
                        dtype=bool)
+
+
+def merge_mutations_right_to_left(muts: np.ndarray, min_gap: int):
+    """ Merge close mutations row by row from right to left.
+
+    For each row, scan from the last column to the first. When a True
+    value is encountered, set the next `min_gap` positions to the left
+    to False, then continue scanning.
+    """
+    if not isinstance(muts, np.ndarray) or muts.ndim != 2:
+        raise ValueError("muts must be a 2D NumPy array")
+    if muts.dtype != np.bool_:
+        raise ValueError("muts must be a boolean NumPy array")
+    if not isinstance(min_gap, int) or min_gap < 0:
+        raise ValueError("min_gap must be a non-negative integer")
+    merged = muts.copy()
+    n_reads, n_pos = merged.shape
+    # If min_gap is 0 or n_pos ≤ 1, then there is nothing to do.
+    # A performance optimized function would return here, but this
+    # function is meant for testing and so we want to test that the
+    # algorithm produces the correct result in this case as well.
+    for i in range(n_reads):
+        j = n_pos - 1
+        while j >= 0:
+            if merged[i, j]:
+                # Set the next min_gap positions to the left to False.
+                left = max(0, j - min_gap)
+                merged[i, left: j] = False
+                j = left - 1
+            else:
+                j -= 1
+    return merged
 
 
 def simulate_reads(n_reads: int, p_mut: np.ndarray, p_ends: np.ndarray):
@@ -264,6 +393,73 @@ class TestNoCloseMuts(ut.TestCase):
             for min_gap in range(len(read)):
                 self.assertEqual(no_close_muts(np.array(read), min_gap),
                                  mut_gap >= min_gap)
+
+
+class TestMergeMutationsRightToLeft(ut.TestCase):
+
+    @staticmethod
+    def bits_to_matrix(bits: str):
+        return np.array(
+            [[bit == "1" for bit in row] for row in bits.split()],
+            dtype=bool
+        )
+    
+    def test_bits_to_matrix(self):
+        bits = "1001011011 0001110101"
+        expect = np.array(
+            [[True, False, False, True, False, True, True, False, True, True],
+             [False, False, False, True, True, True, False, True, False, True]],
+            dtype=bool
+        )
+        result = self.bits_to_matrix(bits)
+        self.assertEqual(result.shape, expect.shape)
+        self.assertTrue(np.array_equal(result, expect))
+
+    def test_zero_columns(self):
+        for n_reads in range(5):
+            with self.subTest(n_reads=n_reads):
+                muts = np.zeros((n_reads, 0), dtype=bool)
+                result = merge_mutations_right_to_left(muts, 3)
+                self.assertEqual(result.shape, muts.shape)
+                self.assertTrue(np.array_equal(result, muts))
+
+    def test_one_column(self):
+        muts = np.array([[False],
+                         [True],
+                         [False],
+                         [True]],
+                        dtype=bool)
+        for min_gap in range(5):
+            with self.subTest(min_gap=min_gap):
+                result = merge_mutations_right_to_left(muts, min_gap)
+                self.assertEqual(result.shape, muts.shape)
+                self.assertTrue(np.array_equal(result, muts))
+    
+    def test_min_gap_0(self):
+        for n_reads in range(4):
+            for n_pos in range(6):
+                with self.subTest(n_reads=n_reads, n_pos=n_pos):
+                    muts = rng.integers(0, 2, size=(n_reads, n_pos), dtype=bool)
+                    result = merge_mutations_right_to_left(muts, 0)
+                    self.assertEqual(result.shape, muts.shape)
+                    self.assertTrue(np.array_equal(result, muts))
+                    self.assertFalse(np.shares_memory(result, muts))
+    
+    def test_min_gaps_0_to_6(self):
+        muts = self.bits_to_matrix("10010110110101")
+        expect = {0: "10010110110101",
+                  1: "10010010010101",
+                  2: "10010010010001",
+                  3: "10000100010001",
+                  4: "00010000100001",
+                  5: "10000010000001",
+                  6: "00000010000001"}
+        for min_gap, bits in expect.items():
+            with self.subTest(min_gap=min_gap):
+                self.assertTrue(np.array_equal(
+                    merge_mutations_right_to_left(muts, min_gap),
+                    self.bits_to_matrix(bits)
+                ))
 
 
 class TestClip(ut.TestCase):
@@ -941,7 +1137,7 @@ class TestCalcPMutGivenSpanNoClose(ut.TestCase):
         n_pos = 6
         n_reads = 1_000_000
         p_mut_max = 0.5
-        p_mut, p_ends, p_clust = simulate_params(n_pos, 1, p_mut_max)
+        p_mut, p_ends, _ = simulate_params(n_pos, 1, p_mut_max)
         muts, info, end5s, end3s = simulate_reads(n_reads, p_mut[:, 0], p_ends)
         # Test each minimum gap between mutations (min_gap).
         for min_gap in [0, 3, n_pos]:
@@ -1034,7 +1230,7 @@ class TestCalcPMutGivenSpanNoClose(ut.TestCase):
                                                           * p_ends[end5, end3])
                 # Calculate the theoretical probability of a mutation at
                 # each position given no mutations are too close.
-                p_mut_given_noclose_theory = calc_p_mut_given_span_noclose(
+                p_mut_given_noclose_theory = calc_p_mut_given_span_dropped(
                     p_mut,
                     p_ends,
                     p_noclose_given_ends_theory,
@@ -1059,7 +1255,7 @@ class TestCalcPMutGivenSpanNoClose(ut.TestCase):
         max_gap = 3
         # Test each number of clusters.
         for n_cls in range(1, max_clusters + 1):
-            p_mut, p_ends, p_clust = simulate_params(n_pos, n_cls)
+            p_mut, p_ends, _ = simulate_params(n_pos, n_cls)
             # Test each minimum gap between mutations.
             for min_gap in range(max_gap + 1):
                 with self.subTest(n_cls=n_cls, min_gap=min_gap):
@@ -1069,20 +1265,147 @@ class TestCalcPMutGivenSpanNoClose(ut.TestCase):
                     p_noclose_given_ends = calc_p_noclose_given_ends(
                         p_mut, p_nomut_window
                     )
-                    p_mut_given_span_noclose = calc_p_mut_given_span_noclose(
+                    p_mut_given_span_noclose = calc_p_mut_given_span_dropped(
                         p_mut, p_ends, p_noclose_given_ends, p_nomut_window
                     )
                     # Compare to computing each cluster individually.
                     for k in range(n_cls):
                         self.assertTrue(np.allclose(
                             p_mut_given_span_noclose[:, k],
-                            calc_p_mut_given_span_noclose(
+                            calc_p_mut_given_span_dropped(
                                 p_mut[:, [k]],
                                 p_ends,
                                 p_noclose_given_ends[:, :, [k]],
                                 p_nomut_window[:, :, [k]],
                             ).reshape(n_pos)
                         ))
+
+
+class TestCalcPMutGivenSpanMergedFullLength(ut.TestCase):
+
+    @staticmethod
+    def _simulate_after_merge(p_before: np.ndarray,
+                              min_gap: int,
+                              n_reads: int,
+                              seed: int):
+        # p_before shape: (n_pos, n_cls); simulate each column independently.
+        sim_rng = np.random.default_rng(seed)
+        n_pos, n_cls = p_before.shape
+        result = np.empty_like(p_before)
+        for k in range(n_cls):
+            muts_k = (sim_rng.random((n_reads, n_pos))
+                      < p_before[np.newaxis, :, k])
+            result[:, k] = np.mean(
+                merge_mutations_right_to_left(muts_k, min_gap), axis=0
+            )
+        return result
+
+    def assert_not_statistically_significant(self,
+                                             p_expect: np.ndarray,
+                                             p_result: np.ndarray,
+                                             n_reads: int,
+                                             z_max: float = 6.0):
+        self.assertEqual(p_result.shape, p_expect.shape)
+        variance = p_expect * (1.0 - p_expect)
+        se = np.sqrt(np.maximum(variance, 1.e-12) / n_reads)
+        z = np.abs(p_result - p_expect) / se
+        self.assertTrue(
+            np.all(z <= z_max),
+            msg=(f"Max z-score {np.max(z):.3f} exceeded {z_max}"
+                 f"; max abs diff = {np.max(np.abs(p_result - p_expect)):.3e}")
+        )
+
+    def test_matches_simulation(self):
+        n_reads = 1_000_000
+        n_cls = 3
+        cases = [
+            (1, 0, 101),
+            (5, 0, 102),
+            (8, 1, 103),
+            (12, 3, 104),
+            (16, 6, 105),
+        ]
+        for n_pos, min_gap, seed in cases:
+            with self.subTest(n_pos=n_pos, min_gap=min_gap, seed=seed):
+                case_rng = np.random.default_rng(seed)
+                # 2D input: shape (n_pos, n_cls)
+                p_before = 0.05 + 0.90 * case_rng.random((n_pos, n_cls))
+                p_expect = _calc_p_mut_given_span_merged_end_b(p_before,
+                                                                     min_gap)
+                self.assertEqual(p_expect.shape, (n_pos, n_cls))
+                p_result = self._simulate_after_merge(p_before,
+                                                           min_gap,
+                                                           n_reads,
+                                                           seed)
+                self.assert_not_statistically_significant(p_expect,
+                                                          p_result,
+                                                          n_reads)
+
+
+class TestCalcPMutGivenSpanMerged(ut.TestCase):
+
+    @staticmethod
+    def _simulate_after_merge(p_before: np.ndarray,
+                              p_ends: np.ndarray,
+                              min_gap: int,
+                              n_reads: int):
+        # p_before shape: (n_pos, n_cls); simulate each column independently.
+        _, n_cls = p_before.shape
+        # Simulate mutations and merge them.
+        result = np.empty_like(p_before)
+        for k in range(n_cls):
+            muts, info, _, _ = simulate_reads(n_reads, 
+                                              p_before[:, k],
+                                              p_ends)
+            muts_merged = merge_mutations_right_to_left(muts, min_gap)
+            result[:, k] = (np.count_nonzero(muts_merged, axis=0)
+                            / np.count_nonzero(info, axis=0))
+        return result
+    
+    def assert_not_statistically_significant(self,
+                                             p_expect: np.ndarray,
+                                             p_result: np.ndarray,
+                                             n_reads: int,
+                                             z_max: float = 6.0):
+        self.assertEqual(p_result.shape, p_expect.shape)
+        variance = p_expect * (1.0 - p_expect)
+        se = np.sqrt(np.maximum(variance, 1.e-12) / n_reads)
+        z = np.abs(p_result - p_expect) / se
+        self.assertTrue(
+            np.all(z <= z_max),
+            msg=(f"Max z-score {np.max(z):.3f} exceeded {z_max}"
+                 f"; max abs diff = {np.max(np.abs(p_result - p_expect)):.3e}")
+        )
+
+    def test_matches_simulated(self):
+        cases = [
+            (1, 1, 0, 201),
+            (5, 1, 1, 202),
+            (7, 2, 2, 203),
+            (8, 3, 4, 204),
+        ]
+        n_reads = 100_000
+        for n_pos, n_cls, min_gap, seed in cases:
+            with self.subTest(n_pos=n_pos,
+                              n_cls=n_cls,
+                              min_gap=min_gap,
+                              seed=seed):
+                case_rng = np.random.default_rng(seed)
+                p_mut_given_span = case_rng.random((n_pos, n_cls))
+                p_ends = np.triu(case_rng.random((n_pos, n_pos)))
+                p_ends /= p_ends.sum()
+                expect = self._simulate_after_merge(
+                    p_mut_given_span,
+                    p_ends,
+                    min_gap,
+                    n_reads=n_reads
+                )
+                result = _calc_p_mut_given_span_merged(p_mut_given_span,
+                                                       p_ends,
+                                                       min_gap)
+                self.assert_not_statistically_significant(expect,
+                                                          result,
+                                                          n_reads)
 
 
 class TestSlicePEnds(ut.TestCase):
@@ -1293,8 +1616,7 @@ class TestQuickUnbias(ut.TestCase):
     """ Test that the quick unbiasing algorithm produces results very
     similar to the exact algorithm. """
 
-    ABS_TOL = 5.e-4
-    REL_TOL = 3.e-2
+    REL_TOL = 0.01
 
     @staticmethod
     def random_params(npos: int, ncls: int):
@@ -1303,78 +1625,65 @@ class TestQuickUnbias(ut.TestCase):
         p_clust = 1. - rng.random(ncls)
         return p_mut, p_ends, p_clust
 
-    def test_threshold_0(self):
-        t = 0.
-        n_pos = 500
-        for n_cls in [1, 2]:
-            for min_gap in [1, 3]:
-                for f_below in [0.2, 0.5, 0.8]:
-                    p_mut, p_ends, p_clust = self.random_params(n_pos, n_cls)
-                    # Set some mutation rates to below the threshold.
-                    n_below = round(n_pos * f_below)
-                    below_t = rng.choice(n_pos, n_below, replace=False)
-                    is_below_t = np.zeros(n_pos, dtype=bool)
-                    is_below_t[below_t] = True
-                    p_mut[is_below_t] = t
-                    # Compare quick vs. exact unbias.
-                    (p_mut_quick,
-                     p_ends_quick,
-                     p_clust_quick) = calc_params(p_mut, p_ends, p_clust, min_gap,
-                                                  quick_unbias=True,
-                                                  quick_unbias_thresh=t)
-                    (p_mut_exact,
-                     p_ends_exact,
-                     p_clust_exact) = calc_params(p_mut, p_ends, p_clust, min_gap,
-                                                  quick_unbias=False,
-                                                  quick_unbias_thresh=t)
-                    with self.subTest(n_cls=n_cls,
-                                      min_gap=min_gap,
-                                      f_below=f_below):
-                        self.assertTrue(np.allclose(p_mut_quick[is_below_t],
-                                                    0.))
-                        self.assertTrue(np.allclose(p_mut_quick[~is_below_t],
-                                                    p_mut_exact[~is_below_t],
-                                                    atol=self.ABS_TOL,
-                                                    rtol=self.REL_TOL))
-                        self.assertTrue(np.allclose(np.triu(p_ends_quick),
-                                                    np.triu(p_ends_exact),
-                                                    atol=self.ABS_TOL,
-                                                    rtol=self.REL_TOL))
-                        self.assertTrue(np.allclose(p_clust_quick,
-                                                    p_clust_exact,
-                                                    atol=self.ABS_TOL,
-                                                    rtol=self.REL_TOL))
-
-    def test_threshold_0p001(self):
-        t = 0.001
-        n_pos = 500
-        for n_cls in [1, 2]:
-            for min_gap in [1, 3]:
-                p_mut, p_ends, p_clust = self.random_params(n_pos, n_cls)
-                # Compare quick vs. exact unbias.
-                (p_mut_quick,
-                 p_ends_quick,
-                 p_clust_quick) = calc_params(p_mut, p_ends, p_clust, min_gap,
-                                              quick_unbias=True,
-                                              quick_unbias_thresh=t)
-                (p_mut_exact,
-                 p_ends_exact,
-                 p_clust_exact) = calc_params(p_mut, p_ends, p_clust, min_gap,
-                                              quick_unbias=False,
-                                              quick_unbias_thresh=t)
-                with self.subTest(n_cls=n_cls, min_gap=min_gap):
-                    self.assertTrue(np.allclose(p_mut_quick,
+    def test_quick_unbias(self):
+        # Re-seed the module-level RNG so this test is deterministic
+        # regardless of the order in which other tests have consumed
+        # random values from it.
+        global rng
+        rng = np.random.default_rng(seed=0)
+        n_pos = 256
+        for t in [0., 0.001]:
+            for n_cls in [1, 2]:
+                for min_gap in [1, 3]:
+                    for f_below in [0.1, 0.5, 0.9]:
+                        p_mut, p_ends, p_clust = self.random_params(n_pos, n_cls)
+                        # Set some mutation rates to the threshold.
+                        n_below = round(n_pos * f_below)
+                        t_pos = rng.choice(n_pos, n_below, replace=False)
+                        equals_t = np.zeros(n_pos, dtype=bool)
+                        equals_t[t_pos] = True
+                        p_mut[equals_t] = t
+                        for mut_collisions in ["drop", "merge"]:
+                            # Compare quick vs. exact unbias.
+                            (p_mut_quick,
+                            p_ends_quick,
+                            p_clust_quick) = calc_params(
+                                p_mut, p_ends, p_clust, min_gap, mut_collisions,
+                                quick_unbias=True,
+                                quick_unbias_thresh=t
+                            )
+                            (p_mut_exact,
+                            p_ends_exact,
+                            p_clust_exact) = calc_params(
+                                p_mut, p_ends, p_clust, min_gap, mut_collisions,
+                                quick_unbias=False,
+                                quick_unbias_thresh=t
+                            )
+                            with self.subTest(
+                                threshold=t,
+                                n_cls=n_cls,
+                                min_gap=min_gap,
+                                f_below=f_below,
+                                mut_collisions=mut_collisions
+                            ):
+                                self.assertTrue(
+                                    np.allclose(p_mut_quick,
                                                 p_mut_exact,
-                                                atol=self.ABS_TOL,
-                                                rtol=self.REL_TOL))
-                    self.assertTrue(np.allclose(np.triu(p_ends_quick),
+                                                atol=(2. * t),
+                                                rtol=self.REL_TOL)
+                                )
+                                self.assertTrue(
+                                    np.allclose(np.triu(p_ends_quick),
                                                 np.triu(p_ends_exact),
-                                                atol=self.ABS_TOL,
-                                                rtol=self.REL_TOL))
-                    self.assertTrue(np.allclose(p_clust_quick,
+                                                atol=(2. * t),
+                                                rtol=self.REL_TOL)
+                                )
+                                self.assertTrue(
+                                    np.allclose(p_clust_quick,
                                                 p_clust_exact,
-                                                atol=self.ABS_TOL,
-                                                rtol=self.REL_TOL))
+                                                atol=(2. * t),
+                                                rtol=self.REL_TOL)
+                                )
 
 
 class TestCalcPMutGivenSpan(ut.TestCase):
@@ -1386,20 +1695,21 @@ class TestCalcPMutGivenSpan(ut.TestCase):
         max_clusters = 3
         max_gap = 3
         for n_cls in range(1, max_clusters):
-            p_mut, p_ends, p_clust = simulate_params(n_pos, n_cls, max_p_mut)
+            p_mut, p_ends, _ = simulate_params(n_pos, n_cls, max_p_mut)
             for min_gap in range(max_gap + 1):
                 # Compute the mutation rates without mutations too close.
                 p_nomut_window = calc_p_nomut_window(p_mut, min_gap)
                 p_noclose_given_ends = calc_p_noclose_given_ends(
                     p_mut, p_nomut_window
                 )
-                p_mut_given_span_noclose = calc_p_mut_given_span_noclose(
+                p_mut_given_span_noclose = calc_p_mut_given_span_dropped(
                     p_mut, p_ends, p_noclose_given_ends, p_nomut_window
                 )
                 p_mut_given_span = calc_p_mut_given_span(
                     p_mut_given_span_noclose,
-                    min_gap,
                     p_ends,
+                    min_gap,
+                    "drop",
                     p_mut_given_span_noclose,
                 )
                 self.assertEqual(p_mut_given_span.shape, p_mut.shape)
@@ -1515,7 +1825,7 @@ class TestCalcParams(ut.TestCase):
                 p_noclose_given_clust = calc_p_noclose_given_clust(
                     p_ends, p_noclose_given_ends
                 )
-                p_mut_given_span_noclose = calc_p_mut_given_span_noclose(
+                p_mut_given_span_noclose = calc_p_mut_given_span_dropped(
                     p_mut, p_ends, p_noclose_given_ends, p_nomut_window
                 )
                 p_ends_given_clust_noclose = calc_p_ends_given_clust_noclose(
@@ -1533,6 +1843,7 @@ class TestCalcParams(ut.TestCase):
                     p_ends_given_clust_noclose,
                     p_clust_given_noclose,
                     min_gap,
+                    "drop"
                 )
                 self.assertEqual(p_mut_inferred.shape, p_mut.shape)
                 self.assertTrue(np.allclose(p_mut_inferred,
@@ -1577,6 +1888,8 @@ class TestCalcRectangularSum(ut.TestCase):
                     self.assertEqual(fast_sum.shape, (n, k))
                     self.assertEqual(slow_sum.shape, (n, k))
                     self.assertTrue(np.allclose(fast_sum, slow_sum))
+
+
 
 
 if __name__ == "__main__":

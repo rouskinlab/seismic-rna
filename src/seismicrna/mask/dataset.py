@@ -21,6 +21,7 @@ from ..core.rel import RelPattern
 from ..core.report import (CountMutsF,
                            CountRefsF,
                            MinMutGapF,
+                           MutCollisionsF,
                            PosKeptF,
                            RefF,
                            RegF,
@@ -52,6 +53,10 @@ class MaskReadDataset(MaskDataset, LoadedDataset, UnbiasDataset):
     @property
     def min_mut_gap(self):
         return self.report.get_field(MinMutGapF)
+    
+    @property
+    def mut_collisions(self):
+        return self.report.get_field(MutCollisionsF)
 
     @property
     def quick_unbias(self):
@@ -92,6 +97,10 @@ class MaskMutsDataset(MaskDataset, MultistepDataset, UnbiasDataset):
     @property
     def min_mut_gap(self):
         return getattr(self.dataset2, "min_mut_gap")
+    
+    @property
+    def mut_collisions(self):
+        return getattr(self.dataset2, "mut_collisions")
 
     @property
     def quick_unbias(self):

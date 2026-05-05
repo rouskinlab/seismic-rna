@@ -12,6 +12,7 @@ from .relate import get_param_dir_fields, load_param_dir
 from ..core import path
 from ..core.arg import (ILLUMINA_TRUSEQ_ADAPTER_R1,
                         ILLUMINA_TRUSEQ_ADAPTER_R2,
+                        PROBE_DMS,
                         arg_input_path,
                         opt_param_dir,
                         opt_profile_name,
@@ -20,6 +21,7 @@ from ..core.arg import (ILLUMINA_TRUSEQ_ADAPTER_R1,
                         opt_paired_end,
                         opt_reverse_fraction,
                         opt_min_mut_gap,
+                        opt_mut_collisions,
                         opt_fq_gzip,
                         opt_num_reads,
                         opt_batch_size,
@@ -40,6 +42,7 @@ from ..core.run import run_func
 from ..core.seq import DNA, BASEA, BASEC, BASEG, BASET, BASEN
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write, write_mode
+from ..mask.main import set_mut_gap_params
 from ..relate.batch import ReadNamesBatch, RelateRegionMutsBatch
 from ..relate.dataset import (ReadNamesDataset,
                               RelateMutsDataset,
@@ -54,6 +57,7 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 
 @jit()
 def _complement(base: str):
+    """ JIT-compiled function to get the complement of a base. """
     if base == BASEA:
         return BASET
     if base == BASEC:
@@ -93,7 +97,7 @@ def _generate_fastq_read_qual(rels: np.ndarray,
     # Fill the read with high-quality Gs (the default base in Illumina).
     read = np.full(read_length, BASEG)
     qual = np.full(read_length, hi_qual)
-    # Add bases from the read.
+    # Add bases to the read.
     read_pos = 0
     while read_pos < read_length and 0 <= ref_pos < ref_length:
         rel = rels[ref_pos]
@@ -118,7 +122,11 @@ def _generate_fastq_read_qual(rels: np.ndarray,
             read[read_pos] = sub_a
             qual[read_pos] = hi_qual
             read_pos += 1
-        elif rel != DELET:
+        elif rel == DELET:
+            # Deletion: do not add any base to the read.
+            pass
+        else:
+            # Assume a low-quality base call: add an N to the read.
             read[read_pos] = BASEN
             qual[read_pos] = lo_qual
             read_pos += 1
@@ -200,6 +208,8 @@ def generate_fastq(
     fastq_paths = [path.buildpar(segs,
                                  {path.TOP: top,
                                   path.SAMPLE: sample,
+                                  path.STEP: path.DEMULT_STEP,
+                                  path.BRANCHES: dict(),
                                   path.REF: ref,
                                   path.EXT: ext})
                    for segs, ext in zip(segs_list, exts, strict=True)]
@@ -332,11 +342,15 @@ def run(*,
         paired_end: bool,
         read_length: int,
         reverse_fraction: float,
-        min_mut_gap: int,
+        min_mut_gap: int | None,
+        mut_collisions: str,
         fq_gzip: bool,
         num_reads: int,
         num_cpus: int,
         force: bool):
+    min_mut_gap, mut_collisions = set_mut_gap_params(PROBE_DMS,
+                                                     min_mut_gap,
+                                                     mut_collisions)
     report_files = as_list_of_tuples(path.find_files_chain(
         input_path,
         load_relate_dataset.report_path_seg_types
@@ -369,6 +383,7 @@ def run(*,
                                                   read_length=read_length,
                                                   p_rev=reverse_fraction,
                                                   min_mut_gap=min_mut_gap,
+                                                  mut_collisions=mut_collisions,
                                                   fq_gzip=fq_gzip,
                                                   num_reads=num_reads,
                                                   force=force))))
@@ -385,6 +400,7 @@ params = [arg_input_path,
           opt_read_length,
           opt_reverse_fraction,
           opt_min_mut_gap,
+          opt_mut_collisions,
           opt_fq_gzip,
           opt_num_reads,
           opt_num_cpus,

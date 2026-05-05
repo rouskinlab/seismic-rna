@@ -20,8 +20,7 @@ from .core.arg import (CMD_JOIN,
                        opt_tmp_pfx,
                        opt_keep_tmp,
                        opt_num_cpus,
-                       opt_force,
-                       extra_defaults)
+                       opt_force)
 from .core.error import InconsistentValueError, NoDataError
 from .core.header import ClustHeader, parse_header
 from .core.join import JoinMutsDataset, JoinReport
@@ -269,7 +268,7 @@ def join_regions(out_dir: Path,
     return join_report_file.parent
 
 
-@run_func(CMD_JOIN, extra_defaults=extra_defaults)
+@run_func(CMD_JOIN)
 def run(input_path: Iterable[str | Path], *,
         joined: str,
         join_clusts: str | None,

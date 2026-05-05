@@ -4,14 +4,14 @@ from textwrap import dedent
 from typing import Any, Callable, Iterable
 
 from . import cli
-from .default import cli_defaults, cli_opts
+from .default import cli_defaults, cli_opts, defaults_to_none
 
 # Ignore special parameters with reserved names.
-reserved_params = ["self", "cls"]
+reserved_params = {"self", "cls"}
 
 # Get the default value for every parameter.
 api_defaults = dict(num_cpus=cli.CPU_COUNT)
-all_defaults = cli_defaults | api_defaults
+all_defaults = api_defaults | cli_defaults | defaults_to_none
 
 # Get the documentation for every CLI option.
 cli_docstrs = {option.name: option.help for option in cli_opts.values()}

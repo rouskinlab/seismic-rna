@@ -45,8 +45,7 @@ from .core.arg import (CMD_WORKFLOW,
                        opt_graph_poscorr,
                        opt_graph_mutdist,
                        opt_mutdist_null,
-                       opt_collate,
-                       extra_defaults)
+                       opt_collate)
 from .core.run import run_func
 from .core.seq import DNA
 from .core.table import (DELET_REL,
@@ -83,9 +82,7 @@ def flatten(nested):
             yield item
 
 
-@run_func(CMD_WORKFLOW,
-          default=None,
-          extra_defaults=extra_defaults)
+@run_func(CMD_WORKFLOW, default=None)
 def run(fasta: str | Path,
         input_path: Iterable[str | Path], *,
         # General options
@@ -186,6 +183,7 @@ def run(fasta: str | Path,
         min_finfo_read: float,
         max_fmut_read: float,
         min_mut_gap: int,
+        mut_collisions: str,
         min_ninfo_pos: int,
         max_fmut_pos: float,
         quick_unbias: bool,
@@ -429,6 +427,7 @@ def run(fasta: str | Path,
         min_finfo_read=min_finfo_read,
         max_fmut_read=max_fmut_read,
         min_mut_gap=min_mut_gap,
+        mut_collisions=mut_collisions,
         min_ninfo_pos=min_ninfo_pos,
         max_fmut_pos=max_fmut_pos,
         quick_unbias=quick_unbias,
@@ -447,6 +446,7 @@ def run(fasta: str | Path,
             input_path=input_path,
             tmp_pfx=tmp_pfx,
             keep_tmp=keep_tmp,
+            probe=probe,
             min_clusters=min_clusters,
             max_clusters=max_clusters,
             min_em_runs=min_em_runs,

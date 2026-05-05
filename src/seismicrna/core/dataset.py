@@ -173,7 +173,7 @@ class UnbiasDataset(Dataset, ABC):
 
     def __init__(self,
                  *args,
-                 masked_read_nums: dict[[int, list]] | None = None,
+                 masked_read_nums: dict[int, list] | None = None,
                  **kwargs):
         super().__init__(*args, **kwargs)
         if masked_read_nums is not None:
@@ -184,6 +184,11 @@ class UnbiasDataset(Dataset, ABC):
     @abstractmethod
     def min_mut_gap(self) -> int:
         """ Minimum gap between two mutations. """
+
+    @property
+    @abstractmethod
+    def mut_collisions(self) -> int:
+        """ Method for handling mutations that are too close. """
 
     @property
     @abstractmethod
@@ -450,6 +455,10 @@ class MergedUnbiasDataset(MergedDataset, UnbiasDataset, ABC):
     @property
     def min_mut_gap(self):
         return self._get_common_attr("min_mut_gap")
+    
+    @property
+    def mut_collisions(self):
+        return self._get_common_attr("mut_collisions")
 
     @property
     def quick_unbias(self):

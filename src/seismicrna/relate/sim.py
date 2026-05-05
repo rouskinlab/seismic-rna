@@ -16,44 +16,19 @@ from ..core.write import need_write
 rng = np.random.default_rng()
 
 
-def _update_checksums(current_checksums: dict[str, list[str]],
-                      new_checksums: dict[str, list[str]]):
-    for key, values in new_checksums.items():
-        try:
-            current_checksums[key].extend(values)
-        except KeyError:
-            current_checksums[key] = values
-
-
 def simulate_batch(sample: str,
                    branches: dict[str, str],
                    ref: str,
                    batch: int,
                    write_read_names: bool,
-                   pmut: pd.DataFrame,
-                   uniq_end5s: np.ndarray,
-                   uniq_end3s: np.ndarray,
-                   pends: np.ndarray,
-                   paired: bool,
-                   read_length: int,
-                   p_rev: float,
-                   min_mut_gap: int,
-                   num_reads: int,
-                   formatter: Callable[[int, int], str] = format_read_name):
+                   formatter: Callable[[int, int], str] = format_read_name,
+                   **kwargs):
     """ Simulate a pair of RelateBatchIO and ReadNamesBatchIO. """
     relate_batch = RelateBatchIO.simulate(sample=sample,
                                           branches=branches,
                                           ref=ref,
                                           batch=batch,
-                                          pmut=pmut,
-                                          uniq_end5s=uniq_end5s,
-                                          uniq_end3s=uniq_end3s,
-                                          pends=pends,
-                                          paired=paired,
-                                          read_length=read_length,
-                                          p_rev=p_rev,
-                                          min_mut_gap=min_mut_gap,
-                                          num_reads=num_reads)
+                                          **kwargs)
     if write_read_names:
         name_batch = ReadNamesBatchIO.simulate(sample=sample,
                                                branches=branches,
@@ -122,8 +97,7 @@ def simulate_relate(*,
                     uniq_end5s: np.ndarray,
                     uniq_end3s: np.ndarray,
                     pends: np.ndarray,
-                    pclust: pd.Series,
-                    brotli_level: int,
+                    pclust: pd.Series,                    brotli_level: int,
                     force: bool,
                     **kwargs):
     """ Simulate an entire relate step. """
@@ -148,18 +122,18 @@ def simulate_relate(*,
             checksums[ReadNamesBatchIO.btype()] = list()
         read_count = 0
         for relate_batch, name_batch in simulate_batches(
-                sample=sample,
-                branches=branches,
-                ref=ref,
-                batch_size=batch_size,
-                num_reads=num_reads,
-                write_read_names=write_read_names,
-                pmut=pmut,
-                uniq_end5s=uniq_end5s,
-                uniq_end3s=uniq_end3s,
-                pends=pends,
-                pclust=pclust,
-                **kwargs
+            sample=sample,
+            branches=branches,
+            ref=ref,
+            batch_size=batch_size,
+            num_reads=num_reads,
+            write_read_names=write_read_names,
+            pmut=pmut,
+            uniq_end5s=uniq_end5s,
+            uniq_end3s=uniq_end3s,
+            pends=pends,
+            pclust=pclust,
+            **kwargs
         ):
             _, relate_checksum = relate_batch.save(tmp_dir,
                                                    brotli_level=brotli_level,

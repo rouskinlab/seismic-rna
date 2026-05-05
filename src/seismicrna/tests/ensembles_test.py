@@ -29,8 +29,6 @@ from seismicrna.ensembles import (_calc_tiles,
 from seismicrna.sim.params import run as sim_params
 from seismicrna.sim.relate import run as sim_relate
 
-rng = np.random.default_rng()
-
 
 class TestCalcTiles(ut.TestCase):
 
@@ -474,10 +472,17 @@ class TestEnsembles(ut.TestCase):
         set_config(verbosity=Level.ERROR,
                    log_file_path=None,
                    exit_on_error=True)
+        # Seed the global RNG so that simulations and EM are
+        # deterministic across runs of these tests.
+        from seismicrna.core.random import rng
+        self._rng_state = rng.bit_generator.state
+        rng.bit_generator.state = np.random.default_rng(0).bit_generator.state
         self.SIM_DIR.mkdir()
 
     def tearDown(self):
         shutil.rmtree(self.SIM_DIR)
+        from seismicrna.core.random import rng
+        rng.bit_generator.state = self._rng_state
         set_config(*self._config)
 
     @classmethod

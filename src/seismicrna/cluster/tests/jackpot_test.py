@@ -27,7 +27,7 @@ from seismicrna.core.unbias import (CLUSTERS,
                                     calc_p_nomut_window,
                                     calc_p_noclose_given_ends,
                                     calc_p_ends_given_noclose,
-                                    calc_p_mut_given_span_noclose)
+                                    calc_p_mut_given_span_dropped)
 from seismicrna.mask import run as run_mask
 from seismicrna.mask.dataset import MaskMutsDataset
 from seismicrna.sim.fold import run as run_sim_fold
@@ -141,7 +141,7 @@ class TestSimReads(ut.TestCase):
         p_noclose_given_ends = calc_p_noclose_given_ends(
             p_mut, p_nomut_window
         )
-        p_mut_given_span_noclose = calc_p_mut_given_span_noclose(
+        p_mut_given_span_noclose = calc_p_mut_given_span_dropped(
             p_mut, p_ends, p_noclose_given_ends, p_nomut_window
         )
         p_noclose_given_clust = calc_p_noclose_given_clust(

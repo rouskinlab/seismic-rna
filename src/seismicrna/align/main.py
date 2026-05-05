@@ -57,8 +57,7 @@ from ..core.arg import (CMD_ALIGN,
                         opt_sep_strands,
                         opt_rev_label,
                         opt_f1r2_fwd,
-                        optional_path,
-                        extra_defaults)
+                        optional_path)
 from ..core.extern import (BOWTIE2_CMD,
                            BOWTIE2_BUILD_CMD,
                            FASTP_CMD,
@@ -67,10 +66,7 @@ from ..core.extern import (BOWTIE2_CMD,
 from ..core.run import run_func
 
 
-@run_func(CMD_ALIGN,
-          with_tmp=True,
-          pass_keep_tmp=True,
-          extra_defaults=extra_defaults)
+@run_func(CMD_ALIGN, with_tmp=True, pass_keep_tmp=True)
 def run(fasta: str | Path, *,
         # Inputs
         fastqz: Iterable[str | Path],

@@ -27,18 +27,14 @@ from ..core.arg import (CMD_DEMULT,
                         opt_branch,
                         opt_force,
                         opt_keep_tmp,
-                        opt_num_cpus,
-                        extra_defaults)
+                        opt_num_cpus)
 from ..core.extern import (SEQKIT_CMD,
                            require_dependency)
 from ..core.run import run_func
 from ..core.seq.xna import DNA
 
 
-@run_func(CMD_DEMULT,
-          with_tmp=True,
-          pass_keep_tmp=True,
-          extra_defaults=extra_defaults)
+@run_func(CMD_DEMULT, with_tmp=True, pass_keep_tmp=True)
 def run(fasta: str | Path, *,
         # Inputs
         fastqz: Iterable[str | Path],

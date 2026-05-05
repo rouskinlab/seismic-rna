@@ -17,7 +17,6 @@ from .core.arg import (CMD_ENSEMBLES,
                        GAP_MODE_INSERT,
                        GAP_MODE_EXPAND,
                        merge_params,
-                       extra_defaults,
                        opt_tile_length,
                        opt_tile_min_overlap,
                        opt_erase_tiles,
@@ -46,7 +45,7 @@ from .core.task import as_list_of_tuples, dispatch
 from .core.validate import require_atleast
 from .mask.dataset import MaskMutsDataset, load_mask_dataset
 from .mask.io import MaskBatchIO
-from .mask.main import load_regions
+from .mask.main import load_regions, set_mut_gap_params
 from .mask.report import MaskReport
 from .relate.dataset import load_relate_dataset
 from .relate.report import RelateReport
@@ -550,7 +549,8 @@ def _write_pairs_to_csv(pairs: list[tuple[int, int]],
 
 def _calc_ref_cluster_modules(datasets: list[MaskMutsDataset],
                               pair_fdr: float,
-                              min_mut_gap: int,
+                              probe: str,
+                              min_mut_gap: int | None,
                               min_pairs: int,
                               min_length: int,
                               max_length: int,
@@ -569,6 +569,7 @@ def _calc_ref_cluster_modules(datasets: list[MaskMutsDataset],
                                        args=as_list_of_tuples(datasets),
                                        kwargs=dict(pair_fdr=pair_fdr)))))
     # Find modules of correlated pairs.
+    min_mut_gap, _ = set_mut_gap_params(probe, min_mut_gap)
     modules = _calc_modules_from_pairs(pairs, pair_fdr, min_mut_gap, min_pairs)
     # Determine what to do with gaps between regions.
     if gap_mode == GAP_MODE_INSERT:
@@ -663,7 +664,8 @@ def _run_group(relate_report_files: list[Path], *,
                min_ncov_read: int,
                min_finfo_read: float,
                max_fmut_read: float,
-               min_mut_gap: int,
+               min_mut_gap: int | None,
+               mut_collisions: str,
                min_ninfo_pos: int,
                max_fmut_pos: float,
                quick_unbias: bool,
@@ -734,6 +736,7 @@ def _run_group(relate_report_files: list[Path], *,
         min_finfo_read=min_finfo_read,
         max_fmut_read=max_fmut_read,
         min_mut_gap=min_mut_gap,
+        mut_collisions=mut_collisions,
         min_ninfo_pos=min_ninfo_pos,
         max_fmut_pos=max_fmut_pos,
         quick_unbias=quick_unbias,
@@ -749,6 +752,7 @@ def _run_group(relate_report_files: list[Path], *,
     module_coords = _calc_cluster_modules(
         tiled_dirs,
         pair_fdr=pair_fdr,
+        probe=probe,
         min_mut_gap=min_mut_gap,
         min_pairs=min_pairs,
         min_length=min_cluster_length,
@@ -809,6 +813,7 @@ def _run_group(relate_report_files: list[Path], *,
         min_finfo_read=min_finfo_read,
         max_fmut_read=max_fmut_read,
         min_mut_gap=min_mut_gap,
+        mut_collisions=mut_collisions,
         min_ninfo_pos=min_ninfo_pos,
         max_fmut_pos=max_fmut_pos,
         quick_unbias=quick_unbias,
@@ -824,6 +829,7 @@ def _run_group(relate_report_files: list[Path], *,
         input_path=module_dirs,
         tmp_pfx=tmp_pfx,
         keep_tmp=keep_tmp,
+        probe=probe,
         min_clusters=min_clusters,
         max_clusters=max_clusters,
         min_em_runs=min_em_runs,
@@ -853,7 +859,7 @@ def _run_group(relate_report_files: list[Path], *,
     return cluster_dirs
 
 
-@run_func(CMD_ENSEMBLES, extra_defaults=extra_defaults)
+@run_func(CMD_ENSEMBLES)
 def run(input_path: Iterable[str | Path], *,
         # General options
         branch: str,
@@ -894,7 +900,8 @@ def run(input_path: Iterable[str | Path], *,
         min_ncov_read: int,
         min_finfo_read: float,
         max_fmut_read: float,
-        min_mut_gap: int,
+        min_mut_gap: int | None,
+mut_collisions: str,
         min_ninfo_pos: int,
         max_fmut_pos: float,
         quick_unbias: bool,
@@ -974,6 +981,7 @@ def run(input_path: Iterable[str | Path], *,
                   min_finfo_read=min_finfo_read,
                   max_fmut_read=max_fmut_read,
                   min_mut_gap=min_mut_gap,
+                  mut_collisions=mut_collisions,
                   min_ninfo_pos=min_ninfo_pos,
                   max_fmut_pos=max_fmut_pos,
                   quick_unbias=quick_unbias,

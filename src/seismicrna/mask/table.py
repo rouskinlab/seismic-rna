@@ -8,6 +8,7 @@ import pandas as pd
 from .dataset import load_mask_dataset
 from .io import MaskFile
 from ..core import path
+from ..core.arg import MUT_COLLISIONS_DROP
 from ..core.batch import END5_COORD, END3_COORD
 from ..core.header import NUM_CLUSTS_NAME, format_clust_name, validate_ks
 from ..core.logs import logger
@@ -118,6 +119,7 @@ class PartialTabulator(Tabulator, ABC):
                  region: Region,
                  pattern: RelPattern,
                  min_mut_gap: int,
+                 mut_collisions: str,
                  quick_unbias: bool,
                  quick_unbias_thresh: float,
                  count_ends: bool = True,
@@ -130,12 +132,15 @@ class PartialTabulator(Tabulator, ABC):
         self.refseq = refseq
         self.pattern = pattern
         self.min_mut_gap = min_mut_gap
+        self.mut_collisions = mut_collisions
         self.quick_unbias = quick_unbias
         self.quick_unbias_thresh = quick_unbias_thresh
 
     @property
     def correct_bias(self):
-        return self.min_mut_gap > 0
+        """ Whether to correct for observer bias. """
+        return (self.min_mut_gap > 0 
+                and self.mut_collisions == MUT_COLLISIONS_DROP)
 
     @cached_property
     def p_ends_given_clust_noclose(self):
@@ -172,6 +177,7 @@ class PartialTabulator(Tabulator, ABC):
                                      self.num_reads,
                                      self.region,
                                      self.min_mut_gap,
+                                     self.mut_collisions,
                                      self.quick_unbias,
                                      self.quick_unbias_thresh)
             except Exception as error:
@@ -227,6 +233,7 @@ def adjust_counts(table_per_pos: pd.DataFrame,
                   n_reads_clust: pd.Series | int,
                   region: Region,
                   min_mut_gap: int,
+                  mut_collisions: str,
                   quick_unbias: bool,
                   quick_unbias_thresh: float):
     """ Adjust the given table of masked/clustered counts per position
@@ -269,6 +276,7 @@ def adjust_counts(table_per_pos: pd.DataFrame,
             p_ends_given_clust_noclose,
             p_clust_given_noclose,
             min_mut_gap,
+            mut_collisions,
             quick_unbias=quick_unbias,
             quick_unbias_thresh=quick_unbias_thresh
         )
@@ -319,7 +327,8 @@ def adjust_counts(table_per_pos: pd.DataFrame,
                 p_mut_given_noclose[:, ki],
                 p_ends_given_clust_noclose[:, :, ki],
                 p_clust_given_noclose,
-                min_mut_gap
+                min_mut_gap,
+                mut_collisions
             )
             # Compute the probability that reads from each cluster would
             # have no two mutations too close.

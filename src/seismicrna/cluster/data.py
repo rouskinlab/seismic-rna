@@ -117,6 +117,14 @@ class ClusterMutsDataset(ClusterDataset, MultistepDataset, UnbiasDataset):
         self.dataset1.min_mut_gap = min_mut_gap
 
     @property
+    def mut_collisions(self):
+        return getattr(self.dataset1, "mut_collisions")
+
+    @mut_collisions.setter
+    def mut_collisions(self, mut_collisions):
+        self.dataset1.mut_collisions = mut_collisions
+
+    @property
     def quick_unbias(self):
         return getattr(self.dataset1, "quick_unbias")
 
@@ -186,6 +194,7 @@ def get_clust_params(dataset: ClusterMutsDataset, num_cpus: int = 1):
             refseq=dataset.refseq,
             pattern=dataset.pattern,
             min_mut_gap=dataset.min_mut_gap,
+            mut_collisions=dataset.mut_collisions,
             quick_unbias=dataset.quick_unbias,
             quick_unbias_thresh=dataset.quick_unbias_thresh,
             ks=dataset.ks,

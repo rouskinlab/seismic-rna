@@ -111,7 +111,8 @@ class TestWorkflow(ut.TestCase):
                 for fastq, mate in zip(fastqs, [1, 2], strict=True):
                     self.assertEqual(
                         fastq,
-                        sample_dir.joinpath(f"{ref}_R{mate}.fq.gz")
+                        sample_dir.joinpath(path.DEMULT_STEP,
+                                            f"{ref}_R{mate}.fq.gz")
                     )
                     self.assertTrue(os.path.isfile(fastq))
         # Merge the FASTA files for all references.

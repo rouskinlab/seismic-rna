@@ -69,9 +69,8 @@ class PositionPairWriter(DatasetWriter):
 
     @classmethod
     @abstractmethod
-    def graph_type(cls):
+    def graph_type(cls) -> type[PositionPairGraph]:
         """ Type of graph. """
-        return type[PositionPairGraph]
 
     def get_graph(self, rel, **kwargs):
         graph_type = self.graph_type()

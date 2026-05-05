@@ -18,17 +18,14 @@ from ..core.arg import (arg_fasta,
                         opt_ct_file,
                         opt_param_dir,
                         opt_write_read_names,
-                        merge_params,
-                        extra_defaults)
+                        merge_params)
 from ..core.run import run_func
 from ..core.seq import DNA
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 
-@run_func(COMMAND,
-          default=None,
-          extra_defaults=extra_defaults)
+@run_func(COMMAND, default=None)
 def run(*,
         sim_dir: str | Path,
         tmp_pfx: str | Path,
@@ -59,6 +56,7 @@ def run(*,
         read_length: int,
         reverse_fraction: float,
         min_mut_gap: int,
+        mut_collisions: str,
         fq_gzip: bool,
         num_reads: int,
         keep_tmp: bool,
@@ -113,6 +111,7 @@ def run(*,
         read_length=read_length,
         reverse_fraction=reverse_fraction,
         min_mut_gap=min_mut_gap,
+        mut_collisions=mut_collisions,
         fq_gzip=fq_gzip,
         num_reads=num_reads,
         force=force,

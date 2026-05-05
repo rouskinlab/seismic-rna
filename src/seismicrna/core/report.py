@@ -73,6 +73,7 @@ from .arg import (opt_phred_enc,
                   opt_min_ncov_read,
                   opt_min_finfo_read,
                   opt_min_mut_gap,
+                  opt_mut_collisions,
                   opt_min_ninfo_pos,
                   opt_max_fmut_pos,
                   opt_max_mask_iter,
@@ -418,6 +419,7 @@ MaxFMutPosF = OptionReportField(opt_max_fmut_pos)
 MinNCovReadF = OptionReportField(opt_min_ncov_read)
 DiscontigF = OptionReportField(opt_mask_discontig)
 MinMutGapF = OptionReportField(opt_min_mut_gap)
+MutCollisionsF = OptionReportField(opt_mut_collisions)
 QuickUnbiasF = OptionReportField(opt_quick_unbias)
 QuickUnbiasThreshF = OptionReportField(opt_quick_unbias_thresh)
 MinFInfoReadF = OptionReportField(opt_min_finfo_read)

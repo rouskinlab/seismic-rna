@@ -311,6 +311,7 @@ class EMRun(object):
             p_ends_observed,
             p_clust_observed,
             self.uniq_reads.min_mut_gap,
+            self.uniq_reads.mut_collisions,
             guess_p_mut,
             guess_p_ends,
             guess_p_clust,
@@ -338,7 +339,8 @@ class EMRun(object):
             self._end3s,
             self._unmasked,
             self.uniq_reads.muts_per_pos,
-            self.uniq_reads.min_mut_gap
+            self.uniq_reads.min_mut_gap,
+            self.uniq_reads.mut_collisions
         )
         # Calculate the log likelihood and append it to the trajectory.
         log_like = _calc_log_like(self._logp_marginal,
@@ -476,6 +478,7 @@ class EMRun(object):
                                             self._p_ends,
                                             self._p_clust,
                                             self.uniq_reads.min_mut_gap,
+                                            self.uniq_reads.mut_collisions,
                                             self._unmasked,
                                             self.jackpot_score,
                                             self._jackpot_conf_level,

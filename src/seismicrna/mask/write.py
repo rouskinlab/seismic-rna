@@ -7,13 +7,18 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
-from .batch import apply_mask
+from .batch import MaskMutsBatch, apply_mask
 from .dataset import MaskMutsDataset
 from .io import MaskBatchIO
 from .report import MaskReport
 from .table import MaskBatchTabulator
 from ..core import path
-from ..core.arg import docdef
+from ..core.arg import (docdef,
+                        MUT_COLLISIONS_AUTO,
+                        MUT_COLLISIONS_DROP,
+                        MUT_COLLISIONS_MERGE,
+                        PROBE_DMS,
+                        PROBE_SHAPE)
 from ..core.batch import RegionMutsBatch
 from ..core.dataset import MissingBatchTypeError
 from ..core.error import IncompatibleValuesError
@@ -54,12 +59,6 @@ class Masker(object):
     MASK_POS_FMUT = "pos-fmut"
     CHECKSUM_KEY = MaskReport.get_batch_type().btype()
 
-    # This decorator is used to make Masker instances easier to create
-    # using the Python API, since the arguments with default values do
-    # not need to be specified; but it can also obscure bugs caused by
-    # failing to pass an argument to __init__, so it's best to comment
-    # out @docdef.auto() when developing the source code.
-    @docdef.auto()
     def __init__(self,
                  dataset: RelateMutsDataset | PoolMutsDataset,
                  region: Region,
@@ -79,6 +78,8 @@ class Masker(object):
                  min_finfo_read: float,
                  max_fmut_read: float,
                  min_mut_gap: int,
+                 mut_collisions: str,
+                 probe: str,
                  min_ninfo_pos: int,
                  max_fmut_pos: float,
                  quick_unbias: bool,
@@ -124,6 +125,8 @@ class Masker(object):
         self.mask_discontig = mask_discontig
         self.min_ncov_read = min_ncov_read
         self.min_mut_gap = min_mut_gap
+        self.mut_collisions = mut_collisions
+        self.probe = probe
         self.min_finfo_read = min_finfo_read
         self.max_fmut_read = max_fmut_read
         self._n_reads = defaultdict(int)
@@ -307,7 +310,7 @@ class Masker(object):
         return mask_read
 
     def _filter_exclude_read(self, batch: RegionMutsBatch):
-        """ Filter out reads in the list of pre-excluded read. """
+        """ Filter out reads in the list of pre-excluded reads. """
         if self.mask_read.size == 0:
             # Pre-exclude no reads.
             logger.detail(f"{self} skipped pre-excluding reads in {batch}")
@@ -399,20 +402,32 @@ class Masker(object):
         return apply_mask(batch, reads)
 
     def _mask_min_mut_gap(self, batch: RegionMutsBatch):
-        """ Filter out reads with mutations that are too close. """
+        """ Filter out mutations that are too close. """
         if not self.min_mut_gap >= 0:
             raise ValueError(
                 f"min_mut_gap must be ≥ 0, but got {self.min_mut_gap}"
             )
         if self.min_mut_gap == 0:
             # No read can have a pair of mutations that are too close.
-            logger.detail(f"{self} skipped filtering reads with pairs of "
-                          f"mutations too close in {batch}")
+            logger.detail(f"{self} skipped filtering pairs of mutations too "
+                          f"close in {batch}")
             return batch
-        reads = batch.reads_noclose_muts(self.pattern, self.min_mut_gap)
-        logger.detail(f"{self} kept {reads.size} reads with no two mutations "
-                      f"separated by < {self.min_mut_gap} nt in {batch}")
-        return apply_mask(batch, reads)
+        if self.mut_collisions == MUT_COLLISIONS_DROP:
+            # Drop reads with pairs of mutations that are too close.
+            reads = batch.reads_noclose_muts(self.pattern, self.min_mut_gap)
+            logger.detail(
+                f"{self} kept {reads.size} reads with no two mutations "
+                f"separated by < {self.min_mut_gap} nt in {batch}"
+            )
+            return apply_mask(batch, reads)
+        if self.mut_collisions == MUT_COLLISIONS_MERGE:
+            # Merge nearby mutations into a single mutation.
+            logger.detail(
+                f"{self} merged mutations closer than {self.min_mut_gap} nt "
+                f"in {batch}"
+            )
+            return batch.merge_close_muts(self.pattern, self.min_mut_gap)
+        raise ValueError(f"Invalid mut_collisions: {repr(self.mut_collisions)}")
 
     def _exclude_positions(self):
         """ Pre-exclude positions from the region. """
@@ -471,7 +486,7 @@ class Masker(object):
         # Remove reads with too many mutations.
         batch = self._filter_max_fmut_read(batch)
         n_reads[self.MASK_READ_FMUT] = (n - (n := batch.num_reads))
-        # Remove reads with mutations too close together.
+        # Remove mutations that are too close together.
         batch = self._mask_min_mut_gap(batch)
         n_reads[self.MASK_READ_GAP] = (n - (n := batch.num_reads))
         # Record the number of reads remaining after filtering.
@@ -530,6 +545,7 @@ class Masker(object):
             region=self.region,
             pattern=self.pattern,
             min_mut_gap=self.min_mut_gap,
+            mut_collisions=self.mut_collisions,
             quick_unbias=self.quick_unbias,
             quick_unbias_thresh=self.quick_unbias_thresh,
             count_pos=True,
@@ -656,6 +672,7 @@ class Masker(object):
             min_finfo_read=self.min_finfo_read,
             max_fmut_read=self.max_fmut_read,
             min_mut_gap=self.min_mut_gap,
+            mut_collisions=self.mut_collisions,
             mask_discontig=self.mask_discontig,
             n_reads_init=self.n_reads_init,
             n_reads_list=self.n_reads_list,

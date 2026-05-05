@@ -15,6 +15,7 @@ from .report import ClusterReport
 from .summary import write_summaries
 from .uniq import UniqReads
 from ..core import path
+from ..core.arg import DEFAULT_MIN_MUT_GAPS, DEFAULT_MUT_COLLISIONS
 from ..core.header import validate_ks
 from ..core.logs import logger
 from ..core.task import dispatch
@@ -189,6 +190,7 @@ def run_ks(uniq_reads: UniqReads,
 def cluster(dataset: MaskMutsDataset | JoinMaskMutsDataset, *,
             branch: str,
             tmp_dir: Path,
+            probe: str,
             min_clusters: int,
             max_clusters: int,
             try_all_ks: bool,
@@ -211,7 +213,22 @@ def cluster(dataset: MaskMutsDataset | JoinMaskMutsDataset, *,
                                             path.REG: dataset.region.name})
     if need_write(report_file, force):
         began = datetime.now()
+        # Check compatibility of the probe and mutation gap parameters.
+        if (
+            dataset.min_mut_gap != DEFAULT_MIN_MUT_GAPS[probe]
+            or dataset.mut_collisions != DEFAULT_MUT_COLLISIONS[probe]
+        ):
+            logger.warning(
+                f"When clustering with probe {repr(probe)}, it is recommended "
+                f"to use min_mut_gap={DEFAULT_MIN_MUT_GAPS[probe]} "
+                f"and mut_collisions={DEFAULT_MUT_COLLISIONS[probe]}, "
+                f"but got min_mut_gap={dataset.min_mut_gap} "
+                f"and mut_collisions={dataset.mut_collisions}. "
+                "The chosen settings make false positive clusters more likely."
+            )
         # Load the unique reads.
+        uniq_reads = UniqReads.from_dataset_contig(dataset, branch)
+        # Create the temporary directory for clustering.
         tmp_clust_dir = path.buildpar(path.REG_DIR_SEGS,
                                       {path.TOP: tmp_dir,
                                        path.SAMPLE: dataset.sample,
@@ -219,11 +236,6 @@ def cluster(dataset: MaskMutsDataset | JoinMaskMutsDataset, *,
                                        path.BRANCHES: branches,
                                        path.REF: dataset.ref,
                                        path.REG: dataset.region.name})
-        if dataset.min_mut_gap != 4:
-            logger.warning("For clustering, it is highly recommended to use "
-                           "the observer bias correction with min_mut_gap=4, "
-                           f"but got min_mut_gap={dataset.min_mut_gap}")
-        uniq_reads = UniqReads.from_dataset_contig(dataset, branch)
         # Run clustering for every number of clusters.
         if max_clusters >= 1:
             max_clusters_use = max_clusters

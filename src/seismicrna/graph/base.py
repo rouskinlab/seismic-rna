@@ -357,7 +357,7 @@ class BaseRunner(ABC):
 
     @classmethod
     @abstractmethod
-    def get_input_loader(cls) -> Callable[[Iterable, Any], Generator]:
+    def get_input_loader(cls) -> Callable[..., Generator]:
         """ Function to load input files. """
 
     @classmethod

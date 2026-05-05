@@ -9,6 +9,7 @@ from .ends import load_pends
 from .muts import load_pmut
 from ..core import path
 from ..core.arg import (opt_param_dir,
+                        PROBE_DMS,
                         opt_profile_name,
                         opt_sample,
                         opt_branch,
@@ -16,6 +17,7 @@ from ..core.arg import (opt_param_dir,
                         opt_read_length,
                         opt_reverse_fraction,
                         opt_min_mut_gap,
+                        opt_mut_collisions,
                         opt_num_reads,
                         opt_batch_size,
                         opt_write_read_names,
@@ -25,6 +27,7 @@ from ..core.arg import (opt_param_dir,
 from ..core.rna import find_ct_region
 from ..core.run import run_func
 from ..core.task import as_list_of_tuples, dispatch
+from ..mask.main import set_mut_gap_params
 from ..relate.sim import simulate_relate
 
 COMMAND = __name__.split(os.path.extsep)[-1]
@@ -79,7 +82,8 @@ def run(*,
         paired_end: bool,
         read_length: int,
         reverse_fraction: float,
-        min_mut_gap: int,
+        min_mut_gap: int | None,
+        mut_collisions: str,
         num_reads: int,
         batch_size: int,
         write_read_names: bool,
@@ -88,6 +92,9 @@ def run(*,
         force: bool,
         num_cpus: int):
     """ Simulate a Relate dataset. """
+    min_mut_gap, mut_collisions = set_mut_gap_params(PROBE_DMS,
+                                                     min_mut_gap,
+                                                     mut_collisions)
     return dispatch(from_param_dir,
                     num_cpus=num_cpus,
                     pass_num_cpus=False,
@@ -102,6 +109,7 @@ def run(*,
                                 read_length=read_length,
                                 p_rev=reverse_fraction,
                                 min_mut_gap=min_mut_gap,
+                                mut_collisions=mut_collisions,
                                 num_reads=num_reads,
                                 batch_size=batch_size,
                                 write_read_names=write_read_names,
@@ -119,6 +127,7 @@ params = [
     opt_read_length,
     opt_reverse_fraction,
     opt_min_mut_gap,
+    opt_mut_collisions,
     opt_num_reads,
     opt_batch_size,
     opt_write_read_names,

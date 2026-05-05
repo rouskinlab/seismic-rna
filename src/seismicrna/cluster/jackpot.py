@@ -4,22 +4,23 @@ import numpy as np
 from numba import jit
 
 from .marginal import calc_marginal
+from ..core.arg import MUT_COLLISIONS_DROP, MUT_COLLISIONS_MERGE
 from ..core.array import find_dims, get_length
 from ..core.logs import logger
 from ..core.random import stochastic_round
 from ..core.unbias import (CLUSTERS,
                            POSITIONS,
                            READS,
+                           UNIQUE_READS,
                            calc_p_noclose_given_clust,
                            calc_p_nomut_window,
                            calc_p_noclose_given_ends,
-                           calc_p_mut_given_span_noclose,
+                           calc_p_mut_given_span_dropped,
                            calc_p_clust_given_noclose,
                            calc_p_ends_given_clust_noclose,
                            calc_p_clust_given_ends_noclose)
 
 SUM_EXP_PRECISION = 3
-UNIQUE = "unique reads"
 
 rng = np.random.default_rng()
 
@@ -246,40 +247,24 @@ def _sim_reads(end5s: np.ndarray,
     return reads, clusts
 
 
-def _calc_resps(n_clusts: int,
-                clusts: np.ndarray,
-                uniq_inverse: np.ndarray,
-                uniq_counts: np.ndarray):
-    """ Calculate the cluster membership of each unique read.
-    """
-    dims = find_dims([(READS,), (READS,), (UNIQUE,)],
-                     [clusts, uniq_inverse, uniq_counts],
-                     ["clusts", "uniq_inverse", "uniq_counts"])
-    resps = np.zeros((dims[UNIQUE], n_clusts))
-    np.add.at(resps, (uniq_inverse, clusts), 1.)
-    # Normalize the memberships so each row sums to 1.
-    return resps / resps.sum(axis=1)[:, np.newaxis]
-
-
 def _calc_obs_exp(reads: np.ndarray,
                   clusts: np.ndarray,
                   p_mut: np.ndarray,
                   p_ends: np.ndarray,
                   p_clust: np.ndarray,
                   min_mut_gap: int,
+                  mut_collisions: str,
                   unmasked: np.ndarray):
     dims = find_dims([(READS, POSITIONS), (READS,)],
                      [reads, clusts],
                      ["reads", "clusts"])
     n_reads = dims[READS]
     # Count each unique read.
-    uniq_reads, uniq_inverse, num_obs = np.unique(reads,
-                                                  axis=0,
-                                                  return_inverse=True,
-                                                  return_counts=True)
+    uniq_reads, num_obs = np.unique(reads,
+                                    axis=0,
+                                    return_counts=True)
     uniq_end5s = uniq_reads[:, -2]
     uniq_end3s = uniq_reads[:, -1]
-    n_uniq_reads_observed, _ = uniq_reads.shape
     # Calculate the properties of the simulated reads.
     muts_per_pos = [np.flatnonzero(uniq_reads[:, j]) for j in unmasked]
     log_exp = np.log(n_reads) + calc_marginal(p_mut,
@@ -289,7 +274,8 @@ def _calc_obs_exp(reads: np.ndarray,
                                               uniq_end3s,
                                               unmasked,
                                               muts_per_pos,
-                                              min_mut_gap)
+                                              min_mut_gap,
+                                              mut_collisions)
     return num_obs, log_exp
 
 
@@ -299,6 +285,7 @@ def sim_obs_exp(end5s: np.ndarray,
                 p_ends: np.ndarray,
                 p_clust: np.ndarray,
                 min_mut_gap: int,
+                mut_collisions: str,
                 unmasked: np.ndarray):
     """ Simulate observed and expected counts. """
     find_dims([(READS,),
@@ -308,10 +295,12 @@ def sim_obs_exp(end5s: np.ndarray,
                (CLUSTERS,)],
               [end5s, end3s, p_mut, p_ends, p_clust],
               ["end5s", "end3s", "p_mut", "p_ends", "p_clust"])
+    if mut_collisions != MUT_COLLISIONS_DROP:
+        raise NotImplementedError(f"mut_collisions={mut_collisions} is not implemented in sim_obs_exp")
     # Calculate the parameters of reads with no two mutations too close.
     p_nomut_window = calc_p_nomut_window(p_mut, min_mut_gap)
     p_noclose_given_ends = calc_p_noclose_given_ends(p_mut, p_nomut_window)
-    p_mut_given_span_noclose = calc_p_mut_given_span_noclose(
+    p_mut_given_span_noclose = calc_p_mut_given_span_dropped(
         p_mut,
         p_ends,
         p_noclose_given_ends,
@@ -342,6 +331,7 @@ def sim_obs_exp(end5s: np.ndarray,
                             p_ends,
                             p_clust,
                             min_mut_gap,
+                            mut_collisions,
                             unmasked)
 
 
@@ -442,6 +432,7 @@ def bootstrap_jackpot_scores(uniq_end5s: np.ndarray,
                              p_ends: np.ndarray,
                              p_clust: np.ndarray,
                              min_mut_gap: int,
+                             mut_collisions: str,
                              unmasked: np.ndarray,
                              real_jackpot_score: float,
                              confidence_level: float,
@@ -469,6 +460,9 @@ def bootstrap_jackpot_scores(uniq_end5s: np.ndarray,
         1D (clusters) probability that a read comes from each cluster.
     min_mut_gap: int
         Minimum number of non-mutated positions between two mutations.
+    mut_collisions: str
+        How to handle mutations that are less than min_mut_gap positions
+        apart.
     unmasked: np.ndarray
         Positions (0-indexed) of p_mut that are not masked.
     real_jackpot_score: float
@@ -485,9 +479,9 @@ def bootstrap_jackpot_scores(uniq_end5s: np.ndarray,
     np.ndarray
         Array of normalized G-test statistics for the null model.
     """
-    find_dims([(UNIQUE,),
-               (UNIQUE,),
-               (UNIQUE,),
+    find_dims([(UNIQUE_READS,),
+               (UNIQUE_READS,),
+               (UNIQUE_READS,),
                (POSITIONS, CLUSTERS),
                (POSITIONS, POSITIONS),
                (CLUSTERS,)],
@@ -517,6 +511,7 @@ def bootstrap_jackpot_scores(uniq_end5s: np.ndarray,
                                         p_ends,
                                         p_clust,
                                         min_mut_gap,
+                                        mut_collisions,
                                         unmasked):
         # Calculate this null model's jackpotting score.
         null_g_anomalies = calc_semi_g_anomaly(num_obs, log_exp)

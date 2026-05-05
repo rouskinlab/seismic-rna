@@ -82,7 +82,7 @@ class TestConsistentVersion(ut.TestCase):
                               "default_options: ['c_std=c99']"])
             expect = f"project({args})"
             with open(meson_build_file) as f:
-                line = f.readline()
+                line = f.readline().rstrip()
             self.assertEqual(line, expect)
 
 

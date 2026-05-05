@@ -4,18 +4,21 @@ from typing import Iterable
 import numpy as np
 from numba import jit, NumbaPerformanceWarning
 
+from .arg import MUT_COLLISIONS_DROP, MUT_COLLISIONS_MERGE
 from .array import find_dims, triangular
 from .logs import logger
 from .validate import (require_isinstance,
                        require_equal,
                        require_atleast,
-                       require_atmost)
+                       require_atmost,
+                       require_between)
 
 # Disable performance warnings from Numba.
 warnings.filterwarnings("ignore", category=NumbaPerformanceWarning)
 
 # Define dimensions
 READS = "reads"
+UNIQUE_READS = "unique reads"
 POSITIONS = "positions"
 CLUSTERS = "clusters"
 POSITIONS_PLUS_1 = "positions + 1"
@@ -42,7 +45,7 @@ def require_same_square_atleast2d(a: np.ndarray, b: np.ndarray):
     """ Require a and b to each be a NumPy NDArray with ≥ 2 dimensions,
     with the first and second dimensions of a and b all equal. """
     require_square_atleast2d("a", a)
-    require_square_atleast2d("b", a)
+    require_square_atleast2d("b", b)
     require_equal("a.shape[:2]", a.shape[:2], b.shape[:2], "b.shape[:2]")
 
 
@@ -109,24 +112,6 @@ def _triu_sum(a: np.ndarray):
     for j in range(a.shape[0]):
         a_sum += a[j, j:].sum(axis=0)
     return a_sum
-
-
-def triu_sum(a: np.ndarray):
-    """ Calculate the sum over the upper triangle(s) of array `a`.
-
-    Parameters
-    ----------
-    a: np.ndarray
-        Array whose upper triangle to sum.
-
-    Returns
-    -------
-    np.ndarray
-        Sum of the upper triangle(s), with the same shape as the third
-        and subsequent dimensions of `a`.
-    """
-    require_square_atleast2d("a", a)
-    return _triu_sum(a)
 
 
 @jit()
@@ -325,80 +310,6 @@ def triu_dot(a: np.ndarray, b: np.ndarray):
     """
     require_same_square_atleast2d(a, b)
     return _triu_dot(a, b)
-
-
-@jit()
-def _triu_allclose(a: np.ndarray,
-                   b: np.ndarray,
-                   rtol: float = 1.e-3,
-                   atol: float = 1.e-6):
-    """ Whether the upper triangles of `a` and `b` are all close.
-
-    This function is meant to be called by another function that has
-    validated the arguments; hence, this function makes assumptions:
-
-    -   `a` and `b` both have at least 2 dimensions.
-    -   The first and second dimensions of `a` are equal.
-    -   The first and second dimensions of `b` are equal.
-
-    Parameters
-    ----------
-    a: np.ndarray
-        Array 1.
-    b: np.ndarray
-        Array 2.
-    rtol: float = 1.0e-3
-        Relative tolerance.
-    atol: float = 1.0e-6
-        Absolute tolerance.
-
-    Returns
-    -------
-    bool
-        Whether all elements of the upper triangles of `a` and `b` are
-        close using the function `np.allclose`.
-    """
-    for j in range(a.shape[0]):
-        if not np.allclose(a[j, j:], b[j, j:], rtol=rtol, atol=atol):
-            return False
-    return True
-
-
-def triu_allclose(a: np.ndarray | float,
-                  b: np.ndarray | float,
-                  rtol: float = 1.e-3,
-                  atol: float = 1.e-6):
-    """ Whether the upper triangles of `a` and `b` are all close.
-
-    Parameters
-    ----------
-    a: np.ndarray | float
-        Array 1.
-    b: np.ndarray | float
-        Array 2.
-    rtol: float = 1.0e-3
-        Relative tolerance.
-    atol: float = 1.0e-6
-        Absolute tolerance.
-
-    Returns
-    -------
-    bool
-        Whether all elements of the upper triangles of `a` and `b` are
-        close using the function `np.allclose`.
-    """
-    # Ensure a and b are arrays with the same dimensions.
-    a, b = np.broadcast_arrays(np.asarray(a), np.asarray(b))
-    # Explicitly set the writeable flag to False in order to suppress
-    # "FutureWarning: future versions will not create a writeable array
-    # from broadcast_array. Set the writable flag explicitly to avoid
-    # this warning."
-    # These lines may not be needed with NumPy ≥ 2.0.
-    a.flags.writeable = False
-    b.flags.writeable = False
-    # Ensure a and b are both square in their first 2 dimensions.
-    require_same_square_atleast2d(a, b)
-    return _triu_allclose(a, b, rtol, atol)
 
 
 @jit()
@@ -722,12 +633,12 @@ def calc_rectangular_sum(array: np.ndarray):
 
 
 @jit()
-def _calc_p_mut_given_span_noclose(p_mut_given_span: np.ndarray,
+def _calc_p_mut_given_span_dropped(p_mut_given_span: np.ndarray,
                                    p_ends: np.ndarray,
                                    p_noclose_given_ends: np.ndarray,
                                    p_nomut_window: np.ndarray):
-    """ Calculate the mutation rates of only reads with no two mutations
-    too close that span each position.
+    """ Calculate the mutation rates after dropping reads with two
+    mutations that are too close.
 
     Parameters
     ----------
@@ -754,8 +665,6 @@ def _calc_p_mut_given_span_noclose(p_mut_given_span: np.ndarray,
         2D (positions x clusters) array of the mutation rate among reads
         with no two mutations too close per position per cluster.
     """
-    # NOTE: _calc_p_mut_given_ends_noclose uses code from this function.
-    # Modify the other if you every modify this function.
     # Find the dimensions.
     npos, ncls = p_mut_given_span.shape
     min_gap = p_nomut_window.shape[0] - 1
@@ -767,11 +676,11 @@ def _calc_p_mut_given_span_noclose(p_mut_given_span: np.ndarray,
     # have no two mutations too close.
     p_noclose_given_span = _calc_rectangular_sum(p_noclose_given_ends
                                                  * p_ends[:, :, np.newaxis])
-    # Compute the mutation rates given no two mutations are too close
-    # one position (j) at a time.
     p_mut_given_span_noclose = np.nan_to_num(
         p_mut_given_span / p_noclose_given_span
     )
+    # Compute the mutation rates given no two mutations are too close
+    # one position (j) at a time.
     for j in range(npos):
         nrows = j + 1
         ncols = npos - j
@@ -780,7 +689,7 @@ def _calc_p_mut_given_span_noclose(p_mut_given_span: np.ndarray,
         p_noclose_a = np.empty((ncls, nrows))
         for a in range(nrows):
             # Number of bases 5' of (j) that must have no mutations:
-            # the smallest of (min_gap) and (j - a).
+            # the smaller of (min_gap) and (j - a).
             nomut = min(min_gap, j - a)
             # Probability of no close mutations, (a) to (j - 1 - nomut):
             #   p_noclose_given_ends[a, max(j - 1 - nomut, a)]
@@ -797,7 +706,7 @@ def _calc_p_mut_given_span_noclose(p_mut_given_span: np.ndarray,
         p_noclose_b = np.empty((ncls, ncols))
         for b in range(j, npos):
             # Number of bases 3' of (j) that must have no mutations:
-            # the smallest of (min_gap) and (b - j).
+            # the smaller of (min_gap) and (b - j).
             nomut = min(min_gap, b - j)
             # Probability of no mutations over the (nomut)-sized window
             # from (j + 1) to (j + nomut):
@@ -819,12 +728,12 @@ def _calc_p_mut_given_span_noclose(p_mut_given_span: np.ndarray,
     return p_mut_given_span_noclose
 
 
-def calc_p_mut_given_span_noclose(p_mut_given_span: np.ndarray,
+def calc_p_mut_given_span_dropped(p_mut_given_span: np.ndarray,
                                   p_ends: np.ndarray,
                                   p_noclose_given_ends: np.ndarray,
                                   p_nomut_window: np.ndarray):
-    """ Calculate the mutation rates of only reads with no two mutations
-    too close that span each position.
+    """ Calculate the mutation rates after dropping reads with two
+    mutations that are too close.
 
     Parameters
     ----------
@@ -867,10 +776,179 @@ def calc_p_mut_given_span_noclose(p_mut_given_span: np.ndarray,
                   dims[POSITIONS],
                   dims[POSITIONS_PLUS_1] - 1,
                   "p_nomut_window.shape[1] - 1")
-    return _calc_p_mut_given_span_noclose(p_mut_given_span,
+    return _calc_p_mut_given_span_dropped(p_mut_given_span,
                                           p_ends,
                                           p_noclose_given_ends,
                                           p_nomut_window)
+
+
+@jit()
+def _calc_p_mut_given_span_merged_end_b(p_mut_given_span: np.ndarray,
+                                        min_gap: int):
+    """ Calculate the mutation rates after merging mutations closer than
+    min_gap positions, assuming that all reads end at the same position.
+
+    This function is meant to be called by another function that has
+    validated the arguments; hence, this function makes assumptions:
+
+    - `p_mut_given_span` is a 2D (positions x clusters) array of the
+      underlying mutation rates.
+    - All values of `p_mut_given_span` are between 0 and 1, inclusive.
+    - `min_gap` is a non-negative integer.
+
+    Parameters
+    ----------
+    p_mut_given_span: np.ndarray
+        2D (positions x clusters) array of the underlying mutation rates
+        (i.e. the probability that a read has a mutation at position (j)
+        given that it contains that position).
+    min_gap: int
+        Minimum number of non-mutated bases between two mutations;
+        must be ≥ 0.
+
+    Returns
+    -------
+    np.ndarray
+        2D (positions x clusters) array of the mutation rate among reads
+        with no two mutations too close per position per cluster.
+    """
+    # Initialize the output array.
+    p_mut_given_span_merged = p_mut_given_span.copy()
+    # Find the dimensions.
+    npos = p_mut_given_span.shape[0]
+    # The 3'-most position (npos - 1) cannot have a mutation on its
+    # 3' side, so its mutation probability is unaffected by merging.
+    # Fill in the other positions from 3' to 5'.
+    for j in range(npos - 2, -1, -1):
+        # The probability that position j has a mutation within min_gap
+        # positions on its 3' side after merging is the sum of the
+        # mutation rates of those positions because, after merging, the
+        # mutations are mutually exclusive:
+        # np.sum(p_mut_given_span_merged[j+1: j+min_gap+1], axis=0)
+        # In order to have a mutation at position j after merging, there
+        # must not be a mutation at any of those positions, so take the
+        # complement of that sum. Then multiply by the original mutation
+        # rate at position j to get the mutation rate after merging.
+        j_inc = j + 1
+        p_mut_given_span_merged[j] *= (1. - np.sum(
+            p_mut_given_span_merged[j_inc: j_inc + min_gap],
+            axis=0
+        ))
+    return p_mut_given_span_merged
+
+
+@jit()
+def _calc_p_mut_given_span_merged(p_mut_given_span: np.ndarray,
+                                  p_ends: np.ndarray,
+                                  min_gap: int) -> np.ndarray:
+    """ Calculate the mutation rates after merging mutations closer than
+    min_gap positions.
+
+    This function is meant to be called by another function that has
+    validated the arguments; hence, this function makes assumptions:
+
+    - `p_mut_given_span` is a 2D (positions x clusters) array of the
+      underlying mutation rates.
+    - All values of `p_mut_given_span` are between 0 and 1, inclusive.
+    - `p_ends` is a 2D (positions x positions) array of the proportion
+      of reads in each cluster beginning at the row position and ending
+      at the column position. (Only the upper triangle of `p_ends` is
+      used, so values below the main diagonal can be ignored.)
+    - All values in the upper triangle of `p_ends` are ≥ 0.
+    - The sum of the upper triangle of `p_ends` equals 1.
+    - `min_gap` is a non-negative integer.
+
+    Parameters
+    ----------
+    p_mut_given_span: np.ndarray
+        2D (positions x clusters) array of the underlying mutation rates
+        (i.e. the probability that a read has a mutation at position (j)
+        given that it contains that position).
+    p_ends: np.ndarray
+        2D (positions x positions) array of the proportion of reads in
+        each cluster beginning at the row position and ending at the
+        column position.
+    min_gap: int
+        Minimum number of non-mutated bases between two mutations;
+        must be ≥ 0.
+
+    Returns
+    -------
+    np.ndarray
+        2D (positions x clusters) array of the mutation rate among reads
+        with no two mutations too close per position per cluster.
+    """
+    npos = p_mut_given_span.shape[0]
+    # Initialize the probability that a read spans each position.
+    p_span = np.zeros(npos, dtype=p_mut_given_span.dtype)
+    # Initialize the joint probability that reads both span and have a
+    # mutation at each position after merging.
+    p_joint_mut_span_merged = np.zeros_like(p_mut_given_span)
+    # For a given end position b, merged probabilities do not depend on
+    # the start position a, so compute them once for each end position b
+    # from 0 to (npos - 1).
+    for b in range(npos):
+        b_inc = b + 1
+        # Calculate the joint probability that a read ends at position b
+        # and spans each position from 0 to b (inclusive).
+        p_joint_span_end_b = np.cumsum(p_ends[:b_inc, b])
+        # If no reads end at position b (p_joint_span_end_b[b] == 0),
+        # then there is nothing to do, so skip to the next b.
+        if p_joint_span_end_b[b] > 0.0:
+            # Accumulate the probability that a read spans each position
+            # by adding the joint probabilities for each end position b.
+            p_span[:b_inc] += p_joint_span_end_b
+            # Calculate the probability that a read has a mutation at
+            # each position from 0 to b after merging given that it ends
+            # at position b.
+            p_mut_given_span_merged_end_b = _calc_p_mut_given_span_merged_end_b(
+                p_mut_given_span[:b_inc],
+                min_gap
+            )
+            # Calculate the joint probability that a read has a mutation
+            # at each position from 0 to b after merging and ends at
+            # position b.
+            p_joint_mut_span_merged_end_b = (
+                p_mut_given_span_merged_end_b
+                * p_joint_span_end_b[:, np.newaxis]
+            )
+            # Accumulate the probability that a read has a mutation at
+            # each position by adding the joint probabilities for each
+            # end position b.
+            p_joint_mut_span_merged[:b_inc] += p_joint_mut_span_merged_end_b
+    # Calculate the mutation rates after merging by dividing the joint
+    # probabilities of mutation and spanning by the probabilities of
+    # spanning. If a position is not spanned by any reads, the mutation
+    # rate is set to zero.
+    p_mut_given_span_merged = np.nan_to_num(p_joint_mut_span_merged
+                                            / p_span[:, np.newaxis])
+    return p_mut_given_span_merged
+
+
+def _calc_p_mut_given_span_biased(p_mut_given_span: np.ndarray,
+                                  p_ends: np.ndarray,
+                                  min_gap: int,
+                                  mut_collisions: str):
+    """ Calculate the biased mutation rates after dropping reads with
+    two mutations too close or merging mutations too close. """
+    if mut_collisions == MUT_COLLISIONS_DROP:
+        # Use the read-dropping method.
+        p_nomut_window = _calc_p_nomut_window(p_mut_given_span, min_gap)
+        p_noclose_given_ends = _calc_p_noclose_given_ends(p_mut_given_span,
+                                                          p_nomut_window)
+        return _calc_p_mut_given_span_dropped(
+            p_mut_given_span,
+            p_ends,
+            p_noclose_given_ends,
+            p_nomut_window
+        )
+    if mut_collisions == MUT_COLLISIONS_MERGE:
+        # Use the mutation-merging method.
+        return _calc_p_mut_given_span_merged(p_mut_given_span, p_ends, min_gap)
+    raise ValueError(
+        f"mut_collisions must be either {repr(MUT_COLLISIONS_DROP)} "
+        f"or {repr(MUT_COLLISIONS_MERGE)}, but got {repr(mut_collisions)}"
+    )
 
 
 def _slice_p_ends(p_ends: np.ndarray,
@@ -942,8 +1020,9 @@ def _split_positions(p_mut: np.ndarray,
 
 
 def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
-                           min_gap: int,
                            p_ends: np.ndarray,
+                           min_gap: int,
+                           mut_collisions: str,
                            init_p_mut_given_span: np.ndarray,
                            f_tol: float,
                            x_rtol: float):
@@ -958,19 +1037,18 @@ def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
     # mutation rates.
 
     def objective(p_mut_given_span: np.ndarray):
-        """ Calculate the difference between the observed mutation rates
-        and the mutation rates of reads with no two mutations too close
-        assuming the true mutaiton rates are `p_mut_given_span`. """
-        p_nomut_window = _calc_p_nomut_window(p_mut_given_span, min_gap)
-        p_noclose_given_ends = _calc_p_noclose_given_ends(p_mut_given_span,
-                                                          p_nomut_window)
-        return p_mut_given_span_observed - _calc_p_mut_given_span_noclose(
-            p_mut_given_span,
+        # Clip the iterate to [0, 1] before evaluating the biased model.
+        # The merge formula is numerically unstable outside [0, 1]:
+        # errors grow multiplicatively as the recursion proceeds from
+        # the 3' end to the 5' end, which can cause Newton-Krylov to
+        # spend a huge number of iterations chasing a runaway residual.
+        return p_mut_given_span_observed - _calc_p_mut_given_span_biased(
+            _clip(p_mut_given_span),
             p_ends,
-            p_noclose_given_ends,
-            p_nomut_window
+            min_gap,
+            mut_collisions
         )
-
+    
     # Import scipy here instead of at the top of this module because
     # its import is slow enough to impact global startup time.
     from scipy.optimize import newton_krylov, NoConvergence
@@ -979,8 +1057,12 @@ def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
         return _clip(newton_krylov(objective,
                                    init_p_mut_given_span,
                                    f_tol=f_tol,
-                                   x_rtol=x_rtol))
-    except (NoConvergence, ValueError, ZeroDivisionError) as error:
+                                   x_rtol=x_rtol,
+                                   maxiter=1000))
+    except (NoConvergence,
+            ValueError,
+            ZeroDivisionError,
+            OverflowError) as error:
         # The Newton-Krylov solver could not unbias the mutation rates.
         # Return the original mutation rates as a fallback.
         logger.warning(error)
@@ -988,8 +1070,9 @@ def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
 
 
 def calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
-                          min_gap: int,
                           p_ends: np.ndarray,
+                          min_gap: int,
+                          mut_collisions: str,
                           init_p_mut_given_span: np.ndarray, *,
                           quick_unbias: bool = True,
                           quick_unbias_thresh: float = 0.,
@@ -1006,8 +1089,9 @@ def calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
         # to 2 dimensions, calculate, and convert back to 1 dimension.
         return calc_p_mut_given_span(
             p_mut_given_span_observed[:, np.newaxis],
-            min_gap,
             p_ends,
+            min_gap,
+            mut_collisions,
             init_p_mut_given_span,
             f_tol=f_tol,
             x_rtol=x_rtol,
@@ -1033,31 +1117,31 @@ def calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
     if quick_unbias:
         # Use the approximation method to reduce the time complexity
         # from O(n^3) to O(n) where n is the number of positions.
-        require_atleast(
-            "quick_unbias_thresh", quick_unbias_thresh, 0., classes=float
-        )
-        require_atmost(
-            "quick_unbias_thresh", quick_unbias_thresh, 1., classes=float
+        require_between(
+            "quick_unbias_thresh", quick_unbias_thresh, 0., 1., classes=float
         )
         # Split the mutation rates and end coordinate distributions,
         # calculate them separately, and reassemble them.
         p_mut_given_span_list = list()
         for p_mut_split, p_mut_init_split, p_ends_split in zip(
-                *_split_positions(p_mut_given_span_observed,
-                                  init_p_mut_given_span,
-                                  p_ends,
-                                  _find_split_positions(
-                                      p_mut_given_span_observed,
-                                      min_gap,
-                                      quick_unbias_thresh
-                                  )),
-                strict=True
+            *_split_positions(
+                p_mut_given_span_observed,
+                init_p_mut_given_span,
+                p_ends,
+                _find_split_positions(
+                    p_mut_given_span_observed,
+                    min_gap,
+                    quick_unbias_thresh
+                )
+            ),
+            strict=True
         ):
             if p_mut_split.max(initial=0.) > quick_unbias_thresh:
                 p_mut_given_span_list.append(_calc_p_mut_given_span(
                     p_mut_split,
-                    min_gap,
                     p_ends_split,
+                    min_gap,
+                    mut_collisions,
                     p_mut_init_split,
                     f_tol,
                     x_rtol,
@@ -1070,12 +1154,15 @@ def calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
                 else np.empty((dims[POSITIONS], dims[CLUSTERS])))
     else:
         # Do not use the approximation method.
-        return _calc_p_mut_given_span(p_mut_given_span_observed,
-                                      min_gap,
-                                      p_ends,
-                                      init_p_mut_given_span,
-                                      f_tol,
-                                      x_rtol)
+        return _calc_p_mut_given_span(
+            p_mut_given_span_observed,
+            p_ends,
+            min_gap,
+            mut_collisions,
+            init_p_mut_given_span,
+            f_tol,
+            x_rtol
+        )
 
 
 def calc_p_ends(p_ends_observed: np.ndarray,
@@ -1255,6 +1342,7 @@ def calc_params(p_mut_given_span_observed: np.ndarray,
                 p_ends_observed: np.ndarray,
                 p_clust_observed: np.ndarray,
                 min_gap: int,
+                mut_collisions: str,
                 guess_p_mut_given_span: np.ndarray | None = None,
                 guess_p_ends: np.ndarray | None = None,
                 guess_p_clust: np.ndarray | None = None, *,
@@ -1281,6 +1369,9 @@ def calc_params(p_mut_given_span_observed: np.ndarray,
     min_gap: int
         Minimum number of non-mutated bases between two mutations. Must
         be a non-negative integer.
+    mut_collisions: str
+        Method for handling reads with two mutations that are too close;
+        must be either "drop" or "merge".
     guess_p_mut_given_span: np.ndarray | None = None
         Initial guess for the probability that each position is mutated.
         If given, must be a 2D array (positions x clusters); defaults to
@@ -1377,42 +1468,60 @@ def calc_params(p_mut_given_span_observed: np.ndarray,
             guess_p_ends = np.average(p_ends_observed,
                                       axis=2,
                                       weights=guess_p_clust)
-    # Iteratively update the mutation rates and read coordinates.
-    require_atleast("max_iter", max_iter, 1, classes=int)
-    for i in range(max_iter):
-        # Update the mutation rates using the read coordinates.
-        next_p_mut_given_span = calc_p_mut_given_span(p_mut_given_span_observed,
-                                                      min_gap,
-                                                      guess_p_ends,
-                                                      guess_p_mut_given_span,
-                                                      **kwargs)
-        # Compute the RMSD change in mutation rates.
-        rmsd_p_mut_given_span = np.sqrt(np.mean(np.square(
-            next_p_mut_given_span - guess_p_mut_given_span
-        )))
-        # Update guess_p_mut_given_span for the next iteration.
-        guess_p_mut_given_span = next_p_mut_given_span
-        # Check for convergence using the RMSD change.
-        if rmsd_p_mut_given_span <= convergence_thresh:
-            break
-        # Compute the probability that reads with each end coordinates
-        # would have no two mutations too close.
-        p_noclose_given_ends = _calc_p_noclose_given_ends(
-            guess_p_mut_given_span,
-            _calc_p_nomut_window(guess_p_mut_given_span, min_gap)
-        )
-        # Update the distribution of read end coordinates and clusters
-        # using the mutation rates.
-        guess_p_ends = calc_p_ends(p_ends_observed,
-                                   p_noclose_given_ends,
-                                   guess_p_mut_given_span,
-                                   guess_p_clust)
-        guess_p_clust = calc_p_clust(p_clust_observed,
-                                     calc_p_noclose_given_clust(guess_p_ends,
-                                                                p_noclose_given_ends))
+    if mut_collisions == MUT_COLLISIONS_DROP:
+        # Iteratively update the mutation rates and read coordinates.
+        require_atleast("max_iter", max_iter, 1, classes=int)
+        for _ in range(max_iter):
+            # Update the mutation rates using the read coordinates.
+            next_p_mut_given_span = calc_p_mut_given_span(
+                p_mut_given_span_observed,      
+                guess_p_ends,
+                min_gap,
+                mut_collisions,
+                guess_p_mut_given_span,
+                **kwargs
+            )
+            # Compute the RMSD change in mutation rates.
+            rmsd_p_mut_given_span = np.sqrt(np.mean(np.square(
+                next_p_mut_given_span - guess_p_mut_given_span
+            )))
+            # Update guess_p_mut_given_span for the next iteration.
+            guess_p_mut_given_span = next_p_mut_given_span
+            # Check for convergence using the RMSD change.
+            if rmsd_p_mut_given_span <= convergence_thresh:
+                break
+            # Compute the probability that reads with each pair of end
+            # coordinates would have no two mutations too close.
+            p_noclose_given_ends = _calc_p_noclose_given_ends(
+                guess_p_mut_given_span,
+                _calc_p_nomut_window(guess_p_mut_given_span, min_gap)
+            )
+            # Update the distribution of read end coordinates and
+            # clusters using the mutation rates.
+            guess_p_ends = calc_p_ends(p_ends_observed,
+                                       p_noclose_given_ends,
+                                       guess_p_mut_given_span,
+                                       guess_p_clust)
+            guess_p_clust = calc_p_clust(
+                p_clust_observed,
+                calc_p_noclose_given_clust(guess_p_ends, p_noclose_given_ends)
+            )
+        else:
+            logger.warning(
+                "Mutation rates and distribution of end coordinates "
+                f"failed to converge in {max_iter} iterations"
+            )
     else:
-        logger.warning("Mutation rates and distribution of read coordinates "
-                       f"failed to converge in {max_iter} iterations")
+        # If reads are not being dropped, then only the mutation rates
+        # need to be updated.
+        guess_p_mut_given_span = calc_p_mut_given_span(
+            p_mut_given_span_observed,      
+            guess_p_ends,
+            min_gap,
+            mut_collisions,
+            guess_p_mut_given_span,
+            **kwargs
+        )
     return guess_p_mut_given_span, guess_p_ends, guess_p_clust
 
 

@@ -40,8 +40,7 @@ from ..core.arg import (CMD_FOLD,
                         opt_verify_times,
                         opt_num_cpus,
                         opt_force,
-                        optional_path,
-                        extra_defaults)
+                        optional_path)
 from ..core.extern import (RNASTRUCTURE_FOLD_CMD,
                            RNASTRUCTURE_SHAPEKNOTS_CMD,
                            VIENNA_RNAFOLD_CMD,
@@ -190,7 +189,7 @@ def fold_table(table: MaskPositionTableLoader | ClusterPositionTableLoader,
                                 **kwargs))
 
 
-@run_func(CMD_FOLD, extra_defaults=extra_defaults)
+@run_func(CMD_FOLD)
 def run(input_path: Iterable[str | Path], *,
         branch: str,
         fold_coords: Iterable[tuple[str, int, int]],
