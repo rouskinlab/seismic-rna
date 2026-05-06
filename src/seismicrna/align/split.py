@@ -38,7 +38,8 @@ from ..core.arg import (CMD_SPLITBAM,
                         opt_min_reads,
                         opt_sep_strands,
                         opt_rev_label,
-                        opt_f1r2_fwd)
+                        opt_f1r2_fwd,
+                        opt_seed)
 from ..core.error import DuplicateValueError
 from ..core.extern import (BOWTIE2_CMD,
                            BOWTIE2_BUILD_CMD,
@@ -187,6 +188,7 @@ def run(fasta: str | Path, *,
         bt2_r: int,
         bt2_dpad: int,
         bt2_orient: str,
+        seed: int | None,
         # Samtools
         min_mapq: int,
         min_reads: int,
@@ -235,6 +237,7 @@ def run(fasta: str | Path, *,
                                 bt2_r=bt2_r,
                                 bt2_dpad=bt2_dpad,
                                 bt2_orient=bt2_orient,
+                                seed=seed,
                                 min_mapq=min_mapq,
                                 min_reads=min_reads,
                                 sep_strands=sep_strands,
@@ -271,6 +274,7 @@ params = [
     opt_bt2_gbar,
     opt_bt2_dpad,
     opt_bt2_orient,
+    opt_seed,
     # Samtools
     opt_min_mapq,
     opt_min_reads,

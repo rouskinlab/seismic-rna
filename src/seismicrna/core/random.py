@@ -2,10 +2,9 @@ import numpy as np
 
 from .array import calc_inverse
 
-rng = np.random.default_rng()
 
-
-def _stochastic_round(values: np.ndarray | list | float | int):
+def _stochastic_round(values: np.ndarray | list | float | int,
+                      seed: int | None):
     """ Round values to integers stochastically, so that the probability
     of rounding up equals the fractional part of the original value.
 
@@ -19,6 +18,7 @@ def _stochastic_round(values: np.ndarray | list | float | int):
     np.ndarray
         Values rounded to integers.
     """
+    rng = np.random.default_rng(seed)
     values = np.asarray_chkfinite(values)
     # Break each value into integer and fractional parts.
     rounded = np.asarray(np.floor(values), dtype=int)
@@ -31,7 +31,8 @@ def _stochastic_round(values: np.ndarray | list | float | int):
     return rounded
 
 
-def _stochastic_round_sum(values: np.ndarray | list | float | int):
+def _stochastic_round_sum(values: np.ndarray | list | float | int,
+                          seed: int | None):
     """ Like stochastic_round, but guarantees that the sums before and
     after rounding are equal. If the former is not an integer, then the
     sum after rounding will be either the nearest integer greater than
@@ -49,6 +50,7 @@ def _stochastic_round_sum(values: np.ndarray | list | float | int):
     np.ndarray
         Values rounded to integers, with the original sum preserved.
     """
+    rng = np.random.default_rng(seed)
     values = np.asarray_chkfinite(values)
     if values.size == 0:
         return np.zeros(values.shape, dtype=bool)
@@ -77,7 +79,8 @@ def _stochastic_round_sum(values: np.ndarray | list | float | int):
 
 
 def stochastic_round(values: np.ndarray | list | float | int,
-                     preserve_sum: bool = False):
+                     preserve_sum: bool = False,
+                     seed: int | None = None):
     """ Round values to integers stochastically, so that the probability
     of rounding up equals the fractional part of the original value.
 
@@ -95,5 +98,5 @@ def stochastic_round(values: np.ndarray | list | float | int,
         Values rounded to integers, with the original sum preserved.
     """
     if preserve_sum:
-        return _stochastic_round_sum(values)
-    return _stochastic_round(values)
+        return _stochastic_round_sum(values, seed=seed)
+    return _stochastic_round(values, seed=seed)

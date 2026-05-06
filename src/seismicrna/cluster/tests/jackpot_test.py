@@ -35,8 +35,6 @@ from seismicrna.sim.params import run as run_sim_params
 from seismicrna.sim.ref import run as run_sim_ref
 from seismicrna.sim.relate import run as run_sim_relate
 
-rng = np.random.default_rng()
-
 
 class TestSimClusters(ut.TestCase):
 
@@ -55,8 +53,8 @@ class TestSimClusters(ut.TestCase):
                          nonzero=[CLUSTERS])
         n_clusts = dims[CLUSTERS]
         # Simulate the cluster for each read.
-        clusters = np.vstack([_sim_clusters(p_clust_per_read)
-                              for _ in range(n_trials)])
+        clusters = np.vstack([_sim_clusters(p_clust_per_read, seed=i)
+                              for i in range(n_trials)])
         for k in range(n_clusts):
             # Find the reads assigned to this cluster.
             read_in_k = clusters == k
@@ -124,6 +122,7 @@ class TestSimReads(ut.TestCase):
         return clust_counts, span_counts, mut_counts
 
     def test_sim_reads(self):
+        rng = np.random.default_rng(seed=0)
         n_pos = 40
         n_reads = 50000
         n_clust = 4
@@ -172,7 +171,8 @@ class TestSimReads(ut.TestCase):
                                    end3s,
                                    p_clust_given_ends_noclose,
                                    p_mut_given_span_noclose,
-                                   min_mut_gap)
+                                   min_mut_gap,
+                                   seed=0)
         clust_counts, span_counts, mut_counts = self.count_reads(reads,
                                                                  clusts,
                                                                  n_clust)
@@ -203,7 +203,7 @@ class TestSimReads(ut.TestCase):
         self.assertTrue(np.all(mut_counts >= np.floor(mut_counts_expect)))
         self.assertTrue(np.all(mut_counts <= np.ceil(mut_counts_expect)))
         # Distance between each pair of mutations.
-        for i, read in enumerate(reads[:, :n_pos]):
+        for read in reads[:, :n_pos]:
             self.assertTrue(np.all(np.diff(np.flatnonzero(read)) > min_mut_gap))
 
 
@@ -332,7 +332,7 @@ class TestBootstrapJackpotScores(ut.TestCase):
         uniq_reads = UniqReads.from_dataset_contig(mask_dataset, "")
         em_run = EMRun(uniq_reads,
                        k=n_clusts,
-                       seed=rng.integers(2 ** 32),
+                       seed=0,
                        min_iter=2,
                        max_iter=opt_max_em_iter.default,
                        em_thresh=opt_em_thresh.default,

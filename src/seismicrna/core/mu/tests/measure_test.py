@@ -4,8 +4,6 @@ import numpy as np
 
 from seismicrna.core.mu.measure import calc_gini, calc_signal_noise
 
-rng = np.random.default_rng()
-
 
 class TestCalcGini(ut.TestCase):
 
@@ -56,6 +54,7 @@ class TestCalcGini(ut.TestCase):
 class TestCalcSignalNoise(ut.TestCase):
 
     def test_1d(self):
+        rng = np.random.default_rng(seed=0)
         for ns in range(1, 5):
             signal = 1. - rng.random(ns)
             smean = signal.mean()
@@ -72,6 +71,7 @@ class TestCalcSignalNoise(ut.TestCase):
                                            smean / nmean))
 
     def test_2d(self):
+        rng = np.random.default_rng(seed=0)
         for ncls in range(1, 5):
             for ns in range(1, 5):
                 signal = 1. - rng.random((ns, ncls))

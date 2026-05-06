@@ -472,21 +472,14 @@ class TestEnsembles(ut.TestCase):
         set_config(verbosity=Level.ERROR,
                    log_file_path=None,
                    exit_on_error=True)
-        # Seed the global RNG so that simulations and EM are
-        # deterministic across runs of these tests.
-        from seismicrna.core.random import rng
-        self._rng_state = rng.bit_generator.state
-        rng.bit_generator.state = np.random.default_rng(0).bit_generator.state
         self.SIM_DIR.mkdir()
 
     def tearDown(self):
         shutil.rmtree(self.SIM_DIR)
-        from seismicrna.core.random import rng
-        rng.bit_generator.state = self._rng_state
         set_config(*self._config)
 
     @classmethod
-    def sim_data(cls, module_nums: list[int], read_length: int):
+    def sim_data(cls, module_nums: list[int], read_length: int, seed: int):
         # Assemble and write the reference sequence.
         modules = dict(cls.MODULES[m] for m in module_nums)
         refseq = DNA("".join(modules.keys()))
@@ -502,9 +495,9 @@ class TestEnsembles(ut.TestCase):
         with open(db_file, "x") as f:
             for i, struct in enumerate(structures):
                 if i == 0:
-                    f.write(f">structure0\n{refseq.tr()}\n{structures[0]}\n")
+                    f.write(f">structure0\n{refseq.tr()}\n{struct}\n")
                 else:
-                    f.write(f">structure{i}\n{structures[i]}\n")
+                    f.write(f">structure{i}\n{struct}\n")
         ct_file = db_to_ct(db_file)
         # Simulate data.
         sim_params(ct_file=[ct_file],
@@ -518,13 +511,15 @@ class TestEnsembles(ut.TestCase):
                    # Make clust_conc very large so that the proportion
                    # of each cluster is approximately equal, which makes
                    # clustering easier.
-                   clust_conc=1000.)
+                   clust_conc=1000.,
+                   seed=seed)
         relate_dirs = sim_relate(param_dir=[param_dir],
                                  sample=cls.SAMPLE,
                                  profile_name=cls.PROFILE,
                                  num_reads=200000,
                                  paired_end=False,
-                                 brotli_level=0)
+                                 brotli_level=0,
+                                 seed=seed)
         return relate_dirs
 
     def run_ensembles(self,
@@ -558,25 +553,25 @@ class TestEnsembles(ut.TestCase):
                                  f"among {sorted(cluster_dirs)}")
 
     def test_modules012_read180(self):
-        relate_dirs = self.sim_data([0, 1, 2], 180)
+        relate_dirs = self.sim_data([0, 1, 2], 180, seed=0)
         self.run_ensembles(relate_dirs,
                            {(1, 60): 2,
                             (121, 180): 2})
 
     def test_modules012_read120(self):
-        relate_dirs = self.sim_data([0, 1, 2], 120)
+        relate_dirs = self.sim_data([0, 1, 2], 120, seed=0)
         self.run_ensembles(relate_dirs,
                            {(1, 60): 2,
                             (121, 180): 2})
 
     def test_modules012_read60(self):
-        relate_dirs = self.sim_data([0, 1, 2], 60)
+        relate_dirs = self.sim_data([0, 1, 2], 60, seed=0)
         self.run_ensembles(relate_dirs,
                            {(1, 60): 2,
                             (121, 180): 2})
 
     def test_modules02_read60(self):
-        relate_dirs = self.sim_data([0, 2], 60)
+        relate_dirs = self.sim_data([0, 2], 60, seed=0)
         self.run_ensembles(relate_dirs,
                            {(1, 60): 2,
                             (61, 120): 2})

@@ -141,7 +141,8 @@ class XNA(ABC):
                a: float = 0.25,
                c: float = 0.25,
                g: float = 0.25,
-               t: float = 0.25):
+               t: float = 0.25,
+               seed: int | None = None):
         """
         Return a random sequence of the given length.
 
@@ -168,9 +169,10 @@ class XNA(ABC):
         if not 0. <= n <= 1.:
             raise ValueError(f"Sum of A, C, G, and {cls.t_or_u()} proportions "
                              f"must be in [0, 1], but got {1. - n}")
-        return cls("".join(np.random.default_rng().choice(cls.alph(),
-                                                          size=nt,
-                                                          p=(a, c, n, g, t))))
+        rng = np.random.default_rng(seed)
+        return cls("".join(rng.choice(cls.alph(),
+                                      size=nt,
+                                      p=(a, c, n, g, t))))
 
     def __init__(self, seq: Any):
         self._seq = str(seq)

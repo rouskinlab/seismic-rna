@@ -7,22 +7,23 @@ from seismicrna.core.array import (calc_inverse,
                                    find_dims,
                                    get_length,
                                    locate_elements,
-intersect1d_unique_sorted,
+                                   intersect1d_unique_sorted,
                                    triangular)
 
-rng = np.random.default_rng()
 
 
 class TestGetLength(ut.TestCase):
 
     def test_1d(self):
         """ A 1D array has a length. """
+        rng = np.random.default_rng(seed=0)
         for length in range(10):
             array = rng.random(length)
             self.assertEqual(get_length(array), length)
 
     def test_other_dims(self):
         """ Non-1D arrays are not valid. """
+        rng = np.random.default_rng(seed=0)
         for d in range(4):
             if d == 1:
                 continue
@@ -38,6 +39,7 @@ class TestEnsureSameLength(ut.TestCase):
 
     def test_same_length(self):
         """ The length is returned when the arrays share the length. """
+        rng = np.random.default_rng(seed=0)
         for length in range(10):
             x = rng.random(length)
             y = rng.random(length)
@@ -45,6 +47,7 @@ class TestEnsureSameLength(ut.TestCase):
 
     def test_diff_lengths(self):
         """ Unequal lengths are not permitted. """
+        rng = np.random.default_rng(seed=0)
         for length1 in range(5):
             x = rng.random(length1)
             for length2 in range(5):
@@ -62,6 +65,7 @@ class TestEnsureSameLength(ut.TestCase):
 
     def test_other_dims(self):
         """ Non-1D arrays are not valid. """
+        rng = np.random.default_rng(seed=0)
         for length in range(5):
             for d1 in range(4):
                 x = rng.random((length,) * d1)
@@ -162,6 +166,7 @@ class TestCalcInverse(ut.TestCase):
 
     def test_is_inverse(self):
         """ Verify every position in the inverse of a random array. """
+        rng = np.random.default_rng(seed=0)
         target = rng.choice(16, 8, replace=False)
         for maximum in [-1, 0, 1, 20]:
             inverse = calc_inverse(target, require=maximum)
@@ -287,6 +292,7 @@ class TestIntersect1dUniqueSorted(ut.TestCase):
         self.assertTrue(np.array_equal(result, expect))
 
     def test_random(self):
+        rng = np.random.default_rng(seed=0)
         for _ in range(1000):
             x = np.unique(rng.integers(100, size=100))
             y = np.unique(rng.integers(100, size=100))

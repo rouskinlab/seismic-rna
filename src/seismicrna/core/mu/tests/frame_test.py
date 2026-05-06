@@ -7,8 +7,6 @@ import pandas as pd
 
 from seismicrna.core.mu import reframe, reframe_like, auto_reframe
 
-rng = np.random.default_rng()
-
 
 def broadcastable(vshape: tuple[int, ...], tshape: tuple[int, ...]):
     """ Check whether values in the shape of `vshape` can be broadcast
@@ -91,6 +89,7 @@ class TestReframe(ut.TestCase):
                     self.assertTrue(np.allclose(frame, value))
 
     def test_float_index(self):
+        rng = np.random.default_rng(seed=0)
         for length in range(5):
             index = rng.integers(10, size=length)
             self.assertEqual(index.shape, (length,))
@@ -103,6 +102,7 @@ class TestReframe(ut.TestCase):
                 self.assertTrue(np.all(frame.index == index))
 
     def test_float_index_int(self):
+        rng = np.random.default_rng(seed=0)
         for nrow in range(5):
             rows = rng.integers(10, size=nrow)
             for ncol in range(3):
@@ -117,6 +117,7 @@ class TestReframe(ut.TestCase):
                     self.assertTrue(np.all(frame.columns == np.arange(ncol)))
 
     def test_float_int_index(self):
+        rng = np.random.default_rng(seed=0)
         for nrow in range(5):
             for ncol in range(3):
                 cols = rng.integers(10, size=ncol)
@@ -131,6 +132,7 @@ class TestReframe(ut.TestCase):
                     self.assertTrue(np.all(frame.columns == cols))
 
     def test_float_index_index(self):
+        rng = np.random.default_rng(seed=0)
         for nrow in range(5):
             rows = rng.integers(10, size=nrow)
             for ncol in range(3):
@@ -146,6 +148,7 @@ class TestReframe(ut.TestCase):
                     self.assertTrue(np.all(frame.columns == cols))
 
     def test_float_index_index_int(self):
+        rng = np.random.default_rng(seed=0)
         for nrow in range(5):
             rows = rng.integers(10, size=nrow)
             for ncol in range(3):
@@ -160,6 +163,7 @@ class TestReframe(ut.TestCase):
                                                (rows, cols, nlev))
 
     def test_float_index_index_index(self):
+        rng = np.random.default_rng(seed=0)
         for nrow in range(5):
             rows = rng.integers(10, size=nrow)
             for ncol in range(3):
@@ -176,6 +180,7 @@ class TestReframe(ut.TestCase):
                                                (rows, cols, levs))
 
     def test_array_none(self):
+        rng = np.random.default_rng(seed=0)
         for ndim in range(4):
             for shape in product(range(4), repeat=ndim):
                 value = rng.random(shape)
@@ -185,6 +190,7 @@ class TestReframe(ut.TestCase):
                 self.assertTrue(np.allclose(frame, value))
 
     def test_array_ints(self):
+        rng = np.random.default_rng(seed=0)
         for vdim in range(4):
             for vshape in product(range(4), repeat=vdim):
                 value = rng.random(vshape)
@@ -205,6 +211,7 @@ class TestReframe(ut.TestCase):
                                                    tshape)
 
     def test_array_index(self):
+        rng = np.random.default_rng(seed=0)
         for ndim in range(4):
             for shape in product(range(4), repeat=ndim):
                 value = rng.random(shape)
@@ -233,6 +240,7 @@ class TestReframe(ut.TestCase):
                                                (index,))
 
     def test_array_index_index(self):
+        rng = np.random.default_rng(seed=0)
         for ndim in range(4):
             for vshape in product(range(4), repeat=ndim):
                 value = rng.random(vshape)
@@ -277,6 +285,7 @@ class TestReframe(ut.TestCase):
                                                        axes)
 
     def test_series(self):
+        rng = np.random.default_rng(seed=0)
         for vlength in range(5):
             vshape = vlength,
             value = pd.Series(rng.random(vlength))
@@ -310,6 +319,7 @@ class TestReframe(ut.TestCase):
                                                axes)
 
     def test_dataframe(self):
+        rng = np.random.default_rng(seed=0)
         for vshape in product(range(4), repeat=2):
             value = pd.DataFrame(rng.random(vshape))
             for nrow in range(5):
@@ -369,6 +379,7 @@ class TestReframe(ut.TestCase):
 class TestReframeLike(ut.TestCase):
 
     def test_float_float(self):
+        rng = np.random.default_rng(seed=0)
         values = rng.random()
         target = rng.random()
         self.assertRaisesRegex(TypeError,
@@ -379,6 +390,7 @@ class TestReframeLike(ut.TestCase):
                                target)
 
     def test_float_array(self):
+        rng = np.random.default_rng(seed=0)
         for ndim in range(4):
             for shape in product(range(5), repeat=ndim):
                 values = rng.random()
@@ -389,6 +401,7 @@ class TestReframeLike(ut.TestCase):
                 self.assertTrue(np.allclose(result, values))
 
     def test_float_series(self):
+        rng = np.random.default_rng(seed=0)
         for length in range(5):
             values = rng.random()
             target = pd.Series(rng.random(length),
@@ -400,6 +413,7 @@ class TestReframeLike(ut.TestCase):
             self.assertTrue(result.index.equals(target.index))
 
     def test_float_dataframe(self):
+        rng = np.random.default_rng(seed=0)
         for (nrow, ncol) in product(range(5), repeat=2):
             values = rng.random()
             target = pd.DataFrame(rng.random((nrow, ncol)),
@@ -413,6 +427,7 @@ class TestReframeLike(ut.TestCase):
             self.assertTrue(result.columns.equals(target.columns))
 
     def test_array_array(self):
+        rng = np.random.default_rng(seed=0)
         for ndim in range(4):
             for shape in product(range(5), repeat=ndim):
                 values = rng.random(shape)
@@ -423,6 +438,7 @@ class TestReframeLike(ut.TestCase):
                 self.assertTrue(np.allclose(result, values))
 
     def test_array_series(self):
+        rng = np.random.default_rng(seed=0)
         for length in range(5):
             values = rng.random(length)
             target = pd.Series(rng.random(length),
@@ -434,6 +450,7 @@ class TestReframeLike(ut.TestCase):
             self.assertTrue(result.index.equals(target.index))
 
     def test_array_dataframe(self):
+        rng = np.random.default_rng(seed=0)
         for (nrow, ncol) in product(range(5), repeat=2):
             values = rng.random((nrow, ncol))
             target = pd.DataFrame(rng.random((nrow, ncol)),
@@ -447,6 +464,7 @@ class TestReframeLike(ut.TestCase):
             self.assertTrue(result.columns.equals(target.columns))
 
     def test_series_array(self):
+        rng = np.random.default_rng(seed=0)
         for length in range(5):
             values = pd.Series(rng.random(length),
                                index=rng.integers(10, size=length))
@@ -457,6 +475,7 @@ class TestReframeLike(ut.TestCase):
             self.assertTrue(np.allclose(result, values))
 
     def test_series_series(self):
+        rng = np.random.default_rng(seed=0)
         for length in range(5):
             values = pd.Series(rng.random(length),
                                index=rng.integers(10, size=length))
@@ -469,6 +488,7 @@ class TestReframeLike(ut.TestCase):
             self.assertTrue(result.index.equals(target.index))
 
     def test_dataframe_array(self):
+        rng = np.random.default_rng(seed=0)
         for (nrow, ncol) in product(range(5), repeat=2):
             values = pd.DataFrame(rng.random((nrow, ncol)),
                                   index=rng.integers(10, size=nrow),
@@ -480,6 +500,7 @@ class TestReframeLike(ut.TestCase):
             self.assertTrue(np.allclose(result, values))
 
     def test_dataframe_dataframe(self):
+        rng = np.random.default_rng(seed=0)
         for (nrow, ncol) in product(range(5), repeat=2):
             values = pd.DataFrame(rng.random((nrow, ncol)),
                                   index=rng.integers(10, size=nrow),
@@ -495,6 +516,7 @@ class TestReframeLike(ut.TestCase):
             self.assertTrue(result.columns.equals(target.columns))
 
     def test_drop_array(self):
+        rng = np.random.default_rng(seed=0)
         for ndim in range(4):
             for shape in product(range(5), repeat=ndim):
                 target = rng.random(shape)
@@ -516,6 +538,7 @@ class TestReframeLike(ut.TestCase):
                                                drop)
 
     def test_drop_series(self):
+        rng = np.random.default_rng(seed=0)
         for length in range(5):
             shape = length,
             target = pd.Series(rng.random(length),
@@ -542,6 +565,7 @@ class TestReframeLike(ut.TestCase):
                                            drop)
 
     def test_drop_dataframe(self):
+        rng = np.random.default_rng(seed=0)
         for shape in product(range(5), repeat=2):
             nrow, ncol = shape
             target = pd.DataFrame(rng.random(shape),
@@ -563,7 +587,6 @@ class TestReframeLike(ut.TestCase):
                         self.assertIsInstance(result, np.ndarray)
                     self.assertEqual(result.shape, dropped)
                     self.assertTrue(np.allclose(result, values))
-
                 else:
                     self.assertRaisesRegex(ValueError,
                                            f"Cannot drop {drop} axes "
@@ -578,6 +601,7 @@ class TestAutoReframe(ut.TestCase):
 
     @staticmethod
     def _sim_data(dmin: int, dmax: int):
+        rng = np.random.default_rng(seed=0)
         for ndim in range(dmin, dmax):
             for shape in product(range(4), repeat=ndim):
                 values = rng.random(shape)

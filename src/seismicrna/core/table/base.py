@@ -481,7 +481,7 @@ class PositionTable(RelTypeTable, ABC):
                         k: int,
                         clust: int,
                         n_cov: np.ndarray, *,
-                        seed: int | None = None,
+                        seed: int | None,
                         tol: float = 1.e-3):
         """ Resample mutations for one cluster.
 
@@ -493,7 +493,7 @@ class PositionTable(RelTypeTable, ABC):
             Number of the cluster.
         n_cov: numpy.ndarray
             Number of reads covering each position (1-D array).
-        seed: int | None = None
+        seed: int | None
             Seed for the random number generator.
         tol: float = 1.e-3
             Tolerance for floating-point rounding error.
@@ -589,7 +589,7 @@ class PositionTable(RelTypeTable, ABC):
     def resample(self,
                  fraction: float = 1., *,
                  exclude_masked: bool = False,
-                 seed: int | None = None,
+                 seed: int | None,
                  max_seed: int = 2 ** 32):
         """ Resample the reads and return a new DataFrame.
 
@@ -600,7 +600,7 @@ class PositionTable(RelTypeTable, ABC):
             original number of reads. Must be ≥ 0; may be > 1.
         exclude_masked: bool = False
             Exclude positions that have been masked.
-        seed: int | None = None
+        seed: int | None
             Seed for the random number generator.
         max_seed: int = 2 ** 32
             Maximum seed to pass to the next random number generator.

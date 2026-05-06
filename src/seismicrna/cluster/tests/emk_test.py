@@ -7,8 +7,6 @@ import numpy as np
 from seismicrna.cluster.emk import assign_clusterings
 from seismicrna.core.array import calc_inverse
 
-rng = np.random.default_rng()
-
 
 class TestAssignClusterings(ut.TestCase):
 
@@ -36,6 +34,7 @@ class TestAssignClusterings(ut.TestCase):
                     self.compare_result(x, y, expect)
 
     def test_1_cluster(self):
+        rng = np.random.default_rng(seed=0)
         for n in range(1, 10):
             x = rng.random((n, 1))
             y = rng.random((n, 1))
@@ -43,6 +42,7 @@ class TestAssignClusterings(ut.TestCase):
             self.compare_result(x, y, expect)
 
     def test_more_clusters(self):
+        rng = np.random.default_rng(seed=0)
         for ncls in range(2, 5):
             for npos in range(1, 8):
                 with self.subTest(ncls=ncls, npos=npos):

@@ -221,8 +221,8 @@ def _get_from_fq_inp(fq_inp: FastqUnit | None, attr: str):
 
 def bowtie2_cmd(fq_inp: FastqUnit | None,
                 sam_out: Path | None, *,
-                paired: bool | None = None,
-                phred_arg: str | None = None,
+                paired: bool | None,
+                phred_arg: str | None,
                 index_pfx: Path,
                 bt2_local: bool,
                 bt2_discordant: bool,
@@ -240,36 +240,45 @@ def bowtie2_cmd(fq_inp: FastqUnit | None,
                 bt2_r: int,
                 bt2_dpad: int,
                 bt2_orient: str,
-                fq_unal: Path | None = None,
-                num_cpus: int):
+                fq_unal: Path | None,
+                seed: int | None,
+                num_cpus: int = 1):
     if paired is None:
         paired = _get_from_fq_inp(fq_inp, "paired")
     if phred_arg is None:
         phred_arg = _get_from_fq_inp(fq_inp, "phred_arg")
+    # Initial Bowtie2 command.
     args = [BOWTIE2_CMD,
             # Resources
-            "--threads", num_cpus,
-            # Alignment setup
-            "--local" if bt2_local else "--end-to-end",
-            "--gbar", bt2_gbar,
-            "--dpad", bt2_dpad,
-            "-L", bt2_l,
-            "-i", bt2_s,
-            "-D", bt2_d,
-            "-R", bt2_r,
-            # Scoring
-            phred_arg,
-            "--ignore-quals",
-            "--ma", MATCH_BONUS if bt2_local else "0",
-            "--mp", MISMATCH_PENALTY,
-            "--np", N_PENALTY,
-            "--rfg", REF_GAP_PENALTY,
-            "--rdg", READ_GAP_PENALTY,
-            # Filtering
-            "--score-min", (bt2_score_min_loc if bt2_local
-                            else bt2_score_min_e2e),
-            "-I", bt2_i,
-            "-X", bt2_x]
+            "--threads", num_cpus]
+    # Random seed
+    if seed is not None:
+        args.extend(["--seed", seed])
+    # Alignment parameters
+    args.extend([
+        # Alignment setup
+        "--local" if bt2_local else "--end-to-end",
+        "--gbar", bt2_gbar,
+        "--dpad", bt2_dpad,
+        "-L", bt2_l,
+        "-i", bt2_s,
+        "-D", bt2_d,
+        "-R", bt2_r,
+        # Scoring
+        phred_arg,
+        "--ignore-quals",
+        "--ma", MATCH_BONUS if bt2_local else "0",
+        "--mp", MISMATCH_PENALTY,
+        "--np", N_PENALTY,
+        "--rfg", REF_GAP_PENALTY,
+        "--rdg", READ_GAP_PENALTY,
+        # Filtering
+        "--score-min", (bt2_score_min_loc
+                        if bt2_local
+                        else bt2_score_min_e2e),
+        "-I", bt2_i,
+        "-X", bt2_x
+    ])
     # Mate pair orientation
     if bt2_orient not in BOWTIE2_ORIENT:
         raise ValueError(f"Invalid value for bt2_orient: {repr(bt2_orient)}")
@@ -395,8 +404,9 @@ def xamgen_cmd(fq_inp: FastqUnit,
                bt2_r: int,
                bt2_dpad: int,
                bt2_orient: str,
-               fq_unal: Path | None = None,
-               min_mapq: int | None = None,
+               fq_unal: Path | None,
+               min_mapq: int,
+               seed: int | None,
                num_cpus: int = 1):
     """ Wrap QC, alignment, and post-processing into one pipeline. """
     cmds = list()
@@ -463,6 +473,7 @@ def xamgen_cmd(fq_inp: FastqUnit,
         bt2_dpad=bt2_dpad,
         bt2_orient=bt2_orient,
         fq_unal=fq_unal,
+        seed=seed,
         num_cpus=num_cpus_bowtie2,
     ))
     # Filter out any unaligned or otherwise unsuitable reads.
@@ -473,7 +484,7 @@ def xamgen_cmd(fq_inp: FastqUnit,
     else:
         # Exclude the paired flag and require no flags.
         flags_exc = EXCLUDE_FLAGS | FLAG_PAIRED
-        flags_req = None
+        flags_req = 0
     cmds.append(view_xam_cmd(None,
                              None,
                              min_mapq=min_mapq,
@@ -574,6 +585,7 @@ def realign_cmd(xam_inp: Path,
     cmds.append(bowtie2_cmd(None,
                             None,
                             paired=paired,
+                            fq_unal=None,
                             num_cpus=num_cpus_bowtie2,
                             **kwargs))
     # Filter low-quality alignments.

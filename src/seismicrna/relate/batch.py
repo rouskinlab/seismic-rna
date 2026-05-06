@@ -105,6 +105,7 @@ class RelateRegionMutsBatch(RelateMutsBatch, RegionMutsBatch):
                  min_mut_gap: int,
                  mut_collisions: str,
                  num_reads: int,
+                 seed: int | None,
                  **kwargs):
         """ Simulate a batch.
 
@@ -140,11 +141,15 @@ class RelateRegionMutsBatch(RelateMutsBatch, RegionMutsBatch):
                                                      num_reads,
                                                      (read_length if paired
                                                       else 0),
-                                                     p_rev)
+                                                     p_rev,
+                                                     seed=seed)
         simulated_all = cls(region=region,
                             seg_end5s=seg_end5s,
                             seg_end3s=seg_end3s,
-                            muts=simulate_muts(pmut, seg_end5s, seg_end3s),
+                            muts=simulate_muts(pmut,
+                                               seg_end5s,
+                                               seg_end3s,
+                                               seed=seed),
                             **kwargs)
         if min_mut_gap == 0:
             # No additional changes needed.
@@ -170,6 +175,12 @@ class RelateRegionMutsBatch(RelateMutsBatch, RegionMutsBatch):
             )
         if mut_collisions == MUT_COLLISIONS_MERGE:
             # Merge mutations that are too close into a single mutation.
-            return simulated_all.merge_close_muts(RelPattern.muts(),
-                                                  min_mut_gap)
+            return cls(
+                region=region,
+                seg_end5s=seg_end5s,
+                seg_end3s=seg_end3s,
+                muts=simulated_all.merge_close_muts(RelPattern.muts(),
+                                                    min_mut_gap),
+                **kwargs
+            )
         raise ValueError(f"Invalid mut_collisions: {repr(mut_collisions)}")

@@ -27,4 +27,5 @@ defaults_to_none = dict(fastp_adapter_fasta=None,
                         samples_meta=None,
                         refs_meta=None,
                         read_pos=None,
-                        collate_out_dir=None)
+                        collate_out_dir=None,
+						seed=None)

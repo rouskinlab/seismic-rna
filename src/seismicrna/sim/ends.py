@@ -24,8 +24,6 @@ from ..core.write import need_write
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
-rng = np.random.default_rng()
-
 PROPORTION = "Proportion"
 
 

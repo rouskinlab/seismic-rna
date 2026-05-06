@@ -51,7 +51,8 @@ from ..core.report import (Report,
                            ReadsTrimF,
                            ReadsAlignF,
                            ReadsDedupF,
-                           ReadsRefsF)
+                           ReadsRefsF,
+                           SeedF)
 
 
 class BaseAlignReport(Report, ABC):
@@ -62,7 +63,8 @@ class BaseAlignReport(Report, ABC):
 
     @classmethod
     def get_param_report_fields(cls):
-        return [IsDemultF,
+        return [SeedF,
+                IsDemultF,
                 IsPairedEndF,
                 PhredEncF,
                 UseFastpF,

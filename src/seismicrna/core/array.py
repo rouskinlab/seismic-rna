@@ -10,8 +10,6 @@ from .validate import (require_isinstance,
                        require_equal,
                        require_array_equal)
 
-rng = np.random.default_rng()
-
 MISSING = -1
 
 

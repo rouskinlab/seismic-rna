@@ -177,6 +177,13 @@ opt_num_cpus = Option(
     help="Use up to this many CPUs simultaneously"
 )
 
+opt_seed = Option(
+    ("--seed",),
+    type=int,
+    default=None,
+    help="Seed for the random number generator"
+)
+
 # Experiment and analysis setup options
 
 opt_force = Option(

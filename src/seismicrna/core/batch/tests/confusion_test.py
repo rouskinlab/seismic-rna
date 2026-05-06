@@ -15,8 +15,6 @@ from seismicrna.core.rel.code import DELET, SUB_A, SUB_C, SUB_G, SUB_T
 from seismicrna.core.rel.pattern import RelPattern
 from seismicrna.core.seq.region import POS_NAME, BASE_NAME
 
-rng = np.random.default_rng()
-
 
 class TestCountIntersection(ut.TestCase):
 
@@ -50,6 +48,7 @@ class TestCountIntersection(ut.TestCase):
         self.assertEqual(_count_intersection(y, x), 4)
 
     def test_count_intersect(self):
+        rng = np.random.default_rng(seed=0)
         x = np.unique(rng.integers(100, size=100))
         y = np.unique(rng.integers(100, size=100))
         count = np.intersect1d(x, y).size
@@ -425,6 +424,7 @@ class TestLabelSignificantPVals(ut.TestCase):
         self.assertTrue(np.array_equal(got, want))
 
     def test_order_invariance(self):
+        rng = np.random.default_rng(seed=0)
         p = rng.uniform(size=200)
         p[[5, 17, 33]] = np.nan
         alpha = 0.1
@@ -457,6 +457,7 @@ class TestLabelSignificantPVals(ut.TestCase):
 
     def test_monotonicity_property(self):
         # Lowering any p-value cannot reduce the number of rejections
+        rng = np.random.default_rng(seed=0)
         p = rng.uniform(size=200)
         alpha = 0.05
         base = label_significant_pvals(p, alpha)
@@ -475,6 +476,7 @@ class TestLabelSignificantPVals(ut.TestCase):
         self.assertTrue(label_significant_pvals(p, 0.2).all())
 
     def test_against_reference_implementation(self):
+        rng = np.random.default_rng(seed=0)
         p = rng.uniform(size=500)
         p[rng.choice(500, size=20, replace=False)] = np.nan
         alpha = 0.07

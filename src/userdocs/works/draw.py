@@ -25,8 +25,6 @@ from seismicrna.core.table import (COVER_REL,
                                    SUB_G_REL,
                                    SUB_T_REL)
 
-rng = np.random.default_rng(42)
-
 ALIGN_CLIP = 1
 READ = "Read"
 POSITION = "Position"
@@ -126,6 +124,7 @@ def calc_p_clust_given_read(end5s: np.ndarray,
 class TestCalcPClustGivenRead(ut.TestCase):
 
     def test_1_cluster(self):
+        rng = np.random.default_rng(42)
         pi = np.ones(1)
         for n_pos in range(1, 5):
             mu = rng.random((n_pos, 1))
@@ -207,8 +206,10 @@ def simulate_mu(is_paired: np.ndarray,
                 pa: float = 2.,
                 pb: float = 64.,
                 ua: float = 8.,
-                ub: float = 16.):
+                ub: float = 16.,
+                seed: int | None):
     """ Simulate mutation rates. """
+    rng = np.random.default_rng(seed)
     n_pos, n_clust = is_paired.shape
     mu = np.zeros((n_pos, n_clust))
     for k in range(n_clust):
@@ -219,16 +220,19 @@ def simulate_mu(is_paired: np.ndarray,
     return mu
 
 
-def simulate_pi(n_clust: int, alpha: float = 1.):
+def simulate_pi(n_clust: int, alpha: float = 1., seed: int | None):
     """ Simulate cluster proportions. """
+    rng = np.random.default_rng(seed)
     return rng.dirichlet(np.repeat(alpha, n_clust))
 
 
 def simulate_ends(n_reads: int,
                   n_pos: int,
                   p5: float = 1 / 3,
-                  p3: float = 1 / 3):
+                  p3: float = 1 / 3,
+                  seed: int | None):
     """ Simulate 5' and 3' end coordinates. """
+    rng = np.random.default_rng(seed)
     partition = rng.multinomial(n_pos, [p5, 1. - (p5 + p3), p3], n_reads)
     end5s = partition[:, 0]
     end3s = (n_pos - 1) - partition[:, -1]
@@ -238,8 +242,10 @@ def simulate_ends(n_reads: int,
 def simulate_muts(mu: np.ndarray,
                   pi: np.ndarray,
                   end5s: np.ndarray,
-                  end3s: np.ndarray):
+                  end3s: np.ndarray,
+                  seed: int | None):
     """ Simulate mutations as a boolean array. """
+    rng = np.random.default_rng(seed)
     dims = find_dims([(POSITION, CLUSTER), (CLUSTER,), (READ,), (READ,)],
                      [mu, pi, end5s, end3s],
                      ["mu", "pi", "end5s", "end3s"])
@@ -262,8 +268,10 @@ def simulate_muts(mu: np.ndarray,
 def simulate_rels(seq: DNA,
                   muts: np.ndarray,
                   end5s: np.ndarray,
-                  end3s: np.ndarray):
+                  end3s: np.ndarray,
+                  seed: int | None):
     """ Simulate the relationship for each mutation. """
+    rng = np.random.default_rng(seed)
     dims = find_dims([(READ, POSITION), (READ,), (READ,)],
                      [muts, end5s, end3s],
                      ["muts", "end5s", "end3s"])

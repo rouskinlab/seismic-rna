@@ -280,7 +280,8 @@ def run(fasta: str | Path,
         include_graph: bool,
         group: str,
         portable: bool,
-        collate_out_dir: str | Path | None = None):
+        collate_out_dir: str | Path | None = None,
+        seed: int | None):
     """ Run the entire workflow. """
     # Ensure that each iterable argument is a list rather than an
     # exhaustible generator.
@@ -472,6 +473,7 @@ def run(fasta: str | Path,
             brotli_level=brotli_level,
             num_cpus=num_cpus,
             force=force,
+            seed=seed,
         )))
     if fold:
         input_path.extend(flatten(fold_mod.run(

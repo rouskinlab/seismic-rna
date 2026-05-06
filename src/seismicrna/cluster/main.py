@@ -34,6 +34,7 @@ from ..core.arg import (CMD_CLUSTER,
                         opt_verify_times,
                         opt_brotli_level,
                         opt_num_cpus,
+                        opt_seed,
                         opt_force)
 from ..core.run import run_func
 from ..core.task import as_list_of_tuples, dispatch
@@ -70,7 +71,8 @@ def run(input_path: Iterable[str | Path], *,
         verify_times: bool,
         brotli_level: int,
         num_cpus: int,
-        force: bool) -> list[Path]:
+        force: bool,
+        seed: int | None) -> list[Path]:
     """ Infer alternative structures by clustering reads' mutations. """
     datasets = load_mask_dataset.iterate(input_path, verify_times=verify_times)
     return dispatch(cluster,
@@ -107,7 +109,8 @@ def run(input_path: Iterable[str | Path], *,
                                 cluster_abundance_table=cluster_abundance_table,
                                 verify_times=verify_times,
                                 brotli_level=brotli_level,
-                                force=force))
+                                force=force,
+                                seed=seed))
 
 
 params = [
@@ -149,6 +152,7 @@ params = [
     opt_force,
     opt_tmp_pfx,
     opt_keep_tmp,
+    opt_seed,
 ]
 
 

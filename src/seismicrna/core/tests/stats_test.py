@@ -9,11 +9,10 @@ from seismicrna.core.stats import (calc_beta_mv,
                                    calc_dirichlet_mv,
                                    kumaraswamy_pdf)
 
-rng = np.random.default_rng()
-
 
 def rand_dirichlet_alpha(n: int):
     """ Simulate `n` alpha parameters for a Dirichlet distribution. """
+    rng = np.random.default_rng(seed=0)
     # Alpha parameters can be any positive real number.
     return -np.log(rng.random(n))
 

@@ -24,8 +24,6 @@ from ..rel import MATCH, NOCOV, REL_TYPE, RelPattern
 from ..seq import Region, index_to_pos
 from ..types import fit_uint_type
 
-rng = np.random.default_rng()
-
 NUM_READS = "reads"
 NUM_SEGMENTS = "segments"
 
@@ -45,7 +43,8 @@ def sanitize_muts(muts: dict[int, dict[int, list[int] | np.ndarray]],
 
 def simulate_muts(pmut: pd.DataFrame,
                   seg_end5s: np.ndarray,
-                  seg_end3s: np.ndarray):
+                  seg_end3s: np.ndarray,
+                  seed: int | None):
     """ Simulate mutation data.
 
     Parameters
@@ -57,6 +56,7 @@ def simulate_muts(pmut: pd.DataFrame,
     seg_end3s:
         3' end coordinate of each segment.
     """
+    rng = np.random.default_rng(seed)
     num_reads, _ = match_reads_segments(seg_end5s, seg_end3s, None)
     read_nums = np.arange(num_reads, dtype=fit_uint_type(num_reads))
     rels = np.asarray(pmut.columns.get_level_values(REL_NAME), dtype=REL_TYPE)
@@ -383,7 +383,7 @@ class RegionMutsBatch(MutsBatch, ABC):
         return self.read_nums[np.logical_or(min_mut_dist == 0,
                                             min_mut_dist > min_gap)]
     
-    def muts_close_merged(self, pattern: RelPattern, min_gap: int):
+    def merge_close_muts(self, pattern: RelPattern, min_gap: int):
         """ Return a new muts dictionary in which mutations closer than
         min_gap are merged into a single mutation, keeping only the
         3'-most mutation. This algorithm corrects for extra mutations 
@@ -432,20 +432,6 @@ class RegionMutsBatch(MutsBatch, ABC):
             last_mod_pos[pos_mod_indexes] = pos
         # Restore the original order of positions.
         return {pos: mods[pos] for pos in self.muts.keys()}
-    
-    def merge_close_muts(self, pattern: RelPattern, min_gap: int, **kwargs):
-        """ Return a new muts dictionary in which mutations closer than
-        min_gap are merged into a single mutation, keeping only the
-        3'-most mutation. """
-        return self.__class__(
-            batch=self.batch,
-            read_nums=self.read_nums,
-            region=self.region,
-            seg_end5s=self.seg_end5s,
-            seg_end3s=self.seg_end3s,
-            muts=self.muts_close_merged(pattern, min_gap),
-            **kwargs
-        )
     
     def calc_confusion_matrix(self, pattern: RelPattern, min_gap: int = 0):
         """ Calculate the confusion matrix of mutations. """

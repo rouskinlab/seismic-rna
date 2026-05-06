@@ -13,7 +13,8 @@ from typing import Any, Callable, Hashable, Iterable
 import numpy as np
 from click import Option
 
-from .arg import (opt_phred_enc,
+from .arg import (opt_seed,
+                  opt_phred_enc,
                   opt_fastp,
                   opt_fastp_5,
                   opt_fastp_3,
@@ -282,6 +283,7 @@ def oconv_datetime(dtime: datetime):
 
 # General fields
 VersionF = ReportField("version", "Version of SEISMIC-RNA", str, __version__)
+SeedF = OptionReportField(opt_seed)
 BranchesF = ReportField("branches", "Branches", dict)
 SampleF = ReportField("sample", "Sample", str)
 RefF = ReportField("ref", "Reference", str)

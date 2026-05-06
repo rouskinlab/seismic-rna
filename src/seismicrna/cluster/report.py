@@ -32,7 +32,8 @@ from ..core.report import (BatchedReport,
                            BestKF,
                            KsWrittenF,
                            JoinedRegionsF,
-                           JoinedClustersF)
+                           JoinedClustersF,
+                           SeedF)
 
 
 class BaseClusterReport(RegReport, ClusterIO, ABC):
@@ -54,7 +55,8 @@ class ClusterReport(BatchedReport, BaseClusterReport):
 
     @classmethod
     def get_param_report_fields(cls):
-        return [MinClustsF,
+        return [SeedF,
+                MinClustsF,
                 MaxClustsF,
                 TryAllKsF,
                 WriteAllKsF,
@@ -109,7 +111,8 @@ class ClusterReport(BatchedReport, BaseClusterReport):
                       ks_written: list[int],
                       checksums: list[str],
                       began: datetime,
-                      ended: datetime):
+                      ended: datetime,
+                      seed: int):
         """ Create a ClusterReport from EmClustering objects. """
         return cls(branches=uniq_reads.branches,
                    sample=uniq_reads.sample,
@@ -141,7 +144,8 @@ class ClusterReport(BatchedReport, BaseClusterReport):
                    best_k=find_best_k(ks),
                    ks_written=ks_written,
                    began=began,
-                   ended=ended)
+                   ended=ended,
+                   seed=seed)
 
 
 class JoinClusterReport(JoinReport, BaseClusterReport):

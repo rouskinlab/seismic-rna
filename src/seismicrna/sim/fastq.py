@@ -8,11 +8,10 @@ import numpy as np
 from click import command
 from numba import jit
 
-from .relate import get_param_dir_fields, load_param_dir
+from .relate import _get_param_dir_fields, _load_param_dir
 from ..core import path
 from ..core.arg import (ILLUMINA_TRUSEQ_ADAPTER_R1,
                         ILLUMINA_TRUSEQ_ADAPTER_R2,
-                        PROBE_DMS,
                         arg_input_path,
                         opt_param_dir,
                         opt_profile_name,
@@ -20,12 +19,14 @@ from ..core.arg import (ILLUMINA_TRUSEQ_ADAPTER_R1,
                         opt_read_length,
                         opt_paired_end,
                         opt_reverse_fraction,
+                        opt_probe,
                         opt_min_mut_gap,
                         opt_mut_collisions,
                         opt_fq_gzip,
                         opt_num_reads,
                         opt_batch_size,
                         opt_num_cpus,
+                        opt_seed,
                         opt_force)
 from ..core.array import get_length
 from ..core.logs import logger
@@ -49,8 +50,6 @@ from ..relate.dataset import (ReadNamesDataset,
                               load_relate_dataset)
 from ..relate.report import RelateReport
 from ..relate.sim import simulate_batches
-
-rng = np.random.default_rng()
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -184,9 +183,11 @@ def generate_fastq(
         batches: Iterable[tuple[RelateRegionMutsBatch, ReadNamesBatch]],
         p_rev: float = 0.5,
         fq_gzip: bool = True,
-        force: bool = False
+        force: bool = False,
+        seed: int | None = None,
 ):
     """ Generate FASTQ file(s) from a dataset. """
+    rng = np.random.default_rng(seed)
     if paired:
         segs_list = [path.DMFASTQ1_SEGS, path.DMFASTQ2_SEGS]
         exts = [path.FQ1_EXTS[0], path.FQ2_EXTS[0]]
@@ -270,7 +271,8 @@ def from_report(report_file: Path, *,
                 read_length: int,
                 p_rev: float,
                 fq_gzip: bool,
-                force: bool):
+                force: bool,
+                seed: int | None):
     """ Simulate a FASTQ file from a Relate report. """
     report = RelateReport.load(report_file)
     sample = report.get_field(SampleF)
@@ -288,7 +290,8 @@ def from_report(report_file: Path, *,
                           batches,
                           p_rev=p_rev,
                           fq_gzip=fq_gzip,
-                          force=force)
+                          force=force,
+                          seed=seed)
 
 
 def from_param_dir(param_dir: Path, *,
@@ -299,10 +302,11 @@ def from_param_dir(param_dir: Path, *,
                    p_rev: float,
                    fq_gzip: bool,
                    force: bool,
+                   seed: int | None,
                    **kwargs):
     """ Simulate a FASTQ file from parameter files. """
-    sim_dir, _, _ = get_param_dir_fields(param_dir)
-    region, pmut, u5s, u3s, pends, pclust = load_param_dir(param_dir, profile)
+    sim_dir, _, _ = _get_param_dir_fields(param_dir)
+    region, pmut, u5s, u3s, pends, pclust = _load_param_dir(param_dir, profile)
     batches = simulate_batches(sample=sample,
                                branches=dict(),
                                ref=region.ref,
@@ -316,6 +320,7 @@ def from_param_dir(param_dir: Path, *,
                                p_rev=p_rev,
                                batch_size=opt_batch_size.default,
                                write_read_names=True,
+                               seed=seed,
                                **kwargs)
     # Convert each RelateBatchIO into a RelateRegionMutsBatch, which is
     # required by generate_fastq().
@@ -330,7 +335,8 @@ def from_param_dir(param_dir: Path, *,
                           batches,
                           p_rev=p_rev,
                           fq_gzip=fq_gzip,
-                          force=force)
+                          force=force,
+                          seed=seed)
 
 
 @run_func(COMMAND)
@@ -342,13 +348,15 @@ def run(*,
         paired_end: bool,
         read_length: int,
         reverse_fraction: float,
+        probe: str,
         min_mut_gap: int | None,
         mut_collisions: str,
         fq_gzip: bool,
         num_reads: int,
         num_cpus: int,
-        force: bool):
-    min_mut_gap, mut_collisions = set_mut_gap_params(PROBE_DMS,
+        force: bool,
+        seed: int | None):
+    min_mut_gap, mut_collisions = set_mut_gap_params(probe,
                                                      min_mut_gap,
                                                      mut_collisions)
     report_files = as_list_of_tuples(path.find_files_chain(
@@ -368,7 +376,8 @@ def run(*,
                                       kwargs=dict(read_length=read_length,
                                                   p_rev=reverse_fraction,
                                                   fq_gzip=fq_gzip,
-                                                  force=force))))
+                                                  force=force,
+                                                  seed=seed))))
     if param_dirs:
         fastqs.extend(chain(*dispatch(from_param_dir,
                                       num_cpus=num_cpus,
@@ -386,7 +395,8 @@ def run(*,
                                                   mut_collisions=mut_collisions,
                                                   fq_gzip=fq_gzip,
                                                   num_reads=num_reads,
-                                                  force=force))))
+                                                  force=force,
+                                                  seed=seed))))
     if not fastqs:
         logger.warning("No FASTQ files were generated")
     return fastqs
@@ -399,12 +409,14 @@ params = [arg_input_path,
           opt_paired_end,
           opt_read_length,
           opt_reverse_fraction,
+          opt_probe,
           opt_min_mut_gap,
           opt_mut_collisions,
           opt_fq_gzip,
           opt_num_reads,
           opt_num_cpus,
-          opt_force]
+          opt_force,
+          opt_seed]
 
 
 @command(COMMAND, params=params)

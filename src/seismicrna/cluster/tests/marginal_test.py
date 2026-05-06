@@ -466,7 +466,7 @@ class TestCalcMarginalSimulated(ut.TestCase):
                     min_mut_gap=2,
                     n_reads=1_000_000,
                     z_threshold=5.0,
-                    seed=42)
+                    seed=0)
 
 
 if __name__ == "__main__":

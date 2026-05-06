@@ -9,13 +9,13 @@ from .ends import load_pends
 from .muts import load_pmut
 from ..core import path
 from ..core.arg import (opt_param_dir,
-                        PROBE_DMS,
                         opt_profile_name,
                         opt_sample,
                         opt_branch,
                         opt_paired_end,
                         opt_read_length,
                         opt_reverse_fraction,
+                        opt_probe,
                         opt_min_mut_gap,
                         opt_mut_collisions,
                         opt_num_reads,
@@ -23,7 +23,8 @@ from ..core.arg import (opt_param_dir,
                         opt_write_read_names,
                         opt_brotli_level,
                         opt_force,
-                        opt_num_cpus)
+                        opt_num_cpus,
+                        opt_seed)
 from ..core.rna import find_ct_region
 from ..core.run import run_func
 from ..core.task import as_list_of_tuples, dispatch
@@ -33,7 +34,7 @@ from ..relate.sim import simulate_relate
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 
-def get_param_dir_fields(param_dir: Path):
+def _get_param_dir_fields(param_dir: Path):
     fields = path.parse(param_dir, [path.RefSeg, path.RegSeg])
     params_dir = fields[path.TOP]
     if params_dir.name != path.SIM_PARAM_DIR:
@@ -44,7 +45,7 @@ def get_param_dir_fields(param_dir: Path):
     return params_dir.parent, fields[path.REF], fields[path.REG]
 
 
-def load_param_dir(param_dir: Path, profile: str):
+def _load_param_dir(param_dir: Path, profile: str):
     """ Load all parameters for a profile in a directory. """
     prefix = param_dir.joinpath(profile)
     region = find_ct_region(prefix.with_suffix(path.CT_EXT))
@@ -54,13 +55,12 @@ def load_param_dir(param_dir: Path, profile: str):
     return region, pmut, u5s, u3s, pends, pclust
 
 
-def from_param_dir(param_dir: Path,
+def _from_param_dir(param_dir: Path,
                    profile: str,
-                   min_mut_gap: int,
                    **kwargs):
     """ Simulate a Relate dataset given parameter files. """
-    sim_dir, _, _ = get_param_dir_fields(param_dir)
-    region, pmut, u5s, u3s, pends, pclust = load_param_dir(param_dir, profile)
+    sim_dir, _, _ = _get_param_dir_fields(param_dir)
+    region, pmut, u5s, u3s, pends, pclust = _load_param_dir(param_dir, profile)
     return simulate_relate(out_dir=sim_dir.joinpath(path.SIM_SAMPLES_DIR),
                            ref=region.ref,
                            refseq=region.seq,
@@ -69,7 +69,6 @@ def from_param_dir(param_dir: Path,
                            uniq_end3s=u3s,
                            pends=pends,
                            pclust=pclust,
-                           min_mut_gap=min_mut_gap,
                            **kwargs)
 
 
@@ -82,6 +81,7 @@ def run(*,
         paired_end: bool,
         read_length: int,
         reverse_fraction: float,
+        probe: str,
         min_mut_gap: int | None,
         mut_collisions: str,
         num_reads: int,
@@ -90,12 +90,13 @@ def run(*,
         brotli_level: int,
         tmp_dir: Path,
         force: bool,
-        num_cpus: int):
+        num_cpus: int,
+        seed: int | None):
     """ Simulate a Relate dataset. """
-    min_mut_gap, mut_collisions = set_mut_gap_params(PROBE_DMS,
+    min_mut_gap, mut_collisions = set_mut_gap_params(probe,
                                                      min_mut_gap,
                                                      mut_collisions)
-    return dispatch(from_param_dir,
+    return dispatch(_from_param_dir,
                     num_cpus=num_cpus,
                     pass_num_cpus=False,
                     as_list=True,
@@ -115,7 +116,8 @@ def run(*,
                                 write_read_names=write_read_names,
                                 brotli_level=brotli_level,
                                 tmp_dir=tmp_dir,
-                                force=force))
+                                force=force,
+                                seed=seed))
 
 
 params = [
@@ -126,6 +128,7 @@ params = [
     opt_paired_end,
     opt_read_length,
     opt_reverse_fraction,
+    opt_probe,
     opt_min_mut_gap,
     opt_mut_collisions,
     opt_num_reads,
@@ -133,7 +136,8 @@ params = [
     opt_write_read_names,
     opt_brotli_level,
     opt_force,
-    opt_num_cpus
+    opt_num_cpus,
+    opt_seed,
 ]
 
 

@@ -87,7 +87,7 @@ class EMRun(object):
     def __init__(self,
                  uniq_reads: UniqReads,
                  k: int,
-                 seed: int | None = None, *,
+                 seed: int | None, *,
                  min_iter: int,
                  max_iter: int,
                  em_thresh: float,
@@ -101,7 +101,7 @@ class EMRun(object):
             Container of unique reads
         k: int
             Number of clusters; must be a positive integer.
-        seed: int | None = None
+        seed: int | None
             Random number generator seed.
         min_iter: int
             Minimum number of iterations for clustering. Must be a
@@ -165,8 +165,10 @@ class EMRun(object):
         self.iter = 0
         # Whether the algorithm has converged.
         self.converged = False
+        # Random number generator seed.
+        self._seed = seed
         # Run EM.
-        self._run(seed)
+        self._run()
 
     @property
     def n_reads(self):
@@ -347,14 +349,8 @@ class EMRun(object):
                                   self._counts_per_uniq)
         self._log_likes.append(round(log_like, LOG_LIKE_PRECISION))
 
-    def _run(self, seed: int | None = None):
-        """ Run the EM clustering algorithm.
-
-        Parameters
-        ----------
-        seed: int | None = None
-            Random number generator seed.
-        """
+    def _run(self):
+        """ Run the EM clustering algorithm. """
         logger.routine(
             f"Began {self} with {self._min_iter}-{self._max_iter} iterations"
         )
@@ -364,7 +360,7 @@ class EMRun(object):
         # thus the same trajectory, which defeats the purpose of running
         # multiple trajectories. By giving every EMRun a unique seed,
         # the runs can be forced to have different trajectories.
-        rng = np.random.default_rng(seed)
+        rng = np.random.default_rng(self._seed)
         # Choose the concentration parameters using a standard uniform
         # distribution so that the reads assigned to each cluster can
         # vary widely among the clusters (helping to make the clusters
@@ -482,7 +478,8 @@ class EMRun(object):
                                             self._unmasked,
                                             self.jackpot_score,
                                             self._jackpot_conf_level,
-                                            self._max_jackpot_quotient)
+                                            self._max_jackpot_quotient,
+                                            seed=self._seed)
         except Exception as error:
             logger.warning(error)
         return np.array([], dtype=float)

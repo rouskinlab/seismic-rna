@@ -426,7 +426,14 @@ class Masker(object):
                 f"{self} merged mutations closer than {self.min_mut_gap} nt "
                 f"in {batch}"
             )
-            return batch.merge_close_muts(self.pattern, self.min_mut_gap)
+            return MaskMutsBatch(
+                batch=batch.batch,
+                read_nums=batch.read_nums,
+                region=batch.region,
+                seg_end5s=batch.seg_end5s,
+                seg_end3s=batch.seg_end3s,
+                muts=batch.merge_close_muts(self.pattern, self.min_mut_gap),
+            )
         raise ValueError(f"Invalid mut_collisions: {repr(self.mut_collisions)}")
 
     def _exclude_positions(self):

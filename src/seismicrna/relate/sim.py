@@ -13,8 +13,6 @@ from ..core.seq import DNA
 from ..core.tmp import release_to_out
 from ..core.write import need_write
 
-rng = np.random.default_rng()
-
 
 def simulate_batch(sample: str,
                    branches: dict[str, str],
@@ -65,7 +63,9 @@ def simulate_batches(batch_size: int,
                      pmut: pd.DataFrame,
                      pclust: pd.Series,
                      num_reads: int,
+                     seed: int | None,
                      **kwargs):
+    rng = np.random.default_rng(seed)
     # Simulate the number of reads per cluster.
     num_reads_clusters = pd.Series(rng.multinomial(num_reads, pclust),
                                    pclust.index)
@@ -78,6 +78,7 @@ def simulate_batches(batch_size: int,
                                       batch_size,
                                       num_reads_cluster,
                                       pmut=pmut_cluster,
+                                      seed=seed,
                                       **kwargs):
             yield batch
             first_batch += 1
@@ -97,7 +98,8 @@ def simulate_relate(*,
                     uniq_end5s: np.ndarray,
                     uniq_end3s: np.ndarray,
                     pends: np.ndarray,
-                    pclust: pd.Series,                    brotli_level: int,
+                    pclust: pd.Series,
+                    brotli_level: int,
                     force: bool,
                     **kwargs):
     """ Simulate an entire relate step. """

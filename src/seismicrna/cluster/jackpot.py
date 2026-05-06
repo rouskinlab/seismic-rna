@@ -22,8 +22,6 @@ from ..core.unbias import (CLUSTERS,
 
 SUM_EXP_PRECISION = 3
 
-rng = np.random.default_rng()
-
 
 def linearize_ends_matrix(p_ends: np.ndarray):
     """ Linearize an N x N matrix of end coordinate probabilities/counts
@@ -94,7 +92,7 @@ def _assign_clusters(clusters: np.ndarray,
     return clusters
 
 
-def _sim_clusters(p_clust_given_read: np.ndarray):
+def _sim_clusters(p_clust_given_read: np.ndarray, seed: int | None):
     """ Simulate a cluster for each read. """
     n_reads, n_clust = p_clust_given_read.shape
     if p_clust_given_read.size > 0 and p_clust_given_read.min() <= 0.:
@@ -116,10 +114,12 @@ def _sim_clusters(p_clust_given_read: np.ndarray):
     p_clust_given_read_sum = p_clust_given_read.sum(axis=0)
     while np.sum(n_reads_per_clust := stochastic_round(
             p_clust_given_read_sum,
-            preserve_sum=True
+            preserve_sum=True,
+            seed=seed,
     )) != n_reads:
         pass
     # Choose the cluster for each read.
+    rng = np.random.default_rng(seed)
     _assign_clusters(clusters,
                      p_clust_given_read,
                      n_reads_per_clust,
@@ -141,7 +141,8 @@ def _sim_muts(end5s: np.ndarray,
               end3s: np.ndarray,
               clusts: np.ndarray,
               p_mut_given_span_noclose: np.ndarray,
-              min_mut_gap: int):
+              min_mut_gap: int,
+              seed: int | None):
     """ Simulate mutations and write them into reads.
 
     Parameters
@@ -178,6 +179,7 @@ def _sim_muts(end5s: np.ndarray,
     n_reads = dims[READS]
     n_pos = dims[POSITIONS]
     n_clust = dims[CLUSTERS]
+    rng = np.random.default_rng(seed)
     # Initialize an empty matrix for the mutations.
     muts = np.zeros((n_reads, n_pos), dtype=bool)
     # Assign mutations to each cluster separately.
@@ -189,7 +191,8 @@ def _sim_muts(end5s: np.ndarray,
         _calc_covered(covered, end5s[i_k], end3s[i_k])
         # Calculate the coverage and number of mutations per position.
         coverage = np.count_nonzero(covered, axis=0)
-        num_muts = stochastic_round(coverage * p_mut_given_span_noclose[:, k])
+        num_muts = stochastic_round(coverage * p_mut_given_span_noclose[:, k],
+                                    seed=seed)
         # Start filling in mutations at positions in order of increasing
         # number of non-mutated bases.
         muts_k = np.zeros_like(covered)
@@ -218,7 +221,8 @@ def _sim_reads(end5s: np.ndarray,
                end3s: np.ndarray,
                p_clust_given_ends_noclose: np.ndarray,
                p_mut_given_span_noclose: np.ndarray,
-               min_mut_gap: int):
+               min_mut_gap: int,
+               seed: int | None):
     find_dims([(READS,),
                (READS,),
                (POSITIONS, POSITIONS, CLUSTERS,),
@@ -233,12 +237,14 @@ def _sim_reads(end5s: np.ndarray,
                "p_mut_given_span_noclose"],
               nonzero=[CLUSTERS])
     # Simulate the clusters and the mutations in each read.
-    clusts = _sim_clusters(p_clust_given_ends_noclose[end5s, end3s])
+    clusts = _sim_clusters(p_clust_given_ends_noclose[end5s, end3s],
+                           seed=seed)
     muts = _sim_muts(end5s,
                      end3s,
                      clusts,
                      p_mut_given_span_noclose,
-                     min_mut_gap)
+                     min_mut_gap,
+                     seed=seed)
     # Merge the mutation data and 5'/3' ends into one array of reads.
     reads = np.hstack([muts,
                        end5s[:, np.newaxis],
@@ -286,7 +292,8 @@ def sim_obs_exp(end5s: np.ndarray,
                 p_clust: np.ndarray,
                 min_mut_gap: int,
                 mut_collisions: str,
-                unmasked: np.ndarray):
+                unmasked: np.ndarray,
+                seed: int | None):
     """ Simulate observed and expected counts. """
     find_dims([(READS,),
                (READS,),
@@ -324,7 +331,8 @@ def sim_obs_exp(end5s: np.ndarray,
                                    end3s,
                                    p_clust_given_ends_noclose,
                                    p_mut_given_span_noclose,
-                                   min_mut_gap)
+                                   min_mut_gap,
+                                   seed=seed)
         yield _calc_obs_exp(reads,
                             clusts,
                             p_mut,
@@ -436,7 +444,8 @@ def bootstrap_jackpot_scores(uniq_end5s: np.ndarray,
                              unmasked: np.ndarray,
                              real_jackpot_score: float,
                              confidence_level: float,
-                             max_jackpot_quotient: float):
+                             max_jackpot_quotient: float,
+                             seed: int | None):
     """ Bootstrap jackpotting scores from the null model.
 
     Parameters
@@ -512,7 +521,8 @@ def bootstrap_jackpot_scores(uniq_end5s: np.ndarray,
                                         p_clust,
                                         min_mut_gap,
                                         mut_collisions,
-                                        unmasked):
+                                        unmasked,
+                                        seed=seed):
         # Calculate this null model's jackpotting score.
         null_g_anomalies = calc_semi_g_anomaly(num_obs, log_exp)
         null_jackpotting_score = calc_jackpot_score(null_g_anomalies,

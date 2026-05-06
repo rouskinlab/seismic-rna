@@ -14,7 +14,8 @@ from ..core.arg import (opt_ct_file,
                         opt_vmut_paired,
                         opt_vmut_unpaired,
                         opt_force,
-                        opt_num_cpus)
+                        opt_num_cpus,
+                        opt_seed)
 from ..core.error import NoDataError
 from ..core.header import RelClustHeader, list_clusts, make_header, parse_header
 from ..core.rel import (MATCH,
@@ -47,8 +48,6 @@ from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write
 
 COMMAND = __name__.split(os.path.extsep)[-1]
-
-rng = np.random.default_rng()
 
 
 def verify_proportions(p: Any):
@@ -238,7 +237,8 @@ def make_pmut_means_unpaired(pam: float = 0.045,
 
 def sim_pmut(positions: pd.Index,
              mean: pd.DataFrame,
-             relative_variance: float):
+             relative_variance: float,
+             seed: int | None):
     """ Simulate mutation rates using a Dirichlet distribution.
 
     Parameters
@@ -255,6 +255,7 @@ def sim_pmut(positions: pd.Index,
     pd.DataFrame
         Mutation rates, with the same index as
     """
+    rng = np.random.default_rng(seed)
     if not isinstance(positions, pd.MultiIndex):
         raise TypeError(f"positions must be a MultiIndex, "
                         f"but got {type(mean).__name__}")
@@ -303,7 +304,8 @@ def run_struct(ct_file: Path,
                pmut_unpaired: Iterable[tuple[str, float]],
                vmut_paired: float,
                vmut_unpaired: float,
-               force: bool):
+               force: bool,
+               seed: int | None):
     pmut_file = ct_file.with_suffix(path.PARAM_MUTS_EXT)
     if need_write(pmut_file, force):
         # Calculate mean mutation rates.
@@ -332,8 +334,8 @@ def run_struct(ct_file: Path,
                     index.get_level_values(POS_NAME) >= end5,
                     index.get_level_values(POS_NAME) <= end3
                 )]
-            mu_paired[pair_] = sim_pmut(use_index, pm, vmut_paired)
-            mu_unpaired[pair_] = sim_pmut(use_index, um, vmut_unpaired)
+            mu_paired[pair_] = sim_pmut(use_index, pm, vmut_paired, seed=seed)
+            mu_unpaired[pair_] = sim_pmut(use_index, um, vmut_unpaired, seed=seed)
 
         unpair = UNPAIRED, UNPAIRED
         update_mus(unpair)
@@ -399,7 +401,8 @@ def run(*,
         vmut_paired: float,
         vmut_unpaired: float,
         force: bool,
-        num_cpus: int):
+        num_cpus: int,
+        seed: int | None):
     """ Simulate the rate of each kind of mutation at each position. """
     return dispatch(run_struct,
                     num_cpus=num_cpus,
@@ -412,7 +415,8 @@ def run(*,
                                 pmut_unpaired=pmut_unpaired,
                                 vmut_paired=vmut_paired,
                                 vmut_unpaired=vmut_unpaired,
-                                force=force))
+                                force=force,
+                                seed=seed))
 
 
 params = [
@@ -422,7 +426,8 @@ params = [
     opt_vmut_paired,
     opt_vmut_unpaired,
     opt_force,
-    opt_num_cpus
+    opt_num_cpus,
+    opt_seed,
 ]
 
 
