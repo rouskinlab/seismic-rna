@@ -8,15 +8,57 @@ from ..core.arg import (FOLD_ENERGY_METHODS,
                         FOLD_ENERGY_METHOD_CORDERO,
                         FOLD_ENERGY_METHOD_DEIGAN,
                         FOLD_ENERGY_METHOD_EDDY)
+from ..core.logs import logger
 from ..core.mu import winsorize
 from ..core.rna import RNAProfile
 from ..core.seq import write_fasta
-from ..core.validate import (require_greater,
+from ..core.validate import (require_atleast,
                              require_between,
                              require_isin,
                              require_isinstance)
 
 ZERO_CELSIUS = 273.15  # Kelvin
+
+
+def celsius_to_kelvin(temp_c: float | int):
+    """ Convert a temperature from Celsius to Kelvin. """
+    require_atleast("temp_c",
+                    temp_c,
+                    -ZERO_CELSIUS,
+                    f"-{ZERO_CELSIUS} °C",
+                    classes=(float, int))
+    return temp_c + ZERO_CELSIUS
+
+
+def kelvin_to_celsius(temp_k: float | int):
+    """ Convert a temperature from Kelvin to Celsius. """
+    require_atleast("temp_k",
+                    temp_k,
+                    0.0,
+                    "0 K",
+                    classes=(float, int))
+    return temp_k - ZERO_CELSIUS
+
+
+def guess_temperature_to_celsius(temp: float | int):
+    """ Guess whether a temperature is in Celsius or Kelvin and return
+    as Celsius. """
+    require_isinstance("temp", temp, (float, int))
+    if temp < -ZERO_CELSIUS:
+        raise ValueError(
+            f"Temperature is too low to be in Celsius or Kelvin: {temp}"
+        )
+    if temp < (ZERO_CELSIUS + 100.) / 2.:
+        # Assume Celsius if the temperature is less than the midpoint of
+        # 100 (boiling point of water in Celsius) and 273.15 (freezing
+        # point of water in Kelvin).
+        return temp
+    # Assume Kelvin if the temperature is greater than the midpoint.
+    logger.warning(
+        f"Assuming temperature {temp} is in Kelvin: if you meant it to be in "
+        f"Celsius, please enter it as {round(celsius_to_kelvin(temp), 2)}"
+    )
+    return kelvin_to_celsius(temp)
 
 
 class RNAFoldProfile(RNAProfile):
@@ -45,10 +87,7 @@ class RNAFoldProfile(RNAProfile):
         """
         super().__init__(**kwargs)
         # Folding temperature (Celsius)
-        require_greater(
-            "fold_temp", fold_temp, -ZERO_CELSIUS, classes=(float, int)
-        )
-        self.fold_temp_c = fold_temp
+        self.fold_temp_c = guess_temperature_to_celsius(fold_temp)
         require_isin("fold_energy_method",
                      fold_energy_method,
                      FOLD_ENERGY_METHODS,
@@ -70,7 +109,7 @@ class RNAFoldProfile(RNAProfile):
     @property
     def fold_temp_k(self):
         """ Folding temperature (Kelvin). """
-        return self.fold_temp_c + ZERO_CELSIUS
+        return celsius_to_kelvin(self.fold_temp_c)
 
     def get_rnastructure_shape_args(self, top: Path, branch: str):
         """ Get the SHAPE/DMS arguments for Fold/ShapeKnots. """

@@ -33,6 +33,7 @@ from ..core.run import run_func
 from ..core.seq import DNA, RefRegions, Region, parse_fasta, write_fasta
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write
+from ..fold.profile import celsius_to_kelvin, guess_temperature_to_celsius
 from ..fold.rnastructure import make_rnastructure_cmd, retitle_ct, require_data_path
 
 COMMAND = __name__.split(os.path.extsep)[-1]
@@ -71,16 +72,18 @@ def fold_region(region: Region, *,
                         [(region.ref, region.seq.tr())],
                         force=force)
             # Predict the RNA structure.
+            fold_temp_c = guess_temperature_to_celsius(fold_temp)
+            fold_temp_k = celsius_to_kelvin(fold_temp_c)
             run_cmd(args_to_cmd(make_rnastructure_cmd(
                 fasta_tmp,
                 ct_tmp,
                 fold_backend=FOLD_BACKEND_FOLD,
                 dms_file=None,
                 shape_file=None,
-                deigan_slope=0.,
-                deigan_intercept=0.,
+                deigan_slope=None,
+                deigan_intercept=None,
                 fold_constraint=fold_constraint,
-                fold_temp_k=fold_temp,
+                fold_temp_k=fold_temp_k,
                 fold_md=fold_md,
                 fold_isolated=False,
                 fold_mfe=fold_mfe,
