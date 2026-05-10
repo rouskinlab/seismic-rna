@@ -93,7 +93,7 @@ class TestExcInfo(ut.TestCase):
             self.assertTrue(exc_info())
 
 
-class TestLoggingRaiseOnError(ut.TestCase):
+class TestLoggingExitOnError(ut.TestCase):
 
     @restore_config
     def test_exit_on_error(self):
@@ -130,13 +130,13 @@ class TestLoggingRaiseOnError(ut.TestCase):
 class TestEraseConfig(ut.TestCase):
 
     def test_erase_config(self):
-        set_config(verbosity=3, exit_on_error=True)
+        set_config(verbosity=3, exit_on_error=False)
         self.assertEqual(logger.console_stream.filterer.verbosity, 3)
-        self.assertTrue(logger.exit_on_error)
+        self.assertFalse(logger.exit_on_error)
         erase_config()
         self.assertIsNone(logger.console_stream)
         self.assertIsNone(logger.file_stream)
-        self.assertFalse(logger.exit_on_error)
+        self.assertTrue(logger.exit_on_error)
 
 
 class TestSetConfig(ut.TestCase):
@@ -146,9 +146,9 @@ class TestSetConfig(ut.TestCase):
         erase_config()
         self.assertIsNone(logger.console_stream)
         self.assertIsNone(logger.file_stream)
-        self.assertFalse(logger.exit_on_error)
+        self.assertTrue(logger.exit_on_error)
         set_config()
-        self.assertFalse(logger.exit_on_error)
+        self.assertTrue(logger.exit_on_error)
         self.assertEqual(logger.console_stream.filterer.verbosity, 0)
         self.assertIs(logger.console_stream.formatter.formatter,
                       format_console_color)
@@ -200,15 +200,15 @@ class TestSetConfig(ut.TestCase):
     @restore_config
     def test_no_log_color(self):
         set_config(log_color=False)
-        self.assertFalse(logger.exit_on_error)
+        self.assertTrue(logger.exit_on_error)
         self.assertEqual(logger.console_stream.filterer.verbosity, 0)
         self.assertIs(logger.console_stream.formatter.formatter,
                       format_console_plain)
 
     @restore_config
     def test_exit_on_error(self):
-        set_config(exit_on_error=True)
-        self.assertTrue(logger.exit_on_error)
+        set_config(exit_on_error=False)
+        self.assertFalse(logger.exit_on_error)
 
 
 class TestGetConfig(ut.TestCase):
