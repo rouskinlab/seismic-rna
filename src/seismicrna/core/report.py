@@ -89,6 +89,7 @@ from .arg import (opt_seed,
                   opt_jackpot,
                   opt_jackpot_conf_level,
                   opt_max_jackpot_quotient,
+                  opt_jackpot_max_data,
                   opt_max_arcd_vs_ens_avg,
                   opt_max_gini_run,
                   opt_max_pearson_run,
@@ -557,6 +558,7 @@ MaxClustsF = OptionReportField(opt_max_clusters)
 JackpotF = OptionReportField(opt_jackpot)
 JackpotConfLevelF = OptionReportField(opt_jackpot_conf_level)
 MaxJackpotQuotientF = OptionReportField(opt_max_jackpot_quotient)
+JackpotMaxDataF = OptionReportField(opt_jackpot_max_data)
 MaxARCDVsEnsAvgF = OptionReportField(opt_max_arcd_vs_ens_avg)
 MaxGiniRunF = OptionReportField(opt_max_gini_run)
 MaxPearsonRunF = OptionReportField(opt_max_pearson_run)

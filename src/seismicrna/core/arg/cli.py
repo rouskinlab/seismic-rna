@@ -974,6 +974,13 @@ opt_max_jackpot_quotient = Option(
     help="Remove runs whose jackpotting quotient exceeds this limit"
 )
 
+opt_jackpot_max_data = Option(
+    ("--jackpot-max-data",),
+    type=int,
+    default=2**28,
+    help="Skip calculating the jackpotting quotient if reads × positions exceeds this limit"
+)
+
 opt_max_pearson_run = Option(
     ("--max-pearson-run",),
     type=float,

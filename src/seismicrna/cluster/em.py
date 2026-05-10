@@ -93,7 +93,8 @@ class EMRun(object):
                  em_thresh: float,
                  jackpot: bool,
                  jackpot_conf_level: float,
-                 max_jackpot_quotient: float):
+                 max_jackpot_quotient: float,
+                 jackpot_max_data: int):
         """
         Parameters
         ----------
@@ -144,6 +145,7 @@ class EMRun(object):
         self._jackpot = jackpot
         self._jackpot_conf_level = jackpot_conf_level
         self._max_jackpot_quotient = max_jackpot_quotient
+        self._jackpot_max_data = jackpot_max_data
         # Mutation rates adjusted for observer bias.
         # 2D (all positions x clusters)
         self._p_mut = np.zeros((self._n_pos_total, self.k))
@@ -486,6 +488,12 @@ class EMRun(object):
         of the median null model. """
         if not self._jackpot:
             # Skip calculating the jackpotting quotient.
+            return np.nan
+        if self.n_reads * self._n_pos_total > self._jackpot_max_data:
+            logger.warning(f"Skipping the jackpotting calculation for {self} "
+                           f"because number of reads ({self.n_reads}) times "
+                           f"number of positions ({self._n_pos_total}) "
+                           f"exceeds the limit ({self._jackpot_max_data})")
             return np.nan
         try:
             null_jackpot_scores = self._null_jackpot_scores

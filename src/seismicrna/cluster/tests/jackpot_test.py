@@ -17,7 +17,8 @@ from seismicrna.core.arg.cli import (PROBE_DMS,
                                      opt_max_em_iter,
                                      opt_em_thresh,
                                      opt_jackpot_conf_level,
-                                     opt_max_jackpot_quotient)
+                                     opt_max_jackpot_quotient,
+                                     opt_jackpot_max_data)
 from seismicrna.core.array import find_dims
 from seismicrna.core.logs import Level, get_config, set_config
 from seismicrna.core.random import get_random_integer_generator
@@ -472,7 +473,8 @@ class TestBootstrapJackpotScores(ut.TestCase):
                        em_thresh=opt_em_thresh.default,
                        jackpot=True,
                        jackpot_conf_level=opt_jackpot_conf_level.default,
-                       max_jackpot_quotient=opt_max_jackpot_quotient.default)
+                       max_jackpot_quotient=opt_max_jackpot_quotient.default,
+                       jackpot_max_data=opt_jackpot_max_data.default)
         # Delete the simulated files so that this function can run again
         # if necessary.
         shutil.rmtree(self.SIM_DIR)
