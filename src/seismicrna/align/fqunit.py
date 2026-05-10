@@ -242,7 +242,6 @@ class FastqUnit(object):
         fields[path.EXT] = self.exts[key]
         return fields
 
-
     def iter_records(self, segments: Iterable[tuple[int, int]] = None):
         """
         Yields processed sequences (or segments) along with the full FASTQ records from the FastqUnit.
@@ -336,7 +335,6 @@ class FastqUnit(object):
             finally:
                 for h in handles:
                     h.close()
-
 
     @property
     def bowtie2_inputs(self):
