@@ -1,6 +1,17 @@
 import numpy as np
 
 from .array import calc_inverse
+from .types import get_max_uint
+
+RAND_INT_DTYPE = np.uint32
+
+
+def get_random_integer_generator(seed: int | None):
+    """ Generate an infinite series of random integers. """
+    rng = np.random.default_rng(seed)
+    max_integer = get_max_uint(RAND_INT_DTYPE)
+    while True:
+        yield int(rng.integers(max_integer, dtype=RAND_INT_DTYPE))
 
 
 def _stochastic_round(values: np.ndarray | list | float | int,

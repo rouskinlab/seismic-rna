@@ -466,23 +466,19 @@ class EMRun(object):
     @cached_property
     def _null_jackpot_scores(self):
         """ Jackpotting score of each null model. """
-        try:
-            return bootstrap_jackpot_scores(self._end5s,
-                                            self._end3s,
-                                            self._counts_per_uniq,
-                                            self._p_mut,
-                                            self._p_ends,
-                                            self._p_clust,
-                                            self.uniq_reads.min_mut_gap,
-                                            self.uniq_reads.mut_collisions,
-                                            self._unmasked,
-                                            self.jackpot_score,
-                                            self._jackpot_conf_level,
-                                            self._max_jackpot_quotient,
-                                            seed=self._seed)
-        except Exception as error:
-            logger.warning(error)
-        return np.array([], dtype=float)
+        return bootstrap_jackpot_scores(self._end5s,
+                                        self._end3s,
+                                        self._counts_per_uniq,
+                                        self._p_mut,
+                                        self._p_ends,
+                                        self._p_clust,
+                                        self.uniq_reads.min_mut_gap,
+                                        self.uniq_reads.mut_collisions,
+                                        self._unmasked,
+                                        self.jackpot_score,
+                                        self._jackpot_conf_level,
+                                        self._max_jackpot_quotient,
+                                        seed=self._seed)
 
     @cached_property
     def jackpot_quotient(self):
@@ -491,9 +487,14 @@ class EMRun(object):
         if not self._jackpot:
             # Skip calculating the jackpotting quotient.
             return np.nan
+        try:
+            null_jackpot_scores = self._null_jackpot_scores
+        except MemoryError as error:  # FIXME
+            logger.warning(error)
+            return np.nan
         return calc_jackpot_quotient(
             self.jackpot_score,
-            float(np.median(self._null_jackpot_scores))
+            float(np.median(null_jackpot_scores))
         )
 
     def _calc_p_mut_pairs(self,

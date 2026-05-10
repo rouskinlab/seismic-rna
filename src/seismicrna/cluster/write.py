@@ -18,13 +18,11 @@ from ..core import path
 from ..core.arg import DEFAULT_MIN_MUT_GAPS, DEFAULT_MUT_COLLISIONS
 from ..core.header import validate_ks
 from ..core.logs import logger
+from ..core.random import get_random_integer_generator
 from ..core.task import dispatch
 from ..core.tmp import release_to_out, with_tmp_dir
-from ..core.types import get_max_uint
 from ..core.write import need_write
 from ..mask.dataset import MaskMutsDataset, JoinMaskMutsDataset
-
-SEED_DTYPE = np.uint32
 
 
 def run_k(uniq_reads: UniqReads,
@@ -41,14 +39,10 @@ def run_k(uniq_reads: UniqReads,
             f"Expected num_runs to be ≥ 1, but got {num_runs}: setting to 1"
         )
         num_runs = 1
-    rng = np.random.default_rng(seed)
-    # On some but not all platforms, using this central source of seeds
-    # is necessary because otherwise the runs would all take identical
-    # trajectories, defeating the purpose of replicates.
-    seeds = rng.integers(get_max_uint(SEED_DTYPE),
-                         size=num_runs,
-                         dtype=SEED_DTYPE)
-    args = [(uniq_reads, k, int(s)) for s in seeds]
+    # Use the main seed to generate a unique seed for each run of EM.
+    seeds = [s for _, s in zip(range(num_runs),
+                               get_random_integer_generator(seed))]
+    args = [(uniq_reads, k, s) for s in seeds]
     runs = dispatch(EMRun,
                     num_cpus=num_cpus,
                     pass_num_cpus=False,
@@ -108,12 +102,11 @@ def run_ks(uniq_reads: UniqReads,
                    path.REG: uniq_reads.region.name}
     runs_ks = dict()
     ks = validate_ks(ks)
-    # Generate a different random seed for each number of clusters (K)
-    # so that each batch of runs will have a different starting point.
+    # Generate a different random seed for each batch of EM runs.
     # This is essential if the while loop below runs multiple times,
     # in which case using the same seed for each loop iteration would
     # cause it to produce the same results.
-    rng = np.random.default_rng(seed)
+    seeds = iter(get_random_integer_generator(seed))
     # Loop through every K if try_all_ks is True, otherwise go until the
     # current K is worse than the previous K or raises an error.
     for k in ks:
@@ -146,8 +139,6 @@ def run_ks(uniq_reads: UniqReads,
                     num_runs = min(max_runs_k - num_runs_k, num_cpus)
                 num_runs_k += num_runs
                 # Run a batch of EM.
-                run_k_seed = int(rng.integers(get_max_uint(SEED_DTYPE),
-                                              dtype=SEED_DTYPE))
                 runs_k.extend(run_k(uniq_reads,
                                     k,
                                     num_runs=num_runs,
@@ -156,7 +147,7 @@ def run_ks(uniq_reads: UniqReads,
                                     max_iter=(max_iter if k > 1 else 2),
                                     max_jackpot_quotient=max_jackpot_quotient,
                                     num_cpus=num_cpus,
-                                    seed=run_k_seed,
+                                    seed=next(seeds),
                                     **kwargs))
                 # Collect all runs so far for this K.
                 runs_ks[k] = EMRunsK(runs_k,
@@ -269,12 +260,7 @@ def cluster(dataset: MaskMutsDataset | JoinMaskMutsDataset, *,
         # a user to reproduce the clustering results by rerunning with
         # the same seed that is chosen randomly here.
         if seed is None:
-            # Don't seed this random number generator so that the random
-            # seed becomes a (pseudo) random integer.
-            seed = int(np.random.default_rng().integers(
-                get_max_uint(SEED_DTYPE),
-                dtype=SEED_DTYPE
-            ))
+            seed = next(iter(get_random_integer_generator(None)))
             logger.detail(f"No random seed specified for clustering: "
                           f"using random seed {seed}")
         runs_ks = run_ks(uniq_reads,

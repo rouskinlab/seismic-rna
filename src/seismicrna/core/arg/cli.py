@@ -8,7 +8,6 @@ from typing import Iterable
 from click import Argument, Choice, Option, Parameter, Path
 
 from ..io import DEFAULT_BROTLI_LEVEL
-from ..logs import DEFAULT_EXIT_ON_ERROR
 from ..seq import DNA
 
 # System information
@@ -1849,7 +1848,7 @@ opt_log_color = Option(
 opt_exit_on_error = Option(
     ("--exit-on-error/--log-on-error",),
     type=bool,
-    default=DEFAULT_EXIT_ON_ERROR,
+    default=False,
     help="If an error occurs, whether to log a message or exit SEISMIC-RNA"
 )
 
