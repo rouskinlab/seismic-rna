@@ -6,7 +6,10 @@ import numpy as np
 from scipy.stats import binom, t as studentt
 
 from seismicrna.cluster.em import EMRun
-from seismicrna.cluster.jackpot import (calc_semi_g_anomaly,
+from seismicrna.cluster.jackpot import (calc_jackpot_quotient,
+                                        calc_jackpot_score,
+                                        calc_jackpot_score_ci,
+                                        calc_semi_g_anomaly,
                                         linearize_ends_matrix,
                                         _sim_clusters_dropped,
                                         _sim_clusters_merged,
@@ -523,6 +526,140 @@ class TestBootstrapJackpotScores(ut.TestCase):
     
     def test_ideal_jackpot_merge(self):
         self.run_ideal_jackpot(min_mut_gap=6, mut_collisions="merge")
+
+
+class TestLinearizeEndsMatrix(ut.TestCase):
+
+    def test_empty_matrix(self):
+        m = np.zeros((4, 4))
+        end5s, end3s, vals = linearize_ends_matrix(m)
+        self.assertEqual(end5s.size, 0)
+        self.assertEqual(end3s.size, 0)
+        self.assertEqual(vals.size, 0)
+
+    def test_single_entry(self):
+        m = np.zeros((3, 3))
+        m[0, 2] = 0.5
+        end5s, end3s, vals = linearize_ends_matrix(m)
+        self.assertEqual(list(end5s), [0])
+        self.assertEqual(list(end3s), [2])
+        self.assertAlmostEqual(vals[0], 0.5)
+
+    def test_diagonal_only(self):
+        m = np.diag([0.1, 0.2, 0.3])
+        end5s, end3s, vals = linearize_ends_matrix(m)
+        self.assertEqual(list(end5s), [0, 1, 2])
+        self.assertEqual(list(end3s), [0, 1, 2])
+        np.testing.assert_allclose(np.sort(vals), [0.1, 0.2, 0.3])
+
+    def test_only_upper_triangle(self):
+        # Lower-triangle entries should be ignored
+        m = np.zeros((3, 3))
+        m[0, 1] = 1.0   # upper triangle
+        m[1, 0] = 9.0   # lower triangle — must be ignored
+        end5s, end3s, vals = linearize_ends_matrix(m)
+        self.assertEqual(list(end5s), [0])
+        self.assertEqual(list(end3s), [1])
+        self.assertAlmostEqual(vals[0], 1.0)
+
+    def test_multiple_entries_values(self):
+        m = np.zeros((4, 4))
+        m[0, 0] = 0.1
+        m[0, 3] = 0.4
+        m[1, 2] = 0.2
+        m[2, 2] = 0.3
+        end5s, end3s, vals = linearize_ends_matrix(m)
+        self.assertEqual(len(vals), 4)
+        for i, (r, c) in enumerate(zip(end5s, end3s)):
+            self.assertAlmostEqual(vals[i], m[r, c])
+
+
+class TestCalcJackpotScore(ut.TestCase):
+
+    def test_zero_reads_empty_anomalies(self):
+        result = calc_jackpot_score(np.array([]), n_reads=0)
+        self.assertEqual(result, 0.)
+
+    def test_zero_reads_nonempty_raises(self):
+        with self.assertRaises(ValueError):
+            calc_jackpot_score(np.array([1.0]), n_reads=0)
+
+    def test_uniform_obs_eq_exp(self):
+        # When obs == exp, semi-G anomaly = n * log(n/n) = 0 for all reads
+        anomalies = np.zeros(5)
+        result = calc_jackpot_score(anomalies, n_reads=10)
+        self.assertAlmostEqual(result, 0.)
+
+    def test_formula(self):
+        anomalies = np.array([3.0, 1.0, 2.0])
+        n_reads = 6
+        expected = anomalies.sum() / n_reads
+        self.assertAlmostEqual(calc_jackpot_score(anomalies, n_reads), expected)
+
+    def test_single_unique_read(self):
+        # All reads are the same unique read: obs=n_reads, exp=n_reads,
+        # semi_g_anomaly = n_reads * log(1) = 0
+        n = 100
+        anomalies = np.array([0.0])
+        self.assertAlmostEqual(calc_jackpot_score(anomalies, n_reads=n), 0.)
+
+
+class TestCalcJackpotScoreCi(ut.TestCase):
+
+    def test_single_score_returns_nan(self):
+        lo, up = calc_jackpot_score_ci([0.5], confidence_level=0.95)
+        self.assertTrue(np.isnan(lo))
+        self.assertTrue(np.isnan(up))
+
+    def test_identical_scores_zero_width(self):
+        scores = [1.0] * 20
+        lo, up = calc_jackpot_score_ci(scores, confidence_level=0.95)
+        self.assertAlmostEqual(lo, 1.0)
+        self.assertAlmostEqual(up, 1.0)
+
+    def test_interval_contains_mean(self):
+        rng = np.random.default_rng(0)
+        scores = rng.normal(loc=2.0, scale=0.5, size=50).tolist()
+        lo, up = calc_jackpot_score_ci(scores, confidence_level=0.95)
+        mean = float(np.mean(scores))
+        self.assertLessEqual(lo, mean)
+        self.assertGreaterEqual(up, mean)
+
+    def test_wider_ci_for_higher_confidence(self):
+        rng = np.random.default_rng(1)
+        scores = rng.normal(0, 1, size=30).tolist()
+        lo_90, up_90 = calc_jackpot_score_ci(scores, confidence_level=0.90)
+        lo_99, up_99 = calc_jackpot_score_ci(scores, confidence_level=0.99)
+        self.assertGreater(up_99 - lo_99, up_90 - lo_90)
+
+    def test_accepts_numpy_array(self):
+        scores = np.array([0.1, 0.2, 0.3, 0.4])
+        lo, up = calc_jackpot_score_ci(scores, confidence_level=0.95)
+        self.assertFalse(np.isnan(lo))
+        self.assertFalse(np.isnan(up))
+
+
+class TestCalcJackpotQuotient(ut.TestCase):
+
+    def test_equal_scores_returns_one(self):
+        self.assertAlmostEqual(calc_jackpot_quotient(0.5, 0.5), 1.0)
+
+    def test_zero_scores_returns_one(self):
+        self.assertAlmostEqual(calc_jackpot_quotient(0.0, 0.0), 1.0)
+
+    def test_real_greater_than_null(self):
+        result = calc_jackpot_quotient(1.0, 0.0)
+        self.assertAlmostEqual(result, np.exp(1.0))
+
+    def test_real_less_than_null(self):
+        result = calc_jackpot_quotient(0.0, 1.0)
+        self.assertAlmostEqual(result, np.exp(-1.0))
+
+    def test_formula(self):
+        real = 0.7
+        null = 0.3
+        self.assertAlmostEqual(calc_jackpot_quotient(real, null),
+                               np.exp(real - null))
 
 
 if __name__ == "__main__":
