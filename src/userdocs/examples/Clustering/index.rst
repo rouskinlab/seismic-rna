@@ -33,7 +33,7 @@ clustering will provide additional tables, reports, and plots:
     .. image:: img/abundance_clustered.png
 
 - The plots that were shown in Example 1, are also provided for each cluster, i.e.
-the barplot with the mutation rate per base in the unmasked positions
+  the barplot with the mutation rate per base in the unmasked positions
 (profile_filtered_m-ratio):
 
     .. image:: img/profile_clustered-2-x_m-ratio.png

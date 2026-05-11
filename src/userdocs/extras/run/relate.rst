@@ -78,7 +78,7 @@ which base(s) were inserted or deleted can be impossible due to the repetitive
 reference sequence itself, even if the reads were perfectly free of errors.
 To handle ambiguous indels, SEISMIC-RNA introduces a new algorithm that finds
 all possible indels that could have produced the observed read (for details on
-this algorithm, see :doc:`../algos/ambrel`).
+this algorithm, see :doc:`../../algos/index`).
 This algorithm is enabled by default.
 If you do not need to identify ambiguous indels, then you can disable this
 algorithm with ``--no-ambrel``, which will speed up the Relate step at the cost

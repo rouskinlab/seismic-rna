@@ -5,7 +5,7 @@ Workflow: Run all steps
 For convenience, ``seismic wf`` runs all steps of the main workflow:
 
 .. image::
-    wf.png
+    ../wf.png
 
 .. note::
     When you run the workflow with ``seismic wf``, the steps Cluster, Fold, and

@@ -103,7 +103,7 @@ Extra Utilities
 
 .. _cli_listpos:
 
-.. click:: seismicrna.lists.listpos:cli
+.. click:: seismicrna.lists:cli
     :prog: seismic listpos
 
 .. _cli_cleanfa:

@@ -16,12 +16,14 @@ def init_confusion_matrix(pos_index: pd.Index,
                           min_gap: int = 0):
     """ For every pair of positions, initialize the confusion matrix:
 
-    +----+----+
-    | AB | AO | A.
-    +----+----+
-    | OB | OO | O.
-    +----+----+
-      .B   .O   ..
+    .. code-block:: none
+
+        +----+----+
+        | AB | AO | A.
+        +----+----+
+        | OB | OO | O.
+        +----+----+
+          .B   .O   ..
 
     And return .., A., .B, AB in that order.
     """
@@ -87,12 +89,14 @@ def calc_confusion_matrix(pos_index: pd.Index,
                           min_gap: int = 0):
     """ For every pair of positions, calculate the confusion matrix:
 
-    +----+----+
-    | AB | AO | A.
-    +----+----+
-    | OB | OO | O.
-    +----+----+
-      .B   .O   ..
+    .. code-block:: none
+
+        +----+----+
+        | AB | AO | A.
+        +----+----+
+        | OB | OO | O.
+        +----+----+
+          .B   .O   ..
 
     And return .., A., .B, AB in that order.
     """
@@ -196,12 +200,14 @@ def calc_confusion_phi(n: pd.Series | pd.DataFrame,
                        validate: bool = True):
     """ Calculate the phi correlation coefficient for a 2x2 matrix.
 
-    +----+----+
-    | AB | AO | A.
-    +----+----+
-    | OB | OO | O.
-    +----+----+
-      .B   .O   ..
+    .. code-block:: none
+
+        +----+----+
+        | AB | AO | A.
+        +----+----+
+        | OB | OO | O.
+        +----+----+
+          .B   .O   ..
 
     where
       A. = AB + AO

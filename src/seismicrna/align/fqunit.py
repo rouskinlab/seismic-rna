@@ -286,23 +286,31 @@ class FastqUnit(object):
         """
         Yields processed sequences (or segments) along with the full FASTQ records from the FastqUnit.
 
-        Output structure:
-        A tuple (processed_seqs, full_records) where:
-            - processed_seqs:
-                * If segments is provided:
-                    - For paired-end FASTQs, a tuple of lists; each list contains the sliced segments,
-                    one per (start, end) tuple.
-                    - For single-end FASTQs, a one-element tuple containing a list of sliced segments.
-                * If segments is None:
-                    - For paired-end FASTQs, a tuple of two full sequence strings safe-sliced to the length
-                    of the longer sequence in the pair.
-                    - For single-end FASTQs, a one-element tuple with the full sequence safe-sliced to its length.
-            - full_records:
-                * A tuple containing the full FASTQ records (each record is a list of 4 lines).
-                In paired mode the tuple will have two elements; in single-end mode, one element.
+        Output structure: a tuple ``(processed_seqs, full_records)`` where:
 
-        Note: Only the sequence (second line of each record) is processed for segments. The header,
-        plus, and quality lines are read to maintain proper file structure and are returned in the full record.
+        - ``processed_seqs``:
+
+          - If segments is provided:
+
+            - For paired-end FASTQs, a tuple of lists; each list contains the
+              sliced segments, one per ``(start, end)`` tuple.
+            - For single-end FASTQs, a one-element tuple containing a list of
+              sliced segments.
+
+          - If segments is None:
+
+            - For paired-end FASTQs, a tuple of two full sequence strings
+              safe-sliced to the length of the longer sequence in the pair.
+            - For single-end FASTQs, a one-element tuple with the full sequence
+              safe-sliced to its length.
+
+        - ``full_records``: a tuple containing the full FASTQ records (each
+          record is a list of 4 lines). In paired mode the tuple will have two
+          elements; in single-end mode, one element.
+
+        Note: Only the sequence (second line of each record) is processed for
+        segments. The header, plus, and quality lines are read to maintain
+        proper file structure and are returned in the full record.
         """
         if not self.exists:
             raise ValueError("Not all FASTQ paths in the FastqUnit exist.")

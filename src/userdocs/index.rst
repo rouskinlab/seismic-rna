@@ -14,7 +14,6 @@ Clustering of RNA
     install/index
     tutorials/index
     examples/index
-    manual/index
     cli
     api/seismicrna
     formats/index

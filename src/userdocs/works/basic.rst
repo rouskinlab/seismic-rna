@@ -5,7 +5,7 @@ Basic Usage
 What you need to run SEISMIC-RNA
 --------------------------------------------------------------------------------
 
-- SEISMIC-RNA: to install it, see :doc:`../install`.
+- SEISMIC-RNA: to install it, see :doc:`../install/index`.
 - A file of one or more "reference sequences" in FASTA format (for details, see
   :doc:`../formats/data/fasta`).
   This file tells SEISMIC-RNA the underlying sequence of each RNA, to which it
@@ -49,4 +49,4 @@ FASTQ files, alignment maps, reports, and tables will enter into the workflow at
 these steps:
 
 .. image::
-    wf.png
+    ../extras/wf.png

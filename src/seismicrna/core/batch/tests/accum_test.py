@@ -27,19 +27,18 @@ class TestAccumulateBatches(ut.TestCase):
 
     def test_relate_1_batch(self):
         """
-        . = Match
-        ! = Mutation
-        ? = Ambiguous
-        _ = Not Covered
+        . = Match, ! = Mutation, ? = Ambiguous, _ = Not Covered
 
-          1234
-          ACGT
-        ------
-        0 _!?!
-        1 .!..
-        2 !!!_
-        3 !!._
-        4 ?.._
+        .. code-block:: none
+
+              1234
+              ACGT
+            ------
+            0 _!?!
+            1 .!..
+            2 !!!_
+            3 !!._
+            4 ?.._
         """
         region = Region("myref", DNA("ACGT"))
         patterns = {"Matches": RelPattern.muts().invert(),
@@ -101,20 +100,19 @@ class TestAccumulateBatches(ut.TestCase):
 
     def test_relate_2_batches(self):
         """
-        . = Match
-        ! = Mutation
-        ? = Ambiguous
-        _ = Not Covered
+        . = Match, ! = Mutation, ? = Ambiguous, _ = Not Covered
 
-          1234
-          ACGT
-        ------
-        0 _!?!
-        1 .!..
-        2 !!!_
-        ------
-        0 !!._
-        1 ?.._
+        .. code-block:: none
+
+              1234
+              ACGT
+            ------
+            0 _!?!
+            1 .!..
+            2 !!!_
+            ------
+            0 !!._
+            1 ?.._
         """
         region = Region("myref", DNA("ACGT"))
         patterns = {"Matches": RelPattern.muts().invert(),
@@ -182,20 +180,19 @@ class TestAccumulateBatches(ut.TestCase):
 
     def test_mask_2_batches(self):
         """
-        . = Match
-        ! = Mutation
-        ? = Ambiguous
-        _ = Not Covered
+        . = Match, ! = Mutation, ? = Ambiguous, _ = Not Covered
 
-          3468
-          ACGT
-        ------
-        2 _!?!
-        4 .!..
-        7 !!!_
-        ------
-        0 !!._
-        6 ?.._
+        .. code-block:: none
+
+              3468
+              ACGT
+            ------
+            2 _!?!
+            4 .!..
+            7 !!!_
+            ------
+            0 !!._
+            6 ?.._
         """
         region = Region("myref", DNA("NNACNGNT"))
         region.add_mask("mask", [3, 4, 6, 8], complement=True)
@@ -267,20 +264,19 @@ class TestAccumulateBatches(ut.TestCase):
 
     def test_cluster_2_batches(self):
         """
-        . = Match
-        ! = Mutation
-        ? = Ambiguous
-        _ = Not Covered
+        . = Match, ! = Mutation, ? = Ambiguous, _ = Not Covered
 
-          3468
-          ACGT  C1  C2
-        --------------
-        2 _!?! 0.1 0.9
-        4 .!.. 0.3 0.7
-        7 !!!_ 0.5 0.5
-        --------------
-        0 !!._ 0.6 0.4
-        6 ?.._ 0.8 0.2
+        .. code-block:: none
+
+              3468
+              ACGT  C1  C2
+            --------------
+            2 _!?! 0.1 0.9
+            4 .!.. 0.3 0.7
+            7 !!!_ 0.5 0.5
+            --------------
+            0 !!._ 0.6 0.4
+            6 ?.._ 0.8 0.2
         """
         region = Region("myref", DNA("NNACNGNT"))
         region.add_mask("mask", [3, 4, 6, 8], complement=True)

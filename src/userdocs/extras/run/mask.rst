@@ -32,18 +32,10 @@ Mask setting: Choose a chemical probe
 Use ``--probe`` to tell SEISMIC-RNA which chemical probe you used.
 This sets sensible defaults for several other mask options automatically:
 
-=========== ================================= ==========================
-``--probe`` Probe                             Default behaviour
-=========== ================================= ==========================
-``DMS``     Dimethyl sulfate (default)        Mask G and U; use
-                                              ``--mut-collisions drop``
-``SHAPE``   SHAPE reagents                   Keep G and U; use
-            (e.g. 1M7, NMIA)                 ``--mut-collisions merge``
-``ETC``     Other chemical probes            Keep G and U; use
-                                              ``--mut-collisions merge``
-``none``    No probe (e.g. icSHAPE input)    Keep G and U; use
-                                              ``--mut-collisions merge``
-=========== ================================= ==========================
+- ``DMS`` (default): Dimethyl sulfate. Masks G and U; uses ``--mut-collisions drop``.
+- ``SHAPE``: SHAPE reagents (e.g. 1M7, NMIA). Keeps G and U; uses ``--mut-collisions merge``.
+- ``ETC``: Other chemical probes. Keeps G and U; uses ``--mut-collisions merge``.
+- ``none``: No probe (e.g. icSHAPE input). Keeps G and U; uses ``--mut-collisions merge``.
 
 You can still override any individual option after setting ``--probe``.
 
@@ -199,19 +191,14 @@ based on our previous findings in `Tomezsko et al. (2020)`_.
 When ``--min-mut-gap`` is set, use ``--mut-collisions`` to choose what to do
 with reads that have two mutations closer than the gap:
 
-============= =================================================================
-``--mut-collisions`` Behaviour
-============= =================================================================
-``auto``      Automatically choose ``drop`` or ``merge`` based on ``--probe``
-(default)     (DMS → ``drop``; SHAPE/ETC/none → ``merge``).
-``drop``      Discard any read with a pair of mutations closer than
-              ``--min-mut-gap``.  Recommended for DMS-MaPseq, where closely
-              spaced hits from the same molecule are rare.
-``merge``     Merge the two nearby mutations into a single event at their
-              midpoint.  Recommended for SHAPE, where a single reagent
-              adduct can generate two adjacent mutation calls during
-              reverse transcription.
-============= =================================================================
+- ``auto`` (default): Automatically choose ``drop`` or ``merge`` based on
+  ``--probe`` (DMS → ``drop``; SHAPE/ETC/none → ``merge``).
+- ``drop``: Discard any read with a pair of mutations closer than
+  ``--min-mut-gap``.  Recommended for DMS-MaPseq, where closely spaced hits
+  from the same molecule are rare.
+- ``merge``: Merge the two nearby mutations into a single event at their
+  midpoint.  Recommended for SHAPE, where a single reagent adduct can generate
+  two adjacent mutation calls during reverse transcription.
 
 Mask setting: Filter positions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -260,7 +247,6 @@ Mask output file: Batch of masked reads
 
 Each batch of masked reads contains a ``MaskBatchIO`` object and is saved to the
 file ``mask-batch-{num}.brickle``, where ``{num}`` is the batch number.
-See :doc:`../../data/mask/mask` for more information on the data structure.
 See :doc:`../../formats/data/brickle` for more information on brickle files.
 
 Mask output file: Mask report

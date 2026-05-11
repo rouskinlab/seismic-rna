@@ -364,7 +364,7 @@ Otherwise, it will print the number of tests that failed and a message about
 each failure.
 If this happens, then first follow :ref:`install_update` to ensure you are using
 the latest version of SEISMIC-RNA and its dependencies.
-If your problem persists, then please report an issue (see :doc:`./issues` for
+If your problem persists, then please report an issue (see :doc:`../issues` for
 instructions).
 
 

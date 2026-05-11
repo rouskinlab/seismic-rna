@@ -50,21 +50,18 @@ Mutation rates are incorporated into the folding energy function as soft
 constraints.
 Use ``--fold-energy-method`` to choose the method:
 
-=================== =========== ================================================
-``--fold-energy-method`` Backends Description
-=================== =========== ================================================
-``Deigan``          all         SHAPE pseudo-energy pseudoenergy term
-(default)                       ``m * log(reactivity + 1) + b``
-                                with slope ``--deigan-slope`` (default 1.8
-                                kcal/mol) and intercept ``--deigan-intercept``
-                                (default −0.6 kcal/mol); used with RNAstructure
-                                Fold and ShapeKnots via SHAPE-directed folding
-                                and with ViennaRNA via soft constraints file.
-``Cordero``         Fold,       Hard partition into paired/unpaired constraints
-                    ShapeKnots  based on reactivity threshold; RNAstructure-only.
-``Eddy``            RNAFold     Uses ViennaRNA's built-in soft constraint
-                                facility; requires ``--fold-backend RNAFold``.
-=================== =========== ================================================
+- ``Deigan`` (default): SHAPE pseudo-energy term ``m * log(reactivity + 1) + b``
+  with slope ``--deigan-slope`` (default 1.8 kcal/mol) and intercept
+  ``--deigan-intercept`` (default −0.6 kcal/mol).
+  Works with all three backends: RNAstructure uses SHAPE-directed folding;
+  ViennaRNA uses a soft-constraint file.
+
+- ``Cordero``: Hard partition of positions into paired/unpaired constraints
+  based on a reactivity threshold.
+  Requires ``--fold-backend Fold`` or ``--fold-backend ShapeKnots``.
+
+- ``Eddy``: Uses ViennaRNA's built-in soft constraint facility.
+  Requires ``--fold-backend RNAFold``.
 
 Fold setting: Define regions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

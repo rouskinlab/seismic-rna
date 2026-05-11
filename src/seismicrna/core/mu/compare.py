@@ -27,7 +27,7 @@ def calc_arcsine_distance(mus1: float | np.ndarray | pd.Series | pd.DataFrame,
     Returns
     -------
     float | np.ndarray | pd.Series | pd.DataFrame
-        Arcsine distance: 2/π * |arcsin(√mus1) - arcsin(√mus2)|
+        Arcsine distance: ``2/π * |arcsin(√mus1) - arcsin(√mus2)|``
     """
     return np.abs(np.arcsin(2. * mus1 - 1.) - np.arcsin(2. * mus2 - 1.)) / np.pi
 

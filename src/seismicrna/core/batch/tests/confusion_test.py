@@ -113,14 +113,16 @@ class TestCalcConfusionMatrix(ut.TestCase):
 
     def test_no_clusters(self):
         """
+        .. code-block:: none
+
             Pos.
-        Rd. 2579
-        0   ====
-        2   A=C=
-        3   =G=T
-        5   .G=.
-        8   ..==
-        9   T-=.
+            Rd. 2579
+            0   ====
+            2   A=C=
+            3   =G=T
+            5   .G=.
+            8   ..==
+            9   T-=.
         """
         pattern = RelPattern.from_counts(count_del=False, count_ins=False)
         read_nums = np.array([0, 2, 3, 5, 8, 9])
@@ -192,14 +194,16 @@ class TestCalcConfusionMatrix(ut.TestCase):
 
     def test_clusters(self):
         """
+        .. code-block:: none
+
             Pos.
-        Rd. 2579
-        0   ====
-        2   A=C=
-        3   =G=T
-        5   .G=.
-        8   ..==
-        9   T-=.
+            Rd. 2579
+            0   ====
+            2   A=C=
+            3   =G=T
+            5   .G=.
+            8   ..==
+            9   T-=.
         """
         pattern = RelPattern.from_counts(count_del=False, count_ins=False)
         read_nums = np.array([0, 2, 3, 5, 8, 9])

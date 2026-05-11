@@ -109,7 +109,6 @@ Cluster output file: Batch of cluster memberships
 
 Each batch of clustered reads contains a ``ClustBatchIO`` object and is saved to
 the file ``cluster-batch-{num}.brickle``, where ``{num}`` is the batch number.
-See :doc:`../../data/cluster/cluster` for details on the data structure.
 See :doc:`../../formats/data/brickle` for more information on brickle files.
 
 Cluster output file: Cluster report

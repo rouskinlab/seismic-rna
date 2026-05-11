@@ -8,19 +8,19 @@ Join Mask Report
 Join Mask Report: Fields
 ================================================================================
 
-====================== =========
+====================== ==========
 Name                   Data Type
-====================== =========
+====================== ==========
 Name of Sample         str
 Name of Reference      str
-Name of Region        str
-Joined Regions        list[str]
+Name of Region         str
+Joined Regions         list[str]
 Branches               list[str]
 Time Began             str
 Time Ended             str
 Time Taken (minutes)   float
 Version of SEISMIC-RNA str
-====================== =========
+====================== ==========
 
 Join Mask Report: Example
 ================================================================================

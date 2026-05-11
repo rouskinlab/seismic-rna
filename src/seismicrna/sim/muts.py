@@ -97,14 +97,18 @@ def make_pmut_means(*,
 
     Mutations are assumed to behave as follows:
 
-    -   A base `n` mutates with probability `pnm`.
-        -   If it mutates, then it is a substitution with probability
-            (`pna` + `pnc` + `png` + `pnt`).
-            -   If it is a substitution, then it is high-quality with
-                probability (1 - `ploq`).
-            -   Otherwise, it is low-quality.
-        -   Otherwise, it is a deletion.
-    -   Otherwise, it is low-quality with probability `ploq`.
+    - A base ``n`` mutates with probability ``pnm``.
+
+      - If it mutates, then it is a substitution with probability
+        (``pna`` + ``pnc`` + ``png`` + ``pnt``).
+
+        - If it is a substitution, then it is high-quality with
+          probability (1 - ``ploq``).
+        - Otherwise, it is low-quality.
+
+      - Otherwise, it is a deletion.
+
+    - Otherwise, it is low-quality with probability ``ploq``.
 
     So the overall probability of being low-quailty is the probability
     given a mutation, `pnm` * (`pna` + `pnc` + `png` + `pnt`) * `ploq`,

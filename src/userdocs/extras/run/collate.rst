@@ -38,15 +38,15 @@ Collate setting: Group graphs
 
 Use ``--group`` to control how graphs are organized within the report:
 
-=========== ====================================================================
-``--group`` Grouping
-=========== ====================================================================
-``sample``  One section per sample (default)
-``graph``   One section per graph type
-``branches``One section per analysis branch
-``region``  One section per reference region
-``all``     All graphs in a single section
-=========== ====================================================================
+=============== ====================================================
+``--group``     Grouping
+=============== ====================================================
+``sample``      One section per sample (default)
+``graph``       One section per graph type
+``branches``    One section per analysis branch
+``region``      One section per reference region
+``all``         All graphs in a single section
+=============== ====================================================
 
 Collate setting: Portable output
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
