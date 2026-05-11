@@ -162,8 +162,8 @@ def get_neighbors(barcode: DNA, max_mismatches: int, allow_n: bool):
     Parameters:
       barcode: DNA barcode (of type DNA). It should not contain 'N'.
       max_mismatches: Maximum allowed mismatches.
-      allow_n_substitution: If True, substitutions to 'N' are allowed (using 3-bit encoding).
-                            If False, only A, C, G, and T are used (using 2-bit encoding).
+      allow_n: If True, substitutions to 'N' are allowed (using 3-bit encoding).
+               If False, only A, C, G, and T are used (using 2-bit encoding).
 
     Returns:
       A set of barcode strings representing all neighbors.

@@ -123,6 +123,21 @@ class MaskMutsDataset(MaskDataset, MultistepDataset, UnbiasDataset):
         return region
 
     def _integrate(self, batch1: RelateMutsBatch, batch2: MaskBatchIO):
+        """ Combine a relate batch with a mask batch into a MaskMutsBatch.
+
+        Parameters
+        ----------
+        batch1: RelateMutsBatch
+            Batch of mutation data from the relate step.
+        batch2: MaskBatchIO
+            Batch of read numbers that passed the mask filters.
+
+        Returns
+        -------
+        MaskMutsBatch
+            A batch containing only the reads and positions that pass
+            the mask, clipped to the dataset's region.
+        """
         if self.masked_read_nums is not None:
             read_nums = np.setdiff1d(batch2.read_nums,
                                      self.masked_read_nums.get(batch2.batch),

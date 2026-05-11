@@ -70,6 +70,36 @@ def split_xam_file(xam_file: Path,
                    force: bool,
                    num_cpus: int,
                    **kwargs):
+    """
+    Sort, index, and split a XAM file into one file per reference.
+
+    Parameters
+    ----------
+    xam_file: Path
+        Input XAM (BAM/SAM/CRAM) file to split; its stem is used as the
+        sample name.
+    out_dir: Path
+        Directory where the final output files are written.
+    tmp_dir: Path
+        Directory for temporary intermediate files.
+    branch: str
+        Branch label to embed in the output file paths.
+    fasta: Path
+        FASTA file of reference sequences used during alignment.
+    phred_enc: int
+        ASCII offset for Phred quality score encoding.
+    force: bool
+        Whether to overwrite existing output files.
+    num_cpus: int
+        Number of CPU cores to use.
+    **kwargs
+        Additional keyword arguments forwarded to `split_references`.
+
+    Returns
+    -------
+    Path
+        Parent directory of the written report file.
+    """
     began = datetime.now()
     # Assume the XAM file is named for the sample.
     sample = xam_file.stem

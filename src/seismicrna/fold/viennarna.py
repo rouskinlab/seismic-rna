@@ -37,6 +37,45 @@ def make_rnafold_cmd(fasta_file: Path,
                      fold_max: int,
                      fold_mfe: bool,
                      num_cpus: int = 1):
+    """ Build the shell command to run RNAfold (and optionally RNAsubopt).
+
+    Parameters
+    ----------
+    fasta_file: Path
+        Input FASTA file containing the RNA sequence.
+    vienna_file: Path
+        Path prefix for the output vienna file (suffix is determined
+        automatically based on ``fold_mfe``).
+    sp_data: Path or None
+        File of per-position reactivity data for soft-constraints; None
+        disables soft constraints.
+    sp_strategy: str or None
+        Soft-constraint strategy passed to ``--sp-strategy``; None
+        omits the flag.
+    fold_constraint: Path or None
+        Hard-constraint file passed to ``--constraint``; None omits the
+        flag.
+    fold_commands: Path or None
+        Commands file passed to ``--commands``; None omits the flag.
+    fold_temp_c: float
+        Folding temperature in degrees Celsius.
+    fold_isolated: bool
+        If True, allow isolated base pairs; if False, pass ``--noLP``.
+    fold_md: int
+        Maximum base-pair span in nucleotides; 0 disables the limit.
+    fold_max: int
+        Maximum number of structures to keep (passed to ``head``).
+    fold_mfe: bool
+        If True, run only RNAfold (MFE structure); if False, also run
+        RNAsubopt for suboptimal structures.
+    num_cpus: int, optional
+        Number of threads for RNAfold (default 1).
+
+    Returns
+    -------
+    str
+        A shell command string ready to be executed.
+    """
     os.environ[RNAFOLD_NUM_THREADS] = str(num_cpus)
     final_cmds = list()
     cmds = [[VIENNA_RNAFOLD_CMD]]

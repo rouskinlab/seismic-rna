@@ -42,6 +42,15 @@ class ScatterGraph(TwoTableRelClusterGroupGraph,
         return SeqColorMap
 
     def __init__(self, *, metric: str, **kwargs):
+        """
+        Parameters
+        ----------
+        metric: str
+            Name of the comparison metric used to annotate the scatter
+            plot (e.g. ``"pearson"``, ``"spearman"``).
+        **kwargs
+            Forwarded to the parent class.
+        """
         super().__init__(**kwargs)
         self._metric = metric
 

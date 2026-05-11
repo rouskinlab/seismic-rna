@@ -89,6 +89,72 @@ class Masker(object):
                  top: Path,
                  branch: str,
                  num_cpus: int = 1):
+        """
+        Parameters
+        ----------
+        dataset: RelateMutsDataset or PoolMutsDataset
+            Dataset of read-level mutation data to be masked.
+        region: Region
+            Genomic region to mask over.
+        pattern: RelPattern
+            Relationship pattern defining which bases count as
+            mutations.
+        max_mask_iter: int
+            Maximum number of masking iterations; 0 means unlimited.
+        mask_polya: int
+            Mask positions in poly(A) runs of at least this length.
+        mask_a: bool
+            Whether to mask adenine positions.
+        mask_c: bool
+            Whether to mask cytosine positions.
+        mask_g: bool
+            Whether to mask guanine positions.
+        mask_u: bool
+            Whether to mask uracil/thymine positions.
+        mask_pos: list[tuple[str, int]]
+            ``(ref, position)`` pairs to pre-exclude from the region.
+        mask_pos_file: list[Path]
+            Files of positions to pre-exclude.
+        mask_read: list[str]
+            Read names to pre-exclude.
+        mask_read_file: list[Path]
+            Files of read names to pre-exclude.
+        mask_discontig: bool
+            Whether to mask reads with discontiguous mate pairs.
+        min_ncov_read: int
+            Minimum number of covered positions required per read.
+        min_finfo_read: float
+            Minimum fraction of informative positions required per read.
+        max_fmut_read: float
+            Maximum fraction of mutated positions allowed per read.
+        min_mut_gap: int
+            Minimum gap in nucleotides between adjacent mutations in a
+            read; reads with closer mutations are handled per
+            ``mut_collisions``.
+        mut_collisions: str
+            How to handle reads with mutations closer than
+            ``min_mut_gap`` (e.g. drop or merge).
+        probe: str
+            Probe type used for auto-selecting defaults.
+        min_ninfo_pos: int
+            Minimum number of informative reads required per position.
+        max_fmut_pos: float
+            Maximum mutation fraction allowed per position.
+        quick_unbias: bool
+            Whether to use the fast approximate bias-correction.
+        quick_unbias_thresh: float
+            Convergence threshold for the quick unbias algorithm.
+        count_read: bool
+            Whether to count reads for the read-level table.
+        brotli_level: int
+            Brotli compression level for batch files.
+        top: Path
+            Top-level output directory.
+        branch: str
+            Branch label appended to the mask step in output paths.
+        num_cpus: int, optional
+            Number of CPUs for parallel batch processing (default 1).
+        """
         # Set the general parameters.
         self._began = datetime.now()
         self.dataset = dataset
@@ -706,6 +772,25 @@ def get_pattern(mask_del: bool,
                 mask_ins: bool,
                 mask_mut: Iterable[str],
                 count_mut: Iterable[str]):
+    """ Build a RelPattern from masking and counting options.
+
+    Parameters
+    ----------
+    mask_del: bool
+        If True, treat deletions as non-mutations (discount them).
+    mask_ins: bool
+        If True, treat insertions as non-mutations (discount them).
+    mask_mut: Iterable[str]
+        Relationship codes to discount from mutations.
+    count_mut: Iterable[str]
+        If non-empty, count only the specified relationships as
+        mutations (overrides the default all-mutation pattern).
+
+    Returns
+    -------
+    RelPattern
+        Relationship pattern for use in masking and tabulation.
+    """
     if count_mut:
         return RelPattern(HalfRelPattern.from_counts(count_sub=False,
                                                      count_del=not mask_del,

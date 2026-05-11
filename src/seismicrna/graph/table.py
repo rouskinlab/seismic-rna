@@ -41,7 +41,7 @@ class RelTableGraph(TableGraph, RelGraph, ABC):
         """
         Parameters
         ----------
-        quantile: float
+        graph_quantile: float
             If `use_ratio` is True, then normalize the ratios to this
             quantile and then winsorize them to the interval [0, 1].
             Passing 0.0 disables normalization and winsorization.
@@ -86,6 +86,15 @@ class RelTableGraph(TableGraph, RelGraph, ABC):
 class TableWriter(BaseWriter, ABC):
 
     def __init__(self, *tables: Table, **kwargs):
+        """
+        Parameters
+        ----------
+        *tables: Table
+            One or more table objects (or file paths) providing the data
+            for the graph(s).
+        **kwargs
+            Forwarded to the parent class.
+        """
         super().__init__(**kwargs)
         self.tables = list(tables)
 

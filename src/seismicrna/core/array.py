@@ -168,7 +168,7 @@ def locate_elements(collection: np.ndarray,
         Collection in which to find each element in `elements`; must be
         a 1-dimensional array of non-negative integers with no duplicate
         values.
-    *elements: np.ndarray
+    elements: np.ndarray
         Elements to find; must be a 1-dimensional array that is a subset
         of `collection`, although duplicate values are permitted.
     what: str = "collection"
@@ -300,7 +300,24 @@ def find_dims(dims: Sequence[Sequence[str | None]],
 
     Parameters
     ----------
+    dims: Sequence[Sequence[str | None]]
+        Expected named dimensions of each array; each inner sequence
+        lists the dimension names in order. The last element may be None
+        to allow extra dimensions beyond the named ones.
+    arrays: Sequence[np.ndarray]
+        Arrays whose dimensions to check; must have the same length as
+        `dims`.
+    names: Sequence[str] | None
+        Names for each array (used in error messages); must have the
+        same length as `arrays` if provided.
+    nonzero: Iterable[str] | bool = False
+        Dimension names that must have size ≥ 1. If True, all named
+        dimensions must be nonzero.
 
+    Returns
+    -------
+    dict[str, int]
+        Mapping from each named dimension to its size.
     """
     # Ensure that nonzero is either True or a set of str.
     if nonzero is False:

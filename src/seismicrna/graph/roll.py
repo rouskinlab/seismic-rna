@@ -9,6 +9,17 @@ from ..core.seq import POS_NAME
 class RollingGraph(TableGraph, ABC):
 
     def __init__(self, *, window: int, winmin: int, **kwargs):
+        """
+        Parameters
+        ----------
+        window: int
+            Rolling window size in nucleotides.
+        winmin: int
+            Minimum number of non-NaN values required within a window
+            to compute the statistic.
+        **kwargs
+            Forwarded to the parent class.
+        """
         super().__init__(**kwargs)
         self._size = window
         self._min_count = winmin

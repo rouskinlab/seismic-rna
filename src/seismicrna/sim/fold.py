@@ -62,6 +62,45 @@ def fold_region(region: Region, *,
                 keep_tmp: bool,
                 force: bool,
                 num_cpus: int):
+    """
+    Predict RNA secondary structures for one region using RNAstructure.
+
+    Parameters
+    ----------
+    region: Region
+        Sequence region to fold.
+    sim_dir: Path
+        Simulation output directory; CT file is written under its
+        parameter subdirectory.
+    tmp_dir: Path
+        Directory for temporary FASTA and intermediate CT files.
+    profile_name: str
+        Profile label embedded in the output CT file path.
+    fold_constraint: Path | None
+        Path to a folding constraint file; None for no constraints.
+    fold_temp: float
+        Folding temperature; interpreted as Celsius if in the typical
+        physiological range, otherwise as Kelvin.
+    fold_md: int
+        Maximum distance between paired bases (0 for no limit).
+    fold_mfe: bool
+        Whether to predict only the minimum free energy structure.
+    fold_max: int
+        Maximum number of structures to predict.
+    fold_percent: float
+        Maximum percent energy difference from the MFE structure.
+    keep_tmp: bool
+        Whether to retain temporary files after folding.
+    force: bool
+        Whether to overwrite an existing output CT file.
+    num_cpus: int
+        Number of CPU cores to use.
+
+    Returns
+    -------
+    Path
+        Path of the written CT file.
+    """
     ct_sim = get_ct_path(sim_dir, region, profile_name)
     if need_write(ct_sim, force):
         fasta_tmp = get_fasta_path(tmp_dir, region.ref)
@@ -122,6 +161,49 @@ def run(fasta: str | Path, *,
         tmp_dir: Path,
         force: bool,
         num_cpus: int):
+    """
+    Fold regions of a reference FASTA file and write CT files.
+
+    Parameters
+    ----------
+    fasta: str | Path
+        Path to the reference FASTA file.
+    sim_dir: str | Path
+        Simulation output directory for writing CT parameter files.
+    profile_name: str
+        Profile label embedded in each output CT file path.
+    fold_coords: Iterable[tuple[str, int, int]]
+        Explicit (ref, end5, end3) coordinate tuples defining regions.
+    fold_primers: Iterable[tuple[str, DNA, DNA]]
+        Primer sequences used to define region boundaries.
+    fold_regions_file: str | None
+        Path to a file listing regions to fold; None to use coords/primers.
+    fold_constraint: str | None
+        Path to a folding constraint file; None for no constraints.
+    fold_temp: float
+        Folding temperature (Celsius or Kelvin).
+    fold_md: int
+        Maximum pairing distance (0 for no limit).
+    fold_mfe: bool
+        Whether to predict only the minimum free energy structure.
+    fold_max: int
+        Maximum number of structures per region.
+    fold_percent: float
+        Maximum percent energy difference from the MFE structure.
+    keep_tmp: bool
+        Whether to retain temporary files.
+    tmp_dir: Path
+        Directory for temporary files (injected by `run_func`).
+    force: bool
+        Whether to overwrite existing CT files.
+    num_cpus: int
+        Number of CPU cores to use.
+
+    Returns
+    -------
+    list[Path]
+        Paths of all written CT files.
+    """
     # Check for the dependencies and the DATAPATH environment variable.
     require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
     require_data_path()

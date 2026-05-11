@@ -129,8 +129,13 @@ class RelateRegionMutsBatch(RelateMutsBatch, RegionMutsBatch):
             Probability that mate 1 is reversed (paired-end reads only).
         min_mut_gap: int
             Minimum number of positions between two mutations.
+        mut_collisions: str
+            How to handle reads with mutations closer than `min_mut_gap`:
+            "drop" to remove such reads, or "merge" to merge them.
         num_reads: int
             Number of reads in the batch.
+        seed: int | None
+            Random seed for reproducibility; None for no fixed seed.
         """
         check_naturals(index_to_pos(pmut.index), "positions")
         region = Region(ref, index_to_seq(pmut.index))

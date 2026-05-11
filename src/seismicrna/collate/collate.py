@@ -707,6 +707,20 @@ def collate_graphs(input_graphs: Iterable[Path],
                    group: str,
                    portable: bool,
                    **kwargs) -> Path:
+    """ Collate HTML graph files (and SVG drawings) into one HTML file.
+
+    Parameters
+    ----------
+    input_graphs: Iterable[Path]
+        Paths to the HTML and/or SVG files to collate.
+    out_path: Path
+        Path to write the output collated HTML file.
+    group: str
+        Field by which to group graphs in the output (e.g. "sample",
+        "ref", "reg", "branches", or "all").
+    portable: bool
+        If True, embed all resources so the HTML file is self-contained.
+    """
     group_names = dict(ref="ref",
                        reference="ref",
                        reg="reg",

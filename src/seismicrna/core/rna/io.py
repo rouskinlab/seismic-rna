@@ -63,7 +63,7 @@ def from_db(db_path: str | Path, branch: str = "", seq5: int = 1):
     Returns
     -------
     Generator[RNAStructure, Any, None]
-        RNA secondary structures from the CT file.
+        RNA secondary structures from the DB file.
     """
     yield from _from_file(db_path, parse_db_file_as_pairs, branch=branch, seq5=seq5)
 

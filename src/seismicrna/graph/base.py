@@ -51,6 +51,25 @@ def make_title_action_sample(action: str, sample: str):
 
 
 def make_path_subject(action: str, k: int | None, clust: int | None):
+    """ Build the path subject string that identifies a graph's data source.
+
+    Parameters
+    ----------
+    action: str
+        Action name (one of ``ACTION_REL``, ``ACTION_MASK``, or
+        ``ACTION_CLUST``).
+    k: int or None
+        Number of clusters; must be None or 0 for non-cluster actions.
+    clust: int or None
+        Cluster index; must be None or 0 for non-cluster actions.
+
+    Returns
+    -------
+    str
+        A string suitable for use as the subject component of a file
+        path (e.g. ``"all"``, ``"filtered"``, or
+        ``"clustered-2-1"``).
+    """
     if action == ACTION_REL or action == ACTION_MASK:
         if k or clust:
             raise ValueError(f"For {action} data, k and clust must both "
@@ -73,6 +92,23 @@ class Annotation(object):
                  y: float,
                  text: str,
                  **kwargs):
+        """
+        Parameters
+        ----------
+        row: int
+            Subplot row (1-based) to which the annotation belongs.
+        col: int
+            Subplot column (1-based) to which the annotation belongs.
+        x: float
+            x-axis coordinate of the annotation.
+        y: float
+            y-axis coordinate of the annotation.
+        text: str
+            Annotation text.
+        **kwargs
+            Additional keyword arguments forwarded to
+            ``plotly.Figure.add_annotation``.
+        """
         self.row = row
         self.col = col
         self.x = x

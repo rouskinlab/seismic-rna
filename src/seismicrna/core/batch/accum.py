@@ -23,7 +23,35 @@ def accumulate_counts(batch_counts: Iterable[tuple[Any, Any, Any, Any]],
                       count_pos: bool = True,
                       count_read: bool = True,
                       validate: bool = True):
-    """ """
+    """ Accumulate counts from batches into total counts.
+
+    Parameters
+    ----------
+    batch_counts: Iterable[tuple]
+        Iterable of (num_reads, end_counts, count_per_pos, count_per_read)
+        tuples, one per batch.
+    refseq: DNA
+        Reference sequence.
+    pos_nums: np.ndarray
+        Position numbers to include in the per-position counts.
+    patterns: dict[str, RelPattern]
+        Mapping from relationship name to relationship pattern.
+    ks: Iterable[int] | None
+        Numbers of clusters; None for unclustered data.
+    count_ends: bool = True
+        Whether to accumulate end coordinate counts.
+    count_pos: bool = True
+        Whether to accumulate per-position counts.
+    count_read: bool = True
+        Whether to accumulate per-read counts.
+    validate: bool = True
+        Whether to validate the index and column labels of each batch.
+
+    Returns
+    -------
+    tuple
+        Total (num_reads, end_counts, count_per_pos, count_per_read).
+    """
     rels = list(patterns)
     logger.routine(f"Began accumulating counts of patterns {rels}")
     header = make_header(rels=rels, ks=ks)
@@ -128,6 +156,40 @@ def accumulate_batches(
         validate: bool = True,
         num_cpus: int = 1
 ):
+    """ Compute and accumulate counts from all batches, optionally in
+    parallel.
+
+    Parameters
+    ----------
+    get_batch_count_all: Callable[[int], tuple]
+        Callable that takes a batch number and returns
+        (num_reads, end_counts, count_per_pos, count_per_read).
+    num_batches: int
+        Total number of batches to process.
+    refseq: DNA
+        Reference sequence.
+    pos_nums: np.ndarray
+        Position numbers to include in the per-position counts.
+    patterns: dict[str, RelPattern]
+        Mapping from relationship name to relationship pattern.
+    ks: Iterable[int] | None
+        Numbers of clusters; None for unclustered data.
+    count_ends: bool = True
+        Whether to accumulate end coordinate counts.
+    count_pos: bool = True
+        Whether to accumulate per-position counts.
+    count_read: bool = True
+        Whether to accumulate per-read counts.
+    validate: bool = True
+        Whether to validate the index and column labels of each batch.
+    num_cpus: int = 1
+        Number of CPUs to use for parallel processing.
+
+    Returns
+    -------
+    tuple
+        Total (num_reads, end_counts, count_per_pos, count_per_read).
+    """
     logger.routine(f"Began accumulating counts of {num_batches} batches")
     # Generate the counts for the batches in parallel.
     batch_counts = dispatch(get_batch_count_all,
@@ -173,6 +235,31 @@ def accumulate_confusion_matrices(
         min_gap: int = 0,
         num_cpus: int = 1
 ):
+    """ Accumulate confusion matrices from all batches.
+
+    Parameters
+    ----------
+    get_batch: Callable[[int], RegionMutsBatch]
+        Callable that returns the batch for a given batch number.
+    num_batches: int
+        Total number of batches to process.
+    pattern: RelPattern
+        Relationship pattern defining which reads count as mutated.
+    pos_index: pd.Index
+        Index of positions to include in the confusion matrix.
+    clusters: pd.Index | None
+        Cluster index for the confusion matrix columns; None if not
+        clustered.
+    min_gap: int = 0
+        Minimum gap between positions to include in position pairs.
+    num_cpus: int = 1
+        Number of CPUs to use for parallel processing.
+
+    Returns
+    -------
+    tuple
+        Total (n, a, b, ab) confusion matrix components.
+    """
     logger.routine(
         f"Began accumulating confusion matrices of {num_batches} batches"
     )

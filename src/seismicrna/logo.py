@@ -11,6 +11,21 @@ from pathlib import Path
 matplotlib.use('Agg')
 
 def compute_arc_points(center, radius, theta1, theta2, n=100):
+    """ Compute x/y coordinates along an arc.
+
+    Parameters
+    ----------
+    center: tuple[float, float]
+        (x, y) coordinates of the arc center.
+    radius: float
+        Radius of the arc.
+    theta1: float
+        Starting angle of the arc in degrees.
+    theta2: float
+        Ending angle of the arc in degrees.
+    n: int
+        Number of sample points along the arc.
+    """
     if theta2 < theta1:
         angles = np.linspace(theta1, theta2 + 360, n) % 360
     else:
@@ -23,6 +38,19 @@ def compute_arc_points(center, radius, theta1, theta2, n=100):
 def draw_seismic_logo(report: bool = False,
                       out_svg: str | Path | None = None,
                       dpi: int = 300):
+    """ Draw the SEISMIC-RNA logo as an SVG.
+
+    Parameters
+    ----------
+    report: bool
+        If True, render the variant of the logo used in reports
+        (different background triangle color).
+    out_svg: str | Path | None
+        Path to write the SVG file; if None the SVG is returned as a
+        string instead of being written to disk.
+    dpi: int
+        Resolution in dots per inch used when saving the figure.
+    """
     fig, ax = plt.subplots()
 
     R = 50

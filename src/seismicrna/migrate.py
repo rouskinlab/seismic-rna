@@ -32,6 +32,21 @@ class FindAndReplaceError(ValueError):
 
 
 def find_and_replace(file: Path, find: str, replace: str, count: int = 1):
+    """ Replace occurrences of a string in a plain-text or gzipped file.
+
+    Parameters
+    ----------
+    file: Path
+        Path to the file to modify in place.
+    find: str
+        Substring to search for.
+    replace: str
+        Replacement string.
+    count: int
+        Expected number of occurrences of `find`; if the actual count
+        differs a FindAndReplaceError is raised.  Pass -1 to skip the
+        check.
+    """
     if file.suffix.endswith(".gz"):
         open_func = gzip.open
     else:

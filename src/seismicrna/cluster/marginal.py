@@ -27,6 +27,42 @@ def _calc_logp_joint(p_mut: np.ndarray,
                      muts_per_pos: list[np.ndarray],
                      min_mut_gap: int,
                      mut_collisions: str):
+    """ Compute the log joint probability of each unique read and cluster.
+
+    For each unique read i and cluster k, the joint probability is:
+    P(read i, cluster k) = P(cluster k) * P(end coords) * P(mutations | ends, cluster k)
+
+    adjusted for the mut_collisions model (drop or merge).
+
+    Parameters
+    ----------
+    p_mut: np.ndarray
+        2D (positions x clusters) array of per-position mutation rates.
+    p_ends: np.ndarray
+        2D (positions x positions) array of the probability distribution
+        of 5'/3' end coordinates.
+    p_clust: np.ndarray
+        1D (clusters) array of cluster proportions.
+    end5s: np.ndarray
+        1D (unique reads) array of 5' end coordinates (0-indexed).
+    end3s: np.ndarray
+        1D (unique reads) array of 3' end coordinates (0-indexed).
+    unmasked: np.ndarray
+        1D array of unmasked position indices (0-indexed).
+    muts_per_pos: list[np.ndarray]
+        For each unmasked position, a 1D array of unique-read indices
+        that are mutated at that position.
+    min_mut_gap: int
+        Minimum number of non-mutated positions between two mutations.
+    mut_collisions: str
+        How to handle mutations closer than `min_mut_gap` positions
+        apart; either MUT_COLLISIONS_DROP or MUT_COLLISIONS_MERGE.
+
+    Returns
+    -------
+    np.ndarray
+        2D (unique reads x clusters) array of log joint probabilities.
+    """
     # Validate the dimensions.
     find_dims([(POSITIONS, CLUSTERS),
                (POSITIONS, POSITIONS),
@@ -119,19 +155,56 @@ def _calc_logp_joint(p_mut: np.ndarray,
 
 
 def _calc_logp_marginal(logp_joint: np.ndarray):
-    # For each unique observed read, the marginal probability that a
-    # random read would have the end coordinates and mutations, no
-    # matter which cluster it came from, is the sum of the joint
-    # probability over all clusters (axis 1).
-    # 1D (unique reads)
+    """ Compute the log marginal probability of each unique read.
+
+    Marginalizes over clusters by summing the joint probabilities
+    (in probability space) via log-sum-exp.
+
+    Parameters
+    ----------
+    logp_joint: np.ndarray
+        2D (unique reads x clusters) array of log joint probabilities,
+        as returned by `_calc_logp_joint`.
+
+    Returns
+    -------
+    np.ndarray
+        1D (unique reads) array of log marginal probabilities.
+    """
+    # Sum the joint probability over all clusters (axis 1).
     return np.logaddexp.reduce(logp_joint, axis=1)
 
 
 def calc_marginal(*args, **kwargs):
+    """ Compute the log marginal probability of each unique read.
+
+    A convenience wrapper that chains `_calc_logp_joint` and
+    `_calc_logp_marginal`.  Accepts the same arguments as
+    `_calc_logp_joint`.
+
+    Returns
+    -------
+    np.ndarray
+        1D (unique reads) array of log marginal probabilities.
+    """
     return _calc_logp_marginal(_calc_logp_joint(*args, **kwargs))
 
 
 def calc_marginal_resps(*args, **kwargs):
+    """ Compute log marginal probabilities and cluster responsibilities.
+
+    A convenience wrapper that chains `_calc_logp_joint`,
+    `_calc_logp_marginal`, and the responsibility calculation.
+    Accepts the same arguments as `_calc_logp_joint`.
+
+    Returns
+    -------
+    logp_marginal: np.ndarray
+        1D (unique reads) array of log marginal probabilities.
+    resps: np.ndarray
+        2D (unique reads x clusters) array of posterior probabilities
+        that each read belongs to each cluster.
+    """
     logp_joint = _calc_logp_joint(*args, **kwargs)
     logp_marginal = _calc_logp_marginal(logp_joint)
     # Calculate the posterior probability that each read came from

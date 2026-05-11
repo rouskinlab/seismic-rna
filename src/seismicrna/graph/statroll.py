@@ -65,6 +65,20 @@ class RollingStatWriter(OneTableRelClusterGroupWriter, TableWriter, ABC):
         """ Type of graph. """
 
     def get_graph(self, rels_group: str, **kwargs):
+        """ Instantiate a RollingStatGraph for the given relationship.
+
+        Parameters
+        ----------
+        rels_group: str
+            One-letter relationship code.
+        **kwargs
+            Additional keyword arguments forwarded to the graph class.
+
+        Returns
+        -------
+        RollingGraph
+            A new rolling-statistic graph for the given relationship.
+        """
         graph_type = self.get_graph_type()
         return graph_type(table=self.table, rel=rels_group, **kwargs)
 

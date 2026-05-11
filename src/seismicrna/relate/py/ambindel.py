@@ -38,6 +38,20 @@ class Indel(ABC):
     __slots__ = ["opposite", "lateral3", "pod"]
 
     def __init__(self, opposite: int, lateral3: int, pod: IndelPod):
+        """
+        Initialize an indel with its position and owning pod.
+
+        Parameters
+        ----------
+        opposite: int
+            Position in the opposite sequence (reference for a deletion,
+            read for an insertion) at which this indel is located.
+        lateral3: int
+            1-indexed position in the indel's own sequence that is
+            immediately 3' of the indel.
+        pod: IndelPod
+            Pod (group) that owns and tracks this indel.
+        """
         self.opposite = opposite
         self.lateral3 = lateral3
         self.pod = pod
@@ -120,6 +134,34 @@ class Deletion(Indel):
                    min_qual: str,
                    swap_lateral: int,
                    next_opposite: int):
+        """
+        Calculate relationships for swapping this deletion one step.
+
+        Parameters
+        ----------
+        ref_seq: str
+            Full reference sequence string (1-indexed via [pos-1]).
+        read_seq: str
+            Full read sequence string (1-indexed via [pos-1]).
+        read_quals: str
+            Full read quality string (1-indexed via [pos-1]).
+        min_qual: str
+            Minimum quality character; base calls below this threshold
+            are treated as low-quality.
+        swap_lateral: int
+            1-indexed read position of the base that will swap with
+            the deletion.
+        next_opposite: int
+            1-indexed reference position to which the deletion would
+            move after the swap.
+
+        Returns
+        -------
+        tuple[int, int]
+            Relationship codes (rel_del, rel_opp) for the deleted base
+            moving to the swap position and the base being swapped,
+            respectively.
+        """
         # Read base with which the deletion will swap.
         read_base = read_seq[swap_lateral - 1]
         read_qual = read_quals[swap_lateral - 1]
@@ -152,6 +194,43 @@ class Deletion(Indel):
                  read_end5: int,
                  read_end3: int,
                  move5to3: bool):
+        """
+        Try to move this deletion one step in the given direction.
+
+        Parameters
+        ----------
+        rels: dict[int, int]
+            Mapping of reference position to relationship code; updated
+            in place if the deletion moves.
+        pods: list[IndelPod]
+            All indel pods in the read, used for collision detection.
+        insert3: bool
+            Whether insertions are marked on the 3' (True) or 5' (False)
+            flanking reference position.
+        ref_seq: str
+            Full reference sequence string.
+        read_seq: str
+            Full read sequence string.
+        read_qual: str
+            Full read quality string.
+        min_qual: str
+            Minimum quality character threshold.
+        ref_end5: int
+            1-indexed 5' boundary of the reference region covered.
+        ref_end3: int
+            1-indexed 3' boundary of the reference region covered.
+        read_end5: int
+            1-indexed 5' boundary of the read (after soft-clipping).
+        read_end3: int
+            1-indexed 3' boundary of the read (after soft-clipping).
+        move5to3: bool
+            Direction of movement: True to move 3', False to move 5'.
+
+        Returns
+        -------
+        bool
+            True if the deletion moved, False otherwise.
+        """
         (swap_lateral,
          next_lateral3,
          next_opposite) = self._calc_positions(move5to3)
@@ -190,6 +269,34 @@ class Insertion(Indel):
                    min_qual: str,
                    swap_lateral: int,
                    next_opposite: int):
+        """
+        Calculate relationships for swapping this insertion one step.
+
+        Parameters
+        ----------
+        ref_seq: str
+            Full reference sequence string (1-indexed via [pos-1]).
+        read_seq: str
+            Full read sequence string (1-indexed via [pos-1]).
+        read_quals: str
+            Full read quality string (1-indexed via [pos-1]).
+        min_qual: str
+            Minimum quality character; base calls below this threshold
+            are treated as low-quality.
+        swap_lateral: int
+            1-indexed reference position of the base that will swap with
+            the insertion.
+        next_opposite: int
+            1-indexed read position to which the insertion would move
+            after the swap.
+
+        Returns
+        -------
+        tuple[int, int]
+            Relationship codes (rel_ins, rel_opp) for the inserted base
+            moving to the swap reference position and the read base being
+            swapped, respectively.
+        """
         # Reference base to whose position the insertion will move.
         ref_base = ref_seq[swap_lateral - 1]
         # Read base that is currently inserted into the reference; will
@@ -225,6 +332,43 @@ class Insertion(Indel):
                  read_end5: int,
                  read_end3: int,
                  move5to3: bool):
+        """
+        Try to move this insertion one step in the given direction.
+
+        Parameters
+        ----------
+        rels: dict[int, int]
+            Mapping of reference position to relationship code; updated
+            in place if the insertion moves.
+        pods: list[IndelPod]
+            All indel pods in the read, used for collision detection.
+        insert3: bool
+            Whether insertions are marked on the 3' (True) or 5' (False)
+            flanking reference position.
+        ref_seq: str
+            Full reference sequence string.
+        read_seq: str
+            Full read sequence string.
+        read_qual: str
+            Full read quality string.
+        min_qual: str
+            Minimum quality character threshold.
+        ref_end5: int
+            1-indexed 5' boundary of the reference region covered.
+        ref_end3: int
+            1-indexed 3' boundary of the reference region covered.
+        read_end5: int
+            1-indexed 5' boundary of the read (after soft-clipping).
+        read_end3: int
+            1-indexed 3' boundary of the read (after soft-clipping).
+        move5to3: bool
+            Direction of movement: True to move 3', False to move 5'.
+
+        Returns
+        -------
+        bool
+            True if the insertion moved, False otherwise.
+        """
         (swap_lateral,
          next_lateral3,
          next_opposite) = self._calc_positions(move5to3)
@@ -383,6 +527,41 @@ def find_ambindels(rels: dict[int, int],
                    ref_end3: int,
                    read_end5: int,
                    read_end3: int):
+    """
+    Find and annotate all ambiguous positions of indels.
+
+    For each indel, slide it as far 5' as possible, then traverse 3'
+    to identify every reference position at which it could equivalently
+    be placed given the read and reference sequences.  Each ambiguous
+    position is added to `rels` so that downstream steps can report it.
+
+    Parameters
+    ----------
+    rels: dict[int, int]
+        Mapping of reference position to relationship code; updated in
+        place with ambiguous positions for each indel.
+    pods: list[IndelPod]
+        All indel pods in the read, ordered 5' to 3'.
+    insert3: bool
+        Whether insertions are marked on the 3' (True) or 5' (False)
+        flanking reference position.
+    ref_seq: str
+        Full reference sequence string (1-indexed via [pos-1]).
+    read_seq: str
+        Full read sequence string (1-indexed via [pos-1]).
+    read_qual: str
+        Full read quality string (1-indexed via [pos-1]).
+    min_qual: str
+        Minimum quality character threshold for base calls.
+    ref_end5: int
+        1-indexed 5' boundary of the aligned reference region.
+    ref_end3: int
+        1-indexed 3' boundary of the aligned reference region.
+    read_end5: int
+        1-indexed 5' boundary of the read (after soft-clipping).
+    read_end3: int
+        1-indexed 3' boundary of the read (after soft-clipping).
+    """
     if not pods:
         # Nothing to do.
         return

@@ -124,6 +124,33 @@ class PartialTabulator(Tabulator, ABC):
                  quick_unbias_thresh: float,
                  count_ends: bool = True,
                  **kwargs):
+        """
+        Parameters
+        ----------
+        refseq: DNA
+            Reference sequence for the region.
+        region: Region
+            Genomic region being tabulated.
+        pattern: RelPattern
+            Relationship pattern defining which bases count as mutated
+            and which count as reference.
+        min_mut_gap: int
+            Minimum gap in nucleotides between adjacent mutations;
+            used to determine whether observer-bias correction applies.
+        mut_collisions: str
+            Strategy for handling reads with mutations closer than
+            ``min_mut_gap`` (e.g. ``MUT_COLLISIONS_DROP``).
+        quick_unbias: bool
+            Whether to use the fast approximate bias-correction
+            algorithm.
+        quick_unbias_thresh: float
+            Convergence threshold for the quick unbias algorithm.
+        count_ends: bool, optional
+            Whether to count 5'/3' end coordinates (must be True for
+            bias correction; default True).
+        **kwargs
+            Forwarded to the parent class.
+        """
         # Partial tabulators must count 5'/3' ends or else calculating
         # self.p_ends_given_clust_noclose will fail.
         if not count_ends:

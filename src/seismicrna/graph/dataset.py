@@ -22,6 +22,16 @@ class DatasetGraph(OneRelGraph, OneSourceClusterGroupGraph, ABC):
     """ Graph based on one Dataset. """
 
     def __init__(self, *, dataset: MutsDataset, num_cpus: int, **kwargs):
+        """
+        Parameters
+        ----------
+        dataset: MutsDataset
+            Dataset providing the mutation data for this graph.
+        num_cpus: int
+            Number of CPUs to use for parallel batch processing.
+        **kwargs
+            Forwarded to the parent class.
+        """
         super().__init__(**kwargs)
         self.dataset = dataset
         self.num_cpus = num_cpus
@@ -87,6 +97,14 @@ class DatasetGraph(OneRelGraph, OneSourceClusterGroupGraph, ABC):
 class DatasetWriter(BaseWriter, ABC):
 
     def __init__(self, *, dataset: MutsDataset, **kwargs):
+        """
+        Parameters
+        ----------
+        dataset: MutsDataset
+            Dataset providing the mutation data for the graph(s).
+        **kwargs
+            Forwarded to the parent class.
+        """
         super().__init__(**kwargs)
         self.dataset = dataset
 
@@ -95,6 +113,22 @@ class DatasetWriter(BaseWriter, ABC):
         """ Return a graph instance. """
 
     def iter_graphs(self, *, rels: list[str], cgroup: str, **kwargs):
+        """ Yield graph instances for every relationship and cluster group.
+
+        Parameters
+        ----------
+        rels: list[str]
+            Relationship codes to graph.
+        cgroup: str
+            Cluster-grouping strategy.
+        **kwargs
+            Additional keyword arguments forwarded to ``get_graph``.
+
+        Yields
+        ------
+        DatasetGraph
+            One graph per (cluster group, relationship) combination.
+        """
         for cparams in cgroup_table(self.dataset, cgroup):
             for rel in rels:
                 yield self.get_graph(rel, **kwargs | cparams)
@@ -121,6 +155,25 @@ class DatasetRunner(RelRunner, ClusterGroupRunner, ABC):
             verify_times: bool,
             num_cpus: int,
             **kwargs):
+        """ Load all datasets and write graphs for each.
+
+        Parameters
+        ----------
+        input_path: Iterable[str or Path]
+            Paths to input files or directories to search for datasets.
+        verify_times: bool
+            Whether to verify file modification times when loading
+            datasets.
+        num_cpus: int
+            Number of CPUs for parallel graph writing.
+        **kwargs
+            Forwarded to each writer's ``write`` method.
+
+        Returns
+        -------
+        list[Path]
+            Paths of all written output files.
+        """
         # Generate a table writer for each table.
         writer_type = cls.get_writer_type()
         writers = [writer_type(dataset=dataset)

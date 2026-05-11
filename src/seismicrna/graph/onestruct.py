@@ -32,6 +32,24 @@ class StructOneTableGraph(OneTableRelClusterGroupGraph, OneRelGraph, ABC):
                  terminal_pairs: bool,
                  branch: str,
                  **kwargs):
+        """
+        Parameters
+        ----------
+        struct_file: Path or None
+            Path to a CT file of RNA structures.  If given, the
+            structure region is inferred from the file path.  If None,
+            ``struct_reg`` is used instead.
+        struct_reg: str or None
+            Name of the region whose folded structure file is used.
+            Required when ``struct_file`` is None.
+        terminal_pairs: bool
+            If True, include terminal base pairs; if False, exclude
+            them.
+        branch: str
+            Branch label appended to the fold step in the output path.
+        **kwargs
+            Forwarded to the parent class.
+        """
         super().__init__(**kwargs)
         self._struct_file = struct_file
         self._struct_reg = struct_reg
@@ -134,6 +152,36 @@ class StructOneTableWriter(OneTableRelClusterGroupWriter, ABC):
                     fold_regions_file: str | None = None,
                     fold_full: bool = opt_fold_full.default,
                     **kwargs):
+        """ Yield graphs for every relationship, cluster, and structure.
+
+        Parameters
+        ----------
+        rels: list[str]
+            Relationship codes to graph.
+        cgroup: str
+            Cluster-grouping strategy.
+        struct_file: Iterable[str or Path], optional
+            CT files of RNA structures to use directly.
+        branch: str, optional
+            Branch label for the fold step in the output path.
+        fold_coords: Iterable[tuple[str, int, int]], optional
+            ``(ref, end5, end3)`` tuples defining structure regions.
+        fold_primers: Iterable[tuple[str, DNA, DNA]], optional
+            ``(ref, fwd, rev)`` primer tuples defining structure
+            regions.
+        fold_regions_file: str or None, optional
+            Path to a file of fold region definitions.
+        fold_full: bool, optional
+            Whether to use the full reference as the fold region.
+        **kwargs
+            Forwarded to ``get_graph``.
+
+        Yields
+        ------
+        StructOneTableGraph
+            One graph per (cluster group, relationship, structure)
+            combination.
+        """
         struct_files = list()
         for file in path.find_files_chain(struct_file, path.CT_FILE_LAST_SEGS):
             # Use a given CT file of an RNA structure, and determine the

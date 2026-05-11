@@ -16,8 +16,7 @@ from seismicrna.cluster.jackpot import (calc_jackpot_quotient,
                                         _sim_reads_dropped,
                                         _sim_reads_merged)
 from seismicrna.cluster.uniq import UniqReads
-from seismicrna.core.arg.cli import (PROBE_DMS,
-                                     opt_max_em_iter,
+from seismicrna.core.arg.cli import (opt_max_em_iter,
                                      opt_em_thresh,
                                      opt_jackpot_conf_level,
                                      opt_max_jackpot_quotient,

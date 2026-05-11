@@ -73,6 +73,20 @@ class PositionPairWriter(DatasetWriter):
         """ Type of graph. """
 
     def get_graph(self, rel, **kwargs):
+        """ Instantiate a PositionPairGraph for the given relationship.
+
+        Parameters
+        ----------
+        rel: str
+            One-letter relationship code.
+        **kwargs
+            Additional keyword arguments forwarded to the graph class.
+
+        Returns
+        -------
+        PositionPairGraph
+            A new graph instance for the given relationship.
+        """
         graph_type = self.graph_type()
         return graph_type(dataset=self.dataset, rel=rel, **kwargs)
 

@@ -304,6 +304,18 @@ def demult_fq_pipeline(fq_inp: FastqUnit,
 def split_fq(fq_inp: FastqUnit,
              working_dir: Path,
              num_split: int):
+    """ Split a FASTQ file (or pair) into parts for parallel processing.
+
+    Parameters
+    ----------
+    fq_inp: FastqUnit
+        The input FASTQ unit (single-end or paired-end) to split.
+    working_dir: Path
+        Temporary working directory under which split files are written.
+    num_split: int
+        Number of parts to split into; if <= 1 the file is symlinked
+        rather than copied.
+    """
     split_dir = working_dir/fq_inp.sample/"split"
     for fq in fq_inp.paths.values():
         fq = Path(fq)
@@ -353,6 +365,18 @@ def rename_fq_part(fq_path: Path) -> Path:
 
 
 def get_split_paths(split_dir, fq_inp, num_parts):
+    """ Return the expected paths of split FASTQ part files.
+
+    Parameters
+    ----------
+    split_dir: Path
+        Directory that contains the split files.
+    fq_inp: FastqUnit
+        The original FASTQ unit from which the base name and suffix are
+        derived.
+    num_parts: int
+        Number of split parts expected.
+    """
     fq_parts = []
     for inp_path in fq_inp.paths.values():
         p = Path(inp_path)
@@ -393,6 +417,24 @@ def process_fq_part(fq_inp: FastqUnit,
                     release_dir: Path,
                     branches: dict[str, str],
                     **kwargs):
+    """ Demultiplex one split part of a FASTQ file.
+
+    Parameters
+    ----------
+    fq_inp: FastqUnit
+        The original (unsplit) FASTQ unit, used for metadata such as
+        sample name and Phred encoding.
+    fqs: tuple[Path, ...]
+        Paths to the split FASTQ file(s) for this part.
+    barcodes: RefBarcodes
+        Barcode definitions used to assign reads to references.
+    release_dir: Path
+        Top-level directory where demultiplexed output files are staged
+        before being moved to the final output directory.
+    branches: dict[str, str]
+        Mapping of pipeline step names to branch names, used when
+        constructing output file paths.
+    """
     # Define segment patterns and corresponding mappings.
     fq_seg_patterns = [path.Fastq1Seg, path.Fastq2Seg, path.FastqSeg]
     fq_seg_map = {
@@ -478,6 +520,22 @@ def demult_ahocorasick(fq_unit: FastqUnit,
                        out_fqs: dict[int, FastqUnit],
                        barcodes: RefBarcodes,
                        buffer_limit: int = 1000):
+    """ Demultiplex reads from a FASTQ unit using Aho-Corasick matching.
+
+    Parameters
+    ----------
+    fq_unit: FastqUnit
+        Input FASTQ unit whose reads are to be demultiplexed.
+    out_fqs: dict[int, FastqUnit]
+        Mapping from barcode name to the output FastqUnit that receives
+        reads assigned to that barcode.
+    barcodes: RefBarcodes
+        Barcode definitions including the forward and reverse-complement
+        automatons and valid position ranges.
+    buffer_limit: int
+        Number of records to accumulate in memory before flushing to
+        disk; higher values use more memory but reduce I/O calls.
+    """
     read_buffer = defaultdict(list)
 
     # Choose the appropriate open function based on file suffix.

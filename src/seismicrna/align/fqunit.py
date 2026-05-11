@@ -68,8 +68,29 @@ def format_phred_arg(phred_enc: int):
 
 def safe_slice(s: str, start: int, end: int, pad_char: str = ' ') -> str:
         """
+        Slice a string with out-of-bounds safety, padding as needed.
+
         Uses NumPy for ultra-fast slicing and padding.
-        Ensures output length is exactly `end - start`, even if the slice goes out of bounds.
+        Ensures output length is exactly `end - start`, even if the slice
+        goes out of bounds.
+
+        Parameters
+        ----------
+        s: str
+            Input string to slice.
+        start: int
+            Start index of the slice (0-indexed).
+        end: int
+            End index of the slice (exclusive, 0-indexed).
+        pad_char: str
+            Character used to pad the result when the slice extends
+            beyond the bounds of `s`; defaults to a space.
+
+        Returns
+        -------
+        str
+            Sliced (and possibly padded) string of length `end - start`,
+            or an empty string if `end <= start`.
         """
         length = end - start
 
@@ -139,6 +160,25 @@ class FastqUnit(object):
                  fastq2: Path | None = None,
                  phred_enc: int,
                  one_ref: bool):
+        """
+        Initialize a FastqUnit from one or two FASTQ file paths.
+
+        Parameters
+        ----------
+        fastqz: Path | None
+            Path to a single-end FASTQ file.
+        fastqy: Path | None
+            Path to an interleaved paired-end FASTQ file.
+        fastq1: Path | None
+            Path to mate-1 FASTQ file (must be paired with `fastq2`).
+        fastq2: Path | None
+            Path to mate-2 FASTQ file (must be paired with `fastq1`).
+        phred_enc: int
+            ASCII offset for encoding Phred quality scores (e.g. 33 or 64).
+        one_ref: bool
+            Whether the FASTQ file(s) were demultiplexed and contain reads
+            from exactly one reference sequence.
+        """
         if fastqz:
             if fastqy or fastq1 or fastq2:
                 raise TypeError("Got too many FASTQ files")
@@ -363,6 +403,25 @@ class FastqUnit(object):
                     one_ref: bool,
                     fqs: Iterable[str | Path],
                     key: str):
+        """
+        Yield a FastqUnit for each single or interleaved FASTQ file.
+
+        Parameters
+        ----------
+        phred_enc: int
+            ASCII offset for encoding Phred quality scores.
+        one_ref: bool
+            Whether the FASTQ files are demultiplexed (one reference each).
+        fqs: Iterable[str | Path]
+            Paths to FASTQ files or directories containing them.
+        key: str
+            Key indicating the type of FASTQ: KEY_SINGLE or KEY_INTER.
+
+        Yields
+        ------
+        FastqUnit
+            One FastqUnit per valid FASTQ file found.
+        """
         if key != cls.KEY_SINGLE and key != cls.KEY_INTER:
             raise ValueError(f"Invalid key: {repr(key)}")
         if one_ref:
@@ -388,6 +447,23 @@ class FastqUnit(object):
                     phred_enc: int,
                     one_ref: bool,
                     fqs: list[Path]):
+        """
+        Yield a FastqUnit for each pair of mate-1/mate-2 FASTQ files.
+
+        Parameters
+        ----------
+        phred_enc: int
+            ASCII offset for encoding Phred quality scores.
+        one_ref: bool
+            Whether the FASTQ files are demultiplexed (one reference each).
+        fqs: list[Path]
+            Paths to FASTQ files or directories to search for mate pairs.
+
+        Yields
+        ------
+        FastqUnit
+            One FastqUnit per matched pair of mate-1 and mate-2 files.
+        """
         # Determine the key and segments based on whether the FASTQs are
         # demultiplexed
         if one_ref:
@@ -440,9 +516,9 @@ class FastqUnit(object):
         Parameters
         ----------
         phred_enc: int
-            ASCII offset for encoding Phred scores
-        fastq_args: list[Path]
-            FASTQ files, given as iterables of paths:
+            ASCII offset for encoding Phred scores.
+        fastq_args: Iterable[str | Path]
+            FASTQ files, given as iterables of paths keyed by type:
             - fastqz: single-end
             - fastqy: interleaved paired-end
             - fastqx: mated paired-end

@@ -34,6 +34,30 @@ def run(*,
         reflen: int,
         force: bool,
         seed: int | None):
+    """
+    Simulate a random reference sequence and write it to a FASTA file.
+
+    Parameters
+    ----------
+    sim_dir: str | Path
+        Simulation output directory; the FASTA file is written under its
+        references subdirectory.
+    refs: str
+        Name of the reference set (used for the FASTA file name).
+    ref: str
+        Name of the single reference sequence record in the FASTA file.
+    reflen: int
+        Length of the reference sequence to generate.
+    force: bool
+        Whether to overwrite an existing FASTA file.
+    seed: int | None
+        Random seed for reproducibility; None for no fixed seed.
+
+    Returns
+    -------
+    Path
+        Path of the written FASTA file.
+    """
     top = Path(sim_dir).joinpath(path.SIM_REFS_DIR)
     top.mkdir(parents=True, exist_ok=True)
     fasta = get_fasta_path(top, refs)

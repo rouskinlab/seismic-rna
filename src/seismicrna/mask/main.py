@@ -64,6 +64,31 @@ def set_mask_acgu(probe: str,
                   mask_c: bool | None = None,
                   mask_g: bool | None = None,
                   mask_u: bool | None = None):
+    """ Resolve per-base masking flags based on the probe type.
+
+    Parameters
+    ----------
+    probe: str
+        Probe type (one of the values in ``PROBES``), used to set
+        defaults when a flag is None.
+    mask_a: bool or None, optional
+        Whether to mask adenine positions; if None, inferred from
+        ``probe``.
+    mask_c: bool or None, optional
+        Whether to mask cytosine positions; if None, inferred from
+        ``probe``.
+    mask_g: bool or None, optional
+        Whether to mask guanine positions; if None, inferred from
+        ``probe``.
+    mask_u: bool or None, optional
+        Whether to mask uracil/thymine positions; if None, inferred
+        from ``probe``.
+
+    Returns
+    -------
+    tuple[bool, bool, bool, bool]
+        Resolved ``(mask_a, mask_c, mask_g, mask_u)`` flags.
+    """
     if probe not in PROBES:
         raise ValueError(f"Invalid probe type: {repr(probe)}")
     if mask_a is None:
@@ -80,6 +105,25 @@ def set_mask_acgu(probe: str,
 def set_mut_gap_params(probe: str,
                        min_mut_gap: int | None = None,
                        mut_collisions: str = MUT_COLLISIONS_AUTO):
+    """ Resolve mutation-gap and collision parameters based on the probe type.
+
+    Parameters
+    ----------
+    probe: str
+        Probe type (one of the values in ``PROBES``), used to set
+        defaults when a parameter is ``None`` / ``MUT_COLLISIONS_AUTO``.
+    min_mut_gap: int or None, optional
+        Minimum gap (in nucleotides) between two mutations in the same
+        read; if None, a probe-specific default is used.
+    mut_collisions: str, optional
+        How to handle reads with mutations closer than ``min_mut_gap``;
+        if ``MUT_COLLISIONS_AUTO``, a probe-specific default is used.
+
+    Returns
+    -------
+    tuple[int, str]
+        Resolved ``(min_mut_gap, mut_collisions)`` values.
+    """
     if min_mut_gap is None:
         min_mut_gap = DEFAULT_MIN_MUT_GAPS[probe]
         logger.detail(

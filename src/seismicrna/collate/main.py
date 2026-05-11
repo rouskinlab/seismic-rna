@@ -25,6 +25,21 @@ def get_out_path(name: str,
                  verbose_name: bool,
                  input_files: list[Path],
                  collate_out_dir: str | Path | None):
+    """ Determine the output path for the collated HTML file.
+
+    Parameters
+    ----------
+    name: str
+        Base name for the output collated file.
+    verbose_name: bool
+        If True, include sample, reference, region, and graph type
+        information in the output file name.
+    input_files: list[Path]
+        List of input graph/SVG files to be collated.
+    collate_out_dir: str | Path | None
+        Directory for the output file; if None, use the common
+        ancestor directory of the input files.
+    """
     if collate_out_dir is not None:
         collate_out_dir = Path(collate_out_dir)
     if verbose_name:

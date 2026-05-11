@@ -64,6 +64,30 @@ def sim_pclust_ct(ct_file: Path, *,
                   concentration: float,
                   force: bool,
                   seed: int | None):
+    """
+    Simulate cluster proportions for a CT file and write them to disk.
+
+    The number of clusters is inferred from the number of structures in
+    the CT file.
+
+    Parameters
+    ----------
+    ct_file: Path
+        Path to the connectivity table (CT) file whose structures define
+        the number of clusters.
+    concentration: float
+        Concentration parameter for the Dirichlet distribution used to
+        simulate cluster proportions; must be > 0.
+    force: bool
+        Whether to overwrite an existing output file.
+    seed: int | None
+        Random seed for reproducibility; None for no fixed seed.
+
+    Returns
+    -------
+    Path
+        Path of the written cluster proportions CSV file.
+    """
     pclust_file = ct_file.with_suffix(path.PARAM_CLUSTS_EXT)
     if need_write(pclust_file, force):
         num_structures = sum(1 for _ in from_ct(ct_file))

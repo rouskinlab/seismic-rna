@@ -57,6 +57,26 @@ def apply_mask(batch: RegionMutsBatch,
                read_nums: np.ndarray | None = None,
                region: Region | None = None,
                sanitize: bool = False):
+    """ Apply a read/position mask to a batch, returning a MaskMutsBatch.
+
+    Parameters
+    ----------
+    batch: RegionMutsBatch
+        Source batch to mask.
+    read_nums: np.ndarray or None, optional
+        Array of read numbers to keep; if None, all reads are kept.
+    region: Region or None, optional
+        Region to clip reads to; if None, the batch's existing region
+        is used.
+    sanitize: bool, optional
+        Whether to run extra validation checks on the new batch
+        (default False).
+
+    Returns
+    -------
+    MaskMutsBatch
+        A new batch containing only the selected reads and positions.
+    """
     require_isinstance("batch", batch, RegionMutsBatch)
     # Determine which reads to use.
     if read_nums is not None:

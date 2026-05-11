@@ -65,6 +65,29 @@ def simulate_batches(batch_size: int,
                      num_reads: int,
                      seed: int | None,
                      **kwargs):
+    """
+    Simulate batches of reads for all clusters.
+
+    Parameters
+    ----------
+    batch_size: int
+        Number of reads per batch.
+    pmut: pd.DataFrame
+        Mutation rate DataFrame with columns indexed by (rel, k, clust).
+    pclust: pd.Series
+        Proportion of reads belonging to each cluster; index is (k, clust).
+    num_reads: int
+        Total number of reads to simulate across all clusters.
+    seed: int | None
+        Random seed for reproducibility; None for no fixed seed.
+    **kwargs
+        Additional keyword arguments forwarded to `simulate_cluster`.
+
+    Yields
+    ------
+    tuple[RelateBatchIO, ReadNamesBatchIO | None]
+        Pairs of relate and (optionally) read-name batch objects.
+    """
     rng = np.random.default_rng(seed)
     # Simulate the number of reads per cluster.
     num_reads_clusters = pd.Series(rng.multinomial(num_reads, pclust),

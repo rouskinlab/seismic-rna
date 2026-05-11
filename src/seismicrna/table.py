@@ -35,6 +35,25 @@ def tabulate(dataset: MutsDataset,
              clust_table: bool,
              force: bool,
              num_cpus: int):
+    """ Write tables for a dataset using the appropriate tabulator.
+
+    Parameters
+    ----------
+    dataset: MutsDataset
+        Dataset to tabulate (from the relate, mask, or cluster step).
+    tabulator_type: type[DatasetTabulator]
+        Tabulator class that can process this dataset type.
+    pos_table: bool
+        If True, write a per-position table.
+    read_table: bool
+        If True, write a per-read table.
+    clust_table: bool
+        If True, write a cluster abundance table.
+    force: bool
+        If True, overwrite existing table files.
+    num_cpus: int
+        Number of CPUs to use for computation.
+    """
     files = tabulator_type(dataset=dataset,
                            count_pos=(pos_table or clust_table),
                            count_read=read_table,

@@ -165,6 +165,28 @@ def generate_fastq_record(name: str,
 
 
 def _get_common_attr(a: Any, b: Any, attr: str):
+    """
+    Return the value of an attribute that must be equal on two objects.
+
+    Parameters
+    ----------
+    a: Any
+        First object.
+    b: Any
+        Second object.
+    attr: str
+        Name of the attribute to compare.
+
+    Returns
+    -------
+    Any
+        The shared value of the attribute.
+
+    Raises
+    ------
+    ValueError
+        If the attribute values differ between `a` and `b`.
+    """
     rval = getattr(a, attr)
     nval = getattr(b, attr)
     if rval != nval:
@@ -356,6 +378,49 @@ def run(*,
         num_cpus: int,
         force: bool,
         seed: int | None):
+    """
+    Simulate FASTQ file(s) from relate reports or parameter directories.
+
+    Parameters
+    ----------
+    input_path: Iterable[str | Path]
+        Paths to relate report files or directories containing them;
+        used to generate FASTQ files from existing relate data.
+    param_dir: Iterable[str | Path]
+        Paths to simulation parameter directories; used to generate
+        FASTQ files from CT/parameter files.
+    profile_name: str
+        Name of the mutation profile to use from the parameter directory.
+    sample: str
+        Sample name to embed in the output FASTQ paths.
+    paired_end: bool
+        Whether to simulate paired-end reads.
+    read_length: int
+        Length of each simulated read.
+    reverse_fraction: float
+        Fraction of reads where mate 1 is reverse-complemented.
+    probe: str
+        Probe type (e.g. DMS); used to set default `min_mut_gap`.
+    min_mut_gap: int | None
+        Minimum gap between mutations; None to use the probe default.
+    mut_collisions: str
+        How to handle reads with close mutations: "drop" or "merge".
+    fq_gzip: bool
+        Whether to gzip-compress the output FASTQ files.
+    num_reads: int
+        Total number of reads to simulate per param_dir run.
+    num_cpus: int
+        Number of CPU cores to use.
+    force: bool
+        Whether to overwrite existing output files.
+    seed: int | None
+        Random seed for reproducibility; None for no fixed seed.
+
+    Returns
+    -------
+    list[Path]
+        Paths of all generated FASTQ files.
+    """
     min_mut_gap, mut_collisions = set_mut_gap_params(probe,
                                                      min_mut_gap,
                                                      mut_collisions)

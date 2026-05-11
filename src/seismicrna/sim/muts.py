@@ -306,6 +306,38 @@ def run_struct(ct_file: Path,
                vmut_unpaired: float,
                force: bool,
                seed: int | None):
+    """
+    Simulate per-position mutation rates for a CT file and write them.
+
+    For each structure in the CT file, mutation rates are simulated
+    using a Dirichlet distribution, with separate mean rates for paired
+    and unpaired bases.
+
+    Parameters
+    ----------
+    ct_file: Path
+        Path to the connectivity table (CT) file defining structures
+        and base-pairing.
+    pmut_paired: Iterable[tuple[str, float]]
+        Mutation-type/probability pairs for paired bases, passed to
+        `make_pmut_means_paired`.
+    pmut_unpaired: Iterable[tuple[str, float]]
+        Mutation-type/probability pairs for unpaired bases, passed to
+        `make_pmut_means_unpaired`.
+    vmut_paired: float
+        Relative variance of mutation rates for paired bases (0 to 1).
+    vmut_unpaired: float
+        Relative variance of mutation rates for unpaired bases (0 to 1).
+    force: bool
+        Whether to overwrite an existing output file.
+    seed: int | None
+        Random seed for reproducibility; None for no fixed seed.
+
+    Returns
+    -------
+    Path
+        Path of the written mutation-rate CSV file.
+    """
     pmut_file = ct_file.with_suffix(path.PARAM_MUTS_EXT)
     if need_write(pmut_file, force):
         # Calculate mean mutation rates.

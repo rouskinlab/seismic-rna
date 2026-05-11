@@ -205,7 +205,8 @@ def _triu_norm(a: np.ndarray):
     Returns
     -------
     np.ndarray
-        Array of the same shape as `a` but scaled so that the
+        Array of the same shape as `a` but scaled so that the upper
+        triangle sums to 1.
     """
     # Calculate the sum over axes 0 and 1.
     a_sum = _triu_sum(a)
@@ -930,7 +931,26 @@ def _calc_p_mut_given_span_biased(p_mut_given_span: np.ndarray,
                                   min_gap: int,
                                   mut_collisions: str):
     """ Calculate the biased mutation rates after dropping reads with
-    two mutations too close or merging mutations too close. """
+    two mutations too close or merging mutations too close.
+
+    Parameters
+    ----------
+    p_mut_given_span: np.ndarray
+        2D (positions x clusters) array of the underlying mutation rates.
+    p_ends: np.ndarray
+        2D (positions x positions) array of the proportion of reads
+        beginning at the row position and ending at the column position.
+    min_gap: int
+        Minimum number of non-mutated bases between two mutations.
+    mut_collisions: str
+        Method for handling reads with two mutations that are too close;
+        must be either "drop" or "merge".
+
+    Returns
+    -------
+    np.ndarray
+        2D (positions x clusters) array of the biased mutation rates.
+    """
     if mut_collisions == MUT_COLLISIONS_DROP:
         # Use the read-dropping method.
         p_nomut_window = _calc_p_nomut_window(p_mut_given_span, min_gap)
@@ -955,7 +975,28 @@ def _slice_p_ends(p_ends: np.ndarray,
                   p_ends_cumsum: np.ndarray,
                   end5: int,
                   end3: int):
-    """ Slice a matrix of end coordinate probabilities. """
+    """ Slice a matrix of end coordinate probabilities to the subregion
+    from `end5` to `end3`, redistributing out-of-region probability mass
+    onto the boundary cells.
+
+    Parameters
+    ----------
+    p_ends: np.ndarray
+        2D (positions x positions) array of end coordinate proportions.
+    p_ends_cumsum: np.ndarray
+        Cumulative sum of the upper triangle of `p_ends` (from the
+        upper-right corner), as computed by `_triu_cumsum`.
+    end5: int
+        Index of the 5' boundary of the slice (inclusive).
+    end3: int
+        Index one past the 3' boundary of the slice (exclusive).
+
+    Returns
+    -------
+    np.ndarray
+        Sliced (end3 - end5) x (end3 - end5) array of end coordinate
+        proportions.
+    """
     p_ends_slice = p_ends[end5: end3, end5: end3].copy()
     if p_ends_slice.size > 0:
         p_ends_slice[0, :-1] = p_ends[:end5 + 1, end5: end3 - 1].sum(axis=0)
@@ -965,8 +1006,25 @@ def _slice_p_ends(p_ends: np.ndarray,
 
 
 def _find_split_positions(p_mut: np.ndarray, min_gap: int, threshold: float):
-    """ Find the positions (at or below the threshold) at which to split
-    the mutation rates. """
+    """ Find positions at which to split the mutation rates into
+    independent segments, defined as stretches of at least `min_gap`
+    consecutive positions all at or below `threshold`.
+
+    Parameters
+    ----------
+    p_mut: np.ndarray
+        2D (positions x clusters) array of mutation rates.
+    min_gap: int
+        Minimum length of a low-mutation stretch to use as a split.
+    threshold: float
+        Mutation rate at or below which a position is considered
+        low-mutation.
+
+    Returns
+    -------
+    np.ndarray
+        1D array of split positions (integers).
+    """
     npos, ncls = p_mut.shape
     min_gap = _adjust_min_gap(npos, min_gap)
     if min_gap == 0 or ncls == 0:
@@ -992,8 +1050,26 @@ def _split_positions(p_mut: np.ndarray,
                      p_mut_init: np.ndarray,
                      p_ends: np.ndarray,
                      split_pos: np.ndarray):
-    """ Split `p_mut` and `p_ends` where at least `min_gap` consecutive
-    positions are no greater than `threshold` in every cluster. """
+    """ Split `p_mut`, `p_mut_init`, and `p_ends` at the given split
+    positions.
+
+    Parameters
+    ----------
+    p_mut: np.ndarray
+        2D (positions x clusters) array of observed mutation rates.
+    p_mut_init: np.ndarray
+        2D (positions x clusters) array of initial mutation rate
+        estimates.
+    p_ends: np.ndarray
+        2D (positions x positions) array of end coordinate proportions.
+    split_pos: np.ndarray
+        1D array of positions at which to split.
+
+    Returns
+    -------
+    tuple[list, list, list]
+        Lists of split subarrays for p_mut, p_mut_init, and p_ends.
+    """
     dims = find_dims([(POSITIONS, CLUSTERS),
                       (POSITIONS, CLUSTERS),
                       (POSITIONS, POSITIONS)],
@@ -1079,7 +1155,42 @@ def calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
                           f_tol: float = 1.e-4,
                           x_rtol: float = 1.e-3):
     """ Calculate the underlying mutation rates including for reads with
-    two mutations too close based on the observed mutation rates. """
+    two mutations too close based on the observed mutation rates.
+
+    Parameters
+    ----------
+    p_mut_given_span_observed: np.ndarray
+        Observed mutation rates (among reads with no two mutations too
+        close): 2D array (positions x clusters).
+    p_ends: np.ndarray
+        Proportion of reads with each pair of 5'/3' end coordinates:
+        2D array (positions x positions).
+    min_gap: int
+        Minimum number of non-mutated bases between two mutations;
+        must be ≥ 0.
+    mut_collisions: str
+        Method for handling reads with two mutations that are too close;
+        must be either "drop" or "merge".
+    init_p_mut_given_span: np.ndarray
+        Initial guess for the underlying mutation rates:
+        2D array (positions x clusters).
+    quick_unbias: bool = True
+        Use the approximation method to reduce time complexity from
+        O(n^3) to O(n) by splitting the region at low-mutation sites.
+    quick_unbias_thresh: float = 0.
+        Threshold mutation rate below which positions are considered
+        low-mutation for the purpose of splitting.
+    f_tol: float = 1.e-4
+        Tolerance on the residual for the Newton-Krylov solver.
+    x_rtol: float = 1.e-3
+        Relative tolerance on the step size for the Newton-Krylov solver.
+
+    Returns
+    -------
+    np.ndarray
+        Underlying (unbiased) mutation rates:
+        2D array (positions x clusters).
+    """
     # Validate the argument types, values, and dimensions (of arrays).
     require_isinstance("p_mut_given_span_observed",
                        p_mut_given_span_observed,
@@ -1237,7 +1348,24 @@ def calc_p_ends(p_ends_observed: np.ndarray,
 def calc_p_noclose_given_clust(p_ends: np.ndarray,
                                p_noclose_given_ends: np.ndarray):
     """ Calculate the probability that a read from each cluster would
-    have no two mutations too close. """
+    have no two mutations too close.
+
+    Parameters
+    ----------
+    p_ends: np.ndarray
+        2D (positions x positions) array of the proportion of reads
+        beginning at the row position and ending at the column position.
+    p_noclose_given_ends: np.ndarray
+        3D (positions x positions x clusters) array of the probability
+        that a read with 5' and 3' coordinates corresponding to the row
+        and column would have no two mutations too close.
+
+    Returns
+    -------
+    np.ndarray
+        1D (clusters) array of the probability that a read from each
+        cluster would have no two mutations too close.
+    """
     # Validate the dimensionality of the arguments.
     find_dims([(POSITIONS, POSITIONS), (POSITIONS, POSITIONS, CLUSTERS)],
               [p_ends, p_noclose_given_ends],
@@ -1536,10 +1664,9 @@ def calc_p_ends_given_clust_noclose(p_ends: np.ndarray,
     -   Every value in the upper triangle of `p_ends` is ≥ 0 and ≤ 1;
         no values below the main diagonal are used.
     -   The upper triangle of `p_ends` sums to 1.
-    -   `min_gap` is a non-negative integer.
-    -   `p_mut_given_span` has 2 dimensions:
-        (positions x clusters)
-    -   Every value in `p_mut_given_span` is ≥ 0 and ≤ 1.
+    -   `p_noclose_given_ends` has 3 dimensions:
+        (positions x positions x clusters)
+    -   Every value in `p_noclose_given_ends` is ≥ 0 and ≤ 1.
     -   There is at least 1 cluster.
 
     Parameters
@@ -1741,6 +1868,22 @@ def calc_p_ends_observed(npos: int,
 
 def calc_n_reads_per_pos(p_ends_observed: np.ndarray,
                          n_reads_per_clust: np.ndarray):
+    """ Calculate the number of reads covering each position per cluster.
+
+    Parameters
+    ----------
+    p_ends_observed: np.ndarray
+        Observed proportion of reads with each pair of 5'/3' end
+        coordinates: 3D array (positions x positions x clusters).
+    n_reads_per_clust: np.ndarray
+        Total number of reads in each cluster: 1D array (clusters).
+
+    Returns
+    -------
+    np.ndarray
+        Number of reads covering each position per cluster:
+        2D array (positions x clusters).
+    """
     find_dims([(POSITIONS, POSITIONS, CLUSTERS), (CLUSTERS,)],
               [p_ends_observed, n_reads_per_clust],
               ["p_ends_observed", "n_reads_per_clust"])

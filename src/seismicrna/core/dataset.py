@@ -109,12 +109,12 @@ class Dataset(ABC):
 
     @cached_property
     def time_began(self) -> datetime:
-        """ Time at which the data were written. """
+        """ Time at which the data processing began. """
         return self.report.get_field(TimeBeganF)
 
     @cached_property
     def time_ended(self) -> datetime:
-        """ Time at which the data were written. """
+        """ Time at which the data processing ended. """
         return self.report.get_field(TimeEndedF)
 
     @property

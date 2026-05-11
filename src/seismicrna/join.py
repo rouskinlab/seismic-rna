@@ -97,6 +97,15 @@ def parse_join_clusts_file(file: str | Path):
 def write_report(report_type: type[JoinReport],
                  out_dir: Path,
                  **kwargs):
+    """ Instantiate and save a JoinReport.
+
+    Parameters
+    ----------
+    report_type: type[JoinReport]
+        The concrete JoinReport subclass to instantiate.
+    out_dir: Path
+        Directory in which to save the report file.
+    """
     report = report_type(ended=datetime.now(), **kwargs)
     return report.save(out_dir, force=True)
 

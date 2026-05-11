@@ -32,8 +32,26 @@ def sanitize_muts(muts: dict[int, dict[int, list[int] | np.ndarray]],
                   region: Region,
                   data_type: type,
                   sanitize: bool = True):
-    """ Keep only unmasked positions in the muts dictionary, and 
-    convert the read lists to arrays. """
+    """ Keep only unmasked positions in the muts dictionary and convert
+    the read lists to arrays.
+
+    Parameters
+    ----------
+    muts: dict[int, dict[int, list[int] | np.ndarray]]
+        Mapping from position to relationship code to read numbers.
+    region: Region
+        Region whose unmasked positions define which positions to keep.
+    data_type: type
+        NumPy dtype to use for the read number arrays.
+    sanitize: bool = True
+        If True, filter to unmasked positions and convert to arrays;
+        if False, return the muts values as-is.
+
+    Returns
+    -------
+    dict[int, dict[int, np.ndarray]]
+        Sanitized mutation data.
+    """
     return {int(pos): ({int(rel): np.asarray(reads, data_type)
                         for rel, reads in muts[pos].items()}
                        if sanitize
@@ -51,10 +69,18 @@ def simulate_muts(pmut: pd.DataFrame,
     ----------
     pmut: pd.DataFrame
         Rate of each type of mutation at each position.
-    seg_end5s:
+    seg_end5s: np.ndarray
         5' end coordinate of each segment.
-    seg_end3s:
+    seg_end3s: np.ndarray
         3' end coordinate of each segment.
+    seed: int | None
+        Random seed for reproducibility; None for a random seed.
+
+    Returns
+    -------
+    dict[int, dict[int, np.ndarray]]
+        Mutation data: mapping from position to relationship code to
+        read numbers.
     """
     rng = np.random.default_rng(seed)
     num_reads, _ = match_reads_segments(seg_end5s, seg_end3s, None)
@@ -108,7 +134,29 @@ def calc_muts_matrix(region: Region,
                      seg_end3s: np.ndarray,
                      seg_ends_mask: np.ndarray,
                      muts: dict[int, dict[int, np.ndarray]]):
-    """ Matrix of relationships at each position in each read. """
+    """ Build a matrix of relationships at each position in each read.
+
+    Parameters
+    ----------
+    region: Region
+        Region providing unmasked positions.
+    read_nums: np.ndarray
+        Read numbers: 1D array (reads).
+    seg_end5s: np.ndarray
+        5' end coordinates of each segment: 2D array (reads x segments).
+    seg_end3s: np.ndarray
+        3' end coordinates of each segment: 2D array (reads x segments).
+    seg_ends_mask: np.ndarray
+        Boolean mask of segments to exclude: 2D array (reads x segments).
+    muts: dict[int, dict[int, np.ndarray]]
+        Mapping from position to relationship code to read numbers.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame of relationship codes, indexed by read number and
+        columned by position index.
+    """
     dims = find_dims([(NUM_READS,),
                       (NUM_READS, NUM_SEGMENTS),
                       (NUM_READS, NUM_SEGMENTS)],

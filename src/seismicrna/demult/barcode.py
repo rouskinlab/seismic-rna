@@ -189,6 +189,32 @@ class RefBarcodes(object):
                  mismatches: int = 0,
                  index_tolerance: int = 0,
                  allow_n: bool = False):
+        """ Initialize a RefBarcodes collection.
+
+        Parameters
+        ----------
+        ref_seqs: Iterable[tuple[str, DNA]]
+            Pairs of (reference name, reference sequence) used to
+            extract barcode sequences from coordinates.
+        refs_meta_file: Path | None
+            Optional CSV file defining barcodes by reference
+            coordinates or explicit sequences.  See `get_ref_barcodes`
+            for the expected column names.
+        coords: Iterable[tuple[str, int, int, int]]
+            Barcodes defined as (name, end5, end3, read_pos) coordinate
+            tuples passed from the command line.
+        bcs: Iterable[tuple[str, DNA, int]]
+            Barcodes defined as (name, sequence, read_pos) tuples
+            passed directly from the command line.
+        mismatches: int
+            Maximum number of mismatches allowed when matching barcodes.
+        index_tolerance: int
+            Number of positions by which a barcode may be shifted from
+            its expected read position and still be considered a match.
+        allow_n: bool
+            If True, treat N as a valid substitution when enumerating
+            barcode neighbors (requires 3-bit encoding).
+        """
         ref_seqs = RefSeqs(ref_seqs)
         # Group coordinates and primers by reference.
         cli_coords = get_coords_by_name(coords)
@@ -331,6 +357,21 @@ class RefBarcodes(object):
         return by_pos_dict
 
     def get_automaton(self, barcodes: list[tuple[str, DNA]], start: int = 0, check: list[ahocorasick.Automaton] = []): # TODO: May be able to remove the check argument depending on edge cases.
+        """ Build an Aho-Corasick automaton for a set of barcodes.
+
+        Parameters
+        ----------
+        barcodes: list[tuple[str, DNA]]
+            Pairs of (name, barcode sequence) to add to the automaton.
+        start: int
+            Integer index offset for the first barcode, used so that
+            forward and reverse-complement automatons can share a
+            single index space in `name_map`.
+        check: list[ahocorasick.Automaton]
+            Existing automatons to check for collisions; any barcode
+            that already appears in one of these will raise a
+            ValueError.
+        """
         automaton = ahocorasick.Automaton()
         collisions = dict()
         sets = set()

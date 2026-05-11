@@ -114,6 +114,20 @@ def get_param_lines(func: Callable, docstrs: dict[str, str]):
 def get_docstr_lines(func: Callable,
                      param_lines: list[str],
                      return_docstr: str):
+    """ Assemble docstring lines for a function.
+
+    Parameters
+    ----------
+    func: Callable
+        Function whose existing docstring and return annotation are used
+        as the basis for the new docstring.
+    param_lines: list[str]
+        Lines describing each parameter, as produced by
+        `get_param_lines`.
+    return_docstr: str
+        Description of the return value; included only when the
+        function has a return annotation.
+    """
     sig = Signature.from_callable(func)
     docstr_lines = list()
     if func.__doc__:

@@ -116,6 +116,57 @@ def fastp_cmd(fq_inp: FastqUnit,
               fastp_detect_adapter_for_pe: bool,
               fastp_min_length: int,
               num_cpus: int):
+    """
+    Build the fastp command for quality trimming and adapter removal.
+
+    Parameters
+    ----------
+    fq_inp: FastqUnit
+        Input FASTQ file(s) to trim.
+    fq_out: FastqUnit | None
+        Output FASTQ file(s); if None, fastp writes trimmed reads to
+        standard output.
+    fastp_html: Path
+        Path for the fastp HTML report.
+    fastp_json: Path
+        Path for the fastp JSON report.
+    fastp_5: bool
+        Whether to enable 5'-end sliding-window quality trimming.
+    fastp_3: bool
+        Whether to enable 3'-end sliding-window quality trimming.
+    fastp_w: int
+        Window size for sliding-window quality trimming.
+    fastp_m: int
+        Minimum mean quality within the sliding window.
+    fastp_poly_g: str
+        Poly-G tail trimming mode: "yes", "no", or "auto".
+    fastp_poly_g_min_len: int
+        Minimum length of poly-G tail to trim.
+    fastp_poly_x: bool
+        Whether to trim poly-X tails.
+    fastp_poly_x_min_len: int
+        Minimum length of poly-X tail to trim.
+    fastp_adapter_trimming: bool
+        Whether to perform adapter trimming.
+    fastp_adapter_1: str
+        Adapter sequence for read 1.
+    fastp_adapter_2: str
+        Adapter sequence for read 2 (ignored for single-end reads).
+    fastp_adapter_fasta: Path | None
+        Path to a FASTA file of adapter sequences; used if provided.
+    fastp_detect_adapter_for_pe: bool
+        Whether to auto-detect adapters for paired-end reads.
+    fastp_min_length: int
+        Minimum read length after trimming; reads shorter than this are
+        discarded (0 disables length filtering).
+    num_cpus: int
+        Number of CPU threads for fastp.
+
+    Returns
+    -------
+    ShellCommand
+        Assembled fastp command ready to run or pipe.
+    """
     args = [FASTP_CMD,
             "--thread", num_cpus,
             "--dont_eval_duplication",
@@ -243,6 +294,68 @@ def bowtie2_cmd(fq_inp: FastqUnit | None,
                 fq_unal: Path | None,
                 seed: int | None,
                 num_cpus: int = 1):
+    """
+    Build the Bowtie2 alignment command.
+
+    Parameters
+    ----------
+    fq_inp: FastqUnit | None
+        Input FASTQ file(s); if None, reads come from standard input.
+    sam_out: Path | None
+        Output SAM file path; if None, output goes to standard output.
+    paired: bool | None
+        Whether reads are paired-end; inferred from `fq_inp` if None.
+    phred_arg: str | None
+        Bowtie2 Phred encoding argument (e.g. "--phred33"); inferred
+        from `fq_inp` if None.
+    index_pfx: Path
+        Prefix path of the Bowtie2 index to align against.
+    bt2_local: bool
+        Whether to use local (soft-clipping) alignment mode.
+    bt2_discordant: bool
+        Whether to allow discordant paired-end alignments.
+    bt2_mixed: bool
+        Whether to allow mixed (partially unpaired) alignments.
+    bt2_dovetail: bool
+        Whether to allow dovetail paired-end alignments.
+    bt2_contain: bool
+        Whether to allow one mate to contain the other.
+    bt2_score_min_e2e: str
+        Minimum alignment score function for end-to-end mode.
+    bt2_score_min_loc: str
+        Minimum alignment score function for local mode.
+    bt2_i: int
+        Minimum fragment length for valid paired-end alignments.
+    bt2_x: int
+        Maximum fragment length for valid paired-end alignments.
+    bt2_gbar: int
+        Minimum distance from the end of a read to allow a gap.
+    bt2_l: int
+        Length of the seed substring.
+    bt2_s: str
+        Interval function between seed substrings.
+    bt2_d: int
+        Maximum number of seed extension attempts.
+    bt2_r: int
+        Maximum number of re-seeding attempts.
+    bt2_dpad: int
+        Number of extra reference bases to pad on either side of the
+        dynamic programming matrix.
+    bt2_orient: str
+        Expected orientation of paired-end mates (e.g. "fr", "rf").
+    fq_unal: Path | None
+        Path to write unaligned reads; if None, unaligned reads are
+        discarded.
+    seed: int | None
+        Random seed for reproducible alignment; None for no fixed seed.
+    num_cpus: int
+        Number of CPU threads for Bowtie2.
+
+    Returns
+    -------
+    ShellCommand
+        Assembled Bowtie2 command ready to run or pipe.
+    """
     if paired is None:
         paired = _get_from_fq_inp(fq_inp, "paired")
     if phred_arg is None:

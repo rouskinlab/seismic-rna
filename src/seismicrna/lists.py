@@ -22,6 +22,19 @@ from .relate.lists import RelatePositionList
 def find_pos(table: PositionTable,
              max_fmut_pos: float,
              complement: bool):
+    """ Find positions that pass a mutation-rate filter.
+
+    Parameters
+    ----------
+    table: PositionTable
+        Per-position table from which mutation rates are fetched.
+    max_fmut_pos: float
+        Maximum allowed mutation frequency; positions above this
+        threshold are masked (or kept if complement is True).
+    complement: bool
+        If True, invert the filter so that positions above the
+        threshold are kept instead of masked.
+    """
     # Initially select all unmasked positions.
     region = table.region.copy()
     positions = region.unmasked_int
