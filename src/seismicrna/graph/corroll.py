@@ -35,6 +35,15 @@ class RollingCorrelationGraph(TwoTableMergedClusterGroupGraph,
         return iter_seq_line_traces
 
     def __init__(self, *, metric: str, **kwargs):
+        """
+        Parameters
+        ----------
+        metric: str
+            Name of the comparison metric to compute over rolling
+            windows (e.g. ``"pearson"``, ``"spearman"``).
+        **kwargs
+            Forwarded to the parent class.
+        """
         super().__init__(**kwargs)
         self._metric = metric
 

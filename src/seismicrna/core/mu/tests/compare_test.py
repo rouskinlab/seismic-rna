@@ -16,8 +16,6 @@ from seismicrna.core.mu import (calc_arcsine_distance,
                                 get_comp_name)
 from seismicrna.core.seq import DNA, seq_pos_to_index
 
-rng = np.random.default_rng()
-
 
 class TestCalcArcsineDistance(ut.TestCase):
 
@@ -111,6 +109,7 @@ class TestCalcArcsineDistance(ut.TestCase):
 class TestCalcSumAbsDiffLogOdds(ut.TestCase):
 
     def test_array0d(self):
+        rng = np.random.default_rng(seed=0)
         self.assertRaisesRegex(ValueError,
                                "A 0-D array has no positional axis",
                                calc_sum_arcsine_distance,
@@ -129,6 +128,7 @@ class TestCalcSumAbsDiffLogOdds(ut.TestCase):
 class TestCalcMeanAbsFoldChangeOdds(ut.TestCase):
 
     def test_array0d(self):
+        rng = np.random.default_rng(seed=0)
         self.assertRaisesRegex(ValueError,
                                "A 0-D array has no positional axis",
                                calc_mean_arcsine_distance,
@@ -152,6 +152,7 @@ class TestCalcPearson(ut.TestCase):
         return pearsonr(x, y).statistic
 
     def test_array0d(self):
+        rng = np.random.default_rng(seed=0)
         self.assertRaisesRegex(ValueError,
                                "A 0-D array has no positional axis",
                                calc_pearson,
@@ -159,6 +160,7 @@ class TestCalcPearson(ut.TestCase):
                                rng.random(()))
 
     def test_array1d(self):
+        rng = np.random.default_rng(seed=0)
         for nrow in range(10):
             x = rng.random(nrow)
             y = rng.random(nrow)
@@ -177,6 +179,7 @@ class TestCalcPearson(ut.TestCase):
                         self.assertTrue(np.isnan(r))
 
     def test_array2d(self):
+        rng = np.random.default_rng(seed=0)
         for ncol in range(1, 3):
             for nrow in range(2, 10):
                 x = rng.random((nrow, ncol))
@@ -190,6 +193,7 @@ class TestCalcPearson(ut.TestCase):
                                                                   y[:, ic])))
 
     def test_series(self):
+        rng = np.random.default_rng(seed=0)
         for nrow in range(2, 10):
             x = pd.Series(rng.random(nrow))
             y = pd.Series(rng.random(nrow))
@@ -198,6 +202,7 @@ class TestCalcPearson(ut.TestCase):
             self.assertTrue(np.isclose(r, self.calc_true(x, y)))
 
     def test_dataframe(self):
+        rng = np.random.default_rng(seed=0)
         for ncol in range(1, 3):
             for nrow in range(2, 10):
                 x = pd.DataFrame(rng.random((nrow, ncol)))
@@ -220,6 +225,7 @@ class TestCalcCoeffDeterm(ut.TestCase):
         return pearsonr(x, y).statistic ** 2
 
     def test_array0d(self):
+        rng = np.random.default_rng(seed=0)
         self.assertRaisesRegex(ValueError,
                                "A 0-D array has no positional axis",
                                calc_coeff_determ,
@@ -227,6 +233,7 @@ class TestCalcCoeffDeterm(ut.TestCase):
                                rng.random(()))
 
     def test_array1d(self):
+        rng = np.random.default_rng(seed=0)
         for nrow in range(10):
             x = rng.random(nrow)
             y = rng.random(nrow)
@@ -245,6 +252,7 @@ class TestCalcCoeffDeterm(ut.TestCase):
                         self.assertTrue(np.isnan(r2))
 
     def test_dataframe(self):
+        rng = np.random.default_rng(seed=0)
         for ncol in range(1, 3):
             for nrow in range(2, 10):
                 x = pd.DataFrame(rng.random((nrow, ncol)))
@@ -267,6 +275,7 @@ class TestCalcSpearman(ut.TestCase):
         return spearmanr(x, y, nan_policy="omit").statistic
 
     def test_array0d(self):
+        rng = np.random.default_rng(seed=0)
         self.assertRaisesRegex(ValueError,
                                "A 0-D array has no positional axis",
                                calc_spearman,
@@ -274,6 +283,7 @@ class TestCalcSpearman(ut.TestCase):
                                rng.random(()))
 
     def test_array1d(self):
+        rng = np.random.default_rng(seed=0)
         for nrow in range(10):
             x = rng.random(nrow)
             y = rng.random(nrow)
@@ -292,6 +302,7 @@ class TestCalcSpearman(ut.TestCase):
                         self.assertTrue(np.isnan(rho))
 
     def test_array1d_nan(self):
+        rng = np.random.default_rng(seed=0)
         for nrow in range(10):
             for num_nan in range(nrow + 1):
                 x = rng.random(nrow)
@@ -315,6 +326,7 @@ class TestCalcSpearman(ut.TestCase):
                             self.assertTrue(np.isnan(rho))
 
     def test_array2d(self):
+        rng = np.random.default_rng(seed=0)
         for ncol in range(1, 3):
             for nrow in range(2, 10):
                 x = rng.random((nrow, ncol))
@@ -328,6 +340,7 @@ class TestCalcSpearman(ut.TestCase):
                                                                     y[:, ic])))
 
     def test_series(self):
+        rng = np.random.default_rng(seed=0)
         for nrow in range(2, 10):
             x = pd.Series(rng.random(nrow))
             y = pd.Series(rng.random(nrow))
@@ -336,6 +349,7 @@ class TestCalcSpearman(ut.TestCase):
             self.assertTrue(np.isclose(rho, self.calc_true(x, y)))
 
     def test_dataframe(self):
+        rng = np.random.default_rng(seed=0)
         for ncol in range(1, 3):
             for nrow in range(2, 10):
                 x = pd.DataFrame(rng.random((nrow, ncol)))
@@ -380,6 +394,7 @@ class TestCompareWindows(ut.TestCase):
 
     def test_contiguous(self):
         for seqlen in [0, 10, 20]:
+            rng = np.random.default_rng(seed=0)
             seq = DNA.random(seqlen)
             index = seq_pos_to_index(seq, np.arange(1, seqlen + 1), start=1)
             mus = pd.Series(rng.random(seqlen), index)

@@ -13,7 +13,8 @@ from typing import Any, Callable, Hashable, Iterable
 import numpy as np
 from click import Option
 
-from .arg import (opt_phred_enc,
+from .arg import (opt_seed,
+                  opt_phred_enc,
                   opt_fastp,
                   opt_fastp_5,
                   opt_fastp_3,
@@ -54,17 +55,26 @@ from .arg import (opt_phred_enc,
                   opt_overhangs,
                   opt_clip_end5,
                   opt_clip_end3,
+                  opt_fold_dry_run,
+                  opt_fold_energy_method,
+                  opt_fold_quantile,
                   opt_fold_temp,
+                  opt_fold_backend,
+                  opt_deigan_slope,
+                  opt_deigan_intercept,
+                  opt_fold_isolated,
+                  opt_fold_commands,
+                  opt_fold_constraint,
                   opt_fold_md,
                   opt_fold_mfe,
                   opt_fold_max,
                   opt_fold_percent,
-                  opt_quantile,
                   opt_quick_unbias,
                   opt_quick_unbias_thresh,
                   opt_min_ncov_read,
                   opt_min_finfo_read,
                   opt_min_mut_gap,
+                  opt_mut_collisions,
                   opt_min_ninfo_pos,
                   opt_max_fmut_pos,
                   opt_max_mask_iter,
@@ -79,6 +89,7 @@ from .arg import (opt_phred_enc,
                   opt_jackpot,
                   opt_jackpot_conf_level,
                   opt_max_jackpot_quotient,
+                  opt_jackpot_max_data,
                   opt_max_arcd_vs_ens_avg,
                   opt_max_gini_run,
                   opt_max_pearson_run,
@@ -88,7 +99,10 @@ from .arg import (opt_phred_enc,
                   opt_max_marcd_vs_best,
                   opt_try_all_ks,
                   opt_write_all_ks,
-                  opt_mask_gu,
+                  opt_mask_a,
+                  opt_mask_c,
+                  opt_mask_g,
+                  opt_mask_u,
                   opt_mask_polya,
                   opt_mask_discontig,
                   opt_min_phred)
@@ -270,6 +284,7 @@ def oconv_datetime(dtime: datetime):
 
 # General fields
 VersionF = ReportField("version", "Version of SEISMIC-RNA", str, __version__)
+SeedF = OptionReportField(opt_seed)
 BranchesF = ReportField("branches", "Branches", dict)
 SampleF = ReportField("sample", "Sample", str)
 RefF = ReportField("ref", "Reference", str)
@@ -392,18 +407,22 @@ CountRefsF = ReportField("count_refs",
                          HalfRelPattern,
                          iconv=HalfRelPattern.from_report_format,
                          oconv=HalfRelPattern.to_report_format)
-ExclPolyAF = OptionReportField(opt_mask_polya)
-ExclGUF = OptionReportField(opt_mask_gu)
-ExclListPosF = ReportField("mask_pos",
-                           "Mask additional positions from a list",
-                           np.ndarray,
-                           iconv=iconv_array_int,
-                           oconv=get_oconv_list(int))
+MaskPolyAF = OptionReportField(opt_mask_polya)
+MaskAF = OptionReportField(opt_mask_a)
+MaskCF = OptionReportField(opt_mask_c)
+MaskGF = OptionReportField(opt_mask_g)
+MaskUF = OptionReportField(opt_mask_u)
+MaskPosF = ReportField("mask_pos",
+                       "Mask additional positions from a list",
+                       np.ndarray,
+                       iconv=iconv_array_int,
+                       oconv=get_oconv_list(int))
 MinNInfoPosF = OptionReportField(opt_min_ninfo_pos)
 MaxFMutPosF = OptionReportField(opt_max_fmut_pos)
 MinNCovReadF = OptionReportField(opt_min_ncov_read)
 DiscontigF = OptionReportField(opt_mask_discontig)
 MinMutGapF = OptionReportField(opt_min_mut_gap)
+MutCollisionsF = OptionReportField(opt_mut_collisions)
 QuickUnbiasF = OptionReportField(opt_quick_unbias)
 QuickUnbiasThreshF = OptionReportField(opt_quick_unbias_thresh)
 MinFInfoReadF = OptionReportField(opt_min_finfo_read)
@@ -414,11 +433,31 @@ PosCutPolyAF = ReportField("pos_polya",
                            np.ndarray,
                            iconv=iconv_array_int,
                            oconv=get_oconv_list(int))
-PosCutGUF = ReportField("pos_gu",
-                        "Positions with G or U bases",
-                        np.ndarray,
-                        iconv=iconv_array_int,
-                        oconv=get_oconv_list(int))
+PosCutAF = ReportField("pos_a",
+                       "Positions masked for having base A",
+                       np.ndarray,
+                       iconv=iconv_array_int,
+                       oconv=get_oconv_list(int))
+PosCutCF = ReportField("pos_c",
+                       "Positions masked for having base C",
+                       np.ndarray,
+                       iconv=iconv_array_int,
+                       oconv=get_oconv_list(int))
+PosCutGF = ReportField("pos_g",
+                       "Positions masked for having base G",
+                       np.ndarray,
+                       iconv=iconv_array_int,
+                       oconv=get_oconv_list(int))
+PosCutUF = ReportField("pos_u",
+                       "Positions masked for having base U",
+                       np.ndarray,
+                       iconv=iconv_array_int,
+                       oconv=get_oconv_list(int))
+PosCutNF = ReportField("pos_n",
+                       "Positions masked for having base N",
+                       np.ndarray,
+                       iconv=iconv_array_int,
+                       oconv=get_oconv_list(int))
 PosCutListF = ReportField("pos_list",
                           "Positions masked from a list",
                           np.ndarray,
@@ -446,9 +485,21 @@ NumPosCutPolyAF = ReportField("n_pos_polya",
                               "Number of positions in stretches of consecutive "
                               "A bases",
                               int)
-NumPosCutGUF = ReportField("n_pos_gu",
-                           "Number of positions with G or U bases",
-                           int)
+NumPosCutAF = ReportField("n_pos_a",
+                          "Number of positions masked for having base A",
+                          int)
+NumPosCutCF = ReportField("n_pos_c",
+                          "Number of positions masked for having base C",
+                          int)
+NumPosCutGF = ReportField("n_pos_g",
+                          "Number of positions masked for having base G",
+                          int)
+NumPosCutUF = ReportField("n_pos_u",
+                          "Number of positions masked for having base U",
+                          int)
+NumPosCutNF = ReportField("n_pos_n",
+                          "Number of positions masked for having base N",
+                          int)
 NumPosCutListF = ReportField("n_pos_list",
                              "Number of positions masked from a list",
                              int)
@@ -507,6 +558,7 @@ MaxClustsF = OptionReportField(opt_max_clusters)
 JackpotF = OptionReportField(opt_jackpot)
 JackpotConfLevelF = OptionReportField(opt_jackpot_conf_level)
 MaxJackpotQuotientF = OptionReportField(opt_max_jackpot_quotient)
+JackpotMaxDataF = OptionReportField(opt_jackpot_max_data)
 MaxARCDVsEnsAvgF = OptionReportField(opt_max_arcd_vs_ens_avg)
 MaxGiniRunF = OptionReportField(opt_max_gini_run)
 MaxPearsonRunF = OptionReportField(opt_max_pearson_run)
@@ -539,12 +591,32 @@ JoinedClustersF = ReportField("joined_clusters",
 # Fold fields
 
 ProfileF = ReportField("profile", "Profile", str)
-Quantile = OptionReportField(opt_quantile)
+FoldDryRunF = OptionReportField(opt_fold_dry_run)
+FoldBackendF = OptionReportField(opt_fold_backend)
+FoldEnergyMethodF = OptionReportField(opt_fold_energy_method)
+DeiganSlopeF = OptionReportField(opt_deigan_slope)
+DeiganInterceptF = OptionReportField(opt_deigan_intercept)
+FoldIsolatedF = OptionReportField(opt_fold_isolated)
+FoldQuantileF = OptionReportField(opt_fold_quantile)
 FoldTempF = OptionReportField(opt_fold_temp)
+FoldConstraintsF = OptionReportField(opt_fold_constraint)
+FoldCommandF = OptionReportField(opt_fold_commands)
 FoldMaxDistF = OptionReportField(opt_fold_md)
 FoldMinFreeEnergyF = OptionReportField(opt_fold_mfe)
 FoldMaxStructsF = OptionReportField(opt_fold_max)
 FoldPercent = OptionReportField(opt_fold_percent)
+CommandsChecksumF = ReportField(
+    "commands_checksum",
+    "Checksum of the ViennaRNA command file (SHA-512)",
+    str,
+    default=""
+)
+ConstraintChecksumF = ReportField(
+    "constraint_checksum",
+    "Checksum of the constraints file (SHA-512)",
+    str,
+    default=""
+)
 
 
 # Field exceptions

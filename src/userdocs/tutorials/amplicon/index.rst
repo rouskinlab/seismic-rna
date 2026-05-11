@@ -22,13 +22,13 @@ TL;DR
 
 #. Process the DMS-treated replicates separately::
 
-    seismic wf -x fq/dms1 -x fq/dms2 --mask-pos rre 176 -p rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC hiv-rre.fa
+    seismic wf -x fq/dms1 -x fq/dms2 --mask-pos rre 176 -P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC hiv-rre.fa
     seismic graph scatter out/dms[12]/mask/rre/26-204/mask-position-table.csv
 
 #. Pool the replicates and process them together::
 
-    seismic pool -P dms-pool out/dms[12]
-    seismic wf --mask-pos rre 176 -p rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC --cluster --fold -q 0.95 hiv-rre.fa out/dms-pool/relate
+    seismic pool -p dms-pool out/dms[12]
+    seismic wf --mask-pos rre 176 -P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC --cluster --fold -q 0.95 hiv-rre.fa out/dms-pool/relate
 
 
 Scientific premise
@@ -226,7 +226,7 @@ Run the workflow on both DMS-treated replicates
 
 Process the DMS-treated samples through the whole workflow with this command::
 
-    seismic wf -x fq/dms1 -x fq/dms2 --mask-pos rre 176 -p rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC hiv-rre.fa
+    seismic wf -x fq/dms1 -x fq/dms2 --mask-pos rre 176 -P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC hiv-rre.fa
 
 This is what each of the arguments does:
 
@@ -237,7 +237,7 @@ This is what each of the arguments does:
   paired-end reads with mate 1 and mate 2 in separate files.
 - ``--mask-pos rre 176`` means mask position 176 (because it had a high mutation
   rate in the no-DMS sample).
-- ``-p rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC`` defines a
+- ``-P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC`` defines a
   region of the reference ``rre`` that corresponds to the amplicon flanked by
   primers ``GGAGCTTTGTTCCTTGGGTTCTTGG`` and ``GGAGCTGTTGATCCTTTAGGTATCTTTC``.
 - ``hiv-rre.fa`` means use the sequence in this FASTA file as the reference
@@ -282,10 +282,10 @@ so that they can be analyzed as a single sample, which is helpful whenever high
 coverage is necessary, such as during clustering.
 To combine the replicates, run this command::
 
-    seismic pool -P dms-pool out/dms[12]
+    seismic pool -p dms-pool out/dms[12]
 
 - ``pool`` means combine samples into a new "pooled" sample.
-- ``-P dms-pool`` means name the pooled sample ``dms-pool``.
+- ``-p dms-pool`` means name the pooled sample ``dms-pool``.
 - ``out/dms[12]`` means pool the samples in these directories, where ``[12]``
   is a `glob pattern`_ that is automatically expanded by the shell into all
   files that match the pattern -- which in this case is ``out/dms1 out/dms2``.
@@ -299,7 +299,7 @@ Now that the replicates are pooled, the overall coverage will be higher, and so
 clustering is more likely to detect true alternative structures.
 Process the pooled sample, including with clustering, by running this command::
 
-    seismic -v wf --mask-pos rre 176 -p rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC --cluster --fold -q 0.95 hiv-rre.fa out/dms-pool/relate
+    seismic -v wf --mask-pos rre 176 -P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC --cluster --fold -q 0.95 hiv-rre.fa out/dms-pool/relate
 
 This is what each of the arguments does:
 
@@ -307,7 +307,7 @@ This is what each of the arguments does:
 - ``wf`` means run the entire workflow.
 - ``--mask-pos rre 176`` means mask position 176 (because it had a high mutation
   rate in the no-DMS sample).
-- ``-p rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC`` defines a
+- ``-P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC`` defines a
   region of the reference ``rre`` that corresponds to the amplicon flanked by
   primers ``GGAGCTTTGTTCCTTGGGTTCTTGG`` and ``GGAGCTGTTGATCCTTTAGGTATCTTTC``.
 - ``--cluster`` means enable clustering to find alternative structures.

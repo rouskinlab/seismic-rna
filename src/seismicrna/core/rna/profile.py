@@ -14,9 +14,9 @@ class RNAProfile(RNARegion):
     def __init__(self, *,
                  sample: str,
                  branches: dict[str, str],
-                 data_reg: str,
-                 data_name: str,
-                 data: pd.Series,
+                 mus_reg: str,
+                 mus_name: str,
+                 mus: pd.Series,
                  **kwargs):
         """
         Parameters
@@ -25,44 +25,44 @@ class RNAProfile(RNARegion):
             Name of the sample from which the mutational profile comes.
         branches: dict[str, str]
             Branches of the workflow.
-        data_reg: str
+        mus_reg: str
             Name of the region from which the mutational profile comes.
-        data_name: str
+        mus_name: str
             Name of the mutational profile (e.g. "cluster_2-1").
-        data: pandas.Series
+        mus: pandas.Series
             Data for the mutational profile (i.e. mutation rates).
         """
         super().__init__(**kwargs)
         self.sample = sample
         self.branches = branches
-        self.data_reg = data_reg
-        self.data_name = data_name
-        if not isinstance(data, pd.Series):
+        self.mus_reg = mus_reg
+        self.mus_name = mus_name
+        if not isinstance(mus, pd.Series):
             raise TypeError(
-                f"Expected data to be a Series, but got {type(data).__name__}"
+                f"Expected data to be a Series, but got {type(mus).__name__}"
             )
-        if data.min() < 0. or data.max() > 1.:
-            raise ValueError(f"Got mutation rates outside [0, 1]:\n{data}")
-        self.data = data.reindex(self.region.range)
+        if mus.min() < 0. or mus.max() > 1.:
+            raise ValueError(f"Got mutation rates outside [0, 1]:\n{mus}")
+        self.mus = mus.reindex(self.region.range)
 
     @cached_property
     def init_args(self):
         return super().init_args | dict(sample=self.sample,
                                         branches=self.branches,
-                                        data_reg=self.data_reg,
-                                        data_name=self.data_name,
-                                        data=self.data)
+                                        mus_reg=self.mus_reg,
+                                        mus_name=self.mus_name,
+                                        mus=self.mus)
 
     def _renumber_from_args(self, seq5: int):
         return super()._renumber_from_args(seq5) | dict(
-            data=pd.Series(self.data.values,
+            data=pd.Series(self.mus.values,
                            index=self.region.renumber_from(seq5).range)
         )
 
     @property
     def profile(self):
         """ Name of the mutational profile. """
-        return f"{self.data_reg}__{self.data_name}"
+        return f"{self.mus_reg}__{self.mus_name}"
 
     def _get_dir_fields(self, top: Path, branch: str):
         """ Get the path fields for the directory of this RNA.
@@ -152,7 +152,7 @@ class RNAProfile(RNARegion):
         # The DMS reactivities must be numbered starting from 1 at the
         # beginning of the region, even if the region does not start
         # at 1. Renumber the region from 1.
-        dms = self.data.copy()
+        dms = self.mus.copy()
         dms.index = self.region.range_one
         # Drop bases with missing data to make RNAstructure ignore them.
         dms.dropna(inplace=True)
@@ -164,7 +164,7 @@ class RNAProfile(RNARegion):
     def to_varna_color_file(self, top: Path, branch: str):
         """ Write the VARNA colors to a file. """
         # Fill missing reactivities with -1, to signify no data.
-        varna_color = self.data.fillna(-1.)
+        varna_color = self.mus.fillna(-1.)
         # Write the values to the VARNA color file.
         varna_color_file = self.get_varna_color_file(top, branch)
         varna_color.to_csv(varna_color_file,

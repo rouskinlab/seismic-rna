@@ -28,6 +28,42 @@ def relate_records(records: Iterable[tuple[str, str, str]],
                    clip_end5: int,
                    clip_end3: int,
                    relate_cx: bool):
+    """
+    Yield relationships for each SAM record in an iterable.
+
+    Parameters
+    ----------
+    records: Iterable[tuple[str, str, str]]
+        Iterable of (name, line1, line2) tuples from a SAM file, where
+        `line2` is empty for single-end reads.
+    ref: str
+        Reference name expected in each SAM record.
+    refseq: str
+        Full reference sequence string.
+    min_mapq: int
+        Minimum acceptable mapping quality score.
+    min_qual: int
+        Minimum Phred quality score (as an integer) for base calls.
+    insert3: bool
+        Whether to mark insertions on the 3' flanking reference
+        position (True) or the 5' position (False).
+    ambindel: bool
+        Whether to find and label ambiguous indel positions.
+    overhangs: bool
+        Whether to allow paired-end mates to overhang one another.
+    clip_end5: int
+        Number of bases to clip from the 5' end of each read.
+    clip_end3: int
+        Number of bases to clip from the 3' end of each read.
+    relate_cx: bool
+        Whether to use the C extension for the relate algorithm;
+        falls back to the Python implementation if import fails.
+
+    Yields
+    ------
+    tuple[str, tuple]
+        Read name and the result of `calc_rels_lines` for that read.
+    """
     # Load the module.
     if relate_cx:
         # Try to load the C extension module.
@@ -110,6 +146,17 @@ class RelationWriter(object):
     aligned to one reference sequence. """
 
     def __init__(self, xam_view: XamViewer, fasta_file: str | Path):
+        """
+        Initialize a RelationWriter.
+
+        Parameters
+        ----------
+        xam_view: XamViewer
+            Viewer for the input XAM file, providing access to reads
+            and batch indexes.
+        fasta_file: str | Path
+            Path to the FASTA file containing the reference sequence.
+        """
         self._xam = xam_view
         self._fasta = fasta_file
 
@@ -134,6 +181,21 @@ class RelationWriter(object):
         return self._xam.branches
 
     def _write_report(self, *, top: Path, **kwargs):
+        """
+        Build and save a RelateReport to disk.
+
+        Parameters
+        ----------
+        top: Path
+            Top-level directory in which to write the report file.
+        **kwargs
+            Additional fields forwarded to `RelateReport.__init__`.
+
+        Returns
+        -------
+        Path
+            Path of the saved report file.
+        """
         report = RelateReport(sample=self.sample,
                               ref=self.ref,
                               branches=self.branches,

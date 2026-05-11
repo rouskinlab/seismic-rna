@@ -10,7 +10,7 @@ from .meta import combine_metadata
 from ..core import path
 from ..core.header import format_clust_name
 from ..core.logs import logger
-from ..core.rna import parse_db_strings
+from ..core.rna import parse_db_file_as_strings
 from ..core.write import need_write, write_mode
 from ..fold.rnastructure import parse_energy
 from ..mask.dataset import MaskMutsDataset
@@ -83,6 +83,25 @@ def get_ref_metadata(top: Path,
                      sample: str,
                      ref: str,
                      refs_metadata: dict[str, dict]):
+    """ Build metadata dict for a reference sequence.
+
+    Parameters
+    ----------
+    top: Path
+        Top-level output directory.
+    sample: str
+        Sample name.
+    ref: str
+        Reference sequence name.
+    refs_metadata: dict[str, dict]
+        Parsed per-reference metadata from a CSV file.
+
+    Returns
+    -------
+    dict[str, Any]
+        Metadata including the reference sequence and number of aligned
+        reads, merged with any additional parsed metadata.
+    """
     dataset = load_relate_dataset(RelateReport.build_path(
         {path.TOP: top,
          path.SAMPLE: sample,
@@ -102,6 +121,27 @@ def get_reg_metadata(top: Path,
                      ref: str,
                      reg: str,
                      all_pos: bool):
+    """ Build metadata dict for a masked region.
+
+    Parameters
+    ----------
+    top: Path
+        Top-level output directory.
+    sample: str
+        Sample name.
+    ref: str
+        Reference sequence name.
+    reg: str
+        Region name.
+    all_pos: bool
+        If True, include all positions in the region; if False, include
+        only unmasked positions.
+
+    Returns
+    -------
+    dict[str, Any]
+        Metadata including 5'/3' end coordinates and included positions.
+    """
     dataset = MaskMutsDataset(MaskReport.build_path(
         {path.TOP: top,
          path.SAMPLE: sample,
@@ -131,6 +171,24 @@ def conform_series(series: pd.Series | pd.DataFrame):
 def get_db_structs(table: PositionTable,
                    k: int | None = None,
                    clust: int | None = None):
+    """ Parse dot-bracket structures and free energies for a table.
+
+    Parameters
+    ----------
+    table: PositionTable
+        Position table whose profiles are used to locate dot-bracket
+        files.
+    k: int or None, optional
+        Number of clusters to select; None selects all.
+    clust: int or None, optional
+        Cluster index to select; None selects all.
+
+    Returns
+    -------
+    tuple[dict, dict]
+        Mapping of profile name to dot-bracket structure string, and
+        mapping of profile name to minimum free energy value.
+    """
     structs = dict()
     energies = dict()
     for profile in table.iter_profiles(k=k, clust=clust):
@@ -138,7 +196,7 @@ def get_db_structs(table: PositionTable,
         if db_file.is_file():
             try:
                 # Parse all structures in the dot-bracket file.
-                seq, profile_structs = parse_db_strings(db_file)
+                seq, profile_structs = parse_db_file_as_strings(db_file)
                 # Keep only the first (minimum free energy) structure.
                 header, struct = list(profile_structs.items())[0]
                 # Parse the minimum free energy of folding.
@@ -146,8 +204,8 @@ def get_db_structs(table: PositionTable,
             except Exception as error:
                 logger.error(error)
             else:
-                structs[profile.data_name] = struct
-                energies[profile.data_name] = energy
+                structs[profile.mus_name] = struct
+                energies[profile.mus_name] = energy
         else:
             logger.warning(f"No structure model available for {profile}: "
                            f"{db_file} does not exist")
@@ -155,6 +213,23 @@ def get_db_structs(table: PositionTable,
 
 
 def iter_pos_table_struct(table: PositionTable, k: int, clust: int):
+    """ Yield structure and free-energy key-value pairs for one cluster.
+
+    Parameters
+    ----------
+    table: PositionTable
+        Position table to look up structures for.
+    k: int
+        Number of clusters.
+    clust: int
+        Cluster index.
+
+    Yields
+    ------
+    tuple[str, Any]
+        ``(STRUCTURE, dot-bracket string)`` then
+        ``(FREE_ENERGY, energy value)``, if a structure is available.
+    """
     structs, energies = get_db_structs(table, k, clust)
     keys = list(structs)
     if keys != list(energies):
@@ -172,6 +247,25 @@ def iter_pos_table_series(table: PositionTable,
                           k: int,
                           clust: int,
                           all_pos: bool):
+    """ Yield per-position count and rate key-value pairs for one cluster.
+
+    Parameters
+    ----------
+    table: PositionTable
+        Position table from which to fetch data.
+    k: int
+        Number of clusters.
+    clust: int
+        Cluster index.
+    all_pos: bool
+        If True, include masked positions; if False, exclude them.
+
+    Yields
+    ------
+    tuple[str, list]
+        Key-value pairs for each relationship count and the substitution
+        rate as lists.
+    """
     exclude_masked = not all_pos
     for key, rel in POS_DATA.items():
         yield key, conform_series(
@@ -190,11 +284,47 @@ def iter_pos_table_series(table: PositionTable,
 
 
 def iter_pos_table_data(table: PositionTable, k: int, clust: int, all_pos: bool):
+    """ Yield all position-table data (series + structure) for one cluster.
+
+    Parameters
+    ----------
+    table: PositionTable
+        Position table from which to fetch data.
+    k: int
+        Number of clusters.
+    clust: int
+        Cluster index.
+    all_pos: bool
+        If True, include masked positions; if False, exclude them.
+
+    Yields
+    ------
+    tuple[str, Any]
+        Key-value pairs for per-position counts, rates, structure, and
+        free energy.
+    """
     yield from iter_pos_table_series(table, k, clust, all_pos)
     yield from iter_pos_table_struct(table, k, clust)
 
 
 def iter_read_table_data(table: ReadTable, k: int, clust: int):
+    """ Yield read-table data (substitution histogram) for one cluster.
+
+    Parameters
+    ----------
+    table: ReadTable
+        Read table from which to fetch data.
+    k: int
+        Number of clusters.
+    clust: int
+        Cluster index.
+
+    Yields
+    ------
+    tuple[str, list]
+        ``(SUBST_HIST, histogram)`` where the histogram is a list of
+        read counts indexed by number of substitutions.
+    """
     read_counts = np.asarray(
         conform_series(table.fetch_count(rel=SUBST_REL,
                                          k=k,
@@ -205,6 +335,23 @@ def iter_read_table_data(table: ReadTable, k: int, clust: int):
 
 
 def iter_clust_table_data(table: AbundanceTable, k: int, clust: int):
+    """ Yield cluster abundance data (proportion) for one cluster.
+
+    Parameters
+    ----------
+    table: AbundanceTable
+        Abundance table from which to fetch data.
+    k: int
+        Number of clusters.
+    clust: int
+        Cluster index.
+
+    Yields
+    ------
+    tuple[str, float]
+        ``(CLUST_PROP, proportion)`` where proportion is the fraction of
+        reads assigned to this cluster.
+    """
     clust_count = table.data[table.header.select(k=k,
                                                  clust=clust)].squeeze()
     k_count = table.data[table.header.select(k=k)].sum().squeeze()
@@ -215,6 +362,25 @@ def iter_clust_table_data(table: AbundanceTable, k: int, clust: int):
 
 
 def iter_table_data(table: Table, k: int, clust: int, all_pos: bool):
+    """ Yield all export data for a table of any type and one cluster.
+
+    Parameters
+    ----------
+    table: Table
+        Table from which to fetch data (PositionTable, ReadTable, or
+        AbundanceTable).
+    k: int
+        Number of clusters.
+    clust: int
+        Cluster index.
+    all_pos: bool
+        For PositionTable only: if True, include masked positions.
+
+    Yields
+    ------
+    tuple[str, Any]
+        Key-value pairs appropriate for the table type.
+    """
     if isinstance(table, PositionTable):
         yield from iter_pos_table_data(table, k, clust, all_pos)
     elif isinstance(table, ReadTable):
@@ -239,6 +405,31 @@ def get_sample_data(top: Path,
                     samples_metadata: dict[str, dict],
                     refs_metadata: dict[str, dict],
                     all_pos: bool):
+    """ Assemble the full nested data dict for one sample.
+
+    Parameters
+    ----------
+    top: Path
+        Top-level output directory.
+    sample: str
+        Sample name.
+    tables: list[Table]
+        Tables for the sample (consumed by this function via pop()).
+    samples_metadata: dict[str, dict]
+        Parsed per-sample metadata from a CSV file.
+    refs_metadata: dict[str, dict]
+        Parsed per-reference metadata from a CSV file.
+    all_pos: bool
+        If True, include all positions; if False, include only unmasked
+        positions.
+
+    Returns
+    -------
+    dict
+        Nested dict suitable for JSON export, structured as
+        ``{sample_meta..., ref: {ref_meta..., reg: {reg_meta...,
+        clust: {counts, rates, ...}}}}``.
+    """
     # Cache results from the metadata functions to improve speed.
     ref_metadata = cache(partial(get_ref_metadata,
                                  refs_metadata=refs_metadata))
@@ -267,6 +458,24 @@ def get_sample_data(top: Path,
 
 
 def export_sample(top_sample: tuple[Path, str], *args, force: bool, **kwargs):
+    """ Export data for one sample to a JSON file.
+
+    Parameters
+    ----------
+    top_sample: tuple[Path, str]
+        Pair of ``(top, sample)`` identifying the sample.
+    *args
+        Positional arguments forwarded to ``get_sample_data``.
+    force: bool
+        Whether to overwrite an existing JSON file.
+    **kwargs
+        Keyword arguments forwarded to ``get_sample_data``.
+
+    Returns
+    -------
+    Path
+        Path of the written JSON file.
+    """
     top, sample = top_sample
     sample_file = path.buildpar([path.WebAppFileSeg],
                                 {path.TOP: top,

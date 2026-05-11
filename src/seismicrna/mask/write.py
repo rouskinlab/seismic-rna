@@ -7,13 +7,18 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
-from .batch import apply_mask
+from .batch import MaskMutsBatch, apply_mask
 from .dataset import MaskMutsDataset
 from .io import MaskBatchIO
 from .report import MaskReport
 from .table import MaskBatchTabulator
 from ..core import path
-from ..core.arg import docdef
+from ..core.arg import (docdef,
+                        MUT_COLLISIONS_AUTO,
+                        MUT_COLLISIONS_DROP,
+                        MUT_COLLISIONS_MERGE,
+                        PROBE_DMS,
+                        PROBE_SHAPE)
 from ..core.batch import RegionMutsBatch
 from ..core.dataset import MissingBatchTypeError
 from ..core.error import IncompatibleValuesError
@@ -21,7 +26,15 @@ from ..core.lists import PositionList
 from ..core.logs import logger
 from ..core.rel import RelPattern, HalfRelPattern
 from ..core.report import mask_iter_no_convergence
-from ..core.seq import FIELD_REF, POS_NAME, Region, index_to_pos
+from ..core.seq import (BASEA,
+                        BASEC,
+                        BASEG,
+                        BASET,
+                        BASEN,
+                        FIELD_REF,
+                        POS_NAME,
+                        Region,
+                        index_to_pos)
 from ..core.table import MUTAT_REL, INFOR_REL
 from ..core.tmp import release_to_out, with_tmp_dir
 from ..core.write import need_write
@@ -46,19 +59,16 @@ class Masker(object):
     MASK_POS_FMUT = "pos-fmut"
     CHECKSUM_KEY = MaskReport.get_batch_type().btype()
 
-    # This decorator is used to make Masker instances easier to create
-    # using the Python API, since the arguments with default values do
-    # not need to be specified; but it can also obscure bugs caused by
-    # failing to pass an argument to __init__, so it's best to comment
-    # out @docdef.auto() when developing the source code.
-    @docdef.auto()
     def __init__(self,
                  dataset: RelateMutsDataset | PoolMutsDataset,
                  region: Region,
                  pattern: RelPattern, *,
                  max_mask_iter: int,
                  mask_polya: int,
-                 mask_gu: bool,
+                 mask_a: bool,
+                 mask_c: bool,
+                 mask_g: bool,
+                 mask_u: bool,
                  mask_pos: list[tuple[str, int]],
                  mask_pos_file: list[Path],
                  mask_read: list[str],
@@ -68,6 +78,8 @@ class Masker(object):
                  min_finfo_read: float,
                  max_fmut_read: float,
                  min_mut_gap: int,
+                 mut_collisions: str,
+                 probe: str,
                  min_ninfo_pos: int,
                  max_fmut_pos: float,
                  quick_unbias: bool,
@@ -77,6 +89,72 @@ class Masker(object):
                  top: Path,
                  branch: str,
                  num_cpus: int = 1):
+        """
+        Parameters
+        ----------
+        dataset: RelateMutsDataset or PoolMutsDataset
+            Dataset of read-level mutation data to be masked.
+        region: Region
+            Genomic region to mask over.
+        pattern: RelPattern
+            Relationship pattern defining which bases count as
+            mutations.
+        max_mask_iter: int
+            Maximum number of masking iterations; 0 means unlimited.
+        mask_polya: int
+            Mask positions in poly(A) runs of at least this length.
+        mask_a: bool
+            Whether to mask adenine positions.
+        mask_c: bool
+            Whether to mask cytosine positions.
+        mask_g: bool
+            Whether to mask guanine positions.
+        mask_u: bool
+            Whether to mask uracil/thymine positions.
+        mask_pos: list[tuple[str, int]]
+            ``(ref, position)`` pairs to pre-exclude from the region.
+        mask_pos_file: list[Path]
+            Files of positions to pre-exclude.
+        mask_read: list[str]
+            Read names to pre-exclude.
+        mask_read_file: list[Path]
+            Files of read names to pre-exclude.
+        mask_discontig: bool
+            Whether to mask reads with discontiguous mate pairs.
+        min_ncov_read: int
+            Minimum number of covered positions required per read.
+        min_finfo_read: float
+            Minimum fraction of informative positions required per read.
+        max_fmut_read: float
+            Maximum fraction of mutated positions allowed per read.
+        min_mut_gap: int
+            Minimum gap in nucleotides between adjacent mutations in a
+            read; reads with closer mutations are handled per
+            ``mut_collisions``.
+        mut_collisions: str
+            How to handle reads with mutations closer than
+            ``min_mut_gap`` (e.g. drop or merge).
+        probe: str
+            Probe type used for auto-selecting defaults.
+        min_ninfo_pos: int
+            Minimum number of informative reads required per position.
+        max_fmut_pos: float
+            Maximum mutation fraction allowed per position.
+        quick_unbias: bool
+            Whether to use the fast approximate bias-correction.
+        quick_unbias_thresh: float
+            Convergence threshold for the quick unbias algorithm.
+        count_read: bool
+            Whether to count reads for the read-level table.
+        brotli_level: int
+            Brotli compression level for batch files.
+        top: Path
+            Top-level output directory.
+        branch: str
+            Branch label appended to the mask step in output paths.
+        num_cpus: int, optional
+            Number of CPUs for parallel batch processing (default 1).
+        """
         # Set the general parameters.
         self._began = datetime.now()
         self.dataset = dataset
@@ -96,7 +174,10 @@ class Masker(object):
                            "RT that causes low reactivity. See Kladwang et al. "
                            "(https://doi.org/10.1021/acs.biochem.0c00020).")
         self.mask_polya = mask_polya
-        self.mask_gu = mask_gu
+        self.mask_a = mask_a
+        self.mask_c = mask_c
+        self.mask_g = mask_g
+        self.mask_u = mask_u
         self.mask_pos = self._get_mask_pos(mask_pos, mask_pos_file)
         self.mask_read = self._get_mask_read(mask_read, mask_read_file)
         # Set the parameters for filtering reads.
@@ -110,6 +191,8 @@ class Masker(object):
         self.mask_discontig = mask_discontig
         self.min_ncov_read = min_ncov_read
         self.min_mut_gap = min_mut_gap
+        self.mut_collisions = mut_collisions
+        self.probe = probe
         self.min_finfo_read = min_finfo_read
         self.max_fmut_read = max_fmut_read
         self._n_reads = defaultdict(int)
@@ -176,11 +259,33 @@ class Masker(object):
 
     # This property can change: do not cache it.
     @property
-    def pos_gu(self):
-        """ Positions masked for having a G or U base. """
-        return (self.region.get_mask(self.region.MASK_GU)
-                if self.mask_gu
-                else np.array([], dtype=int))
+    def pos_a(self):
+        """ Positions masked for having base A. """
+        return self.region.get_mask(BASEA, missing_ok=True)
+
+    # This property can change: do not cache it.
+    @property
+    def pos_c(self):
+        """ Positions masked for having base C. """
+        return self.region.get_mask(BASEC, missing_ok=True)
+
+    # This property can change: do not cache it.
+    @property
+    def pos_g(self):
+        """ Positions masked for having base G. """
+        return self.region.get_mask(BASEG, missing_ok=True)
+
+    # This property can change: do not cache it.
+    @property
+    def pos_u(self):
+        """ Positions masked for having base T or U. """
+        return self.region.get_mask(BASET, missing_ok=True)
+
+    # This property can change: do not cache it.
+    @property
+    def pos_n(self):
+        """ Positions masked for having base N. """
+        return self.region.get_mask(BASEN, missing_ok=True)
 
     # This property can change: do not cache it.
     @property
@@ -271,7 +376,7 @@ class Masker(object):
         return mask_read
 
     def _filter_exclude_read(self, batch: RegionMutsBatch):
-        """ Filter out reads in the list of pre-excluded read. """
+        """ Filter out reads in the list of pre-excluded reads. """
         if self.mask_read.size == 0:
             # Pre-exclude no reads.
             logger.detail(f"{self} skipped pre-excluding reads in {batch}")
@@ -363,26 +468,52 @@ class Masker(object):
         return apply_mask(batch, reads)
 
     def _mask_min_mut_gap(self, batch: RegionMutsBatch):
-        """ Filter out reads with mutations that are too close. """
+        """ Filter out mutations that are too close. """
         if not self.min_mut_gap >= 0:
             raise ValueError(
                 f"min_mut_gap must be ≥ 0, but got {self.min_mut_gap}"
             )
         if self.min_mut_gap == 0:
             # No read can have a pair of mutations that are too close.
-            logger.detail(f"{self} skipped filtering reads with pairs of "
-                          f"mutations too close in {batch}")
+            logger.detail(f"{self} skipped filtering pairs of mutations too "
+                          f"close in {batch}")
             return batch
-        reads = batch.reads_noclose_muts(self.pattern, self.min_mut_gap)
-        logger.detail(f"{self} kept {reads.size} reads with no two mutations "
-                      f"separated by < {self.min_mut_gap} nt in {batch}")
-        return apply_mask(batch, reads)
+        if self.mut_collisions == MUT_COLLISIONS_DROP:
+            # Drop reads with pairs of mutations that are too close.
+            reads = batch.reads_noclose_muts(self.pattern, self.min_mut_gap)
+            logger.detail(
+                f"{self} kept {reads.size} reads with no two mutations "
+                f"separated by < {self.min_mut_gap} nt in {batch}"
+            )
+            return apply_mask(batch, reads)
+        if self.mut_collisions == MUT_COLLISIONS_MERGE:
+            # Merge nearby mutations into a single mutation.
+            logger.detail(
+                f"{self} merged mutations closer than {self.min_mut_gap} nt "
+                f"in {batch}"
+            )
+            return MaskMutsBatch(
+                batch=batch.batch,
+                read_nums=batch.read_nums,
+                region=batch.region,
+                seg_end5s=batch.seg_end5s,
+                seg_end3s=batch.seg_end3s,
+                muts=batch.merge_close_muts(self.pattern, self.min_mut_gap),
+            )
+        raise ValueError(f"Invalid mut_collisions: {repr(self.mut_collisions)}")
 
     def _exclude_positions(self):
         """ Pre-exclude positions from the region. """
+        self.region.mask_n()
+        if self.mask_a:
+            self.region.mask_a()
+        if self.mask_c:
+            self.region.mask_c()
+        if self.mask_g:
+            self.region.mask_g()
+        if self.mask_u:
+            self.region.mask_t()
         self.region.mask_polya(self.mask_polya)
-        if self.mask_gu:
-            self.region.mask_gu()
         self.region.mask_list(self.mask_pos)
 
     def _get_batch_num_path(self, batch_num: int):
@@ -428,7 +559,7 @@ class Masker(object):
         # Remove reads with too many mutations.
         batch = self._filter_max_fmut_read(batch)
         n_reads[self.MASK_READ_FMUT] = (n - (n := batch.num_reads))
-        # Remove reads with mutations too close together.
+        # Remove mutations that are too close together.
         batch = self._mask_min_mut_gap(batch)
         n_reads[self.MASK_READ_GAP] = (n - (n := batch.num_reads))
         # Record the number of reads remaining after filtering.
@@ -487,6 +618,7 @@ class Masker(object):
             region=self.region,
             pattern=self.pattern,
             min_mut_gap=self.min_mut_gap,
+            mut_collisions=self.mut_collisions,
             quick_unbias=self.quick_unbias,
             quick_unbias_thresh=self.quick_unbias_thresh,
             count_pos=True,
@@ -579,20 +711,31 @@ class Masker(object):
             n_batches=self.dataset.num_batches,
             count_refs=self.pattern.nos,
             count_muts=self.pattern.yes,
-            mask_gu=self.mask_gu,
+            mask_a=self.mask_a,
+            mask_c=self.mask_c,
+            mask_g=self.mask_g,
+            mask_u=self.mask_u,
             mask_polya=self.mask_polya,
             mask_pos=self.mask_pos,
             min_ninfo_pos=self.min_ninfo_pos,
             max_fmut_pos=self.max_fmut_pos,
             max_mask_iter=self.max_iter,
             n_pos_init=self.region.length,
-            n_pos_gu=self.pos_gu.size,
+            n_pos_a=self.pos_a.size,
+            n_pos_c=self.pos_c.size,
+            n_pos_g=self.pos_g.size,
+            n_pos_u=self.pos_u.size,
+            n_pos_n=self.pos_n.size,
             n_pos_polya=self.pos_polya.size,
             n_pos_list=self.pos_list.size,
             n_pos_min_ninfo=self.pos_min_ninfo.size,
             n_pos_max_fmut=self.pos_max_fmut.size,
             n_pos_kept=self.pos_kept.size,
-            pos_gu=self.pos_gu,
+            pos_a=self.pos_a,
+            pos_c=self.pos_c,
+            pos_g=self.pos_g,
+            pos_u=self.pos_u,
+            pos_n=self.pos_n,
             pos_polya=self.pos_polya,
             pos_list=self.pos_list,
             pos_min_ninfo=self.pos_min_ninfo,
@@ -602,6 +745,7 @@ class Masker(object):
             min_finfo_read=self.min_finfo_read,
             max_fmut_read=self.max_fmut_read,
             min_mut_gap=self.min_mut_gap,
+            mut_collisions=self.mut_collisions,
             mask_discontig=self.mask_discontig,
             n_reads_init=self.n_reads_init,
             n_reads_list=self.n_reads_list,
@@ -628,6 +772,25 @@ def get_pattern(mask_del: bool,
                 mask_ins: bool,
                 mask_mut: Iterable[str],
                 count_mut: Iterable[str]):
+    """ Build a RelPattern from masking and counting options.
+
+    Parameters
+    ----------
+    mask_del: bool
+        If True, treat deletions as non-mutations (discount them).
+    mask_ins: bool
+        If True, treat insertions as non-mutations (discount them).
+    mask_mut: Iterable[str]
+        Relationship codes to discount from mutations.
+    count_mut: Iterable[str]
+        If non-empty, count only the specified relationships as
+        mutations (overrides the default all-mutation pattern).
+
+    Returns
+    -------
+    RelPattern
+        Relationship pattern for use in masking and tabulation.
+    """
     if count_mut:
         return RelPattern(HalfRelPattern.from_counts(count_sub=False,
                                                      count_del=not mask_del,

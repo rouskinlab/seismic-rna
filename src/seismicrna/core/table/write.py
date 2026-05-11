@@ -89,6 +89,26 @@ class Tabulator(ABC):
                  count_pos: bool,
                  count_read: bool,
                  validate: bool = True):
+        """
+        Parameters
+        ----------
+        top: Path
+            Top-level output directory.
+        branches: dict[str, str]
+            Workflow branches.
+        sample: str
+            Name of the sample.
+        region: Region
+            Region over which counts are tabulated.
+        count_ends: bool
+            Whether to tabulate end coordinate counts.
+        count_pos: bool
+            Whether to tabulate per-position counts.
+        count_read: bool
+            Whether to tabulate per-read counts.
+        validate: bool = True
+            Whether to validate input data.
+        """
         self.top = top
         self.branches = branches
         self.sample = sample

@@ -29,8 +29,6 @@ from seismicrna.ensembles import (_calc_tiles,
 from seismicrna.sim.params import run as sim_params
 from seismicrna.sim.relate import run as sim_relate
 
-rng = np.random.default_rng()
-
 
 class TestCalcTiles(ut.TestCase):
 
@@ -481,7 +479,7 @@ class TestEnsembles(ut.TestCase):
         set_config(*self._config)
 
     @classmethod
-    def sim_data(cls, module_nums: list[int], read_length: int):
+    def sim_data(cls, module_nums: list[int], read_length: int, seed: int):
         # Assemble and write the reference sequence.
         modules = dict(cls.MODULES[m] for m in module_nums)
         refseq = DNA("".join(modules.keys()))
@@ -497,9 +495,9 @@ class TestEnsembles(ut.TestCase):
         with open(db_file, "x") as f:
             for i, struct in enumerate(structures):
                 if i == 0:
-                    f.write(f">structure0\n{refseq.tr()}\n{structures[0]}\n")
+                    f.write(f">structure0\n{refseq.tr()}\n{struct}\n")
                 else:
-                    f.write(f">structure{i}\n{structures[i]}\n")
+                    f.write(f">structure{i}\n{struct}\n")
         ct_file = db_to_ct(db_file)
         # Simulate data.
         sim_params(ct_file=[ct_file],
@@ -513,19 +511,20 @@ class TestEnsembles(ut.TestCase):
                    # Make clust_conc very large so that the proportion
                    # of each cluster is approximately equal, which makes
                    # clustering easier.
-                   clust_conc=1000.)
+                   clust_conc=1000.,
+                   seed=seed)
         relate_dirs = sim_relate(param_dir=[param_dir],
                                  sample=cls.SAMPLE,
                                  profile_name=cls.PROFILE,
                                  num_reads=200000,
                                  paired_end=False,
-                                 brotli_level=0)
+                                 brotli_level=0,
+                                 seed=seed)
         return relate_dirs
 
     def run_ensembles(self,
                       relate_dirs: list[Path],
                       expect_regions: dict[tuple[int, int], int],
-                      tolerance: int = 0,
                       **kwargs):
         cluster_dirs = {tuple(map(int, d.name.split("-"))): d
                         for d in run_ensembles(relate_dirs,
@@ -554,32 +553,28 @@ class TestEnsembles(ut.TestCase):
                                  f"among {sorted(cluster_dirs)}")
 
     def test_modules012_read180(self):
-        relate_dirs = self.sim_data([0, 1, 2], 180)
+        relate_dirs = self.sim_data([0, 1, 2], 180, seed=0)
         self.run_ensembles(relate_dirs,
                            {(1, 60): 2,
-                            (121, 180): 2},
-                           tolerance=60)
+                            (121, 180): 2})
 
     def test_modules012_read120(self):
-        relate_dirs = self.sim_data([0, 1, 2], 120)
+        relate_dirs = self.sim_data([0, 1, 2], 120, seed=0)
         self.run_ensembles(relate_dirs,
                            {(1, 60): 2,
-                            (121, 180): 2},
-                           tolerance=60)
+                            (121, 180): 2})
 
     def test_modules012_read60(self):
-        relate_dirs = self.sim_data([0, 1, 2], 60)
+        relate_dirs = self.sim_data([0, 1, 2], 60, seed=0)
         self.run_ensembles(relate_dirs,
                            {(1, 60): 2,
-                            (121, 180): 2},
-                           tolerance=60)
+                            (121, 180): 2})
 
     def test_modules02_read60(self):
-        relate_dirs = self.sim_data([0, 2], 60)
+        relate_dirs = self.sim_data([0, 2], 60, seed=0)
         self.run_ensembles(relate_dirs,
                            {(1, 60): 2,
-                            (61, 120): 2},
-                           tolerance=30)
+                            (61, 120): 2})
 
 
 if __name__ == "__main__":

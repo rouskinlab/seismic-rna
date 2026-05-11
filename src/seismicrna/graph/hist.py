@@ -64,6 +64,18 @@ class HistogramGraph(OneTableRelClusterGroupGraph,
         return RelColorMap
 
     def __init__(self, *, hist_bins: int, hist_margin: float, **kwargs):
+        """
+        Parameters
+        ----------
+        hist_bins: int
+            Number of bins for ratio histograms (must be > 0).
+        hist_margin: float
+            Fractional margin applied to the lower/upper bounds: if the
+            minimum value lies within ``hist_margin`` of 0 it is snapped
+            to 0, and similarly for the maximum value and 1.
+        **kwargs
+            Forwarded to the parent class.
+        """
         super().__init__(**kwargs)
         if hist_bins <= 0:
             raise ValueError(
@@ -151,6 +163,20 @@ class HistogramWriter(OneTableRelClusterGroupWriter, ABC):
         """ Type of graph. """
 
     def get_graph(self, rels_group: str, **kwargs):
+        """ Instantiate a HistogramGraph for the given relationship group.
+
+        Parameters
+        ----------
+        rels_group: str
+            Relationship code string for the graph.
+        **kwargs
+            Additional keyword arguments forwarded to the graph class.
+
+        Returns
+        -------
+        HistogramGraph
+            A new graph instance for the given relationship group.
+        """
         graph_type = self.get_graph_type()
         return graph_type(table=self.table, rels=rels_group, **kwargs)
 

@@ -20,6 +20,7 @@ from ..core.report import (BatchedReport,
                            JackpotF,
                            JackpotConfLevelF,
                            MaxJackpotQuotientF,
+                           JackpotMaxDataF,
                            MaxLogLikeVsBestF,
                            MaxARCDVsEnsAvgF,
                            MaxGiniRunF,
@@ -32,7 +33,8 @@ from ..core.report import (BatchedReport,
                            BestKF,
                            KsWrittenF,
                            JoinedRegionsF,
-                           JoinedClustersF)
+                           JoinedClustersF,
+                           SeedF)
 
 
 class BaseClusterReport(RegReport, ClusterIO, ABC):
@@ -54,7 +56,8 @@ class ClusterReport(BatchedReport, BaseClusterReport):
 
     @classmethod
     def get_param_report_fields(cls):
-        return [MinClustsF,
+        return [SeedF,
+                MinClustsF,
                 MaxClustsF,
                 TryAllKsF,
                 WriteAllKsF,
@@ -65,6 +68,7 @@ class ClusterReport(BatchedReport, BaseClusterReport):
                 JackpotF,
                 JackpotConfLevelF,
                 MaxJackpotQuotientF,
+                JackpotMaxDataF,
                 MaxLogLikeVsBestF,
                 MinPearsonVsBestF,
                 MaxMARCDVsBestF,
@@ -100,6 +104,7 @@ class ClusterReport(BatchedReport, BaseClusterReport):
                       jackpot: bool,
                       jackpot_conf_level: float,
                       max_jackpot_quotient: float,
+                      jackpot_max_data: int,
                       max_loglike_vs_best: float,
                       min_pearson_vs_best: float,
                       max_marcd_vs_best: float,
@@ -109,7 +114,8 @@ class ClusterReport(BatchedReport, BaseClusterReport):
                       ks_written: list[int],
                       checksums: list[str],
                       began: datetime,
-                      ended: datetime):
+                      ended: datetime,
+                      seed: int):
         """ Create a ClusterReport from EmClustering objects. """
         return cls(branches=uniq_reads.branches,
                    sample=uniq_reads.sample,
@@ -129,6 +135,7 @@ class ClusterReport(BatchedReport, BaseClusterReport):
                    jackpot=jackpot,
                    jackpot_conf_level=jackpot_conf_level,
                    max_jackpot_quotient=max_jackpot_quotient,
+                   jackpot_max_data=jackpot_max_data,
                    max_loglike_vs_best=max_loglike_vs_best,
                    min_pearson_vs_best=min_pearson_vs_best,
                    max_marcd_vs_best=max_marcd_vs_best,
@@ -141,7 +148,8 @@ class ClusterReport(BatchedReport, BaseClusterReport):
                    best_k=find_best_k(ks),
                    ks_written=ks_written,
                    began=began,
-                   ended=ended)
+                   ended=ended,
+                   seed=seed)
 
 
 class JoinClusterReport(JoinReport, BaseClusterReport):

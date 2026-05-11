@@ -18,17 +18,14 @@ from ..core.arg import (arg_fasta,
                         opt_ct_file,
                         opt_param_dir,
                         opt_write_read_names,
-                        merge_params,
-                        extra_defaults)
+                        merge_params)
 from ..core.run import run_func
 from ..core.seq import DNA
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 
-@run_func(COMMAND,
-          default=None,
-          extra_defaults=extra_defaults)
+@run_func(COMMAND, default=None)
 def run(*,
         sim_dir: str | Path,
         tmp_pfx: str | Path,
@@ -58,19 +55,23 @@ def run(*,
         paired_end: bool,
         read_length: int,
         reverse_fraction: float,
+        probe: str,
         min_mut_gap: int,
+        mut_collisions: str,
         fq_gzip: bool,
         num_reads: int,
         keep_tmp: bool,
         force: bool,
-        num_cpus: int):
+        num_cpus: int,
+        seed: int | None):
     """ Simulate FASTQ files from scratch. """
     fasta = str(ref_mod.run(
         sim_dir=sim_dir,
         refs=refs,
         ref=ref,
         reflen=reflen,
-        force=force)
+        force=force,
+        seed=seed)
     )
     ct_file = fold_mod.run(
         fasta=fasta,
@@ -102,7 +103,8 @@ def run(*,
         length_fvar=length_fvar,
         clust_conc=clust_conc,
         force=force,
-        num_cpus=num_cpus
+        num_cpus=num_cpus,
+        seed=seed
     )
     return fastq_mod.run(
         input_path=(),
@@ -112,11 +114,14 @@ def run(*,
         paired_end=paired_end,
         read_length=read_length,
         reverse_fraction=reverse_fraction,
+        probe=probe,
         min_mut_gap=min_mut_gap,
+        mut_collisions=mut_collisions,
         fq_gzip=fq_gzip,
         num_reads=num_reads,
         force=force,
-        num_cpus=num_cpus
+        num_cpus=num_cpus,
+        seed=seed
     )
 
 

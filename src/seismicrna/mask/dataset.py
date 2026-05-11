@@ -21,6 +21,7 @@ from ..core.rel import RelPattern
 from ..core.report import (CountMutsF,
                            CountRefsF,
                            MinMutGapF,
+                           MutCollisionsF,
                            PosKeptF,
                            RefF,
                            RegF,
@@ -52,6 +53,10 @@ class MaskReadDataset(MaskDataset, LoadedDataset, UnbiasDataset):
     @property
     def min_mut_gap(self):
         return self.report.get_field(MinMutGapF)
+    
+    @property
+    def mut_collisions(self):
+        return self.report.get_field(MutCollisionsF)
 
     @property
     def quick_unbias(self):
@@ -92,6 +97,10 @@ class MaskMutsDataset(MaskDataset, MultistepDataset, UnbiasDataset):
     @property
     def min_mut_gap(self):
         return getattr(self.dataset2, "min_mut_gap")
+    
+    @property
+    def mut_collisions(self):
+        return getattr(self.dataset2, "mut_collisions")
 
     @property
     def quick_unbias(self):
@@ -114,6 +123,21 @@ class MaskMutsDataset(MaskDataset, MultistepDataset, UnbiasDataset):
         return region
 
     def _integrate(self, batch1: RelateMutsBatch, batch2: MaskBatchIO):
+        """ Combine a relate batch with a mask batch into a MaskMutsBatch.
+
+        Parameters
+        ----------
+        batch1: RelateMutsBatch
+            Batch of mutation data from the relate step.
+        batch2: MaskBatchIO
+            Batch of read numbers that passed the mask filters.
+
+        Returns
+        -------
+        MaskMutsBatch
+            A batch containing only the reads and positions that pass
+            the mask, clipped to the dataset's region.
+        """
         if self.masked_read_nums is not None:
             read_nums = np.setdiff1d(batch2.read_nums,
                                      self.masked_read_nums.get(batch2.batch),

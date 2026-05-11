@@ -4,7 +4,11 @@ from string import printable
 
 import numpy as np
 
-from seismicrna.core.seq.xna import XNA, DNA, RNA, expand_degenerate_seq
+from seismicrna.core.seq.xna import (InvalidBaseError,
+                                     XNA,
+                                     DNA,
+                                     RNA,
+                                     expand_degenerate_seq)
 
 
 class TestDNA(ut.TestCase):
@@ -43,6 +47,27 @@ class TestDNA(ut.TestCase):
                 dna = DNA("".join(bases))
                 self.assertEqual(len(dna), length)
                 self.assertEqual(str(dna), "".join(bases).upper())
+
+    def test_invalid_bases(self):
+        """ Test whether invalid characters raise ValueError. """
+        for char in printable:
+            if char not in "ACGTNacgtn":
+                self.assertRaisesRegex(InvalidBaseError, "Invalid DNA bases:",
+                                       DNA, char)
+
+    def test_from_any_seq_valid(self):
+        for length in range(1, 5):
+            for bases in product(*(["ACGTUNacgtun"] * length)):
+                dna = DNA.from_any_seq("".join(bases))
+                self.assertEqual(len(dna), length)
+                self.assertEqual(str(dna),
+                                 "".join(bases).upper().replace("U", "T"))
+
+    def test_from_any_seq_invalid(self):
+        for char in printable:
+            if char not in "ACGTUNacgtun":
+                self.assertRaisesRegex(InvalidBaseError, "Invalid DNA bases:",
+                                       DNA.from_any_seq, char)
 
     def test_random(self):
         """ Test whether random DNA sequences can be created. """
@@ -98,14 +123,6 @@ class TestDNA(ut.TestCase):
         pics = ["▲⌠○⌡▼", ""]
         for seq, pic in zip(seqs, pics):
             self.assertEqual(DNA(seq).picto, pic)
-
-    def test_invalid_bases(self):
-        """ Test whether invalid characters raise ValueError. """
-        for char in printable:
-            if char not in "ACGTNacgtn":
-                self.assertRaisesRegex(ValueError,
-                                       "Invalid DNA bases:",
-                                       DNA, char)
 
     def test_bool(self):
         """ Test that only zero-length DNA sequences are falsy. """
@@ -219,12 +236,31 @@ class TestRNA(ut.TestCase):
                           "\t", "\n", "\r", "\x0b", "\x0c"})
 
     def test_valid(self):
-        """ Test whether valid RNA sequences can be created. """
         for length in range(1, 5):
             for bases in product(*(["ACGUNacgun"] * length)):
                 rna = RNA("".join(bases))
                 self.assertEqual(len(rna), length)
                 self.assertEqual(str(rna), "".join(bases).upper())
+
+    def test_invalid_bases(self):
+        for char in printable:
+            if char not in "ACGUNacgun":
+                self.assertRaisesRegex(InvalidBaseError, "Invalid RNA bases:",
+                                       RNA, char)
+
+    def test_from_any_seq_valid(self):
+        for length in range(1, 5):
+            for bases in product(*(["ACGTUNacgtun"] * length)):
+                rna = RNA.from_any_seq("".join(bases))
+                self.assertEqual(len(rna), length)
+                self.assertEqual(str(rna),
+                                 "".join(bases).upper().replace("T", "U"))
+
+    def test_from_any_seq_invalid(self):
+        for char in printable:
+            if char not in "ACGTUNacgtun":
+                self.assertRaisesRegex(InvalidBaseError, "Invalid RNA bases:",
+                                       RNA.from_any_seq, char)
 
     def test_random(self):
         """ Test whether random RNA sequences can be created. """
@@ -280,13 +316,6 @@ class TestRNA(ut.TestCase):
         pics = ["▲⌠○⌡▼", ""]
         for seq, pic in zip(seqs, pics):
             self.assertEqual(RNA(seq).picto, pic)
-
-    def test_invalid_bases(self):
-        """ Test whether invalid characters raise ValueError. """
-        for char in printable:
-            if char not in "ACGUNacgun":
-                self.assertRaisesRegex(ValueError, "Invalid RNA bases:",
-                                       RNA, char)
 
     def test_bool(self):
         """ Test that only zero-length RNA sequences are falsy. """

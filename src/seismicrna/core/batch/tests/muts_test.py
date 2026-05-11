@@ -37,7 +37,8 @@ class TestCalcMutsMatrix(ut.TestCase):
 
     def test_full_reads_no_muts_some_masked(self):
         region = Region("myref", DNA("GTACTCAG"))
-        region.mask_gu()
+        region.mask_g()
+        region.mask_t()
         muts = dict()
         for num_reads in range(10):
             read_nums = np.arange(num_reads)
@@ -84,7 +85,8 @@ class TestCalcMutsMatrix(ut.TestCase):
 
     def test_partial_reads_no_muts_some_masked(self):
         region = Region("myref", DNA("TAGCT"))
-        region.mask_gu()
+        region.mask_g()
+        region.mask_t()
         muts = dict()
         read_nums = np.array([2, 3, 5, 7, 8, 9, 12, 13, 16, 19, 20])
         seg_end5s = np.array([[1, 1, 1, 1, 1, 1, 2, 3, 4, 5, 6]]).T

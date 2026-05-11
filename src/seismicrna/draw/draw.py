@@ -108,6 +108,23 @@ class ColorBlock:
                  color_to: str = None,
                  color_filter: str = None,
                  location: tuple[int] = None):
+        """
+        Parameters
+        ----------
+        color_type: str
+            RNArtist color type code (e.g. "N" for nucleotides, "n" for
+            nucleotide labels).
+        color_value: str
+            Starting color value (hex or named color string).
+        color_to: str, optional
+            Ending color for a gradient; if None, a solid color is used.
+        color_filter: str, optional
+            Filter expression restricting which data values the color
+            applies to (e.g. ``{"between": (0.0, 0.25)}``).
+        location: tuple[int], optional
+            ``(start, end)`` positions to restrict coloring to a
+            specific location.
+        """
         self.color_type = color_type
         self.color_value = color_value
         self.color_to = color_to
@@ -135,6 +152,30 @@ class JinjaData:
                  color_blocks: list[ColorBlock],
                  draw_svg: bool,
                  draw_png: bool):
+        """
+        Parameters
+        ----------
+        path_: Path
+            Output directory for the rendered image files.
+        seq: str
+            RNA/DNA sequence string.
+        value: str
+            Dot-bracket structure string.
+        name: str
+            Name of the structure (used as the RNArtist ``name``
+            field).
+        color_dict: dict
+            Mapping of position (1-based int) to reactivity value,
+            used to color nucleotides.
+        details_value: int
+            RNArtist ``details`` level (controls annotation density).
+        color_blocks: list[ColorBlock]
+            List of color blocks defining the RNArtist color theme.
+        draw_svg: bool
+            Whether to render an SVG image.
+        draw_png: bool
+            Whether to render a PNG image.
+        """
         self.path = path_
         self.seq = seq
         self.value = value
@@ -180,18 +221,50 @@ def build_jinja_data(struct: str,
                      draw_svg: bool,
                      draw_png: bool,
                      highlight_pos: Iterable[int] = None):
+    """ Build a JinjaData object for rendering an RNArtist script.
+
+    Parameters
+    ----------
+    struct: str
+        Dictionary with keys ``"seq"`` (sequence) and ``"value"``
+        (dot-bracket string) describing the RNA structure.
+    color_dict: dict
+        Mapping of 1-based position to reactivity value for coloring.
+    name: str
+        Name of the structure, used as the RNArtist structure name.
+    out_dir: Path
+        Output directory for the rendered image files.
+    draw_svg: bool
+        Whether to render an SVG image.
+    draw_png: bool
+        Whether to render a PNG image.
+    highlight_pos: Iterable[int], optional
+        Positions to highlight in green (e.g. edited positions).
+
+    Returns
+    -------
+    JinjaData
+        Data object suitable for rendering with the RNArtist Jinja
+        template.
+    """
+    color_values = color_dict.values()
+    if not color_values:
+        max_data = 0
+    else:
+        max_data = max(color_values)
+    quartile = max_data/4
     color_blocks = [ColorBlock("N", "#caccce"),
                     ColorBlock("n", "black"),
                     ColorBlock("N", "#88CCEE", "#7287D9",
-                               {"between": (0.0, 0.2)}),
+                               {"between": (0.0, quartile)}),
                     ColorBlock("N", "#7287D9", "#8750D1",
-                               {"between": (0.2, 0.4)}),
+                               {"between": (quartile, quartile*2)}),
                     ColorBlock("N", "#8750D1", "#852075",
-                               {"between": (0.4, 0.8)}),
+                               {"between": (quartile*2, quartile*3)}),
                     ColorBlock("N", "#852075", "#661100",
-                               {"between": (0.8, 1.0)}),
-                    ColorBlock("n", "white", "white", {"between": (0.2, 1.0)}),
-                    ColorBlock("n", "black", "black", {"between": (0.0, 0.2)})]
+                               {"between": (quartile*3, max_data)}),
+                    ColorBlock("n", "white", "white", {"between": (0.2*max_data, max_data)}),
+                    ColorBlock("n", "black", "black", {"between": (0.0, 0.2*max_data)})]
 
     if highlight_pos:
         for pos in highlight_pos:
@@ -216,7 +289,7 @@ class RNArtistRun(object):
 
     def _parse_profile(self):
         match = re.search(r'(.+?)__(?:(average|.+?(?=-)))', self.profile)
-        self.data_reg = match.group(1) if match else None
+        self.mus_reg = match.group(1) if match else None
         self.table_type = match.group(2) if match else None
         if not match:
             logger.warning(f"Could not parse profile: {self.profile}.")
@@ -231,6 +304,32 @@ class RNArtistRun(object):
                  draw_png: bool,
                  update: bool,
                  num_cpus: int):
+        """
+        Parameters
+        ----------
+        report_file: Path
+            Path to the FoldReport file identifying the RNA to draw.
+        tmp_dir: Path
+            Directory for temporary intermediate files (e.g. KTS
+            scripts).
+        struct_num: Iterable[int]
+            Indices of the structures to draw; pass ``(-1,)`` to draw
+            all structures.
+        color: bool
+            Whether to color nucleotides by their reactivity values.
+        verify_times: bool
+            Whether to verify file modification times when loading
+            tables.
+        draw_svg: bool
+            Whether to render SVG images.
+        draw_png: bool
+            Whether to render PNG images.
+        update: bool
+            Whether to force-update the RNArtistCore JAR via JGO before
+            running.
+        num_cpus: int
+            Number of CPUs to use for parallel structure drawing.
+        """
         self.top, _ = FoldReport.parse_path(report_file)
         report = FoldReport.load(report_file)
         self.sample = report.get_field(SampleF)
@@ -327,7 +426,7 @@ class RNArtistRun(object):
                                              path.SAMPLE: self.sample,
                                              path.BRANCHES: table_branches,
                                              path.REF: self.ref,
-                                             path.REG: self.data_reg})
+                                             path.REG: self.mus_reg})
                 if self.table_class else None)
 
     @cached_property
@@ -465,9 +564,10 @@ class RNArtistRun(object):
             if self.profile == profile.profile:
                 for struct_num, struct in enumerate(structs):
                     state = RNAState.from_struct_profile(struct, profile)
-                    if state.auc > max_auc:
-                        max_auc = state.auc
+                    if state.calc_auc() > max_auc:
+                        max_auc = state.calc_auc()
                         best_auc = struct_num
+        self.max_auc = max_auc
         return best_auc
 
     @cached_property
@@ -500,6 +600,32 @@ class RNArtistRun(object):
                        script_file: Path,
                        keep_tmp: bool,
                        force: bool):
+        """ Render a single RNA structure using RNArtistCore.
+
+        Parameters
+        ----------
+        struct_name: str
+            Name string for this structure (used in the Jinja template
+            and as the RNArtist structure identifier).
+        struct: str
+            Dictionary with keys ``"seq"`` and ``"value"`` describing
+            the structure.
+        svg_path: Path
+            Destination path for the rendered SVG file.
+        png_path: Path
+            Destination path for the rendered PNG file.
+        script_file: Path
+            Path at which to write the temporary KTS script.
+        keep_tmp: bool
+            Whether to retain the KTS script after rendering.
+        force: bool
+            Whether to overwrite existing output files.
+
+        Returns
+        -------
+        list[Path]
+            Paths of the output files that were written.
+        """
         if not (self.draw_svg or self.draw_png):
             logger.warning("Both --no-draw-svg and --no-draw-png are set, defaulting to --svg")
             self.draw_svg = True
@@ -566,6 +692,20 @@ class RNArtistRun(object):
         return out_paths
 
     def run(self, keep_tmp: bool, force: bool):
+        """ Draw all requested structures for this RNA.
+
+        Parameters
+        ----------
+        keep_tmp: bool
+            Whether to retain temporary KTS script files.
+        force: bool
+            Whether to overwrite existing output files.
+
+        Returns
+        -------
+        list[Path]
+            Paths of the output files that were written.
+        """
         structs = dict()
         if not self.struct_num:
             self.struct_num = (self.best_struct,)
@@ -573,7 +713,7 @@ class RNArtistRun(object):
                 from_ct(self.get_ct_file(self.top))):
             if struct_num in self.struct_num or -1 in self.struct_num:
                 structs[struct_num] = dict(seq=struct.seq,
-                                           value=struct.db_structure)
+                                           value=struct.db_string)
         args = [(f"{self.profile}-{struct_num}",
                  struct,
                  self.get_svg_file(self.top, struct=struct_num),

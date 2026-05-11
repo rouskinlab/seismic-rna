@@ -6,13 +6,13 @@ from scipy.stats import beta, dirichlet
 from seismicrna.core.stats import (calc_beta_mv,
                                    calc_beta_params,
                                    calc_dirichlet_params,
-                                   calc_dirichlet_mv)
-
-rng = np.random.default_rng()
+                                   calc_dirichlet_mv,
+                                   kumaraswamy_pdf)
 
 
 def rand_dirichlet_alpha(n: int):
     """ Simulate `n` alpha parameters for a Dirichlet distribution. """
+    rng = np.random.default_rng(seed=0)
     # Alpha parameters can be any positive real number.
     return -np.log(rng.random(n))
 
@@ -54,6 +54,20 @@ class TestCalcBetaParams(ut.TestCase):
         a, b = calc_beta_params(*calc_beta_mv(a_true, b_true))
         self.assertTrue(np.isclose(a, a_true))
         self.assertTrue(np.isclose(b, b_true))
+
+
+class TestKumaraswamyPDF(ut.TestCase):
+
+    def test_auc(self):
+        x = np.linspace(0, 1, 10001)
+        for a in [0.01, 0.1, 1.0, 10.]:
+            for b in [0.01, 0.1, 1.0, 10.]:
+                with np.errstate(divide="ignore"):
+                    expect = ((a * b)
+                              * (x ** (a - 1))
+                              * ((1 - x ** a) ** (b - 1)))
+                    result = kumaraswamy_pdf(x, a, b)
+                self.assertTrue(np.allclose(expect, result, equal_nan=True))
 
 
 if __name__ == "__main__":

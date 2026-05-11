@@ -10,8 +10,6 @@ from seismicrna.core.mu.nan import (any_nan,
                                     auto_remove_nan,
                                     auto_removes_nan)
 
-rng = np.random.default_rng()
-
 
 class TestAnyNaN(ut.TestCase):
 
@@ -270,6 +268,7 @@ class TestAutoRemoveNaN(ut.TestCase):
         return x, y, z
 
     def test_array(self):
+        rng = np.random.default_rng(seed=0)
         func = self._error_if_nan
         wrap = auto_remove_nan(func)
         a = rng.random((1, 1))
@@ -289,6 +288,7 @@ class TestAutoRemovesNaN(ut.TestCase):
         return y, z
 
     def test_array(self):
+        rng = np.random.default_rng(seed=0)
         func = self._error_if_nan
         wrap = auto_removes_nan(func)
         a = rng.random((1, 1))

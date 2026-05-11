@@ -6,12 +6,20 @@ from ..core import path
 from ..core.io import RegFileIO
 from ..core.report import (RegReport,
                            ProfileF,
-                           Quantile,
+                           FoldDryRunF,
+                           FoldBackendF,
+                           FoldEnergyMethodF,
+                           DeiganSlopeF,
+                           DeiganInterceptF,
+                           FoldQuantileF,
+                           FoldIsolatedF,
                            FoldTempF,
                            FoldMaxDistF,
                            FoldMinFreeEnergyF,
                            FoldMaxStructsF,
-                           FoldPercent)
+                           FoldPercent,
+                           CommandsChecksumF,
+                           ConstraintChecksumF)
 
 
 class FoldIO(RegFileIO, ABC):
@@ -30,10 +38,21 @@ class FoldReport(RegReport, FoldIO, ABC):
     @classmethod
     def get_param_report_fields(cls):
         return [ProfileF,
-                Quantile,
+                FoldDryRunF,
+                FoldBackendF,
+                FoldEnergyMethodF,
+                DeiganSlopeF,
+                DeiganInterceptF,
+                FoldQuantileF,
+                FoldIsolatedF,
                 FoldTempF,
                 FoldMaxDistF,
                 FoldMinFreeEnergyF,
                 FoldMaxStructsF,
                 FoldPercent,
                 *super().get_param_report_fields()]
+
+    @classmethod
+    def get_checksum_report_fields(cls):
+        return [CommandsChecksumF,
+                ConstraintChecksumF]

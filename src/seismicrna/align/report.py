@@ -51,7 +51,8 @@ from ..core.report import (Report,
                            ReadsTrimF,
                            ReadsAlignF,
                            ReadsDedupF,
-                           ReadsRefsF)
+                           ReadsRefsF,
+                           SeedF)
 
 
 class BaseAlignReport(Report, ABC):
@@ -62,7 +63,8 @@ class BaseAlignReport(Report, ABC):
 
     @classmethod
     def get_param_report_fields(cls):
-        return [IsDemultF,
+        return [SeedF,
+                IsDemultF,
                 IsPairedEndF,
                 PhredEncF,
                 UseFastpF,
@@ -128,6 +130,19 @@ class AlignSampleReport(BaseAlignReport):
                  ref: str | None = None,
                  demultiplexed: bool,
                  **kwargs):
+        """
+        Initialize a sample-level alignment report.
+
+        Parameters
+        ----------
+        ref: str | None
+            Reference name; must be None for a sample-level report.
+        demultiplexed: bool
+            Whether the reads were demultiplexed; must be False for this
+            report type.
+        **kwargs
+            Additional keyword arguments passed to the parent class.
+        """
         if ref is not None:
             raise TypeError(f"Got an unexpected reference name: {repr(ref)}")
         if demultiplexed:
@@ -150,6 +165,19 @@ class AlignRefReport(BaseAlignReport):
                  ref: str,
                  demultiplexed: bool,
                  **kwargs):
+        """
+        Initialize a reference-level (demultiplexed) alignment report.
+
+        Parameters
+        ----------
+        ref: str
+            Name of the reference sequence for this report.
+        demultiplexed: bool
+            Whether the reads were demultiplexed; must be True for this
+            report type.
+        **kwargs
+            Additional keyword arguments passed to the parent class.
+        """
         if not isinstance(ref, str):
             raise TypeError(f"Expected a reference name, but got {repr(ref)}")
         if not demultiplexed:

@@ -24,6 +24,14 @@ class OneTableGraph(TableGraph, OneSourceGraph, ABC):
     def __init__(self, *,
                  table: Table | PositionTable | AbundanceTable,
                  **kwargs):
+        """
+        Parameters
+        ----------
+        table: Table or PositionTable or AbundanceTable
+            Table providing the data for this graph.
+        **kwargs
+            Forwarded to the parent class.
+        """
         super().__init__(**kwargs)
         self.table = table
 
@@ -72,6 +80,14 @@ class OneTableRelClusterGroupGraph(OneTableGraph,
 class OneTableWriter(TableWriter, ABC):
 
     def __init__(self, table: Table, **kwargs):
+        """
+        Parameters
+        ----------
+        table: Table
+            Path of the table file (passed to ``TableWriter``).
+        **kwargs
+            Forwarded to the parent class.
+        """
         super().__init__(table, **kwargs)
 
     @cached_property
@@ -88,6 +104,22 @@ class OneTableWriter(TableWriter, ABC):
 class OneTableRelClusterGroupWriter(OneTableWriter, ABC):
 
     def iter_graphs(self, *, rels: list[str], cgroup: str, **kwargs):
+        """ Yield graph instances for every relationship and cluster group.
+
+        Parameters
+        ----------
+        rels: list[str]
+            Relationship code strings to graph.
+        cgroup: str
+            Cluster-grouping strategy.
+        **kwargs
+            Additional keyword arguments forwarded to ``get_graph``.
+
+        Yields
+        ------
+        OneTableRelClusterGroupGraph
+            One graph per (cluster group, relationship) combination.
+        """
         for cparams in cgroup_table(self.table, cgroup):
             for rels_group in rels:
                 yield self.get_graph(rels_group, **kwargs | cparams)
@@ -101,6 +133,25 @@ class OneTableRunner(TableRunner, ABC):
             verify_times: bool,
             num_cpus: int,
             **kwargs):
+        """ Load all tables and write graphs for each.
+
+        Parameters
+        ----------
+        input_path: Iterable[str or Path]
+            Paths to input files or directories to search for tables.
+        verify_times: bool
+            Whether to verify file modification times when loading
+            tables.
+        num_cpus: int
+            Number of CPUs for parallel graph writing.
+        **kwargs
+            Forwarded to each writer's ``write`` method.
+
+        Returns
+        -------
+        list[Path]
+            Paths of all written output files.
+        """
         # Generate a table writer for each table.
         writer_type = cls.get_writer_type()
         writers = [writer_type(table_file)

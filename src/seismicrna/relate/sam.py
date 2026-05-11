@@ -30,6 +30,26 @@ def get_line_attrs(line: str) -> tuple[str, bool, bool]:
 
 
 def _iter_batch_indexes(sam_file: Path, batch_size: int, paired: bool):
+    """
+    Yield the batch number and byte offsets for each batch in a SAM file.
+
+    Parameters
+    ----------
+    sam_file: Path
+        Path to the collated SAM file (no header lines).
+    batch_size: int
+        Target number of records per batch; must be a positive integer.
+    paired: bool
+        Whether the SAM file contains paired-end reads.  If True,
+        mate pairs that straddle a batch boundary are kept together in
+        the earlier batch.
+
+    Yields
+    ------
+    tuple[int, int, int]
+        (batch, start, stop) where `batch` is the 0-indexed batch
+        number and `start`/`stop` are byte offsets in the file.
+    """
     logger.routine(f"Began calculating batch indexes in {sam_file}")
     if batch_size <= 0:
         raise ValueError(f"batch_size must be a positive integer, "
@@ -213,6 +233,22 @@ class XamViewer(object):
                  branch: str,
                  batch_size: int,
                  num_cpus: int = 1):
+        """
+        Initialize a XamViewer for iterating over batches of reads.
+
+        Parameters
+        ----------
+        xam_input: Path
+            Path to the input XAM (BAM/SAM/CRAM) file.
+        tmp_dir: Path
+            Directory in which to write the temporary collated SAM file.
+        branch: str
+            Branch label used when constructing output path names.
+        batch_size: int
+            Target number of records per batch.
+        num_cpus: int
+            Number of CPU cores to use for samtools operations.
+        """
         self.xam_input = xam_input
         self.tmp_dir = tmp_dir
         self.branch = branch

@@ -7,13 +7,19 @@ import re
 from pathlib import Path
 from shutil import which
 
-from ..core.arg import docdef
+from .dryrun import dry_run
+from .profile import ZERO_CELSIUS, RNAFoldProfile
+from ..core.arg import (FOLD_BACKEND_FOLD,
+                        FOLD_BACKEND_SHAPEKNOTS,
+                        opt_fold_temp)
+from ..core.error import IncompatibleValuesError
 from ..core.extern import (RNASTRUCTURE_FOLD_CMD,
                            RNASTRUCTURE_FOLD_SMP_CMD,
+                           RNASTRUCTURE_SHAPEKNOTS_CMD,
                            args_to_cmd,
                            run_cmd)
 from ..core.logs import logger
-from ..core.rna import RNAProfile, renumber_ct
+from ..core.rna import renumber_ct
 from ..core.write import need_write, write_mode
 
 ENERGY_UNIT = "kcal/mol"
@@ -336,31 +342,71 @@ def require_data_path():
     return data_path
 
 
-def make_fold_cmd(fasta_file: Path,
-                  ct_file: Path, *,
-                  dms_file: Path | None,
-                  fold_constraint: Path | None,
-                  fold_temp: float,
-                  fold_md: int,
-                  fold_mfe: bool,
-                  fold_max: int,
-                  fold_percent: float,
-                  num_cpus: int = 1):
-    if num_cpus > 1:
-        # Fold with multiple threads using the Fold-smp program.
-        cmd = [RNASTRUCTURE_FOLD_SMP_CMD]
-        os.environ[FOLD_SMP_NUM_THREADS] = str(num_cpus)
+def make_rnastructure_cmd(fasta_file: Path,
+                          ct_file: Path, *,
+                          fold_backend: str,
+                          fold_constraint: Path | None,
+                          dms_file: Path | None,
+                          shape_file: Path | None,
+                          deigan_intercept: float | None,
+                          deigan_slope: float | None,
+                          fold_temp_k: float | None,
+                          fold_isolated: bool,
+                          fold_md: int,
+                          fold_mfe: bool,
+                          fold_max: int,
+                          fold_percent: float,
+                          num_cpus: int = 1):
+    """ Make a command for 'Fold', 'Fold-smp', or 'ShapeKnots'. """
+    if fold_backend == FOLD_BACKEND_FOLD:
+        if num_cpus > 1:
+            # Fold with multiple threads using the Fold-smp program.
+            cmd = [RNASTRUCTURE_FOLD_SMP_CMD]
+            os.environ[FOLD_SMP_NUM_THREADS] = str(num_cpus)
+        else:
+            # Fold with one thread using the Fold program.
+            cmd = [RNASTRUCTURE_FOLD_CMD]
+    elif fold_backend == FOLD_BACKEND_SHAPEKNOTS:
+        if num_cpus > 1:
+            logger.warning(
+                f"ShapeKnots cannot use {num_cpus} threads; defaulting to 1"
+            )
+        cmd = [RNASTRUCTURE_SHAPEKNOTS_CMD]
     else:
-        # Fold with one thread using the Fold program.
-        cmd = [RNASTRUCTURE_FOLD_CMD]
-    if dms_file is not None:
-        # File of DMS reactivities.
-        cmd.extend(["--DMS", dms_file])
+        raise ValueError(
+            f"RNAstructure cannot use fold_backend {repr(fold_backend)}"
+        )
     if fold_constraint is not None:
         # File of constraints.
         cmd.extend(["--constraint", fold_constraint])
-    # Temperature of folding (Kelvin).
-    cmd.extend(["--temperature", fold_temp])
+    if dms_file is not None:
+        # File of DMS reactivities.
+        if shape_file is not None:
+            raise IncompatibleValuesError("Cannot give both DMS and SHAPE files")
+        cmd.extend(["--DMS", dms_file])
+    if shape_file is not None:
+        # File of SHAPE reactivities.
+        cmd.extend(["--SHAPE", shape_file])
+    if deigan_intercept is not None:
+        # SHAPE intercept parameter (kcal/mol).
+        cmd.extend(["--SHAPEintercept", deigan_intercept])
+    if deigan_slope is not None:
+        # SHAPE slope parameter (kcal/mol).
+        cmd.extend(["--SHAPEslope", deigan_slope])
+    if fold_temp_k is not None:
+        # Temperature of folding (Kelvin).
+        if fold_backend == FOLD_BACKEND_SHAPEKNOTS:
+            default_temp_k = opt_fold_temp.default + ZERO_CELSIUS
+            if abs(fold_temp_k - default_temp_k) > 0.01:
+                logger.warning(
+                    f"ShapeKnots cannot fold at {fold_temp_k} K; "
+                    f"defaulting to {default_temp_k} K"
+                )
+        else:
+            cmd.extend(["--temperature", fold_temp_k])
+    if fold_isolated:
+        # Allow isolated pairs.
+        cmd.append("--isolated")
     if fold_md > 0:
         # Maximum distance between paired bases.
         cmd.extend(["--maxdistance", fold_md])
@@ -368,69 +414,93 @@ def make_fold_cmd(fasta_file: Path,
         # Predict only the minimum free energy structure.
         cmd.append("--MFE")
     else:
-        # Maximum number of structures.
-        cmd.extend(["--maximum", fold_max])
-        # Maximum % difference between free energies of structures.
-        cmd.extend(["--percent", fold_percent])
+        if fold_max > 0:
+            # Maximum number of structures.
+            cmd.extend(["--maximum", fold_max])
+        if fold_percent > 0.:
+            # Maximum % difference between free energies of structures.
+            cmd.extend(["--percent", fold_percent])
     # Input and output files.
-    cmd.append(fasta_file)
-    cmd.append(ct_file)
+    cmd.extend([fasta_file, ct_file])
     return cmd
 
 
-@docdef.auto()
-def fold(rna: RNAProfile, *,
-         branch: str,
-         fold_temp: float,
-         fold_constraint: Path | None = None,
-         fold_md: int,
-         fold_mfe: bool,
-         fold_max: int,
-         fold_percent: float,
-         out_dir: Path,
-         tmp_dir: Path,
-         keep_tmp: bool,
-         num_cpus: int):
-    """ Run the 'Fold' or 'Fold-smp' program of RNAstructure. """
+def fold_or_shapeknots(rna: RNAFoldProfile, *,
+                       branch: str,
+                       fold_dry_run: bool,
+                       fold_backend: str,
+                       out_dir: Path,
+                       tmp_dir: Path,
+                       keep_tmp: bool,
+                       num_cpus: int,
+                       **kwargs):
+    """ Run 'Fold', 'Fold-smp', or 'ShapeKnots'. """
     logger.routine(f"Began folding {rna}")
+    # SHAPE arguments for RNAstructure.
+    rnastructure_shape_args = rna.get_rnastructure_shape_args(tmp_dir, branch)
+    # Output CT file.
     ct_out = rna.get_ct_file(out_dir, branch)
     # Temporary FASTA file for the RNA.
-    fasta_tmp = rna.to_fasta(tmp_dir, branch)
+    fasta_tmp = rna.write_fasta(tmp_dir, branch)
     # Path of the temporary CT file.
     ct_tmp = rna.get_ct_file(tmp_dir, branch)
-    # DMS reactivities file for the RNA.
-    dms_file = rna.to_dms(tmp_dir, branch)
+    # Mutation rates file for the RNA.
+    mus_file = rna.write_mus_file(tmp_dir, branch)
     try:
-        # Run the command.
-        fold_cmds = {
-            smp: args_to_cmd(make_fold_cmd(fasta_tmp,
-                                           ct_tmp,
-                                           dms_file=dms_file,
-                                           fold_constraint=fold_constraint,
-                                           fold_temp=fold_temp,
-                                           fold_md=fold_md,
-                                           fold_mfe=fold_mfe,
-                                           fold_max=fold_max,
-                                           fold_percent=fold_percent,
-                                           num_cpus=(num_cpus if smp else 1)))
-            for smp in [True, False]
-        }
-        try:
-            run_cmd(fold_cmds[True])
-        except RuntimeError as error:
-            logger.warning(error)
-            run_cmd(fold_cmds[False])
-        # Reformat the CT file title lines so that each is unique.
-        retitle_ct(ct_tmp, ct_tmp, force=True)
-        # Renumber the CT file so that it has the same numbering scheme
-        # as the region, rather than always starting at 1, the latter
-        # of which is always output by the Fold program.
-        renumber_ct(ct_tmp, ct_out, rna.region.end5, force=True)
+        if fold_backend == FOLD_BACKEND_FOLD and num_cpus > 1:
+            # Fold also has a parellized version, Fold-smp.
+            parallel_options = [True, False]
+        else:
+            # ShapeKnots does not.
+            parallel_options = [False]
+        # Generate the command(s).
+        fold_cmds = [
+            args_to_cmd(
+                make_rnastructure_cmd(
+                    fasta_tmp,
+                    ct_tmp,
+                    fold_backend=fold_backend,
+                    fold_temp_k=rna.fold_temp_k,
+                    num_cpus=(num_cpus if parallel else 1),
+                    **rnastructure_shape_args,
+                    **kwargs
+                )
+            )
+            for parallel in parallel_options
+        ]
+        if fold_dry_run:
+            dry_run(fold_cmds, ct_tmp.parent)
+        else:
+            # Run the command(s).
+            fold_cmd = fold_cmds.pop(0)
+            while True:
+                try:
+                    # Run the current command.
+                    run_cmd(fold_cmd)
+                except RuntimeError as error:
+                    # If that fails, check whether there is another
+                    # option, i.e. without SMP support if using Fold.
+                    if fold_cmds:
+                        # If so, try it.
+                        logger.warning(error)
+                        fold_cmd = fold_cmds.pop(0)
+                    else:
+                        # If not, re-raise the error.
+                        raise
+                else:
+                    # If the command succeeds, then exit the loop.
+                    break
+            # Reformat the CT file title lines so that each is unique.
+            retitle_ct(ct_tmp, ct_tmp, force=True)
+            # Renumber the CT file so that it has the same numbering
+            # scheme as the region, rather than always starting at 1,
+            # the latter of which is always output by Fold and Fold-smp.
+            renumber_ct(ct_tmp, ct_out, rna.region.end5, force=True)
     finally:
         if not keep_tmp:
             # Delete the temporary files.
             fasta_tmp.unlink(missing_ok=True)
-            dms_file.unlink(missing_ok=True)
+            mus_file.unlink(missing_ok=True)
             if ct_tmp != ct_out:
                 ct_tmp.unlink(missing_ok=True)
     logger.routine(f"Ended folding {rna}")

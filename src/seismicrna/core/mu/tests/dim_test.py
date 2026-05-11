@@ -8,8 +8,6 @@ from seismicrna.core.mu.dim import (count_pos,
                                     counts_pos,
                                     counts_pos_consensus)
 
-rng = np.random.default_rng()
-
 
 class TestCountPos(ut.TestCase):
 
@@ -20,19 +18,23 @@ class TestCountPos(ut.TestCase):
                                np.array(0.))
 
     def test_array1d(self):
+        rng = np.random.default_rng(seed=0)
         for n in range(5):
             self.assertEqual(count_pos(rng.random(n)), n)
 
     def test_array2d(self):
+        rng = np.random.default_rng(seed=0)
         for n in range(5):
             for m in range(3):
                 self.assertEqual(count_pos(rng.random((n, m))), n)
 
     def test_series(self):
+        rng = np.random.default_rng(seed=0)
         for n in range(5):
             self.assertEqual(count_pos(pd.Series(rng.random(n))), n)
 
     def test_dataframe(self):
+        rng = np.random.default_rng(seed=0)
         for n in range(5):
             for m in range(3):
                 self.assertEqual(count_pos(pd.DataFrame(rng.random((n, m)))), n)
@@ -41,18 +43,21 @@ class TestCountPos(ut.TestCase):
 class TestCountsPos(ut.TestCase):
 
     def test_array1d(self):
+        rng = np.random.default_rng(seed=0)
         for a in range(3):
             for ns in product(range(5), repeat=a):
                 arrays = (rng.random(n) for n in ns)
                 self.assertEqual(counts_pos(*arrays), ns)
 
     def test_series(self):
+        rng = np.random.default_rng(seed=0)
         for a in range(3):
             for ns in product(range(5), repeat=a):
                 arrays = (pd.Series(rng.random(n)) for n in ns)
                 self.assertEqual(counts_pos(*arrays), ns)
 
     def test_dataframe(self):
+        rng = np.random.default_rng(seed=0)
         for a in range(3):
             for ns in product(range(5), repeat=a):
                 for m in range(3):
@@ -68,12 +73,14 @@ class TestCountsPosConsensus(ut.TestCase):
                                counts_pos_consensus)
 
     def test_equal(self):
+        rng = np.random.default_rng(seed=0)
         for a in range(1, 5):
             for n in range(5):
                 arrays = (rng.random(n) for _ in range(a))
                 self.assertEqual(counts_pos_consensus(*arrays), n)
 
     def test_unequal(self):
+        rng = np.random.default_rng(seed=0)
         for n in range(5):
             array1 = rng.random(n)
             array2 = rng.random(n + 1)

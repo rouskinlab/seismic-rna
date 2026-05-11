@@ -116,6 +116,57 @@ def fastp_cmd(fq_inp: FastqUnit,
               fastp_detect_adapter_for_pe: bool,
               fastp_min_length: int,
               num_cpus: int):
+    """
+    Build the fastp command for quality trimming and adapter removal.
+
+    Parameters
+    ----------
+    fq_inp: FastqUnit
+        Input FASTQ file(s) to trim.
+    fq_out: FastqUnit | None
+        Output FASTQ file(s); if None, fastp writes trimmed reads to
+        standard output.
+    fastp_html: Path
+        Path for the fastp HTML report.
+    fastp_json: Path
+        Path for the fastp JSON report.
+    fastp_5: bool
+        Whether to enable 5'-end sliding-window quality trimming.
+    fastp_3: bool
+        Whether to enable 3'-end sliding-window quality trimming.
+    fastp_w: int
+        Window size for sliding-window quality trimming.
+    fastp_m: int
+        Minimum mean quality within the sliding window.
+    fastp_poly_g: str
+        Poly-G tail trimming mode: "yes", "no", or "auto".
+    fastp_poly_g_min_len: int
+        Minimum length of poly-G tail to trim.
+    fastp_poly_x: bool
+        Whether to trim poly-X tails.
+    fastp_poly_x_min_len: int
+        Minimum length of poly-X tail to trim.
+    fastp_adapter_trimming: bool
+        Whether to perform adapter trimming.
+    fastp_adapter_1: str
+        Adapter sequence for read 1.
+    fastp_adapter_2: str
+        Adapter sequence for read 2 (ignored for single-end reads).
+    fastp_adapter_fasta: Path | None
+        Path to a FASTA file of adapter sequences; used if provided.
+    fastp_detect_adapter_for_pe: bool
+        Whether to auto-detect adapters for paired-end reads.
+    fastp_min_length: int
+        Minimum read length after trimming; reads shorter than this are
+        discarded (0 disables length filtering).
+    num_cpus: int
+        Number of CPU threads for fastp.
+
+    Returns
+    -------
+    ShellCommand
+        Assembled fastp command ready to run or pipe.
+    """
     args = [FASTP_CMD,
             "--thread", num_cpus,
             "--dont_eval_duplication",
@@ -221,8 +272,8 @@ def _get_from_fq_inp(fq_inp: FastqUnit | None, attr: str):
 
 def bowtie2_cmd(fq_inp: FastqUnit | None,
                 sam_out: Path | None, *,
-                paired: bool | None = None,
-                phred_arg: str | None = None,
+                paired: bool | None,
+                phred_arg: str | None,
                 index_pfx: Path,
                 bt2_local: bool,
                 bt2_discordant: bool,
@@ -240,36 +291,107 @@ def bowtie2_cmd(fq_inp: FastqUnit | None,
                 bt2_r: int,
                 bt2_dpad: int,
                 bt2_orient: str,
-                fq_unal: Path | None = None,
-                num_cpus: int):
+                fq_unal: Path | None,
+                seed: int | None,
+                num_cpus: int = 1):
+    """
+    Build the Bowtie2 alignment command.
+
+    Parameters
+    ----------
+    fq_inp: FastqUnit | None
+        Input FASTQ file(s); if None, reads come from standard input.
+    sam_out: Path | None
+        Output SAM file path; if None, output goes to standard output.
+    paired: bool | None
+        Whether reads are paired-end; inferred from `fq_inp` if None.
+    phred_arg: str | None
+        Bowtie2 Phred encoding argument (e.g. "--phred33"); inferred
+        from `fq_inp` if None.
+    index_pfx: Path
+        Prefix path of the Bowtie2 index to align against.
+    bt2_local: bool
+        Whether to use local (soft-clipping) alignment mode.
+    bt2_discordant: bool
+        Whether to allow discordant paired-end alignments.
+    bt2_mixed: bool
+        Whether to allow mixed (partially unpaired) alignments.
+    bt2_dovetail: bool
+        Whether to allow dovetail paired-end alignments.
+    bt2_contain: bool
+        Whether to allow one mate to contain the other.
+    bt2_score_min_e2e: str
+        Minimum alignment score function for end-to-end mode.
+    bt2_score_min_loc: str
+        Minimum alignment score function for local mode.
+    bt2_i: int
+        Minimum fragment length for valid paired-end alignments.
+    bt2_x: int
+        Maximum fragment length for valid paired-end alignments.
+    bt2_gbar: int
+        Minimum distance from the end of a read to allow a gap.
+    bt2_l: int
+        Length of the seed substring.
+    bt2_s: str
+        Interval function between seed substrings.
+    bt2_d: int
+        Maximum number of seed extension attempts.
+    bt2_r: int
+        Maximum number of re-seeding attempts.
+    bt2_dpad: int
+        Number of extra reference bases to pad on either side of the
+        dynamic programming matrix.
+    bt2_orient: str
+        Expected orientation of paired-end mates (e.g. "fr", "rf").
+    fq_unal: Path | None
+        Path to write unaligned reads; if None, unaligned reads are
+        discarded.
+    seed: int | None
+        Random seed for reproducible alignment; None for no fixed seed.
+    num_cpus: int
+        Number of CPU threads for Bowtie2.
+
+    Returns
+    -------
+    ShellCommand
+        Assembled Bowtie2 command ready to run or pipe.
+    """
     if paired is None:
         paired = _get_from_fq_inp(fq_inp, "paired")
     if phred_arg is None:
         phred_arg = _get_from_fq_inp(fq_inp, "phred_arg")
+    # Initial Bowtie2 command.
     args = [BOWTIE2_CMD,
             # Resources
-            "--threads", num_cpus,
-            # Alignment setup
-            "--local" if bt2_local else "--end-to-end",
-            "--gbar", bt2_gbar,
-            "--dpad", bt2_dpad,
-            "-L", bt2_l,
-            "-i", bt2_s,
-            "-D", bt2_d,
-            "-R", bt2_r,
-            # Scoring
-            phred_arg,
-            "--ignore-quals",
-            "--ma", MATCH_BONUS if bt2_local else "0",
-            "--mp", MISMATCH_PENALTY,
-            "--np", N_PENALTY,
-            "--rfg", REF_GAP_PENALTY,
-            "--rdg", READ_GAP_PENALTY,
-            # Filtering
-            "--score-min", (bt2_score_min_loc if bt2_local
-                            else bt2_score_min_e2e),
-            "-I", bt2_i,
-            "-X", bt2_x]
+            "--threads", num_cpus]
+    # Random seed
+    if seed is not None:
+        args.extend(["--seed", seed])
+    # Alignment parameters
+    args.extend([
+        # Alignment setup
+        "--local" if bt2_local else "--end-to-end",
+        "--gbar", bt2_gbar,
+        "--dpad", bt2_dpad,
+        "-L", bt2_l,
+        "-i", bt2_s,
+        "-D", bt2_d,
+        "-R", bt2_r,
+        # Scoring
+        phred_arg,
+        "--ignore-quals",
+        "--ma", MATCH_BONUS if bt2_local else "0",
+        "--mp", MISMATCH_PENALTY,
+        "--np", N_PENALTY,
+        "--rfg", REF_GAP_PENALTY,
+        "--rdg", READ_GAP_PENALTY,
+        # Filtering
+        "--score-min", (bt2_score_min_loc
+                        if bt2_local
+                        else bt2_score_min_e2e),
+        "-I", bt2_i,
+        "-X", bt2_x
+    ])
     # Mate pair orientation
     if bt2_orient not in BOWTIE2_ORIENT:
         raise ValueError(f"Invalid value for bt2_orient: {repr(bt2_orient)}")
@@ -395,8 +517,9 @@ def xamgen_cmd(fq_inp: FastqUnit,
                bt2_r: int,
                bt2_dpad: int,
                bt2_orient: str,
-               fq_unal: Path | None = None,
-               min_mapq: int | None = None,
+               fq_unal: Path | None,
+               min_mapq: int,
+               seed: int | None,
                num_cpus: int = 1):
     """ Wrap QC, alignment, and post-processing into one pipeline. """
     cmds = list()
@@ -463,6 +586,7 @@ def xamgen_cmd(fq_inp: FastqUnit,
         bt2_dpad=bt2_dpad,
         bt2_orient=bt2_orient,
         fq_unal=fq_unal,
+        seed=seed,
         num_cpus=num_cpus_bowtie2,
     ))
     # Filter out any unaligned or otherwise unsuitable reads.
@@ -473,7 +597,7 @@ def xamgen_cmd(fq_inp: FastqUnit,
     else:
         # Exclude the paired flag and require no flags.
         flags_exc = EXCLUDE_FLAGS | FLAG_PAIRED
-        flags_req = None
+        flags_req = 0
     cmds.append(view_xam_cmd(None,
                              None,
                              min_mapq=min_mapq,
@@ -574,6 +698,7 @@ def realign_cmd(xam_inp: Path,
     cmds.append(bowtie2_cmd(None,
                             None,
                             paired=paired,
+                            fq_unal=None,
                             num_cpus=num_cpus_bowtie2,
                             **kwargs))
     # Filter low-quality alignments.

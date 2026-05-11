@@ -31,6 +31,7 @@ class UniqReads(EndCoords):
                    path.add_branch(path.CLUSTER_STEP, branch, dataset.branches),
                    dataset.region,
                    dataset.min_mut_gap,
+                   dataset.mut_collisions,
                    dataset.quick_unbias,
                    dataset.quick_unbias_thresh,
                    muts_per_pos,
@@ -52,17 +53,49 @@ class UniqReads(EndCoords):
                  branches: dict[str, str],
                  region: Region,
                  min_mut_gap: int,
+                 mut_collisions: str,
                  quick_unbias: bool,
                  quick_unbias_thresh: float,
                  muts_per_pos: list[np.ndarray],
                  batch_to_uniq: list[pd.Series],
                  counts_per_uniq: np.ndarray,
                  **kwargs):
+        """
+        Parameters
+        ----------
+        sample: str
+            Name of the sample.
+        branches: dict[str, str]
+            Mapping of step names to branch names.
+        region: Region
+            Genomic region covered by the reads.
+        min_mut_gap: int
+            Minimum number of non-mutated positions between two
+            mutations.
+        mut_collisions: str
+            How mutations closer than `min_mut_gap` are handled.
+        quick_unbias: bool
+            Whether to use the fast (approximate) unbiasing method.
+        quick_unbias_thresh: float
+            Convergence threshold for the quick unbiasing method.
+        muts_per_pos: list[np.ndarray]
+            For each unmasked position, a 1D array of unique-read
+            indices that are mutated at that position.
+        batch_to_uniq: list[pd.Series]
+            For each batch, a Series mapping read numbers within the
+            batch to unique-read indices.
+        counts_per_uniq: np.ndarray
+            1D array of the number of times each unique read was
+            observed across all batches.
+        **kwargs
+            Additional keyword arguments forwarded to `EndCoords`.
+        """
         super().__init__(region=region, **kwargs)
         self.sample = sample
         self.branches = branches
         self.region = region
         self.min_mut_gap = min_mut_gap
+        self.mut_collisions = mut_collisions
         self.quick_unbias = quick_unbias
         self.quick_unbias_thresh = quick_unbias_thresh
         if len(muts_per_pos) != (npos := get_length(self.region.unmasked_int,
@@ -176,6 +209,9 @@ class UniqReads(EndCoords):
                 and self.branches == other.branches
                 and self.region == other.region
                 and self.min_mut_gap == other.min_mut_gap
+                and self.mut_collisions == other.mut_collisions
+                and self.quick_unbias == other.quick_unbias
+                and self.quick_unbias_thresh == other.quick_unbias_thresh
                 and self.num_batches == other.num_batches
                 and np.array_equal(self.seg_end5s, other.seg_end5s)
                 and np.array_equal(self.seg_end3s, other.seg_end3s)
@@ -191,7 +227,8 @@ class UniqReads(EndCoords):
                                    other.counts_per_uniq))
 
     def __str__(self):
-        return f"{type(self).__name__}(sample={repr(self.sample)};{self.region})"
+        return "".join([type(self).__name__,
+                        f"(sample={repr(self.sample)};{self.region})"])
 
     def __repr__(self):
         return str(self)
@@ -219,7 +256,7 @@ def _batch_to_uniq_read_num(read_nums_per_batch: list[np.ndarray],
                             uniq_read_nums: Iterable[list]):
     """ Map each read's number in its own batch to its unique number in
     the pool of all batches. """
-    # For each batch, initialize a map from the read numbers of the .
+    # For each batch, initialize a map from the read numbers of the batch.
     batch_to_uniq = [pd.Series(-1, index=read_nums)
                      for read_nums in read_nums_per_batch]
     # Fill in the map for each unique read.
@@ -234,7 +271,7 @@ def _batch_to_uniq_read_num(read_nums_per_batch: list[np.ndarray],
 
 
 def _count_uniq_reads(uniq_read_nums: Iterable[list]):
-    """ Count the occurrances of each unique value in the original. """
+    """ Count the occurrences of each unique read across all batches. """
     return np.fromiter(map(len, uniq_read_nums), dtype=int)
 
 
@@ -242,6 +279,33 @@ def get_uniq_reads(pos_nums: Iterable[int],
                    pattern: RelPattern,
                    batches: Iterable[RegionMutsBatch],
                    **kwargs):
+    """ Collect unique reads from batches and build lookup structures.
+
+    Parameters
+    ----------
+    pos_nums: Iterable[int]
+        Unmasked position numbers (1-indexed) to track mutations for.
+    pattern: RelPattern
+        Relationship pattern used to determine which bases count as
+        mutations when iterating reads.
+    batches: Iterable[RegionMutsBatch]
+        Batches of region mutation data to process, in order.
+    **kwargs
+        Additional keyword arguments forwarded to `batch.iter_reads`.
+
+    Returns
+    -------
+    reads_ends: tuple[np.ndarray, np.ndarray]
+        Pair of 1D arrays (end5s, end3s) for each unique read.
+    muts_per_pos: list[np.ndarray]
+        For each position in `pos_nums`, a 1D array of unique-read
+        indices mutated at that position.
+    batch_to_uniq: list[pd.Series]
+        For each batch, a Series mapping read numbers within the batch
+        to unique-read indices.
+    count_per_uniq: np.ndarray
+        1D array of the number of times each unique read was observed.
+    """
     uniq_reads = defaultdict(list)
     read_nums_per_batch = list()
     for batch_num, batch in enumerate(batches):

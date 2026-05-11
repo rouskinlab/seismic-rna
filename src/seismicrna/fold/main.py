@@ -5,43 +5,55 @@ from typing import Iterable
 
 from click import command
 
+from .profile import RNAFoldProfile
 from .report import FoldReport
-from .rnastructure import fold, require_data_path
+from .rnastructure import fold_or_shapeknots, require_data_path
+from .viennarna import rnafold
 from ..cluster.data import ClusterPositionTableLoader
 from ..core import path
 from ..core.arg import (CMD_FOLD,
+                        FOLD_BACKEND_FOLD,
+                        FOLD_BACKEND_SHAPEKNOTS,
+                        FOLD_BACKEND_RNAFOLD,
                         arg_input_path,
                         opt_branch,
                         opt_tmp_pfx,
                         opt_keep_tmp,
+                        opt_fold_dry_run,
                         opt_fold_regions_file,
                         opt_fold_coords,
                         opt_fold_primers,
                         opt_fold_full,
-                        opt_quantile,
+                        opt_fold_backend,
                         opt_fold_temp,
+                        opt_fold_energy_method,
+                        opt_deigan_slope,
+                        opt_deigan_intercept,
+                        opt_fold_quantile,
                         opt_fold_constraint,
+                        opt_fold_commands,
                         opt_fold_md,
                         opt_fold_mfe,
                         opt_fold_max,
                         opt_fold_percent,
+                        opt_fold_isolated,
                         opt_verify_times,
                         opt_num_cpus,
                         opt_force,
-                        optional_path,
-                        extra_defaults)
+                        optional_path)
 from ..core.extern import (RNASTRUCTURE_FOLD_CMD,
+                           RNASTRUCTURE_SHAPEKNOTS_CMD,
+                           VIENNA_RNAFOLD_CMD,
+                           VIENNA_RNASUBOPT_CMD,
                            require_dependency)
-from ..core.logs import logger
-from ..core.rna import RNAProfile, ct_to_db
+from ..core.io import calc_sha512_path
+from ..core.rna import ct_to_db
 from ..core.run import run_func
 from ..core.seq import DNA, RefRegions, RefSeqs, Region
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.tmp import with_tmp_dir
 from ..core.write import need_write
 from ..mask.table import MaskPositionTableLoader
-
-DEFAULT_QUANTILE = 0.95
 
 
 def load_foldable_tables(input_path: Iterable[str | Path], **kwargs):
@@ -54,20 +66,22 @@ def load_foldable_tables(input_path: Iterable[str | Path], **kwargs):
 
 
 @with_tmp_dir(pass_keep_tmp=True)
-def fold_region(rna: RNAProfile, *,
+def fold_region(rna: RNAFoldProfile, *,
                 out_dir: Path,
                 tmp_dir: Path,
                 branch: str,
-                quantile: float,
-                fold_temp: float,
+                fold_dry_run: bool,
+                fold_backend: str,
                 fold_constraint: Path | None,
+                fold_commands: Path | None,
                 fold_md: int,
                 fold_mfe: bool,
                 fold_max: int,
                 fold_percent: float,
+                fold_isolated: bool,
                 force: bool,
-                num_cpus: int,
-                **kwargs):
+                keep_tmp: bool,
+                num_cpus: int):
     """ Fold a region of an RNA from one mutational profile. """
     branches = path.add_branch(path.FOLD_STEP, branch, rna.branches)
     report_file = FoldReport.build_path({path.TOP: out_dir,
@@ -78,43 +92,79 @@ def fold_region(rna: RNAProfile, *,
                                          path.PROFILE: rna.profile})
     if need_write(report_file, force):
         began = datetime.now()
-        rna.to_varna_color_file(out_dir, branch)
-        ct_file = fold(rna,
-                       out_dir=out_dir,
-                       tmp_dir=tmp_dir,
-                       branch=branch,
-                       fold_temp=fold_temp,
-                       fold_constraint=fold_constraint,
-                       fold_md=fold_md,
-                       fold_mfe=fold_mfe,
-                       fold_max=fold_max,
-                       fold_percent=fold_percent,
-                       num_cpus=num_cpus,
-                       **kwargs)
-        ct_to_db(ct_file, force=True)
+        rna.write_varna_color_file(out_dir, branch)
+        if fold_backend == FOLD_BACKEND_RNAFOLD:
+            ct_file = rnafold(rna,
+                              out_dir=out_dir,
+                              tmp_dir=tmp_dir,
+                              branch=branch,
+                              fold_dry_run=fold_dry_run,
+                              fold_constraint=fold_constraint,
+                              fold_commands=fold_commands,
+                              fold_md=fold_md,
+                              fold_mfe=fold_mfe,
+                              fold_max=fold_max,
+                              fold_isolated=fold_isolated,
+                              keep_tmp=keep_tmp,
+                              num_cpus=num_cpus)
+        else:
+            ct_file = fold_or_shapeknots(rna,
+                                         out_dir=out_dir,
+                                         tmp_dir=tmp_dir,
+                                         branch=branch,
+                                         fold_dry_run=fold_dry_run,
+                                         fold_backend=fold_backend,
+                                         fold_constraint=fold_constraint,
+                                         fold_md=fold_md,
+                                         fold_mfe=fold_mfe,
+                                         fold_max=fold_max,
+                                         fold_isolated=fold_isolated,
+                                         fold_percent=fold_percent,
+                                         keep_tmp=keep_tmp,
+                                         num_cpus=num_cpus)
+        if not fold_dry_run:
+            ct_to_db(ct_file, force=True)
+        constraint_checksum = (calc_sha512_path(fold_constraint)
+                               if fold_constraint else "")
+        commands_checksum = (calc_sha512_path(fold_commands)
+                             if fold_commands else "")
         ended = datetime.now()
         report = FoldReport(branches=branches,
                             sample=rna.sample,
                             ref=rna.ref,
                             reg=rna.reg,
                             profile=rna.profile,
-                            quantile=quantile,
-                            fold_temp=fold_temp,
+                            fold_dry_run=fold_dry_run,
+                            fold_backend=fold_backend,
+                            fold_energy_method=rna.fold_energy_method,
+                            deigan_slope=rna.deigan_slope,
+                            deigan_intercept=rna.deigan_intercept,
+                            fold_quantile=rna.fold_quantile,
+                            fold_isolated=fold_isolated,
+                            fold_temp=rna.fold_temp_c,
                             fold_md=fold_md,
                             fold_mfe=fold_mfe,
                             fold_max=fold_max,
                             fold_percent=fold_percent,
+                            constraint_checksum=constraint_checksum,
+                            commands_checksum=commands_checksum,
                             began=began,
                             ended=ended)
         report.save(out_dir, force=True)
     return report_file
 
 
-def fold_profile(table: MaskPositionTableLoader | ClusterPositionTableLoader,
-                 regions: list[Region],
-                 quantile: float,
-                 num_cpus: int,
-                 **kwargs):
+def fold_table(table: MaskPositionTableLoader | ClusterPositionTableLoader,
+               regions: list[Region],
+               fold_temp: float,
+               fold_energy_method: str,
+               fold_quantile: float,
+               deigan_slope: float,
+               deigan_intercept: float,
+               num_cpus: int,
+               keep_tmp: bool,
+               fold_dry_run: bool,
+               **kwargs):
     """ Fold an RNA molecule from one table of reactivities. """
     return dispatch(fold_region,
                     num_cpus=num_cpus,
@@ -122,43 +172,67 @@ def fold_profile(table: MaskPositionTableLoader | ClusterPositionTableLoader,
                     as_list=True,
                     ordered=False,
                     raise_on_error=False,
-                    args=as_list_of_tuples(table.iter_profiles(
-                        regions=regions, quantile=quantile)
+                    args=as_list_of_tuples(
+                        RNAFoldProfile.from_profile(
+                            profile,
+                            fold_temp=fold_temp,
+                            fold_energy_method=fold_energy_method,
+                            fold_quantile=fold_quantile,
+                            deigan_slope=deigan_slope,
+                            deigan_intercept=deigan_intercept,
+                        )
+                        for profile in table.iter_profiles(regions=regions)
                     ),
                     kwargs=dict(out_dir=table.top,
-                                quantile=quantile,
+                                keep_tmp=(keep_tmp or fold_dry_run),
+                                fold_dry_run=fold_dry_run,
                                 **kwargs))
 
 
-@run_func(CMD_FOLD, extra_defaults=extra_defaults)
+@run_func(CMD_FOLD)
 def run(input_path: Iterable[str | Path], *,
         branch: str,
         fold_coords: Iterable[tuple[str, int, int]],
         fold_primers: Iterable[tuple[str, DNA, DNA]],
         fold_regions_file: str | None,
         fold_full: bool,
-        quantile: float,
+        fold_dry_run: bool,
+        fold_backend: str,
+        fold_energy_method: str,
+        deigan_slope: float,
+        deigan_intercept: float,
         fold_temp: float,
+        fold_quantile: float,
         fold_constraint: str | None,
+        fold_commands: str | None,
         fold_md: int,
         fold_mfe: bool,
         fold_max: int,
         fold_percent: float,
+        fold_isolated: bool,
         tmp_pfx: str | Path,
         keep_tmp: bool,
         verify_times: bool,
         num_cpus: int,
         force: bool):
     """ Predict RNA secondary structures using mutation rates. """
-    # Check for the dependencies and the DATAPATH environment variable.
-    require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
-    require_data_path()
-    # Reactivities must be normalized before using them to fold.
-    if quantile <= 0.:
-        logger.warning(f"Fold needs normalized mutation rates, "
-                       f"but got quantile = {quantile}; "
-                       f"setting quantile to {DEFAULT_QUANTILE}")
-        quantile = DEFAULT_QUANTILE
+    # Check for dependencies.
+    if fold_backend == FOLD_BACKEND_RNAFOLD:
+        # Use ViennaRNA.
+        require_dependency(VIENNA_RNAFOLD_CMD, __name__)
+        require_dependency(VIENNA_RNASUBOPT_CMD, __name__)
+    elif fold_backend == FOLD_BACKEND_FOLD:
+        # Use RNAstructure Fold.
+        require_data_path()
+        require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
+    elif fold_backend == FOLD_BACKEND_SHAPEKNOTS:
+        # Use RNAstructure ShapeKnots.
+        require_data_path()
+        require_dependency(RNASTRUCTURE_SHAPEKNOTS_CMD, __name__)
+    else:
+        raise ValueError(
+            f"Invalid value for --fold-backend: {repr(fold_backend)}"
+        )
     # List the tables.
     tables = list(load_foldable_tables(input_path, verify_times=verify_times))
     # Get the regions to fold for every reference sequence.
@@ -167,7 +241,7 @@ def run(input_path: Iterable[str | Path], *,
         ref_seqs.add(table.ref, table.refseq)
     fold_regions = RefRegions(ref_seqs,
                               regs_file=optional_path(fold_regions_file),
-                              coords=fold_coords,
+                              ends=fold_coords,
                               primers=fold_primers,
                               default_full=fold_full).dict
     # For each table whose reference had no regions defined, default to
@@ -178,7 +252,7 @@ def run(input_path: Iterable[str | Path], *,
             for table in tables]
     # Fold the RNA profiles.
     return list(chain(*dispatch(
-        fold_profile,
+        fold_table,
         num_cpus=num_cpus,
         pass_num_cpus=True,
         as_list=False,
@@ -188,13 +262,20 @@ def run(input_path: Iterable[str | Path], *,
         kwargs=dict(branch=branch,
                     tmp_pfx=tmp_pfx,
                     keep_tmp=keep_tmp,
-                    quantile=quantile,
+                    fold_dry_run=fold_dry_run,
+                    fold_backend=fold_backend,
                     fold_temp=fold_temp,
+                    fold_energy_method=fold_energy_method,
+                    deigan_slope=deigan_slope,
+                    deigan_intercept=deigan_intercept,
+                    fold_quantile=fold_quantile,
                     fold_constraint=optional_path(fold_constraint),
+                    fold_commands=optional_path(fold_commands),
                     fold_md=fold_md,
                     fold_mfe=fold_mfe,
                     fold_max=fold_max,
                     fold_percent=fold_percent,
+                    fold_isolated=fold_isolated,
                     force=force)
     )))
 
@@ -206,13 +287,20 @@ params = [
     opt_fold_coords,
     opt_fold_primers,
     opt_fold_full,
-    opt_quantile,
+    opt_fold_dry_run,
+    opt_fold_backend,
+    opt_fold_energy_method,
     opt_fold_temp,
+    opt_deigan_slope,
+    opt_deigan_intercept,
+    opt_fold_quantile,
     opt_fold_constraint,
+    opt_fold_commands,
     opt_fold_md,
     opt_fold_mfe,
     opt_fold_max,
     opt_fold_percent,
+    opt_fold_isolated,
     opt_tmp_pfx,
     opt_keep_tmp,
     opt_verify_times,

@@ -5,6 +5,7 @@ from typing import Callable, Self
 import numpy as np
 import pandas as pd
 
+from ..core.arg import MUT_COLLISIONS_DROP, MUT_COLLISIONS_MERGE
 from ..core.array import calc_inverse, check_naturals, get_length
 from ..core.batch import (ReadBatch,
                           MutsBatch,
@@ -102,7 +103,9 @@ class RelateRegionMutsBatch(RelateMutsBatch, RegionMutsBatch):
                  read_length: int,
                  p_rev: float,
                  min_mut_gap: int,
+                 mut_collisions: str,
                  num_reads: int,
+                 seed: int | None,
                  **kwargs):
         """ Simulate a batch.
 
@@ -126,8 +129,13 @@ class RelateRegionMutsBatch(RelateMutsBatch, RegionMutsBatch):
             Probability that mate 1 is reversed (paired-end reads only).
         min_mut_gap: int
             Minimum number of positions between two mutations.
+        mut_collisions: str
+            How to handle reads with mutations closer than `min_mut_gap`:
+            "drop" to remove such reads, or "merge" to merge them.
         num_reads: int
             Number of reads in the batch.
+        seed: int | None
+            Random seed for reproducibility; None for no fixed seed.
         """
         check_naturals(index_to_pos(pmut.index), "positions")
         region = Region(ref, index_to_seq(pmut.index))
@@ -138,27 +146,46 @@ class RelateRegionMutsBatch(RelateMutsBatch, RegionMutsBatch):
                                                      num_reads,
                                                      (read_length if paired
                                                       else 0),
-                                                     p_rev)
+                                                     p_rev,
+                                                     seed=seed)
         simulated_all = cls(region=region,
                             seg_end5s=seg_end5s,
                             seg_end3s=seg_end3s,
-                            muts=simulate_muts(pmut, seg_end5s, seg_end3s),
+                            muts=simulate_muts(pmut,
+                                               seg_end5s,
+                                               seg_end3s,
+                                               seed=seed),
                             **kwargs)
         if min_mut_gap == 0:
+            # No additional changes needed.
             return simulated_all
-        # Remove reads with two mutations too close.
-        reads_noclose = simulated_all.reads_noclose_muts(RelPattern.muts(),
-                                                         min_mut_gap)
-        reads_exclude = np.setdiff1d(simulated_all.read_nums,
-                                     reads_noclose,
-                                     assume_unique=True)
-        renumber = calc_inverse(reads_noclose, what="reads_noclose")
-        return cls(region=region,
-                   seg_end5s=seg_end5s[reads_noclose],
-                   seg_end3s=seg_end3s[reads_noclose],
-                   muts={pos: {rel: renumber[np.setdiff1d(reads,
-                                                          reads_exclude,
-                                                          assume_unique=True)]
-                               for rel, reads in rels.items()}
-                         for pos, rels in simulated_all.muts.items()},
-                   **kwargs)
+        if mut_collisions == MUT_COLLISIONS_DROP:
+            # Remove reads with two mutations too close.
+            reads_noclose = simulated_all.reads_noclose_muts(RelPattern.muts(),
+                                                             min_mut_gap)
+            reads_exclude = np.setdiff1d(simulated_all.read_nums,
+                                         reads_noclose,
+                                         assume_unique=True)
+            renumber = calc_inverse(reads_noclose, what="reads_noclose")
+            return cls(
+                region=region,
+                seg_end5s=seg_end5s[reads_noclose],
+                seg_end3s=seg_end3s[reads_noclose],
+                muts={pos: {rel: renumber[np.setdiff1d(reads,
+                                                       reads_exclude,
+                                                       assume_unique=True)]
+                            for rel, reads in rels.items()}
+                      for pos, rels in simulated_all.muts.items()},
+                **kwargs
+            )
+        if mut_collisions == MUT_COLLISIONS_MERGE:
+            # Merge mutations that are too close into a single mutation.
+            return cls(
+                region=region,
+                seg_end5s=seg_end5s,
+                seg_end3s=seg_end3s,
+                muts=simulated_all.merge_close_muts(RelPattern.muts(),
+                                                    min_mut_gap),
+                **kwargs
+            )
+        raise ValueError(f"Invalid mut_collisions: {repr(mut_collisions)}")

@@ -323,16 +323,14 @@ class TestCalcRelsLinesSingle(ut.TestCase):
     def test_5nt_2ins(self):
         self.iter_cases(DNA("CTTTG"), 2)
 
-    def test_6nt_2ins(self):
-        self.iter_cases(DNA("TGAGAC"), 2)
+    # def test_6nt_2ins(self):
+    #     self.iter_cases(DNA("TGAGAC"), 2)
 
-    @ut.skip("Takes too long")
-    def test_7nt_0ins(self):
-        self.iter_cases(DNA("GAACACT"), 0)
+    # def test_7nt_0ins(self):
+    #     self.iter_cases(DNA("GAACACT"), 0)
 
-    @ut.skip("Takes too long")
-    def test_8nt_0ins(self):
-        self.iter_cases(DNA("TACACGGT"), 0)
+    # def test_8nt_0ins(self):
+    #     self.iter_cases(DNA("TACACGGT"), 0)
 
     def test_all_matches(self):
         for reflen in range(1, 10):

@@ -247,7 +247,7 @@ class TestCmdSeg(ut.TestCase):
                                 BRANCHES: ["branch1", ""]})
         self.assertRaisesRegex(
             PathValueError,
-            (r"option must be in \['align', 'relate', 'mask', 'cluster', "
+            (r"option must be in \['demult', 'align', 'relate', 'mask', 'cluster', "
              r"'fold', 'graph'\], but got 'malign'"),
             StepSeg.build,
             {STEP: "malign",
@@ -274,7 +274,7 @@ class TestCmdSeg(ut.TestCase):
                          "align_branch1_branch2")
         self.assertRaisesRegex(
             PathValueError,
-            (r"option must be in \['align', 'relate', 'mask', 'cluster', "
+            (r"option must be in \['demult', 'align', 'relate', 'mask', 'cluster', "
              r"'fold', 'graph'\], but got 'malign'"),
             StepSeg.build,
             {STEP: "malign",
@@ -306,7 +306,7 @@ class TestCmdSeg(ut.TestCase):
                                "_align")
         self.assertRaisesRegex(
             PathValueError,
-            (r"option must be in \['align', 'relate', 'mask', 'cluster', "
+            (r"option must be in \['demult', 'align', 'relate', 'mask', 'cluster', "
              r"'fold', 'graph'\], but got 'alight'"),
             StepSeg.parse,
             "alight"

@@ -16,9 +16,15 @@ BOWTIE2_BUILD_CMD = "bowtie2-build"
 SAMTOOLS_CMD = "samtools"
 RNASTRUCTURE_FOLD_CMD = "Fold"
 RNASTRUCTURE_FOLD_SMP_CMD = "Fold-smp"
+RNASTRUCTURE_SHAPEKNOTS_CMD = "ShapeKnots"
+VIENNA_RNAFOLD_CMD = "RNAfold"
+VIENNA_RNASUBOPT_CMD = "RNAsubopt"
 JAVA_CMD = "java"
 JAR_CMD = "-jar"
 JGO_CMD = "jgo"
+UMI_TOOLS_CMD = "umi_tools"
+UMI_TOOLS_EXTRACT_CMD = "extract"
+SEQKIT_CMD = "seqkit"
 
 
 class ShellCommandFailedError(RuntimeError):
@@ -39,19 +45,26 @@ def cmds_to_series(cmds: list[str]):
     """ Run commands in series. """
     return " ; ".join(cmds)
 
+def cmds_to_redirect_in(cmds: list[str]):
+     """ Run commands with a leftward redirect. """
+     return " < ".join(cmds)
+
+def cmds_to_redirect_out(cmds: list[str]):
+    """ Run commands with a rightward redirect. """
+    return " > ".join(cmds)
 
 def cmds_to_subshell(cmds: list[str]):
     """ Run commands in a subshell. """
     return f"( {cmds_to_series(cmds)} )"
 
 
-def run_cmd(cmd: str, text: bool | None = True):
+def run_cmd(cmd: str, text: bool | None = True, shell: bool = True):
     """ Run a command via subprocess.run(), with logging. """
     # Log the command with which the process was run.
     logger.action(f"Began running shell command:\n{cmd}")
     # Run the process and capture the output.
     process = run(cmd,
-                  shell=True,
+                  shell=shell,
                   capture_output=text is not None,
                   text=text)
     failed = process.returncode != 0

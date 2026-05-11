@@ -38,7 +38,8 @@ from ..core.arg import (CMD_SPLITBAM,
                         opt_min_reads,
                         opt_sep_strands,
                         opt_rev_label,
-                        opt_f1r2_fwd)
+                        opt_f1r2_fwd,
+                        opt_seed)
 from ..core.error import DuplicateValueError
 from ..core.extern import (BOWTIE2_CMD,
                            BOWTIE2_BUILD_CMD,
@@ -69,6 +70,36 @@ def split_xam_file(xam_file: Path,
                    force: bool,
                    num_cpus: int,
                    **kwargs):
+    """
+    Sort, index, and split a XAM file into one file per reference.
+
+    Parameters
+    ----------
+    xam_file: Path
+        Input XAM (BAM/SAM/CRAM) file to split; its stem is used as the
+        sample name.
+    out_dir: Path
+        Directory where the final output files are written.
+    tmp_dir: Path
+        Directory for temporary intermediate files.
+    branch: str
+        Branch label to embed in the output file paths.
+    fasta: Path
+        FASTA file of reference sequences used during alignment.
+    phred_enc: int
+        ASCII offset for Phred quality score encoding.
+    force: bool
+        Whether to overwrite existing output files.
+    num_cpus: int
+        Number of CPU cores to use.
+    **kwargs
+        Additional keyword arguments forwarded to `split_references`.
+
+    Returns
+    -------
+    Path
+        Parent directory of the written report file.
+    """
     began = datetime.now()
     # Assume the XAM file is named for the sample.
     sample = xam_file.stem
@@ -187,6 +218,7 @@ def run(fasta: str | Path, *,
         bt2_r: int,
         bt2_dpad: int,
         bt2_orient: str,
+        seed: int | None,
         # Samtools
         min_mapq: int,
         min_reads: int,
@@ -235,6 +267,7 @@ def run(fasta: str | Path, *,
                                 bt2_r=bt2_r,
                                 bt2_dpad=bt2_dpad,
                                 bt2_orient=bt2_orient,
+                                seed=seed,
                                 min_mapq=min_mapq,
                                 min_reads=min_reads,
                                 sep_strands=sep_strands,
@@ -271,6 +304,7 @@ params = [
     opt_bt2_gbar,
     opt_bt2_dpad,
     opt_bt2_orient,
+    opt_seed,
     # Samtools
     opt_min_mapq,
     opt_min_reads,

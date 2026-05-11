@@ -39,6 +39,29 @@ def _find_cigar_op_pos(cigar_string: str,
                        find_op: str,
                        init_pos: int,
                        op_consumes_func: Callable[[str], bool]):
+    """
+    Yield positions in a sequence consumed by a specific CIGAR operation.
+
+    Parameters
+    ----------
+    cigar_string: str
+        CIGAR string from a SAM record.
+    find_op: str
+        CIGAR operation code whose positions to yield (e.g. 'D', 'I').
+    init_pos: int
+        Initial position in the sequence (1-indexed for reference; read
+        position should start at 1).
+    op_consumes_func: Callable[[str], bool]
+        Function that returns True if an operation consumes a position
+        in the target sequence (e.g. `op_consumes_ref` or
+        `op_consumes_read`).
+
+    Yields
+    ------
+    int
+        Each position in the target sequence that is consumed by the
+        specified CIGAR operation.
+    """
     if op_consumes_func(find_op):
         pos = init_pos
         # Check each CIGAR operation, starting at position 1.

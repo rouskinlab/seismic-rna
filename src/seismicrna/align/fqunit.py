@@ -1,3 +1,7 @@
+import gzip
+
+import numpy as np
+
 from functools import cached_property
 from itertools import chain
 from pathlib import Path
@@ -62,6 +66,49 @@ def format_phred_arg(phred_enc: int):
                        f"but got {phred_enc}, which may cause problems")
     return f"--phred{phred_enc}"
 
+def safe_slice(s: str, start: int, end: int, pad_char: str = ' ') -> str:
+        """
+        Slice a string with out-of-bounds safety, padding as needed.
+
+        Uses NumPy for ultra-fast slicing and padding.
+        Ensures output length is exactly `end - start`, even if the slice
+        goes out of bounds.
+
+        Parameters
+        ----------
+        s: str
+            Input string to slice.
+        start: int
+            Start index of the slice (0-indexed).
+        end: int
+            End index of the slice (exclusive, 0-indexed).
+        pad_char: str
+            Character used to pad the result when the slice extends
+            beyond the bounds of `s`; defaults to a space.
+
+        Returns
+        -------
+        str
+            Sliced (and possibly padded) string of length `end - start`,
+            or an empty string if `end <= start`.
+        """
+        length = end - start
+
+        if length <= 0:
+            return ''  # Return empty string if range is invalid
+
+        s_len = len(s)
+        result = np.full(length, ord(pad_char), dtype=np.uint8)  # Preallocate and fill with padding
+
+        # Compute valid slice indices
+        slice_start = max(start, 0)
+        slice_end = min(end, s_len)
+
+        if slice_start < slice_end:  # Only copy if valid range
+            result[(slice_start - start):(slice_end - start)] = np.frombuffer(s.encode(), dtype=np.uint8)[slice_start:slice_end]
+
+        return result.tobytes().decode()
+
 
 class MissingFastqMate(FileNotFoundError):
     """ Missing a file in a pair of paired-end FASTQ files. """
@@ -113,6 +160,25 @@ class FastqUnit(object):
                  fastq2: Path | None = None,
                  phred_enc: int,
                  one_ref: bool):
+        """
+        Initialize a FastqUnit from one or two FASTQ file paths.
+
+        Parameters
+        ----------
+        fastqz: Path | None
+            Path to a single-end FASTQ file.
+        fastqy: Path | None
+            Path to an interleaved paired-end FASTQ file.
+        fastq1: Path | None
+            Path to mate-1 FASTQ file (must be paired with `fastq2`).
+        fastq2: Path | None
+            Path to mate-2 FASTQ file (must be paired with `fastq1`).
+        phred_enc: int
+            ASCII offset for encoding Phred quality scores (e.g. 33 or 64).
+        one_ref: bool
+            Whether the FASTQ file(s) were demultiplexed and contain reads
+            from exactly one reference sequence.
+        """
         if fastqz:
             if fastqy or fastq1 or fastq2:
                 raise TypeError("Got too many FASTQ files")
@@ -187,6 +253,10 @@ class FastqUnit(object):
             )
         return n_reads[0]
 
+    def exists(self):
+        """ Check if all FASTQ paths in the FastqUnit exist """
+        return all(path.exists() for path in self.paths.values())
+
     def get_sample_ref_exts(self):
         """ Return the sample and reference of the FASTQ file(s). """
         samples: set[str] = set()
@@ -211,6 +281,100 @@ class FastqUnit(object):
             fields[path.REF] = self.ref
         fields[path.EXT] = self.exts[key]
         return fields
+
+    def iter_records(self, segments: Iterable[tuple[int, int]] = None):
+        """
+        Yields processed sequences (or segments) along with the full FASTQ records from the FastqUnit.
+
+        Output structure:
+        A tuple (processed_seqs, full_records) where:
+            - processed_seqs:
+                * If segments is provided:
+                    - For paired-end FASTQs, a tuple of lists; each list contains the sliced segments,
+                    one per (start, end) tuple.
+                    - For single-end FASTQs, a one-element tuple containing a list of sliced segments.
+                * If segments is None:
+                    - For paired-end FASTQs, a tuple of two full sequence strings safe-sliced to the length
+                    of the longer sequence in the pair.
+                    - For single-end FASTQs, a one-element tuple with the full sequence safe-sliced to its length.
+            - full_records:
+                * A tuple containing the full FASTQ records (each record is a list of 4 lines).
+                In paired mode the tuple will have two elements; in single-end mode, one element.
+
+        Note: Only the sequence (second line of each record) is processed for segments. The header,
+        plus, and quality lines are read to maintain proper file structure and are returned in the full record.
+        """
+        if not self.exists:
+            raise ValueError("Not all FASTQ paths in the FastqUnit exist.")
+
+        def get_open_func(path):
+            return gzip.open if fastq_gz(path) else open
+
+        # If segments is provided, use it; otherwise, we'll later compute full sequences trimmed
+        # to equal length.
+        if segments:
+            slices = segments
+        else:
+            slices = None
+
+        if self.interleaved:
+            fq_path = next(iter(self.paths.values()))
+            open_func = get_open_func(fq_path)
+            with open_func(fq_path, "rt") as f:
+                while True:
+                    rec1 = [f.readline().rstrip("\n") for _ in range(4)]
+                    rec2 = [f.readline().rstrip("\n") for _ in range(4)]
+                    if not rec1[0] and not rec2[0]:
+                        break
+                    full_record = (rec1, rec2) if self.paired else (rec1,)
+                    if slices:
+                        if self.paired:
+                            segs = [(safe_slice(rec1[1], s[0], s[1]),
+                                    safe_slice(rec2[1], s[0], s[1]))
+                                    for s in slices]
+                        else:
+                            segs = ([safe_slice(rec1[1], s[0], s[1]) for s in slices],)
+                        yield (segs, full_record)
+                    else:
+                        if self.paired:
+                            max_len = max(len(rec1[1]), len(rec2[1]))
+                            segs = (safe_slice(rec1[1], 1, max_len),
+                                    safe_slice(rec2[1], 1, max_len))
+                        else:
+                            segs = (rec1[1],)
+                        yield (segs, full_record)
+        else:
+            paths = list(self.paths.values())
+            handles = [get_open_func(p)(p, "rt") for p in paths]
+            try:
+                while True:
+                    recs = [[h.readline().rstrip("\n") for _ in range(4)] for h in handles]
+                    if all(not rec[0] for rec in recs):
+                        break
+                    read_name = recs[0][0].split(" ")[0]
+                    if not all(rec[0].split(" ")[0] == read_name for rec in recs):
+                        raise ValueError("FASTQs are not properly paired. Read names do not match: " +
+                                        str(tuple(rec[0] for rec in recs)))
+                    full_record = tuple(tuple(rec) for rec in recs)
+                    # print(slices)
+                    if slices:
+                        if self.paired:
+                            segs = tuple(tuple(safe_slice(rec[1], s[0], s[1]) for rec in recs)
+                                        for s in slices)
+                        else:
+                            seg_records = [safe_slice(recs[0][1], s[0], s[1]) for s in slices]
+                            segs = (seg_records,)
+                        yield (segs, full_record)
+                    else:
+                        if self.paired:
+                            max_len = max(len(rec[1]) for rec in recs)
+                            segs = tuple(safe_slice(rec[1], 1, max_len) for rec in recs)
+                        else:
+                            segs = (recs[0][1],)
+                        yield (segs, full_record)
+            finally:
+                for h in handles:
+                    h.close()
 
     @property
     def bowtie2_inputs(self):
@@ -239,6 +403,25 @@ class FastqUnit(object):
                     one_ref: bool,
                     fqs: Iterable[str | Path],
                     key: str):
+        """
+        Yield a FastqUnit for each single or interleaved FASTQ file.
+
+        Parameters
+        ----------
+        phred_enc: int
+            ASCII offset for encoding Phred quality scores.
+        one_ref: bool
+            Whether the FASTQ files are demultiplexed (one reference each).
+        fqs: Iterable[str | Path]
+            Paths to FASTQ files or directories containing them.
+        key: str
+            Key indicating the type of FASTQ: KEY_SINGLE or KEY_INTER.
+
+        Yields
+        ------
+        FastqUnit
+            One FastqUnit per valid FASTQ file found.
+        """
         if key != cls.KEY_SINGLE and key != cls.KEY_INTER:
             raise ValueError(f"Invalid key: {repr(key)}")
         if one_ref:
@@ -264,6 +447,23 @@ class FastqUnit(object):
                     phred_enc: int,
                     one_ref: bool,
                     fqs: list[Path]):
+        """
+        Yield a FastqUnit for each pair of mate-1/mate-2 FASTQ files.
+
+        Parameters
+        ----------
+        phred_enc: int
+            ASCII offset for encoding Phred quality scores.
+        one_ref: bool
+            Whether the FASTQ files are demultiplexed (one reference each).
+        fqs: list[Path]
+            Paths to FASTQ files or directories to search for mate pairs.
+
+        Yields
+        ------
+        FastqUnit
+            One FastqUnit per matched pair of mate-1 and mate-2 files.
+        """
         # Determine the key and segments based on whether the FASTQs are
         # demultiplexed
         if one_ref:
@@ -316,9 +516,9 @@ class FastqUnit(object):
         Parameters
         ----------
         phred_enc: int
-            ASCII offset for encoding Phred scores
-        fastq_args: list[Path]
-            FASTQ files, given as iterables of paths:
+            ASCII offset for encoding Phred scores.
+        fastq_args: Iterable[str | Path]
+            FASTQ files, given as iterables of paths keyed by type:
             - fastqz: single-end
             - fastqy: interleaved paired-end
             - fastqx: mated paired-end

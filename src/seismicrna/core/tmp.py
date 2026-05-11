@@ -20,7 +20,23 @@ WORKING = "working"
 def release_to_out(out_dir: Path,
                    release_dir: Path,
                    initial_path: Path):
-    """ Move temporary path(s) to the output directory. """
+    """ Move a temporary path to the output directory.
+
+    Parameters
+    ----------
+    out_dir: Path
+        Destination output directory.
+    release_dir: Path
+        Root of the temporary release directory (used to compute the
+        destination path relative to `out_dir`).
+    initial_path: Path
+        Path of the file or directory to move.
+
+    Returns
+    -------
+    Path
+        Final path of the file or directory in the output directory.
+    """
     logger.routine(
         f"Began releasing {initial_path} from {release_dir} to {out_dir}"
     )
@@ -86,6 +102,19 @@ def release_to_out(out_dir: Path,
 
 
 def get_release_working_dirs(tmp_dir: Path):
+    """ Create and return the release and working subdirectories inside
+    a temporary directory.
+
+    Parameters
+    ----------
+    tmp_dir: Path
+        Root temporary directory.
+
+    Returns
+    -------
+    tuple[Path, Path]
+        Paths of the release and working subdirectories, respectively.
+    """
     release_dir = tmp_dir.joinpath(PENDING)
     working_dir = tmp_dir.joinpath(WORKING)
     release_dir.mkdir(parents=False, exist_ok=True)

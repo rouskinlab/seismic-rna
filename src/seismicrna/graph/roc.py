@@ -73,10 +73,12 @@ class ROCGraph(StructOneTableGraph):
         fpr = dict()
         tpr = dict()
         for state in self.iter_states():
-            key = state.data_name, state.title
+            key = state.mus_name, state.title
             if key in fpr or key in tpr:
                 raise ValueError(f"Duplicate RNA state: {key}")
-            fpr[key], tpr[key] = state.roc
+            fpr[key], tpr[key] = state.calc_roc(
+                terminal_pairs=self._terminal_pairs
+            )
         if not fpr or not tpr:
             raise ValueError(f"Got no data for {self}")
         # Consolidate the FPR and TPR data into two DataFrames.

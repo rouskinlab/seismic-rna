@@ -7,10 +7,17 @@ from click import command
 
 from .write import mask_region
 from ..core.arg import (CMD_MASK,
+                        PROBES,
+                        PROBE_DMS,
+                        PROBE_ETC,
+                        MUT_COLLISIONS_AUTO,
+                        DEFAULT_MIN_MUT_GAPS,
+                        DEFAULT_MUT_COLLISIONS,
                         arg_input_path,
                         opt_tmp_pfx,
                         opt_branch,
                         opt_keep_tmp,
+                        opt_probe,
                         opt_mask_coords,
                         opt_mask_primers,
                         opt_primer_gap,
@@ -21,7 +28,10 @@ from ..core.arg import (CMD_MASK,
                         opt_mask_mut,
                         opt_count_mut,
                         opt_mask_polya,
-                        opt_mask_gu,
+                        opt_mask_a,
+                        opt_mask_c,
+                        opt_mask_g,
+                        opt_mask_u,
                         opt_mask_pos,
                         opt_mask_pos_file,
                         opt_mask_read,
@@ -31,6 +41,7 @@ from ..core.arg import (CMD_MASK,
                         opt_min_finfo_read,
                         opt_max_fmut_read,
                         opt_min_mut_gap,
+                        opt_mut_collisions,
                         opt_min_ninfo_pos,
                         opt_max_fmut_pos,
                         opt_quick_unbias,
@@ -40,13 +51,91 @@ from ..core.arg import (CMD_MASK,
                         opt_brotli_level,
                         opt_num_cpus,
                         opt_force,
-                        optional_path,
-                        extra_defaults)
+                        optional_path)
 from ..core.logs import logger
 from ..core.run import run_func
 from ..core.seq import DNA, RefRegions
 from ..core.task import dispatch
 from ..relate.dataset import load_relate_dataset
+
+
+def set_mask_acgu(probe: str,
+                  mask_a: bool | None = None,
+                  mask_c: bool | None = None,
+                  mask_g: bool | None = None,
+                  mask_u: bool | None = None):
+    """ Resolve per-base masking flags based on the probe type.
+
+    Parameters
+    ----------
+    probe: str
+        Probe type (one of the values in ``PROBES``), used to set
+        defaults when a flag is None.
+    mask_a: bool or None, optional
+        Whether to mask adenine positions; if None, inferred from
+        ``probe``.
+    mask_c: bool or None, optional
+        Whether to mask cytosine positions; if None, inferred from
+        ``probe``.
+    mask_g: bool or None, optional
+        Whether to mask guanine positions; if None, inferred from
+        ``probe``.
+    mask_u: bool or None, optional
+        Whether to mask uracil/thymine positions; if None, inferred
+        from ``probe``.
+
+    Returns
+    -------
+    tuple[bool, bool, bool, bool]
+        Resolved ``(mask_a, mask_c, mask_g, mask_u)`` flags.
+    """
+    if probe not in PROBES:
+        raise ValueError(f"Invalid probe type: {repr(probe)}")
+    if mask_a is None:
+        mask_a = probe in [PROBE_ETC]
+    if mask_c is None:
+        mask_c = probe in [PROBE_ETC]
+    if mask_g is None:
+        mask_g = probe in [PROBE_DMS]
+    if mask_u is None:
+        mask_u = probe in [PROBE_DMS]
+    return mask_a, mask_c, mask_g, mask_u
+
+
+def set_mut_gap_params(probe: str,
+                       min_mut_gap: int | None = None,
+                       mut_collisions: str = MUT_COLLISIONS_AUTO):
+    """ Resolve mutation-gap and collision parameters based on the probe type.
+
+    Parameters
+    ----------
+    probe: str
+        Probe type (one of the values in ``PROBES``), used to set
+        defaults when a parameter is ``None`` / ``MUT_COLLISIONS_AUTO``.
+    min_mut_gap: int or None, optional
+        Minimum gap (in nucleotides) between two mutations in the same
+        read; if None, a probe-specific default is used.
+    mut_collisions: str, optional
+        How to handle reads with mutations closer than ``min_mut_gap``;
+        if ``MUT_COLLISIONS_AUTO``, a probe-specific default is used.
+
+    Returns
+    -------
+    tuple[int, str]
+        Resolved ``(min_mut_gap, mut_collisions)`` values.
+    """
+    if min_mut_gap is None:
+        min_mut_gap = DEFAULT_MIN_MUT_GAPS[probe]
+        logger.detail(
+            f"Auto-selected min_mut_gap={min_mut_gap} for probe {repr(probe)}"
+        )
+    if mut_collisions == MUT_COLLISIONS_AUTO:
+        mut_collisions = DEFAULT_MUT_COLLISIONS[probe]
+        logger.detail(
+            f"Auto-selected mut_collisions={repr(mut_collisions)} for probe "
+            f"{repr(probe)}"
+        )
+    return min_mut_gap, mut_collisions
 
 
 def load_regions(input_path: Iterable[str | Path],
@@ -67,14 +156,14 @@ def load_regions(input_path: Iterable[str | Path],
                           for ref_datasets in datasets.values()
                           for dataset in ref_datasets},
                          regs_file=regions_file,
-                         coords=coords,
+                         ends=coords,
                          primers=primers,
                          primer_gap=primer_gap,
                          exclude_primers=True)
     return datasets, regions
 
 
-@run_func(CMD_MASK, extra_defaults=extra_defaults)
+@run_func(CMD_MASK)
 def run(input_path: Iterable[str | Path], *,
         branch: str,
         tmp_pfx: str | Path,
@@ -90,8 +179,12 @@ def run(input_path: Iterable[str | Path], *,
         mask_mut: Iterable[str],
         count_mut: Iterable[str],
         # Filtering
+        probe: str,
+        mask_a: bool | None,
+        mask_c: bool | None,
+        mask_g: bool | None,
+        mask_u: bool | None,
         mask_polya: int,
-        mask_gu: bool,
         mask_pos: Iterable[tuple[str, int]],
         mask_pos_file: Iterable[str | Path],
         mask_read: Iterable[str],
@@ -102,7 +195,8 @@ def run(input_path: Iterable[str | Path], *,
         min_ncov_read: int,
         min_finfo_read: float,
         max_fmut_read: float,
-        min_mut_gap: int,
+        min_mut_gap: int | None,
+        mut_collisions: str,
         # Observer bias correction
         quick_unbias: bool,
         quick_unbias_thresh: float,
@@ -118,6 +212,14 @@ def run(input_path: Iterable[str | Path], *,
         # Effort
         force: bool) -> list[Path]:
     """ Define mutations and regions to filter reads and positions. """
+    mask_a, mask_c, mask_g, mask_u = set_mask_acgu(probe,
+                                                   mask_a,
+                                                   mask_c,
+                                                   mask_g,
+                                                   mask_u)
+    min_mut_gap, mut_collisions = set_mut_gap_params(probe,
+                                                     min_mut_gap,
+                                                     mut_collisions)
     datasets, regions = load_regions(
         input_path,
         coords=mask_coords,
@@ -143,7 +245,10 @@ def run(input_path: Iterable[str | Path], *,
                                 mask_mut=mask_mut,
                                 count_mut=count_mut,
                                 mask_polya=mask_polya,
-                                mask_gu=mask_gu,
+                                mask_a=mask_a,
+                                mask_c=mask_c,
+                                mask_g=mask_g,
+                                mask_u=mask_u,
                                 mask_pos=list(mask_pos),
                                 mask_pos_file=list(mask_pos_file),
                                 mask_read=list(mask_read),
@@ -153,6 +258,8 @@ def run(input_path: Iterable[str | Path], *,
                                 min_finfo_read=min_finfo_read,
                                 max_fmut_read=max_fmut_read,
                                 min_mut_gap=min_mut_gap,
+                                mut_collisions=mut_collisions,
+                                probe=probe,
                                 min_ninfo_pos=min_ninfo_pos,
                                 max_fmut_pos=max_fmut_pos,
                                 quick_unbias=quick_unbias,
@@ -181,8 +288,12 @@ params = [
     opt_mask_mut,
     opt_count_mut,
     # Filtering
+    opt_probe,
+    opt_mask_a,
+    opt_mask_c,
+    opt_mask_g,
+    opt_mask_u,
     opt_mask_polya,
-    opt_mask_gu,
     opt_mask_pos,
     opt_mask_pos_file,
     opt_min_ninfo_pos,
@@ -194,6 +305,7 @@ params = [
     opt_min_finfo_read,
     opt_max_fmut_read,
     opt_min_mut_gap,
+    opt_mut_collisions,
     # Observer bias correction
     opt_quick_unbias,
     opt_quick_unbias_thresh,

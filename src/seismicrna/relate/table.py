@@ -42,6 +42,25 @@ class RelatePositionTable(RelateTable, PositionTable, ABC):
                        rel: str,
                        k: int | None,
                        clust: int | None):
+        """
+        Yield RNA profiles from this table (always empty for relate).
+
+        Relate tables contain unfiltered reads and are unsuitable for
+        generating RNA mutational profiles.
+
+        Parameters
+        ----------
+        regions: Iterable[Region] | None
+            Regions for which to generate profiles; unused.
+        quantile: float
+            Quantile for normalization; unused.
+        rel: str
+            Relationship type to profile; unused.
+        k: int | None
+            Number of clusters; unused.
+        clust: int | None
+            Cluster index; unused.
+        """
         # Relate tables have unfiltered reads and are thus unsuitable
         # for making RNA profiles: do not generate any.
         yield from ()
@@ -78,6 +97,21 @@ class FullTabulator(Tabulator, ABC):
                  refseq: DNA,
                  count_ends: bool = False,
                  **kwargs):
+        """
+        Initialize a full-reference tabulator.
+
+        Parameters
+        ----------
+        ref: str
+            Name of the reference sequence.
+        refseq: DNA
+            Full reference sequence; used to construct the region
+            spanning the entire reference.
+        count_ends: bool
+            Whether to count read end positions.
+        **kwargs
+            Additional keyword arguments forwarded to the parent class.
+        """
         # For a full tabulator, the full reference sequence must be used
         # as the region.
         super().__init__(region=Region(ref, refseq),

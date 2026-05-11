@@ -13,10 +13,19 @@ cli_defaults = {param.name: param.default
                 for param in (cli_args | cli_opts).values()
                 if param.default is not None}
 
-extra_defaults = dict(fastp_adapter_fasta=None,
-                      mask_regions_file=None,
-                      join_clusts=None,
-                      fold_regions_file=None,
-                      fold_constraint=None,
-                      samples_meta=None,
-                      refs_meta=None)
+defaults_to_none = dict(fastp_adapter_fasta=None,
+                        mask_regions_file=None,
+                        min_mut_gap=None,
+                        mask_a=None,
+                        mask_c=None,
+                        mask_g=None,
+                        mask_u=None,
+                        join_clusts=None,
+                        fold_regions_file=None,
+                        fold_constraint=None,
+                        fold_commands=None,
+                        samples_meta=None,
+                        refs_meta=None,
+                        read_pos=None,
+                        collate_out_dir=None,
+						seed=None)

@@ -5,14 +5,15 @@ import numpy as np
 import pandas as pd
 
 from .base import RNARegion
-from .db import DB_NAME_MARK, format_db_structure
+from .db import DB_NAME_MARK, format_db_string, parse_db_string
 from .pair import (UNPAIRED,
                    find_root_pairs,
                    pairs_to_dict,
                    pairs_to_table,
                    renumber_pairs,
                    table_to_pairs)
-from ..seq import POS_NAME, intersect
+from ..seq import POS_NAME, DNA, RNA, Region, intersect
+from ..validate import require_isinstance, require_equal
 
 IDX_FIELD = "Index"
 BASE_FIELD = "Base"
@@ -76,6 +77,19 @@ class Rna2dStemLoop(RnaJunction):
 class RNAStructure(RNARegion):
     """ Secondary structure of an RNA. """
 
+    @classmethod
+    def from_db_string(cls,
+                       db_string: str,
+                       seq: DNA | RNA | str, *,
+                       seq5: int = 1,
+                       ref: str,
+                       reg: str,
+                       **kwargs):
+        """ Create an RNAStructure from a dot-bracket string. """
+        return cls(pairs=parse_db_string(db_string, seq5),
+                   region=Region(ref, seq, seq5=seq5, name=reg),
+                   **kwargs)
+
     def __init__(self, *,
                  title: str,
                  pairs: Iterable[tuple[int, int]],
@@ -110,21 +124,74 @@ class RNAStructure(RNARegion):
     @cached_property
     def pairs(self):
         """ Base pairs in the structure. """
-        return tuple(table_to_pairs(self.table))
+        return set(table_to_pairs(self.table))
 
     @cached_property
     def dict(self):
+        """ Map from each paired base to its partner. """
         return pairs_to_dict(self.pairs)
 
     @cached_property
     def roots(self):
+        """ All pairs that are not contained by any other pair. """
         return find_root_pairs(self.pairs)
 
     @cached_property
     def is_paired(self):
-        """ Series where each index is a position and each value is True
-        if the corresponding base is paired, otherwise False. """
+        """ Whether each base is paired. """
         return self.table != UNPAIRED
+
+    @cached_property
+    def is_unpaired(self):
+        """ Whether each base is unpaired. """
+        return self.table == UNPAIRED
+
+    @cached_property
+    def is_paired_internally(self):
+        """ Whether each base is paired and between two other base pairs
+        (no bulges or other unpaired bases next to it). """
+        is_internal = self.is_paired.copy()
+        # A base can be between two other base pairs only if both bases
+        # to its 5' and its 3' are paired.
+        paired5 = np.concatenate([[False], is_internal.values[:-1]])
+        paired3 = np.concatenate([is_internal.values[1:], [False]])
+        is_internal &= (paired5 & paired3)
+        # A base can be between two other base pairs only if its partner
+        # is also between two base pairs.
+        is_internal_index = is_internal[is_internal].index
+        is_internal.loc[is_internal_index] = (
+                is_internal.loc[is_internal_index]
+                &
+                is_internal.loc[self.table[is_internal]].values
+        )
+        # Pairs between adjacent bases are not considered internal
+        # because they are not flanked by a base pair on both sides.
+        table_is_internal = self.table[is_internal]
+        distance = np.abs(
+            table_is_internal
+            -
+            table_is_internal.index.get_level_values(POS_NAME)
+        )
+        is_internal.loc[distance.index] = distance > 1
+        # To handle pseudoknots, a base can be between two other base
+        # pairs only if its 5' base and partner's 3' base are partners,
+        # and its 3' base and partner's 5' base are partners.
+        is_internal_pos = is_internal[is_internal].index.get_level_values(
+            POS_NAME
+        )
+        internal_partners = self.table.loc[is_internal_pos]
+        pseudoknot = (np.logical_or(
+            internal_partners - 1 != self.table.loc[is_internal_pos + 1].values,
+            internal_partners + 1 != self.table.loc[is_internal_pos - 1].values
+        ))
+        is_internal.loc[pseudoknot.loc[pseudoknot].index] = False
+        return is_internal
+
+    @cached_property
+    def is_paired_terminally(self):
+        """ Whether each base is paired and terminates a consecutive
+        stretch of base pairs (i.e. is not internally paired). """
+        return self.is_paired & ~self.is_paired_internally
 
     def _subregion_kwargs(self,
                           end5: int,
@@ -185,16 +252,60 @@ class RNAStructure(RNARegion):
         return f"{DB_NAME_MARK}{self.title}"
 
     @cached_property
-    def db_structure(self):
+    def db_string(self):
         """ Dot-bracket string (structure only). """
-        return format_db_structure(self.pairs,
-                                   self.region.length,
-                                   self.region.end5)
+        return format_db_string(self.pairs,
+                                self.region.length,
+                                self.region.end5)
 
     def get_db_text(self, sequence: bool):
         """ Dot-bracket record. """
         lines = [self.db_title]
         if sequence:
             lines.append(str(self.seq))
-        lines.append(self.db_structure)
+        lines.append(self.db_string)
         return "".join([f"{line}\n" for line in lines])
+
+
+def calc_wfmi(struct1: RNAStructure,
+              struct2: RNAStructure,
+              terminal_pairs: bool = True):
+    """ Weighted Fowlkes-Mallows index between two structures. """
+    require_isinstance("struct1", struct1, RNAStructure)
+    require_isinstance("struct2", struct2, RNAStructure)
+    region = struct1.region
+    require_equal("struct1.region",
+                  region,
+                  struct2.region,
+                  "struct2.region")
+    # Whether each base is paired in each structure.
+    if terminal_pairs:
+        is_paired1 = struct1.is_paired
+        is_paired2 = struct2.is_paired
+    else:
+        is_paired1 = struct1.is_paired_internally
+        is_paired2 = struct2.is_paired_internally
+    # Number of positions that are unpaired in both structures.
+    n_unpaired = np.count_nonzero(struct1.is_unpaired & struct2.is_unpaired)
+    # Number of positions with structural information.
+    n_total = n_unpaired + np.count_nonzero(is_paired1 | is_paired2)
+    if n_total == 0:
+        # There are no positions with structural information.
+        return np.nan
+    # Calculate the Fowlkes-Mallows index (FMI).
+    n_paired1 = np.count_nonzero(is_paired1)
+    n_paired2 = np.count_nonzero(is_paired2)
+    if n_paired1 > 0 and n_paired2 > 0:
+        # FMI = TP / √(TP+FP)*(TP+FN)
+        both_paired = is_paired1 & is_paired2
+        n_paired12 = np.count_nonzero(
+            struct1.table[both_paired] == struct2.table[both_paired]
+        )
+        fmi = n_paired12 / np.sqrt(n_paired1 * n_paired2)
+    else:
+        # At least one structure has 0 base pairs.
+        fmi = 0.
+    # Weight the FMI by the fraction of positions that are paired in at
+    # least one structure.
+    f_unpaired = n_unpaired / n_total
+    return float(f_unpaired + (1. - f_unpaired) * fmi)

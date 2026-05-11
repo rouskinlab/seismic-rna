@@ -24,8 +24,6 @@ from ..core.write import need_write
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
-rng = np.random.default_rng()
-
 PROPORTION = "Proportion"
 
 
@@ -168,6 +166,35 @@ def sim_pends_ct(ct_file: Path, *,
                  length_fmean: float,
                  length_fvar: float,
                  force: bool):
+    """
+    Simulate read-end coordinate probabilities for a CT file region.
+
+    Determines the region boundaries from the CT file, simulates the
+    probability distribution over all (5', 3') end coordinate pairs,
+    and writes the result to a CSV file.
+
+    Parameters
+    ----------
+    ct_file: Path
+        Path to the connectivity table (CT) file defining the region.
+    center_fmean: float
+        Mean read center as a fraction of the region length (0 to 1).
+    center_fvar: float
+        Variance of the read center as a fraction of its maximum
+        (0 to 1).
+    length_fmean: float
+        Mean read length as a fraction of the available length (0 to 1).
+    length_fvar: float
+        Variance of the read length as a fraction of its maximum
+        (0 to 1).
+    force: bool
+        Whether to overwrite an existing output file.
+
+    Returns
+    -------
+    Path
+        Path of the written end-coordinate proportions CSV file.
+    """
     pends_file = ct_file.with_suffix(path.PARAM_ENDS_EXT)
     if need_write(pends_file, force):
         region = find_ct_region(ct_file)

@@ -9,6 +9,7 @@ from ..core.arg import (CMD_CLUSTER,
                         opt_branch,
                         opt_tmp_pfx,
                         opt_keep_tmp,
+                        opt_probe,
                         opt_min_clusters,
                         opt_max_clusters,
                         opt_min_em_runs,
@@ -19,6 +20,7 @@ from ..core.arg import (CMD_CLUSTER,
                         opt_jackpot,
                         opt_jackpot_conf_level,
                         opt_max_jackpot_quotient,
+                        opt_jackpot_max_data,
                         opt_max_pearson_run,
                         opt_min_marcd_run,
                         opt_max_arcd_vs_ens_avg,
@@ -33,6 +35,7 @@ from ..core.arg import (CMD_CLUSTER,
                         opt_verify_times,
                         opt_brotli_level,
                         opt_num_cpus,
+                        opt_seed,
                         opt_force)
 from ..core.run import run_func
 from ..core.task import as_list_of_tuples, dispatch
@@ -44,6 +47,7 @@ def run(input_path: Iterable[str | Path], *,
         branch: str,
         tmp_pfx: str | Path,
         keep_tmp: bool,
+        probe: str,
         min_clusters: int,
         max_clusters: int,
         min_em_runs: int,
@@ -58,6 +62,7 @@ def run(input_path: Iterable[str | Path], *,
         jackpot: bool,
         jackpot_conf_level: float,
         max_jackpot_quotient: float,
+        jackpot_max_data: int,
         max_loglike_vs_best: float,
         min_pearson_vs_best: float,
         max_marcd_vs_best: float,
@@ -68,7 +73,8 @@ def run(input_path: Iterable[str | Path], *,
         verify_times: bool,
         brotli_level: int,
         num_cpus: int,
-        force: bool) -> list[Path]:
+        force: bool,
+        seed: int | None) -> list[Path]:
     """ Infer alternative structures by clustering reads' mutations. """
     datasets = load_mask_dataset.iterate(input_path, verify_times=verify_times)
     return dispatch(cluster,
@@ -81,6 +87,7 @@ def run(input_path: Iterable[str | Path], *,
                     kwargs=dict(tmp_pfx=tmp_pfx,
                                 branch=branch,
                                 keep_tmp=keep_tmp,
+                                probe=probe,
                                 min_clusters=min_clusters,
                                 max_clusters=max_clusters,
                                 min_em_runs=min_em_runs,
@@ -95,6 +102,7 @@ def run(input_path: Iterable[str | Path], *,
                                 jackpot=jackpot,
                                 jackpot_conf_level=jackpot_conf_level,
                                 max_jackpot_quotient=max_jackpot_quotient,
+                                jackpot_max_data=jackpot_max_data,
                                 max_loglike_vs_best=max_loglike_vs_best,
                                 min_pearson_vs_best=min_pearson_vs_best,
                                 max_marcd_vs_best=max_marcd_vs_best,
@@ -104,13 +112,16 @@ def run(input_path: Iterable[str | Path], *,
                                 cluster_abundance_table=cluster_abundance_table,
                                 verify_times=verify_times,
                                 brotli_level=brotli_level,
-                                force=force))
+                                force=force,
+                                seed=seed))
 
 
 params = [
     # Input and output files
     arg_input_path,
     opt_branch,
+    # Probe options
+    opt_probe,
     # Clustering options
     opt_min_clusters,
     opt_max_clusters,
@@ -126,6 +137,7 @@ params = [
     opt_jackpot,
     opt_jackpot_conf_level,
     opt_max_jackpot_quotient,
+    opt_jackpot_max_data,
     opt_max_loglike_vs_best,
     opt_min_pearson_vs_best,
     opt_max_marcd_vs_best,
@@ -144,6 +156,7 @@ params = [
     opt_force,
     opt_tmp_pfx,
     opt_keep_tmp,
+    opt_seed,
 ]
 
 

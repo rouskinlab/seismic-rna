@@ -95,6 +95,15 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
         return RelColorMap
 
     def __init__(self, *, mutdist_null: bool, **kwargs):
+        """
+        Parameters
+        ----------
+        mutdist_null: bool
+            If True, compute and overlay a null-model histogram that
+            assumes mutations are independent.
+        **kwargs
+            Forwarded to the parent class.
+        """
         super().__init__(**kwargs)
         self.calc_null = mutdist_null
 

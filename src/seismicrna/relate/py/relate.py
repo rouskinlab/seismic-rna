@@ -121,6 +121,28 @@ def _add_indel(pods: list[IndelPod],
                pod_type: type[IndelPod],
                opposite: int,
                lateral3: int):
+    """
+    Add a new indel to the appropriate pod, creating one if needed.
+
+    Parameters
+    ----------
+    pods: list[IndelPod]
+        Current list of pods; a new pod of `pod_type` is appended if
+        the last pod is not of that type.
+    pod_type: type[IndelPod]
+        Type of pod (DeletionPod or InsertionPod) to use.
+    opposite: int
+        Position in the opposite sequence (reference for deletions,
+        read for insertions) at which the indel is located.
+    lateral3: int
+        1-indexed position immediately 3' of the indel in its own
+        sequence.
+
+    Returns
+    -------
+    Indel
+        The newly created indel object.
+    """
     if not pods or not isinstance(pods[-1], pod_type):
         pods.append(pod_type())
     pod = pods[-1]
@@ -399,6 +421,27 @@ def _validate_read(read: SamRead,
                    min_mapq: int,
                    paired: bool,
                    proper: bool):
+    """
+    Validate a SAM read against expected attributes.
+
+    Parameters
+    ----------
+    read: SamRead
+        Parsed SAM read to validate.
+    ref: str
+        Expected reference name for this read.
+    min_mapq: int
+        Minimum acceptable mapping quality score.
+    paired: bool
+        Whether the read is expected to be paired-end.
+    proper: bool
+        Whether the read is expected to be properly paired.
+
+    Raises
+    ------
+    RelateError
+        If any attribute of the read does not match expectations.
+    """
     if read.ref != ref:
         raise RelateError("Reference name does not match name of SAM file")
     if read.mapq < min_mapq:
@@ -459,6 +502,34 @@ def _merge_rels(end5sf: list[int],
                 end5sr: list[int],
                 end3sr: list[int],
                 relsr: dict[int, int]):
+    """
+    Merge relationship dictionaries from forward and reverse mates.
+
+    For each position present in either mate's relationships, compute
+    the bitwise AND of the two relationship codes (treating uncovered
+    positions as MATCH within covered segments and NOCOV outside).
+
+    Parameters
+    ----------
+    end5sf: list[int]
+        5' segment ends for the forward mate.
+    end3sf: list[int]
+        3' segment ends for the forward mate.
+    relsf: dict[int, int]
+        Relationship codes for mutated positions in the forward mate.
+    end5sr: list[int]
+        5' segment ends for the reverse mate.
+    end3sr: list[int]
+        3' segment ends for the reverse mate.
+    relsr: dict[int, int]
+        Relationship codes for mutated positions in the reverse mate.
+
+    Returns
+    -------
+    dict[int, int]
+        Merged relationship codes for positions that are mutated in the
+        combined paired-end read.
+    """
     merged_rels = dict()
     for pos in relsf | relsr:
         relf = relsf.get(pos, MATCH if any(end5f <= pos <= end3f
@@ -482,6 +553,36 @@ def merge_mates(end5sf: list[int],
                 end3sr: list[int],
                 relsr: dict[int, int],
                 overhangs: bool):
+    """
+    Merge segment coordinates and relationships from a paired-end read.
+
+    Optionally trims overhanging ends so that the forward mate does not
+    extend past the reverse mate and vice versa.
+
+    Parameters
+    ----------
+    end5sf: list[int]
+        5' segment ends for the forward mate.
+    end3sf: list[int]
+        3' segment ends for the forward mate.
+    relsf: dict[int, int]
+        Relationship codes for the forward mate.
+    end5sr: list[int]
+        5' segment ends for the reverse mate.
+    end3sr: list[int]
+        3' segment ends for the reverse mate.
+    relsr: dict[int, int]
+        Relationship codes for the reverse mate.
+    overhangs: bool
+        Whether to allow one mate to overhang the other.  If False,
+        overhanging regions are trimmed before merging.
+
+    Returns
+    -------
+    tuple[tuple[list[int], list[int]], dict[int, int]]
+        Combined (end5s, end3s) for all segments and the merged
+        relationship codes for mutated positions.
+    """
     if not overhangs:
         # The 5' end of the reverse mate cannot extend past the 5' end
         # of the forward mate.
@@ -512,6 +613,43 @@ def calc_rels_lines(line1: str,
                     overhangs: bool,
                     clip_end5: int = 0,
                     clip_end3: int = 0):
+    """
+    Calculate relationships for one SAM record (single or paired-end).
+
+    Parameters
+    ----------
+    line1: str
+        First SAM alignment line (always present).
+    line2: str
+        Second SAM alignment line for paired-end reads; empty string
+        for single-end reads or improperly paired reads.
+    ref: str
+        Expected reference name.
+    refseq: str
+        Full reference sequence string.
+    min_mapq: int
+        Minimum acceptable mapping quality score.
+    min_qual: int
+        Minimum Phred quality score (as an integer) to accept a base
+        call; converted to a character internally.
+    insert3: bool
+        Whether to mark insertions on the 3' (True) or 5' (False)
+        flanking reference position.
+    ambindel: bool
+        Whether to find and label all ambiguous indel positions.
+    overhangs: bool
+        Whether to allow paired-end mates to overhang one another.
+    clip_end5: int
+        Number of bases to clip from the 5' end of each read.
+    clip_end3: int
+        Number of bases to clip from the 3' end of each read.
+
+    Returns
+    -------
+    tuple[tuple[list[int], list[int]], dict[int, int]]
+        Segment end coordinates (end5s, end3s) and relationship codes
+        for mutated positions.
+    """
     # Determine if the read is paired-end and properly paired.
     paired = bool(line2)
     proper = paired and line1 != line2

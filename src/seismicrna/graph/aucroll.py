@@ -36,10 +36,14 @@ class RollingAUCGraph(StructOneTableGraph, RollingGraph):
         # Collect the rolling AUC-ROC from every RNA state.
         data = dict()
         for state in self.iter_states():
-            key = state.data_name, state.title
+            key = state.mus_name, state.title
             if key in data:
                 raise ValueError(f"Duplicate RNA state: {key}")
-            data[key] = state.rolling_auc(self._size, self._min_count)
+            data[key] = state.calc_auc_rolling(
+                size=self._size,
+                min_data=self._min_count,
+                terminal_pairs=self._terminal_pairs
+            )
         if not data:
             raise ValueError(f"Got no data for {self}")
         # Covert the data into a DataFrame and rename the column levels.

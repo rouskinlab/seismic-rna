@@ -62,7 +62,17 @@ class FastaCleaner(object):
 
 
 def clean_fasta(fasta_in: Path, fasta_out: Path, force: bool = False):
-    """ Clean a FASTA file. """
+    """ Clean a FASTA file.
+
+    Parameters
+    ----------
+    fasta_in: Path
+        Path to the input FASTA file to clean.
+    fasta_out: Path
+        Path to the output FASTA file to write.
+    force: bool
+        If True, overwrite the output file if it already exists.
+    """
     # Make the output directory, if it does not exist.
     fasta_out.parent.mkdir(parents=True, exist_ok=True)
     # Clean the FASTA file.

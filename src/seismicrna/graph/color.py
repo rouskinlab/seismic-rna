@@ -36,6 +36,22 @@ class SeqColorMap(ColorMap):
     """ Color map for bases A, C, G, and T. """
 
     def __init__(self, name: str, a: str, c: str, g: str, t: str, n: str):
+        """
+        Parameters
+        ----------
+        name: str
+            Unique name for this color map.
+        a: str
+            Color for adenine (A) bases.
+        c: str
+            Color for cytosine (C) bases.
+        g: str
+            Color for guanine (G) bases.
+        t: str
+            Color for thymine/uracil (T/U) bases.
+        n: str
+            Color for unknown (N) bases.
+        """
         super().__init__(name, a=a, c=c, g=g, t=t, n=n)
 
     def _set_colors(self, *, a: str, c: str, g: str, t: str, n: str):
@@ -62,6 +78,36 @@ class RelColorMap(ColorMap):
                  g: str,
                  t: str,
                  x: str):
+        """
+        Parameters
+        ----------
+        name: str
+            Unique name for this color map.
+        v: str
+            Color for Covered relationships.
+        n: str
+            Color for Informative relationships.
+        e: str
+            Color for Matched relationships.
+        m: str
+            Color for Mutated relationships.
+        d: str
+            Color for Deleted relationships.
+        i: str
+            Color for Inserted relationships.
+        s: str
+            Color for Substituted relationships.
+        a: str
+            Color for Substituted-to-A relationships.
+        c: str
+            Color for Substituted-to-C relationships.
+        g: str
+            Color for Substituted-to-G relationships.
+        t: str
+            Color for Substituted-to-T relationships.
+        x: str
+            Default color for unknown/other relationships.
+        """
         super().__init__(name,
                          v=v,
                          n=n,
@@ -221,6 +267,15 @@ class ColorMapGraph(BaseGraph, ABC):
         """ Type of the color map. """
 
     def __init__(self, *, cmap: str | None = None, **kwargs):
+        """
+        Parameters
+        ----------
+        cmap: str or None, optional
+            Name of the color map to use.  If None, the default color
+            map for the graph's ``get_cmap_type()`` class is used.
+        **kwargs
+            Forwarded to the next class in the MRO.
+        """
         super().__init__(**kwargs)
         self._cmap_name = cmap
 

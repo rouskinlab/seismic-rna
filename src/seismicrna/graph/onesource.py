@@ -29,6 +29,17 @@ class OneSourceClusterGroupGraph(OneSourceGraph, ClusterGroupGraph, ABC):
                  k: int | None,
                  clust: int | None,
                  **kwargs):
+        """
+        Parameters
+        ----------
+        k: int or None
+            Number of clusters to select; None selects all.
+        clust: int or None
+            Cluster index to select; None selects all.
+        **kwargs
+            Forwarded to the parent class.  A ``K_CLUST_KEY`` entry, if
+            present, is popped and stored for later use.
+        """
         self.k_clust_list = kwargs.pop(K_CLUST_KEY, None)
         super().__init__(**kwargs)
         self.k = k

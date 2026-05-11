@@ -43,6 +43,19 @@ class TwoTableGraph(TableGraph, ABC):
                  table1: Table | PositionTable,
                  table2: Table | PositionTable,
                  **kwargs):
+        """
+        Parameters
+        ----------
+        out_dir: str or Path
+            Top-level output directory for graph files (used when the
+            two tables come from different samples).
+        table1: Table or PositionTable
+            First table providing data for comparison.
+        table2: Table or PositionTable
+            Second table providing data for comparison.
+        **kwargs
+            Forwarded to the parent class.
+        """
         super().__init__(**kwargs)
         self._top = Path(out_dir)
         self.table1 = table1
@@ -152,6 +165,20 @@ class TwoTableRelClusterGroupGraph(TwoTableGraph,
                  k2: int | None,
                  clust2: int | None,
                  **kwargs):
+        """
+        Parameters
+        ----------
+        k1: int or None
+            Number of clusters to select from table 1; None selects all.
+        clust1: int or None
+            Cluster index to select from table 1; None selects all.
+        k2: int or None
+            Number of clusters to select from table 2; None selects all.
+        clust2: int or None
+            Cluster index to select from table 2; None selects all.
+        **kwargs
+            Forwarded to the parent class.
+        """
         super().__init__(**kwargs)
         self.k1 = k1
         self.clust1 = clust1
@@ -251,6 +278,18 @@ class TwoTableWriter(TableWriter, ABC):
         """ Type of graph. """
 
     def __init__(self, table1: Table, table2: Table, **kwargs):
+        """
+        Parameters
+        ----------
+        table1: Table
+            First table (or its file path) providing data for the
+            graph(s).
+        table2: Table
+            Second table (or its file path) providing data for the
+            graph(s).
+        **kwargs
+            Forwarded to the parent class.
+        """
         super().__init__(table1, table2, **kwargs)
 
     @cached_property
@@ -269,6 +308,23 @@ class TwoTableWriter(TableWriter, ABC):
 class TwoTableRelClusterGroupWriter(TwoTableWriter, ABC):
 
     def iter_graphs(self, *, rels: list[str], cgroup: str, **kwargs):
+        """ Yield graphs for every relationship and cluster-group pair.
+
+        Parameters
+        ----------
+        rels: list[str]
+            Relationship codes to graph.
+        cgroup: str
+            Cluster-grouping strategy applied to both tables.
+        **kwargs
+            Additional keyword arguments forwarded to the graph class.
+
+        Yields
+        ------
+        TwoTableRelClusterGroupGraph
+            One graph per (cluster group from table1, cluster group from
+            table2, relationship) combination.
+        """
         for cparams1, cparams2 in product(cgroup_table(self.table1, cgroup),
                                           cgroup_table(self.table2, cgroup)):
             for rel in rels:
@@ -330,6 +386,30 @@ class TwoTableRunner(TableRunner, ABC):
             verify_times: bool,
             num_cpus: int,
             **kwargs):
+        """ Load all tables and write comparison graphs for each pair.
+
+        Parameters
+        ----------
+        input_path: Iterable[str or Path]
+            Paths to input files or directories to search for tables.
+        compself: bool
+            If True, compare each table with itself.
+        comppair: bool
+            If True, compare every pair of different tables with the
+            same reference and region.
+        verify_times: bool
+            Whether to verify file modification times when loading
+            tables.
+        num_cpus: int
+            Number of CPUs for parallel graph writing.
+        **kwargs
+            Forwarded to each writer's ``write`` method.
+
+        Returns
+        -------
+        list[Path]
+            Paths of all written output files.
+        """
         # List all table files.
         tables = list(load_pos_tables(input_path,
                                       verify_times=verify_times))

@@ -57,8 +57,8 @@ from ..core.arg import (CMD_ALIGN,
                         opt_sep_strands,
                         opt_rev_label,
                         opt_f1r2_fwd,
-                        optional_path,
-                        extra_defaults)
+                        opt_seed,
+                        optional_path)
 from ..core.extern import (BOWTIE2_CMD,
                            BOWTIE2_BUILD_CMD,
                            FASTP_CMD,
@@ -67,10 +67,7 @@ from ..core.extern import (BOWTIE2_CMD,
 from ..core.run import run_func
 
 
-@run_func(CMD_ALIGN,
-          with_tmp=True,
-          pass_keep_tmp=True,
-          extra_defaults=extra_defaults)
+@run_func(CMD_ALIGN, with_tmp=True, pass_keep_tmp=True)
 def run(fasta: str | Path, *,
         # Inputs
         fastqz: Iterable[str | Path],
@@ -119,6 +116,7 @@ def run(fasta: str | Path, *,
         bt2_dpad: int,
         bt2_orient: str,
         bt2_un: bool,
+        seed: int | None,
         # Samtools
         min_mapq: int,
         min_reads: int,
@@ -188,6 +186,7 @@ def run(fasta: str | Path, *,
         bt2_r=bt2_r,
         bt2_dpad=bt2_dpad,
         bt2_orient=bt2_orient,
+        seed=seed,
         min_mapq=min_mapq,
         min_reads=min_reads,
         sep_strands=sep_strands,
@@ -246,6 +245,7 @@ params = [
     opt_bt2_dpad,
     opt_bt2_orient,
     opt_bt2_un,
+    opt_seed,
     # Samtools
     opt_min_mapq,
     opt_min_reads,

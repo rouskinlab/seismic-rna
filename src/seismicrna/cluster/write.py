@@ -15,21 +15,21 @@ from .report import ClusterReport
 from .summary import write_summaries
 from .uniq import UniqReads
 from ..core import path
+from ..core.arg import DEFAULT_MIN_MUT_GAPS, DEFAULT_MUT_COLLISIONS
 from ..core.header import validate_ks
 from ..core.logs import logger
+from ..core.random import get_random_integer_generator
 from ..core.task import dispatch
 from ..core.tmp import release_to_out, with_tmp_dir
-from ..core.types import get_max_uint
 from ..core.write import need_write
 from ..mask.dataset import MaskMutsDataset, JoinMaskMutsDataset
-
-SEED_DTYPE = np.uint32
 
 
 def run_k(uniq_reads: UniqReads,
           k: int,
           num_runs: int, *,
           num_cpus: int,
+          seed: int,
           **kwargs) -> list[EMRun]:
     """ Run EM with a specific number of clusters. """
     if k < 1:
@@ -39,14 +39,10 @@ def run_k(uniq_reads: UniqReads,
             f"Expected num_runs to be ≥ 1, but got {num_runs}: setting to 1"
         )
         num_runs = 1
-    rng = np.random.default_rng()
-    # On some but not all platforms, using this central source of seeds
-    # is necessary because otherwise the runs would all take identical
-    # trajectories, defeating the purpose of replicates.
-    seeds = rng.integers(get_max_uint(SEED_DTYPE),
-                         size=num_runs,
-                         dtype=SEED_DTYPE)
-    args = [(uniq_reads, k, seed) for seed in seeds]
+    # Use the main seed to generate a unique seed for each run of EM.
+    seeds = [s for _, s in zip(range(num_runs),
+                               get_random_integer_generator(seed))]
+    args = [(uniq_reads, k, s) for s in seeds]
     runs = dispatch(EMRun,
                     num_cpus=num_cpus,
                     pass_num_cpus=False,
@@ -79,6 +75,7 @@ def run_ks(uniq_reads: UniqReads,
            em_thresh: float,
            num_cpus: int,
            top: Path,
+           seed: int,
            **kwargs):
     """ Run EM with multiple numbers of clusters. """
     if min_em_runs < 1:
@@ -105,6 +102,11 @@ def run_ks(uniq_reads: UniqReads,
                    path.REG: uniq_reads.region.name}
     runs_ks = dict()
     ks = validate_ks(ks)
+    # Generate a different random seed for each batch of EM runs.
+    # This is essential if the while loop below runs multiple times,
+    # in which case using the same seed for each loop iteration would
+    # cause it to produce the same results.
+    seeds = iter(get_random_integer_generator(seed))
     # Loop through every K if try_all_ks is True, otherwise go until the
     # current K is worse than the previous K or raises an error.
     for k in ks:
@@ -145,6 +147,7 @@ def run_ks(uniq_reads: UniqReads,
                                     max_iter=(max_iter if k > 1 else 2),
                                     max_jackpot_quotient=max_jackpot_quotient,
                                     num_cpus=num_cpus,
+                                    seed=next(seeds),
                                     **kwargs))
                 # Collect all runs so far for this K.
                 runs_ks[k] = EMRunsK(runs_k,
@@ -189,6 +192,7 @@ def run_ks(uniq_reads: UniqReads,
 def cluster(dataset: MaskMutsDataset | JoinMaskMutsDataset, *,
             branch: str,
             tmp_dir: Path,
+            probe: str,
             min_clusters: int,
             max_clusters: int,
             try_all_ks: bool,
@@ -200,6 +204,7 @@ def cluster(dataset: MaskMutsDataset | JoinMaskMutsDataset, *,
             cluster_pos_table: bool,
             cluster_abundance_table: bool,
             verify_times: bool,
+            seed: int | None,
             **kwargs):
     """ Cluster unique reads from one mask dataset. """
     # Check if the report file already exists.
@@ -211,7 +216,22 @@ def cluster(dataset: MaskMutsDataset | JoinMaskMutsDataset, *,
                                             path.REG: dataset.region.name})
     if need_write(report_file, force):
         began = datetime.now()
+        # Check compatibility of the probe and mutation gap parameters.
+        if (
+            dataset.min_mut_gap != DEFAULT_MIN_MUT_GAPS[probe]
+            or dataset.mut_collisions != DEFAULT_MUT_COLLISIONS[probe]
+        ):
+            logger.warning(
+                f"When clustering with probe {repr(probe)}, it is recommended "
+                f"to use min_mut_gap={DEFAULT_MIN_MUT_GAPS[probe]} "
+                f"and mut_collisions={DEFAULT_MUT_COLLISIONS[probe]}, "
+                f"but got min_mut_gap={dataset.min_mut_gap} "
+                f"and mut_collisions={dataset.mut_collisions}. "
+                "The chosen settings make false positive clusters more likely."
+            )
         # Load the unique reads.
+        uniq_reads = UniqReads.from_dataset_contig(dataset, branch)
+        # Create the temporary directory for clustering.
         tmp_clust_dir = path.buildpar(path.REG_DIR_SEGS,
                                       {path.TOP: tmp_dir,
                                        path.SAMPLE: dataset.sample,
@@ -219,11 +239,6 @@ def cluster(dataset: MaskMutsDataset | JoinMaskMutsDataset, *,
                                        path.BRANCHES: branches,
                                        path.REF: dataset.ref,
                                        path.REG: dataset.region.name})
-        if dataset.min_mut_gap != 4:
-            logger.warning("For clustering, it is highly recommended to use "
-                           "the observer bias correction with min_mut_gap=4, "
-                           f"but got min_mut_gap={dataset.min_mut_gap}")
-        uniq_reads = UniqReads.from_dataset_contig(dataset, branch)
         # Run clustering for every number of clusters.
         if max_clusters >= 1:
             max_clusters_use = max_clusters
@@ -240,6 +255,14 @@ def cluster(dataset: MaskMutsDataset | JoinMaskMutsDataset, *,
             raise ValueError(
                 f"max_clusters must be ≥ 0, but got {max_clusters}"
             )
+        # The cluster report expects the random seed to be an integer,
+        # so if it is None, convert it to an integer. This also enables
+        # a user to reproduce the clustering results by rerunning with
+        # the same seed that is chosen randomly here.
+        if seed is None:
+            seed = next(iter(get_random_integer_generator(None)))
+            logger.detail(f"No random seed specified for clustering: "
+                          f"using random seed {seed}")
         runs_ks = run_ks(uniq_reads,
                          ks=range(min_clusters,
                                   max_clusters_use + 1),
@@ -247,6 +270,7 @@ def cluster(dataset: MaskMutsDataset | JoinMaskMutsDataset, *,
                          max_em_runs=max_em_runs,
                          num_cpus=num_cpus,
                          top=tmp_dir,
+                         seed=seed,
                          **kwargs)
         runs_ks_list = list(runs_ks.values())
         # Choose which numbers of clusters to write.
@@ -286,6 +310,7 @@ def cluster(dataset: MaskMutsDataset | JoinMaskMutsDataset, *,
                                              checksums=batch_writer.checksums,
                                              began=began,
                                              ended=ended,
+                                             seed=seed,
                                              **kwargs)
         report_saved = report.save(tmp_dir)
         release_to_out(dataset.top, tmp_dir, report_saved.parent)

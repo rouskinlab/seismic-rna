@@ -42,6 +42,7 @@ RE_PATTERNS = {str: STR_PATTERN,
                pathlib.Path: PATH_PATTERN}
 
 # Names of steps
+DEMULT_STEP = "demult"
 ALIGN_STEP = "align"
 RELATE_STEP = "relate"
 NAMES_BATCH = "names"
@@ -114,17 +115,20 @@ FQ1_EXTS = tuple(template.format(1, ext) for template, ext in
                  product(FQ_PAIRED_EXTS_TEMPLATES, FQ_EXTS))
 FQ2_EXTS = tuple(template.format(2, ext) for template, ext in
                  product(FQ_PAIRED_EXTS_TEMPLATES, FQ_EXTS))
+FQ_ALL_EXTS = FQ1_EXTS + FQ2_EXTS + FQ_EXTS
 SAM_EXT = ".sam"
 BAM_EXT = ".bam"
 CRAM_EXT = ".cram"
 XAM_EXTS = SAM_EXT, BAM_EXT, CRAM_EXT
 FAI_EXT = ".fai"
+VIENNA_EXT = ".vienna"
+VIENNA_SUBOPT_EXT = ".subopt-vienna"
 CT_EXT = ".ct"
 DB_EXT = ".db"
 DBN_EXT = ".dbn"
 DOT_EXT = ".dot"
 DOT_EXTS = DB_EXT, DBN_EXT, DOT_EXT
-DMS_EXT = ".dms"
+MUS_EXT = ".mus"
 KTS_EXT = ".kts"
 HTML_EXT = ".html"
 SVG_EXT = ".svg"
@@ -172,22 +176,25 @@ def fill_whitespace(path: str | pathlib.Path,
 
 def sanitize(path: str | pathlib.Path, strict: bool = False):
     """ Sanitize a path-like object by ensuring it is an absolute path,
-    eliminating symbolic links and redundant path separators/references,
-    and returning a Path object.
+    eliminating redundant path separators/references, and returning a
+    Path object.
 
     Parameters
     ----------
     path: str | pathlib.Path
         Path to sanitize.
-    strict: bool = False
+    strict: bool
         Require the path to exist and contain no symbolic link loops.
 
     Returns
     -------
     pathlib.Path
-        Absolute, normalized, symlink-free path.
+        Normalized absolute path.
     """
-    return pathlib.Path(path).resolve(strict=strict)
+    sanitized = pathlib.Path(os.path.abspath(path))
+    if strict:
+        os.path.realpath(sanitized, strict=strict)
+    return sanitized
 
 
 @cache
@@ -406,8 +413,10 @@ class BranchesPathField(PathField):
 # Fields
 TopField = PathField(pathlib.Path)
 NameField = PathField(str)
+InfoField = PathField(str)
 StepField = PathField(str,
-                      [ALIGN_STEP,
+                      [DEMULT_STEP,
+                       ALIGN_STEP,
                        RELATE_STEP,
                        MASK_STEP,
                        CLUSTER_STEP,
@@ -437,14 +446,16 @@ FastqExt = PathField(str, FQ_EXTS, is_ext=True)
 Fastq1Ext = PathField(str, FQ1_EXTS, is_ext=True)
 Fastq2Ext = PathField(str, FQ2_EXTS, is_ext=True)
 XamExt = PathField(str, XAM_EXTS, is_ext=True)
+ViennaExt = PathField(str, [VIENNA_EXT], is_ext=True)
 ConnectTableExt = PathField(str, [CT_EXT], is_ext=True)
 DotBracketExt = PathField(str, DOT_EXTS, is_ext=True)
-DmsReactsExt = PathField(str, [DMS_EXT], is_ext=True)
+MusExt = PathField(str, [MUS_EXT], is_ext=True)
 GraphExt = PathField(str, GRAPH_EXTS, is_ext=True)
 WebAppFileExt = PathField(str, [JSON_EXT], is_ext=True)
 SvgExt = PathField(str, [SVG_EXT], is_ext=True)
 PngExt = PathField(str, [PNG_EXT], is_ext=True)
 KtsExt = PathField(str, [KTS_EXT], is_ext=True)
+HtmlExt = PathField(str, [HTML_EXT], is_ext=True)
 
 
 def check_file_extension(file: str | pathlib.Path,
@@ -594,8 +605,11 @@ NCLUST = "k"
 RUN = "run"
 PROFILE = "profile"
 GRAPH = "graph"
+COLLATE_NAME = "collate_name"
+COLLATE_INFO = "collate_info"
 EXT = "ext"
 STRUCT = "struct"
+PART = "part"
 
 # Directory segments
 
@@ -623,6 +637,9 @@ Fastq2Seg = PathSegment("fastq2", {SAMPLE: NameField, EXT: Fastq2Ext})
 DmFastqSeg = PathSegment("dm-fastq", {REF: NameField, EXT: FastqExt})
 DmFastq1Seg = PathSegment("dm-fastq1", {REF: NameField, EXT: Fastq1Ext})
 DmFastq2Seg = PathSegment("dm-fastq2", {REF: NameField, EXT: Fastq2Ext})
+DmFastqPartSeg = PathSegment("dm-fastq-part", {PART: NameField,
+                                               REF: NameField,
+                                               EXT: FastqExt})
 
 # Align
 XamSeg = PathSegment("xam", {REF: NameField, EXT: XamExt})
@@ -699,12 +716,14 @@ ReadListSeg = PathSegment("read-list",
 FoldRepSeg = PathSegment("fold-rep",
                          {PROFILE: NameField, EXT: ReportExt},
                          frmt="{profile}__fold-report{ext}")
+ViennaSeg = PathSegment("rna-vienna",
+                        {PROFILE: NameField, EXT: ViennaExt})
 ConnectTableSeg = PathSegment("rna-ct",
                               {PROFILE: NameField, EXT: ConnectTableExt})
 DotBracketSeg = PathSegment("rna-dot",
                             {PROFILE: NameField, EXT: DotBracketExt})
-DmsReactsSeg = PathSegment("dms-reacts",
-                           {PROFILE: NameField, EXT: DmsReactsExt})
+MusSeg = PathSegment("mus",
+                     {PROFILE: NameField, EXT: MusExt})
 VarnaColorSeg = PathSegment("varna-color",
                             {PROFILE: NameField, EXT: TextExt},
                             frmt="{profile}__varna-color{ext}")
@@ -722,6 +741,16 @@ KtsSeg = PathSegment("kts",
 
 # Graphs
 GraphSeg = PathSegment("graph", {GRAPH: NameField, EXT: GraphExt})
+HtmlSeg = PathSegment("graph", {GRAPH: NameField, EXT: HtmlExt})
+
+# Collate
+CollateSeg = PathSegment("collate", {COLLATE_NAME: NameField,
+                                     EXT: HtmlExt},
+                         frmt="{collate_name}{ext}")
+CollateInfoSeg = PathSegment("collate", {COLLATE_NAME: NameField,
+                                         COLLATE_INFO: InfoField,
+                                         EXT: HtmlExt},
+                             frmt="{collate_name}_{collate_info}{ext}")
 
 # Web App Export
 WebAppFileSeg = PathSegment("webapp",
@@ -738,9 +767,14 @@ FASTA_INDEX_DIR_STAGE_SEGS = StageSeg, RefSeg
 FASTQ_SEGS = FastqSeg,
 FASTQ1_SEGS = Fastq1Seg,
 FASTQ2_SEGS = Fastq2Seg,
-DMFASTQ_SEGS = SampSeg, DmFastqSeg
-DMFASTQ1_SEGS = SampSeg, DmFastq1Seg
-DMFASTQ2_SEGS = SampSeg, DmFastq2Seg
+DMFASTQ_SEGS = STEP_DIR_SEGS + (SampSeg, DmFastqSeg)
+DMFASTQ1_SEGS = STEP_DIR_SEGS + (SampSeg, DmFastq1Seg)
+DMFASTQ2_SEGS = STEP_DIR_SEGS + (SampSeg, DmFastq2Seg)
+DMFASTQ_PART_SEGS = (DmFastqPartSeg,) + DMFASTQ_SEGS
+DMFASTQ1_PART_SEGS = (DmFastqPartSeg,) + DMFASTQ1_SEGS
+DMFASTQ2_PART_SEGS = (DmFastqPartSeg,) + DMFASTQ2_SEGS
+GRAPH_SEGS = REG_DIR_SEGS + (GraphSeg,)
+
 XAM_SEGS = STEP_DIR_SEGS + (XamSeg,)
 XAM_STAGE_SEGS = STAGE_DIR_SEGS + (XamSeg,)
 CLUST_TAB_SEGS = REG_DIR_SEGS + (ClustParamsDirSeg, ClustParamsFileSeg)
@@ -748,6 +782,9 @@ CT_FILE_ALL_SEGS = REG_DIR_SEGS + (ConnectTableSeg,)
 CT_FILE_LAST_SEGS = CT_FILE_ALL_SEGS[-3:]
 DB_FILE_ALL_SEGS = REG_DIR_SEGS + (DotBracketSeg,)
 DB_FILE_LAST_SEGS = DB_FILE_ALL_SEGS[-3:]
+DRAW_SEGS = REG_DIR_SEGS + (SvgSeg,)
+VIENNA_FILE_ALL_SEGS = REG_DIR_SEGS + (ViennaSeg,)
+VIENNA_FILE_LAST_SEGS = VIENNA_FILE_ALL_SEGS[-3:]
 
 
 # Paths ################################################################
@@ -961,7 +998,7 @@ def get_fields_in_seg_types(segment_types: Iterable[PathSegment],
     return {TOP: TopField, **fields_no_top} if include_top else fields_no_top
 
 
-def deduplicate(paths: Iterable[str | pathlib.Path], warn: bool = True):
+def deduplicate(paths: Iterable[str | pathlib.Path], warn: bool = False):
     """ Yield the non-redundant paths. """
     total = 0
     seen = set()

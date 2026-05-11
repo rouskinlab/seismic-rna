@@ -9,8 +9,6 @@ from seismicrna.core.mu import (calc_quantile,
                                 normalize,
                                 winsorize)
 
-rng = np.random.default_rng()
-
 
 class TestCalcQuantile(ut.TestCase):
 
@@ -22,6 +20,7 @@ class TestCalcQuantile(ut.TestCase):
                                0.5)
 
     def test_array1d(self):
+        rng = np.random.default_rng(seed=0)
         for n in range(1, 5):
             # Create a random order.
             order = np.arange(n)
@@ -44,6 +43,7 @@ class TestCalcQuantile(ut.TestCase):
                     self.assertTrue(np.isclose(value, quantile * mu_max))
 
     def test_array1d_some_nan(self):
+        rng = np.random.default_rng(seed=0)
         for n in range(1, 5):
             for n_nan in range(1, n - 1):
                 # Create a random order so that the NaN values are mixed
@@ -95,6 +95,7 @@ class TestCalcQuantile(ut.TestCase):
                 self.assertTrue(np.isnan(value))
 
     def test_series(self):
+        rng = np.random.default_rng(seed=0)
         for n in range(1, 5):
             # Create a random order.
             order = np.arange(n)
@@ -117,6 +118,7 @@ class TestCalcQuantile(ut.TestCase):
                     self.assertTrue(np.isclose(value, quantile * mu_max))
 
     def test_array2d(self):
+        rng = np.random.default_rng(seed=0)
         for nrow in range(1, 5):
             # Define quantiles of the array to check.
             quantiles = np.linspace(0., 1., nrow)
@@ -175,6 +177,7 @@ class TestCalcQuantile(ut.TestCase):
                             self.assertTrue(np.allclose(value, quantile * mu_max))
 
     def test_array2d_one_col_nan(self):
+        rng = np.random.default_rng(seed=0)
         for nrow in range(1, 5):
             # Define quantiles of the array to check.
             quantiles = np.linspace(0., 1., nrow)
@@ -207,6 +210,7 @@ class TestCalcQuantile(ut.TestCase):
                             self.assertTrue(np.all(np.isnan(value)))
 
     def test_dataframe(self):
+        rng = np.random.default_rng(seed=0)
         for nrow in range(1, 5):
             # Define quantiles of the array to check.
             quantiles = np.linspace(0., 1., nrow)
@@ -239,6 +243,7 @@ class TestCalcQuantile(ut.TestCase):
                         self.assertTrue(value.index.equals(mus.columns))
 
     def test_invalid_quantiles(self):
+        rng = np.random.default_rng(seed=0)
         n = 11
         mus = rng.random(n)
         valerr = r"Quantiles must be in the range [\[0, 1\]]"
@@ -274,6 +279,7 @@ class TestCalcQuantile(ut.TestCase):
 class TestNormalize(ut.TestCase):
 
     def test_array0d(self):
+        rng = np.random.default_rng(seed=0)
         mus = rng.random(())
         for quantile in np.linspace(0., 1., 5):
             if quantile == 0.:
@@ -423,6 +429,7 @@ class TestNormalize(ut.TestCase):
 class TestWinsorize(ut.TestCase):
 
     def test_arrays(self):
+        rng = np.random.default_rng(seed=0)
         for ndim in range(1, 4):
             for shape in product(range(4), repeat=ndim):
                 mus = rng.random(shape)
@@ -435,6 +442,7 @@ class TestWinsorize(ut.TestCase):
                     self.assertTrue(np.allclose(wins, expect))
 
     def test_series(self):
+        rng = np.random.default_rng(seed=0)
         for length in range(4):
             mus = pd.Series(rng.random(length))
             for quantile in np.linspace(0., 1., 5):
@@ -446,6 +454,7 @@ class TestWinsorize(ut.TestCase):
                 self.assertTrue(np.allclose(wins, expect))
 
     def test_dataframe(self):
+        rng = np.random.default_rng(seed=0)
         for nrow in range(4):
             for ncol in range(4):
                 mus = pd.DataFrame(rng.random((nrow, ncol)))

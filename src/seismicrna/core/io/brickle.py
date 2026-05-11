@@ -82,7 +82,25 @@ def save_brickle(item: BrickleIO,
                  file: str | Path,
                  brotli_level: int = DEFAULT_BROTLI_LEVEL,
                  force: bool = False):
-    """ Pickle an object, compress with Brotli, and save to a file. """
+    """ Pickle an object, compress with Brotli, and save to a file.
+
+    Parameters
+    ----------
+    item: BrickleIO
+        Object to pickle and compress.
+    file: str | Path
+        Path at which to save the compressed pickle file.
+    brotli_level: int
+        Brotli compression quality (0–11); higher means better
+        compression but slower.
+    force: bool = False
+        Overwrite the file if it already exists.
+
+    Returns
+    -------
+    str
+        SHA-512 checksum of the written data.
+    """
     require_isinstance("item", item, BrickleIO)
     logger.routine(f"Began writing {item} to {file}")
     # Save the item's state rather than the item itself.
@@ -104,7 +122,24 @@ def save_brickle(item: BrickleIO,
 def load_brickle(file: str | Path,
                  data_type: type[BrickleIO],
                  checksum: str):
-    """ Unpickle and return an object from a Brotli-compressed file. """
+    """ Unpickle and return an object from a Brotli-compressed file.
+
+    Parameters
+    ----------
+    file: str | Path
+        Path to the Brotli-compressed pickle file.
+    data_type: type[BrickleIO]
+        Expected type of the loaded object; must be a subclass of
+        BrickleIO.
+    checksum: str
+        Expected SHA-512 checksum of the file's raw bytes; pass an
+        empty string to skip checksum verification.
+
+    Returns
+    -------
+    BrickleIO
+        The loaded object.
+    """
     require_issubclass("data_type", data_type, BrickleIO)
     logger.routine(f"Began loading {data_type} from {file}")
     with open(file, "rb") as f:

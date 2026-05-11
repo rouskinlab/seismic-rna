@@ -73,6 +73,31 @@ def combine_metadata(special_metadata: dict[str, Any],
                      parsed_metadata: dict[Any, dict],
                      item: Any,
                      what: str = "item"):
+    """ Merge computed metadata with metadata parsed from a CSV file.
+
+    Parameters
+    ----------
+    special_metadata: dict[str, Any]
+        Metadata computed internally (e.g. sequence, read counts).
+        These values take precedence over ``parsed_metadata`` values,
+        and any key collision with a differing value raises an error.
+    parsed_metadata: dict[Any, dict]
+        Mapping from item identifier to its parsed metadata dict, as
+        returned by ``_parse_metadata``.
+    item: Any
+        The identifier used to look up the item in ``parsed_metadata``
+        (e.g. a sample name or reference name).
+    what: str, optional
+        Human-readable label for the item type, used in log/error
+        messages (default ``"item"``).
+
+    Returns
+    -------
+    dict[str, Any]
+        Union of ``special_metadata`` and the parsed metadata for
+        ``item``.  If ``item`` is not found in ``parsed_metadata``,
+        ``special_metadata`` is returned unchanged.
+    """
     try:
         item_metadata = parsed_metadata[item]
     except KeyError:

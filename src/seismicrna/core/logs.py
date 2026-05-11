@@ -22,7 +22,7 @@ class Level(IntEnum):
 
 
 DEFAULT_COLOR = True
-DEFAULT_EXIT_ON_ERROR = False
+DEFAULT_EXIT_ON_ERROR = True
 DEFAULT_VERBOSITY = Level.STATUS
 FILE_VERBOSITY = Level.DETAIL
 EXC_INFO_VERBOSITY = Level.TASK
@@ -61,7 +61,7 @@ class Filterer(object):
 
 
 class Formatter(object):
-    """ Filter messages before logging. """
+    """ Format messages before logging. """
     __slots__ = ["formatter"]
 
     def __init__(self, formatter: Callable[[Message], str]):
@@ -83,7 +83,7 @@ class Stream(ABC):
     @abstractmethod
     def stream(self) -> TextIO:
         """ Text stream to which messages will be logged after filtering
-        and formating. """
+        and formatting. """
 
     def log(self, message: Message):
         """ Log a message to the stream. """
@@ -263,7 +263,19 @@ def set_config(verbosity: int = 0,
                log_file_path: str | Path | None = None,
                log_color: bool = True,
                exit_on_error: bool = DEFAULT_EXIT_ON_ERROR):
-    """ Configure the main logger with handlers and verbosity. """
+    """ Configure the main logger with handlers and verbosity.
+
+    Parameters
+    ----------
+    verbosity: int = 0
+        Verbosity level; messages at or below this level are shown.
+    log_file_path: str | Path | None
+        Path of the log file; logging to a file is disabled if None.
+    log_color: bool = True
+        Whether to use ANSI color codes in console output.
+    exit_on_error: bool
+        Whether to raise an exception (or exit) when an error is logged.
+    """
     # Erase any existing configuration.
     erase_config()
     # Set up logger.

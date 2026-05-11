@@ -8,6 +8,7 @@ import pandas as pd
 from .dataset import load_mask_dataset
 from .io import MaskFile
 from ..core import path
+from ..core.arg import MUT_COLLISIONS_DROP
 from ..core.batch import END5_COORD, END3_COORD
 from ..core.header import NUM_CLUSTS_NAME, format_clust_name, validate_ks
 from ..core.logs import logger
@@ -57,19 +58,19 @@ class PartialPositionTable(PartialTable, PositionTable, ABC):
             regions = [self.region]
         for hk, hc in self.header.clusts:
             if (k is None or k == hk) and (clust is None or clust == hc):
-                data_name = path.fill_whitespace(format_clust_name(hk, hc),
-                                                 fill="-")
+                mus_name = path.fill_whitespace(format_clust_name(hk, hc),
+                                                fill="-")
                 for region in regions:
                     yield RNAProfile(region=region,
                                      sample=self.sample,
                                      branches=self.branches,
-                                     data_reg=self.reg,
-                                     data_name=data_name,
-                                     data=self.fetch_ratio(quantile=quantile,
-                                                           rel=rel,
-                                                           k=hk,
-                                                           clust=hc,
-                                                           squeeze=True))
+                                     mus_reg=self.reg,
+                                     mus_name=mus_name,
+                                     mus=self.fetch_ratio(quantile=quantile,
+                                                          rel=rel,
+                                                          k=hk,
+                                                          clust=hc,
+                                                          squeeze=True))
 
 
 class PartialReadTable(PartialTable, ReadTable, ABC):
@@ -118,10 +119,38 @@ class PartialTabulator(Tabulator, ABC):
                  region: Region,
                  pattern: RelPattern,
                  min_mut_gap: int,
+                 mut_collisions: str,
                  quick_unbias: bool,
                  quick_unbias_thresh: float,
                  count_ends: bool = True,
                  **kwargs):
+        """
+        Parameters
+        ----------
+        refseq: DNA
+            Reference sequence for the region.
+        region: Region
+            Genomic region being tabulated.
+        pattern: RelPattern
+            Relationship pattern defining which bases count as mutated
+            and which count as reference.
+        min_mut_gap: int
+            Minimum gap in nucleotides between adjacent mutations;
+            used to determine whether observer-bias correction applies.
+        mut_collisions: str
+            Strategy for handling reads with mutations closer than
+            ``min_mut_gap`` (e.g. ``MUT_COLLISIONS_DROP``).
+        quick_unbias: bool
+            Whether to use the fast approximate bias-correction
+            algorithm.
+        quick_unbias_thresh: float
+            Convergence threshold for the quick unbias algorithm.
+        count_ends: bool, optional
+            Whether to count 5'/3' end coordinates (must be True for
+            bias correction; default True).
+        **kwargs
+            Forwarded to the parent class.
+        """
         # Partial tabulators must count 5'/3' ends or else calculating
         # self.p_ends_given_clust_noclose will fail.
         if not count_ends:
@@ -130,12 +159,21 @@ class PartialTabulator(Tabulator, ABC):
         self.refseq = refseq
         self.pattern = pattern
         self.min_mut_gap = min_mut_gap
+        self.mut_collisions = mut_collisions
         self.quick_unbias = quick_unbias
         self.quick_unbias_thresh = quick_unbias_thresh
+
+    @property
+    def correct_bias(self):
+        """ Whether to correct for observer bias. """
+        return (self.min_mut_gap > 0 
+                and self.mut_collisions == MUT_COLLISIONS_DROP)
 
     @cached_property
     def p_ends_given_clust_noclose(self):
         """ Probability of each end coordinate. """
+        if not self.correct_bias:
+            return None
         # Ensure end_counts has 2 dimensions.
         if self.end_counts.ndim == 1:
             end_counts = self.end_counts.values[:, np.newaxis]
@@ -153,7 +191,7 @@ class PartialTabulator(Tabulator, ABC):
     @cached_property
     def _adjusted(self):
         table_per_pos = super().data_per_pos
-        if self.min_mut_gap > 0:
+        if self.correct_bias:
             if self.region.length > np.sqrt(1_000_000_000):
                 logger.warning("Using bias correction on a region with "
                                f"{self.region.length} positions requires "
@@ -166,6 +204,7 @@ class PartialTabulator(Tabulator, ABC):
                                      self.num_reads,
                                      self.region,
                                      self.min_mut_gap,
+                                     self.mut_collisions,
                                      self.quick_unbias,
                                      self.quick_unbias_thresh)
             except Exception as error:
@@ -221,6 +260,7 @@ def adjust_counts(table_per_pos: pd.DataFrame,
                   n_reads_clust: pd.Series | int,
                   region: Region,
                   min_mut_gap: int,
+                  mut_collisions: str,
                   quick_unbias: bool,
                   quick_unbias_thresh: float):
     """ Adjust the given table of masked/clustered counts per position
@@ -263,6 +303,7 @@ def adjust_counts(table_per_pos: pd.DataFrame,
             p_ends_given_clust_noclose,
             p_clust_given_noclose,
             min_mut_gap,
+            mut_collisions,
             quick_unbias=quick_unbias,
             quick_unbias_thresh=quick_unbias_thresh
         )
@@ -313,7 +354,8 @@ def adjust_counts(table_per_pos: pd.DataFrame,
                 p_mut_given_noclose[:, ki],
                 p_ends_given_clust_noclose[:, :, ki],
                 p_clust_given_noclose,
-                min_mut_gap
+                min_mut_gap,
+                mut_collisions
             )
             # Compute the probability that reads from each cluster would
             # have no two mutations too close.

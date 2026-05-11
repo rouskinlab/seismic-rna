@@ -219,7 +219,7 @@ def calc_confusion_phi(n: pd.Series | pd.DataFrame,
     ab: pd.Series | pd.DataFrame
         Observations for which A and B are both true (AB)
     min_cover: float
-        Set phi values with coverage < min_cov to NaN
+        Set phi values with coverage < min_cover to NaN
     tol: float
         Tolerance for phi coefficients outside [-1, 1]
     validate: bool

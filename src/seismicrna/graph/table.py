@@ -7,7 +7,7 @@ from .base import BaseGraph, BaseRunner, BaseWriter
 from .rel import RelGraph, RelRunner
 from ..cluster.data import (ClusterPositionTableLoader,
                             ClusterAbundanceTableLoader)
-from ..core.arg import opt_use_ratio, opt_quantile, opt_verify_times
+from ..core.arg import opt_use_ratio, opt_verify_times, opt_graph_quantile
 from ..core.table import Table, PositionTable
 from ..mask.table import MaskPositionTableLoader, MaskReadTableLoader
 from ..relate.table import RelatePositionTableLoader, RelateReadTableLoader
@@ -37,17 +37,17 @@ class TableGraph(BaseGraph, ABC):
 
 class RelTableGraph(TableGraph, RelGraph, ABC):
 
-    def __init__(self, *, quantile: float, **kwargs):
+    def __init__(self, *, graph_quantile: float, **kwargs):
         """
         Parameters
         ----------
-        quantile: float
+        graph_quantile: float
             If `use_ratio` is True, then normalize the ratios to this
             quantile and then winsorize them to the interval [0, 1].
             Passing 0.0 disables normalization and winsorization.
         """
         super().__init__(**kwargs)
-        self.quantile = quantile
+        self.quantile = graph_quantile
 
     @cached_property
     def _fetch_kwargs(self) -> dict[str, Any]:
@@ -86,6 +86,15 @@ class RelTableGraph(TableGraph, RelGraph, ABC):
 class TableWriter(BaseWriter, ABC):
 
     def __init__(self, *tables: Table, **kwargs):
+        """
+        Parameters
+        ----------
+        *tables: Table
+            One or more table objects (or file paths) providing the data
+            for the graph(s).
+        **kwargs
+            Forwarded to the parent class.
+        """
         super().__init__(**kwargs)
         self.tables = list(tables)
 
@@ -136,7 +145,7 @@ class RelTableRunner(RelRunner, TableRunner, ABC):
 
     @classmethod
     def get_var_params(cls):
-        return super().get_var_params() + [opt_quantile]
+        return super().get_var_params() + [opt_graph_quantile]
 
 
 class PositionTableRunner(RelTableRunner, ABC):

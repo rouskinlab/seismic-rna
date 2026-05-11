@@ -36,6 +36,19 @@ class RefseqIO(RefBrickleIO, RelateIO):
         return path.RefseqFileSeg
 
     def __init__(self, *args, refseq: DNA, **kwargs):
+        """
+        Initialize a reference sequence IO object.
+
+        Parameters
+        ----------
+        refseq: DNA
+            Reference sequence to store; compressed on initialization
+            and decompressed lazily via the `refseq` property.
+        *args
+            Positional arguments forwarded to the parent class.
+        **kwargs
+            Keyword arguments forwarded to the parent class.
+        """
         super().__init__(*args, **kwargs)
         self._s = refseq.compress()
 

@@ -111,7 +111,8 @@ class TestWorkflow(ut.TestCase):
                 for fastq, mate in zip(fastqs, [1, 2], strict=True):
                     self.assertEqual(
                         fastq,
-                        sample_dir.joinpath(f"{ref}_R{mate}.fq.gz")
+                        sample_dir.joinpath(path.DEMULT_STEP,
+                                            f"{ref}_R{mate}.fq.gz")
                     )
                     self.assertTrue(os.path.isfile(fastq))
         # Merge the FASTA files for all references.
@@ -132,7 +133,7 @@ class TestWorkflow(ut.TestCase):
                             force=False)
         rel_graph_kwargs = graph_kwargs | dict(rels=("m",),
                                                use_ratio=True,
-                                               quantile=0.0)
+                                               graph_quantile=0.)
         clust_rel_graph_kwargs = rel_graph_kwargs | {"cgroup": GROUP_ALL,
                                                      K_CLUST_KEY: [(1, 1),
                                                                    (2, 2)],
@@ -163,7 +164,7 @@ class TestWorkflow(ut.TestCase):
                min_em_runs=2,
                jackpot=True,
                fold=True,
-               quantile=0.95,
+               fold_quantile=0.95,
                export=True,
                graph_mprof=True,
                graph_tmprof=True,
@@ -241,8 +242,8 @@ class TestWorkflow(ut.TestCase):
                     for reg in refs_regions[ref]:
                         for action in list_actions(num_structs):
                             for name in [
-                                f"aucroll_{reg}__{action}_45-9_m-ratio-q0",
-                                f"roc_{reg}__{action}_m-ratio-q0",
+                                f"aucroll_{reg}__{action}_45-9_m-ratio-q0_incl-term",
+                                f"roc_{reg}__{action}_m-ratio-q0_incl-term",
                             ]:
                                 file = graph_full_dir.joinpath(f"{name}{ext}")
                                 with self.subTest(file=file):
@@ -526,7 +527,7 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
             self.assertEqual(cjoin_dir, cjoin_report.parent)
         # Fold mask and cluster reports.
         fold_reports = run_fold(mask_dirs + cluster_dirs,
-                                quantile=1.0)
+                                fold_quantile=1.)
         expect_fold_reports = list()
         for region in ["5-50"]:
             for profile in ["average", "cluster-1-1"]:

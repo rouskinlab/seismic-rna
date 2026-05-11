@@ -76,5 +76,23 @@ def table_from_dataset(dataset: MutsDataset,
 def table_from_report(report_path: str | Path,
                       verify_times: bool = True,
                       table: str = "pos"):
+    """ Load a dataset from a report file and tabulate it.
+
+    Parameters
+    ----------
+    report_path: str | Path
+        Path to a report JSON file from the relate, mask, or cluster step.
+    verify_times: bool
+        If True, ensure the report file does not have a timestamp
+        earlier than any of its constituent files.
+    table: str
+        Type of table to generate: "pos" for per-position, "read" for
+        per-read, or "abundance" for cluster abundance.
+
+    Returns
+    -------
+    TableWriter
+        The type of TableWriter returned depends on the report file.
+    """
     dataset = dataset_from_report(report_path=report_path, verify_times=verify_times)
     return table_from_dataset(dataset=dataset, table=table)

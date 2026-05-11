@@ -6,12 +6,11 @@ from scipy.stats import binom
 
 from seismicrna.core.random import stochastic_round
 
-rng = np.random.default_rng()
-
 
 class TestStochasticRound(ut.TestCase):
 
     def test_int_arrays(self):
+        rng = np.random.default_rng(seed=0)
         n_trials = 10
         max_ndim = 3
         max_dim = 3
@@ -28,6 +27,7 @@ class TestStochasticRound(ut.TestCase):
                         ))
 
     def test_float_arrays(self):
+        rng = np.random.default_rng(seed=0)
         confidence = 0.9999
         n_trials = 50000
         floor = 8
@@ -52,6 +52,7 @@ class TestStochasticRound(ut.TestCase):
             self.assertTrue(np.all(np.less_equal(n_floor, floor_ci_up)))
 
     def test_float_arrays_preserve_sum(self):
+        rng = np.random.default_rng(seed=0)
         confidence = 0.9999
         n_trials = 50000
         floor = 8

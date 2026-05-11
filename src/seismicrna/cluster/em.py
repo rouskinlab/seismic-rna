@@ -73,10 +73,23 @@ def _calc_bic(n_params: int,
 
 
 def _calc_log_like(logp_marginal: np.ndarray, counts_per_uniq: np.ndarray):
-    # Calculate the log likelihood of observing all the reads
-    # by summing the log probability over all reads, weighted
-    # by the number of times each read occurs. Cast to a float
-    # explicitly to verify that the product is a scalar.
+    """ Compute the log likelihood of observing all reads.
+
+    Parameters
+    ----------
+    logp_marginal: np.ndarray
+        1D (unique reads) array of the log marginal probability of each
+        unique read.
+    counts_per_uniq: np.ndarray
+        1D (unique reads) integer array of the number of times each
+        unique read was observed.
+
+    Returns
+    -------
+    float
+        Log likelihood: dot product of logp_marginal and counts_per_uniq.
+    """
+    # Cast to a float explicitly to verify that the product is a scalar.
     return float(np.vdot(logp_marginal, counts_per_uniq))
 
 
@@ -87,13 +100,14 @@ class EMRun(object):
     def __init__(self,
                  uniq_reads: UniqReads,
                  k: int,
-                 seed: int | None = None, *,
+                 seed: int | None, *,
                  min_iter: int,
                  max_iter: int,
                  em_thresh: float,
                  jackpot: bool,
                  jackpot_conf_level: float,
-                 max_jackpot_quotient: float):
+                 max_jackpot_quotient: float,
+                 jackpot_max_data: int):
         """
         Parameters
         ----------
@@ -101,7 +115,7 @@ class EMRun(object):
             Container of unique reads
         k: int
             Number of clusters; must be a positive integer.
-        seed: int | None = None
+        seed: int | None
             Random number generator seed.
         min_iter: int
             Minimum number of iterations for clustering. Must be a
@@ -120,6 +134,9 @@ class EMRun(object):
             Confidence level for the jackpotting confidence interval.
         max_jackpot_quotient: float
             Maximum acceptable jackpotting quotient.
+        jackpot_max_data: int
+            Skip the jackpotting calculation if reads × positions exceeds
+            this limit; returns nan instead.
         """
         # Unique reads of mutations
         self.uniq_reads = uniq_reads
@@ -144,6 +161,7 @@ class EMRun(object):
         self._jackpot = jackpot
         self._jackpot_conf_level = jackpot_conf_level
         self._max_jackpot_quotient = max_jackpot_quotient
+        self._jackpot_max_data = jackpot_max_data
         # Mutation rates adjusted for observer bias.
         # 2D (all positions x clusters)
         self._p_mut = np.zeros((self._n_pos_total, self.k))
@@ -165,8 +183,10 @@ class EMRun(object):
         self.iter = 0
         # Whether the algorithm has converged.
         self.converged = False
+        # Random number generator seed.
+        self._seed = seed
         # Run EM.
-        self._run(seed)
+        self._run()
 
     @property
     def n_reads(self):
@@ -311,6 +331,7 @@ class EMRun(object):
             p_ends_observed,
             p_clust_observed,
             self.uniq_reads.min_mut_gap,
+            self.uniq_reads.mut_collisions,
             guess_p_mut,
             guess_p_ends,
             guess_p_clust,
@@ -338,21 +359,16 @@ class EMRun(object):
             self._end3s,
             self._unmasked,
             self.uniq_reads.muts_per_pos,
-            self.uniq_reads.min_mut_gap
+            self.uniq_reads.min_mut_gap,
+            self.uniq_reads.mut_collisions
         )
         # Calculate the log likelihood and append it to the trajectory.
         log_like = _calc_log_like(self._logp_marginal,
                                   self._counts_per_uniq)
         self._log_likes.append(round(log_like, LOG_LIKE_PRECISION))
 
-    def _run(self, seed: int | None = None):
-        """ Run the EM clustering algorithm.
-
-        Parameters
-        ----------
-        seed: int | None = None
-            Random number generator seed.
-        """
+    def _run(self):
+        """ Run the EM clustering algorithm. """
         logger.routine(
             f"Began {self} with {self._min_iter}-{self._max_iter} iterations"
         )
@@ -362,7 +378,7 @@ class EMRun(object):
         # thus the same trajectory, which defeats the purpose of running
         # multiple trajectories. By giving every EMRun a unique seed,
         # the runs can be forced to have different trajectories.
-        rng = np.random.default_rng(seed)
+        rng = np.random.default_rng(self._seed)
         # Choose the concentration parameters using a standard uniform
         # distribution so that the reads assigned to each cluster can
         # vary widely among the clusters (helping to make the clusters
@@ -449,7 +465,19 @@ class EMRun(object):
         return self.mus @ self.pis
 
     def get_resps(self, batch_num: int):
-        """ Cluster memberships of the reads in the batch. """
+        """ Cluster memberships of the reads in a batch.
+
+        Parameters
+        ----------
+        batch_num: int
+            Index of the batch whose cluster memberships to retrieve.
+
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame of shape (reads in batch x clusters) with the
+            posterior probability that each read belongs to each cluster.
+        """
         batch_uniq_nums = self.uniq_reads.batch_to_uniq[batch_num]
         return pd.DataFrame(self._resps[batch_uniq_nums],
                             index=batch_uniq_nums.index,
@@ -468,21 +496,19 @@ class EMRun(object):
     @cached_property
     def _null_jackpot_scores(self):
         """ Jackpotting score of each null model. """
-        try:
-            return bootstrap_jackpot_scores(self._end5s,
-                                            self._end3s,
-                                            self._counts_per_uniq,
-                                            self._p_mut,
-                                            self._p_ends,
-                                            self._p_clust,
-                                            self.uniq_reads.min_mut_gap,
-                                            self._unmasked,
-                                            self.jackpot_score,
-                                            self._jackpot_conf_level,
-                                            self._max_jackpot_quotient)
-        except Exception as error:
-            logger.warning(error)
-        return np.array([], dtype=float)
+        return bootstrap_jackpot_scores(self._end5s,
+                                        self._end3s,
+                                        self._counts_per_uniq,
+                                        self._p_mut,
+                                        self._p_ends,
+                                        self._p_clust,
+                                        self.uniq_reads.min_mut_gap,
+                                        self.uniq_reads.mut_collisions,
+                                        self._unmasked,
+                                        self.jackpot_score,
+                                        self._jackpot_conf_level,
+                                        self._max_jackpot_quotient,
+                                        seed=self._seed)
 
     @cached_property
     def jackpot_quotient(self):
@@ -491,16 +517,43 @@ class EMRun(object):
         if not self._jackpot:
             # Skip calculating the jackpotting quotient.
             return np.nan
+        if self.n_reads * self._n_pos_total > self._jackpot_max_data:
+            logger.warning(f"Skipping the jackpotting calculation for {self} "
+                           f"because number of reads ({self.n_reads}) times "
+                           f"number of positions ({self._n_pos_total}) "
+                           f"exceeds the limit ({self._jackpot_max_data})")
+            return np.nan
+        try:
+            null_jackpot_scores = self._null_jackpot_scores
+        except MemoryError as error:  # FIXME
+            logger.warning(error)
+            return np.nan
         return calc_jackpot_quotient(
             self.jackpot_score,
-            float(np.median(self._null_jackpot_scores))
+            float(np.median(null_jackpot_scores))
         )
 
     def _calc_p_mut_pairs(self,
                           stat: Callable[[np.ndarray, np.ndarray], float],
                           summ: Callable[[list[float]], float]):
-        """ Calculate a statistic for each pair of mutation rates and
-        summarize them into one value. """
+        """ Calculate a statistic for each pair of clusters' mutation
+        rates and summarize them into one value.
+
+        Parameters
+        ----------
+        stat: Callable
+            Function taking two 1D mutation-rate arrays and returning a
+            scalar statistic (e.g. Pearson correlation).
+        summ: Callable
+            Function summarizing a list of per-pair statistics into a
+            single scalar (e.g. max or min).
+
+        Returns
+        -------
+        float
+            Summary statistic across all cluster pairs, or nan if there
+            are fewer than two clusters or all values are nan.
+        """
         stats = list(filterfalse(
             np.isnan,
             [stat(*p) for p in combinations(self._p_mut[self._unmasked].T, 2)]

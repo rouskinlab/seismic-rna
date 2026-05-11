@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from functools import cache, cached_property
 from itertools import chain, product
 from string import printable
-from typing import Any
+from typing import Any, Self
 
 import numpy as np
 
@@ -60,6 +60,10 @@ PICTC = "⌠"
 PICTN = "○"
 PICTG = "⌡"
 PICTT = PICTU = "▼"
+
+
+class InvalidBaseError(ValueError):
+    """ Invalid base for a sequence. """
 
 
 class XNA(ABC):
@@ -126,12 +130,19 @@ class XNA(ABC):
         return max(cls.four())
 
     @classmethod
+    @abstractmethod
+    def from_any_seq(cls, seq: str | XNA) -> Self:
+        """ Create a sequence from a string or other sequence, possibly
+        of a different type. """
+
+    @classmethod
     def random(cls,
                nt: int,
                a: float = 0.25,
                c: float = 0.25,
                g: float = 0.25,
-               t: float = 0.25):
+               t: float = 0.25,
+               seed: int | None = None):
         """
         Return a random sequence of the given length.
 
@@ -158,9 +169,10 @@ class XNA(ABC):
         if not 0. <= n <= 1.:
             raise ValueError(f"Sum of A, C, G, and {cls.t_or_u()} proportions "
                              f"must be in [0, 1], but got {1. - n}")
-        return cls("".join(np.random.default_rng().choice(cls.alph(),
-                                                          size=nt,
-                                                          p=(a, c, n, g, t))))
+        rng = np.random.default_rng(seed)
+        return cls("".join(rng.choice(cls.alph(),
+                                      size=nt,
+                                      p=(a, c, n, g, t))))
 
     def __init__(self, seq: Any):
         self._seq = str(seq)
@@ -170,7 +182,9 @@ class XNA(ABC):
             # are valid if converted to uppercase.
             if inv := {i for i in inv if i.upper() not in self.get_alphaset()}:
                 # If there are invalid uppercase characters, then raise.
-                raise ValueError(f"Invalid {type(self).__name__} bases: {inv}")
+                raise InvalidBaseError(
+                    f"Invalid {type(self).__name__} bases: {inv}"
+                )
             self._seq = self._seq.upper()
 
     @cached_property
@@ -261,6 +275,10 @@ class DNA(XNA):
     def pict(cls):
         return PICTA, PICTC, PICTN, PICTG, PICTT
 
+    @classmethod
+    def from_any_seq(cls, seq: str | XNA):
+        return cls(str(seq).upper().replace(RNA.t_or_u(), DNA.t_or_u()))
+
     def tr(self):
         """ Transcribe DNA to RNA. """
         return RNA(str(self).replace(BASET, BASEU))
@@ -275,6 +293,10 @@ class RNA(XNA):
     @classmethod
     def pict(cls):
         return PICTA, PICTC, PICTN, PICTG, PICTU
+
+    @classmethod
+    def from_any_seq(cls, seq: str | XNA):
+        return cls(str(seq).upper().replace(DNA.t_or_u(), RNA.t_or_u()))
 
     def rt(self):
         """ Reverse transcribe RNA to DNA. """

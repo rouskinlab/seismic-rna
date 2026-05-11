@@ -9,6 +9,14 @@ from ..core.lists import List, PositionList
 class MaskList(List, MaskFile, ABC):
 
     def __init__(self, *, reg: str, **kwargs):
+        """
+        Parameters
+        ----------
+        reg: str
+            Name of the region to which this list belongs.
+        **kwargs
+            Forwarded to the parent class.
+        """
         super().__init__(**kwargs)
         self.reg = reg
 

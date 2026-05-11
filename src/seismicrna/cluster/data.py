@@ -104,6 +104,10 @@ class ClusterMutsDataset(ClusterDataset, MultistepDataset, UnbiasDataset):
     def region(self):
         return self.dataset1.region
 
+    @region.setter
+    def region(self, region):
+        self.dataset1.region = region
+
     @property
     def min_mut_gap(self):
         return getattr(self.dataset1, "min_mut_gap")
@@ -111,6 +115,14 @@ class ClusterMutsDataset(ClusterDataset, MultistepDataset, UnbiasDataset):
     @min_mut_gap.setter
     def min_mut_gap(self, min_mut_gap):
         self.dataset1.min_mut_gap = min_mut_gap
+
+    @property
+    def mut_collisions(self):
+        return getattr(self.dataset1, "mut_collisions")
+
+    @mut_collisions.setter
+    def mut_collisions(self, mut_collisions):
+        self.dataset1.mut_collisions = mut_collisions
 
     @property
     def quick_unbias(self):
@@ -151,14 +163,20 @@ def get_clust_params(dataset: ClusterMutsDataset, num_cpus: int = 1):
                    path.REG: dataset.region.name}
     pos_table_file = ClusterPositionTableLoader.build_path(path_fields)
     if pos_table_file.is_file():
-        pos_table = ClusterPositionTableLoader(pos_table_file)
+        pos_table = ClusterPositionTableLoader(
+            pos_table_file,
+            verify_times=dataset.verify_times
+        )
         logger.detail(f"Position table {pos_table_file} exists")
     else:
         pos_table = None
         logger.detail(f"Position table {pos_table_file} does not exist")
     abundance_table_file = ClusterAbundanceTableLoader.build_path(path_fields)
     if abundance_table_file.is_file():
-        abundance_table = ClusterAbundanceTableLoader(abundance_table_file)
+        abundance_table = ClusterAbundanceTableLoader(
+            abundance_table_file,
+            verify_times=dataset.verify_times
+        )
         logger.detail(f"Abundance table {abundance_table_file} exists")
     else:
         abundance_table = None
@@ -176,6 +194,7 @@ def get_clust_params(dataset: ClusterMutsDataset, num_cpus: int = 1):
             refseq=dataset.refseq,
             pattern=dataset.pattern,
             min_mut_gap=dataset.min_mut_gap,
+            mut_collisions=dataset.mut_collisions,
             quick_unbias=dataset.quick_unbias,
             quick_unbias_thresh=dataset.quick_unbias_thresh,
             ks=dataset.ks,

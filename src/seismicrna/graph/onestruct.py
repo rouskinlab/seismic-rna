@@ -15,6 +15,7 @@ from ..core.arg import (opt_struct_file,
                         opt_fold_coords,
                         opt_fold_primers,
                         opt_fold_full,
+                        opt_terminal_pairs,
                         optional_path)
 from ..core.logs import logger
 from ..core.rna import RNAState, from_ct
@@ -28,11 +29,31 @@ class StructOneTableGraph(OneTableRelClusterGroupGraph, OneRelGraph, ABC):
     def __init__(self, *,
                  struct_file: Path | None,
                  struct_reg: str | None,
+                 terminal_pairs: bool,
                  branch: str,
                  **kwargs):
+        """
+        Parameters
+        ----------
+        struct_file: Path or None
+            Path to a CT file of RNA structures.  If given, the
+            structure region is inferred from the file path.  If None,
+            ``struct_reg`` is used instead.
+        struct_reg: str or None
+            Name of the region whose folded structure file is used.
+            Required when ``struct_file`` is None.
+        terminal_pairs: bool
+            If True, include terminal base pairs; if False, exclude
+            them.
+        branch: str
+            Branch label appended to the fold step in the output path.
+        **kwargs
+            Forwarded to the parent class.
+        """
         super().__init__(**kwargs)
         self._struct_file = struct_file
         self._struct_reg = struct_reg
+        self._terminal_pairs = terminal_pairs
         self.branch = branch
 
     @property
@@ -88,6 +109,18 @@ class StructOneTableGraph(OneTableRelClusterGroupGraph, OneRelGraph, ABC):
                 f"in {self.title_action_sample} "
                 f"over region {repr(self.reg)}"]
 
+    @cached_property
+    def details(self):
+        return super().details + [
+            f"{'in' if self._terminal_pairs else 'ex'}cl. terminal pairs"
+        ]
+
+    @cached_property
+    def predicate(self):
+        return super().predicate + [
+            "incl-term" if self._terminal_pairs else "excl-term"
+        ]
+
     def iter_profiles(self):
         """ Yield each RNAProfile from the table. """
         yield from self.table.iter_profiles(quantile=self.quantile,
@@ -119,6 +152,36 @@ class StructOneTableWriter(OneTableRelClusterGroupWriter, ABC):
                     fold_regions_file: str | None = None,
                     fold_full: bool = opt_fold_full.default,
                     **kwargs):
+        """ Yield graphs for every relationship, cluster, and structure.
+
+        Parameters
+        ----------
+        rels: list[str]
+            Relationship codes to graph.
+        cgroup: str
+            Cluster-grouping strategy.
+        struct_file: Iterable[str or Path], optional
+            CT files of RNA structures to use directly.
+        branch: str, optional
+            Branch label for the fold step in the output path.
+        fold_coords: Iterable[tuple[str, int, int]], optional
+            ``(ref, end5, end3)`` tuples defining structure regions.
+        fold_primers: Iterable[tuple[str, DNA, DNA]], optional
+            ``(ref, fwd, rev)`` primer tuples defining structure
+            regions.
+        fold_regions_file: str or None, optional
+            Path to a file of fold region definitions.
+        fold_full: bool, optional
+            Whether to use the full reference as the fold region.
+        **kwargs
+            Forwarded to ``get_graph``.
+
+        Yields
+        ------
+        StructOneTableGraph
+            One graph per (cluster group, relationship, structure)
+            combination.
+        """
         struct_files = list()
         for file in path.find_files_chain(struct_file, path.CT_FILE_LAST_SEGS):
             # Use a given CT file of an RNA structure, and determine the
@@ -138,7 +201,7 @@ class StructOneTableWriter(OneTableRelClusterGroupWriter, ABC):
             # Add the regions from the given coordinates/primers.
             ref_regions = RefRegions([(self.table.ref, self.table.refseq)],
                                      regs_file=optional_path(fold_regions_file),
-                                     coords=fold_coords,
+                                     ends=fold_coords,
                                      primers=fold_primers,
                                      default_full=fold_full)
             fold_regs = [region.name
@@ -177,4 +240,5 @@ class StructOneTableRunner(OneTableRelClusterGroupRunner, ABC):
                                            opt_fold_regions_file,
                                            opt_fold_coords,
                                            opt_fold_primers,
-                                           opt_fold_full]
+                                           opt_fold_full,
+                                           opt_terminal_pairs]

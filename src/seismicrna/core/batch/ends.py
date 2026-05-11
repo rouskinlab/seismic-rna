@@ -8,8 +8,6 @@ from ..seq import Region
 from ..types import fit_uint_type
 from ..validate import require_isinstance, require_equal, require_atleast
 
-rng = np.random.default_rng()
-
 # Indexes of read end coordinates.
 END5_COORD = "5' End"
 END3_COORD = "3' End"
@@ -305,7 +303,8 @@ def simulate_segment_ends(uniq_end5s: np.ndarray,
                           p_ends: np.ndarray,
                           num_reads: int,
                           read_length: int = 0,
-                          p_rev: float = 0.5):
+                          p_rev: float = 0.5,
+                          seed: int | None = None):
     """ Simulate segment end coordinates from their probabilities.
 
     Parameters
@@ -356,6 +355,7 @@ def simulate_segment_ends(uniq_end5s: np.ndarray,
             p_ends = np.full(num_ends, 1. / num_ends)
     elif not np.isclose(p_ends.sum(), 1.):
         raise ValueError(f"p_ends must sum to 1, but got {p_ends.sum()}")
+    rng = np.random.default_rng(seed)
     # Choose reads based on their probabilities.
     indexes = rng.choice(num_ends, num_reads, p=p_ends)
     read_end5s = uniq_end5s[indexes]

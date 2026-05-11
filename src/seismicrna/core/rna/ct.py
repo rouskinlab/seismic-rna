@@ -154,14 +154,14 @@ def _parse_ct_structure(ct_file: TextIO, length: int):
         raise ValueError(f"Paired bases {is_paired} do not match bases "
                          f"expected to be paired {expect_paired}")
     # Assemble the list of bases into an RNA sequence.
-    seq = RNA("".join(bases))
+    seq = RNA.from_any_seq("".join(bases))
     # Map all the indexes to their corresponding positions.
     pairs_list = [(index1 + pos_offset, index2 + pos_offset)
                   for index1, index2 in pairs.items()]
     return seq, pairs_list, (pos_offset if pos_offset is not None else 0)
 
 
-def parse_ct(ct_path: str | Path):
+def parse_ct_file(ct_path: str | Path):
     """ Yield the title, region, and base pairs for each structure in a
     connectivity table (CT) file.
 

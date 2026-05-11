@@ -4,14 +4,14 @@ from textwrap import dedent
 from typing import Any, Callable, Iterable
 
 from . import cli
-from .default import cli_defaults, cli_opts
+from .default import cli_defaults, cli_opts, defaults_to_none
 
 # Ignore special parameters with reserved names.
-reserved_params = ["self", "cls"]
+reserved_params = {"self", "cls"}
 
 # Get the default value for every parameter.
 api_defaults = dict(num_cpus=cli.CPU_COUNT)
-all_defaults = cli_defaults | api_defaults
+all_defaults = api_defaults | cli_defaults | defaults_to_none
 
 # Get the documentation for every CLI option.
 cli_docstrs = {option.name: option.help for option in cli_opts.values()}
@@ -114,6 +114,20 @@ def get_param_lines(func: Callable, docstrs: dict[str, str]):
 def get_docstr_lines(func: Callable,
                      param_lines: list[str],
                      return_docstr: str):
+    """ Assemble docstring lines for a function.
+
+    Parameters
+    ----------
+    func: Callable
+        Function whose existing docstring and return annotation are used
+        as the basis for the new docstring.
+    param_lines: list[str]
+        Lines describing each parameter, as produced by
+        `get_param_lines`.
+    return_docstr: str
+        Description of the return value; included only when the
+        function has a return annotation.
+    """
     sig = Signature.from_callable(func)
     docstr_lines = list()
     if func.__doc__:

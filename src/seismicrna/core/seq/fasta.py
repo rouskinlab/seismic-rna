@@ -84,6 +84,25 @@ def format_fasta_record(name: str, seq: XNA, wrap: int = 0):
 def parse_fasta(fasta: str | Path,
                 seq_type: type[XNA] | None,
                 only: Iterable[str] | None = None):
+    """ Parse a FASTA file and yield names and (optionally) sequences.
+
+    Parameters
+    ----------
+    fasta: str | Path
+        Path to the FASTA file.
+    seq_type: type[XNA] | None
+        Type of sequence to parse (e.g. DNA or RNA); if None, only
+        reference names are yielded.
+    only: Iterable[str] | None
+        If provided, only records whose names are in this collection are
+        yielded; all others are skipped.
+
+    Yields
+    ------
+    tuple[str, XNA] | str
+        If `seq_type` is not None, yields (name, sequence) tuples.
+        If `seq_type` is None, yields only the name of each reference.
+    """
     fasta = path.sanitize(fasta, strict=True)
     path.check_file_extension(fasta, path.FastaExt)
     if seq_type is None:

@@ -10,7 +10,8 @@ from ..core import path
 from ..core.arg import (opt_ct_file,
                         opt_clust_conc,
                         opt_force,
-                        opt_num_cpus)
+                        opt_num_cpus,
+                        opt_seed)
 from ..core.header import ClustHeader
 from ..core.rna import from_ct
 from ..core.run import run_func
@@ -20,14 +21,13 @@ from ..core.write import need_write
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
-rng = np.random.default_rng()
-
 PROPORTION = "Proportion"
 
 
 def sim_pclust(num_clusters: int,
                concentration: float | None = None,
-               sort: bool = True):
+               sort: bool = True,
+               seed: int | None = None):
     """ Simulate proportions of clusters using a Dirichlet distribution.
 
     Parameters
@@ -51,6 +51,7 @@ def sim_pclust(num_clusters: int,
     else:
         if concentration is None:
             concentration = 1. / (num_clusters - 1.)
+        rng = np.random.default_rng(seed)
         props = rng.dirichlet(np.full(num_clusters, concentration))
         if sort:
             props = np.sort(props)[::-1]
@@ -61,11 +62,36 @@ def sim_pclust(num_clusters: int,
 
 def sim_pclust_ct(ct_file: Path, *,
                   concentration: float,
-                  force: bool):
+                  force: bool,
+                  seed: int | None):
+    """
+    Simulate cluster proportions for a CT file and write them to disk.
+
+    The number of clusters is inferred from the number of structures in
+    the CT file.
+
+    Parameters
+    ----------
+    ct_file: Path
+        Path to the connectivity table (CT) file whose structures define
+        the number of clusters.
+    concentration: float
+        Concentration parameter for the Dirichlet distribution used to
+        simulate cluster proportions; must be > 0.
+    force: bool
+        Whether to overwrite an existing output file.
+    seed: int | None
+        Random seed for reproducibility; None for no fixed seed.
+
+    Returns
+    -------
+    Path
+        Path of the written cluster proportions CSV file.
+    """
     pclust_file = ct_file.with_suffix(path.PARAM_CLUSTS_EXT)
     if need_write(pclust_file, force):
         num_structures = sum(1 for _ in from_ct(ct_file))
-        pclust = sim_pclust(num_structures, concentration)
+        pclust = sim_pclust(num_structures, concentration, seed=seed)
         pclust.to_csv(pclust_file)
     return pclust_file
 
@@ -83,7 +109,8 @@ def run(*,
         ct_file: Iterable[str | Path],
         clust_conc: float,
         force: bool,
-        num_cpus: int):
+        num_cpus: int,
+        seed: int | None):
     """ Simulate the rate of each kind of mutation at each position. """
     return dispatch(sim_pclust_ct,
                     num_cpus=num_cpus,
@@ -94,14 +121,16 @@ def run(*,
                     args=as_list_of_tuples(map(Path, ct_file)),
                     kwargs=dict(concentration=(clust_conc if clust_conc
                                                else None),
-                                force=force))
+                                force=force,
+                                seed=seed))
 
 
 params = [
     opt_ct_file,
     opt_clust_conc,
     opt_force,
-    opt_num_cpus
+    opt_num_cpus,
+    opt_seed,
 ]
 
 

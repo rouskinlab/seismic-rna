@@ -16,6 +16,25 @@ def get_seq_base_scatter_trace(xdata: pd.Series,
                                ydata: pd.Series,
                                cmap: ColorMap,
                                base: str):
+    """ Build a scatter trace for one DNA base type.
+
+    Parameters
+    ----------
+    xdata: pd.Series
+        x-axis data indexed by a MultiIndex with levels including
+        ``BASE_NAME`` and ``POS_NAME``.
+    ydata: pd.Series
+        y-axis data with the same index as ``xdata``.
+    cmap: ColorMap
+        Color map used to look up the color for ``base``.
+    base: str
+        Single-character DNA base code (A, C, G, T, or N).
+
+    Returns
+    -------
+    plotly.graph_objects.Scatter
+        A scatter trace for the positions of the given base type.
+    """
     # Validate the indexes.
     if not xdata.index.equals(ydata.index):
         raise ValueError("Indexes of x and y data must match, "
@@ -51,11 +70,45 @@ def get_seq_base_scatter_trace(xdata: pd.Series,
 def iter_seq_base_scatter_traces(xdata: pd.Series,
                                  ydata: pd.Series,
                                  cmap: ColorMap):
+    """ Yield one scatter trace per DNA base type.
+
+    Parameters
+    ----------
+    xdata: pd.Series
+        x-axis data indexed by a MultiIndex including ``BASE_NAME`` and
+        ``POS_NAME``.
+    ydata: pd.Series
+        y-axis data with the same index as ``xdata``.
+    cmap: ColorMap
+        Color map for base coloring.
+
+    Yields
+    ------
+    plotly.graph_objects.Scatter
+        One trace per base in ``DNA.alph()``.
+    """
     for base in DNA.alph():
         yield get_seq_base_scatter_trace(xdata, ydata, cmap, base)
 
 
 def get_seq_base_bar_trace(data: pd.Series, cmap: ColorMap, base: str):
+    """ Build a bar trace for one DNA base type.
+
+    Parameters
+    ----------
+    data: pd.Series
+        Data indexed by a MultiIndex with levels including ``BASE_NAME``
+        and ``POS_NAME``.
+    cmap: ColorMap
+        Color map used to look up the color for ``base``.
+    base: str
+        Single-character DNA base code (A, C, G, T, or N).
+
+    Returns
+    -------
+    plotly.graph_objects.Bar
+        A bar trace for the positions of the given base type.
+    """
     # Validate the base.
     if base not in DNA.alph():
         raise ValueError(f"Invalid DNA base: {repr(base)}")
@@ -82,6 +135,24 @@ def iter_seq_base_bar_traces(data: pd.Series, cmap: ColorMap):
 
 
 def get_seq_stack_bar_trace(data: pd.Series, rel: str, cmap: ColorMap):
+    """ Build a stacked bar trace for one relationship type.
+
+    Parameters
+    ----------
+    data: pd.Series
+        Per-position data indexed by a MultiIndex with levels including
+        ``BASE_NAME`` and ``POS_NAME``.
+    rel: str
+        Name of the relationship (used as the trace name and for color
+        lookup).
+    cmap: ColorMap
+        Color map used to look up the color for ``rel``.
+
+    Returns
+    -------
+    plotly.graph_objects.Bar
+        A bar trace for all positions, colored by relationship type.
+    """
     # Get the sequence and positions.
     bases = data.index.get_level_values(BASE_NAME)
     pos = data.index.get_level_values(POS_NAME)
@@ -110,6 +181,26 @@ HIST_UPPER_NAME = "Upper"
 
 
 def get_hist_trace(data: pd.Series, rel: str, cmap: ColorMap):
+    """ Build a histogram bar trace for one relationship type.
+
+    Parameters
+    ----------
+    data: pd.Series
+        Histogram data.  If the index is a ``pd.MultiIndex`` its levels
+        are ``HIST_LOWER_NAME`` and ``HIST_UPPER_NAME`` (ratio bins);
+        otherwise it is a plain ``pd.Index`` named ``HIST_COUNT_NAME``
+        (count bins).
+    rel: str
+        Name of the relationship (used as the trace name and for color
+        lookup).
+    cmap: ColorMap
+        Color map used to look up the color for ``rel``.
+
+    Returns
+    -------
+    plotly.graph_objects.Bar
+        A bar trace representing the histogram for ``rel``.
+    """
     # Get the edges of the bins.
     if isinstance(data.index, pd.MultiIndex):
         lower = data.index.get_level_values(HIST_LOWER_NAME)
@@ -149,10 +240,42 @@ def get_seq_line_trace(data: pd.Series):
 
 
 def iter_seq_line_traces(data: pd.Series, *_, **__):
+    """ Yield a single line trace for sequence data.
+
+    Parameters
+    ----------
+    data: pd.Series
+        Per-position data indexed by a MultiIndex including
+        ``POS_NAME``.
+    *_, **__
+        Ignored extra arguments (for call-signature compatibility).
+
+    Yields
+    ------
+    plotly.graph_objects.Scatter
+        One line trace for the entire series.
+    """
     yield get_seq_line_trace(data)
 
 
 def _format_profile_struct(profile: str, struct: str, auc: float | None = None):
+    """ Format a trace name combining profile, structure, and AUC.
+
+    Parameters
+    ----------
+    profile: str
+        Name of the mutational profile.
+    struct: str
+        Name or identifier of the RNA structure.
+    auc: float or None, optional
+        Area under the ROC curve; if provided it is appended to the
+        label.
+
+    Returns
+    -------
+    str
+        Formatted label string.
+    """
     text = f"{profile}, {struct}"
     if auc is not None:
         text = f"{text} (AUC = {round(auc, AUC_PRECISION)})"
@@ -160,6 +283,24 @@ def _format_profile_struct(profile: str, struct: str, auc: float | None = None):
 
 
 def get_roc_trace(fpr: pd.Series, tpr: pd.Series, profile: str, struct: str):
+    """ Build an ROC curve trace for one profile/structure combination.
+
+    Parameters
+    ----------
+    fpr: pd.Series
+        False positive rates.
+    tpr: pd.Series
+        True positive rates.
+    profile: str
+        Name of the mutational profile.
+    struct: str
+        Name or identifier of the RNA structure.
+
+    Returns
+    -------
+    plotly.graph_objects.Scatter
+        An ROC curve trace with AUC annotated in the trace name.
+    """
     name = _format_profile_struct(profile,
                                   struct,
                                   compute_auc(fpr.values, tpr.values))
@@ -167,6 +308,24 @@ def get_roc_trace(fpr: pd.Series, tpr: pd.Series, profile: str, struct: str):
 
 
 def iter_roc_traces(fprs: pd.DataFrame, tprs: pd.DataFrame, profile: str):
+    """ Yield one ROC trace per RNA structure.
+
+    Parameters
+    ----------
+    fprs: pd.DataFrame
+        DataFrame whose columns correspond to structures and whose
+        values are false positive rates.
+    tprs: pd.DataFrame
+        DataFrame whose columns correspond to structures and whose
+        values are true positive rates; columns must match ``fprs``.
+    profile: str
+        Name of the mutational profile.
+
+    Yields
+    ------
+    plotly.graph_objects.Scatter
+        One ROC trace per structure column.
+    """
     for (sf, fpr), (st, tpr) in zip(fprs.items(), tprs.items(), strict=True):
         if sf != st:
             raise ValueError(f"Structure names differ: {repr(sf)} ≠ {repr(st)}")
@@ -196,6 +355,25 @@ def iter_line_traces(lines: pd.DataFrame):
 
 
 def get_pairwise_position_trace(data: pd.Series, end5: int, end3: int):
+    """ Build a pairwise-position heatmap trace.
+
+    Parameters
+    ----------
+    data: pd.Series
+        Long-form data with a two-level ``pd.MultiIndex`` of
+        ``(position_a, position_b)`` pairs and values representing the
+        pairwise statistic.
+    end5: int
+        5' end position of the region (inclusive, 1-based).
+    end3: int
+        3' end position of the region (inclusive, 1-based).
+
+    Returns
+    -------
+    plotly.graph_objects.Heatmap
+        A symmetric heatmap trace covering positions ``end5`` to
+        ``end3``.
+    """
     # The data must be a long-form Series with a two-level MultiIndex.
     # Convert the data to wide-form and make them symmetric.
     if not isinstance(data, pd.Series):
@@ -221,7 +399,7 @@ def get_pairwise_position_trace(data: pd.Series, end5: int, end3: int):
 
 
 def iter_stack_bar_traces(data: pd.DataFrame):
-    for column_label, column in data.items():
+    for column_label, column in reversed(list(data.items())):
         yield go.Bar(name=f"{data.columns.name} {column_label}",
                      x=data.index,
                      y=column,

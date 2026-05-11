@@ -8,7 +8,6 @@ from typing import Iterable
 from click import Argument, Choice, Option, Parameter, Path
 
 from ..io import DEFAULT_BROTLI_LEVEL
-from ..logs import DEFAULT_EXIT_ON_ERROR
 from ..seq import DNA
 
 # System information
@@ -37,10 +36,69 @@ CLIP_END5_DEFAULT = BOWTIE2_GBAR_DEFAULT
 CLIP_END3_DEFAULT = BOWTIE2_GBAR_DEFAULT
 MIN_READ_LENGTH_DEFAULT = CLIP_END5_DEFAULT + CLIP_END3_DEFAULT + 1
 
+# dimethyl sulfate (DMS)
+PROBE_DMS = "DMS"
+# selective 2'-hydroxyl acylation analyzed by primer extension (SHAPE)
+PROBE_SHAPE = "SHAPE"
+# 1-ethyl-3-(3-dimethylaminopropyl) carbodiimide methiodide (ETC)
+PROBE_ETC = "ETC"
+# untreated control with no chemical probe
+PROBE_NONE = "none"
+PROBES = PROBE_DMS, PROBE_SHAPE, PROBE_ETC, PROBE_NONE
+DEFAULT_MIN_MUT_GAPS = {
+    # For DMS-MaPseq with group II intron RTs, there is a bias against
+    # mutations less than 4 nt apart. The formula that corrects the bias
+    # assumes any reads with mutations close by have been dropped.
+    PROBE_DMS: 4,
+    # For other probe types (e.g. SHAPE-MaP) with retroviral RTs, when
+    # the RT encounters a modification, it can make several mutations
+    # for up to 6 nt as it moves 3' to 5'. It's best to merge nearby 
+    # mutations, keeping the 3'-most (the original modification).
+    PROBE_SHAPE: 6,
+    PROBE_ETC: 6,
+    # With no probe, there should be no effect on nearby mutations.
+    PROBE_NONE: 0,
+}
+
+MUT_COLLISIONS_DROP = "drop"
+MUT_COLLISIONS_MERGE = "merge"
+MUT_COLLISIONS_AUTO = "auto"
+MUT_COLLISIONS = (MUT_COLLISIONS_DROP,
+                  MUT_COLLISIONS_MERGE,
+                  MUT_COLLISIONS_AUTO)
+DEFAULT_MUT_COLLISIONS = {
+    # For DMS-MaPseq with group II intron RTs, there is a bias against
+    # mutations less than 4 nt apart. The formula that corrects the bias
+    # assumes any reads with mutations close by have been dropped.
+    PROBE_DMS: MUT_COLLISIONS_DROP,
+    # For other probe types (e.g. SHAPE-MaP) with retroviral RTs, when
+    # the RT encounters a modification, it can make several mutations
+    # for up to 6 nt as it moves 3' to 5'. It's best to merge nearby 
+    # mutations, keeping the 3'-most (the original modification).
+    PROBE_SHAPE: MUT_COLLISIONS_MERGE,
+    PROBE_ETC: MUT_COLLISIONS_MERGE,
+    PROBE_NONE: MUT_COLLISIONS_MERGE
+}
+
+
 GAP_MODE_OMIT = "omit"
 GAP_MODE_INSERT = "insert"
 GAP_MODE_EXPAND = "expand"
 GAP_MODE = GAP_MODE_OMIT, GAP_MODE_INSERT, GAP_MODE_EXPAND
+
+FOLD_BACKEND_FOLD = "Fold"
+FOLD_BACKEND_SHAPEKNOTS = "ShapeKnots"
+FOLD_BACKEND_RNAFOLD = "RNAFold"
+FOLD_BACKENDS = (FOLD_BACKEND_FOLD,
+                 FOLD_BACKEND_SHAPEKNOTS,
+                 FOLD_BACKEND_RNAFOLD)
+
+FOLD_ENERGY_METHOD_DEIGAN = "Deigan"
+FOLD_ENERGY_METHOD_CORDERO = "Cordero"
+FOLD_ENERGY_METHOD_EDDY = "Eddy"
+FOLD_ENERGY_METHODS = (FOLD_ENERGY_METHOD_DEIGAN,
+                       FOLD_ENERGY_METHOD_CORDERO,
+                       FOLD_ENERGY_METHOD_EDDY)
 
 NO_GROUP = "c"
 GROUP_BY_K = "k"
@@ -118,6 +176,13 @@ opt_num_cpus = Option(
     help="Use up to this many CPUs simultaneously"
 )
 
+opt_seed = Option(
+    ("--seed",),
+    type=int,
+    default=None,
+    help="Seed for the random number generator"
+)
+
 # Experiment and analysis setup options
 
 opt_force = Option(
@@ -171,64 +236,72 @@ opt_min_phred = Option(
 # Demultiplexing options
 
 opt_demultiplex = Option(
-    ("--demult-on/--demult-off",),
+    ("--demult/--no-demult",),
     type=bool,
     default=False,
     help="Enable demultiplexing"
 )
 
-opt_parallel_demultiplexing = Option(
-    ("--parallel-demultiplexing",),
-    type=bool,
-    default=False,
-    help="Whether to run demultiplexing at maximum speed by submitting multithreaded "
-         "grep functions")
-
 opt_clipped_demultiplexing = Option(
     ("--clipped",),
     type=int,
     default=0,
-    help="Designates the amount of clipped patterns to search for in the sample, will raise compution time")
+    help="Designates the amount of clipped patterns to search for in the sample, will raise compution time"
+)
 
-opt_mismatch_tolerence = Option(
-    ("--mismatch-tolerence",),
+opt_mismatch_tolerance = Option(
+    ("--mismatch-tolerance",),
     type=int,
     default=0,
     help="Designates the allowable amount of mismatches allowed in a string and still be considered a valid pattern "
          "find. will increase non-parallel computation at a factorial rate. use caution going above 2 mismatches. "
-         "does not apply to clipped sequences.")
+         "does not apply to clipped sequences."
+)
 
-opt_index_tolerence = Option(
+opt_index_tolerance = Option(
     ("--index-tolerance",),
     type=int,
     default=0,
     help="Designates the allowable amount of distance you allow the pattern to be found in a read from the reference "
-         "index")
+         "index"
+)
+
+opt_allow_n = Option(
+    ("--allow-n/--no-allow-n",),
+    type=bool,
+    default=False,
+    help="Allow N as a valid mismatch when --mismatch-tolerance ≥ 1. Increases memory consumption."
+)
+
+opt_barcode = Option(
+    ("--barcode",),
+    type=(str, DNA, int),
+    multiple=True,
+    default=(),
+    help=("A list of barcode name, barcode sequence, and barcode position "
+          "(1-indexed relative to read start) to demultiplex")
+)
 
 opt_barcode_start = Option(
     ("--barcode-start",),
     type=int,
     default=0,
-    help="Index of start of barcode")
+    help="Index of start of barcode"
+)
 
 opt_barcode_end = Option(
     ("--barcode-end",),
     type=int,
     default=0,
-    help="Length of barcode")
+    help="Index of end of barcode"
+)
 
-opt_barcode_length = Option(
-    ("--barcode-length",),
+opt_read_pos = Option(
+    ("--read-pos",),
     type=int,
-    default=0,
-    help="Length of barcode")
-
-opt_demulti_overwrite = Option(
-    ("--demulti-overwrite",),
-    type=bool,
-    default=False,
-    help="Desiginates whether to overwrite the grepped fastq. should only be used if changing setting on the same "
-         "sample")
+    help=("Expected position of the barcode in the read (1-indexed). "
+          "Defaults to --barcode-start")
+)
 
 # Demultiplexed sequencing read (FASTQ) directories
 
@@ -611,6 +684,13 @@ opt_pooled = Option(
 
 # Mask
 
+opt_probe = Option(
+    ("--probe",),
+    type=Choice(PROBES, case_sensitive=False),
+    default=PROBE_DMS,
+    help="Use default mask options for this chemical probe"
+)
+
 opt_mask_regions_file = Option(
     ("--mask-regions-file", "-i"),
     type=Path(exists=True, dir_okay=False),
@@ -677,11 +757,32 @@ opt_mask_polya = Option(
     help="Mask stretches of at least this many consecutive A bases (0 disables)"
 )
 
-opt_mask_gu = Option(
-    ("--mask-gu/--keep-gu",),
+opt_mask_a = Option(
+    ("--mask-a/--keep-a",),
     type=bool,
-    default=True,
-    help="Mask G and U bases"
+    default=None,
+    help="Mask positions with base A"
+)
+
+opt_mask_c = Option(
+    ("--mask-c/--keep-c",),
+    type=bool,
+    default=None,
+    help="Mask positions with base C"
+)
+
+opt_mask_g = Option(
+    ("--mask-g/--keep-g",),
+    type=bool,
+    default=None,
+    help="Mask positions with base G"
+)
+
+opt_mask_u = Option(
+    ("--mask-u/--keep-u",),
+    type=bool,
+    default=None,
+    help="Mask positions with base U"
 )
 
 opt_mask_pos = Option(
@@ -747,8 +848,16 @@ opt_max_fmut_read = Option(
 opt_min_mut_gap = Option(
     ("--min-mut-gap",),
     type=int,
-    default=4,
+    default=None,
     help="Mask reads with two mutations separated by fewer than this many bases"
+)
+
+opt_mut_collisions = Option(
+    ("--mut-collisions",),
+    type=Choice(MUT_COLLISIONS, case_sensitive=False),
+    default=MUT_COLLISIONS_AUTO,
+    help=("If two mutations are closer than --min-mut-gap positions, MERGE "
+          "the mutations, DROP the read, or AUTO-select based on the probe.")
 )
 
 opt_min_ninfo_pos = Option(
@@ -863,6 +972,13 @@ opt_max_jackpot_quotient = Option(
     type=float,
     default=1.1,
     help="Remove runs whose jackpotting quotient exceeds this limit"
+)
+
+opt_jackpot_max_data = Option(
+    ("--jackpot-max-data",),
+    type=int,
+    default=2**28,
+    help="Skip calculating the jackpotting quotient if reads × positions exceeds this limit"
 )
 
 opt_max_pearson_run = Option(
@@ -1045,11 +1161,18 @@ opt_fold = Option(
     ("--fold/--no-fold",),
     type=bool,
     default=False,
-    help="Predict the secondary structure using the RNAstructure Fold program"
+    help="Predict the secondary structure using the reactivities"
+)
+
+opt_fold_dry_run = Option(
+    ("--fold-dry-run/--fold-real-run",),
+    type=bool,
+    default=False,
+    help="Only generate the fold command and input files; do not run folding"
 )
 
 opt_fold_regions_file = Option(
-    ("--fold-regions-file", "-f"),
+    ("--fold-regions-file", "-F"),
     type=Path(exists=True, dir_okay=False),
     help="Fold regions of references from coordinates/primers in a CSV file"
 )
@@ -1070,24 +1193,72 @@ opt_fold_primers = Option(
     help="Fold a region of a reference given its forward and reverse primers"
 )
 
-opt_quantile = Option(
-    ("--quantile", "-q"),
+opt_fold_backend = Option(
+     ("--fold-backend",),
+     type=Choice(FOLD_BACKENDS, case_sensitive=False),
+     default=FOLD_BACKEND_FOLD,
+     help=("Model RNA structures using Fold (RNAstructure), "
+           "ShapeKnots (RNAstructure), or RNAfold (ViennaRNA)")
+)
+
+opt_fold_energy_method = Option(
+    ("--fold-energy-method",),
+    type=Choice(FOLD_ENERGY_METHODS, case_sensitive=False),
+    default=FOLD_ENERGY_METHOD_DEIGAN,
+    help=("Use this method to incorporate reactivities into folding energies. "
+          f"{FOLD_ENERGY_METHOD_EDDY} requires "
+          f"--fold-backend={FOLD_BACKEND_RNAFOLD}; "
+          f"{FOLD_ENERGY_METHOD_CORDERO} requires "
+          f"--fold-backend={FOLD_BACKEND_FOLD} or {FOLD_BACKEND_SHAPEKNOTS}")
+)
+
+opt_deigan_slope = Option(
+    ("--deigan-slope",),
     type=float,
-    default=0.,
-    help="Normalize and winsorize ratios to this quantile (0.0 disables)"
+    default=1.8,
+    help=(f"Slope (kcal/mol) for SHAPE reactivities using Deigan method; "
+          f"used only with --fold-energy-method={FOLD_ENERGY_METHOD_DEIGAN}")
+)
+
+opt_deigan_intercept = Option(
+    ("--deigan-intercept",),
+    type=float,
+    default=-0.6,
+    help=(f"Intercept (kcal/mol) for SHAPE reactivities using Deigan method; "
+          f"used only with --fold-energy-method={FOLD_ENERGY_METHOD_DEIGAN}")
+)
+
+opt_fold_quantile = Option(
+    ("--fold-quantile",),
+    type=float,
+    default=0.95,
+    help="Normalize and winsorize reactivities to this quantile for folding"
 )
 
 opt_fold_temp = Option(
     ("--fold-temp",),
     type=float,
-    default=310.15,
-    help="Predict structures at this temperature (Kelvin)"
+    default=37.0,
+    help="Predict structures at this temperature (Celsius)"
 )
 
 opt_fold_constraint = Option(
     ("--fold-constraint",),
     type=Path(exists=True, dir_okay=False),
     help="Force bases to be paired/unpaired from a file of constraints"
+)
+
+opt_fold_commands = Option(
+    ("--fold-commands",),
+    type=Path(exists=True, dir_okay=False),
+    help="Command file for RNAFold"
+)
+
+opt_fold_isolated = Option(
+    ("--fold-isolated/--fold-stacked",),
+    type=bool,
+    default=False,
+    help="Allow isolated (non-stacked) base pairs when folding"
 )
 
 opt_fold_md = Option(
@@ -1204,6 +1375,13 @@ opt_use_ratio = Option(
     help="Graph ratios or counts"
 )
 
+opt_graph_quantile = Option(
+    ("--graph-quantile",),
+    type=float,
+    default=0.,
+    help="Normalize and winsorize ratios to this quantile (0 disables)"
+)
+
 opt_window = Option(
     ("--window", "-w"),
     type=int,
@@ -1227,6 +1405,13 @@ opt_metric = Option(
           f"{repr(KEY_SPEARMAN)} = Spearman correlation coefficient (ρ), "
           f"{repr(KEY_DETERM)} = coefficient of determination (R²), "
           f"{repr(KEY_MARCD)} = mean arcsine distance (MARCD)")
+)
+
+opt_terminal_pairs = Option(
+    ("--terminal-pairs/--no-terminal-pairs",),
+    type=bool,
+    default=True,
+    help="Include terminal base pairs (at the ends of stems) in ROC curves"
 )
 
 opt_struct_file = Option(
@@ -1340,14 +1525,14 @@ opt_graph_roc = Option(
     ("--graph-roc/--no-graph-roc",),
     type=bool,
     default=True,
-    help="Graph receiver operating characteristic curves"
+    help="Graph receiver operating characteristic (ROC) curves"
 )
 
 opt_graph_aucroll = Option(
     ("--graph-aucroll/--no-graph-aucroll",),
     type=bool,
     default=False,
-    help="Graph rolling areas under receiver operating characteristic curves"
+    help="Graph rolling areas under ROC curves (AUC-ROC)"
 )
 
 opt_graph_poscorr = Option(
@@ -1369,6 +1554,65 @@ opt_mutdist_null = Option(
     type=bool,
     default=True,
     help="Include the null distribution of distances between mutations"
+)
+
+# Collate
+
+opt_collate = Option(
+    ("--collate/--no-collate",),
+    type=bool,
+    default=True,
+    help="Collate HTML graphs and SVG drawings into an HTML report file."
+)
+
+opt_group = Option(
+    ("--group",),
+    type=str,
+    default="sample",
+    help="Group collated graphs by one of 'sample', 'graph', 'branches', 'region', or 'all'."
+)
+
+opt_portable = Option(
+    ("--portable/--no-portable",),
+    type=bool,
+    default=False,
+    help=("Embed collated graphs into the output HTML file for "
+          "portability at the expense of live updates and file size.")
+)
+
+opt_name = Option(
+    ("--name",),
+    type=str,
+    default="collated",
+    help="Prefix the HTML report with this name."
+)
+
+opt_verbose_name = Option(
+    ("--verbose-name/--no-verbose-name",),
+    type=bool,
+    default=False,
+    help="Add collated file information to report name."
+)
+
+opt_collate_out_dir = Option(
+    ("--collate-out-dir",),
+    type=Path(file_okay=False),
+    help=("Write collated report to this directory. By default, write to the "
+          "lowest level directory common to all input graphs.")
+)
+
+opt_include_svg = Option(
+    ("--include-svg/--no-include-svg",),
+    type=bool,
+    default=True,
+    help="Include RNA structure drawings from the draw module."
+)
+
+opt_include_graph = Option(
+    ("--include-graph/--no-include-graph",),
+    type=bool,
+    default=True,
+    help="Include graphs from the graph module."
 )
 
 # CT renumbering
@@ -1611,7 +1855,7 @@ opt_log_color = Option(
 opt_exit_on_error = Option(
     ("--exit-on-error/--log-on-error",),
     type=bool,
-    default=DEFAULT_EXIT_ON_ERROR,
+    default=False,
     help="If an error occurs, whether to log a message or exit SEISMIC-RNA"
 )
 

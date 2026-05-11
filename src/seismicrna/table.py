@@ -20,7 +20,7 @@ from .core.arg import (CMD_TABLE,
                        opt_force)
 from .core.dataset import Dataset, MutsDataset
 from .core.run import run_func
-from .core.table import DatasetTabulator
+from .core.table import CountTabulator, DatasetTabulator
 from .core.task import dispatch
 from .mask.dataset import load_mask_dataset
 from .mask.table import MaskCountTabulator, MaskDatasetTabulator
@@ -35,6 +35,25 @@ def tabulate(dataset: MutsDataset,
              clust_table: bool,
              force: bool,
              num_cpus: int):
+    """ Write tables for a dataset using the appropriate tabulator.
+
+    Parameters
+    ----------
+    dataset: MutsDataset
+        Dataset to tabulate (from the relate, mask, or cluster step).
+    tabulator_type: type[DatasetTabulator]
+        Tabulator class that can process this dataset type.
+    pos_table: bool
+        If True, write a per-position table.
+    read_table: bool
+        If True, write a per-read table.
+    clust_table: bool
+        If True, write a cluster abundance table.
+    force: bool
+        If True, overwrite existing table files.
+    num_cpus: int
+        Number of CPUs to use for computation.
+    """
     files = tabulator_type(dataset=dataset,
                            count_pos=(pos_table or clust_table),
                            count_read=read_table,
@@ -57,7 +76,10 @@ def load_all_datasets(input_path: Iterable[str | Path], **kwargs):
         yield from load_func.iterate(input_path, **kwargs)
 
 
-def get_tabulator_type(dataset_type: type[Dataset], count: bool = False):
+def get_tabulator_type(
+        dataset_type: type[Dataset],
+        count: bool = False,
+) -> type[DatasetTabulator] | type[CountTabulator]:
     """ Determine which class of Tabulator can process the dataset. """
     if issubclass(dataset_type, load_relate_dataset.dataset_types):
         return RelateCountTabulator if count else RelateDatasetTabulator

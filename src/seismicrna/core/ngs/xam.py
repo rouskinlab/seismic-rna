@@ -75,7 +75,27 @@ def sort_xam_cmd(xam_inp: Path | None,
                  tmp_pfx: Path | None = None,
                  name: bool = False,
                  num_cpus: int = 1):
-    """ Sort a SAM or BAM file using `samtools sort`. """
+    """ Sort a SAM or BAM file using `samtools sort`.
+
+    Parameters
+    ----------
+    xam_inp: Path | None
+        Input SAM/BAM file; reads from stdin if None.
+    xam_out: Path | None
+        Output SAM/BAM file; writes to stdout if None.
+    tmp_pfx: Path | None
+        Prefix for temporary files; defaults to `xam_out` without its
+        extension if `xam_out` is not None.
+    name: bool = False
+        Sort by read name instead of by coordinate.
+    num_cpus: int = 1
+        Number of threads to use.
+
+    Returns
+    -------
+    str
+        Shell command string.
+    """
     args = [SAMTOOLS_CMD, "sort",
             "-@", calc_extra_threads(num_cpus)]
     if name:
@@ -104,7 +124,27 @@ def collate_xam_cmd(xam_inp: Path | None,
                     tmp_pfx: Path | None = None,
                     fast: bool = False,
                     num_cpus: int = 1):
-    """ Collate a SAM or BAM file using `samtools collate`. """
+    """ Collate a SAM or BAM file using `samtools collate`.
+
+    Parameters
+    ----------
+    xam_inp: Path | None
+        Input SAM/BAM file; reads from stdin ("-") if None.
+    xam_out: Path | None
+        Output SAM/BAM file; writes to stdout if None.
+    tmp_pfx: Path | None
+        Prefix for temporary files; defaults to `xam_out` without its
+        extension if `xam_out` is not None.
+    fast: bool = False
+        Use fast mode, which outputs primary alignments only.
+    num_cpus: int = 1
+        Number of threads to use.
+
+    Returns
+    -------
+    str
+        Shell command string.
+    """
     args = [SAMTOOLS_CMD, "collate",
             "-@", calc_extra_threads(num_cpus)]
     if fast:
@@ -145,7 +185,48 @@ def view_xam_cmd(xam_inp: Path | None,
                  num_cpus: int = 1):
     """ Convert between SAM and BAM formats, extract reads aligning to a
     specific reference/region, and filter by flag and mapping quality
-    using `samtools view`. """
+    using `samtools view`.
+
+    Parameters
+    ----------
+    xam_inp: Path | None
+        Input SAM/BAM file; reads from stdin if None.
+    xam_out: Path | None
+        Output SAM/BAM file; writes to stdout if None.
+    sam: bool = False
+        Output in SAM format.
+    bam: bool = False
+        Output in BAM format.
+    cram: bool = False
+        Output in CRAM format (requires `refs_file`).
+    with_header: bool = False
+        Include the header in the output.
+    only_header: bool = False
+        Output only the header.
+    min_mapq: int = 0
+        Minimum mapping quality score required.
+    flags_req: int = 0
+        Bitwise flag; only output reads with all these bits set.
+    flags_exc: int = 0
+        Bitwise flag; skip reads with any of these bits set.
+    ref: str | None
+        Only output reads aligning to this reference.
+    end5: int | None
+        5' coordinate of the region to extract (requires `ref` and
+        `end3`).
+    end3: int | None
+        3' coordinate of the region to extract (requires `ref` and
+        `end5`).
+    refs_file: Path | None
+        FASTA file of reference sequences (required for CRAM output).
+    num_cpus: int = 1
+        Number of threads to use.
+
+    Returns
+    -------
+    str
+        Shell command string.
+    """
     args = [SAMTOOLS_CMD, "view",
             "-@", calc_extra_threads(num_cpus)]
     # Read filters
@@ -352,7 +433,28 @@ def xam_to_fastq_cmd(xam_inp: Path | None,
                      flags_exc: int | None = None,
                      label_12: bool = False,
                      num_cpus: int = 1):
-    """ Convert XAM format to FASTQ format, and filter by flags. """
+    """ Convert XAM format to FASTQ format, and filter by flags.
+
+    Parameters
+    ----------
+    xam_inp: Path | None
+        Input SAM/BAM file; reads from stdin if None.
+    fq_out: Path | None
+        Output FASTQ file; writes to stdout if None.
+    flags_req: int | None
+        Bitwise flag; only output reads with all these bits set.
+    flags_exc: int | None
+        Bitwise flag; skip reads with any of these bits set.
+    label_12: bool = False
+        Add /1 and /2 suffixes to the names of paired-end reads.
+    num_cpus: int = 1
+        Number of threads to use.
+
+    Returns
+    -------
+    str
+        Shell command string.
+    """
     args = [SAMTOOLS_CMD, "fastq",
             "-@", calc_extra_threads(num_cpus)]
     if flags_req is not None:
