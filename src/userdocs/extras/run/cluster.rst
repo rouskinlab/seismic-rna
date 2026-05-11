@@ -171,6 +171,30 @@ In your cluster report:
   for that number of clusters, so it would be best to rerun clustering using
   more independent runs to increase the chances of finding the global optimum.
 
+Cluster setting: Jackpotting threshold
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+SEISMIC-RNA checks for "jackpotting" — the overrepresentation of certain reads
+due to PCR amplification bias — as part of the clustering quality control.
+Computing the jackpotting quotient requires iterating over every read × position
+combination, which can be slow for large datasets.
+
+Use ``--jackpot-max-data`` (default: 2²⁸ ≈ 268 million) to skip the jackpotting
+quotient calculation when the product of the number of reads and the number of
+positions exceeds this limit.
+Increase this value if you want jackpotting checks on large datasets (at the
+cost of longer runtimes), or decrease it to always skip the check.
+
+Cluster setting: Random seed
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The EM algorithm uses random starting points.
+To make clustering reproducible, pass ``--seed`` followed by any integer::
+
+    seismic cluster --seed 42 {out}
+
+Without ``--seed``, each run will use a different random state.
+
 Cluster: Troubleshoot and optimize
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

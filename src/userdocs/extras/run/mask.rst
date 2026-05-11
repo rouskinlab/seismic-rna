@@ -26,6 +26,27 @@ To mask all relation vectors in ``{out}``, you can use the command ::
 Mask: Settings
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Mask setting: Choose a chemical probe
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Use ``--probe`` to tell SEISMIC-RNA which chemical probe you used.
+This sets sensible defaults for several other mask options automatically:
+
+=========== ================================= ==========================
+``--probe`` Probe                             Default behaviour
+=========== ================================= ==========================
+``DMS``     Dimethyl sulfate (default)        Mask G and U; use
+                                              ``--mut-collisions drop``
+``SHAPE``   SHAPE reagents                   Keep G and U; use
+            (e.g. 1M7, NMIA)                 ``--mut-collisions merge``
+``ETC``     Other chemical probes            Keep G and U; use
+                                              ``--mut-collisions merge``
+``none``    No probe (e.g. icSHAPE input)    Keep G and U; use
+                                              ``--mut-collisions merge``
+=========== ================================= ==========================
+
+You can still override any individual option after setting ``--probe``.
+
 Mask setting: Define regions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -71,14 +92,24 @@ Mask setting: Exclude positions
 The first substep of masking is excluding pre-specified positions.
 You can specify three types of positions to exclude.
 
-Exclude positions with G and U bases
+Exclude positions by base identity
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 DMS methylates G and U much less than A and C residues under physiological
 conditions [`Zubradt et al. (2017)`_], so positions with G or U bases are
 generally excluded when DMS is the chemical probe.
-Use ``--exclude-gu`` (default) and ``--include-gu`` to choose whether to use
-G and U bases.
+SEISMIC-RNA provides per-base masking flags so you can control each base
+independently:
+
+- ``--mask-a`` / ``--keep-a``: mask or keep positions with base A
+- ``--mask-c`` / ``--keep-c``: mask or keep positions with base C
+- ``--mask-g`` / ``--keep-g``: mask or keep positions with base G (masked by default for DMS)
+- ``--mask-u`` / ``--keep-u``: mask or keep positions with base U (masked by default for DMS)
+
+When no per-base flag is provided, the default is determined by ``--probe``
+(see `Mask setting: Choose a chemical probe`_):
+``--probe DMS`` masks G and U, while ``--probe SHAPE``, ``--probe ETC``, and
+``--probe none`` keep all four bases.
 
 Exclude positions with poly(A) sequences
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -150,22 +181,37 @@ Filter reads by space between mutations
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 Reads with closely spaced mutations are very underrepresented in mutational
-profiling data, presumably because reverse transcripases struggle to read
+profiling data, presumably because reverse transcriptases struggle to read
 through closely spaced pairs of modifications [`Tomezsko et al. (2020)`_].
 Therefore, the data are biased towards reads without closely spaced mutations,
 which would skew the mutation rates.
-However, SEISMIC-RNA can correct the bias: first by removing any reads that
-did happen to have mutations close together, then calculating the mutation
-rates without such reads, and inferring what the mutation rates would have
-been if no reads had dropped out.
+However, SEISMIC-RNA can correct the bias: first by handling reads that have
+mutations close together, then calculating the mutation rates without such reads,
+and inferring what the mutation rates would have been if no reads had dropped out.
 
 The correction for observer bias is most important for finding alternative
 structures and (to minimize surprises) does not run by default.
-You can correct observer bias using ``--min-mut-gap`` followed by the minimum
-number of non-mutated bases that must separate two mutations; reads with any
-pair of mutations closer than this gap are discarded.
+You can activate it using ``--min-mut-gap`` followed by the minimum number of
+non-mutated bases that must separate two mutations.
 If you correct for observer bias, then we recommend using ``--min-mut-gap 3``,
 based on our previous findings in `Tomezsko et al. (2020)`_.
+
+When ``--min-mut-gap`` is set, use ``--mut-collisions`` to choose what to do
+with reads that have two mutations closer than the gap:
+
+============= =================================================================
+``--mut-collisions`` Behaviour
+============= =================================================================
+``auto``      Automatically choose ``drop`` or ``merge`` based on ``--probe``
+(default)     (DMS → ``drop``; SHAPE/ETC/none → ``merge``).
+``drop``      Discard any read with a pair of mutations closer than
+              ``--min-mut-gap``.  Recommended for DMS-MaPseq, where closely
+              spaced hits from the same molecule are rare.
+``merge``     Merge the two nearby mutations into a single event at their
+              midpoint.  Recommended for SHAPE, where a single reagent
+              adduct can generate two adjacent mutation calls during
+              reverse transcription.
+============= =================================================================
 
 Mask setting: Filter positions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

@@ -60,6 +60,11 @@ Run individual steps of the workflow
 .. click:: seismicrna.fold:cli
     :prog: seismic fold
 
+.. _cli_collate:
+
+.. click:: seismicrna.collate:cli
+    :prog: seismic collate
+
 .. _cli_graph:
 
 seismic graph

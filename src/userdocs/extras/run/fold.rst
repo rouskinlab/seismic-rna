@@ -22,6 +22,50 @@ directory ``{out}``, you could use the command ::
 Fold: Settings
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fold setting: Choose a folding backend
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+``seismic fold`` supports three folding backends, selected with
+``--fold-backend``:
+
+=================== =================== ========================================
+``--fold-backend``  Program             Package
+=================== =================== ========================================
+``Fold`` (default)  RNAstructure Fold   RNAstructure_ (≥ 6.6)
+``ShapeKnots``      RNAstructure        RNAstructure_ (≥ 6.6) — predicts
+                    ShapeKnots          pseudoknots
+``RNAFold``         ViennaRNA RNAfold   ViennaRNA_ (≥ 2.7.2) — see
+                                        :ref:`install_dependencies`
+=================== =================== ========================================
+
+All three backends accept normalized mutation rates as soft constraints to guide
+structure prediction (see `Fold setting: Energy method`_).
+ShapeKnots is the only backend that can predict pseudoknots.
+RNAFold is the only backend that supports the Eddy energy method.
+
+Fold setting: Energy method
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Mutation rates are incorporated into the folding energy function as soft
+constraints.
+Use ``--fold-energy-method`` to choose the method:
+
+=================== =========== ================================================
+``--fold-energy-method`` Backends Description
+=================== =========== ================================================
+``Deigan``          all         SHAPE pseudo-energy pseudoenergy term
+(default)                       ``m * log(reactivity + 1) + b``
+                                with slope ``--deigan-slope`` (default 1.8
+                                kcal/mol) and intercept ``--deigan-intercept``
+                                (default −0.6 kcal/mol); used with RNAstructure
+                                Fold and ShapeKnots via SHAPE-directed folding
+                                and with ViennaRNA via soft constraints file.
+``Cordero``         Fold,       Hard partition into paired/unpaired constraints
+                    ShapeKnots  based on reactivity threshold; RNAstructure-only.
+``Eddy``            RNAFold     Uses ViennaRNA's built-in soft constraint
+                                facility; requires ``--fold-backend RNAFold``.
+=================== =========== ================================================
+
 Fold setting: Define regions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -57,24 +101,45 @@ Fold setting: Quantile for normalization
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Folding requires that the mutation rates be normalized to the interval [0, 1].
-See :doc:`../normalize` for ways to normalize mutation rates.
+Use ``--fold-quantile`` (default 0.95) to set the quantile to which reactivities
+are normalized and winsorized before folding.
+See :doc:`../normalize` for more information on normalization.
 
 Fold setting: RNAstructure parameters
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-``seismic fold`` exposes several options for the RNAstructure Fold program (see
-the `documentation for Fold`_ for details on each option):
+``seismic fold`` exposes several options for the RNAstructure Fold and
+ShapeKnots programs (see the `documentation for Fold`_ for details on each
+option).
+Options marked with (†) are also honoured by the ViennaRNA RNAfold backend.
 
-========================== =========================== =============================================================================================
-Option in ``seismic fold`` Option in RNAstructure Fold Brief explanation
-========================== =========================== =============================================================================================
-``--fold-temp``            ``--temperature``           temperature (K) of folding
-``--fold-constraint``      ``--constraint``            optional `folding constraints file`_
-``--fold-md``              ``--maxdistance``           maximum distance between paired bases
-``--fold-mfe``             ``--MFE``                   predict only the optimal structure (same result as ``--fold-max 1``, but about twice as fast)
-``--fold-max``             ``--maximum``               maximum number of structures to predict (ignored if using ``--fold-mfe``)
-``--fold-percent``         ``--percent``               maximum % difference in free energy of predicted structures (ignored if using ``--fold-mfe``)
-========================== =========================== =============================================================================================
+============================== =========================== ===========================================================================================
+Option in ``seismic fold``     Option in RNAstructure      Brief explanation
+============================== =========================== ===========================================================================================
+``--fold-temp``                ``--temperature``           temperature (°C) of folding (default 37)
+``--fold-constraint``          ``--constraint``            optional `folding constraints file`_ with forced pairs/unpaired bases (†)
+``--fold-md`` (†)              ``--maxdistance``           maximum distance between paired bases (0 = no limit)
+``--fold-mfe`` (†)             ``--MFE``                   predict only the optimal structure (same result as ``--fold-max 1``, but about twice as fast)
+``--fold-max`` (†)             ``--maximum``               maximum number of structures to predict (ignored if using ``--fold-mfe``)
+``--fold-percent``             ``--percent``               maximum % difference in free energy of predicted structures (ignored if using ``--fold-mfe``)
+``--fold-isolated``            ``--maxloop``-adjacent      allow isolated (non-stacked) base pairs (default: disallowed)
+============================== =========================== ===========================================================================================
+
+Fold setting: ViennaRNA-specific parameters
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When ``--fold-backend RNAFold`` is selected, you may additionally pass a
+commands file to RNAfold using ``--fold-commands``.
+This file is forwarded verbatim to RNAfold's ``--commands`` option.
+
+Fold setting: Dry run
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Use ``--fold-dry-run`` to generate the input files and command for the folding
+backend without actually running it.
+This is useful for inspecting the soft-constraint data files or debugging the
+command line before a long production run.
+Use ``--fold-real-run`` (the default) to run folding normally.
 
 Fold: Output files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -146,3 +211,5 @@ To draw a structure from SEISMIC-RNA in VARNA:
 .. _documentation for Fold: https://rna.urmc.rochester.edu/Text/Fold.html
 .. _folding constraints file: https://rna.urmc.rochester.edu/Text/File_Formats.html#Constraint
 .. _VARNA: https://varna.lisn.upsaclay.fr/
+.. _RNAstructure: https://rna.urmc.rochester.edu/RNAstructure.html
+.. _ViennaRNA: https://www.tbi.univie.ac.at/RNA/

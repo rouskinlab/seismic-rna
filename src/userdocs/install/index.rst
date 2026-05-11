@@ -202,20 +202,28 @@ After updating, it is a good idea to run the tests (see :ref:`test_seismicrna`).
 Appendix 1: Install the dependencies of SEISMIC-RNA with or without Conda
 ================================================================================
 
-Although most dependencies of SEISMIC-RNA are available from pip, four are not:
+Although most dependencies of SEISMIC-RNA are available from pip, several are not:
 
 .. image:: dependencies.png
 
 The easiest way to install them is with Conda, using the following commands:
 
-============= =========================================================
+============= =================================================================
 Dependency    Command to install with Conda
-============= =========================================================
+============= =================================================================
 Bowtie2_      ``conda install -c bioconda -c conda-forge bowtie2``
 Fastp_        ``conda install -c bioconda -c conda-forge fastp``
-RNAstructure_ ``conda install -c bioconda -c conda-forge rnastructure``
+RNAstructure_ ``conda install -c bioconda -c conda-forge rnastructure>=6.6``
 Samtools_     ``conda install -c bioconda -c conda-forge samtools``
-============= =========================================================
+seqkit_       ``conda install -c bioconda -c conda-forge seqkit>=2.10.1``
+ViennaRNA_    ``conda install -c bioconda -c conda-forge viennarna>=2.7.2``
+============= =================================================================
+
+.. note::
+    RNAstructure_ (version ≥ 6.6) and seqkit_ are required for the ``fold``
+    and ``demult`` steps, respectively.
+    ViennaRNA_ is optional: it is only needed if you use
+    ``--fold-backend RNAFold`` (see :doc:`../extras/run/fold`).
 
 If a package fails to install using Conda, or if you are not using Conda, then
 follow its link above to find the instructions for installing it manually.
@@ -237,6 +245,8 @@ one at a time::
     which fastp
     which ct2dot  # ct2dot is part of RNAstructure
     which samtools
+    which seqkit
+    which RNAfold  # RNAfold is part of ViennaRNA (optional)
 
 If the dependency is installed, then it should print out the path to it.
 If it says something like ``not found``, then the dependency is not installed.
@@ -369,6 +379,8 @@ instructions).
 .. _Fastp: https://github.com/OpenGene/fastp
 .. _RNAstructure: https://rna.urmc.rochester.edu/RNAstructure.html
 .. _Samtools: https://www.htslib.org/
+.. _seqkit: https://bioinf.shenwei.me/seqkit/
+.. _ViennaRNA: https://www.tbi.univie.ac.at/RNA/
 .. _PyPI: https://pypi.org/project/seismic-rna/
 .. _Anaconda: https://anaconda.org/bioconda/seismic-rna
 .. _Windows Subsystem for Linux (WSL): https://learn.microsoft.com/en-us/windows/wsl
