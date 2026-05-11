@@ -26,7 +26,6 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
-    "sphinxcontrib.blockdiag",
     "sphinx.ext.autosectionlabel",
     "sphinx_click",
     "sphinx_rtd_theme",
