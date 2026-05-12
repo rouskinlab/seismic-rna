@@ -153,6 +153,7 @@ class TestWorkflow(ut.TestCase):
                input_path=[],
                out_dir=self.OUT_DIR,
                dmfastqx=[samples_dir],
+               seed=0,
                batch_size=batch_size,
                brotli_level=0,
                write_read_names=True,
@@ -401,6 +402,7 @@ class TestWorkflow(ut.TestCase):
                  str(fasta),
                  "-o", str(self.OUT_DIR),
                  "-X", str(samples_dir),
+                 "--seed", "0",
                  "--batch-size", str(batch_size),
                  "--brotli-level", "0",
                  "--write-read-names"]
@@ -634,6 +636,7 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
             dmfastqxs.append(run_sim_fastq(input_path=[],
                                            param_dir=[param_dir],
                                            sample=self.SAMPLE,
+                                           seed=0,
                                            read_length=30,
                                            num_reads=2000,
                                            fq_gzip=False))
@@ -644,6 +647,7 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
                             min_mapq=min_mapq,
                             bt2_score_min_loc="L,1,0.5",
                             fastp_poly_g="yes",
+                            seed=0,
                             force=True)
         self.assertRaisesRegex(DuplicateSampleReferenceError,
                                str((self.SAMPLE, self.REF)),
@@ -730,6 +734,7 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
         # Cluster mask reports.
         cluster_dirs = sorted(run_cluster(mask_dirs,
                                           max_clusters=1,
+                                          seed=0,
                                           jackpot=False))
         cluster_reports = sorted(out_dir.joinpath(self.SAMPLE,
                                                   "cluster",
