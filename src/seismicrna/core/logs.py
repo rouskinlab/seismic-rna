@@ -255,6 +255,8 @@ LoggerConfig = namedtuple("LoggerConfig",
 def erase_config():
     """ Erase the existing logger configuration. """
     logger.console_stream = None
+    if logger.file_stream is not None:
+        logger.file_stream.close()
     logger.file_stream = None
     logger.exit_on_error = DEFAULT_EXIT_ON_ERROR
 

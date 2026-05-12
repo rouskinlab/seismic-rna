@@ -5,6 +5,8 @@ from itertools import chain, combinations, product
 from pathlib import Path
 from typing import Iterable
 
+from click.testing import CliRunner
+
 from seismicrna.align import run as run_align
 from seismicrna.cluster import run as run_cluster
 from seismicrna.core import path
@@ -30,6 +32,7 @@ from seismicrna.sim.params import run as run_sim_params
 from seismicrna.sim.ref import run as run_sim_ref
 from seismicrna.wf import run as run_wf
 from seismicrna.cluster.data import ClusterMutsDataset
+from seismicrna.main import cli as seismic_cli
 
 
 def list_step_dir_contents(parent_dir: Path,
@@ -342,6 +345,235 @@ class TestWorkflow(ut.TestCase):
                                 file = graph_reg_dir.joinpath(f"{name}{ext}")
                                 with self.subTest(file=file):
                                     self.assertTrue(file.is_file())
+
+
+    def test_wf_sim_2samples_2refs_20000reads_2clusts_cli(self):
+        # Simulate the data to be processed with wf (same as API test).
+        num_structs = 2
+        num_reads = 10000
+        batch_size = 2 ** 16
+        num_batches = (num_reads + 1) // batch_size + 1
+        samples = ["test-sample-1", "test-sample-2"]
+        refs = {"ref-A": 100, "ref-B": 150}
+        samples_dir = self.SIM_DIR.joinpath("samples")
+        all_fastas = list()
+        for ref, reflen in refs.items():
+            run_sim_ref(refs=ref, ref=ref, reflen=reflen, sim_dir=self.SIM_DIR)
+            fasta = self.SIM_DIR.joinpath("refs", f"{ref}.fa")
+            all_fastas.append(fasta)
+            run_sim_fold(fasta, fold_max=num_structs, sim_dir=self.SIM_DIR)
+            param_dir = self.SIM_DIR.joinpath("params", ref, "full")
+            ct_file = param_dir.joinpath("simulated.ct")
+            run_sim_params(ct_file=[ct_file])
+            for sample in samples:
+                fastqs = run_sim_fastq(input_path=(),
+                                       param_dir=(param_dir,),
+                                       sample=sample,
+                                       num_reads=num_reads)
+                sample_dir = samples_dir.joinpath(sample)
+                for fastq, mate in zip(fastqs, [1, 2], strict=True):
+                    self.assertEqual(
+                        fastq,
+                        sample_dir.joinpath(path.DEMULT_STEP,
+                                            f"{ref}_R{mate}.fq.gz")
+                    )
+                    self.assertTrue(os.path.isfile(fastq))
+        # Merge the FASTA files for all references.
+        fasta = self.SIM_DIR.joinpath("refs", "test-refs.fa")
+        with open(fasta, "x") as f:
+            for ref in all_fastas:
+                with open(ref) as r:
+                    f.write(r.read())
+        # Build mask_coords for CLI: -c ref end5 end3 per region.
+        refs_coords = {"ref-A": [(1, 70), (31, 90)],
+                       "ref-B": [(31, 90), (101, 150)]}
+        refs_regions = {ref: [f"{end5}-{end3}" for end5, end3 in ref_coords]
+                        for ref, ref_coords in refs_coords.items()}
+        mask_coords_args = []
+        for ref, ref_coords in refs_coords.items():
+            for end5, end3 in ref_coords:
+                mask_coords_args += ["-c", ref, str(end5), str(end3)]
+        # Invoke `seismic wf` via the CLI runner.
+        runner = CliRunner()
+        args = (["-qq",
+                 "--exit-on-error",
+                 "wf",
+                 str(fasta),
+                 "-o", str(self.OUT_DIR),
+                 "-X", str(samples_dir),
+                 "--batch-size", str(batch_size),
+                 "--brotli-level", "0",
+                 "--write-read-names"]
+                + mask_coords_args
+                + ["--cluster",
+                   "--max-clusters", str(num_structs),
+                   "--try-all-ks",
+                   "--write-all-ks",
+                   "--em-thresh", "1.0",
+                   "--min-em-runs", "2",
+                   "--jackpot",
+                   "--fold",
+                   "--fold-quantile", "0.95",
+                   "--export",
+                   "--graph-mprof",
+                   "--graph-tmprof",
+                   "--graph-ncov",
+                   "--graph-mhist",
+                   "--graph-abundance",
+                   "--graph-giniroll",
+                   "--graph-roc",
+                   "--graph-aucroll",
+                   "--graph-poscorr",
+                   "--graph-mutdist",
+                   "--mutdist-null",
+                   "--cgroup", GROUP_BY_K,
+                   "--csv",
+                   "--html",
+                   "--svg",
+                   "--pdf",
+                   "--png",
+                   "--verify-times",
+                   "--num-cpus", "1",
+                   "--no-force"])
+        result = runner.invoke(seismic_cli, args, catch_exceptions=False)
+        self.assertEqual(result.exit_code, 0, msg=result.output)
+        # Restore the logging config changed by the CLI invocation so that
+        # subsequent API calls behave the same as in the API test.
+        set_config(verbosity=Level.ERROR, log_file_path=None, exit_on_error=True)
+        # Create additional graphs that are not part of wf (same as API test).
+        graph_kwargs = dict(cgroup=GROUP_BY_K,
+                            csv=True,
+                            html=True,
+                            svg=True,
+                            pdf=True,
+                            png=True,
+                            verify_times=True,
+                            num_cpus=1,
+                            force=False)
+        rel_graph_kwargs = graph_kwargs | dict(rels=("m",),
+                                               use_ratio=True,
+                                               graph_quantile=0.)
+        clust_rel_graph_kwargs = rel_graph_kwargs | {"cgroup": GROUP_ALL,
+                                                     K_CLUST_KEY: [(1, 1),
+                                                                   (2, 2)],
+                                                     "k": None,
+                                                     "clust": None}
+        PositionHistogramRunner.run([self.OUT_DIR],
+                                    hist_bins=37,
+                                    hist_margin=0.01,
+                                    **rel_graph_kwargs)
+        # Re-run profile graph for clusters with arbitrary (k, clust) list.
+        ProfileRunner.run([self.OUT_DIR.joinpath(sample).joinpath("cluster")
+                           for sample in samples],
+                          **clust_rel_graph_kwargs)
+        graph_formats = [".csv", ".html", ".svg", ".pdf", ".png"]
+        for sample in samples:
+            self.assertTrue(
+                self.OUT_DIR.joinpath(f"{sample}__webapp.json").is_file()
+            )
+            sample_dir = self.OUT_DIR.joinpath(sample)
+            align_dir = sample_dir.joinpath("align")
+            self.assertListEqual(
+                sorted(align_dir.iterdir()),
+                sorted(align_dir.joinpath(file)
+                       for ref in refs_coords
+                       for file in [f"{ref}__align-report.json",
+                                    f"{ref}.bam",
+                                    f"{ref}__unaligned.fq.1.gz",
+                                    f"{ref}__unaligned.fq.2.gz",
+                                    f"{ref}__fastp.html",
+                                    f"{ref}__fastp.json"])
+            )
+            for ref, ref_coords in refs_coords.items():
+                relate_dir = sample_dir.joinpath("relate", ref)
+                self.assertListEqual(sorted(relate_dir.iterdir()),
+                                     sorted(list_step_dir_contents(
+                                         relate_dir, "relate", num_batches
+                                     )))
+                graph_full_dir = sample_dir.joinpath("graph", ref, "full")
+                for ext in graph_formats:
+                    for name in ["giniroll_all_45-9_m-ratio-q0",
+                                 "histpos_all_m-ratio-q0",
+                                 "mutdist_all_m",
+                                 "poscorr_all_m",
+                                 "profile_all_acgtdi-ratio-q0",
+                                 "profile_all_m-ratio-q0",
+                                 "profile_all_n-count"]:
+                        file = graph_full_dir.joinpath(f"{name}{ext}")
+                        with self.subTest(file=file):
+                            self.assertTrue(file.is_file())
+                    for reg in refs_regions[ref]:
+                        for action in list_actions(num_structs):
+                            for name in [
+                                f"aucroll_{reg}__{action}_45-9_m-ratio-q0_incl-term",
+                                f"roc_{reg}__{action}_m-ratio-q0_incl-term",
+                            ]:
+                                file = graph_full_dir.joinpath(f"{name}{ext}")
+                                with self.subTest(file=file):
+                                    self.assertTrue(file.is_file())
+                for reg in refs_regions[ref]:
+                    mask_dir = sample_dir.joinpath("mask", ref, reg)
+                    self.assertListEqual(sorted(mask_dir.iterdir()),
+                                         sorted(list_step_dir_contents(
+                                             mask_dir, "mask", num_batches
+                                         )))
+                    cluster_dir = sample_dir.joinpath("cluster", ref, reg)
+                    self.assertListEqual(sorted(cluster_dir.iterdir()),
+                                         sorted(list_step_dir_contents(
+                                             cluster_dir, "cluster", num_batches
+                                         )))
+                    graph_reg_dir = sample_dir.joinpath("graph", ref, reg)
+                    for ext in graph_formats:
+                        for name in ["histread_filtered_m-count"]:
+                            file = graph_reg_dir.joinpath(f"{name}{ext}")
+                            with self.subTest(file=file):
+                                self.assertTrue(file.is_file())
+                        for action in list_actions(num_structs):
+                            for name in [f"giniroll_{action}_45-9_m-ratio-q0",
+                                         f"histpos_{action}_m-ratio-q0",
+                                         f"mutdist_{action}_m",
+                                         f"poscorr_{action}_m",
+                                         f"profile_{action}_m-ratio-q0",
+                                         f"profile_{action}_acgtdi-ratio-q0",
+                                         f"profile_{action}_n-count"]:
+                                file = graph_reg_dir.joinpath(f"{name}{ext}")
+                                with self.subTest(file=file):
+                                    self.assertTrue(file.is_file())
+                        for name in ["profile_clustered-x-x_m-ratio-q0",
+                                     "abundance_clustered"]:
+                            file = graph_reg_dir.joinpath(f"{name}{ext}")
+                            with self.subTest(file=file):
+                                self.assertTrue(file.is_file())
+                fold_dir = sample_dir.joinpath("fold", ref, "full")
+                self.assertListEqual(
+                    sorted(fold_dir.iterdir()),
+                    sorted([fold_dir.joinpath(file)
+                            for reg in refs_regions[ref]
+                            for profile in list_profiles(num_structs)
+                            for file in [f"{reg}__{profile}.ct",
+                                         f"{reg}__{profile}.db",
+                                         f"{reg}__{profile}__fold-report.json",
+                                         f"{reg}__{profile}__varna-color.txt"]
+                            ])
+                )
+        cluster_report = cluster_dir.joinpath("cluster-report.json")
+        cluster_dataset = ClusterMutsDataset(cluster_report)
+        target_tracks = [(1, 1), (2, 2)]
+        tracks = make_tracks(source=cluster_dataset,
+                             k=None,
+                             clust=None,
+                             k_clust_list=target_tracks)
+        self.assertListEqual(tracks, target_tracks)
+        tracks = make_tracks(source=cluster_dataset,
+                             k=1,
+                             clust=None,
+                             k_clust_list=[(2, 2)])
+        self.assertListEqual(tracks, target_tracks)
+        tracks = make_tracks(source=cluster_dataset,
+                             k=None,
+                             clust=2,
+                             k_clust_list=[(1, 1)])
+        self.assertListEqual(tracks, target_tracks)
 
 
 class TestWorkflowTwoOutDirs(ut.TestCase):
