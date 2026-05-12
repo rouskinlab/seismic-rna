@@ -556,25 +556,29 @@ class TestEnsembles(ut.TestCase):
         relate_dirs = self.sim_data([0, 1, 2], 180, seed=0)
         self.run_ensembles(relate_dirs,
                            {(1, 60): 2,
-                            (121, 180): 2})
+                            (121, 180): 2},
+                            seed=0)
 
     def test_modules012_read120(self):
         relate_dirs = self.sim_data([0, 1, 2], 120, seed=0)
         self.run_ensembles(relate_dirs,
                            {(1, 60): 2,
-                            (121, 180): 2})
+                            (121, 180): 2},
+                            seed=0)
 
     def test_modules012_read60(self):
         relate_dirs = self.sim_data([0, 1, 2], 60, seed=0)
         self.run_ensembles(relate_dirs,
                            {(1, 60): 2,
-                            (121, 180): 2})
+                            (121, 180): 2},
+                            seed=0)
 
     def test_modules02_read60(self):
         relate_dirs = self.sim_data([0, 2], 60, seed=0)
         self.run_ensembles(relate_dirs,
                            {(1, 60): 2,
-                            (61, 120): 2})
+                            (61, 120): 2},
+                            seed=0)
 
 
 if __name__ == "__main__":

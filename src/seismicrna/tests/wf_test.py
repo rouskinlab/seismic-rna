@@ -98,18 +98,19 @@ class TestWorkflow(ut.TestCase):
         samples_dir = self.SIM_DIR.joinpath("samples")
         all_fastas = list()
         for ref, reflen in refs.items():
-            run_sim_ref(refs=ref, ref=ref, reflen=reflen, sim_dir=self.SIM_DIR)
+            run_sim_ref(refs=ref, ref=ref, reflen=reflen, sim_dir=self.SIM_DIR, seed=0)
             fasta = self.SIM_DIR.joinpath("refs", f"{ref}.fa")
             all_fastas.append(fasta)
             run_sim_fold(fasta, fold_max=num_structs, sim_dir=self.SIM_DIR)
             param_dir = self.SIM_DIR.joinpath("params", ref, "full")
             ct_file = param_dir.joinpath("simulated.ct")
-            run_sim_params(ct_file=[ct_file])
+            run_sim_params(ct_file=[ct_file], seed=0)
             for sample in samples:
                 fastqs = run_sim_fastq(input_path=(),
                                        param_dir=(param_dir,),
                                        sample=sample,
-                                       num_reads=num_reads)
+                                       num_reads=num_reads,
+                                       seed=0)
                 sample_dir = samples_dir.joinpath(sample)
                 for fastq, mate in zip(fastqs, [1, 2], strict=True):
                     self.assertEqual(
@@ -359,18 +360,19 @@ class TestWorkflow(ut.TestCase):
         samples_dir = self.SIM_DIR.joinpath("samples")
         all_fastas = list()
         for ref, reflen in refs.items():
-            run_sim_ref(refs=ref, ref=ref, reflen=reflen, sim_dir=self.SIM_DIR)
+            run_sim_ref(refs=ref, ref=ref, reflen=reflen, sim_dir=self.SIM_DIR, seed=0)
             fasta = self.SIM_DIR.joinpath("refs", f"{ref}.fa")
             all_fastas.append(fasta)
             run_sim_fold(fasta, fold_max=num_structs, sim_dir=self.SIM_DIR)
             param_dir = self.SIM_DIR.joinpath("params", ref, "full")
             ct_file = param_dir.joinpath("simulated.ct")
-            run_sim_params(ct_file=[ct_file])
+            run_sim_params(ct_file=[ct_file], seed=0)
             for sample in samples:
                 fastqs = run_sim_fastq(input_path=(),
                                        param_dir=(param_dir,),
                                        sample=sample,
-                                       num_reads=num_reads)
+                                       num_reads=num_reads,
+                                       seed=0)
                 sample_dir = samples_dir.joinpath(sample)
                 for fastq, mate in zip(fastqs, [1, 2], strict=True):
                     self.assertEqual(

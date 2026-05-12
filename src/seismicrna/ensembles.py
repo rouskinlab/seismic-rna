@@ -695,7 +695,8 @@ def _run_group(relate_report_files: list[Path], *,
                write_all_ks: bool,
                cluster_pos_table: bool,
                cluster_abundance_table: bool,
-               verify_times: bool):
+               verify_times: bool,
+               seed: int | None):
     """ Run a group of datasets. """
     # Divide each reference into overlapping tiles.
     tiled_coords = _calc_tiled_coords(
@@ -855,6 +856,7 @@ def _run_group(relate_report_files: list[Path], *,
         brotli_level=brotli_level,
         num_cpus=num_cpus,
         force=force,
+        seed=seed,
     )
     return cluster_dirs
 
@@ -901,7 +903,7 @@ def run(input_path: Iterable[str | Path], *,
         min_finfo_read: float,
         max_fmut_read: float,
         min_mut_gap: int | None,
-mut_collisions: str,
+        mut_collisions: str,
         min_ninfo_pos: int,
         max_fmut_pos: float,
         quick_unbias: bool,
@@ -931,7 +933,8 @@ mut_collisions: str,
         write_all_ks: bool,
         cluster_pos_table: bool,
         cluster_abundance_table: bool,
-        verify_times: bool):
+        verify_times: bool,
+        seed: int | None):
     """ Infer independent structure ensembles along an entire RNA. """
     # Group reports by sample and branches.
     seg_types = load_relate_dataset.report_path_seg_types
@@ -1011,7 +1014,8 @@ mut_collisions: str,
                   write_all_ks=write_all_ks,
                   cluster_pos_table=cluster_pos_table,
                   cluster_abundance_table=cluster_abundance_table,
-                  verify_times=verify_times)
+                  verify_times=verify_times,
+                  seed=seed)
     return list(chain(*dispatch(_run_group,
                                 num_cpus=num_cpus,
                                 pass_num_cpus=True,
