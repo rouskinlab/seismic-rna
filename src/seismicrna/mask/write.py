@@ -711,6 +711,7 @@ class Masker(object):
             n_batches=self.dataset.num_batches,
             count_refs=self.pattern.nos,
             count_muts=self.pattern.yes,
+            probe=self.probe,
             mask_a=self.mask_a,
             mask_c=self.mask_c,
             mask_g=self.mask_g,

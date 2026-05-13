@@ -133,6 +133,10 @@ class ClusterMutsDataset(ClusterDataset, MultistepDataset, UnbiasDataset):
         return getattr(self.dataset1, "quick_unbias_thresh")
 
     @property
+    def probe(self):
+        return getattr(self.dataset1, "probe")
+
+    @property
     def ks(self):
         return getattr(self.dataset2, "ks")
 

@@ -23,6 +23,7 @@ from ..core.report import (CountMutsF,
                            MinMutGapF,
                            MutCollisionsF,
                            PosKeptF,
+                           ProbeF,
                            RefF,
                            RegF,
                            End5F,
@@ -67,6 +68,10 @@ class MaskReadDataset(MaskDataset, LoadedDataset, UnbiasDataset):
         return self.report.get_field(QuickUnbiasThreshF)
 
     @property
+    def probe(self):
+        return self.report.get_field(ProbeF)
+
+    @property
     def pos_kept(self):
         """ Positions kept after masking. """
         return self.report.get_field(PosKeptF)
@@ -109,6 +114,10 @@ class MaskMutsDataset(MaskDataset, MultistepDataset, UnbiasDataset):
     @property
     def quick_unbias_thresh(self):
         return getattr(self.dataset2, "quick_unbias_thresh")
+
+    @property
+    def probe(self):
+        return getattr(self.dataset2, "probe")
 
     @cached_property
     def region(self):

@@ -5,6 +5,7 @@ from ..core import path
 from ..core.join import JoinReport
 from ..core.report import (RegReport,
                            BatchedReport,
+                           ProbeF,
                            End5F,
                            End3F,
                            CountMutsF,
@@ -78,6 +79,8 @@ class MaskReport(BatchedReport, BaseMaskReport):
             # Region 5' and 3' ends.
             End5F,
             End3F,
+            # Probe type.
+            ProbeF,
             # Types of mutations and matches to count.
             CountMutsF,
             CountRefsF,

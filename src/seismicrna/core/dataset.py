@@ -201,6 +201,11 @@ class UnbiasDataset(Dataset, ABC):
         """ Consider mutation rates less than or equal to this threshold
         to be 0 when using the quick heuristic for unbiasing. """
 
+    @property
+    @abstractmethod
+    def probe(self) -> str:
+        """ Chemical probe used for the experiment. """
+
 
 class RegionDataset(Dataset, ABC):
     """ Dataset with a known reference sequence and region. """
@@ -467,6 +472,10 @@ class MergedUnbiasDataset(MergedDataset, UnbiasDataset, ABC):
     @property
     def quick_unbias_thresh(self):
         return self._get_common_attr("quick_unbias_thresh")
+
+    @property
+    def probe(self):
+        return self._get_common_attr("probe")
 
 
 class TallDataset(MergedDataset, ABC):

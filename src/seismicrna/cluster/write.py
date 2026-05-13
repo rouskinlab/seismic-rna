@@ -192,7 +192,6 @@ def run_ks(uniq_reads: UniqReads,
 def cluster(dataset: MaskMutsDataset | JoinMaskMutsDataset, *,
             branch: str,
             tmp_dir: Path,
-            probe: str,
             min_clusters: int,
             max_clusters: int,
             try_all_ks: bool,
@@ -218,13 +217,13 @@ def cluster(dataset: MaskMutsDataset | JoinMaskMutsDataset, *,
         began = datetime.now()
         # Check compatibility of the probe and mutation gap parameters.
         if (
-            dataset.min_mut_gap != DEFAULT_MIN_MUT_GAPS[probe]
-            or dataset.mut_collisions != DEFAULT_MUT_COLLISIONS[probe]
+            dataset.min_mut_gap != DEFAULT_MIN_MUT_GAPS[dataset.probe]
+            or dataset.mut_collisions != DEFAULT_MUT_COLLISIONS[dataset.probe]
         ):
             logger.warning(
-                f"When clustering with probe {repr(probe)}, it is recommended "
-                f"to use min_mut_gap={DEFAULT_MIN_MUT_GAPS[probe]} "
-                f"and mut_collisions={DEFAULT_MUT_COLLISIONS[probe]}, "
+                f"When clustering with probe {repr(dataset.probe)}, it is recommended "
+                f"to use min_mut_gap={DEFAULT_MIN_MUT_GAPS[dataset.probe]} "
+                f"and mut_collisions={DEFAULT_MUT_COLLISIONS[dataset.probe]}, "
                 f"but got min_mut_gap={dataset.min_mut_gap} "
                 f"and mut_collisions={dataset.mut_collisions}. "
                 "The chosen settings make false positive clusters more likely."

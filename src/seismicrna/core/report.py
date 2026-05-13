@@ -114,7 +114,8 @@ from .arg import (opt_seed,
                   opt_threshold_multiplier,
                   opt_min_cluster_length,
                   opt_max_cluster_length,
-                  opt_gap_mode)
+                  opt_gap_mode,
+                  opt_probe)
 from .error import InconsistentValueError
 from .io import SampleFileIO, ReadBatchIO, RefFileIO, RegFileIO
 from .logs import logger
@@ -405,6 +406,7 @@ ClipEnd3F = OptionReportField(opt_clip_end3)
 PooledSamplesF = ReportField("pooled_samples", "Pooled samples", list)
 
 # Mask fields
+ProbeF = OptionReportField(opt_probe)
 mask_iter_no_convergence = 0
 CountMutsF = ReportField("count_muts",
                          "Count as mutations",
