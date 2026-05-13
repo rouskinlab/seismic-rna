@@ -48,6 +48,7 @@ RELATE_STEP = "relate"
 NAMES_BATCH = "names"
 MASK_STEP = "mask"
 CLUSTER_STEP = "cluster"
+ENSEMBLES_STEP = "ensembles"
 FOLD_STEP = "fold"
 GRAPH_STEP = "graph"
 LIST_STEP = "list"
@@ -420,6 +421,7 @@ StepField = PathField(str,
                        RELATE_STEP,
                        MASK_STEP,
                        CLUSTER_STEP,
+                       ENSEMBLES_STEP,
                        FOLD_STEP,
                        GRAPH_STEP],
                       pattern=STEP_PATTERN)
@@ -692,6 +694,11 @@ ClustBatSeg = PathSegment("cluster-bat",
 ClustRepSeg = PathSegment("cluster-rep",
                           {EXT: ReportExt},
                           frmt=CLUSTER_STEP + "-report{ext}")
+
+# Ensembles
+EnsemblesRepSeg = PathSegment("ensembles-rep",
+                              {EXT: ReportExt},
+                              frmt=ENSEMBLES_STEP + "-report{ext}")
 
 # Table
 PositionTableSeg = PathSegment("position-table",

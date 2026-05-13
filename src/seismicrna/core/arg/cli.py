@@ -1155,6 +1155,13 @@ opt_gap_mode = Option(
          "regions to fill the gaps"
 )
 
+opt_threshold_multiplier = Option(
+    ("--threshold-multiplier",),
+    type=float,
+    default=1.0,
+    help="Multiply the threshold for detecting modules by this factor",
+)
+
 # Fold
 
 opt_fold = Option(

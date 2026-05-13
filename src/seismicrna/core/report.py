@@ -105,7 +105,16 @@ from .arg import (opt_seed,
                   opt_mask_u,
                   opt_mask_polya,
                   opt_mask_discontig,
-                  opt_min_phred)
+                  opt_min_phred,
+                  opt_tile_length,
+                  opt_tile_min_overlap,
+                  opt_erase_tiles,
+                  opt_pair_fdr,
+                  opt_min_pairs,
+                  opt_threshold_multiplier,
+                  opt_min_cluster_length,
+                  opt_max_cluster_length,
+                  opt_gap_mode)
 from .error import InconsistentValueError
 from .io import SampleFileIO, ReadBatchIO, RefFileIO, RegFileIO
 from .logs import logger
@@ -579,6 +588,18 @@ KsWrittenF = ReportField("ks_written",
                          "Numbers of clusters written to batches",
                          list)
 BestKF = ReportField("best_k", "Best number of clusters", int)
+
+# Ensembles fields
+
+TileLengthF          = OptionReportField(opt_tile_length)
+TileMinOverlapF      = OptionReportField(opt_tile_min_overlap)
+EraseTilesF          = OptionReportField(opt_erase_tiles)
+PairFdrF             = OptionReportField(opt_pair_fdr)
+MinPairsF            = OptionReportField(opt_min_pairs)
+ThresholdMultiplierF = OptionReportField(opt_threshold_multiplier)
+MinClusterLengthF    = OptionReportField(opt_min_cluster_length)
+MaxClusterLengthF    = OptionReportField(opt_max_cluster_length)
+GapModeF             = OptionReportField(opt_gap_mode)
 
 # Join fields
 

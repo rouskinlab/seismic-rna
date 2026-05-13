@@ -7,10 +7,12 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from click.testing import CliRunner
 
 from seismicrna.cluster.data import ClusterMutsDataset
 from seismicrna.core.arg.cli import opt_sim_dir
 from seismicrna.core.logs import Level, get_config, set_config
+from seismicrna.main import cli as seismic_cli
 from seismicrna.core.rna.convert import db_to_ct
 from seismicrna.core.seq.fasta import write_fasta
 from seismicrna.core.seq.region import FULL_NAME
@@ -579,6 +581,26 @@ class TestEnsembles(ut.TestCase):
                            {(1, 60): 2,
                             (61, 120): 2},
                             seed=0)
+
+    def test_modules012_read180_cli(self):
+        relate_dirs = self.sim_data([0, 1, 2], 180, seed=0)
+        runner = CliRunner()
+        args = (["-qq",
+                 "--exit-on-error",
+                 "ensembles"]
+                + [str(d) for d in relate_dirs]
+                + ["--min-em-runs", "1",
+                   "--max-em-runs", "1",
+                   "--no-jackpot",
+                   "--brotli-level", "0",
+                   "--no-mask-pos-table",
+                   "--no-mask-read-table",
+                   "--no-cluster-pos-table",
+                   "--no-cluster-abundance-table",
+                   "--seed", "0"])
+        result = runner.invoke(seismic_cli, args, catch_exceptions=False)
+        self.assertEqual(result.exit_code, 0, msg=result.output)
+        set_config(verbosity=Level.ERROR, log_file_path=None, exit_on_error=True)
 
 
 if __name__ == "__main__":

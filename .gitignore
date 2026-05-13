@@ -34,5 +34,6 @@ log/
 
 # VS Code
 .vscode
+.claude
 .coverage
 src/seismicrna/pytest.ini

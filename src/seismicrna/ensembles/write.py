@@ -1,4 +1,5 @@
 from collections import defaultdict
+from datetime import datetime
 from itertools import chain
 from math import ceil
 from pathlib import Path
@@ -6,49 +7,38 @@ from typing import Iterable
 
 import numpy as np
 import pandas as pd
-from click import command
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
-from . import mask as mask_mod, cluster as cluster_mod
-from .core import path
-from .core.arg import (CMD_ENSEMBLES,
-                       GAP_MODE_OMIT,
-                       GAP_MODE_INSERT,
-                       GAP_MODE_EXPAND,
-                       merge_params,
-                       opt_tile_length,
-                       opt_tile_min_overlap,
-                       opt_erase_tiles,
-                       opt_pair_fdr,
-                       opt_min_pairs,
-                       opt_min_cluster_length,
-                       opt_max_cluster_length,
-                       opt_gap_mode)
-from .core.array import triangular
-from .core.batch import (POSITION_A,
-                         POSITION_B,
-                         accumulate_confusion_matrices,
-                         calc_confusion_pvals,
-                         calc_confusion_phi,
-                         label_significant_pvals)
-from .core.dataset import MutsDataset
-from .core.error import (IncompatibleValuesError,
-                         OutOfBoundsError)
-from .core.logs import logger
-from .core.run import run_func
-from .core.seq import (DNA,
-                       DuplicateReferenceNameError,
-                       RefRegions,
-                       unite)
-from .core.task import as_list_of_tuples, dispatch
-from .core.validate import require_atleast
-from .mask.dataset import MaskMutsDataset, load_mask_dataset
-from .mask.io import MaskBatchIO
-from .mask.main import load_regions, set_mut_gap_params
-from .mask.report import MaskReport
-from .relate.dataset import load_relate_dataset
-from .relate.report import RelateReport
+from .. import mask as mask_mod, cluster as cluster_mod
+from ..core import path
+from ..core.arg import (GAP_MODE_OMIT,
+                        GAP_MODE_INSERT,
+                        GAP_MODE_EXPAND)
+from ..core.array import triangular
+from ..core.batch import (POSITION_A,
+                          POSITION_B,
+                          accumulate_confusion_matrices,
+                          calc_confusion_pvals,
+                          calc_confusion_phi,
+                          label_significant_pvals)
+from ..core.dataset import MutsDataset
+from ..core.error import (IncompatibleValuesError,
+                          OutOfBoundsError)
+from ..core.logs import logger
+from ..core.seq import (DNA,
+                        DuplicateReferenceNameError,
+                        RefRegions,
+                        unite)
+from ..core.task import as_list_of_tuples, dispatch
+from ..core.validate import require_atleast
+from ..core.write import need_write
+from ..mask.dataset import MaskMutsDataset, load_mask_dataset
+from ..mask.io import MaskBatchIO
+from ..mask.main import load_regions, set_mut_gap_params
+from ..mask.report import MaskReport
+from ..relate.report import RelateReport
+from .report import EnsemblesReport
 
 
 def _get_batch_read_lengths(batch_num: int,
@@ -333,7 +323,10 @@ def _calc_null_span_per_pos_rand_dists(pairs: list[tuple[int, int]],
     # Count all intervals (a, b) such that end5 ≤ a ≤ k ≤ b ≤ end3 and
     # b - a > min_mut_gap.
     num_intervals = triangular(num_pos - (min_mut_gap + 1))
-    if num_intervals == 0 or len(pairs) == 0:
+    # Only count pairs that satisfy min_mut_gap; short pairs have zero
+    # expected count under this null model and must not inflate num_pairs.
+    num_valid_pairs = sum(1 for p5, p3 in pairs if p3 - p5 > min_mut_gap)
+    if num_intervals == 0 or num_valid_pairs == 0:
         return pd.Series(0., index=positions)
     # For each position, count all possible intervals (a, b) such that
     # end5 ≤ a ≤ k ≤ b ≤ end3.
@@ -347,18 +340,22 @@ def _calc_null_span_per_pos_rand_dists(pairs: list[tuple[int, int]],
         counts -= np.minimum(ramp, min(length, num_loc))
     assert np.all(counts >= 0)
     # Calculate the expected number of pairs that overlap each position.
-    return pd.Series((len(pairs) / num_intervals) * counts, index=positions)
+    return pd.Series((num_valid_pairs / num_intervals) * counts,
+                     index=positions)
 
 
 def _calc_modules_from_pairs(pairs: list[tuple[int, int]],
                              pair_fdr: float,
                              min_mut_gap: int,
                              min_pairs: int = 1,
+                             threshold_multiplier: float = 1.0,
                              preserve_null_pair_dists: bool = False,
                              max_iter: int = 10000):
     logger.routine("Began calculating modules")
     require_atleast("min_mut_gap", min_mut_gap, 0, classes=int)
     require_atleast("min_pairs", min_pairs, 1, classes=int)
+    require_atleast("threshold_multiplier", threshold_multiplier, 0.0,
+                    classes=(float, int))
     finished = set()
     # First, naively aggregate all pairs that overlap.
     modules = _aggregate_pairs(pairs)
@@ -392,7 +389,7 @@ def _calc_modules_from_pairs(pairs: list[tuple[int, int]],
                     end3,
                     min_mut_gap,
                 )
-            threshold = pair_fdr * null_spans_per_pos
+            threshold = pair_fdr * null_spans_per_pos * threshold_multiplier
             sufficient_spans_per_pos = spans_per_pos > threshold
             if sufficient_spans_per_pos.all():
                 # All positions have enough pairs spanning them: keep
@@ -552,12 +549,31 @@ def _calc_ref_cluster_modules(datasets: list[MaskMutsDataset],
                               probe: str,
                               min_mut_gap: int | None,
                               min_pairs: int,
+                              threshold_multiplier: float,
                               min_length: int,
                               max_length: int,
                               gap_mode: str,
+                              branch: str,
+                              tile_length: int,
+                              tile_min_overlap: float,
+                              erase_tiles: bool,
+                              force: bool,
                               num_cpus: int):
     """ Calculate the cluster regions for one reference. """
     region = unite([dataset.region for dataset in datasets])
+    # Check if the EnsemblesReport already exists for this reference.
+    report_branches = path.add_branch(path.ENSEMBLES_STEP, branch,
+                                      datasets[0].branches)
+    report_file = EnsemblesReport.build_path({
+        path.TOP:      datasets[0].top,
+        path.SAMPLE:   datasets[0].sample,
+        path.BRANCHES: report_branches,
+        path.REF:      datasets[0].ref,
+        path.REG:      region.name,
+    })
+    if not need_write(report_file, force):
+        return list()
+    began = datetime.now()
     # Find pairs of bases that correlate significantly in any region.
     # Use sorted(set()) to ensure pairs are unique and sorted.
     pairs = sorted(set(chain(*dispatch(_find_correlated_pairs,
@@ -570,7 +586,8 @@ def _calc_ref_cluster_modules(datasets: list[MaskMutsDataset],
                                        kwargs=dict(pair_fdr=pair_fdr)))))
     # Find modules of correlated pairs.
     min_mut_gap, _ = set_mut_gap_params(probe, min_mut_gap)
-    modules = _calc_modules_from_pairs(pairs, pair_fdr, min_mut_gap, min_pairs)
+    modules = _calc_modules_from_pairs(pairs, pair_fdr, min_mut_gap, min_pairs,
+                                       threshold_multiplier=threshold_multiplier)
     # Determine what to do with gaps between regions.
     if gap_mode == GAP_MODE_INSERT:
         modules = _filter_modules_length(modules, min_length=min_length)
@@ -597,6 +614,26 @@ def _calc_ref_cluster_modules(datasets: list[MaskMutsDataset],
                                  html_file)
     except Exception as error:
         logger.error(error)
+    # Save the EnsemblesReport for this reference.
+    branches = path.add_branch(path.ENSEMBLES_STEP, branch,
+                               datasets[0].branches)
+    EnsemblesReport(
+        sample=datasets[0].sample,
+        ref=datasets[0].ref,
+        reg=region.name,
+        branches=branches,
+        tile_length=tile_length,
+        tile_min_overlap=tile_min_overlap,
+        erase_tiles=erase_tiles,
+        pair_fdr=pair_fdr,
+        min_pairs=min_pairs,
+        threshold_multiplier=threshold_multiplier,
+        min_cluster_length=min_length,
+        max_cluster_length=max_length,
+        gap_mode=gap_mode,
+        began=began,
+        ended=datetime.now(),
+    ).save(datasets[0].top)
     return modules
 
 
@@ -624,7 +661,7 @@ def _calc_cluster_modules(mask_dirs: list[Path],
             for end5, end3 in ref_regions]
 
 
-def _run_group(relate_report_files: list[Path], *,
+def run_group(relate_report_files: list[Path], *,
                # General options
                branch: str,
                tmp_pfx: str | Path,
@@ -638,6 +675,7 @@ def _run_group(relate_report_files: list[Path], *,
                erase_tiles: bool,
                pair_fdr: float,
                min_pairs: int,
+               threshold_multiplier: float,
                min_cluster_length: int,
                max_cluster_length: int,
                gap_mode: str,
@@ -681,6 +719,7 @@ def _run_group(relate_report_files: list[Path], *,
                jackpot: bool,
                jackpot_conf_level: float,
                max_jackpot_quotient: float,
+               jackpot_max_data: int,
                min_em_iter: int,
                max_em_iter: int,
                em_thresh: float,
@@ -756,9 +795,15 @@ def _run_group(relate_report_files: list[Path], *,
         probe=probe,
         min_mut_gap=min_mut_gap,
         min_pairs=min_pairs,
+        threshold_multiplier=threshold_multiplier,
         min_length=min_cluster_length,
         max_length=max_cluster_length,
         gap_mode=gap_mode,
+        branch=branch,
+        tile_length=tile_length,
+        tile_min_overlap=tile_min_overlap,
+        erase_tiles=erase_tiles,
+        force=force,
         num_cpus=num_cpus
     )
     if erase_tiles:
@@ -838,6 +883,7 @@ def _run_group(relate_report_files: list[Path], *,
         jackpot=jackpot,
         jackpot_conf_level=jackpot_conf_level,
         max_jackpot_quotient=max_jackpot_quotient,
+        jackpot_max_data=jackpot_max_data,
         min_em_iter=min_em_iter,
         max_em_iter=max_em_iter,
         em_thresh=em_thresh,
@@ -859,186 +905,3 @@ def _run_group(relate_report_files: list[Path], *,
         seed=seed,
     )
     return cluster_dirs
-
-
-@run_func(CMD_ENSEMBLES)
-def run(input_path: Iterable[str | Path], *,
-        # General options
-        branch: str,
-        tmp_pfx: str | Path,
-        keep_tmp: bool,
-        brotli_level: int,
-        force: bool,
-        num_cpus: int,
-        # Ensembles options
-        tile_length: int,
-        tile_min_overlap: float,
-        erase_tiles: bool,
-        pair_fdr: float,
-        min_pairs: int,
-        min_cluster_length: int,
-        max_cluster_length: int,
-        gap_mode: str,
-        # Mask options
-        mask_coords: Iterable[tuple[str, int, int]],
-        mask_primers: Iterable[tuple[str, DNA, DNA]],
-        primer_gap: int,
-        mask_regions_file: str | None,
-        mask_del: bool,
-        mask_ins: bool,
-        mask_mut: Iterable[str],
-        count_mut: Iterable[str],
-        probe: str,
-        mask_a: bool | None,
-        mask_c: bool | None,
-        mask_g: bool | None,
-        mask_u: bool | None,
-        mask_polya: int,
-        mask_pos: Iterable[tuple[str, int]],
-        mask_pos_file: Iterable[str | Path],
-        mask_read: Iterable[str],
-        mask_read_file: Iterable[str | Path],
-        mask_discontig: bool,
-        min_ncov_read: int,
-        min_finfo_read: float,
-        max_fmut_read: float,
-        min_mut_gap: int | None,
-        mut_collisions: str,
-        min_ninfo_pos: int,
-        max_fmut_pos: float,
-        quick_unbias: bool,
-        quick_unbias_thresh: float,
-        max_mask_iter: int,
-        mask_pos_table: bool,
-        mask_read_table: bool,
-        # Cluster options
-        min_clusters: int,
-        max_clusters: int,
-        min_em_runs: int,
-        max_em_runs: int,
-        jackpot: bool,
-        jackpot_conf_level: float,
-        max_jackpot_quotient: float,
-        min_em_iter: int,
-        max_em_iter: int,
-        em_thresh: float,
-        min_marcd_run: float,
-        max_pearson_run: float,
-        max_arcd_vs_ens_avg: float,
-        max_gini_run: float,
-        max_loglike_vs_best: float,
-        min_pearson_vs_best: float,
-        max_marcd_vs_best: float,
-        try_all_ks: bool,
-        write_all_ks: bool,
-        cluster_pos_table: bool,
-        cluster_abundance_table: bool,
-        verify_times: bool,
-        seed: int | None):
-    """ Infer independent structure ensembles along an entire RNA. """
-    # Group reports by sample and branches.
-    seg_types = load_relate_dataset.report_path_seg_types
-    groups = defaultdict(list)
-    for relate_report_file in path.find_files_chain(input_path, seg_types):
-        fields = path.parse(relate_report_file, seg_types)
-        sample = fields[path.SAMPLE]
-        branches = tuple(fields[path.BRANCHES])
-        groups[sample, branches].append(relate_report_file)
-    # Process each group separately.
-    kwargs = dict(branch=branch,
-                  tmp_pfx=tmp_pfx,
-                  keep_tmp=keep_tmp,
-                  brotli_level=brotli_level,
-                  force=force,
-                  num_cpus=num_cpus,
-                  # Ensembles options
-                  tile_length=tile_length,
-                  tile_min_overlap=tile_min_overlap,
-                  erase_tiles=erase_tiles,
-                  pair_fdr=pair_fdr,
-                  min_pairs=min_pairs,
-                  min_cluster_length=min_cluster_length,
-                  max_cluster_length=max_cluster_length,
-                  gap_mode=gap_mode,
-                  # Mask options
-                  mask_coords=mask_coords,
-                  mask_primers=mask_primers,
-                  primer_gap=primer_gap,
-                  mask_regions_file=mask_regions_file,
-                  mask_del=mask_del,
-                  mask_ins=mask_ins,
-                  mask_mut=mask_mut,
-                  count_mut=count_mut,
-                  probe=probe,
-                  mask_a=mask_a,
-                  mask_c=mask_c,
-                  mask_g=mask_g,
-                  mask_u=mask_u,
-                  mask_polya=mask_polya,
-                  mask_pos=mask_pos,
-                  mask_pos_file=mask_pos_file,
-                  mask_read=mask_read,
-                  mask_read_file=mask_read_file,
-                  mask_discontig=mask_discontig,
-                  min_ncov_read=min_ncov_read,
-                  min_finfo_read=min_finfo_read,
-                  max_fmut_read=max_fmut_read,
-                  min_mut_gap=min_mut_gap,
-                  mut_collisions=mut_collisions,
-                  min_ninfo_pos=min_ninfo_pos,
-                  max_fmut_pos=max_fmut_pos,
-                  quick_unbias=quick_unbias,
-                  quick_unbias_thresh=quick_unbias_thresh,
-                  max_mask_iter=max_mask_iter,
-                  mask_pos_table=mask_pos_table,
-                  mask_read_table=mask_read_table,
-                  # Cluster options
-                  min_clusters=min_clusters,
-                  max_clusters=max_clusters,
-                  min_em_runs=min_em_runs,
-                  max_em_runs=max_em_runs,
-                  jackpot=jackpot,
-                  jackpot_conf_level=jackpot_conf_level,
-                  max_jackpot_quotient=max_jackpot_quotient,
-                  min_em_iter=min_em_iter,
-                  max_em_iter=max_em_iter,
-                  em_thresh=em_thresh,
-                  min_marcd_run=min_marcd_run,
-                  max_pearson_run=max_pearson_run,
-                  max_arcd_vs_ens_avg=max_arcd_vs_ens_avg,
-                  max_gini_run=max_gini_run,
-                  max_loglike_vs_best=max_loglike_vs_best,
-                  min_pearson_vs_best=min_pearson_vs_best,
-                  max_marcd_vs_best=max_marcd_vs_best,
-                  try_all_ks=try_all_ks,
-                  write_all_ks=write_all_ks,
-                  cluster_pos_table=cluster_pos_table,
-                  cluster_abundance_table=cluster_abundance_table,
-                  verify_times=verify_times,
-                  seed=seed)
-    return list(chain(*dispatch(_run_group,
-                                num_cpus=num_cpus,
-                                pass_num_cpus=True,
-                                as_list=False,
-                                ordered=False,
-                                raise_on_error=False,
-                                args=as_list_of_tuples(groups.values()),
-                                kwargs=kwargs)))
-
-
-params = merge_params(mask_mod.params,
-                      cluster_mod.params,
-                      [opt_tile_length,
-                       opt_tile_min_overlap,
-                       opt_erase_tiles,
-                       opt_pair_fdr,
-                       opt_min_pairs,
-                       opt_min_cluster_length,
-                       opt_max_cluster_length,
-                       opt_gap_mode])
-
-
-@command(CMD_ENSEMBLES, params=params)
-def cli(*args, **kwargs):
-    """ Infer independent structure ensembles along an entire RNA. """
-    return run(*args, **kwargs)
