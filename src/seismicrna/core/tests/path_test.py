@@ -248,7 +248,7 @@ class TestCmdSeg(ut.TestCase):
         self.assertRaisesRegex(
             PathValueError,
             (r"option must be in \['demult', 'align', 'relate', 'mask', 'cluster', "
-             r"'fold', 'graph'\], but got 'malign'"),
+             r"'ensembles', 'fold', 'graph'\], but got 'malign'"),
             StepSeg.build,
             {STEP: "malign",
              BRANCHES: ["branch1"]}
@@ -275,7 +275,7 @@ class TestCmdSeg(ut.TestCase):
         self.assertRaisesRegex(
             PathValueError,
             (r"option must be in \['demult', 'align', 'relate', 'mask', 'cluster', "
-             r"'fold', 'graph'\], but got 'malign'"),
+             r"'ensembles', 'fold', 'graph'\], but got 'malign'"),
             StepSeg.build,
             {STEP: "malign",
              BRANCHES: {"step1": "branch1"}}
@@ -307,7 +307,7 @@ class TestCmdSeg(ut.TestCase):
         self.assertRaisesRegex(
             PathValueError,
             (r"option must be in \['demult', 'align', 'relate', 'mask', 'cluster', "
-             r"'fold', 'graph'\], but got 'alight'"),
+             r"'ensembles', 'fold', 'graph'\], but got 'alight'"),
             StepSeg.parse,
             "alight"
         )
