@@ -634,6 +634,39 @@ def calc_rectangular_sum(array: np.ndarray):
 
 
 @jit()
+def _calc_rectangular_sum_weighted(array: np.ndarray, weights: np.ndarray):
+    """ Like `_calc_rectangular_sum`, but multiplies each element of
+    `array` by the corresponding scalar in `weights` on the fly, avoiding
+    the allocation of a full product array.
+
+    This function is meant to be called by another function that has
+    validated the arguments; hence, this function makes assumptions:
+
+    -   `array` has exactly 3 dimensions (positions x positions x clusters).
+    -   `weights` has exactly 2 dimensions (positions x positions).
+    -   The first and second dimensions of both arrays have equal lengths.
+    """
+    npos = array.shape[0]
+    ncls = array.shape[2]
+    rows_area = np.empty((npos, ncls))
+    cols_area = np.empty((npos, ncls))
+    if npos > 0:
+        rows_area[0] = weights[0] @ array[0]
+        cols_area[0] = 0.
+        for j in range(1, npos):
+            i = j - 1
+            rows_area[j] = rows_area[i] + weights[j, j:] @ array[j, j:]
+            # Use an element loop for the column sum to avoid non-contiguous
+            # '@': array[a, i] is a contiguous 1D row of the last dimension,
+            # whereas array[:j, i] as a whole is a non-contiguous 2D slice.
+            col_contrib = np.zeros(ncls)
+            for a in range(j):
+                col_contrib += weights[a, i] * array[a, i]
+            cols_area[j] = cols_area[i] + col_contrib
+    return rows_area - cols_area
+
+
+@jit()
 def _calc_p_mut_given_span_dropped(p_mut_given_span: np.ndarray,
                                    p_ends: np.ndarray,
                                    p_noclose_given_ends: np.ndarray,
@@ -675,11 +708,18 @@ def _calc_p_mut_given_span_dropped(p_mut_given_span: np.ndarray,
         return p_mut_given_span
     # Calculate the probability that a read spanning each position would
     # have no two mutations too close.
-    p_noclose_given_span = _calc_rectangular_sum(p_noclose_given_ends
-                                                 * p_ends[:, :, np.newaxis])
+    p_noclose_given_span = _calc_rectangular_sum_weighted(p_noclose_given_ends,
+                                                          p_ends)
     p_mut_given_span_noclose = np.nan_to_num(
         p_mut_given_span / p_noclose_given_span
     )
+    # Preallocate work buffers (clusters x positions) at maximum size to
+    # avoid per-iteration heap allocation. Row-leading layout [(cls, pos)]
+    # means buf[k, :n] is always a 1D contiguous row prefix, which keeps
+    # all '@' operands typed as 1D 'C' by Numba (no non-contiguous slices).
+    p_noclose_a = np.empty((ncls, npos))
+    p_noclose_b = np.empty((ncls, npos))
+    right_mat = np.empty((ncls, npos))
     # Compute the mutation rates given no two mutations are too close
     # one position (j) at a time.
     for j in range(npos):
@@ -687,7 +727,6 @@ def _calc_p_mut_given_span_dropped(p_mut_given_span: np.ndarray,
         ncols = npos - j
         # For each starting position (a), calculate the probability of
         # no two mutations too close from (a) to (j).
-        p_noclose_a = np.empty((ncls, nrows))
         for a in range(nrows):
             # Number of bases 5' of (j) that must have no mutations:
             # the smaller of (min_gap) and (j - a).
@@ -704,7 +743,6 @@ def _calc_p_mut_given_span_dropped(p_mut_given_span: np.ndarray,
             )
         # For each ending position (b), calculate the probability of
         # no two mutations too close from (j) to (b).
-        p_noclose_b = np.empty((ncls, ncols))
         for b in range(j, npos):
             # Number of bases 3' of (j) that must have no mutations:
             # the smaller of (min_gap) and (b - j).
@@ -722,10 +760,15 @@ def _calc_p_mut_given_span_dropped(p_mut_given_span: np.ndarray,
         # The probability that a read has a mutation at position (j)
         # given that it has no two mutations too close is the weighted
         # sum of such probabilities for all (a) and (b).
+        # Build right_mat[k, a] = p_ends[a, j:] · p_noclose_b[k, :ncols]
+        # using only 1D row-prefix slices so every '@' operand is typed
+        # as 1D 'C' by Numba (a 2D slice would be typed 'A' even when
+        # contiguous at runtime, triggering a performance warning).
         for k in range(ncls):
-            p_mut_given_span_noclose[j, k] *= (p_noclose_a[k]
-                                               @ p_ends[:nrows, -ncols:]
-                                               @ p_noclose_b[k])
+            for a in range(nrows):
+                right_mat[k, a] = p_ends[a, j:] @ p_noclose_b[k, :ncols]
+            p_mut_given_span_noclose[j, k] *= (p_noclose_a[k, :nrows]
+                                               @ right_mat[k, :nrows])
     return p_mut_given_span_noclose
 
 
@@ -784,61 +827,6 @@ def calc_p_mut_given_span_dropped(p_mut_given_span: np.ndarray,
 
 
 @jit()
-def _calc_p_mut_given_span_merged_end_b(p_mut_given_span: np.ndarray,
-                                        min_gap: int):
-    """ Calculate the mutation rates after merging mutations closer than
-    min_gap positions, assuming that all reads end at the same position.
-
-    This function is meant to be called by another function that has
-    validated the arguments; hence, this function makes assumptions:
-
-    - `p_mut_given_span` is a 2D (positions x clusters) array of the
-      underlying mutation rates.
-    - All values of `p_mut_given_span` are between 0 and 1, inclusive.
-    - `min_gap` is a non-negative integer.
-
-    Parameters
-    ----------
-    p_mut_given_span: np.ndarray
-        2D (positions x clusters) array of the underlying mutation rates
-        (i.e. the probability that a read has a mutation at position (j)
-        given that it contains that position).
-    min_gap: int
-        Minimum number of non-mutated bases between two mutations;
-        must be ≥ 0.
-
-    Returns
-    -------
-    np.ndarray
-        2D (positions x clusters) array of the mutation rate among reads
-        with no two mutations too close per position per cluster.
-    """
-    # Initialize the output array.
-    p_mut_given_span_merged = p_mut_given_span.copy()
-    # Find the dimensions.
-    npos = p_mut_given_span.shape[0]
-    # The 3'-most position (npos - 1) cannot have a mutation on its
-    # 3' side, so its mutation probability is unaffected by merging.
-    # Fill in the other positions from 3' to 5'.
-    for j in range(npos - 2, -1, -1):
-        # The probability that position j has a mutation within min_gap
-        # positions on its 3' side after merging is the sum of the
-        # mutation rates of those positions because, after merging, the
-        # mutations are mutually exclusive:
-        # np.sum(p_mut_given_span_merged[j+1: j+min_gap+1], axis=0)
-        # In order to have a mutation at position j after merging, there
-        # must not be a mutation at any of those positions, so take the
-        # complement of that sum. Then multiply by the original mutation
-        # rate at position j to get the mutation rate after merging.
-        j_inc = j + 1
-        p_mut_given_span_merged[j] *= (1. - np.sum(
-            p_mut_given_span_merged[j_inc: j_inc + min_gap],
-            axis=0
-        ))
-    return p_mut_given_span_merged
-
-
-@jit()
 def _calc_p_mut_given_span_merged(p_mut_given_span: np.ndarray,
                                   p_ends: np.ndarray,
                                   min_gap: int) -> np.ndarray:
@@ -879,12 +867,20 @@ def _calc_p_mut_given_span_merged(p_mut_given_span: np.ndarray,
         2D (positions x clusters) array of the mutation rate among reads
         with no two mutations too close per position per cluster.
     """
+    if min_gap <= 0:
+        # No positions will be merged.
+        return p_mut_given_span.copy()
     npos = p_mut_given_span.shape[0]
+    ncls = p_mut_given_span.shape[1]
     # Initialize the probability that a read spans each position.
     p_span = np.zeros(npos, dtype=p_mut_given_span.dtype)
     # Initialize the joint probability that reads both span and have a
     # mutation at each position after merging.
     p_joint_mut_span_merged = np.zeros_like(p_mut_given_span)
+    # Preallocate a single buffer for the merged rates; reused every b.
+    p_merged_buf = np.empty_like(p_mut_given_span)
+    # Preallocate a running window sum over clusters.
+    window_sum = np.empty(ncls)
     # For a given end position b, merged probabilities do not depend on
     # the start position a, so compute them once for each end position b
     # from 0 to (npos - 1).
@@ -899,31 +895,36 @@ def _calc_p_mut_given_span_merged(p_mut_given_span: np.ndarray,
             # Accumulate the probability that a read spans each position
             # by adding the joint probabilities for each end position b.
             p_span[:b_inc] += p_joint_span_end_b
-            # Calculate the probability that a read has a mutation at
-            # each position from 0 to b after merging given that it ends
-            # at position b.
-            p_mut_given_span_merged_end_b = _calc_p_mut_given_span_merged_end_b(
-                p_mut_given_span[:b_inc],
-                min_gap
-            )
-            # Calculate the joint probability that a read has a mutation
-            # at each position from 0 to b after merging and ends at
-            # position b.
-            p_joint_mut_span_merged_end_b = (
-                p_mut_given_span_merged_end_b
-                * p_joint_span_end_b[:, np.newaxis]
-            )
-            # Accumulate the probability that a read has a mutation at
-            # each position by adding the joint probabilities for each
-            # end position b.
-            p_joint_mut_span_merged[:b_inc] += p_joint_mut_span_merged_end_b
+            # Calculate the merged rates for reads ending at position b
+            # using an inlined right-to-left recurrence.
+            # The 3'-most position b has no neighbours on its right
+            # within [0, b], so its merged rate equals the raw rate.
+            p_merged_buf[b, :] = p_mut_given_span[b, :]
+            # Initialize the running window sum for j = b-1.
+            # The window at position j covers p_merged_buf[j+1:j+min_gap+1]
+            # clipped to [0, b]; for j = b-1 that is just {p_merged_buf[b]}.
+            window_sum[:] = p_merged_buf[b, :]
+            # Fill positions b-1 down to 0 using the running window sum,
+            # keeping update cost O(ncls) per step instead of O(min_gap * ncls).
+            for j in range(b - 1, -1, -1):
+                p_merged_buf[j, :] = (p_mut_given_span[j, :]
+                                      * (1.0 - window_sum[:]))
+                # Slide the window: add p_merged_buf[j], drop position
+                # j + min_gap if it is still within [0, b].
+                window_sum[:] += p_merged_buf[j, :]
+                out_pos = j + min_gap
+                if out_pos <= b:
+                    window_sum[:] -= p_merged_buf[out_pos, :]
+            # Accumulate the joint probability that a read has a mutation
+            # at each position after merging and ends at position b.
+            for j in range(b_inc):
+                wt = p_joint_span_end_b[j]
+                p_joint_mut_span_merged[j, :] += p_merged_buf[j, :] * wt
     # Calculate the mutation rates after merging by dividing the joint
     # probabilities of mutation and spanning by the probabilities of
     # spanning. If a position is not spanned by any reads, the mutation
     # rate is set to zero.
-    p_mut_given_span_merged = np.nan_to_num(p_joint_mut_span_merged
-                                            / p_span[:, np.newaxis])
-    return p_mut_given_span_merged
+    return np.nan_to_num(p_joint_mut_span_merged / p_span[:, np.newaxis])
 
 
 def _calc_p_mut_given_span_biased(p_mut_given_span: np.ndarray,

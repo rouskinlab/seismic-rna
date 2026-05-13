@@ -31,13 +31,12 @@ from seismicrna.core.unbias import (_clip,
                                     calc_p_clust_given_noclose,
                                     calc_params,
                                     calc_rectangular_sum,
+                                    _calc_rectangular_sum_weighted,
                                     require_square_atleast2d,
                                     require_same_square_atleast2d,
-                                    _calc_p_mut_given_span_merged,
-                                    _calc_p_mut_given_span_merged_end_b)
+                                    _calc_p_mut_given_span_merged)
 from seismicrna.core.validate import require_equal
 
-rng = np.random.default_rng(seed=0)
 
 
 def triu_sum(a: np.ndarray):
@@ -191,6 +190,7 @@ def merge_mutations_right_to_left(muts: np.ndarray, min_gap: int):
 def simulate_reads(n_reads: int, p_mut: np.ndarray, p_ends: np.ndarray):
     """ Simulate `n_reads` reads based on the mutation rates (`p_mut`)
     and the distributions of end coordinates (`p_ends`). """
+    rng = np.random.default_rng(seed=0)
     n_pos, = p_mut.shape
     if p_ends.shape != (n_pos, n_pos):
         raise ValueError(f"p_ends must have dimensions {n_pos, n_pos}, "
@@ -221,6 +221,7 @@ def simulate_reads(n_reads: int, p_mut: np.ndarray, p_ends: np.ndarray):
 
 def simulate_params(n_pos: int, n_cls: int, p_mut_max: float = 1.):
     """ Return `p_mut`, `p_ends`, and `p_clust` parameters. """
+    rng = np.random.default_rng(seed=0)
     p_mut = p_mut_max * rng.random((n_pos, n_cls))
     p_ends = np.triu(1. - rng.random((n_pos, n_pos)))
     p_ends /= np.sum(p_ends)
@@ -436,6 +437,7 @@ class TestMergeMutationsRightToLeft(ut.TestCase):
                 self.assertTrue(np.array_equal(result, muts))
     
     def test_min_gap_0(self):
+        rng = np.random.default_rng(seed=0)
         for n_reads in range(4):
             for n_pos in range(6):
                 with self.subTest(n_reads=n_reads, n_pos=n_pos):
@@ -465,6 +467,7 @@ class TestMergeMutationsRightToLeft(ut.TestCase):
 class TestClip(ut.TestCase):
 
     def test_with_clip(self):
+        rng = np.random.default_rng(seed=0)
         n_pos = 64
         n_nan = 16
         min_scale = 1
@@ -488,6 +491,7 @@ class TestClip(ut.TestCase):
             self.assertTrue(np.all(np.isnan(mus[nan_indexes])))
 
     def test_without_clip(self):
+        rng = np.random.default_rng(seed=0)
         mus = rng.random(64, dtype=float)
         # All values are in [0, 1] and so should not be clipped.
         self.assertTrue(np.allclose(mus, _clip(mus)))
@@ -496,6 +500,7 @@ class TestClip(ut.TestCase):
 class TestNormalize(ut.TestCase):
 
     def test_sum_positive(self):
+        rng = np.random.default_rng(seed=0)
         for ndim in range(1, 4):
             for dims in product(range(5), repeat=ndim):
                 x = 1. - rng.random(dims)
@@ -521,6 +526,7 @@ class TestNormalize(ut.TestCase):
 class TestTriuAllClose(ut.TestCase):
 
     def test_equal(self):
+        rng = np.random.default_rng(seed=0)
         for npos in range(4):
             for extra in range(3):
                 for extras in product(range(4), repeat=extra):
@@ -529,16 +535,19 @@ class TestTriuAllClose(ut.TestCase):
                     self.assertTrue(triu_allclose(a, a.copy()))
 
     def test_triu(self):
+        rng = np.random.default_rng(seed=0)
         for npos in range(2, 4):
             a = rng.random((npos, npos))
             self.assertTrue(triu_allclose(a, np.triu(a)))
 
     def test_tril(self):
+        rng = np.random.default_rng(seed=0)
         for npos in range(2, 4):
             a = rng.random((npos, npos))
             self.assertFalse(triu_allclose(a, np.tril(a)))
 
     def test_float_equal(self):
+        rng = np.random.default_rng(seed=0)
         for npos in range(4):
             for extra in range(3):
                 for extras in product(range(4), repeat=extra):
@@ -549,6 +558,7 @@ class TestTriuAllClose(ut.TestCase):
                     self.assertTrue(triu_allclose(b, a))
 
     def test_float_unequal(self):
+        rng = np.random.default_rng(seed=0)
         for npos in range(1, 4):
             for extra in range(3):
                 for extras in product(range(1, 4), repeat=extra):
@@ -593,6 +603,7 @@ class TestTriuDot(ut.TestCase):
 class TestTriuMul(ut.TestCase):
 
     def test_1x1(self):
+        rng = np.random.default_rng(seed=0)
         a = rng.random()
         b = 1. - rng.random()
         expect = np.array([[a * b]])
@@ -601,6 +612,7 @@ class TestTriuMul(ut.TestCase):
                                        expect))
 
     def test_1x1x1(self):
+        rng = np.random.default_rng(seed=0)
         a = rng.random()
         b = 1. - rng.random()
         expect = np.array([[[a * b]]])
@@ -630,6 +642,7 @@ class TestTriuMul(ut.TestCase):
 class TestTriuDiv(ut.TestCase):
 
     def test_1x1(self):
+        rng = np.random.default_rng(seed=0)
         n = rng.random()
         d = 1. - rng.random()
         expect = np.array([[n / d]])
@@ -638,6 +651,7 @@ class TestTriuDiv(ut.TestCase):
                                        expect))
 
     def test_1x1x1(self):
+        rng = np.random.default_rng(seed=0)
         n = rng.random()
         d = 1. - rng.random()
         expect = np.array([[[n / d]]])
@@ -667,24 +681,28 @@ class TestTriuDiv(ut.TestCase):
 class TestTriuSum(ut.TestCase):
 
     def test_all_zero(self):
+        rng = np.random.default_rng(seed=0)
         for ndim in range(2, 6):
             array = rng.random((0,) * ndim)
             expect = np.zeros((0,) * (ndim - 2))
             self.assertTrue(np.array_equal(triu_sum(array), expect))
 
     def test_1x1(self):
+        rng = np.random.default_rng(seed=0)
         x = rng.random()
         array = np.array([[x]])
         expect = np.array(x)
         self.assertTrue(np.array_equal(triu_sum(array), expect))
 
     def test_1x1x1(self):
+        rng = np.random.default_rng(seed=0)
         x = rng.random()
         array = np.array([[[x]]])
         expect = np.array([x])
         self.assertTrue(np.array_equal(triu_sum(array), expect))
 
     def test_1x1x2(self):
+        rng = np.random.default_rng(seed=0)
         x = rng.random()
         y = rng.random()
         array = np.array([[[x, y]]])
@@ -724,6 +742,7 @@ class TestTriuSum(ut.TestCase):
 class TestTriuCumSum(ut.TestCase):
 
     def test_all_0(self):
+        rng = np.random.default_rng(seed=0)
         for ndim in range(2, 6):
             array = rng.random((0,) * ndim)
             result = _triu_cumsum(array)
@@ -731,6 +750,7 @@ class TestTriuCumSum(ut.TestCase):
             self.assertTrue(triu_allclose(result, array))
 
     def test_all_1(self):
+        rng = np.random.default_rng(seed=0)
         for ndim in range(2, 6):
             array = rng.random((1,) * ndim)
             result = _triu_cumsum(array)
@@ -738,6 +758,7 @@ class TestTriuCumSum(ut.TestCase):
             self.assertTrue(triu_allclose(result, array))
 
     def test_1x1x2(self):
+        rng = np.random.default_rng(seed=0)
         x = rng.random()
         y = rng.random()
         array = np.array([[[x, y]]])
@@ -774,6 +795,7 @@ class TestTriuCumSum(ut.TestCase):
         self.assertTrue(triu_allclose(_triu_cumsum(array), expect))
 
     def test_explicit_sum(self):
+        rng = np.random.default_rng(seed=0)
         for npos in range(8):
             array = rng.random((npos, npos))
             result = _triu_cumsum(array)
@@ -793,26 +815,31 @@ class TestTriuNorm(ut.TestCase):
                                              np.isnan(expect))))
 
     def test_0x0(self):
+        rng = np.random.default_rng(seed=0)
         array = rng.random((0, 0))
         expect = np.ones_like(array)
         self.compare(_triu_norm(array), expect)
 
     def test_0x0x1(self):
+        rng = np.random.default_rng(seed=0)
         array = rng.random((0, 0, 1))
         expect = np.ones_like(array)
         self.compare(_triu_norm(array), expect)
 
     def test_1x1(self):
+        rng = np.random.default_rng(seed=0)
         array = rng.random((1, 1))
         expect = np.ones_like(array)
         self.compare(_triu_norm(array), expect)
 
     def test_1x1x1(self):
+        rng = np.random.default_rng(seed=0)
         array = rng.random((1, 1, 1))
         expect = np.ones_like(array)
         self.compare(_triu_norm(array), expect)
 
     def test_1x1x2(self):
+        rng = np.random.default_rng(seed=0)
         array = rng.random((1, 1, 2))
         expect = np.ones_like(array)
         self.compare(_triu_norm(array), expect)
@@ -914,6 +941,7 @@ class TestCalcPNoCloseGivenEnds(ut.TestCase):
     """ Test calc_p_nomut_window and calc_p_noclose_given_ends. """
 
     def test_min_gap_0(self):
+        rng = np.random.default_rng(seed=0)
         for npos in range(10):
             with self.subTest(npos=npos):
                 mu = rng.random((npos, 1))
@@ -1061,6 +1089,7 @@ class TestCalcPNoCloseGivenEnds(ut.TestCase):
         self._check_1_cluster(nc, nc_expect)
 
     def test_clusters(self):
+        rng = np.random.default_rng(seed=0)
         for ncls in range(4):
             for npos in range(5):
                 for min_gap in range(npos):
@@ -1087,6 +1116,7 @@ class TestCalcPNoCloseGivenEnds(ut.TestCase):
 class TestCalcPNoCloseGivenEndsAuto(ut.TestCase):
 
     def test_1_dim(self):
+        rng = np.random.default_rng(seed=0)
         max_n = 5
         max_g = 4
         for n_pos in range(max_n + 1):
@@ -1098,6 +1128,7 @@ class TestCalcPNoCloseGivenEndsAuto(ut.TestCase):
                 self.assertEqual(p_noclose_given_ends.shape, (n_pos, n_pos))
 
     def test_2_dim(self):
+        rng = np.random.default_rng(seed=0)
         max_n = 5
         max_c = 5
         max_g = 4
@@ -1112,6 +1143,7 @@ class TestCalcPNoCloseGivenEndsAuto(ut.TestCase):
                                      (n_pos, n_pos, n_clust))
 
     def test_invalid_dim(self):
+        rng = np.random.default_rng(seed=0)
         for n_dim in range(5):
             if n_dim == 1 or n_dim == 2:
                 # Skip the dimensions that are valid.
@@ -1128,7 +1160,7 @@ class TestCalcPNoCloseGivenEndsAuto(ut.TestCase):
                                            gap)
 
 
-class TestCalcPMutGivenSpanNoClose(ut.TestCase):
+class TestCalcPMutGivenSpanDropped(ut.TestCase):
 
     def test_simulated(self):
         from scipy.stats import binom
@@ -1222,15 +1254,9 @@ class TestCalcPMutGivenSpanNoClose(ut.TestCase):
                                                 inter_lo[end5, end3])
                         self.assertLessEqual(p_ends_given_clust_noclose_simulated,
                                              inter_up[end5, end3])
-                # Compute the expected coverage at each position.
-                n_expect = np.zeros(n_pos, dtype=int)
-                for end5 in range(n_pos):
-                    for end3 in range(end5, n_pos):
-                        n_expect[end5: end3 + 1] += round(n_reads
-                                                          * p_ends[end5, end3])
                 # Calculate the theoretical probability of a mutation at
                 # each position given no mutations are too close.
-                p_mut_given_noclose_theory = calc_p_mut_given_span_dropped(
+                p_mut_given_span_dropped_theory = calc_p_mut_given_span_dropped(
                     p_mut,
                     p_ends,
                     p_noclose_given_ends_theory,
@@ -1238,16 +1264,17 @@ class TestCalcPMutGivenSpanNoClose(ut.TestCase):
                 ).reshape(n_pos)
                 # Compare the simulated probabilities of mutations given
                 # no mutations are too close.
-                p_mut_given_noclose_simulated = (np.sum(muts[has_no_close], axis=0)
-                                                 /
-                                                 np.sum(info[has_no_close], axis=0))
+                info_sum = np.sum(info[has_no_close], axis=0)
+                p_mut_given_span_dropped_simulated = (
+                    np.sum(muts[has_no_close], axis=0) / info_sum
+                )
                 inter_lo, inter_up = binom.interval(confidence,
-                                                    n_expect,
-                                                    p_mut_given_noclose_theory)
-                self.assertTrue(np.all(p_mut_given_noclose_simulated
-                                       >= inter_lo / n_expect))
-                self.assertTrue(np.all(p_mut_given_noclose_simulated
-                                       <= inter_up / n_expect))
+                                                    info_sum,
+                                                    p_mut_given_span_dropped_theory)
+                self.assertTrue(np.all(p_mut_given_span_dropped_simulated
+                                       >= inter_lo / info_sum))
+                self.assertTrue(np.all(p_mut_given_span_dropped_simulated
+                                       <= inter_up / info_sum))
 
     def test_clusters(self):
         n_pos = 16
@@ -1281,67 +1308,6 @@ class TestCalcPMutGivenSpanNoClose(ut.TestCase):
                         ))
 
 
-class TestCalcPMutGivenSpanMergedFullLength(ut.TestCase):
-
-    @staticmethod
-    def _simulate_after_merge(p_before: np.ndarray,
-                              min_gap: int,
-                              n_reads: int,
-                              seed: int):
-        # p_before shape: (n_pos, n_cls); simulate each column independently.
-        sim_rng = np.random.default_rng(seed)
-        n_pos, n_cls = p_before.shape
-        result = np.empty_like(p_before)
-        for k in range(n_cls):
-            muts_k = (sim_rng.random((n_reads, n_pos))
-                      < p_before[np.newaxis, :, k])
-            result[:, k] = np.mean(
-                merge_mutations_right_to_left(muts_k, min_gap), axis=0
-            )
-        return result
-
-    def assert_not_statistically_significant(self,
-                                             p_expect: np.ndarray,
-                                             p_result: np.ndarray,
-                                             n_reads: int,
-                                             z_max: float = 6.0):
-        self.assertEqual(p_result.shape, p_expect.shape)
-        variance = p_expect * (1.0 - p_expect)
-        se = np.sqrt(np.maximum(variance, 1.e-12) / n_reads)
-        z = np.abs(p_result - p_expect) / se
-        self.assertTrue(
-            np.all(z <= z_max),
-            msg=(f"Max z-score {np.max(z):.3f} exceeded {z_max}"
-                 f"; max abs diff = {np.max(np.abs(p_result - p_expect)):.3e}")
-        )
-
-    def test_matches_simulation(self):
-        n_reads = 1_000_000
-        n_cls = 3
-        cases = [
-            (1, 0, 101),
-            (5, 0, 102),
-            (8, 1, 103),
-            (12, 3, 104),
-            (16, 6, 105),
-        ]
-        for n_pos, min_gap, seed in cases:
-            with self.subTest(n_pos=n_pos, min_gap=min_gap, seed=seed):
-                case_rng = np.random.default_rng(seed)
-                # 2D input: shape (n_pos, n_cls)
-                p_before = 0.05 + 0.90 * case_rng.random((n_pos, n_cls))
-                p_expect = _calc_p_mut_given_span_merged_end_b(p_before,
-                                                                     min_gap)
-                self.assertEqual(p_expect.shape, (n_pos, n_cls))
-                p_result = self._simulate_after_merge(p_before,
-                                                           min_gap,
-                                                           n_reads,
-                                                           seed)
-                self.assert_not_statistically_significant(p_expect,
-                                                          p_result,
-                                                          n_reads)
-
-
 class TestCalcPMutGivenSpanMerged(ut.TestCase):
 
     @staticmethod
@@ -1365,11 +1331,11 @@ class TestCalcPMutGivenSpanMerged(ut.TestCase):
     def assert_not_statistically_significant(self,
                                              p_expect: np.ndarray,
                                              p_result: np.ndarray,
-                                             n_reads: int,
+                                             coverage: np.ndarray,
                                              z_max: float = 6.0):
         self.assertEqual(p_result.shape, p_expect.shape)
         variance = p_expect * (1.0 - p_expect)
-        se = np.sqrt(np.maximum(variance, 1.e-12) / n_reads)
+        se = np.sqrt(np.maximum(variance, 1.e-12) / coverage)
         z = np.abs(p_result - p_expect) / se
         self.assertTrue(
             np.all(z <= z_max),
@@ -1394,18 +1360,20 @@ class TestCalcPMutGivenSpanMerged(ut.TestCase):
                 p_mut_given_span = case_rng.random((n_pos, n_cls))
                 p_ends = np.triu(case_rng.random((n_pos, n_pos)))
                 p_ends /= p_ends.sum()
-                expect = self._simulate_after_merge(
+                p_expect = _calc_p_mut_given_span_merged(p_mut_given_span,
+                                                         p_ends,
+                                                         min_gap)
+                p_result = self._simulate_after_merge(
                     p_mut_given_span,
                     p_ends,
                     min_gap,
                     n_reads=n_reads
                 )
-                result = _calc_p_mut_given_span_merged(p_mut_given_span,
-                                                       p_ends,
-                                                       min_gap)
-                self.assert_not_statistically_significant(expect,
-                                                          result,
-                                                          n_reads)
+                coverage = n_reads * np.array([p_ends[:j + 1, j:].sum()
+                                               for j in range(n_pos)])
+                self.assert_not_statistically_significant(p_expect,
+                                                          p_result,
+                                                          coverage[:, np.newaxis])
 
 
 class TestSlicePEnds(ut.TestCase):
@@ -1444,6 +1412,7 @@ class TestFindSplitPositions(ut.TestCase):
             ))
 
     def test_thresh0(self):
+        rng = np.random.default_rng(seed=0)
         p_mut = 1. - rng.random((10, 2))
         for min_gap in range(4):
             self.assertTrue(np.array_equal(
@@ -1452,6 +1421,7 @@ class TestFindSplitPositions(ut.TestCase):
             ))
 
     def test_thresh1(self):
+        rng = np.random.default_rng(seed=0)
         p_mut = 1. - rng.random((10, 2))
         for min_gap in range(4):
             self.assertTrue(np.array_equal(
@@ -1460,6 +1430,7 @@ class TestFindSplitPositions(ut.TestCase):
             ))
 
     def test_gap0(self):
+        rng = np.random.default_rng(seed=0)
         p_mut = 1. - rng.random((10, 2))
         for thresh in np.linspace(0., 1., 5):
             self.assertTrue(np.array_equal(
@@ -1603,6 +1574,7 @@ class TestFindSplitPositions(ut.TestCase):
                     splits.pop()
             return np.array(splits, dtype=int)
 
+        rng = np.random.default_rng(seed=0)
         p = rng.random((100, 2))
         for gap in range(4):
             for thresh in np.linspace(0., 1., 6):
@@ -1619,24 +1591,20 @@ class TestQuickUnbias(ut.TestCase):
     REL_TOL = 0.01
 
     @staticmethod
-    def random_params(npos: int, ncls: int):
+    def random_params(npos: int, ncls: int, rng: np.random.Generator):
         p_mut = rng.beta(0.5, 9.5, (npos, ncls))
         p_ends = 1. - rng.random((npos, npos, ncls))
         p_clust = 1. - rng.random(ncls)
         return p_mut, p_ends, p_clust
 
     def test_quick_unbias(self):
-        # Re-seed the module-level RNG so this test is deterministic
-        # regardless of the order in which other tests have consumed
-        # random values from it.
-        global rng
         rng = np.random.default_rng(seed=0)
         n_pos = 256
         for t in [0., 0.001]:
             for n_cls in [1, 2]:
                 for min_gap in [1, 3]:
                     for f_below in [0.1, 0.5, 0.9]:
-                        p_mut, p_ends, p_clust = self.random_params(n_pos, n_cls)
+                        p_mut, p_ends, p_clust = self.random_params(n_pos, n_cls, rng)
                         # Set some mutation rates to the threshold.
                         n_below = round(n_pos * f_below)
                         t_pos = rng.choice(n_pos, n_below, replace=False)
@@ -1702,15 +1670,15 @@ class TestCalcPMutGivenSpan(ut.TestCase):
                 p_noclose_given_ends = calc_p_noclose_given_ends(
                     p_mut, p_nomut_window
                 )
-                p_mut_given_span_noclose = calc_p_mut_given_span_dropped(
+                p_mut_given_span_dropped = calc_p_mut_given_span_dropped(
                     p_mut, p_ends, p_noclose_given_ends, p_nomut_window
                 )
                 p_mut_given_span = calc_p_mut_given_span(
-                    p_mut_given_span_noclose,
+                    p_mut_given_span_dropped,
                     p_ends,
                     min_gap,
                     "drop",
-                    p_mut_given_span_noclose,
+                    p_mut_given_span_dropped,
                 )
                 self.assertEqual(p_mut_given_span.shape, p_mut.shape)
                 self.assertTrue(np.allclose(p_mut_given_span,
@@ -1869,6 +1837,7 @@ class TestCalcRectangularSum(ut.TestCase):
         return spanning_sum
 
     def test_2d(self):
+        rng = np.random.default_rng(seed=0)
         for n in range(5):
             with self.subTest(n=n):
                 array = rng.random((n, n))
@@ -1879,6 +1848,7 @@ class TestCalcRectangularSum(ut.TestCase):
                 self.assertTrue(np.allclose(fast_sum, slow_sum))
 
     def test_3d(self):
+        rng = np.random.default_rng(seed=0)
         for n in range(5):
             for k in range(3):
                 with self.subTest(n=n, k=k):
@@ -1890,6 +1860,35 @@ class TestCalcRectangularSum(ut.TestCase):
                     self.assertTrue(np.allclose(fast_sum, slow_sum))
 
 
+class TestCalcRectangularSumWeighted(ut.TestCase):
+
+    @staticmethod
+    def calc_weighted_slow(array: np.ndarray, weights: np.ndarray):
+        return calc_rectangular_sum(weights[:, :, np.newaxis] * array)
+
+    def test_3d(self):
+        rng = np.random.default_rng(seed=0)
+        for npos in range(5):
+            for ncls in range(3):
+                with self.subTest(npos=npos, ncls=ncls):
+                    array = rng.random((npos, npos, ncls))
+                    weights = rng.random((npos, npos))
+                    fast = _calc_rectangular_sum_weighted(array, weights)
+                    slow = self.calc_weighted_slow(array, weights)
+                    self.assertEqual(fast.shape, (npos, ncls))
+                    self.assertTrue(np.allclose(fast, slow))
+
+    def test_unit_weights(self):
+        rng = np.random.default_rng(seed=0)
+        for npos in range(5):
+            for ncls in range(3):
+                with self.subTest(npos=npos, ncls=ncls):
+                    array = rng.random((npos, npos, ncls))
+                    weights = np.ones((npos, npos))
+                    fast = _calc_rectangular_sum_weighted(array, weights)
+                    unweighted = calc_rectangular_sum(array)
+                    self.assertEqual(fast.shape, (npos, ncls))
+                    self.assertTrue(np.allclose(fast, unweighted))
 
 
 if __name__ == "__main__":
