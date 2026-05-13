@@ -12,9 +12,14 @@ from .viennarna import rnafold
 from ..cluster.data import ClusterPositionTableLoader
 from ..core import path
 from ..core.arg import (CMD_FOLD,
+                        FOLD_BACKEND_AUTO,
                         FOLD_BACKEND_FOLD,
                         FOLD_BACKEND_SHAPEKNOTS,
                         FOLD_BACKEND_RNAFOLD,
+                        FOLD_ENERGY_METHOD_AUTO,
+                        FOLD_ENERGY_METHOD_CORDERO,
+                        FOLD_ENERGY_METHOD_EDDY,
+                        PROBE_DMS,
                         arg_input_path,
                         opt_branch,
                         opt_tmp_pfx,
@@ -54,6 +59,32 @@ from ..core.task import as_list_of_tuples, dispatch
 from ..core.tmp import with_tmp_dir
 from ..core.write import need_write
 from ..mask.table import MaskPositionTableLoader
+
+
+def resolve_fold_backend(probe: str, fold_backend: str) -> str:
+    if fold_backend == FOLD_BACKEND_AUTO:
+        return FOLD_BACKEND_FOLD if probe == PROBE_DMS else FOLD_BACKEND_RNAFOLD
+    return fold_backend
+
+
+def resolve_fold_energy_method(probe: str, fold_energy_method: str) -> str:
+    if fold_energy_method == FOLD_ENERGY_METHOD_AUTO:
+        return FOLD_ENERGY_METHOD_CORDERO if probe == PROBE_DMS else FOLD_ENERGY_METHOD_EDDY
+    return fold_energy_method
+
+
+def check_fold_deps(fold_backend: str):
+    if fold_backend == FOLD_BACKEND_RNAFOLD:
+        require_dependency(VIENNA_RNAFOLD_CMD, __name__)
+        require_dependency(VIENNA_RNASUBOPT_CMD, __name__)
+    elif fold_backend == FOLD_BACKEND_FOLD:
+        require_data_path()
+        require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
+    elif fold_backend == FOLD_BACKEND_SHAPEKNOTS:
+        require_data_path()
+        require_dependency(RNASTRUCTURE_SHAPEKNOTS_CMD, __name__)
+    else:
+        raise ValueError(f"Invalid value for --fold-backend: {repr(fold_backend)}")
 
 
 def load_foldable_tables(input_path: Iterable[str | Path], **kwargs):
@@ -164,8 +195,13 @@ def fold_table(table: MaskPositionTableLoader | ClusterPositionTableLoader,
                num_cpus: int,
                keep_tmp: bool,
                fold_dry_run: bool,
+               fold_backend: str,
                **kwargs):
     """ Fold an RNA molecule from one table of reactivities. """
+    probe = table._dataset.probe
+    fold_backend = resolve_fold_backend(probe, fold_backend)
+    fold_energy_method = resolve_fold_energy_method(probe, fold_energy_method)
+    check_fold_deps(fold_backend)
     return dispatch(fold_region,
                     num_cpus=num_cpus,
                     pass_num_cpus=True,
@@ -186,6 +222,7 @@ def fold_table(table: MaskPositionTableLoader | ClusterPositionTableLoader,
                     kwargs=dict(out_dir=table.top,
                                 keep_tmp=(keep_tmp or fold_dry_run),
                                 fold_dry_run=fold_dry_run,
+                                fold_backend=fold_backend,
                                 **kwargs))
 
 
@@ -216,23 +253,9 @@ def run(input_path: Iterable[str | Path], *,
         num_cpus: int,
         force: bool):
     """ Predict RNA secondary structures using mutation rates. """
-    # Check for dependencies.
-    if fold_backend == FOLD_BACKEND_RNAFOLD:
-        # Use ViennaRNA.
-        require_dependency(VIENNA_RNAFOLD_CMD, __name__)
-        require_dependency(VIENNA_RNASUBOPT_CMD, __name__)
-    elif fold_backend == FOLD_BACKEND_FOLD:
-        # Use RNAstructure Fold.
-        require_data_path()
-        require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
-    elif fold_backend == FOLD_BACKEND_SHAPEKNOTS:
-        # Use RNAstructure ShapeKnots.
-        require_data_path()
-        require_dependency(RNASTRUCTURE_SHAPEKNOTS_CMD, __name__)
-    else:
-        raise ValueError(
-            f"Invalid value for --fold-backend: {repr(fold_backend)}"
-        )
+    # Check for dependencies; deferred per table when backend is auto.
+    if fold_backend != FOLD_BACKEND_AUTO:
+        check_fold_deps(fold_backend)
     # List the tables.
     tables = list(load_foldable_tables(input_path, verify_times=verify_times))
     # Get the regions to fold for every reference sequence.

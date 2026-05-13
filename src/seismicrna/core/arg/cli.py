@@ -86,17 +86,21 @@ GAP_MODE_INSERT = "insert"
 GAP_MODE_EXPAND = "expand"
 GAP_MODE = GAP_MODE_OMIT, GAP_MODE_INSERT, GAP_MODE_EXPAND
 
+FOLD_BACKEND_AUTO = "auto"
 FOLD_BACKEND_FOLD = "Fold"
 FOLD_BACKEND_SHAPEKNOTS = "ShapeKnots"
 FOLD_BACKEND_RNAFOLD = "RNAFold"
-FOLD_BACKENDS = (FOLD_BACKEND_FOLD,
+FOLD_BACKENDS = (FOLD_BACKEND_AUTO,
+                 FOLD_BACKEND_FOLD,
                  FOLD_BACKEND_SHAPEKNOTS,
                  FOLD_BACKEND_RNAFOLD)
 
+FOLD_ENERGY_METHOD_AUTO = "auto"
 FOLD_ENERGY_METHOD_DEIGAN = "Deigan"
 FOLD_ENERGY_METHOD_CORDERO = "Cordero"
 FOLD_ENERGY_METHOD_EDDY = "Eddy"
-FOLD_ENERGY_METHODS = (FOLD_ENERGY_METHOD_DEIGAN,
+FOLD_ENERGY_METHODS = (FOLD_ENERGY_METHOD_AUTO,
+                       FOLD_ENERGY_METHOD_DEIGAN,
                        FOLD_ENERGY_METHOD_CORDERO,
                        FOLD_ENERGY_METHOD_EDDY)
 
@@ -1203,16 +1207,20 @@ opt_fold_primers = Option(
 opt_fold_backend = Option(
      ("--fold-backend",),
      type=Choice(FOLD_BACKENDS, case_sensitive=False),
-     default=FOLD_BACKEND_FOLD,
+     default=FOLD_BACKEND_AUTO,
      help=("Model RNA structures using Fold (RNAstructure), "
-           "ShapeKnots (RNAstructure), or RNAfold (ViennaRNA)")
+           "ShapeKnots (RNAstructure), or RNAfold (ViennaRNA); "
+           f"auto selects {FOLD_BACKEND_FOLD} for {PROBE_DMS} "
+           f"and {FOLD_BACKEND_RNAFOLD} for other probes")
 )
 
 opt_fold_energy_method = Option(
     ("--fold-energy-method",),
     type=Choice(FOLD_ENERGY_METHODS, case_sensitive=False),
-    default=FOLD_ENERGY_METHOD_DEIGAN,
+    default=FOLD_ENERGY_METHOD_AUTO,
     help=("Use this method to incorporate reactivities into folding energies. "
+          f"auto selects {FOLD_ENERGY_METHOD_CORDERO} for {PROBE_DMS} "
+          f"and {FOLD_ENERGY_METHOD_EDDY} for other probes; "
           f"{FOLD_ENERGY_METHOD_EDDY} requires "
           f"--fold-backend={FOLD_BACKEND_RNAFOLD}; "
           f"{FOLD_ENERGY_METHOD_CORDERO} requires "
