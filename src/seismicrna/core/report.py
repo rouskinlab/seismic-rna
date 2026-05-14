@@ -602,6 +602,24 @@ ThresholdMultiplierF = OptionReportField(opt_threshold_multiplier)
 MinClusterLengthF    = OptionReportField(opt_min_cluster_length)
 MaxClusterLengthF    = OptionReportField(opt_max_cluster_length)
 GapModeF             = OptionReportField(opt_gap_mode)
+TileCoordsF          = ReportField("tile_coords",
+                                   "Coordinates of tiles (ref, end5, end3)",
+                                   list)
+NumSignifPairsF      = ReportField("n_signif_pairs",
+                                   "Number of significant pairs detected",
+                                   int)
+NumModulesF          = ReportField("n_modules",
+                                   "Number of modules detected",
+                                   int)
+ModuleCoordsF        = ReportField("module_coords",
+                                   "Coordinates of modules (ref, end5, end3)",
+                                   list)
+ClusterDirsF         = ReportField("cluster_dirs",
+                                   "Directories of cluster results",
+                                   list)
+BestKsF              = ReportField("best_ks",
+                                   "Best number of clusters for each module",
+                                   list)
 
 # Join fields
 

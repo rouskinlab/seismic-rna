@@ -8,7 +8,13 @@ from ..core.report import (RegReport,
                            ThresholdMultiplierF,
                            MinClusterLengthF,
                            MaxClusterLengthF,
-                           GapModeF)
+                           GapModeF,
+                           TileCoordsF,
+                           NumSignifPairsF,
+                           NumModulesF,
+                           ModuleCoordsF,
+                           ClusterDirsF,
+                           BestKsF)
 from .io import EnsemblesIO
 
 
@@ -31,4 +37,16 @@ class EnsemblesReport(RegReport, EnsemblesIO):
             MaxClusterLengthF,
             GapModeF,
             *super().get_param_report_fields()
+        ]
+    
+    @classmethod
+    def get_result_report_fields(cls):
+        return [
+            TileCoordsF,
+            NumSignifPairsF,
+            NumModulesF,
+            ModuleCoordsF,
+            BestKsF,
+            ClusterDirsF,
+            *super().get_result_report_fields()
         ]

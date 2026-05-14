@@ -5,7 +5,7 @@ from numba import jit
 from ..array import intersect1d_unique_sorted
 from ..logs import logger
 from ..seq import POS_NAME
-from ..validate import require_isinstance, require_between
+from ..validate import require_isinstance
 
 POSITION_A = "Position A"
 POSITION_B = "Position B"
@@ -287,16 +287,17 @@ def calc_confusion_pvals(n: pd.Series,
     return pvals
 
 
-def label_significant_pvals(pvals: np.ndarray | pd.Series | pd.DataFrame,
-                            alpha: float):
-    """ Label the significant p-values using the Benjamini-Hochberg
-    method. """
-    require_between("alpha", alpha, 0., 1., inclusive=False, classes=float)
+def calc_bh_adjusted_pvals(pvals: np.ndarray | pd.Series | pd.DataFrame):
+    """ Calculate BH-adjusted p-values using the Benjamini-Hochberg correction.
+
+    Returns adjusted p-values (the minimum FDR at which each hypothesis would
+    be rejected).  Compare ``adjusted_pvals <= fdr`` to label significant pairs.
+    """
+    # Import scipy here because the import takes a long time.
+    from scipy.stats import false_discovery_control
     require_isinstance("pvals", pvals, (np.ndarray, pd.Series, pd.DataFrame))
     if pvals.ndim == 2:
-        # If pvals is 2D, then calculate each column separately.
-        values = np.stack([label_significant_pvals(np.asarray(pvals)[:, i],
-                                                   alpha)
+        values = np.stack([calc_bh_adjusted_pvals(np.asarray(pvals)[:, i])
                            for i in range(pvals.shape[1])],
                           axis=1)
         if isinstance(pvals, pd.DataFrame):
@@ -306,22 +307,12 @@ def label_significant_pvals(pvals: np.ndarray | pd.Series | pd.DataFrame,
         raise ValueError(f"pvals must be 1D or 2D, but is {pvals.ndim}D")
     if np.any(np.logical_or(pvals < 0, pvals > 1)):
         raise ValueError("pvals are not all in [0, 1]")
-    # Count and rank the valid p-values.
-    is_valid = ~np.isnan(pvals)
-    pvals_valid = pvals[is_valid]
-    m = pvals_valid.size
-    if m == 0:
-        # No p-values are valid, so none are significant.
-        return np.logical_and(False, pvals.astype(bool))
-    ranks = np.empty_like(pvals_valid, dtype=int)
-    ranks[np.argsort(pvals_valid, kind="stable")] = np.arange(1, m + 1)
-    # Determine the largest p-value that is ≤ (alpha / m) * rank.
-    pvals_less_or_equal = pvals_valid[pvals_valid <= (alpha / m) * ranks]
-    if pvals_less_or_equal.size > 0:
-        max_significant_pval = np.max(pvals_less_or_equal)
-    else:
-        max_significant_pval = np.nan
-    # All p-values less than or equal to that value are significant.
-    is_significant = pvals <= max_significant_pval
-    is_significant[~is_valid] = False
-    return is_significant
+    pvals_arr = np.asarray(pvals, dtype=float)
+    is_valid = ~np.isnan(pvals_arr)
+    adjusted = np.full(pvals_arr.size, np.nan)
+    if is_valid.any():
+        adjusted[is_valid] = false_discovery_control(pvals_arr[is_valid],
+                                                     method="bh")
+    if isinstance(pvals, pd.Series):
+        return pd.Series(adjusted, index=pvals.index)
+    return adjusted

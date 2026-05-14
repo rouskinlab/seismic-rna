@@ -10,24 +10,27 @@ import pandas as pd
 from click.testing import CliRunner
 
 from seismicrna.cluster.data import ClusterMutsDataset
+from seismicrna.core import path
 from seismicrna.core.arg.cli import opt_sim_dir
 from seismicrna.core.logs import Level, get_config, set_config
+from seismicrna.core.report import ClusterDirsF
 from seismicrna.main import cli as seismic_cli
 from seismicrna.core.rna.convert import db_to_ct
 from seismicrna.core.seq.fasta import write_fasta
 from seismicrna.core.seq.region import FULL_NAME
 from seismicrna.core.seq.xna import DNA
-from seismicrna.ensembles import (_calc_tiles,
-                                  _aggregate_pairs,
-                                  _select_pairs,
-                                  _calc_span_per_pos,
-                                  _calc_null_span_per_pos_keep_dists,
-                                  _calc_null_span_per_pos_rand_dists,
-                                  _calc_modules_from_pairs,
-                                  _insert_modules_into_gaps,
-                                  _expand_modules_into_gaps,
-                                  _filter_modules_length,
-                                  run as run_ensembles)
+from seismicrna.ensembles.main import run as run_ensembles
+from seismicrna.ensembles.report import EnsemblesReport
+from seismicrna.ensembles.write import (_calc_tiles,
+                                        _aggregate_pairs,
+                                        _select_pairs,
+                                        _calc_span_per_pos,
+                                        _calc_null_span_per_pos_keep_dists,
+                                        _calc_null_span_per_pos_rand_dists,
+                                        _calc_modules_from_pairs,
+                                        _insert_modules_into_gaps,
+                                        _expand_modules_into_gaps,
+                                        _filter_modules_length)
 from seismicrna.sim.params import run as sim_params
 from seismicrna.sim.relate import run as sim_relate
 
@@ -528,18 +531,26 @@ class TestEnsembles(ut.TestCase):
                       relate_dirs: list[Path],
                       expect_regions: dict[tuple[int, int], int],
                       **kwargs):
-        cluster_dirs = {tuple(map(int, d.name.split("-"))): d
-                        for d in run_ensembles(relate_dirs,
-                                               # Optimize for speed.
-                                               min_em_runs=1,
-                                               max_em_runs=1,
-                                               jackpot=False,
-                                               brotli_level=0,
-                                               mask_pos_table=False,
-                                               mask_read_table=False,
-                                               cluster_pos_table=False,
-                                               cluster_abundance_table=False,
-                                               **kwargs)}
+        ensembles_dirs = run_ensembles(relate_dirs,
+                                       # Optimize for speed.
+                                       min_em_runs=1,
+                                       max_em_runs=1,
+                                       jackpot=False,
+                                       brotli_level=0,
+                                       mask_pos_table=False,
+                                       mask_read_table=False,
+                                       cluster_pos_table=False,
+                                       cluster_abundance_table=False,
+                                       **kwargs)
+        cluster_dirs = {}
+        for ensembles_dir in ensembles_dirs:
+            for report_file in path.find_files_chain(
+                    [ensembles_dir], EnsemblesReport.get_path_seg_types()):
+                report = EnsemblesReport.load(report_file)
+                for cluster_dir_str in report.get_field(ClusterDirsF):
+                    d = Path(cluster_dir_str)
+                    reg5, reg3 = map(int, d.name.split("-"))
+                    cluster_dirs[(reg5, reg3)] = d
         for (exp5, exp3), expect_k in expect_regions.items():
             expect_length = exp3 - exp5 + 1
             for (reg5, reg3), cluster_dir in cluster_dirs.items():

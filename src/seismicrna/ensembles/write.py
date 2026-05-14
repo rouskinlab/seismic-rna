@@ -1,4 +1,3 @@
-from collections import defaultdict
 from datetime import datetime
 from itertools import chain
 from math import ceil
@@ -21,45 +20,33 @@ from ..core.batch import (POSITION_A,
                           accumulate_confusion_matrices,
                           calc_confusion_pvals,
                           calc_confusion_phi,
-                          label_significant_pvals)
+                          calc_bh_adjusted_pvals)
 from ..core.dataset import MutsDataset
 from ..core.error import (IncompatibleValuesError,
                           OutOfBoundsError)
 from ..core.logs import logger
-from ..core.seq import (DNA,
-                        DuplicateReferenceNameError,
-                        RefRegions,
-                        unite)
+from ..core.seq import DNA, unite
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.validate import require_atleast
 from ..core.write import need_write
+from ..cluster.report import ClusterReport
+from ..core.report import BestKF
 from ..mask.dataset import MaskMutsDataset, load_mask_dataset
 from ..mask.io import MaskBatchIO
 from ..mask.main import load_regions, set_mut_gap_params
 from ..mask.report import MaskReport
-from ..relate.report import RelateReport
 from .report import EnsemblesReport
+
+PAIRS_CSV = "pairs.csv"
+MODULES_CSV = "modules.csv"
+PAIRS_MODULES_HTML = "pairs_and_modules.html"
+CONFUSION_MATRIX_CSV = "confusion-matrix.csv"
 
 
 def _get_batch_read_lengths(batch_num: int,
                             dataset: MutsDataset):
     batch = dataset.get_batch(batch_num)
     return batch.read_lengths
-
-
-def _get_dataset_read_lengths(dataset: MutsDataset, *,
-                              num_cpus: int):
-    read_lengths = dispatch(_get_batch_read_lengths,
-                            num_cpus=num_cpus,
-                            pass_num_cpus=False,
-                            as_list=True,
-                            ordered=False,
-                            raise_on_error=True,
-                            args=as_list_of_tuples(dataset.batch_nums),
-                            kwargs=dict(dataset=dataset))
-    if sum(a.size for a in read_lengths) == 0:
-        raise ValueError(f"{dataset} has 0 reads")
-    return np.concatenate(read_lengths, axis=0)
 
 
 def _ends_arrays_to_tuples(end5s: Iterable, end3s: Iterable):
@@ -132,36 +119,33 @@ def _calc_tiles(total_end5: int,
     return _ends_arrays_to_tuples(region_end5s, region_end3s)
 
 
-def _calc_ref_tiled_regions(ref: str, *,
-                            datasets: dict[str, list[MutsDataset]],
-                            total_regions: RefRegions,
-                            tile_length: int,
-                            tile_min_overlap: float,
-                            num_cpus: int):
-    """ Calculate the tiles for one reference. """
+def _calc_tile_coords(dataset,
+                       total_region,
+                       tile_length: int,
+                       tile_min_overlap: float,
+                       num_cpus: int):
+    """ Calculate the tiled coordinates for one relate dataset. """
+    ref = dataset.ref
     logger.routine(f"Began calculating tiles for reference {repr(ref)}")
-    ref_total_regions = total_regions.dict[ref]
-    # Get the region for this reference.
-    assert len(ref_total_regions) > 0
-    if len(ref_total_regions) > 1:
-        raise DuplicateReferenceNameError(ref)
-    ref_total_region = ref_total_regions[0]
     if tile_length > 0:
         # Use a prespecified region length.
         ref_tile_length = tile_length
     else:
         # Set the region length to twice the median read length.
         logger.routine("Began calculating optimal tile length")
-        read_lengths = dispatch(_get_dataset_read_lengths,
-                                num_cpus=num_cpus,
-                                pass_num_cpus=True,
-                                as_list=True,
-                                ordered=False,
-                                raise_on_error=True,
-                                args=as_list_of_tuples(datasets[ref]))
-        if sum(a.size for a in read_lengths) == 0:
-            raise ValueError("Datasets have 0 reads")
-        read_lengths = np.concatenate(read_lengths, axis=0)
+        batches_read_lengths = dispatch(
+            _get_batch_read_lengths,
+            num_cpus=num_cpus,
+            pass_num_cpus=False,
+            as_list=True,
+            ordered=False,
+            raise_on_error=True,
+            args=as_list_of_tuples(dataset.batch_nums),
+            kwargs=dict(dataset=dataset)
+        )
+        if sum(a.size for a in batches_read_lengths) == 0:
+            raise ValueError(f"{dataset} has 0 reads")
+        read_lengths = np.concatenate(batches_read_lengths, axis=0)
         median_read_length = np.median(read_lengths)
         if median_read_length < 1:
             raise ValueError("The median read length must be ≥ 1, "
@@ -171,45 +155,12 @@ def _calc_ref_tiled_regions(ref: str, *,
         logger.routine(
             f"Ended calculating optimal tile length: {ref_tile_length}"
         )
-    # Calculate the tiles for this reference.
-    tiles = _calc_tiles(ref_total_region.end5,
-                        ref_total_region.end3,
+    tiles = _calc_tiles(total_region.end5,
+                        total_region.end3,
                         ref_tile_length,
                         tile_min_overlap)
     logger.routine(f"Ended calculating tiles for reference {repr(ref)}")
     return [(ref, end5, end3) for end5, end3 in tiles]
-
-
-def _calc_tiled_coords(relate_report_files: Iterable[str | Path],
-                       coords: Iterable[tuple[str, int, int]],
-                       primers: Iterable[tuple[str, DNA, DNA]],
-                       primer_gap: int,
-                       regions_file: str | None,
-                       tile_length: int,
-                       tile_min_overlap: float,
-                       num_cpus: int):
-    """ Calculate the tiled regions for all references. """
-    datasets, total_regions = load_regions(relate_report_files,
-                                           coords,
-                                           primers,
-                                           primer_gap,
-                                           regions_file)
-    tiled_regions = dispatch(
-        _calc_ref_tiled_regions,
-        num_cpus=num_cpus,
-        pass_num_cpus=True,
-        as_list=False,
-        ordered=False,
-        raise_on_error=True,
-        args=as_list_of_tuples(total_regions.refs),
-        kwargs=dict(datasets=datasets,
-                    total_regions=total_regions,
-                    tile_length=tile_length,
-                    tile_min_overlap=tile_min_overlap)
-    )
-    return [region
-            for ref_tiled_regions in tiled_regions
-            for region in ref_tiled_regions]
 
 
 def _find_correlated_pairs(dataset: MaskMutsDataset,
@@ -228,9 +179,10 @@ def _find_correlated_pairs(dataset: MaskMutsDataset,
     # Determine which pairs of positions correlate significantly at a
     # false discovery rate of pair_fdr.
     pvals = calc_confusion_pvals(n, a, b, ab)
-    is_significant = label_significant_pvals(pvals, pair_fdr)
+    pvals_bh_adjusted = calc_bh_adjusted_pvals(pvals)
+    is_significant = pvals_bh_adjusted <= pair_fdr
     # Save the confusion matrix as a CSV file.
-    csv_file = dataset.report_file.with_name("confusion-matrix.csv")
+    csv_file = dataset.report_file.with_name(CONFUSION_MATRIX_CSV)
     phi = calc_confusion_phi(n, a, b, ab)
     confusion_matrix = pd.DataFrame.from_dict(
         {"Neither Mutated": n - (a + b - ab),
@@ -239,6 +191,7 @@ def _find_correlated_pairs(dataset: MaskMutsDataset,
          "Both Mutated": ab,
          "Phi Correlation": phi,
          "Raw P-Value": pvals,
+         "Adjusted P-Value": pvals_bh_adjusted,
          f"Significant at FDR={pair_fdr}": is_significant},
     )
     confusion_matrix.to_csv(csv_file)
@@ -544,36 +497,40 @@ def _write_pairs_to_csv(pairs: list[tuple[int, int]],
     df.to_csv(csv_file, index=False)
 
 
-def _calc_ref_cluster_modules(datasets: list[MaskMutsDataset],
-                              pair_fdr: float,
-                              probe: str,
-                              min_mut_gap: int | None,
-                              min_pairs: int,
-                              threshold_multiplier: float,
-                              min_length: int,
-                              max_length: int,
-                              gap_mode: str,
-                              branch: str,
-                              tile_length: int,
-                              tile_min_overlap: float,
-                              erase_tiles: bool,
-                              force: bool,
-                              num_cpus: int):
-    """ Calculate the cluster regions for one reference. """
-    region = unite([dataset.region for dataset in datasets])
-    # Check if the EnsemblesReport already exists for this reference.
-    report_branches = path.add_branch(path.ENSEMBLES_STEP, branch,
-                                      datasets[0].branches)
-    report_file = EnsemblesReport.build_path({
-        path.TOP:      datasets[0].top,
-        path.SAMPLE:   datasets[0].sample,
-        path.BRANCHES: report_branches,
-        path.REF:      datasets[0].ref,
-        path.REG:      region.name,
-    })
-    if not need_write(report_file, force):
-        return list()
-    began = datetime.now()
+def _calc_cluster_modules(mask_dirs: list[Path],
+                          report_dir: Path,
+                          num_cpus: int,
+                          pair_fdr: float,
+                          probe: str,
+                          min_mut_gap: int | None,
+                          min_pairs: int,
+                          threshold_multiplier: float,
+                          min_length: int,
+                          max_length: int,
+                          gap_mode: str):
+    """ Calculate the cluster regions for all tiles of one reference. """
+    # Each dataset corresponds to one tile.
+    datasets = list(load_mask_dataset.iterate(mask_dirs))
+    if not datasets:
+        return list(), 0
+    # Find the common ref, refseq, top, and branches (must be
+    # identical among all datasets).
+    ref = datasets[0].ref
+    refseq = datasets[0].refseq
+    branches = datasets[0].branches
+    for dataset in datasets[1:]:
+        if dataset.ref != ref:
+            raise ValueError(f"Expected all tile datasets to have reference "
+                             f"{repr(ref)}, but got {repr(dataset.ref)}")
+        if dataset.refseq != refseq:
+            raise ValueError(f"Expected all tile datasets to have the same "
+                             f"reference sequence as {repr(ref)}, but got a "
+                             f"different sequence for {repr(dataset.ref)}")
+        if dataset.branches != branches:
+            raise ValueError(f"Expected all tile datasets to have branches "
+                             f"{branches}, but got {dataset.branches}")
+    # The region is the union of all tiles' regions.
+    region = unite([dataset.region for dataset in datasets], refseq=refseq)
     # Find pairs of bases that correlate significantly in any region.
     # Use sorted(set()) to ensure pairs are unique and sorted.
     pairs = sorted(set(chain(*dispatch(_find_correlated_pairs,
@@ -588,6 +545,7 @@ def _calc_ref_cluster_modules(datasets: list[MaskMutsDataset],
     min_mut_gap, _ = set_mut_gap_params(probe, min_mut_gap)
     modules = _calc_modules_from_pairs(pairs, pair_fdr, min_mut_gap, min_pairs,
                                        threshold_multiplier=threshold_multiplier)
+    n_modules_before_filter = len(modules)
     # Determine what to do with gaps between regions.
     if gap_mode == GAP_MODE_INSERT:
         modules = _filter_modules_length(modules, min_length=min_length)
@@ -600,12 +558,16 @@ def _calc_ref_cluster_modules(datasets: list[MaskMutsDataset],
         modules = _filter_modules_length(modules, min_length, max_length)
     else:
         raise ValueError(gap_mode)
+    logger.routine(f"Ended adjusting modules: {modules}")
+    if n_modules_before_filter > 0 and not modules:
+        logger.warning(f"All {n_modules_before_filter} module(s) were removed "
+                       f"by length filter (min={min_length}, max={max_length})")
     # Write the pairs and modules to CSV files.
-    ref_dir = datasets[0].report_file.parent.parent
-    _write_pairs_to_csv(pairs, ref_dir.joinpath("pairs.csv"))
-    _write_pairs_to_csv(modules, ref_dir.joinpath("modules.csv"))
+    report_dir.mkdir(parents=True, exist_ok=True)
+    _write_pairs_to_csv(pairs, report_dir.joinpath(PAIRS_CSV))
+    _write_pairs_to_csv(modules, report_dir.joinpath(MODULES_CSV))
     # Graph the correlated pairs and modules.
-    html_file = ref_dir.joinpath("pairs-and-modules.html")
+    html_file = report_dir.joinpath(PAIRS_MODULES_HTML)
     try:
         _graph_pairs_and_modules(pairs,
                                  modules,
@@ -614,56 +576,12 @@ def _calc_ref_cluster_modules(datasets: list[MaskMutsDataset],
                                  html_file)
     except Exception as error:
         logger.error(error)
-    # Save the EnsemblesReport for this reference.
-    branches = path.add_branch(path.ENSEMBLES_STEP, branch,
-                               datasets[0].branches)
-    EnsemblesReport(
-        sample=datasets[0].sample,
-        ref=datasets[0].ref,
-        reg=region.name,
-        branches=branches,
-        tile_length=tile_length,
-        tile_min_overlap=tile_min_overlap,
-        erase_tiles=erase_tiles,
-        pair_fdr=pair_fdr,
-        min_pairs=min_pairs,
-        threshold_multiplier=threshold_multiplier,
-        min_cluster_length=min_length,
-        max_cluster_length=max_length,
-        gap_mode=gap_mode,
-        began=began,
-        ended=datetime.now(),
-    ).save(datasets[0].top)
-    return modules
+    return [(ref, end5, end3) for end5, end3 in modules], len(pairs)
 
 
-def _calc_cluster_modules(mask_dirs: list[Path],
-                          num_cpus: int,
-                          **kwargs):
-    """ Calculate the cluster regions for all references. """
-    # Group the datasets by reference.
-    groups = defaultdict(list)
-    for dataset in load_mask_dataset.iterate(mask_dirs):
-        ref = dataset.ref
-        groups[ref].append(dataset)
-    # Calculate regions for each reference.
-    regions = dispatch(_calc_ref_cluster_modules,
-                       num_cpus=num_cpus,
-                       pass_num_cpus=True,
-                       as_list=False,
-                       ordered=True,
-                       raise_on_error=True,
-                       args=as_list_of_tuples(groups.values()),
-                       kwargs=kwargs)
-    # Format the regions so that they can be passed into the mask step.
-    return [(ref, end5, end3)
-            for ref, ref_regions in zip(groups.keys(), regions)
-            for end5, end3 in ref_regions]
-
-
-def run_group(relate_report_files: list[Path], *,
-               # General options
-               branch: str,
+def ensembles(relate_report_file: Path, *,
+            # General options
+            branch: str,
                tmp_pfx: str | Path,
                keep_tmp: bool,
                brotli_level: int,
@@ -735,173 +653,216 @@ def run_group(relate_report_files: list[Path], *,
                cluster_pos_table: bool,
                cluster_abundance_table: bool,
                verify_times: bool,
-               seed: int | None):
-    """ Run a group of datasets. """
-    # Divide each reference into overlapping tiles.
-    tiled_coords = _calc_tiled_coords(
-        relate_report_files,
-        coords=mask_coords,
-        primers=mask_primers,
-        primer_gap=primer_gap,
-        regions_file=mask_regions_file,
-        tile_length=tile_length,
-        tile_min_overlap=tile_min_overlap,
-        num_cpus=num_cpus
-    )
-    tiled_dirs = mask_mod.run(
-        input_path=relate_report_files,
-        branch=branch,
-        tmp_pfx=tmp_pfx,
-        keep_tmp=keep_tmp,
-        mask_coords=tiled_coords,
-        mask_primers=(),
-        primer_gap=0,
-        mask_regions_file=None,
-        mask_del=mask_del,
-        mask_ins=mask_ins,
-        mask_mut=mask_mut,
-        count_mut=count_mut,
-        probe=probe,
-        mask_a=mask_a,
-        mask_c=mask_c,
-        mask_g=mask_g,
-        mask_u=mask_u,
-        mask_polya=mask_polya,
-        mask_pos=mask_pos,
-        mask_pos_file=mask_pos_file,
-        mask_read=mask_read,
-        mask_read_file=mask_read_file,
-        mask_discontig=mask_discontig,
-        min_ncov_read=min_ncov_read,
-        min_finfo_read=min_finfo_read,
-        max_fmut_read=max_fmut_read,
-        min_mut_gap=min_mut_gap,
-        mut_collisions=mut_collisions,
-        min_ninfo_pos=min_ninfo_pos,
-        max_fmut_pos=max_fmut_pos,
-        quick_unbias=quick_unbias,
-        quick_unbias_thresh=quick_unbias_thresh,
-        max_mask_iter=max_mask_iter,
-        mask_pos_table=False,
-        mask_read_table=False,
-        brotli_level=brotli_level,
-        num_cpus=num_cpus,
-        force=force
-    )
-    # Find regions spanned by correlated base pairs.
-    module_coords = _calc_cluster_modules(
-        tiled_dirs,
-        pair_fdr=pair_fdr,
-        probe=probe,
-        min_mut_gap=min_mut_gap,
-        min_pairs=min_pairs,
-        threshold_multiplier=threshold_multiplier,
-        min_length=min_cluster_length,
-        max_length=max_cluster_length,
-        gap_mode=gap_mode,
-        branch=branch,
-        tile_length=tile_length,
-        tile_min_overlap=tile_min_overlap,
-        erase_tiles=erase_tiles,
-        force=force,
-        num_cpus=num_cpus
-    )
-    if erase_tiles:
-        # Delete the mask reports and batches of the tiles.
-        logger.routine("Began deleting tiled reports and batches")
-        for file in path.find_files_chain(tiled_dirs,
-                                          MaskReport.get_path_seg_types()):
-            file.unlink(missing_ok=True)
-        for file in path.find_files_chain(tiled_dirs,
-                                          MaskBatchIO.get_path_seg_types()):
-            file.unlink(missing_ok=True)
-        logger.routine("Ended deleting tiled reports and batches")
-    # Drop each relate report whose reference contained no correlated
-    # base pairs; otherwise, it will default to clustering the full
-    # reference, which is not what seismic ensembles is for.
-    refs_with_correlated_pairs = {ref for ref, end5, end3 in module_coords}
-    logger.detail(f"Found {len(refs_with_correlated_pairs)} references with "
-                  f"correlated pairs: {sorted(refs_with_correlated_pairs)}")
-    relate_report_files_with_correlated_pairs = list()
-    for file in relate_report_files:
-        ref = path.parse(file, RelateReport.get_path_seg_types())[path.REF]
-        if ref in refs_with_correlated_pairs:
-            relate_report_files_with_correlated_pairs.append(file)
-    logger.detail(f"Found {len(relate_report_files_with_correlated_pairs)} "
-                  "relate report files with correlated pairs, out of "
-                  f"{len(relate_report_files)} total relate report files")
-    # Cluster the regions spanned by correlated base pairs.
-    module_dirs = mask_mod.run(
-        input_path=relate_report_files_with_correlated_pairs,
-        branch=branch,
-        tmp_pfx=tmp_pfx,
-        keep_tmp=keep_tmp,
-        mask_coords=tuple(module_coords),
-        mask_primers=(),
-        primer_gap=0,
-        mask_regions_file=None,
-        mask_del=mask_del,
-        mask_ins=mask_ins,
-        mask_mut=mask_mut,
-        count_mut=count_mut,
-        probe=probe,
-        mask_a=mask_a,
-        mask_c=mask_c,
-        mask_g=mask_g,
-        mask_u=mask_u,
-        mask_polya=mask_polya,
-        mask_pos=mask_pos,
-        mask_pos_file=mask_pos_file,
-        mask_read=mask_read,
-        mask_read_file=mask_read_file,
-        mask_discontig=mask_discontig,
-        min_ncov_read=min_ncov_read,
-        min_finfo_read=min_finfo_read,
-        max_fmut_read=max_fmut_read,
-        min_mut_gap=min_mut_gap,
-        mut_collisions=mut_collisions,
-        min_ninfo_pos=min_ninfo_pos,
-        max_fmut_pos=max_fmut_pos,
-        quick_unbias=quick_unbias,
-        quick_unbias_thresh=quick_unbias_thresh,
-        max_mask_iter=max_mask_iter,
-        mask_pos_table=mask_pos_table,
-        mask_read_table=mask_read_table,
-        brotli_level=brotli_level,
-        num_cpus=num_cpus,
-        force=force
-    )
-    cluster_dirs = cluster_mod.run(
-        input_path=module_dirs,
-        tmp_pfx=tmp_pfx,
-        keep_tmp=keep_tmp,
-        probe=probe,
-        min_clusters=min_clusters,
-        max_clusters=max_clusters,
-        min_em_runs=min_em_runs,
-        max_em_runs=max_em_runs,
-        jackpot=jackpot,
-        jackpot_conf_level=jackpot_conf_level,
-        max_jackpot_quotient=max_jackpot_quotient,
-        jackpot_max_data=jackpot_max_data,
-        min_em_iter=min_em_iter,
-        max_em_iter=max_em_iter,
-        em_thresh=em_thresh,
-        min_marcd_run=min_marcd_run,
-        max_pearson_run=max_pearson_run,
-        max_arcd_vs_ens_avg=max_arcd_vs_ens_avg,
-        max_gini_run=max_gini_run,
-        max_loglike_vs_best=max_loglike_vs_best,
-        min_pearson_vs_best=min_pearson_vs_best,
-        max_marcd_vs_best=max_marcd_vs_best,
-        try_all_ks=try_all_ks,
-        write_all_ks=write_all_ks,
-        cluster_pos_table=cluster_pos_table,
-        cluster_abundance_table=cluster_abundance_table,
-        verify_times=verify_times,
-        brotli_level=brotli_level,
-        num_cpus=num_cpus,
-        force=force,
-        seed=seed,
-    )
-    return cluster_dirs
+            seed: int | None):
+    """ Run one relate report through the full ensembles pipeline. """
+    # Load region info cheaply (reads JSON only, no batch I/O).
+    datasets, total_regions = load_regions([relate_report_file],
+                                           mask_coords,
+                                           mask_primers,
+                                           primer_gap,
+                                           mask_regions_file)
+    refs = total_regions.refs
+    assert len(refs) == 1
+    ref = refs[0]
+    ref_total_regions = total_regions.dict[ref]
+    assert len(ref_total_regions) == 1
+    total_region = ref_total_regions[0]
+    assert list(datasets.keys()) == [ref]
+    assert len(datasets[ref]) == 1
+    relate_dataset = datasets[ref][0]
+    # Check if the EnsemblesReport already exists.
+    report_branches = path.add_branch(path.ENSEMBLES_STEP, branch,
+                                      relate_dataset.branches)
+    report_file = EnsemblesReport.build_path({
+        path.TOP:      relate_dataset.top,
+        path.SAMPLE:   relate_dataset.sample,
+        path.BRANCHES: report_branches,
+        path.REF:      relate_dataset.ref,
+        path.REG:      total_region.name,
+    })
+    if need_write(report_file, force):
+        began = datetime.now()
+        # Compute tile coordinates (potentially expensive when tile_length <= 0).
+        tile_coords = _calc_tile_coords(relate_dataset,
+                                          total_region,
+                                          tile_length,
+                                          tile_min_overlap,
+                                          num_cpus)
+        tiled_dirs = mask_mod.run(
+            input_path=[relate_report_file],
+            branch=branch,
+            tmp_pfx=tmp_pfx,
+            keep_tmp=keep_tmp,
+            mask_coords=tile_coords,
+            mask_primers=(),
+            primer_gap=0,
+            mask_regions_file=None,
+            mask_del=mask_del,
+            mask_ins=mask_ins,
+            mask_mut=mask_mut,
+            count_mut=count_mut,
+            probe=probe,
+            mask_a=mask_a,
+            mask_c=mask_c,
+            mask_g=mask_g,
+            mask_u=mask_u,
+            mask_polya=mask_polya,
+            mask_pos=mask_pos,
+            mask_pos_file=mask_pos_file,
+            mask_read=mask_read,
+            mask_read_file=mask_read_file,
+            mask_discontig=mask_discontig,
+            min_ncov_read=min_ncov_read,
+            min_finfo_read=min_finfo_read,
+            max_fmut_read=max_fmut_read,
+            min_mut_gap=min_mut_gap,
+            mut_collisions=mut_collisions,
+            min_ninfo_pos=min_ninfo_pos,
+            max_fmut_pos=max_fmut_pos,
+            quick_unbias=quick_unbias,
+            quick_unbias_thresh=quick_unbias_thresh,
+            max_mask_iter=max_mask_iter,
+            mask_pos_table=False,
+            mask_read_table=False,
+            brotli_level=brotli_level,
+            num_cpus=num_cpus,
+            force=force
+        )
+        # Find regions spanned by correlated base pairs.
+        report_dir = report_file.parent
+        module_coords, n_signif_pairs = _calc_cluster_modules(
+            tiled_dirs,
+            report_dir=report_dir,
+            pair_fdr=pair_fdr,
+            probe=probe,
+            min_mut_gap=min_mut_gap,
+            min_pairs=min_pairs,
+            threshold_multiplier=threshold_multiplier,
+            min_length=min_cluster_length,
+            max_length=max_cluster_length,
+            gap_mode=gap_mode,
+            num_cpus=num_cpus
+        )
+        if module_coords:
+            # Generate the regions spanned by correlated base pairs.
+            module_dirs = mask_mod.run(
+                input_path=[relate_report_file],
+                branch=branch,
+                tmp_pfx=tmp_pfx,
+                keep_tmp=keep_tmp,
+                mask_coords=tuple(module_coords),
+                mask_primers=(),
+                primer_gap=0,
+                mask_regions_file=None,
+                mask_del=mask_del,
+                mask_ins=mask_ins,
+                mask_mut=mask_mut,
+                count_mut=count_mut,
+                probe=probe,
+                mask_a=mask_a,
+                mask_c=mask_c,
+                mask_g=mask_g,
+                mask_u=mask_u,
+                mask_polya=mask_polya,
+                mask_pos=mask_pos,
+                mask_pos_file=mask_pos_file,
+                mask_read=mask_read,
+                mask_read_file=mask_read_file,
+                mask_discontig=mask_discontig,
+                min_ncov_read=min_ncov_read,
+                min_finfo_read=min_finfo_read,
+                max_fmut_read=max_fmut_read,
+                min_mut_gap=min_mut_gap,
+                mut_collisions=mut_collisions,
+                min_ninfo_pos=min_ninfo_pos,
+                max_fmut_pos=max_fmut_pos,
+                quick_unbias=quick_unbias,
+                quick_unbias_thresh=quick_unbias_thresh,
+                max_mask_iter=max_mask_iter,
+                mask_pos_table=mask_pos_table,
+                mask_read_table=mask_read_table,
+                brotli_level=brotli_level,
+                num_cpus=num_cpus,
+                force=force
+            )
+            # Cluster the regions spanned by correlated base pairs.
+            cluster_dirs = cluster_mod.run(
+                input_path=module_dirs,
+                tmp_pfx=tmp_pfx,
+                keep_tmp=keep_tmp,
+                min_clusters=min_clusters,
+                max_clusters=max_clusters,
+                min_em_runs=min_em_runs,
+                max_em_runs=max_em_runs,
+                jackpot=jackpot,
+                jackpot_conf_level=jackpot_conf_level,
+                max_jackpot_quotient=max_jackpot_quotient,
+                jackpot_max_data=jackpot_max_data,
+                min_em_iter=min_em_iter,
+                max_em_iter=max_em_iter,
+                em_thresh=em_thresh,
+                min_marcd_run=min_marcd_run,
+                max_pearson_run=max_pearson_run,
+                max_arcd_vs_ens_avg=max_arcd_vs_ens_avg,
+                max_gini_run=max_gini_run,
+                max_loglike_vs_best=max_loglike_vs_best,
+                min_pearson_vs_best=min_pearson_vs_best,
+                max_marcd_vs_best=max_marcd_vs_best,
+                try_all_ks=try_all_ks,
+                write_all_ks=write_all_ks,
+                cluster_pos_table=cluster_pos_table,
+                cluster_abundance_table=cluster_abundance_table,
+                verify_times=verify_times,
+                brotli_level=brotli_level,
+                num_cpus=num_cpus,
+                force=force,
+                seed=seed,
+            )
+            best_ks = [
+                ClusterReport.load(f).get_field(BestKF)
+                for f in path.find_files_chain(
+                    cluster_dirs, ClusterReport.get_path_seg_types()
+                )
+            ]
+        else:
+            # Skip clustering if no modules were found.
+            logger.warning(
+                f"No modules of correlated pairs found in {relate_report_file}"
+            )
+            cluster_dirs = list()
+            best_ks = list()
+        EnsemblesReport(
+            sample=relate_dataset.sample,
+            ref=relate_dataset.ref,
+            reg=total_region.name,
+            branches=report_branches,
+            tile_length=tile_length,
+            tile_min_overlap=tile_min_overlap,
+            erase_tiles=erase_tiles,
+            pair_fdr=pair_fdr,
+            min_pairs=min_pairs,
+            threshold_multiplier=threshold_multiplier,
+            min_cluster_length=min_cluster_length,
+            max_cluster_length=max_cluster_length,
+            gap_mode=gap_mode,
+            tile_coords=tile_coords,
+            n_signif_pairs=n_signif_pairs,
+            n_modules=len(module_coords),
+            module_coords=module_coords,
+            cluster_dirs=list(map(str, cluster_dirs)),
+            best_ks=best_ks,
+            began=began,
+            ended=datetime.now(),
+        ).save(relate_dataset.top, force=force)
+        # Erase the tiles at the 
+        if erase_tiles:
+            # Delete the mask reports and batches of the tiles.
+            logger.routine("Began deleting tiled reports and batches")
+            for file in path.find_files_chain(tiled_dirs,
+                                            MaskReport.get_path_seg_types()):
+                file.unlink(missing_ok=True)
+            for file in path.find_files_chain(tiled_dirs,
+                                            MaskBatchIO.get_path_seg_types()):
+                file.unlink(missing_ok=True)
+            logger.routine("Ended deleting tiled reports and batches")
+    return report_file.parent

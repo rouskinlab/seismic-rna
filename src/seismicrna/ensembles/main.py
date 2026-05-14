@@ -1,11 +1,9 @@
-from collections import defaultdict
-from itertools import chain
 from pathlib import Path
 from typing import Iterable
 
 from click import command
 
-from .write import run_group
+from .write import ensembles
 from .. import mask as mask_mod, cluster as cluster_mod
 from ..core import path
 from ..core.arg import (CMD_ENSEMBLES,
@@ -102,15 +100,8 @@ def run(input_path: Iterable[str | Path], *,
         verify_times: bool,
         seed: int | None):
     """ Infer independent structure ensembles along an entire RNA. """
-    # Group reports by sample and branches.
     seg_types = load_relate_dataset.report_path_seg_types
-    groups = defaultdict(list)
-    for relate_report_file in path.find_files_chain(input_path, seg_types):
-        fields = path.parse(relate_report_file, seg_types)
-        sample = fields[path.SAMPLE]
-        branches = tuple(fields[path.BRANCHES])
-        groups[sample, branches].append(relate_report_file)
-    # Process each group separately.
+    relate_report_files = list(path.find_files_chain(input_path, seg_types))
     kwargs = dict(branch=branch,
                   tmp_pfx=tmp_pfx,
                   keep_tmp=keep_tmp,
@@ -184,14 +175,14 @@ def run(input_path: Iterable[str | Path], *,
                   cluster_abundance_table=cluster_abundance_table,
                   verify_times=verify_times,
                   seed=seed)
-    return list(chain(*dispatch(run_group,
-                                num_cpus=num_cpus,
-                                pass_num_cpus=True,
-                                as_list=False,
-                                ordered=False,
-                                raise_on_error=False,
-                                args=as_list_of_tuples(groups.values()),
-                                kwargs=kwargs)))
+    return dispatch(ensembles,
+                    num_cpus=num_cpus,
+                    pass_num_cpus=True,
+                    as_list=True,
+                    ordered=False,
+                    raise_on_error=False,
+                    args=as_list_of_tuples(relate_report_files),
+                    kwargs=kwargs)
 
 
 params = merge_params(mask_mod.params,

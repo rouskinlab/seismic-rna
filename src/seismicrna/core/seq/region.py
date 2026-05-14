@@ -812,9 +812,10 @@ def unite(regions: Iterable[Region],
             # Fill in the sequence based on the region.
             seq_array.loc[reg.end5: reg.end3] = reg.seq.array
         seq = DNA("".join(seq_array))
-    if all(region.full for region in regions):
-        # If all regions are full-length, then also make the union
-        # full-length.
+    if all(region.full for region in regions) or (
+            refseq is not None and end5 == 1 and end3 == len(refseq)):
+        # If all regions are full-length, or if a refseq was given and
+        # the union spans the full reference, make the union full-length.
         seq5 = 1
         end5 = None
         end3 = None
