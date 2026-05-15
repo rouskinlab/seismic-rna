@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from typing import Iterable
 
+import numpy as np
 from click import command
 
 from .clusts import load_pclust
@@ -18,6 +19,7 @@ from ..core.arg import (opt_param_dir,
                         opt_probe,
                         opt_min_mut_gap,
                         opt_mut_collisions,
+                        opt_mut_probs,
                         opt_num_reads,
                         opt_batch_size,
                         opt_write_read_names,
@@ -84,6 +86,7 @@ def run(*,
         probe: str,
         min_mut_gap: int | None,
         mut_collisions: str,
+        mut_probs: str | None,
         num_reads: int,
         batch_size: int,
         write_read_names: bool,
@@ -96,6 +99,8 @@ def run(*,
     min_mut_gap, mut_collisions = set_mut_gap_params(probe,
                                                      min_mut_gap,
                                                      mut_collisions)
+    mut_probs_arr = (np.array(list(map(float, mut_probs.split(","))), dtype=float)
+                     if mut_probs is not None else None)
     return dispatch(_from_param_dir,
                     num_cpus=num_cpus,
                     pass_num_cpus=False,
@@ -110,6 +115,7 @@ def run(*,
                                 read_length=read_length,
                                 p_rev=reverse_fraction,
                                 min_mut_gap=min_mut_gap,
+                                mut_probs=mut_probs_arr,
                                 mut_collisions=mut_collisions,
                                 num_reads=num_reads,
                                 batch_size=batch_size,
@@ -131,6 +137,7 @@ params = [
     opt_probe,
     opt_min_mut_gap,
     opt_mut_collisions,
+    opt_mut_probs,
     opt_num_reads,
     opt_batch_size,
     opt_write_read_names,

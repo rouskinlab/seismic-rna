@@ -103,6 +103,7 @@ class RelateRegionMutsBatch(RelateMutsBatch, RegionMutsBatch):
                  read_length: int,
                  p_rev: float,
                  min_mut_gap: int,
+                 mut_probs: np.ndarray | None,
                  mut_collisions: str,
                  num_reads: int,
                  seed: int | None,
@@ -129,6 +130,9 @@ class RelateRegionMutsBatch(RelateMutsBatch, RegionMutsBatch):
             Probability that mate 1 is reversed (paired-end reads only).
         min_mut_gap: int
             Minimum number of positions between two mutations.
+        mut_probs: np.ndarray | None
+            Probabilities of injecting a mutation at each successive position
+            5' of an existing mutation; passed directly to `inject_close_muts`.
         mut_collisions: str
             How to handle reads with mutations closer than `min_mut_gap`:
             "drop" to remove such reads, or "merge" to merge them.
@@ -184,8 +188,9 @@ class RelateRegionMutsBatch(RelateMutsBatch, RegionMutsBatch):
                 region=region,
                 seg_end5s=seg_end5s,
                 seg_end3s=seg_end3s,
-                muts=simulated_all.merge_close_muts(RelPattern.muts(),
-                                                    min_mut_gap),
+                muts=simulated_all.inject_close_muts(RelPattern.muts(),
+                                                     mut_probs,
+                                                     seed),
                 **kwargs
             )
         raise ValueError(f"Invalid mut_collisions: {repr(mut_collisions)}")

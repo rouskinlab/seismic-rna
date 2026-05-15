@@ -21,7 +21,7 @@ from .read import ReadBatch
 from ..array import calc_inverse, find_dims
 from ..header import REL_NAME, make_header
 from ..rel import MATCH, NOCOV, REL_TYPE, RelPattern
-from ..seq import Region, index_to_pos
+from ..seq import DNA, Region, index_to_pos
 from ..types import fit_uint_type
 
 NUM_READS = "reads"
@@ -434,7 +434,7 @@ class RegionMutsBatch(MutsBatch, ABC):
     def merge_close_muts(self, pattern: RelPattern, min_gap: int):
         """ Return a new muts dictionary in which mutations closer than
         min_gap are merged into a single mutation, keeping only the
-        3'-most mutation. This algorithm corrects for extra mutations 
+        3'-most mutation. This algorithm corrects for extra mutations
         occuring at non-modified positions shortly 5' of modifications,
         and therefore distinguishes probe-modified positions from all
         mutated positions. """
@@ -469,17 +469,140 @@ class RegionMutsBatch(MutsBatch, ABC):
             # Map the read indexes back to their read numbers.
             pos_mod_read_nums = self.read_nums[pos_mod_indexes]
             # Add the reads with probe modifications at this position to
-            # the new mods dictionary.
+            # the new mods dictionary. Artifact reads are those with
+            # pattern-matching mutations at pos that are too close to a
+            # true modification on the 3' side; all other reads (including
+            # those with non-pattern relationships) are kept unchanged.
+            artifact_reads = np.setdiff1d(reads_per_pos[pos],
+                                          pos_mod_read_nums,
+                                          assume_unique=True)
             mods[pos] = {
-                rel: mod_reads for rel, reads in self.muts[pos].items()
-                if (mod_reads := np.intersect1d(reads,
-                                                pos_mod_read_nums,
-                                                assume_unique=True)).size
+                rel: remaining for rel, reads in self.muts[pos].items()
+                if (remaining := np.setdiff1d(reads,
+                                              artifact_reads,
+                                              assume_unique=True)).size
             }
             # Update the most recent probe-modified position.
             last_mod_pos[pos_mod_indexes] = pos
         # Restore the original order of positions.
         return {pos: mods[pos] for pos in self.muts.keys()}
+
+    def inject_close_muts(self,
+                          pattern: RelPattern,
+                          mut_probs: Iterable[float] | np.ndarray,
+                          seed: int | None):
+        """ Return a new muts dictionary with extra mutations within
+        min_gap positions 5' of existing mutations. """
+        rng = np.random.default_rng(seed)
+        # Make a deep copy of muts; for speed, make only shallow copies
+        # of the NumPy arrays.
+        new_muts = {pos: rels.copy() for pos, rels in self.muts.items()}
+        # Validate the mutation probabilities.
+        mut_probs = np.asarray_chkfinite(mut_probs)
+        if mut_probs.ndim != 1:
+            raise ValueError(
+                f"mut_probs must have 1 dimension, but got {mut_probs.ndim}"
+            )
+        mut_window_size = mut_probs.size
+        if mut_window_size == 0:
+            # No mutations to inject.
+            return new_muts
+        if mut_probs.min() < 0:
+            raise ValueError(
+                f"All mut_probs must be ≥ 0, but got {mut_probs}"
+            )
+        if mut_probs.max() > 1:
+            raise ValueError(
+                f"All mut_probs must be ≤ 1, but got {mut_probs}"
+            )
+        if mut_probs.sum() == 0:
+            # No mutations to inject.
+            return new_muts
+        # For each position, list the reads with a mutation.
+        reads_per_pos = self.reads_per_pos(pattern)
+        # Map each unmasked position to its reference base.
+        pos_to_base = dict(self.pos_index)
+        # Determine the valid mutations for each base.
+        valid_muts = {
+            base: np.array([rel for rel in pattern.yes.mut_bits
+                            if pattern.yes.fits(base, rel)])
+            for base in DNA.alph()
+        }
+        # Iterate over positions from 3' to 5'.
+        prev_pos = self.region.end3 + 1
+        for pos in reversed(reads_per_pos.keys()):
+            # This algorithm relies on valid positions being ≥ 1 and
+            # ≤ self.region.end3.
+            assert 1 <= pos <= self.region.end3, "Position out of bounds"
+            # Positions must be in decreasing order for this algorithm
+            # to work correctly, but this should be guaranteed.
+            assert pos < prev_pos, "Positions are not in decreasing order"
+            prev_pos = pos
+            # Indexes of all reads with a mutation at this position.
+            pos_mut_indexes = self.read_indexes[reads_per_pos[pos]]
+            # 5'/3' ends of all reads with a mutation at this position.
+            pos_mut_end5s = self.seg_end5s[pos_mut_indexes]
+            pos_mut_end3s = self.seg_end3s[pos_mut_indexes]            
+            for new_pos, mut_prob in zip(
+                range(pos - 1, pos - mut_window_size - 1, -1),
+                mut_probs,
+                strict=True
+            ):
+                if new_pos not in new_muts:
+                    # Skip masked positions.
+                    continue
+                # Whether each read has a segment that covers new_pos.
+                # Note: self.seg_ends_mask does not need to be applied
+                # because any masked segment has end5 > end3, and thus
+                # the following inequality must be False automatically.
+                covers_new_pos = np.any(
+                    (pos_mut_end5s <= new_pos) & (new_pos <= pos_mut_end3s),
+                    axis=1
+                )
+                # Choose which reads to mutate at new_pos.
+                mut_new_pos = np.logical_and(
+                    covers_new_pos,
+                    rng.binomial(n=1, p=mut_prob, size=covers_new_pos.size)
+                )
+                new_pos_indexes = pos_mut_indexes[mut_new_pos]
+                if new_pos_indexes.size == 0:
+                    continue
+                # Map the indexes back to the read numbers.
+                new_pos_reads = self.read_nums[new_pos_indexes]
+                # Exclude reads that already have a mutation at new_pos
+                # under any rel; each read must appear in at most one rel
+                # per position.
+                if new_muts[new_pos]:
+                    already_mutated = np.unique(np.concatenate(
+                        list(new_muts[new_pos].values())
+                    ))
+                    new_pos_reads = np.setdiff1d(new_pos_reads,
+                                                 already_mutated,
+                                                 assume_unique=True)
+                if new_pos_reads.size == 0:
+                    continue
+                # Choose a valid mutation for each read in new_pos_reads.
+                new_base = pos_to_base[new_pos]
+                new_pos_valid_muts = valid_muts[new_base]
+                if new_pos_valid_muts.size == 0:
+                    raise ValueError("There are no relationships for "
+                                     f"base {repr(new_base)} at position "
+                                     f"{new_pos} that fit {pattern}")
+                new_pos_muts = rng.choice(new_pos_valid_muts,
+                                          new_pos_reads.size,
+                                          replace=True)
+                unique_rels, inverse = np.unique(new_pos_muts,
+                                                 return_inverse=True)
+                for i, rel in enumerate(unique_rels):
+                    reads_for_rel = new_pos_reads[inverse == i]
+                    try:
+                        new_muts[new_pos][rel] = np.union1d(
+                            new_muts[new_pos][rel], reads_for_rel
+                        )
+                    except KeyError:
+                        new_muts[new_pos][rel] = reads_for_rel
+        # Restore the original order of positions.
+        return new_muts
     
     def calc_confusion_matrix(self, pattern: RelPattern, min_gap: int = 0):
         """ Calculate the confusion matrix of mutations. """

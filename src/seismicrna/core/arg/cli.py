@@ -864,6 +864,15 @@ opt_mut_collisions = Option(
           "the mutations, DROP the read, or AUTO-select based on the probe.")
 )
 
+opt_mut_probs = Option(
+    ("--mut-probs",),
+    type=str,
+    default="0.2,0.04,0.008",
+    help=("Comma-separated probabilities of injecting a mutation at each "
+          "successive position 5' of an existing mutation (used with "
+          "--mut-collisions merge)")
+)
+
 opt_min_ninfo_pos = Option(
     ("--min-ninfo-pos",),
     type=int,
