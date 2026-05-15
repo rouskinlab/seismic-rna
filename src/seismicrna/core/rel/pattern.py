@@ -13,7 +13,7 @@ from .code import (MATCH,
                    SUB_G,
                    SUB_T)
 from ..error import IncompatibleOptionsError
-from ..seq import BASEA, BASEC, BASEG, BASET, DNA
+from ..seq import BASEA, BASEC, BASEN, BASEG, BASET, DNA
 
 READ_DEL = "D"
 READ_INS = "I"
@@ -22,10 +22,10 @@ READ_INS = "I"
 class HalfRelPattern(object):
     """ """
 
-    __slots__ = "a", "c", "g", "t"
+    __slots__ = "a", "c", "n", "g", "t"
 
-    ref_bases = "".join(DNA.four())
-    read_bases = "".join((ref_bases, READ_DEL, READ_INS))
+    ref_bases = "".join(DNA.alph())
+    read_bases = "".join(DNA.four()) + READ_DEL + READ_INS
     mut_bits = bytes([SUB_A, SUB_C, SUB_G, SUB_T, DELET, INSRT])
     fmt_plain = "{}{}"
     fmt_fancy = "{} -> {}"
@@ -178,7 +178,9 @@ class HalfRelPattern(object):
         
         if count_ref:
             # Count all matches between the read and reference.
-            codes.update(cls.as_plain(2 * base) for base in cls.ref_bases)
+            # Use DNA.four() rather than cls.ref_bases to exclude N, since
+            # a "match" at an ambiguous position is undefined.
+            codes.update(cls.as_plain(2 * base) for base in DNA.four())
         if count_sub:
             # Count all substitutions in the read.
             codes.update(cls.as_plain(f"{base1}{base2}") for base1, base2 
@@ -228,6 +230,7 @@ class HalfRelPattern(object):
         patterns = self.compile(codes)
         self.a = patterns.pop(BASEA, 0)
         self.c = patterns.pop(BASEC, 0)
+        self.n = patterns.pop(BASEN, 0)
         self.g = patterns.pop(BASEG, 0)
         self.t = patterns.pop(BASET, 0)
         if patterns:
@@ -235,7 +238,7 @@ class HalfRelPattern(object):
 
     @property
     def patterns(self):
-        return {BASEA: self.a, BASEC: self.c, BASEG: self.g, BASET: self.t}
+        return {BASEA: self.a, BASEC: self.c, BASEN: self.n, BASEG: self.g, BASET: self.t}
 
     @property
     def codes(self):
