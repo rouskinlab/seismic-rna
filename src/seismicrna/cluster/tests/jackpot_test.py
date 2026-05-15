@@ -20,6 +20,7 @@ from seismicrna.core.arg.cli import (opt_max_em_iter,
                                      opt_em_thresh,
                                      opt_jackpot_conf_level,
                                      opt_max_jackpot_quotient,
+                                     opt_max_jackpot_sims,
                                      opt_jackpot_max_data)
 from seismicrna.core.array import find_dims
 from seismicrna.core.logs import Level, get_config, set_config
@@ -399,7 +400,8 @@ class TestBootstrapJackpotScores(ut.TestCase):
     def sim_jackpot_quotient(self,
                              min_mut_gap: int,
                              mut_collisions: str,
-                             seed: int):
+                             seed: int,
+                             mut_probs: str | None = None):
         """ Simulate a dataset and return its jackpotting quotient. """
         n_pos = 60
         n_reads = 50000
@@ -447,6 +449,7 @@ class TestBootstrapJackpotScores(ut.TestCase):
                                              num_reads=n_reads,
                                              min_mut_gap=min_mut_gap,
                                              mut_collisions=mut_collisions,
+                                             mut_probs=mut_probs,
                                              seed=seed)
         # Mask the data.
         mask_dir, = run_mask([relate_report_file],
@@ -476,6 +479,7 @@ class TestBootstrapJackpotScores(ut.TestCase):
                        jackpot=True,
                        jackpot_conf_level=opt_jackpot_conf_level.default,
                        max_jackpot_quotient=opt_max_jackpot_quotient.default,
+                       max_jackpot_sims=opt_max_jackpot_sims.default,
                        jackpot_max_data=opt_jackpot_max_data.default)
         # Delete the simulated files so that this function can run again
         # if necessary.
@@ -495,7 +499,8 @@ class TestBootstrapJackpotScores(ut.TestCase):
         j_up = mean + std_err * t_up
         return j_lo, j_up
 
-    def run_ideal_jackpot(self, min_mut_gap: int, mut_collisions: str):
+    def run_ideal_jackpot(self, min_mut_gap: int, mut_collisions: str,
+                          mut_probs: str | None = None):
         """ Test that bootstrapping "perfect" data correctly returns a
         jackpotting quotient that is expected to be 1. """
         confidence_level = 0.99
@@ -505,7 +510,8 @@ class TestBootstrapJackpotScores(ut.TestCase):
         for seed in seeds:
             jackpot_quotient = self.sim_jackpot_quotient(min_mut_gap,
                                                          mut_collisions,
-                                                         seed)
+                                                         seed,
+                                                         mut_probs=mut_probs)
             log_jackpot_quotients.append(np.log(jackpot_quotient))
             jq_lo, jq_up = self.calc_confidence_interval(log_jackpot_quotients,
                                                          confidence_level)
@@ -518,13 +524,15 @@ class TestBootstrapJackpotScores(ut.TestCase):
                     break
     
     def test_ideal_jackpot_uncorrected(self):
+        self.run_ideal_jackpot(min_mut_gap=0, mut_collisions="drop")
         self.run_ideal_jackpot(min_mut_gap=0, mut_collisions="merge")
     
     def test_ideal_jackpot_drop(self):
         self.run_ideal_jackpot(min_mut_gap=4, mut_collisions="drop")
     
     def test_ideal_jackpot_merge(self):
-        self.run_ideal_jackpot(min_mut_gap=6, mut_collisions="merge")
+        self.run_ideal_jackpot(min_mut_gap=6, mut_collisions="merge",
+                               mut_probs="0.5,0.25,0.125")
 
 
 class TestLinearizeEndsMatrix(ut.TestCase):

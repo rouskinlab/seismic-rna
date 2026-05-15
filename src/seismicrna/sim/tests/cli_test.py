@@ -3,6 +3,7 @@ import unittest as ut
 
 from click.testing import CliRunner
 
+from seismicrna.core.logs import Level, get_config, set_config
 from seismicrna.sim import (abstract, clusts, ends, fastq, fold,
                             muts, params, ref, relate, total)
 
@@ -54,14 +55,24 @@ class TestSimCLIInvocation(ut.TestCase):
       itself rejects an empty invocation with exit_code 2.
     """
 
+    def setUp(self):
+        self._config = get_config()
+        set_config(verbosity=Level.ERROR, log_file_path=None,
+                   exit_on_error=True)
+
+    def tearDown(self):
+        set_config(**self._config._asdict())
+
     def _invoke_help(self, module):
         runner = CliRunner()
-        result = runner.invoke(module.cli, ["--help"])
+        with runner.isolated_filesystem():
+            result = runner.invoke(module.cli, ["--help"])
         self.assertEqual(result.exit_code, 0, msg=result.output)
 
     def _invoke_empty(self, module):
         runner = CliRunner()
-        result = runner.invoke(module.cli, [])
+        with runner.isolated_filesystem():
+            result = runner.invoke(module.cli, [])
         self.assertEqual(result.exit_code, 0, msg=result.output)
 
     # --help tests (all commands)

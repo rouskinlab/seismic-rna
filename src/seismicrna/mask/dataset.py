@@ -4,6 +4,7 @@ from functools import cached_property
 import numpy as np
 
 from .batch import MaskMutsBatch, apply_mask
+from ..core.arg import MUT_COLLISIONS_MERGE
 from .io import MaskBatchIO
 from .report import MaskReport, JoinMaskReport
 from ..core.dataset import (LoadedDataset,
@@ -153,10 +154,21 @@ class MaskMutsDataset(MaskDataset, MultistepDataset, UnbiasDataset):
                                      assume_unique=True)
         else:
             read_nums = batch2.read_nums
-        return apply_mask(batch1,
-                          read_nums,
-                          self.region,
-                          sanitize=False)
+        masked_batch = apply_mask(batch1,
+                                  read_nums,
+                                  self.region,
+                                  sanitize=False)
+        if self.min_mut_gap > 0 and self.mut_collisions == MUT_COLLISIONS_MERGE:
+            return MaskMutsBatch(
+                batch=masked_batch.batch,
+                read_nums=masked_batch.read_nums,
+                region=masked_batch.region,
+                seg_end5s=masked_batch.seg_end5s,
+                seg_end3s=masked_batch.seg_end3s,
+                muts=masked_batch.merge_close_muts(self.pattern,
+                                                   self.min_mut_gap),
+            )
+        return masked_batch
 
 
 class JoinMaskMutsDataset(MaskDataset, JoinMutsDataset, MergedUnbiasDataset):

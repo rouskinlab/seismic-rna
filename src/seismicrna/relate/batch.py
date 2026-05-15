@@ -183,14 +183,25 @@ class RelateRegionMutsBatch(RelateMutsBatch, RegionMutsBatch):
                 **kwargs
             )
         if mut_collisions == MUT_COLLISIONS_MERGE:
-            # Merge mutations that are too close into a single mutation.
+            # First merge to keep only true modifications.
+            merged = cls(
+                region=region,
+                seg_end5s=seg_end5s,
+                seg_end3s=seg_end3s,
+                muts=simulated_all.merge_close_muts(RelPattern.muts(),
+                                                    min_mut_gap),
+                **kwargs
+            )
+            if mut_probs is None:
+                return merged
+            # Then inject RT artifacts 5' of true modifications only.
             return cls(
                 region=region,
                 seg_end5s=seg_end5s,
                 seg_end3s=seg_end3s,
-                muts=simulated_all.inject_close_muts(RelPattern.muts(),
-                                                     mut_probs,
-                                                     seed),
+                muts=merged.inject_close_muts(RelPattern.muts(),
+                                              mut_probs,
+                                              seed),
                 **kwargs
             )
         raise ValueError(f"Invalid mut_collisions: {repr(mut_collisions)}")
