@@ -987,6 +987,13 @@ opt_max_jackpot_quotient = Option(
     help="Remove runs whose jackpotting quotient exceeds this limit"
 )
 
+opt_max_jackpot_sims = Option(
+    ("--max-jackpot-sims",),
+    type=int,
+    default=12,
+    help="Maximum number of simulations to compute the jackpotting quotient"
+)
+
 opt_jackpot_max_data = Option(
     ("--jackpot-max-data",),
     type=int,

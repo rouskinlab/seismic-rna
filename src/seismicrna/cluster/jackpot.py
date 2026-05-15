@@ -928,6 +928,7 @@ def bootstrap_jackpot_scores(uniq_end5s: np.ndarray,
                              real_jackpot_score: float,
                              confidence_level: float,
                              max_jackpot_quotient: float,
+                             max_jackpot_sims: int,
                              seed: int | None):
     """ Bootstrap jackpotting scores from the null model.
 
@@ -965,6 +966,9 @@ def bootstrap_jackpot_scores(uniq_end5s: np.ndarray,
     max_jackpot_quotient: float
         Stop bootstrapping once the confidence interval lies entirely
         above or entirely below this threshold.
+    max_jackpot_sims: int
+        Maximum number of simulations to calculate a null jackpotting
+        score.
     seed: int | None
         Seed for the random number generator stream.
 
@@ -999,15 +1003,21 @@ def bootstrap_jackpot_scores(uniq_end5s: np.ndarray,
     end5s = np.repeat(uniq_end5s, counts_per_uniq)
     end3s = np.repeat(uniq_end3s, counts_per_uniq)
     null_jackpotting_scores = list()
-    for num_obs, log_exp in sim_obs_exp(end5s,
-                                        end3s,
-                                        p_mut,
-                                        p_ends,
-                                        p_clust,
-                                        min_mut_gap,
-                                        mut_collisions,
-                                        unmasked,
-                                        seed=seed):
+    obs_exps = sim_obs_exp(end5s,
+                            end3s,
+                            p_mut,
+                            p_ends,
+                            p_clust,
+                            min_mut_gap,
+                            mut_collisions,
+                            unmasked,
+                            seed=seed)
+    jq_ci_lo = np.nan
+    jq_ci_up = np.nan
+    conf_pct = (f"{round(confidence_level * 100., 1)} % confidence interval "
+                "for the mean jackpotting quotient")
+    for _ in range(max_jackpot_sims):
+        num_obs, log_exp = next(obs_exps)
         # Calculate this null model's jackpotting score.
         null_g_anomalies = calc_semi_g_anomaly(num_obs, log_exp)
         null_jackpotting_score = calc_jackpot_score(null_g_anomalies,
@@ -1024,8 +1034,7 @@ def bootstrap_jackpot_scores(uniq_end5s: np.ndarray,
         jq_ci_lo = calc_jackpot_quotient(real_jackpot_score, js_ci_up)
         jq_ci_up = calc_jackpot_quotient(real_jackpot_score, js_ci_lo)
         if not np.isnan(jq_ci_lo) and not np.isnan(jq_ci_up):
-            logger.detail(f"{confidence_level * 100.} % confidence interval "
-                          f"for jackpotting quotient: {jq_ci_lo} - {jq_ci_up}")
+            logger.detail(f"{conf_pct}: {jq_ci_lo} - {jq_ci_up}")
         # Stop when the confidence interval lies entirely below or above
         # max_jackpot_quotient, so it's clear whether the jackpotting
         # quotient is less or greater than max_jackpot_quotient.
@@ -1033,5 +1042,15 @@ def bootstrap_jackpot_scores(uniq_end5s: np.ndarray,
         # because this expression will evaluate to True after the first
         # iteration, when jq_ci_lo and jq_ci_up will both be NaN.
         if jq_ci_lo > max_jackpot_quotient or max_jackpot_quotient > jq_ci_up:
-            logger.routine("Ended boostrapping null jackpotting scores")
-            return np.array(null_jackpotting_scores)
+            break
+    else:
+        # The confidence interval still contains max_jackpot_quotient
+        # after max_jackpot_sims simulations.
+        logger.warning(
+            f"After the maximum of {max_jackpot_sims} simulations, the "
+            f"{conf_pct} is {jq_ci_lo} - {jq_ci_up}, which still contains "
+            f"the maximum jackpotting quotient {max_jackpot_quotient}, "
+            "making the data ambiguously jackpotted"
+        )
+    logger.routine("Ended boostrapping null jackpotting scores")
+    return np.array(null_jackpotting_scores)

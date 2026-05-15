@@ -107,6 +107,7 @@ class EMRun(object):
                  jackpot: bool,
                  jackpot_conf_level: float,
                  max_jackpot_quotient: float,
+                 max_jackpot_sims: int,
                  jackpot_max_data: int):
         """
         Parameters
@@ -134,6 +135,8 @@ class EMRun(object):
             Confidence level for the jackpotting confidence interval.
         max_jackpot_quotient: float
             Maximum acceptable jackpotting quotient.
+        max_jackpot_sims: int
+            Maximum number of simulations to compute the jackpotting quotient.
         jackpot_max_data: int
             Skip the jackpotting calculation if reads × positions exceeds
             this limit; returns nan instead.
@@ -161,6 +164,7 @@ class EMRun(object):
         self._jackpot = jackpot
         self._jackpot_conf_level = jackpot_conf_level
         self._max_jackpot_quotient = max_jackpot_quotient
+        self._max_jackpot_sims = max_jackpot_sims
         self._jackpot_max_data = jackpot_max_data
         # Mutation rates adjusted for observer bias.
         # 2D (all positions x clusters)
@@ -508,6 +512,7 @@ class EMRun(object):
                                         self.jackpot_score,
                                         self._jackpot_conf_level,
                                         self._max_jackpot_quotient,
+                                        self._max_jackpot_sims,
                                         seed=self._seed)
 
     @cached_property
