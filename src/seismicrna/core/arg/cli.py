@@ -1693,6 +1693,15 @@ opt_all_pos = Option(
     help="Export all positions (not just unmasked positions)"
 )
 
+# Import MM
+
+opt_importmm_sample = Option(
+    ("--sample", "-s"),
+    type=str,
+    required=True,
+    help="Give this name to the imported sample"
+)
+
 # Simulation
 
 opt_sim_dir = Option(
