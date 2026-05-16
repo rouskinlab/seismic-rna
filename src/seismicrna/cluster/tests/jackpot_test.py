@@ -21,7 +21,8 @@ from seismicrna.core.arg.cli import (opt_max_em_iter,
                                      opt_jackpot_conf_level,
                                      opt_max_jackpot_quotient,
                                      opt_max_jackpot_sims,
-                                     opt_jackpot_max_data)
+                                     opt_jackpot_max_data,
+                                     PROBE_DMS)
 from seismicrna.core.array import find_dims
 from seismicrna.core.logs import Level, get_config, set_config
 from seismicrna.core.random import get_random_integer_generator
@@ -413,7 +414,7 @@ class TestBootstrapJackpotScores(ut.TestCase):
                     sim_dir=self.SIM_DIR,
                     seed=seed)
         fasta = self.SIM_DIR.joinpath("refs", f"{self.REFS}.fa")
-        run_sim_fold(fasta, fold_max=n_clusts, sim_dir=self.SIM_DIR)
+        run_sim_fold(fasta, probe=PROBE_DMS, fold_max=n_clusts, sim_dir=self.SIM_DIR)
         param_dir = self.SIM_DIR.joinpath("params", self.REF, "full")
         ct_file = param_dir.joinpath("simulated.ct")
         pmut = [("loq", 0.),
@@ -440,6 +441,7 @@ class TestBootstrapJackpotScores(ut.TestCase):
         run_sim_params(ct_file=[ct_file],
                        pmut_paired=pmut_paired,
                        pmut_unpaired=pmut_unpaired,
+                       probe=PROBE_DMS,
                        center_fmean=0.5,
                        length_fmean=0.5,
                        clust_conc=2.,

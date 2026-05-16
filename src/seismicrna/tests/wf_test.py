@@ -10,7 +10,7 @@ from click.testing import CliRunner
 from seismicrna.align import run as run_align
 from seismicrna.cluster import run as run_cluster
 from seismicrna.core import path
-from seismicrna.core.arg.cli import GROUP_BY_K, GROUP_ALL, KEY_PEARSON
+from seismicrna.core.arg.cli import GROUP_BY_K, GROUP_ALL, KEY_PEARSON, PROBE_DMS
 from seismicrna.core.header import list_ks_clusts, K_CLUST_KEY
 from seismicrna.core.logs import Level, get_config, set_config
 from seismicrna.core.ngs import DuplicateSampleReferenceError
@@ -101,10 +101,11 @@ class TestWorkflow(ut.TestCase):
             run_sim_ref(refs=ref, ref=ref, reflen=reflen, sim_dir=self.SIM_DIR, seed=0)
             fasta = self.SIM_DIR.joinpath("refs", f"{ref}.fa")
             all_fastas.append(fasta)
-            run_sim_fold(fasta, fold_max=num_structs, sim_dir=self.SIM_DIR)
+            run_sim_fold(fasta, probe=PROBE_DMS, fold_max=num_structs,
+                         sim_dir=self.SIM_DIR)
             param_dir = self.SIM_DIR.joinpath("params", ref, "full")
             ct_file = param_dir.joinpath("simulated.ct")
-            run_sim_params(ct_file=[ct_file], seed=0)
+            run_sim_params(ct_file=[ct_file], probe=PROBE_DMS, seed=0)
             for sample in samples:
                 fastqs = run_sim_fastq(input_path=(),
                                        param_dir=(param_dir,),
@@ -363,10 +364,11 @@ class TestWorkflow(ut.TestCase):
             run_sim_ref(refs=ref, ref=ref, reflen=reflen, sim_dir=self.SIM_DIR, seed=0)
             fasta = self.SIM_DIR.joinpath("refs", f"{ref}.fa")
             all_fastas.append(fasta)
-            run_sim_fold(fasta, fold_max=num_structs, sim_dir=self.SIM_DIR)
+            run_sim_fold(fasta, probe=PROBE_DMS, fold_max=num_structs,
+                         sim_dir=self.SIM_DIR)
             param_dir = self.SIM_DIR.joinpath("params", ref, "full")
             ct_file = param_dir.joinpath("simulated.ct")
-            run_sim_params(ct_file=[ct_file], seed=0)
+            run_sim_params(ct_file=[ct_file], probe=PROBE_DMS, seed=0)
             for sample in samples:
                 fastqs = run_sim_fastq(input_path=(),
                                        param_dir=(param_dir,),
@@ -624,7 +626,8 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
                             ref=self.REF,
                             refs=self.REFS,
                             reflen=60)
-        ct_file, = run_sim_fold(fasta, sim_dir=self.SIM_DIR, fold_max=1)
+        ct_file, = run_sim_fold(fasta, probe=PROBE_DMS, sim_dir=self.SIM_DIR,
+                                fold_max=1)
         dmfastqxs = list()
         for sim_dir, out_dir in zip(self.SIM_DIRS, self.OUT_DIRS, strict=True):
             ct_file_copy = path.transpath(sim_dir,
@@ -634,7 +637,7 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
             param_dir = ct_file_copy.parent
             param_dir.mkdir(parents=True)
             ct_file_copy.hardlink_to(ct_file)
-            run_sim_params(ct_file=[ct_file_copy])
+            run_sim_params(ct_file=[ct_file_copy], probe=PROBE_DMS)
             dmfastqxs.append(run_sim_fastq(input_path=[],
                                            param_dir=[param_dir],
                                            sample=self.SAMPLE,

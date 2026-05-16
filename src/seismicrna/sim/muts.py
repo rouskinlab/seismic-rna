@@ -11,11 +11,17 @@ from ..core import path
 from ..core.arg import (opt_ct_file,
                         opt_pmut_paired,
                         opt_pmut_unpaired,
+                        opt_probe,
                         opt_vmut_paired,
                         opt_vmut_unpaired,
                         opt_force,
                         opt_num_cpus,
-                        opt_seed)
+                        opt_seed,
+                        PROBE_DMS,
+                        PROBE_ETC,
+                        PROBE_NONE,
+                        PROBE_SHAPE,
+                        PROBES)
 from ..core.error import NoDataError
 from ..core.header import RelClustHeader, list_clusts, make_header, parse_header
 from ..core.rel import (MATCH,
@@ -74,25 +80,25 @@ def verify_proportions(p: Any):
 
 
 def make_pmut_means(*,
-                    ploq: float = 0.02,
+                    ploq: float,
                     pam: float,
-                    pac: float = 0.30,
-                    pag: float = 0.16,
-                    pat: float = 0.50,
+                    pac: float,
+                    pag: float,
+                    pat: float,
                     pcm: float,
-                    pca: float = 0.32,
-                    pcg: float = 0.32,
-                    pct: float = 0.32,
+                    pca: float,
+                    pcg: float,
+                    pct: float,
                     pgm: float,
-                    pga: float = 0.32,
-                    pgc: float = 0.32,
-                    pgt: float = 0.32,
+                    pga: float,
+                    pgc: float,
+                    pgt: float,
                     ptm: float,
-                    pta: float = 0.32,
-                    ptc: float = 0.32,
-                    ptg: float = 0.32,
-                    pnm: float = 0.00,
-                    pnd: float = 0.04):
+                    pta: float,
+                    ptc: float,
+                    ptg: float,
+                    pnm: float,
+                    pnd: float):
     """ Generate mean mutation rates.
 
     Mutations are assumed to behave as follows:
@@ -209,34 +215,74 @@ def make_pmut_means(*,
     return pmut_means
 
 
-def make_pmut_means_paired(pam: float = 0.005,
-                           pcm: float = 0.003,
-                           pgm: float = 0.003,
-                           ptm: float = 0.001,
-                           pnm: float = 0.002,
-                           **kwargs):
+_PMUT_MEANS_PAIRED_DEFAULTS = {
+    PROBE_DMS: dict(ploq=0.02,
+                    pam=0.005, pac=0.30, pag=0.16, pat=0.50,
+                    pcm=0.003, pca=0.32, pcg=0.32, pct=0.32,
+                    pgm=0.003, pga=0.32, pgc=0.32, pgt=0.32,
+                    ptm=0.001, pta=0.32, ptc=0.32, ptg=0.32,
+                    pnm=0.002, pnd=0.04),
+    PROBE_SHAPE: dict(ploq=0.02,
+                      pam=0.005, pac=0.30, pag=0.16, pat=0.50,
+                      pcm=0.003, pca=0.32, pcg=0.32, pct=0.32,
+                      pgm=0.003, pga=0.32, pgc=0.32, pgt=0.32,
+                      ptm=0.001, pta=0.32, ptc=0.32, ptg=0.32,
+                      pnm=0.002, pnd=0.04),
+    PROBE_ETC: dict(ploq=0.02,
+                    pam=0.005, pac=0.30, pag=0.16, pat=0.50,
+                    pcm=0.003, pca=0.32, pcg=0.32, pct=0.32,
+                    pgm=0.003, pga=0.32, pgc=0.32, pgt=0.32,
+                    ptm=0.001, pta=0.32, ptc=0.32, ptg=0.32,
+                    pnm=0.002, pnd=0.04),
+    PROBE_NONE: dict(ploq=0.02,
+                     pam=0.005, pac=0.30, pag=0.16, pat=0.50,
+                     pcm=0.003, pca=0.32, pcg=0.32, pct=0.32,
+                     pgm=0.003, pga=0.32, pgc=0.32, pgt=0.32,
+                     ptm=0.001, pta=0.32, ptc=0.32, ptg=0.32,
+                     pnm=0.002, pnd=0.04),
+}
+
+
+def make_pmut_means_paired(probe: str, **kwargs: float):
     """ Generate mean mutation rates for paired bases. """
-    return make_pmut_means(pam=pam,
-                           pcm=pcm,
-                           pgm=pgm,
-                           ptm=ptm,
-                           pnm=pnm,
-                           **kwargs)
+    if probe not in PROBES:
+        raise ValueError(f"probe must be one of {PROBES}, but got {probe!r}")
+    return make_pmut_means(**(_PMUT_MEANS_PAIRED_DEFAULTS[probe] | kwargs))
 
 
-def make_pmut_means_unpaired(pam: float = 0.045,
-                             pcm: float = 0.039,
-                             pgm: float = 0.003,
-                             ptm: float = 0.001,
-                             pnm: float = 0.002,
-                             **kwargs):
+_PMUT_MEANS_UNPAIRED_DEFAULTS = {
+    PROBE_DMS: dict(ploq=0.02,
+                    pam=0.045, pac=0.30, pag=0.16, pat=0.50,
+                    pcm=0.039, pca=0.32, pcg=0.32, pct=0.32,
+                    pgm=0.003, pga=0.32, pgc=0.32, pgt=0.32,
+                    ptm=0.001, pta=0.32, ptc=0.32, ptg=0.32,
+                    pnm=0.002, pnd=0.04),
+    PROBE_SHAPE: dict(ploq=0.02,
+                      pam=0.045, pac=0.30, pag=0.16, pat=0.50,
+                      pcm=0.039, pca=0.32, pcg=0.32, pct=0.32,
+                      pgm=0.003, pga=0.32, pgc=0.32, pgt=0.32,
+                      ptm=0.001, pta=0.32, ptc=0.32, ptg=0.32,
+                      pnm=0.002, pnd=0.04),
+    PROBE_ETC: dict(ploq=0.02,
+                    pam=0.045, pac=0.30, pag=0.16, pat=0.50,
+                    pcm=0.039, pca=0.32, pcg=0.32, pct=0.32,
+                    pgm=0.003, pga=0.32, pgc=0.32, pgt=0.32,
+                    ptm=0.001, pta=0.32, ptc=0.32, ptg=0.32,
+                    pnm=0.002, pnd=0.04),
+    PROBE_NONE: dict(ploq=0.02,
+                     pam=0.045, pac=0.30, pag=0.16, pat=0.50,
+                     pcm=0.039, pca=0.32, pcg=0.32, pct=0.32,
+                     pgm=0.003, pga=0.32, pgc=0.32, pgt=0.32,
+                     ptm=0.001, pta=0.32, ptc=0.32, ptg=0.32,
+                     pnm=0.002, pnd=0.04),
+}
+
+
+def make_pmut_means_unpaired(probe: str, **kwargs: float):
     """ Generate mean mutation rates for unpaired bases. """
-    return make_pmut_means(pam=pam,
-                           pcm=pcm,
-                           pgm=pgm,
-                           ptm=ptm,
-                           pnm=pnm,
-                           **kwargs)
+    if probe not in PROBES:
+        raise ValueError(f"probe must be one of {PROBES}, but got {probe!r}")
+    return make_pmut_means(**(_PMUT_MEANS_UNPAIRED_DEFAULTS[probe] | kwargs))
 
 
 def sim_pmut(positions: pd.Index,
@@ -308,6 +354,7 @@ def run_struct(ct_file: Path,
                pmut_unpaired: Iterable[tuple[str, float]],
                vmut_paired: float,
                vmut_unpaired: float,
+               probe: str,
                force: bool,
                seed: int | None):
     """
@@ -345,8 +392,8 @@ def run_struct(ct_file: Path,
     pmut_file = ct_file.with_suffix(path.PARAM_MUTS_EXT)
     if need_write(pmut_file, force):
         # Calculate mean mutation rates.
-        pm = make_pmut_means_paired(**_make_pmut_means_kwargs(pmut_paired))
-        um = make_pmut_means_unpaired(**_make_pmut_means_kwargs(pmut_unpaired))
+        pm = make_pmut_means_paired(probe, **_make_pmut_means_kwargs(pmut_paired))
+        um = make_pmut_means_unpaired(probe, **_make_pmut_means_kwargs(pmut_unpaired))
         # Load the structures.
         structures = list(from_ct(ct_file))
         if not structures:
@@ -436,6 +483,7 @@ def run(*,
         pmut_unpaired: Iterable[tuple[str, float]],
         vmut_paired: float,
         vmut_unpaired: float,
+        probe: str,
         force: bool,
         num_cpus: int,
         seed: int | None):
@@ -451,6 +499,7 @@ def run(*,
                                 pmut_unpaired=pmut_unpaired,
                                 vmut_paired=vmut_paired,
                                 vmut_unpaired=vmut_unpaired,
+                                probe=probe,
                                 force=force,
                                 seed=seed))
 
@@ -461,6 +510,7 @@ params = [
     opt_pmut_unpaired,
     opt_vmut_paired,
     opt_vmut_unpaired,
+    opt_probe,
     opt_force,
     opt_num_cpus,
     opt_seed,

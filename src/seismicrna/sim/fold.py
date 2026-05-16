@@ -8,9 +8,11 @@ from .ref import get_fasta_path
 from ..core import path
 from ..core.arg import (FOLD_BACKEND_FOLD,
                         arg_fasta,
+                        opt_fold_backend,
                         opt_sim_dir,
                         opt_tmp_pfx,
                         opt_profile_name,
+                        opt_probe,
                         opt_fold_regions_file,
                         opt_fold_coords,
                         opt_fold_primers,
@@ -33,6 +35,7 @@ from ..core.run import run_func
 from ..core.seq import DNA, RefRegions, Region, parse_fasta, write_fasta
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write
+from ..fold.main import resolve_fold_backend
 from ..fold.profile import celsius_to_kelvin, guess_temperature_to_celsius
 from ..fold.rnastructure import make_rnastructure_cmd, retitle_ct, require_data_path
 
@@ -53,6 +56,7 @@ def fold_region(region: Region, *,
                 sim_dir: Path,
                 tmp_dir: Path,
                 profile_name: str,
+                fold_backend: str,
                 fold_constraint: Path | None,
                 fold_temp: float,
                 fold_md: int,
@@ -116,7 +120,7 @@ def fold_region(region: Region, *,
             run_cmd(args_to_cmd(make_rnastructure_cmd(
                 fasta_tmp,
                 ct_tmp,
-                fold_backend=FOLD_BACKEND_FOLD,
+                fold_backend=fold_backend,
                 dms_file=None,
                 shape_file=None,
                 deigan_slope=None,
@@ -148,6 +152,8 @@ def fold_region(region: Region, *,
 def run(fasta: str | Path, *,
         sim_dir: str | Path,
         profile_name: str,
+        probe: str,
+        fold_backend: str,
         fold_coords: Iterable[tuple[str, int, int]],
         fold_primers: Iterable[tuple[str, DNA, DNA]],
         fold_regions_file: str | None,
@@ -207,6 +213,7 @@ def run(fasta: str | Path, *,
     # Check for the dependencies and the DATAPATH environment variable.
     require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
     require_data_path()
+    fold_backend = resolve_fold_backend(probe, fold_backend)
     # List the regions.
     regions = RefRegions(parse_fasta(Path(fasta), DNA),
                          regs_file=(Path(fold_regions_file)
@@ -224,6 +231,7 @@ def run(fasta: str | Path, *,
                     kwargs=dict(sim_dir=Path(sim_dir),
                                 tmp_dir=tmp_dir,
                                 profile_name=profile_name,
+                                fold_backend=fold_backend,
                                 fold_constraint=optional_path(fold_constraint),
                                 fold_temp=fold_temp,
                                 fold_md=fold_md,
@@ -238,6 +246,8 @@ params = [arg_fasta,
           opt_sim_dir,
           opt_tmp_pfx,
           opt_profile_name,
+          opt_probe,
+          opt_fold_backend,
           opt_fold_regions_file,
           opt_fold_coords,
           opt_fold_primers,

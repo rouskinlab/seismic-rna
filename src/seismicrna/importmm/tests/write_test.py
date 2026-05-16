@@ -263,6 +263,7 @@ class TestRFCountIntegration(ut.TestCase):
         from seismicrna.align import run as run_align
         from seismicrna.relate import run as run_relate
         from seismicrna.sim.ref import run as run_sim_ref
+        from seismicrna.core.arg.cli import PROBE_DMS
         from seismicrna.sim.fold import run as run_sim_fold
         from seismicrna.sim.params import run as run_sim_params
         from seismicrna.sim.fastq import run as run_sim_fastq
@@ -294,7 +295,8 @@ class TestRFCountIntegration(ut.TestCase):
                 fasta = sim_dir / "refs" / f"{self._REF}.fa"
 
                 # 2. Fold (single MFE structure; requires RNAstructure/ViennaRNA).
-                run_sim_fold(fasta, sim_dir=sim_dir, fold_mfe=True, fold_max=1,
+                run_sim_fold(fasta, probe=PROBE_DMS, sim_dir=sim_dir,
+                             fold_mfe=True, fold_max=1,
                              num_cpus=1, tmp_pfx=tmp_pfx)
 
                 # 3. Sim params: substitutions only, no deletions, no low-quality
@@ -314,6 +316,7 @@ class TestRFCountIntegration(ut.TestCase):
                 ]
                 run_sim_params(ct_file=[param_dir / "simulated.ct"],
                                pmut_paired=pmut, pmut_unpaired=pmut,
+                               probe=PROBE_DMS,
                                seed=42)
 
                 # 4. Simulate 500 single-end reads with read_length=50.
