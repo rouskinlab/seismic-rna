@@ -724,34 +724,34 @@ opt_primer_gap = Option(
     help="Leave a gap of this many bases between the primer and the region"
 )
 
-opt_mask_del = Option(
-    ("--mask-del/--keep-del",),
+opt_count_del = Option(
+    ("--count-del/--no-del",),
     type=bool,
     default=True,
-    help="Mask deletions"
+    help="Count deletions as mutations"
 )
 
-opt_mask_ins = Option(
-    ("--mask-ins/--keep-ins",),
+opt_count_ins = Option(
+    ("--count-ins/--no-ins",),
     type=bool,
     default=True,
-    help="Mask insertions"
+    help="Count insertions as mutations"
 )
 
-opt_count_mut = Option(
-    ("--count-mut",),
+opt_no_mut = Option(
+    ("--no-mut",),
     type=str,
     multiple=True,
     default=(),
-    help="Count only this type of mutation"
+    help="Do not count this type of mutation (overrides --count-del/ins)"
 )
 
-opt_mask_mut = Option(
-    ("--mask-mut",),
+opt_only_mut = Option(
+    ("--only-mut",),
     type=str,
     multiple=True,
     default=(),
-    help="Mask this type of mutation"
+    help="Count only this type of mutation (overrides other mutation settings)"
 )
 
 opt_mask_polya = Option(

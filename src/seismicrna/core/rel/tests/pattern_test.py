@@ -121,18 +121,18 @@ class TestHalfRelPattern(ut.TestCase):
         self.assertDictEqual(pattern.patterns,
                              {"A": 12, "C": 12, "N": 12, "G": 12, "T": 12})
         pattern = HalfRelPattern.from_counts(count_ref=True,
-                                             discount=["A -> G", "cc", "ta"])
+                                             no_count=["A -> G", "cc", "ta"])
         self.assertDictEqual(pattern.patterns,
                              {"A": 1, "C": 0, "N": 0, "G": 1, "T": 1})
         pattern = HalfRelPattern.from_counts(count_sub=True,
-                                             discount=["A -> G", "cc", "ta"])
+                                             no_count=["A -> G", "cc", "ta"])
         self.assertDictEqual(pattern.patterns,
                              {"A": 160, "C": 208, "N": 0, "G": 176, "T": 96})
         pattern = HalfRelPattern.from_counts(count_ref=True,
                                              count_sub=True,
                                              count_del=True,
                                              count_ins=True,
-                                             discount=["ag", "G -> C"])
+                                             no_count=["ag", "G -> C"])
         self.assertDictEqual(pattern.patterns,
                              {"A": 175, "C": 223, "N": 14, "G": 159, "T": 127})
 
@@ -248,19 +248,19 @@ class TestRelPattern(ut.TestCase):
                                       count_ins=count_ins):
                         pattern = RelPattern.from_counts(count_del=count_del,
                                                          count_ins=count_ins,
-                                                         discount=[fancy])
+                                                         no_count=[fancy])
                         self.assertIsInstance(pattern, RelPattern)
                         self.assertEqual(
                             pattern.yes,
                             HalfRelPattern.from_counts(count_sub=True,
                                                        count_del=count_del,
                                                        count_ins=count_ins,
-                                                       discount=[fancy])
+                                                       no_count=[fancy])
                         )
                         self.assertEqual(
                             pattern.nos,
                             HalfRelPattern.from_counts(count_ref=True,
-                                                       discount=[fancy])
+                                                       no_count=[fancy])
                         )
 
     def test_allc(self):

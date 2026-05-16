@@ -1275,7 +1275,7 @@ class TestCalcCountPerRead(ut.TestCase):
         self.assertIsInstance(fits, pd.Series)
         self.assertTrue(fits.equals(fexp))
         pattern = RelPattern(HalfRelPattern.from_counts(count_sub=True,
-                                                        discount=["at", "cg"]),
+                                                        no_count=["at", "cg"]),
                              HalfRelPattern.refs())
         iexp = pd.Series([2, 1, 4, 2, 2, 4, 3, 5, 4, 2], read_nums)
         fexp = pd.Series([0, 0, 1, 0, 0, 1, 0, 0, 2, 0], read_nums)

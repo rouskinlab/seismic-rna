@@ -143,7 +143,7 @@ class HalfRelPattern(object):
                     count_del: bool = False,
                     count_ins: bool = False,
                     count: Iterable[str] = (),
-                    discount: Iterable[str] = ()):
+                    no_count: Iterable[str] = ()):
         """
         Return a new SemiBitCaller by specifying which general types of
         relationships are to be counted.
@@ -158,7 +158,7 @@ class HalfRelPattern(object):
             Whether to call True all deletions in the read.
         count_ins: bool = False
             Whether to call True all insertions in the read.
-        discount: Iterable[str] = ()
+        no_count: Iterable[str] = ()
             Do not count any of these relationships between the read and
             the reference, even if they would be counted according to
             any of the other parameters. Should be an iterable of str in
@@ -169,13 +169,13 @@ class HalfRelPattern(object):
         HalfRelPattern
             New HalfRefPattern instance that counts the specified bytes.
         """
-        
+
         codes: set[str] = set(map(cls.as_plain, count))
-        discount = set(map(cls.as_plain, discount))
-        intersect_codes = codes & discount
+        no_count = set(map(cls.as_plain, no_count))
+        intersect_codes = codes & no_count
         if intersect_codes:
-            raise IncompatibleOptionsError(f"Got the same mutations to count and discount {intersect_codes}.")
-        
+            raise IncompatibleOptionsError(f"Got the same mutations in count and no_count {intersect_codes}.")
+
         if count_ref:
             # Count all matches between the read and reference.
             # Use DNA.four() rather than cls.ref_bases to exclude N, since
@@ -183,7 +183,7 @@ class HalfRelPattern(object):
             codes.update(cls.as_plain(2 * base) for base in DNA.four())
         if count_sub:
             # Count all substitutions in the read.
-            codes.update(cls.as_plain(f"{base1}{base2}") for base1, base2 
+            codes.update(cls.as_plain(f"{base1}{base2}") for base1, base2
                          in product("".join(DNA.four()), repeat=2)
                          if base1 != base2)
         if count_del:
@@ -192,8 +192,8 @@ class HalfRelPattern(object):
         if count_ins:
             # Count all insertions in the read.
             codes.update(cls.as_plain(f"{base}I") for base in cls.ref_bases)
-        # Remove all the codes to be discounted.
-        codes -= discount
+        # Remove codes in no_count.
+        codes -= no_count
         return cls(*codes)
 
     @classmethod
@@ -277,16 +277,16 @@ class RelPattern(object):
     def from_counts(cls,
                     count_del: bool = False,
                     count_ins: bool = False,
-                    discount: Iterable[str] = ()):
+                    no_count: Iterable[str] = ()):
         """ Return a new RelPattern by specifying which general types of
-        mutations are to be counted, with optional ones to discount. """
-        discount = list(discount)
+        mutations are to be counted, with optional ones to not count. """
+        no_count = list(no_count)
         return cls(HalfRelPattern.from_counts(count_sub=True,
                                               count_del=count_del,
                                               count_ins=count_ins,
-                                              discount=discount),
+                                              no_count=no_count),
                    HalfRelPattern.from_counts(count_ref=True,
-                                              discount=discount))
+                                              no_count=no_count))
 
     @classmethod
     @cache

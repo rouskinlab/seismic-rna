@@ -769,38 +769,37 @@ class Masker(object):
         return f"{type(self).__name__}: {self.dataset} over {self.region}"
 
 
-def get_pattern(mask_del: bool,
-                mask_ins: bool,
-                mask_mut: Iterable[str],
-                count_mut: Iterable[str]):
+def get_pattern(count_del: bool,
+                count_ins: bool,
+                no_mut: Iterable[str],
+                only_mut: Iterable[str]):
     """ Build a RelPattern from masking and counting options.
 
     Parameters
     ----------
-    mask_del: bool
-        If True, treat deletions as non-mutations (discount them).
-    mask_ins: bool
-        If True, treat insertions as non-mutations (discount them).
-    mask_mut: Iterable[str]
-        Relationship codes to discount from mutations.
-    count_mut: Iterable[str]
+    count_del: bool
+        If True, count deletions as mutations.
+    count_ins: bool
+        If True, count insertions as mutations.
+    no_mut: Iterable[str]
+        Relationship codes to not count as mutations.
+    only_mut: Iterable[str]
         If non-empty, count only the specified relationships as
-        mutations (overrides the default all-mutation pattern).
+        mutations; deletions and insertions are suppressed unless
+        explicitly listed here (overrides the default all-mutation
+        pattern, including count_del and count_ins).
 
     Returns
     -------
     RelPattern
         Relationship pattern for use in masking and tabulation.
     """
-    if count_mut:
-        return RelPattern(HalfRelPattern.from_counts(count_sub=False,
-                                                     count_del=not mask_del,
-                                                     count_ins=not mask_ins,
-                                                     count=count_mut,
-                                                     discount=mask_mut),
+    if only_mut:
+        return RelPattern(HalfRelPattern.from_counts(count=only_mut,
+                                                     no_count=no_mut),
                           HalfRelPattern.from_counts(count_ref=True,
-                                                     discount=mask_mut))
-    return RelPattern.from_counts(not mask_del, not mask_ins, mask_mut)
+                                                     no_count=no_mut))
+    return RelPattern.from_counts(count_del, count_ins, no_mut)
 
 
 @with_tmp_dir(pass_keep_tmp=False)
@@ -808,10 +807,10 @@ def mask_region(dataset: RelateMutsDataset | PoolMutsDataset,
                 region: Region, *,
                 branch: str,
                 tmp_dir: Path,
-                mask_del: bool,
-                mask_ins: bool,
-                mask_mut: Iterable[str],
-                count_mut: Iterable[str],
+                count_del: bool,
+                count_ins: bool,
+                no_mut: Iterable[str],
+                only_mut: Iterable[str],
                 mask_pos_table: bool,
                 mask_read_table: bool,
                 force: bool,
@@ -826,7 +825,7 @@ def mask_region(dataset: RelateMutsDataset | PoolMutsDataset,
                                          path.REF: dataset.ref,
                                          path.REG: region.name})
     if need_write(report_file, force):
-        pattern = get_pattern(mask_del, mask_ins, mask_mut, count_mut)
+        pattern = get_pattern(count_del, count_ins, no_mut, only_mut)
         masker = Masker(dataset,
                         region,
                         pattern,

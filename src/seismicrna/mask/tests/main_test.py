@@ -196,8 +196,8 @@ class TestMask(ut.TestCase, ABC):
         set_config()
 
     def dataset(self, *,
-                mask_del: bool = False,
-                mask_ins: bool = False,
+                count_del: bool = True,
+                count_ins: bool = True,
                 mask_polya: int = 0,
                 probe: str = "none",
                 mask_a: bool | None = None,
@@ -213,8 +213,8 @@ class TestMask(ut.TestCase, ABC):
                 max_fmut_pos: float = 1.,
                 **kwargs):
         mask_dir, = run_mask([self._report_file],
-                             mask_del=mask_del,
-                             mask_ins=mask_ins,
+                             count_del=count_del,
+                             count_ins=count_ins,
                              mask_polya=mask_polya,
                              probe=probe,
                              mask_a=mask_a,
@@ -602,9 +602,9 @@ class TestMaskSingle1Sample1Batch(TestMaskSingle,
                              [[0, 1, 2, 3, 4, 7]])
 
     def test_mask_all_muts_min_ncov_read_7(self):
-        dataset = self.dataset(mask_del=True,
-                               mask_ins=True,
-                               mask_mut=["ac", "ag", "at",
+        dataset = self.dataset(count_del=False,
+                               count_ins=False,
+                               no_mut=["ac", "ag", "at",
                                          "ca", "cg", "ct",
                                          "ga", "gc", "gt",
                                          "ta", "tc", "tg"],

@@ -454,8 +454,8 @@ class TestBootstrapJackpotScores(ut.TestCase):
         # Mask the data.
         mask_dir, = run_mask([relate_report_file],
                              mask_polya=0,
-                             mask_del=False,
-                             mask_ins=False,
+                             count_del=True,
+                             count_ins=True,
                              probe="none",
                              mask_a=False,
                              mask_c=False,
