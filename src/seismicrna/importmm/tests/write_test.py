@@ -5,25 +5,17 @@ import unittest as ut
 from pathlib import Path
 
 from seismicrna.core import path
-from seismicrna.core.logs import Level, set_config
+from seismicrna.core.logs import Level, logger, set_config
 from seismicrna.core.rel.code import DELET, INS_3, INS_5, SUB_A, SUB_C, SUB_G, SUB_N, SUB_T
 from seismicrna.core.report import NumReadsXamF, NumReadsRelF, RefF, SampleF
 from seismicrna.core.seq import DNA
 from seismicrna.importmm.write import _build_mut_codes, import_mm
 from seismicrna.relate.report import RelateReport
 
-# ---------------------------------------------------------------------------
-# Shared MM binary fixture  (same layout as mm_test.py)
-# ---------------------------------------------------------------------------
-# Ref 1: "ACGT" (4 bp), 3 reads
-# Ref 2: "TGCA" (4 bp), 2 reads
-
 _SAMPLE = "test_sample"
 _BRANCH = ""
 _REF1 = "ref1"
-_REF1_SEQ = DNA("ACGT")
 _REF2 = "ref2"
-_REF2_SEQ = DNA("TGCA")
 
 
 def _build_mm_bytes() -> bytes:
@@ -146,6 +138,8 @@ class TestImportMM(ut.TestCase):
             batch_size=100,
             insert3=True,
             write_read_names=False,
+            relate_pos_table=False,
+            relate_read_table=False,
             brotli_level=5,
             force=False,
         )
@@ -240,6 +234,8 @@ class TestImportMM(ut.TestCase):
                 batch_size=100,
                 insert3=True,
                 write_read_names=False,
+                relate_pos_table=False,
+                relate_read_table=False,
                 brotli_level=5,
                 force=False,
             )
@@ -248,6 +244,192 @@ class TestImportMM(ut.TestCase):
         finally:
             shutil.rmtree(out2, ignore_errors=True)
             shutil.rmtree(tmp2, ignore_errors=True)
+
+
+# ---------------------------------------------------------------------------
+# rf-count integration test
+# ---------------------------------------------------------------------------
+
+class TestRFCountIntegration(ut.TestCase):
+    """Verify importmm and relate produce identical position/read-table counts."""
+
+    _SAMPLE = "rfcount_integ"
+    _REF = "integ_ref"
+
+    def test_matches_relate(self):
+        import shutil
+        import subprocess
+        import pandas as pd
+        from seismicrna.align import run as run_align
+        from seismicrna.relate import run as run_relate
+        from seismicrna.sim.ref import run as run_sim_ref
+        from seismicrna.sim.fold import run as run_sim_fold
+        from seismicrna.sim.params import run as run_sim_params
+        from seismicrna.sim.fastq import run as run_sim_fastq
+
+        if shutil.which("rf-count") is None:
+            logger.warning("Skipped test of importing Mutation Map files from "
+                           "RNAFramework because RNAFramework is not installed")
+            return  # rf-count not installed; trivially passes
+
+        set_config(verbosity=Level.FATAL, exit_on_error=True)
+        try:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                root = Path(tmpdir)
+                sim_dir = root / "sim"
+                sim_dir.mkdir()
+                out_dir = root / "out"
+                out_dir.mkdir()
+                out_importmm = root / "out_importmm"
+                out_importmm.mkdir()
+                rf_out = root / "rf_out"
+                rf_out.mkdir()
+                tmp_pfx = str(root / "tmp")
+
+                # 1. Simulate a 200-bp reference (longer than the 151-bp reads
+                #    so most reads align without excessive soft-clipping).
+                reflen = 200
+                run_sim_ref(refs=self._REF, ref=self._REF, reflen=reflen,
+                            sim_dir=sim_dir, seed=42)
+                fasta = sim_dir / "refs" / f"{self._REF}.fa"
+
+                # 2. Fold (single MFE structure; requires RNAstructure/ViennaRNA).
+                run_sim_fold(fasta, sim_dir=sim_dir, fold_mfe=True, fold_max=1,
+                             num_cpus=1, tmp_pfx=tmp_pfx)
+
+                # 3. Sim params: substitutions only, no deletions, no low-quality
+                # bases. Setting each base's substitution fractions to sum to
+                # 1.0 (one-third each) ensures the deletion probability is 0.
+                # "loq" set to 0.0 ensures no low-quality (N) base calls.
+                # fold writes to params/{ref}/full/simulated.ct ("full" is the region).
+                param_dir = sim_dir / "params" / self._REF / "full"
+                pmut = [
+                    ("am", 0.05), ("cm", 0.05), ("gm", 0.05), ("tm", 0.05),
+                    ("loq", 0.0),
+                    # Substitution fractions sum to 1.0 → deletion rate = 0.
+                    ("ac", 1/3), ("ag", 1/3), ("at", 1/3),
+                    ("ca", 1/3), ("cg", 1/3), ("ct", 1/3),
+                    ("ga", 1/3), ("gc", 1/3), ("gt", 1/3),
+                    ("ta", 1/3), ("tc", 1/3), ("tg", 1/3),
+                ]
+                run_sim_params(ct_file=[param_dir / "simulated.ct"],
+                               pmut_paired=pmut, pmut_unpaired=pmut,
+                               seed=42)
+
+                # 4. Simulate 500 single-end reads with read_length=50.
+                # read_length < reflen (200) so every read fits entirely within
+                # the reference; no adapter padding is needed, so all reads
+                # are clean reference-derived sequence.  Single-end avoids the
+                # factor-of-2 counting difference between rf-count (counts each
+                # BAM record) and relate (counts each paired read as one unit).
+                fastqs = run_sim_fastq(input_path=(), param_dir=(param_dir,),
+                                       sample=self._SAMPLE, num_reads=500,
+                                       paired_end=False, read_length=50,
+                                       seed=42)
+                samples_dir = fastqs[0].parent.parent.parent
+
+                # 5. Align → sorted, indexed BAM.
+                # run_align returns output directories, not BAM file paths.
+                # Use dmfastqz for single-end demultiplexed reads.
+                align_dirs = run_align(fasta, dmfastqz=[samples_dir],
+                                       out_dir=out_dir,
+                                       min_mapq=0, min_reads=1,
+                                       num_cpus=1, force=True,
+                                       tmp_pfx=tmp_pfx)
+                bam = next(p for d in align_dirs for p in d.rglob("*.bam"))
+
+                # 6. rf-count → MM binary file.
+                # -q 0 / -mq 0: accept all base and mapping qualities so that
+                # neither threshold diverges from relate's min_phred=0, min_mapq=0.
+                subprocess.run(
+                    ["rf-count", "-m", "-mm",
+                     "-f", str(fasta),
+                     "-o", str(rf_out),
+                     "-q", "0", "-mq", "0",
+                     "-ow", str(bam)],
+                    check=True,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+                mm_file = next(rf_out.rglob("*.mm"))
+
+                # 7. Import MM → relate-format output with position and read tables.
+                tmp_mm = root / "tmp_mm"
+                tmp_mm.mkdir()
+                import_mm(
+                    mm_file,
+                    sample=self._SAMPLE,
+                    out_dir=out_importmm,
+                    tmp_dir=tmp_mm,
+                    branch="",
+                    min_reads=1,
+                    batch_size=1000,
+                    insert3=True,
+                    write_read_names=False,
+                    relate_pos_table=True,
+                    relate_read_table=True,
+                    brotli_level=5,
+                    force=False,
+                )
+
+                # 8. Relate on the same BAM.
+                # clip_end5/3=0: rf-count does not clip read ends.
+                # min_phred=0:   sim reads have perfect quality, matching -q 0 above.
+                # ambindel=False: consistent with importmm sentinel value.
+                run_relate(fasta, align_dirs,
+                           out_dir=out_dir,
+                           clip_end5=0, clip_end3=0,
+                           insert3=True, ambindel=False, overhangs=True,
+                           min_mapq=0, min_phred=0, min_reads=1,
+                           relate_pos_table=True, relate_read_table=True,
+                           relate_cx=False,
+                           num_cpus=1, brotli_level=5,
+                           force=False, tmp_pfx=tmp_pfx)
+
+                # 9. Compare Mutated counts element-by-element in both tables.
+                #
+                # rf-count's MM format stores only reads that have ≥1 mutation;
+                # perfect-match reads are absent.  As a result, importmm's
+                # Covered and Matched totals will be lower than relate's (which
+                # processes all aligned reads), and read-table row counts will
+                # differ.  Only the Mutated column is directly comparable: both
+                # tools count the exact same mutations from the same BAM file.
+                #
+                # Position table: both tables share the same (Position, Base)
+                # index, so the Mutated value at each index must be identical.
+                mm_pos = next(out_importmm.rglob("*-position-table.csv"))
+                rel_pos = next(out_dir.rglob("*-position-table.csv"))
+                mm_pos_tbl = pd.read_csv(mm_pos, index_col=[0, 1], header=0)
+                rel_pos_tbl = pd.read_csv(rel_pos, index_col=[0, 1], header=0)
+                self.assertEqual(mm_pos_tbl.index.tolist(),
+                                 rel_pos_tbl.index.tolist(),
+                                 msg="Position tables have different indexes")
+                mm_pos_muts = mm_pos_tbl["Mutated"].astype(int).tolist()
+                rel_pos_muts = rel_pos_tbl["Mutated"].astype(int).tolist()
+                self.assertEqual(len(mm_pos_muts), reflen)
+                self.assertListEqual(mm_pos_muts, rel_pos_muts,
+                                 msg="Position table Mutated counts differ "
+                                     "element-by-element")
+
+                # Read table: importmm contains only the mutated reads (those
+                # rf-count put in the MM file); relate contains all reads.
+                # Read names and row order differ, so compare sorted per-read
+                # Mutated counts: importmm's full list vs relate's mutated-only
+                # subset (Mutated > 0), both sorted ascending.
+                mm_read = next(out_importmm.rglob("*-read-table.csv.gz"))
+                rel_read = next(out_dir.rglob("*-read-table.csv.gz"))
+                mm_read_tbl = pd.read_csv(mm_read, index_col=0, header=0)
+                rel_read_tbl = pd.read_csv(rel_read, index_col=0, header=0)
+                mm_read_muts = sorted(mm_read_tbl["Mutated"].astype(int))
+                rel_read_muts = sorted(
+                    rel_read_tbl.loc[rel_read_tbl["Mutated"] > 0,
+                                     "Mutated"].astype(int)
+                )
+                self.assertListEqual(mm_read_muts, rel_read_muts,
+                                 msg="Read table per-read Mutated counts "
+                                     "differ (sorted)")
+        finally:
+            set_config()
 
 
 if __name__ == "__main__":

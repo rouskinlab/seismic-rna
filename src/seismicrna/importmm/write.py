@@ -7,11 +7,13 @@ from .mm import iter_mm_file
 from ..core import path
 from ..core.logs import logger
 from ..core.rel.code import DELET, INS_3, INS_5, SUB_A, SUB_C, SUB_G, SUB_T, SUB_N
-from ..core.seq import DNA
+from ..core.seq import DNA, Region
+from ..core.table import all_patterns
 from ..core.tmp import get_release_working_dirs, release_to_out
 from ..core.write import need_write
 from ..relate.io import from_reads, ReadNamesBatchIO, RelateBatchIO, RefseqIO
 from ..relate.report import RelateReport
+from ..relate.table import RelateCountTabulator
 
 # All substitution codes except the one that would match the reference base.
 _SUB_FOR_BASE: dict[str, int] = {
@@ -65,6 +67,8 @@ def _import_one_ref(ref_id: str,
                     batch_size: int,
                     insert3: bool,
                     write_read_names: bool,
+                    relate_pos_table: bool,
+                    relate_read_table: bool,
                     brotli_level: int,
                     force: bool) -> Path | None:
     """ Convert one MM transcript block into relate batches and a report. """
@@ -99,8 +103,10 @@ def _import_one_ref(ref_id: str,
     mut_codes = _build_mut_codes(refseq, insert3)
 
     # Write batches.
+    region = Region(ref_id, refseq)
     relate_checksums: list[str] = []
     name_checksums: list[str | None] = []
+    batch_counts = []
     n_reads_rel = 0
     batch_num = 0
     batch_start = 0
@@ -117,6 +123,15 @@ def _import_one_ref(ref_id: str,
         _, rc = relate_batch.save(release_dir, brotli_level)
         relate_checksums.append(rc)
         n_reads_rel += relate_batch.num_reads
+        if relate_pos_table or relate_read_table:
+            batch_counts.append(
+                relate_batch.to_region_batch(region).count_all(
+                    all_patterns(),
+                    count_pos=relate_pos_table,
+                    count_read=relate_read_table,
+                    count_ends=False,
+                )
+            )
         if write_read_names:
             assert isinstance(name_batch, ReadNamesBatchIO)
             _, nc = name_batch.save(release_dir, brotli_level)
@@ -129,6 +144,20 @@ def _import_one_ref(ref_id: str,
     checksums = {RelateBatchIO.btype(): relate_checksums}
     if write_read_names:
         checksums[ReadNamesBatchIO.btype()] = name_checksums
+
+    if relate_pos_table or relate_read_table:
+        tabulator = RelateCountTabulator(
+            batch_counts=batch_counts,
+            top=release_dir,
+            branches=branches,
+            sample=sample,
+            ref=ref_id,
+            refseq=refseq,
+            count_pos=relate_pos_table,
+            count_read=relate_read_table,
+            validate=False,
+        )
+        tabulator.write_tables(pos=relate_pos_table, read=relate_read_table)
 
     ended = datetime.now()
 
@@ -169,6 +198,8 @@ def import_mm(mm_path: Path, *,
               batch_size: int,
               insert3: bool,
               write_read_names: bool,
+              relate_pos_table: bool,
+              relate_read_table: bool,
               brotli_level: int,
               force: bool) -> list[Path]:
     """ Convert all transcript blocks in one MM file into relate outputs.
@@ -190,6 +221,8 @@ def import_mm(mm_path: Path, *,
             batch_size=batch_size,
             insert3=insert3,
             write_read_names=write_read_names,
+            relate_pos_table=relate_pos_table,
+            relate_read_table=relate_read_table,
             brotli_level=brotli_level,
             force=force,
         )

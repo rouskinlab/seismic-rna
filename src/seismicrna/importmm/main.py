@@ -15,6 +15,8 @@ from ..core.arg import (CMD_IMPORTMM,
                         opt_insert3,
                         opt_brotli_level,
                         opt_write_read_names,
+                        opt_relate_pos_table,
+                        opt_relate_read_table,
                         opt_force,
                         opt_num_cpus)
 from ..core.run import run_func
@@ -31,6 +33,8 @@ def run(input_path: Iterable[str | Path], *,
         batch_size: int,
         insert3: bool,
         write_read_names: bool,
+        relate_pos_table: bool,
+        relate_read_table: bool,
         brotli_level: int,
         num_cpus: int,
         force: bool):
@@ -50,6 +54,8 @@ def run(input_path: Iterable[str | Path], *,
                                 batch_size=batch_size,
                                 insert3=insert3,
                                 write_read_names=write_read_names,
+                                relate_pos_table=relate_pos_table,
+                                relate_read_table=relate_read_table,
                                 brotli_level=brotli_level,
                                 force=force))
 
@@ -70,6 +76,8 @@ params = [
     opt_brotli_level,
     # Output options
     opt_write_read_names,
+    opt_relate_pos_table,
+    opt_relate_read_table,
     # Parallelization
     opt_num_cpus,
     # File generation
