@@ -7,8 +7,8 @@ from click import command
 
 from .profile import RNAFoldProfile
 from .report import FoldReport
-from .rnastructure import fold_or_shapeknots, require_data_path
-from .viennarna import rnafold
+from .rnastructure import require_data_path, run_rnastructure
+from .viennarna import run_rnafold
 from ..cluster.data import ClusterPositionTableLoader
 from ..core import path
 from ..core.arg import (CMD_FOLD,
@@ -52,6 +52,7 @@ from ..core.extern import (RNASTRUCTURE_FOLD_CMD,
                            VIENNA_RNASUBOPT_CMD,
                            require_dependency)
 from ..core.io import calc_sha512_path
+from ..core.logs import logger
 from ..core.rna import ct_to_db
 from ..core.run import run_func
 from ..core.seq import DNA, RefRegions, RefSeqs, Region
@@ -124,35 +125,62 @@ def fold_region(rna: RNAFoldProfile, *,
     if need_write(report_file, force):
         began = datetime.now()
         rna.write_varna_color_file(out_dir, branch)
+        logger.routine(f"Began folding {rna}")
+        ct_out = rna.get_ct_file(out_dir, branch)
+        fasta_tmp = rna.write_fasta(tmp_dir, branch)
+        ct_tmp = rna.get_ct_file(tmp_dir, branch)
+        mus_file = rna.write_mus_file(tmp_dir, branch)
         if fold_backend == FOLD_BACKEND_RNAFOLD:
-            ct_file = rnafold(rna,
-                              out_dir=out_dir,
-                              tmp_dir=tmp_dir,
-                              branch=branch,
-                              fold_dry_run=fold_dry_run,
-                              fold_constraint=fold_constraint,
-                              fold_commands=fold_commands,
-                              fold_md=fold_md,
-                              fold_mfe=fold_mfe,
-                              fold_max=fold_max,
-                              fold_isolated=fold_isolated,
-                              keep_tmp=keep_tmp,
-                              num_cpus=num_cpus)
+            db_tmp = rna.get_db_file(tmp_dir, branch)
+            vienna_tmp = rna.get_vienna_file(tmp_dir, branch)
         else:
-            ct_file = fold_or_shapeknots(rna,
-                                         out_dir=out_dir,
-                                         tmp_dir=tmp_dir,
-                                         branch=branch,
-                                         fold_dry_run=fold_dry_run,
-                                         fold_backend=fold_backend,
-                                         fold_constraint=fold_constraint,
-                                         fold_md=fold_md,
-                                         fold_mfe=fold_mfe,
-                                         fold_max=fold_max,
-                                         fold_isolated=fold_isolated,
-                                         fold_percent=fold_percent,
-                                         keep_tmp=keep_tmp,
-                                         num_cpus=num_cpus)
+            rnastructure_shape_args = rna.get_rnastructure_shape_args(tmp_dir, branch)
+        try:
+            if fold_backend == FOLD_BACKEND_RNAFOLD:
+                run_rnafold(fasta_tmp,
+                            ct_tmp,
+                            ct_out,
+                            vienna_tmp,
+                            db_tmp,
+                            sp_data=mus_file,
+                            sp_strategy=rna.rnafold_sp_strategy,
+                            fold_constraint=fold_constraint,
+                            fold_commands=fold_commands,
+                            fold_temp_c=rna.fold_temp_c,
+                            fold_isolated=fold_isolated,
+                            fold_md=fold_md,
+                            fold_max=fold_max,
+                            fold_mfe=fold_mfe,
+                            end5=rna.region.end5,
+                            num_cpus=num_cpus,
+                            fold_dry_run=fold_dry_run)
+            else:
+                run_rnastructure(fasta_tmp,
+                                 ct_tmp,
+                                 ct_out,
+                                 fold_backend=fold_backend,
+                                 fold_temp_k=rna.fold_temp_k,
+                                 end5=rna.region.end5,
+                                 num_cpus=num_cpus,
+                                 fold_dry_run=fold_dry_run,
+                                 fold_constraint=fold_constraint,
+                                 fold_isolated=fold_isolated,
+                                 fold_md=fold_md,
+                                 fold_mfe=fold_mfe,
+                                 fold_max=fold_max,
+                                 fold_percent=fold_percent,
+                                 **rnastructure_shape_args)
+        finally:
+            if not keep_tmp:
+                fasta_tmp.unlink(missing_ok=True)
+                mus_file.unlink(missing_ok=True)
+                if ct_tmp != ct_out:
+                    ct_tmp.unlink(missing_ok=True)
+                if fold_backend == FOLD_BACKEND_RNAFOLD:
+                    db_tmp.unlink(missing_ok=True)
+                    vienna_tmp.unlink(missing_ok=True)
+        logger.routine(f"Ended folding {rna}")
+        ct_file = ct_out
         if not fold_dry_run:
             ct_to_db(ct_file, force=True)
         constraint_checksum = (calc_sha512_path(fold_constraint)

@@ -6,7 +6,7 @@ from click import command
 
 from .ref import get_fasta_path
 from ..core import path
-from ..core.arg import (FOLD_BACKEND_FOLD,
+from ..core.arg import (FOLD_BACKEND_RNAFOLD,
                         arg_fasta,
                         opt_fold_backend,
                         opt_sim_dir,
@@ -26,18 +26,14 @@ from ..core.arg import (FOLD_BACKEND_FOLD,
                         opt_force,
                         opt_num_cpus,
                         optional_path)
-from ..core.extern import (RNASTRUCTURE_FOLD_CMD,
-                           require_dependency,
-                           args_to_cmd,
-                           run_cmd)
-from ..core.rna import renumber_ct
 from ..core.run import run_func
 from ..core.seq import DNA, RefRegions, Region, parse_fasta, write_fasta
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write
-from ..fold.main import resolve_fold_backend
+from ..fold.main import check_fold_deps, resolve_fold_backend
 from ..fold.profile import celsius_to_kelvin, guess_temperature_to_celsius
-from ..fold.rnastructure import make_rnastructure_cmd, retitle_ct, require_data_path
+from ..fold.rnastructure import run_rnastructure
+from ..fold.viennarna import run_rnafold
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -109,40 +105,60 @@ def fold_region(region: Region, *,
     if need_write(ct_sim, force):
         fasta_tmp = get_fasta_path(tmp_dir, region.ref)
         ct_tmp = get_ct_path(tmp_dir, region, profile_name)
+        vienna_tmp = (ct_tmp.with_suffix(path.VIENNA_EXT)
+                      if fold_backend == FOLD_BACKEND_RNAFOLD
+                      else None)
+        db_tmp = (ct_tmp.with_suffix(path.DB_EXT)
+                  if fold_backend == FOLD_BACKEND_RNAFOLD
+                  else None)
         try:
-            # Write a temporary FASTA file for this region only.
             write_fasta(fasta_tmp,
                         [(region.ref, region.seq.tr())],
                         force=force)
-            # Predict the RNA structure.
             fold_temp_c = guess_temperature_to_celsius(fold_temp)
-            fold_temp_k = celsius_to_kelvin(fold_temp_c)
-            run_cmd(args_to_cmd(make_rnastructure_cmd(
-                fasta_tmp,
-                ct_tmp,
-                fold_backend=fold_backend,
-                dms_file=None,
-                shape_file=None,
-                deigan_slope=None,
-                deigan_intercept=None,
-                fold_constraint=fold_constraint,
-                fold_temp_k=fold_temp_k,
-                fold_md=fold_md,
-                fold_isolated=False,
-                fold_mfe=fold_mfe,
-                fold_max=fold_max,
-                fold_percent=fold_percent,
-                num_cpus=num_cpus
-            )))
-            # Reformat the CT file title lines so that each is unique.
-            retitle_ct(ct_tmp, ct_tmp, force=True)
-            # Renumber the CT file so that it has the same numbering
-            # scheme as the region, rather than always starting at 1,
-            # the latter of which is always output by the Fold program.
-            renumber_ct(ct_tmp, ct_sim, region.end5, force=force)
+            if fold_backend == FOLD_BACKEND_RNAFOLD:
+                run_rnafold(fasta_tmp,
+                            ct_tmp,
+                            ct_sim,
+                            vienna_tmp,
+                            db_tmp,
+                            sp_data=None,
+                            sp_strategy=None,
+                            fold_constraint=fold_constraint,
+                            fold_commands=None,
+                            fold_temp_c=fold_temp_c,
+                            fold_isolated=False,
+                            fold_md=fold_md,
+                            fold_max=fold_max,
+                            fold_mfe=fold_mfe,
+                            end5=region.end5,
+                            num_cpus=num_cpus)
+            else:
+                run_rnastructure(fasta_tmp,
+                                 ct_tmp,
+                                 ct_sim,
+                                 fold_backend=fold_backend,
+                                 fold_temp_k=celsius_to_kelvin(fold_temp_c),
+                                 dms_file=None,
+                                 shape_file=None,
+                                 deigan_slope=None,
+                                 deigan_intercept=None,
+                                 fold_constraint=fold_constraint,
+                                 fold_isolated=False,
+                                 fold_md=fold_md,
+                                 fold_mfe=fold_mfe,
+                                 fold_max=fold_max,
+                                 fold_percent=fold_percent,
+                                 end5=region.end5,
+                                 num_cpus=num_cpus)
         finally:
             if not keep_tmp:
                 fasta_tmp.unlink(missing_ok=True)
+                if vienna_tmp is not None:
+                    vienna_tmp.unlink(missing_ok=True)
+                    vienna_tmp.with_suffix(path.VIENNA_SUBOPT_EXT).unlink(
+                        missing_ok=True)
+                    db_tmp.unlink(missing_ok=True)
                 if ct_tmp != ct_sim:
                     ct_tmp.unlink(missing_ok=True)
     return ct_sim
@@ -210,10 +226,8 @@ def run(fasta: str | Path, *,
     list[Path]
         Paths of all written CT files.
     """
-    # Check for the dependencies and the DATAPATH environment variable.
-    require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
-    require_data_path()
     fold_backend = resolve_fold_backend(probe, fold_backend)
+    check_fold_deps(fold_backend)
     # List the regions.
     regions = RefRegions(parse_fasta(Path(fasta), DNA),
                          regs_file=(Path(fold_regions_file)

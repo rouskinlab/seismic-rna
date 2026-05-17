@@ -8,7 +8,7 @@ from pathlib import Path
 from shutil import which
 
 from .dryrun import dry_run
-from .profile import ZERO_CELSIUS, RNAFoldProfile
+from .profile import ZERO_CELSIUS
 from ..core.arg import (FOLD_BACKEND_FOLD,
                         FOLD_BACKEND_SHAPEKNOTS,
                         opt_fold_temp)
@@ -348,86 +348,66 @@ def make_rnastructure_cmd(fasta_file: Path,
     return cmd
 
 
-def fold_or_shapeknots(rna: RNAFoldProfile, *,
-                       branch: str,
-                       fold_dry_run: bool,
-                       fold_backend: str,
-                       out_dir: Path,
-                       tmp_dir: Path,
-                       keep_tmp: bool,
-                       num_cpus: int,
-                       **kwargs):
-    """ Run 'Fold', 'Fold-smp', or 'ShapeKnots'. """
-    logger.routine(f"Began folding {rna}")
-    # SHAPE arguments for RNAstructure.
-    rnastructure_shape_args = rna.get_rnastructure_shape_args(tmp_dir, branch)
-    # Output CT file.
-    ct_out = rna.get_ct_file(out_dir, branch)
-    # Temporary FASTA file for the RNA.
-    fasta_tmp = rna.write_fasta(tmp_dir, branch)
-    # Path of the temporary CT file.
-    ct_tmp = rna.get_ct_file(tmp_dir, branch)
-    # Mutation rates file for the RNA.
-    mus_file = rna.write_mus_file(tmp_dir, branch)
-    try:
-        if fold_backend == FOLD_BACKEND_FOLD and num_cpus > 1:
-            # Fold also has a parellized version, Fold-smp.
-            parallel_options = [True, False]
-        else:
-            # ShapeKnots does not.
-            parallel_options = [False]
-        # Generate the command(s).
-        fold_cmds = [
-            args_to_cmd(
-                make_rnastructure_cmd(
-                    fasta_tmp,
-                    ct_tmp,
-                    fold_backend=fold_backend,
-                    fold_temp_k=rna.fold_temp_k,
-                    num_cpus=(num_cpus if parallel else 1),
-                    **rnastructure_shape_args,
-                    **kwargs
-                )
-            )
-            for parallel in parallel_options
-        ]
-        if fold_dry_run:
-            dry_run(fold_cmds, ct_tmp.parent)
-        else:
-            # Run the command(s).
-            fold_cmd = fold_cmds.pop(0)
-            while True:
-                try:
-                    # Run the current command.
-                    run_cmd(fold_cmd)
-                except RuntimeError as error:
-                    # If that fails, check whether there is another
-                    # option, i.e. without SMP support if using Fold.
-                    if fold_cmds:
-                        # If so, try it.
-                        logger.warning(error)
-                        fold_cmd = fold_cmds.pop(0)
-                    else:
-                        # If not, re-raise the error.
-                        raise
+def run_rnastructure(fasta_tmp: Path,
+                     ct_tmp: Path,
+                     ct_out: Path, *,
+                     fold_backend: str,
+                     fold_temp_k: float | None,
+                     dms_file: Path | None,
+                     shape_file: Path | None,
+                     deigan_slope: float | None,
+                     deigan_intercept: float | None,
+                     fold_constraint: Path | None,
+                     fold_isolated: bool,
+                     fold_md: int,
+                     fold_mfe: bool,
+                     fold_max: int,
+                     fold_percent: float,
+                     end5: int,
+                     num_cpus: int,
+                     fold_dry_run: bool = False):
+    """ Run Fold/ShapeKnots on pre-built paths, retitle, and renumber. """
+    if fold_backend == FOLD_BACKEND_FOLD and num_cpus > 1:
+        parallel_options = [True, False]
+    else:
+        parallel_options = [False]
+    fold_cmds = [
+        args_to_cmd(make_rnastructure_cmd(
+            fasta_tmp,
+            ct_tmp,
+            fold_backend=fold_backend,
+            fold_temp_k=fold_temp_k,
+            dms_file=dms_file,
+            shape_file=shape_file,
+            deigan_slope=deigan_slope,
+            deigan_intercept=deigan_intercept,
+            fold_constraint=fold_constraint,
+            fold_isolated=fold_isolated,
+            fold_md=fold_md,
+            fold_mfe=fold_mfe,
+            fold_max=fold_max,
+            fold_percent=fold_percent,
+            num_cpus=(num_cpus if parallel else 1),
+        ))
+        for parallel in parallel_options
+    ]
+    if fold_dry_run:
+        dry_run(fold_cmds, ct_tmp.parent)
+    else:
+        fold_cmd = fold_cmds.pop(0)
+        while True:
+            try:
+                run_cmd(fold_cmd)
+            except RuntimeError as error:
+                if fold_cmds:
+                    logger.warning(error)
+                    fold_cmd = fold_cmds.pop(0)
                 else:
-                    # If the command succeeds, then exit the loop.
-                    break
-            # Reformat the CT file title lines so that each is unique.
-            retitle_ct(ct_tmp, ct_tmp, force=True)
-            # Renumber the CT file so that it has the same numbering
-            # scheme as the region, rather than always starting at 1,
-            # the latter of which is always output by Fold and Fold-smp.
-            renumber_ct(ct_tmp, ct_out, rna.region.end5, force=True)
-    finally:
-        if not keep_tmp:
-            # Delete the temporary files.
-            fasta_tmp.unlink(missing_ok=True)
-            mus_file.unlink(missing_ok=True)
-            if ct_tmp != ct_out:
-                ct_tmp.unlink(missing_ok=True)
-    logger.routine(f"Ended folding {rna}")
-    return ct_out
+                    raise
+            else:
+                break
+        retitle_ct(ct_tmp, ct_tmp, force=True)
+        renumber_ct(ct_tmp, ct_out, end5, force=True)
 
 
 class RNAStructureConnectivityTableTitleLineFormatError(ValueError):

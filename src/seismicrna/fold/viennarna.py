@@ -6,7 +6,6 @@ import os
 from pathlib import Path
 
 from .dryrun import dry_run
-from .profile import RNAFoldProfile
 from .rnastructure import retitle_ct
 from ..core.extern import (VIENNA_RNAFOLD_CMD,
                            VIENNA_RNASUBOPT_CMD,
@@ -109,72 +108,59 @@ def make_rnafold_cmd(fasta_file: Path,
         cmd = args_to_cmd(cmd)
         cmd = cmds_to_redirect_in([cmd, str(fasta_file)])
         vienna_suffix = VIENNA_SUBOPT_EXT if VIENNA_RNASUBOPT_CMD in cmd else VIENNA_EXT
-        cmd = cmds_to_pipe([cmd, f"head -n {fold_max + 1}"])
+        if VIENNA_RNASUBOPT_CMD in cmd:
+            # RNAsubopt: 2 header lines (title + sequence) + fold_max structure lines.
+            head_n = fold_max + 2
+        else:
+            # RNAfold: 3 lines per structure (title + sequence + structure).
+            head_n = fold_max * 3
+        cmd = cmds_to_pipe([cmd, f"head -n {head_n}"])
         cmd = cmds_to_redirect_out([cmd, str(vienna_file.with_suffix(vienna_suffix))])
         final_cmds.append(cmd)
     final_cmd = cmds_to_series(final_cmds)
     return final_cmd
 
 
-def rnafold(rna: RNAFoldProfile, *,
-            branch: str,
-            out_dir: Path,
-            tmp_dir: Path,
-            keep_tmp: bool,
-            fold_dry_run: bool,
-            fold_mfe: bool,
-            **kwargs):
-    """ Run the 'RNAFold' or 'RNAsubopt' program of ViennaRNA. """
-    logger.routine(f"Began folding {rna}")
-    # Output CT file.
-    ct_out = rna.get_ct_file(out_dir, branch)
-    # Temporary FASTA file for the RNA.
-    fasta_tmp = rna.write_fasta(tmp_dir, branch)
-    # Path of the temporary CT file.
-    ct_tmp = rna.get_ct_file(tmp_dir, branch)
-    # Path of the temporary DB file.
-    db_tmp = rna.get_db_file(tmp_dir, branch)
-    # Path of the temporary vienna file.
-    vienna_tmp = rna.get_vienna_file(tmp_dir, branch)
-    # DMS reactivities file for the RNA.
-    mus_file = rna.write_mus_file(tmp_dir, branch)
-    try:
-        # Generate the command.
-        fold_cmd = make_rnafold_cmd(fasta_tmp,
-                                    vienna_tmp,
-                                    sp_data=mus_file,
-                                    sp_strategy=rna.rnafold_sp_strategy,
-                                    fold_temp_c=rna.fold_temp_c,
-                                    fold_mfe=fold_mfe,
-                                    **kwargs)
-        if fold_dry_run:
-            dry_run([fold_cmd], ct_tmp.parent)
-        else:
-            # Run the command.
-            run_cmd(fold_cmd)
-            # Extract energy values from vienna file to DB file.
-            extract_energies(vienna_tmp, db_tmp, force=True)
-            if not fold_mfe:
-                get_subopt(vienna_tmp.with_suffix(VIENNA_SUBOPT_EXT), db_tmp)
-            # Convert DB file to CT
-            db_to_ct(db_tmp, force=True)
-            # Reformat the CT file title lines so that each is unique.
-            retitle_ct(ct_tmp, ct_tmp, force=True)
-            # Renumber the CT file so that it has the same numbering
-            # scheme as the region, rather than always starting at 1,
-            # the latter of which is always output by the Fold program.
-            renumber_ct(ct_tmp, ct_out, rna.region.end5, force=True)
-    finally:
-        if not keep_tmp:
-            # Delete the temporary files.
-            fasta_tmp.unlink(missing_ok=True)
-            if ct_tmp != ct_out:
-                ct_tmp.unlink(missing_ok=True)
-            db_tmp.unlink(missing_ok=True)
-            vienna_tmp.unlink(missing_ok=True)
-            mus_file.unlink(missing_ok=True)
-    logger.routine(f"Ended folding {rna}")
-    return ct_out
+def run_rnafold(fasta_tmp: Path,
+                ct_tmp: Path,
+                ct_out: Path,
+                vienna_tmp: Path,
+                db_tmp: Path, *,
+                sp_data: Path | None,
+                sp_strategy: str | None,
+                fold_constraint: Path | None,
+                fold_commands: Path | None,
+                fold_temp_c: float,
+                fold_isolated: bool,
+                fold_md: int,
+                fold_max: int,
+                fold_mfe: bool,
+                end5: int,
+                num_cpus: int,
+                fold_dry_run: bool = False):
+    """ Run RNAfold/RNAsubopt on pre-built paths, convert to CT, retitle, and renumber. """
+    fold_cmd = make_rnafold_cmd(fasta_tmp,
+                                vienna_tmp,
+                                sp_data=sp_data,
+                                sp_strategy=sp_strategy,
+                                fold_constraint=fold_constraint,
+                                fold_commands=fold_commands,
+                                fold_temp_c=fold_temp_c,
+                                fold_isolated=fold_isolated,
+                                fold_md=fold_md,
+                                fold_max=fold_max,
+                                fold_mfe=fold_mfe,
+                                num_cpus=num_cpus)
+    if fold_dry_run:
+        dry_run([fold_cmd], ct_tmp.parent)
+    else:
+        run_cmd(fold_cmd)
+        extract_energies(vienna_tmp, db_tmp, force=True)
+        if not fold_mfe:
+            get_subopt(vienna_tmp.with_suffix(VIENNA_SUBOPT_EXT), db_tmp)
+        db_to_ct(db_tmp, force=True)
+        retitle_ct(ct_tmp, ct_tmp, force=True)
+        renumber_ct(ct_tmp, ct_out, end5, force=True)
 
 
 def get_subopt(subopt_out: Path,
