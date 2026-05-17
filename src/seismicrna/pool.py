@@ -9,7 +9,7 @@ from click import command
 from .core import path
 from .core.arg import (CMD_POOL,
                        arg_input_path,
-                       arg_sample_pool,
+                       arg_pooled_sample,
                        opt_min_pearson_pool,
                        opt_max_marcd_pool,
                        opt_relate_pos_table,
@@ -61,7 +61,7 @@ def write_report(out_dir: Path, **kwargs):
 
 @with_tmp_dir(pass_keep_tmp=False)
 def pool_samples(out_dir: Path,
-                 name: str,
+                 pooled_sample: str,
                  branches_flat: Iterable[str],
                  ref: str,
                  samples: Iterable[str], *,
@@ -79,7 +79,7 @@ def pool_samples(out_dir: Path,
     ----------
     out_dir: pathlib.Path
         Output directory.
-    name: str
+    pooled_sample: str
         Name of the pooled sample.
     branches_flat: Iterable[str]
         Branches of the datasets being pooled.
@@ -114,12 +114,12 @@ def pool_samples(out_dir: Path,
     # Deduplicate and sort the samples.
     sample_counts = Counter(samples)
     if max(sample_counts.values()) > 1:
-        logger.warning(f"Pool {repr(name)} with reference {repr(ref)} "
+        logger.warning(f"Pool {repr(pooled_sample)} with reference {repr(ref)} "
                        f"in {out_dir} got duplicate samples: {sample_counts}")
     samples = sorted(sample_counts)
     # Determine the output report file.
     pool_report_file = PoolReport.build_path({path.TOP: out_dir,
-                                              path.SAMPLE: name,
+                                              path.SAMPLE: pooled_sample,
                                               path.BRANCHES: branches_flat,
                                               path.REF: ref})
     if need_write(pool_report_file, force):
@@ -136,7 +136,7 @@ def pool_samples(out_dir: Path,
                                 f"{PoolReport.__name__}: would cause data loss")
         # To be able to load, the pooled dataset must have access to the
         # original relate dataset(s) in the temporary directory.
-        report_kwargs = dict(sample=name,
+        report_kwargs = dict(sample=pooled_sample,
                              ref=ref,
                              pooled_samples=samples,
                              min_pearson=min_pearson,
@@ -170,7 +170,7 @@ def pool_samples(out_dir: Path,
             sample_mus[sample] = _calc_sample_mus(relate_dataset, num_cpus)
         if BranchesF.key not in report_kwargs:
             raise NoDataError(
-                f"No samples were given to make pooled sample {repr(name)} "
+                f"No samples were given to make pooled sample {repr(pooled_sample)} "
                 f"with branches {branches_flat} and reference {repr(ref)} "
                 f"in {out_dir}"
             )
@@ -181,7 +181,7 @@ def pool_samples(out_dir: Path,
             pearson = float(calc_pearson(mu1, mu2))
             if pearson < min_pearson:
                 logger.warning(
-                    f"Skipping pool {repr(name)} with reference {repr(ref)} "
+                    f"Skipping pool {repr(pooled_sample)} with reference {repr(ref)} "
                     f"in {out_dir}: Pearson r = {pearson:.4f} between "
                     f"{repr(s1)} and {repr(s2)} is less than "
                     f"min_pearson = {min_pearson}"
@@ -190,7 +190,7 @@ def pool_samples(out_dir: Path,
             marcd = float(calc_mean_arcsine_distance(mu1, mu2))
             if marcd > max_marcd:
                 logger.warning(
-                    f"Skipping pool {repr(name)} with reference {repr(ref)} "
+                    f"Skipping pool {repr(pooled_sample)} with reference {repr(ref)} "
                     f"in {out_dir}: MARCD = {marcd:.4f} between "
                     f"{repr(s1)} and {repr(s2)} exceeds "
                     f"max_marcd = {max_marcd}"
@@ -214,8 +214,8 @@ def pool_samples(out_dir: Path,
     return pool_report_file.parent
 
 
-@run_func(CMD_POOL, exclude_defaults=("sample",))
-def run(sample: str,
+@run_func(CMD_POOL)
+def run(pooled_sample: str,
         input_path: Iterable[str | Path], *,
         relate_pos_table: bool,
         relate_read_table: bool,
@@ -227,8 +227,8 @@ def run(sample: str,
         num_cpus: int,
         force: bool) -> list[Path]:
     """ Merge samples (vertically) from the Relate step. """
-    if not sample:
-        raise ValueError("No name for the pooled sample was given via sample")
+    if not pooled_sample:
+        raise ValueError("No name for the pooled sample was given")
     # Group the datasets by output directory, branches, and reference.
     pools = defaultdict(list)
     for dataset in load_relate_dataset.iterate(input_path,
@@ -258,7 +258,7 @@ def run(sample: str,
                                    as_list=False,
                                    ordered=False,
                                    raise_on_error=False,
-                                   args=[(out_dir, sample, branches_flat, ref, samples)
+                                   args=[(out_dir, pooled_sample, branches_flat, ref, samples)
                                          for (out_dir, branches_flat, ref), samples
                                          in pools.items()],
                                    kwargs=dict(min_pearson=min_pearson,
@@ -273,7 +273,7 @@ def run(sample: str,
 
 
 params = [
-    arg_sample_pool,
+    arg_pooled_sample,
     arg_input_path,
     opt_relate_pos_table,
     opt_relate_read_table,

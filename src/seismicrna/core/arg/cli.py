@@ -679,8 +679,8 @@ opt_relate_cx = Option(
 
 # Pool
 
-arg_sample_pool = Argument(
-    ("sample",),
+arg_pooled_sample = Argument(
+    ("pooled_sample",),
     type=str,
     required=True
 )
@@ -723,7 +723,7 @@ opt_mask_coords = Option(
 )
 
 opt_mask_primers = Option(
-    ("--mask-primers", "-P"),
+    ("--mask-primers", "-p"),
     type=(str, DNA, DNA),
     multiple=True,
     default=(),
