@@ -22,7 +22,9 @@ from ..core.report import (RefReport,
                            PhredEncF,
                            ClipEnd5F,
                            ClipEnd3F,
-                           RefseqChecksumF)
+                           RefseqChecksumF,
+                           MinPearsonPoolF,
+                           MaxMarcdPoolF)
 
 BATCH_INDEX_COL = "Read Name"
 
@@ -76,4 +78,6 @@ class PoolReport(BaseRelateReport):
     @classmethod
     def get_param_report_fields(cls):
         return [PooledSamplesF,
+                MinPearsonPoolF,
+                MaxMarcdPoolF,
                 *super().get_param_report_fields()]

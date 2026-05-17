@@ -1,5 +1,6 @@
 from collections import Counter, defaultdict
 from datetime import datetime
+from itertools import combinations
 from pathlib import Path
 from typing import Iterable
 
@@ -8,7 +9,9 @@ from click import command
 from .core import path
 from .core.arg import (CMD_POOL,
                        arg_input_path,
-                       opt_pooled,
+                       arg_sample_pool,
+                       opt_min_pearson_pool,
+                       opt_max_marcd_pool,
                        opt_relate_pos_table,
                        opt_relate_read_table,
                        opt_verify_times,
@@ -18,15 +21,37 @@ from .core.arg import (CMD_POOL,
                        opt_force)
 from .core.error import InconsistentValueError, NoDataError
 from .core.logs import logger
+from .core.mu.compare import calc_mean_arcsine_distance, calc_pearson
 from .core.report import BranchesF
 from .core.run import run_func
+from .core.table import INFOR_REL, MUTAT_REL
 from .core.task import dispatch
 from .core.tmp import release_to_out, with_tmp_dir
 from .core.write import need_write
 from .relate.dataset import PoolMutsDataset, load_relate_dataset
 from .relate.report import PoolReport, RelateReport
-from .relate.table import RelateDatasetTabulator
+from .relate.table import RelateDatasetTabulator, RelatePositionTableLoader
 from .table import tabulate
+
+
+def _calc_sample_mus(relate_dataset, num_cpus: int):
+    """ Get per-position mutation rates for a relate dataset.
+
+    Uses an existing position table CSV if available (fast), otherwise
+    computes from batch files via RelateDatasetTabulator (slow).
+    """
+    table_files = list(RelatePositionTableLoader.find_tables([relate_dataset.dir]))
+    if len(table_files) > 1:
+        raise ValueError(f"Expected at most 1 position table in {relate_dataset.dir}, "
+                         f"but found {len(table_files)}: {table_files}")
+    if table_files:
+        table = RelatePositionTableLoader(table_files[0])
+        return table.fetch_ratio(rel=MUTAT_REL, squeeze=True)
+    tabulator = RelateDatasetTabulator(
+        dataset=relate_dataset, count_pos=True, count_read=False, num_cpus=num_cpus
+    )
+    data = tabulator.data_per_pos
+    return data[MUTAT_REL] / data[INFOR_REL]
 
 
 def write_report(out_dir: Path, **kwargs):
@@ -41,6 +66,8 @@ def pool_samples(out_dir: Path,
                  ref: str,
                  samples: Iterable[str], *,
                  tmp_dir: Path,
+                 min_pearson: float,
+                 max_marcd: float,
                  relate_pos_table: bool,
                  relate_read_table: bool,
                  verify_times: bool,
@@ -62,6 +89,10 @@ def pool_samples(out_dir: Path,
         Names of the samples in the pool.
     tmp_dir: Path
         Temporary directory.
+    min_pearson: float
+        Skip pooling if any pair of samples has Pearson r below this.
+    max_marcd: float
+        Skip pooling if any pair of samples has MARCD above this.
     relate_pos_table: bool
         Tabulate relationships per position for relate data.
     relate_read_table: bool
@@ -108,7 +139,10 @@ def pool_samples(out_dir: Path,
         report_kwargs = dict(sample=name,
                              ref=ref,
                              pooled_samples=samples,
+                             min_pearson=min_pearson,
+                             max_marcd=max_marcd,
                              began=began)
+        sample_mus = {}
         for sample in samples:
             relate_dataset = load_relate_dataset(
                 RelateReport.build_path({path.TOP: out_dir,
@@ -132,12 +166,36 @@ def pool_samples(out_dir: Path,
             # Make links to the files for this dataset in the temporary
             # directory.
             relate_dataset.link_data_dirs_to_tmp(tmp_dir)
+            # Calculate the mutation rates for the sample.
+            sample_mus[sample] = _calc_sample_mus(relate_dataset, num_cpus)
         if BranchesF.key not in report_kwargs:
             raise NoDataError(
                 f"No samples were given to make pooled sample {repr(name)} "
                 f"with branches {branches_flat} and reference {repr(ref)} "
                 f"in {out_dir}"
             )
+        # Pairwise similarity filter.
+        for s1, s2 in combinations(samples, 2):
+            mu1 = sample_mus[s1]
+            mu2 = sample_mus[s2]
+            pearson = float(calc_pearson(mu1, mu2))
+            if pearson < min_pearson:
+                logger.warning(
+                    f"Skipping pool {repr(name)} with reference {repr(ref)} "
+                    f"in {out_dir}: Pearson r = {pearson:.4f} between "
+                    f"{repr(s1)} and {repr(s2)} is less than "
+                    f"min_pearson = {min_pearson}"
+                )
+                return None
+            marcd = float(calc_mean_arcsine_distance(mu1, mu2))
+            if marcd > max_marcd:
+                logger.warning(
+                    f"Skipping pool {repr(name)} with reference {repr(ref)} "
+                    f"in {out_dir}: MARCD = {marcd:.4f} between "
+                    f"{repr(s1)} and {repr(s2)} exceeds "
+                    f"max_marcd = {max_marcd}"
+                )
+                return None
         # Tabulate the pooled dataset.
         pool_dataset = load_relate_dataset(write_report(tmp_dir,
                                                         **report_kwargs),
@@ -156,19 +214,21 @@ def pool_samples(out_dir: Path,
     return pool_report_file.parent
 
 
-@run_func(CMD_POOL)
-def run(input_path: Iterable[str | Path], *,
-        pooled: str,
+@run_func(CMD_POOL, exclude_defaults=("sample",))
+def run(sample: str,
+        input_path: Iterable[str | Path], *,
         relate_pos_table: bool,
         relate_read_table: bool,
+        min_pearson: float,
+        max_marcd: float,
         verify_times: bool,
         tmp_pfx: str | Path,
         keep_tmp: bool,
         num_cpus: int,
         force: bool) -> list[Path]:
     """ Merge samples (vertically) from the Relate step. """
-    if not pooled:
-        raise ValueError("No name for the pooled sample was given via --pooled")
+    if not sample:
+        raise ValueError("No name for the pooled sample was given via sample")
     # Group the datasets by output directory, branches, and reference.
     pools = defaultdict(list)
     for dataset in load_relate_dataset.iterate(input_path,
@@ -189,29 +249,36 @@ def run(input_path: Iterable[str | Path], *,
                dataset.ref)
         pools[key].extend(samples)
         logger.detail(f"Added samples {samples} for {dataset}")
-    # Make each pool of samples.
-    return dispatch(pool_samples,
-                    num_cpus=num_cpus,
-                    pass_num_cpus=True,
-                    as_list=True,
-                    ordered=False,
-                    raise_on_error=False,
-                    args=[(out_dir, pooled, branches_flat, ref, samples)
-                          for (out_dir, branches_flat, ref), samples
-                          in pools.items()],
-                    kwargs=dict(relate_pos_table=relate_pos_table,
-                                relate_read_table=relate_read_table,
-                                verify_times=verify_times,
-                                tmp_pfx=tmp_pfx,
-                                keep_tmp=keep_tmp,
-                                force=force))
+    # Make each pool of samples, dropping any that were skipped by the
+    # pairwise similarity filter (pool_samples returns None for those).
+    return [result
+            for result in dispatch(pool_samples,
+                                   num_cpus=num_cpus,
+                                   pass_num_cpus=True,
+                                   as_list=False,
+                                   ordered=False,
+                                   raise_on_error=False,
+                                   args=[(out_dir, sample, branches_flat, ref, samples)
+                                         for (out_dir, branches_flat, ref), samples
+                                         in pools.items()],
+                                   kwargs=dict(min_pearson=min_pearson,
+                                               max_marcd=max_marcd,
+                                               relate_pos_table=relate_pos_table,
+                                               relate_read_table=relate_read_table,
+                                               verify_times=verify_times,
+                                               tmp_pfx=tmp_pfx,
+                                               keep_tmp=keep_tmp,
+                                               force=force))
+            if result is not None]
 
 
 params = [
+    arg_sample_pool,
     arg_input_path,
-    opt_pooled,
     opt_relate_pos_table,
     opt_relate_read_table,
+    opt_min_pearson_pool,
+    opt_max_marcd_pool,
     opt_verify_times,
     opt_tmp_pfx,
     opt_keep_tmp,

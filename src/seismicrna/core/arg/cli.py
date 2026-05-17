@@ -679,11 +679,24 @@ opt_relate_cx = Option(
 
 # Pool
 
-opt_pooled = Option(
-    ("--pooled", "-p"),
+arg_sample_pool = Argument(
+    ("sample",),
     type=str,
-    default="",
-    help="Pooled sample name"
+    required=True
+)
+
+opt_min_pearson_pool = Option(
+    ("--min-pearson",),
+    type=float,
+    default=0.,
+    help="Pool samples only if their Pearson correlation is at least this large"
+)
+
+opt_max_marcd_pool = Option(
+    ("--max-marcd",),
+    type=float,
+    default=1.0,
+    help="Pool samples only if their mean arsince distance is at most this"
 )
 
 # Mask
@@ -1718,7 +1731,7 @@ opt_sim_dir = Option(
     help="Write all simulated files to this directory"
 )
 
-opt_sample = Option(
+opt_sample_sim = Option(
     ("--sample", "-s"),
     type=str,
     default="sim-sample",

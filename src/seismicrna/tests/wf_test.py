@@ -739,7 +739,7 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
             relate_reports.append(relate_report)
         self.check_no_identical(relate_reports, False)
         # Pool relate reports.
-        pool_dirs = sorted(run_pool(relate_reports, pooled=self.POOLED))
+        pool_dirs = sorted(run_pool(self.POOLED, relate_reports))
         pool_reports = sorted(out_dir.joinpath(self.POOLED,
                                                "relate",
                                                self.REF,

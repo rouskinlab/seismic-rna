@@ -137,7 +137,7 @@ def write_datasets(out_dir: Path,
     # Pool the samples if there is more than one.
     if len(report_files) == 1:
         return report_files[0]
-    pooled_files = run_pool(report_files, pool=POOLED_SAMPLE)
+    pooled_files = run_pool(POOLED_SAMPLE, report_files)
     if len(pooled_files) != 1:
         raise ValueError("Expected exactly 1 pooled report file, "
                          f"but got {len(pooled_files)}")

@@ -11,7 +11,7 @@ from .muts import load_pmut
 from ..core import path
 from ..core.arg import (opt_param_dir,
                         opt_profile_name,
-                        opt_sample,
+                        opt_sample_sim,
                         opt_branch,
                         opt_paired_end,
                         opt_read_length,
@@ -129,7 +129,7 @@ def run(*,
 params = [
     opt_param_dir,
     opt_profile_name,
-    opt_sample,
+    opt_sample_sim,
     opt_branch,
     opt_paired_end,
     opt_read_length,

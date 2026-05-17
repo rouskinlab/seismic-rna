@@ -116,7 +116,9 @@ from .arg import (opt_seed,
                   opt_min_cluster_length,
                   opt_max_cluster_length,
                   opt_gap_mode,
-                  opt_probe)
+                  opt_probe,
+                  opt_min_pearson_pool,
+                  opt_max_marcd_pool)
 from .error import InconsistentValueError
 from .io import SampleFileIO, ReadBatchIO, RefFileIO, RegFileIO
 from .logs import logger
@@ -405,6 +407,8 @@ ClipEnd3F = OptionReportField(opt_clip_end3)
 
 # Pool fields
 PooledSamplesF = ReportField("pooled_samples", "Pooled samples", list)
+MinPearsonPoolF = OptionReportField(opt_min_pearson_pool)
+MaxMarcdPoolF = OptionReportField(opt_max_marcd_pool)
 
 # Mask fields
 ProbeF = OptionReportField(opt_probe)
