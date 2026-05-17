@@ -1453,6 +1453,13 @@ opt_struct_file = Option(
     help="Compare mutational profiles to the structure(s) in this CT file"
 )
 
+opt_min_aucroc = Option(
+    ("--min-aucroc",),
+    type=float,
+    default=0.85,
+    help="Skip tables/profiles where the AUC-ROC is less than this value"
+)
+
 opt_fold_full = Option(
     ("--fold-full/--fold-table",),
     type=bool,

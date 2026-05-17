@@ -12,6 +12,7 @@ from click import command
 
 from ..core import path
 from ..core.arg import (arg_input_path,
+                        opt_min_aucroc,
                         opt_struct_file,
                         opt_verify_times,
                         opt_num_cpus,
@@ -22,6 +23,7 @@ from ..core.arg import (arg_input_path,
 from ..core.error import DuplicateValueError, NoDataError
 from ..core.logs import logger
 from ..core.rna import UNPAIRED_MARK, from_ct
+from ..core.rna.roc import compute_auc_roc
 from ..core.run import run_func
 from ..core.seq import DNA, Region, BASE_NAME, BASEN
 from ..core.table import (COVER_REL,
@@ -147,7 +149,8 @@ def _accumulate_ratios(paired_unpaired_ratios: Iterable[tuple[dict, dict]]):
 
 
 def abstract_table(table: MaskPositionTableLoader,
-                   struct_file: str | Path):
+                   struct_file: str | Path,
+                   min_aucroc: float = 0.):
     path_fields = path.parse(struct_file, path.CT_FILE_LAST_SEGS)
     require_equal("table.ref",
                   table.ref,
@@ -180,10 +183,17 @@ def abstract_table(table: MaskPositionTableLoader,
                   table.region.seq,
                   "table.region.seq",
                   classes=DNA)
-    return _calc_ratios(table.fetch_count(), struct.is_paired.values)
+    counts = table.fetch_count()
+    if min_aucroc > 0.:
+        auc = compute_auc_roc(counts[MUTAT_REL] / counts[INFOR_REL],
+                              struct.is_paired)
+        if not (auc >= min_aucroc):
+            logger.detail(f"Skipping {table}: AUC-ROC {auc} < {min_aucroc}")
+            return None
+    return _calc_ratios(counts, struct.is_paired.values)
 
 
-def _abstract_seismicgraph_file(seismicgraph_file: Path):
+def _abstract_seismicgraph_file(seismicgraph_file: Path, min_aucroc: float = 0.):
     with open(seismicgraph_file) as f:
         sample_data = json.load(f)
     require_isinstance("sample_data", sample_data, dict)
@@ -227,11 +237,23 @@ def _abstract_seismicgraph_file(seismicgraph_file: Path):
                               "region.length",
                               classes=int)
                 is_paired = np.array([x != UNPAIRED_MARK for x in dot_bracket])
+                if min_aucroc > 0.:
+                    auc = compute_auc_roc(
+                        counts[MUTAT_REL] / counts[INFOR_REL],
+                        pd.Series(is_paired, index=counts.index)
+                    )
+                    if not (auc >= min_aucroc):
+                        logger.detail(
+                            f"Skipping profile {profile!r}: "
+                            f"AUC-ROC {auc} < {min_aucroc}"
+                        )
+                        continue
                 yield _calc_ratios(counts, is_paired)
 
 
-def abstract_seismicgraph_file(seismicgraph_file: Path):
-    return _accumulate_ratios(_abstract_seismicgraph_file(seismicgraph_file))
+def abstract_seismicgraph_file(seismicgraph_file: Path, min_aucroc: float = 0.):
+    return _accumulate_ratios(_abstract_seismicgraph_file(seismicgraph_file,
+                                                          min_aucroc))
 
 
 def _calc_ratio_stats(ratios: dict[str, np.ndarray], margin: float = 1.e-6):
@@ -257,6 +279,7 @@ def _calc_ratio_stats(ratios: dict[str, np.ndarray], margin: float = 1.e-6):
 @run_func(COMMAND, default=None)
 def run(input_path: Iterable[str | Path], *,
         struct_file: Iterable[str | Path],
+        min_aucroc: float,
         print_params: bool = True,
         verify_times: bool,
         num_cpus: int):
@@ -286,7 +309,8 @@ def run(input_path: Iterable[str | Path], *,
                             as_list=False,
                             ordered=False,
                             raise_on_error=True,
-                            args=args)
+                            args=args,
+                            kwargs=dict(min_aucroc=min_aucroc))
     # Accumulate ratios from SEISMICgraph files.
     seismicgraph_files = path.find_files_chain(input_path, [path.WebAppFileSeg])
     seismicgraph_ratios = dispatch(abstract_seismicgraph_file,
@@ -295,10 +319,11 @@ def run(input_path: Iterable[str | Path], *,
                                    as_list=False,
                                    ordered=False,
                                    raise_on_error=True,
-                                   args=as_list_of_tuples(seismicgraph_files))
+                                   args=as_list_of_tuples(seismicgraph_files),
+                                   kwargs=dict(min_aucroc=min_aucroc))
     # Accumulate all ratios and calculate statistics.
     paired_ratios, unpaired_ratios = _accumulate_ratios(
-        chain(table_ratios, seismicgraph_ratios)
+        chain(filter(None, table_ratios), seismicgraph_ratios)
     )
     paired_means, paired_fvar = _calc_ratio_stats(paired_ratios)
     unpaired_means, unpaired_fvar = _calc_ratio_stats(unpaired_ratios)
@@ -316,6 +341,7 @@ def run(input_path: Iterable[str | Path], *,
 
 params = [arg_input_path,
           opt_struct_file,
+          opt_min_aucroc,
           opt_verify_times,
           opt_num_cpus]
 
