@@ -1115,15 +1115,14 @@ opt_cluster_abundance_table = Option(
 
 # Join options
 
-opt_joined = Option(
-    ("--joined", "-j"),
+arg_joined_region = Argument(
+    ("joined_region",),
     type=str,
-    default="",
-    help="Name of the region formed by joining other regions"
+    required=True
 )
 
 opt_join_clusts = Option(
-    ("--join-clusts", "-J"),
+    ("--join-clusts", "-j"),
     type=Path(dir_okay=False, exists=True),
     help="Specify which clusters to join clusters using this CSV file"
 )

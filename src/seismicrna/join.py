@@ -9,8 +9,8 @@ from click import command
 from .cluster.data import ClusterDatasetTabulator, load_cluster_dataset
 from .core import path
 from .core.arg import (CMD_JOIN,
+                       arg_joined_region,
                        arg_input_path,
-                       opt_joined,
                        opt_join_clusts,
                        opt_mask_pos_table,
                        opt_mask_read_table,
@@ -40,7 +40,7 @@ def joined_mask_report_exists(top: Path,
                               sample: str,
                               branches_flat: Iterable[str],
                               ref: str,
-                              joined: str,
+                              joined_region: str,
                               regs: Iterable[str]):
     """ Return whether a mask report for the joined region exists. """
     mask_report_file = JoinMaskReport.build_path(
@@ -48,7 +48,7 @@ def joined_mask_report_exists(top: Path,
          path.SAMPLE: sample,
          path.BRANCHES: list(branches_flat),
          path.REF: ref,
-         path.REG: joined}
+         path.REG: joined_region}
     )
     if not mask_report_file.is_file():
         logger.detail(
@@ -112,7 +112,7 @@ def write_report(report_type: type[JoinReport],
 
 @with_tmp_dir(pass_keep_tmp=False)
 def join_regions(out_dir: Path,
-                 name: str,
+                 joined_region: str,
                  sample: str,
                  branches_flat: Iterable[str],
                  ref: str,
@@ -133,7 +133,7 @@ def join_regions(out_dir: Path,
     ----------
     out_dir: pathlib.Path
         Output directory.
-    name: str
+    joined_region: str
         Name of the joined region.
     branches_flat: Iterable[str]
         Branches of the datasets being pooled.
@@ -176,13 +176,13 @@ def join_regions(out_dir: Path,
     # Deduplicate and sort the regions.
     reg_counts = Counter(regs)
     if max(reg_counts.values()) > 1:
-        logger.warning(f"Joined region {repr(name)} of sample {repr(sample)}, "
+        logger.warning(f"Joined region {repr(joined_region)} of sample {repr(sample)}, "
                        f"reference {repr(ref)} in {out_dir} got duplicate "
                        f"regions: {reg_counts}")
     regs = sorted(reg_counts)
     report_kwargs = dict(sample=sample,
                          ref=ref,
-                         reg=name,
+                         reg=joined_region,
                          joined_regions=regs,
                          began=began)
     # Determine whether the dataset is clustered.
@@ -205,7 +205,7 @@ def join_regions(out_dir: Path,
                                                path.SAMPLE: sample,
                                                path.BRANCHES: branches_flat,
                                                path.REF: ref,
-                                               path.REG: name})
+                                               path.REG: joined_region})
     if need_write(join_report_file, force):
         # Because a Join report file has the same name as a Mask/Cluster
         # report, it would be possible to overwrite the latter with a
@@ -247,7 +247,7 @@ def join_regions(out_dir: Path,
             region_dataset.link_data_dirs_to_tmp(tmp_dir)
         if BranchesF.key not in report_kwargs:
             raise NoDataError(
-                f"No regions were given to make joined region {repr(name)} "
+                f"No regions were given to make joined region {repr(joined_region)} "
                 f"with sample {repr(sample)}, reference {repr(ref)}, "
                 f"and branches {branches_flat} in {out_dir}"
             )
@@ -278,8 +278,8 @@ def join_regions(out_dir: Path,
 
 
 @run_func(CMD_JOIN)
-def run(input_path: Iterable[str | Path], *,
-        joined: str,
+def run(joined_region: str,
+        input_path: Iterable[str | Path], *,
         join_clusts: str | None,
         mask_pos_table: bool,
         mask_read_table: bool,
@@ -291,10 +291,6 @@ def run(input_path: Iterable[str | Path], *,
         num_cpus: int,
         force: bool) -> list[Path]:
     """ Merge regions (horizontally) from the Mask or Cluster step. """
-    if not joined:
-        raise ValueError(
-            "No name for the joined region was given via --joined"
-        )
     if join_clusts is not None:
         clusts = parse_join_clusts_file(join_clusts)
     else:
@@ -333,7 +329,7 @@ def run(input_path: Iterable[str | Path], *,
                                                                  sample,
                                                                  branches_flat,
                                                                  ref,
-                                                                 joined,
+                                                                 joined_region,
                                                                  regs)):
             mask_joins = joins[top, sample, branches_flat, ref, False]
             mask_joins.extend(reg for reg in regs if reg not in mask_joins)
@@ -341,7 +337,7 @@ def run(input_path: Iterable[str | Path], *,
     # the clustered regions require the masked regions.
     results = list()
     for use_clustered in [False, True]:
-        args = [(out_dir, joined, sample, branches_flat, ref, regs, clustered)
+        args = [(out_dir, joined_region, sample, branches_flat, ref, regs, clustered)
                 for (out_dir, sample, branches_flat, ref, clustered), regs
                 in joins.items()
                 if clustered == use_clustered]
@@ -366,8 +362,8 @@ def run(input_path: Iterable[str | Path], *,
 
 
 params = [
+    arg_joined_region,
     arg_input_path,
-    opt_joined,
     opt_join_clusts,
     opt_mask_pos_table,
     opt_mask_read_table,

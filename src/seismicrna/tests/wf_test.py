@@ -763,7 +763,7 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
             self.assertEqual(mask_dir, mask_report.parent)
         self.check_no_identical(mask_reports, False)
         # Join mask reports.
-        mjoin_dirs = sorted(run_join(mask_reports, joined=self.MJOINED))
+        mjoin_dirs = sorted(run_join(self.MJOINED, mask_reports))
         mjoin_reports = sorted(out_dir.joinpath(self.SAMPLE,
                                                 "mask",
                                                 self.REF,
@@ -793,7 +793,7 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
             self.assertEqual(cluster_dir, cluster_report.parent)
         self.check_no_identical(cluster_reports, False)
         # Join cluster reports.
-        cjoin_dirs = sorted(run_join(cluster_reports, joined=self.CJOINED))
+        cjoin_dirs = sorted(run_join(self.CJOINED, cluster_reports))
         cjoin_reports = sorted(out_dir.joinpath(self.SAMPLE,
                                                 step,
                                                 self.REF,
