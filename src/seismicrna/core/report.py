@@ -72,6 +72,7 @@ from .arg import (opt_seed,
                   opt_quick_unbias,
                   opt_quick_unbias_thresh,
                   opt_min_ncov_read,
+                  opt_min_fcov_read,
                   opt_min_finfo_read,
                   opt_min_mut_gap,
                   opt_mut_collisions,
@@ -436,6 +437,7 @@ MaskPosF = ReportField("mask_pos",
 MinNInfoPosF = OptionReportField(opt_min_ninfo_pos)
 MaxFMutPosF = OptionReportField(opt_max_fmut_pos)
 MinNCovReadF = OptionReportField(opt_min_ncov_read)
+MinFCovReadF = OptionReportField(opt_min_fcov_read)
 DiscontigF = OptionReportField(opt_mask_discontig)
 MinMutGapF = OptionReportField(opt_min_mut_gap)
 MutCollisionsF = OptionReportField(opt_mut_collisions)
@@ -538,6 +540,11 @@ NumReadCutListF = ReportField("n_reads_list",
 NumReadsLoNCovF = ReportField(
     "n_reads_min_ncov",
     "Number of reads with too few bases covering the region",
+    int
+)
+NumReadsLoFCovF = ReportField(
+    "n_reads_min_fcov",
+    "Number of reads covering too small a fraction of the region",
     int
 )
 NumDiscontigF = ReportField("n_reads_discontig",

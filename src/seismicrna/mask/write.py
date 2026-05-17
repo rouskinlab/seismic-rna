@@ -50,6 +50,7 @@ class Masker(object):
     MASK_READ_INIT = "read-init"
     MASK_READ_LIST = "read-exclude"
     MASK_READ_NCOV = "read-ncov"
+    MASK_READ_FCOV = "read-fcov"
     MASK_READ_DISCONTIG = "read-discontig"
     MASK_READ_FINFO = "read-finfo"
     MASK_READ_FMUT = "read-fmut"
@@ -75,6 +76,7 @@ class Masker(object):
                  mask_read_file: list[Path],
                  mask_discontig: bool,
                  min_ncov_read: int,
+                 min_fcov_read: float,
                  min_finfo_read: float,
                  max_fmut_read: float,
                  min_mut_gap: int,
@@ -123,6 +125,8 @@ class Masker(object):
             Whether to mask reads with discontiguous mate pairs.
         min_ncov_read: int
             Minimum number of covered positions required per read.
+        min_fcov_read: float
+            Minimum fraction of region positions that must be covered per read.
         min_finfo_read: float
             Minimum fraction of informative positions required per read.
         max_fmut_read: float
@@ -190,6 +194,7 @@ class Masker(object):
                              "especially with clustering).")
         self.mask_discontig = mask_discontig
         self.min_ncov_read = min_ncov_read
+        self.min_fcov_read = min_fcov_read
         self.min_mut_gap = min_mut_gap
         self.mut_collisions = mut_collisions
         self.probe = probe
@@ -230,6 +235,11 @@ class Masker(object):
     @property
     def n_reads_min_ncov(self):
         return self._n_reads[self.MASK_READ_NCOV]
+
+    # This property can change: do not cache it.
+    @property
+    def n_reads_min_fcov(self):
+        return self._n_reads[self.MASK_READ_FCOV]
 
     # This property can change: do not cache it.
     @property
@@ -414,6 +424,23 @@ class Masker(object):
         # Return a new batch of only those reads.
         return apply_mask(batch, reads)
 
+    def _filter_min_fcov_read(self, batch: RegionMutsBatch):
+        """ Filter out reads covering too small a fraction of the region. """
+        if not 0. <= self.min_fcov_read <= 1.:
+            raise ValueError(f"min_fcov_read must be in [0, 1], but got "
+                             f"{self.min_fcov_read}")
+        if self.min_fcov_read == 0.:
+            logger.detail(f"{self} skipped filtering reads with insufficient "
+                          f"coverage fractions in {batch}")
+            return batch
+        ncov = batch.cover_per_read.values.sum(axis=1)
+        n_pos = self.region.size
+        fcov = ncov / n_pos if n_pos > 0 else np.zeros(ncov.size)
+        reads = batch.read_nums[fcov >= self.min_fcov_read]
+        logger.detail(f"{self} kept {reads.size} reads with coverage "
+                      f"fractions ≥ {self.min_fcov_read} in {batch}")
+        return apply_mask(batch, reads)
+
     def _filter_discontig(self, batch: RegionMutsBatch):
         """ Filter out reads with discontiguous mates. """
         if not self.mask_discontig:
@@ -550,6 +577,9 @@ class Masker(object):
         # Remove reads with too few covered positions.
         batch = self._filter_min_ncov_read(batch)
         n_reads[self.MASK_READ_NCOV] = (n - (n := batch.num_reads))
+        # Remove reads covering too small a fraction of the region.
+        batch = self._filter_min_fcov_read(batch)
+        n_reads[self.MASK_READ_FCOV] = (n - (n := batch.num_reads))
         # Remove reads with discontiguous mates.
         batch = self._filter_discontig(batch)
         n_reads[self.MASK_READ_DISCONTIG] = (n - (n := batch.num_reads))
@@ -743,6 +773,7 @@ class Masker(object):
             pos_max_fmut=self.pos_max_fmut,
             pos_kept=self.pos_kept,
             min_ncov_read=self.min_ncov_read,
+            min_fcov_read=self.min_fcov_read,
             min_finfo_read=self.min_finfo_read,
             max_fmut_read=self.max_fmut_read,
             min_mut_gap=self.min_mut_gap,
@@ -751,6 +782,7 @@ class Masker(object):
             n_reads_init=self.n_reads_init,
             n_reads_list=self.n_reads_list,
             n_reads_min_ncov=self.n_reads_min_ncov,
+            n_reads_min_fcov=self.n_reads_min_fcov,
             n_reads_discontig=self.n_reads_discontig,
             n_reads_min_finfo=self.n_reads_min_finfo,
             n_reads_max_fmut=self.n_reads_max_fmut,

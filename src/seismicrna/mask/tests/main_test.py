@@ -1,13 +1,12 @@
+import tempfile
 import unittest as ut
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from shutil import rmtree
 
 import numpy as np
 
-from seismicrna.core import path
 from seismicrna.core.logs import Level, set_config
 from seismicrna.core.seq.region import Region
 from seismicrna.core.seq.xna import DNA
@@ -16,6 +15,7 @@ from seismicrna.mask.main import run as run_mask
 from seismicrna.pool import run as run_pool
 from seismicrna.relate.io import RelateBatchIO, ReadNamesBatchIO, RefseqIO
 from seismicrna.relate.report import RelateReport
+
 
 POOLED_SAMPLE = "pooled"
 REF = "ref"
@@ -177,11 +177,13 @@ class TestMask(ut.TestCase, ABC):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._tmp: tempfile.TemporaryDirectory | None = None
         self._out_dir: Path | None = None
         self._report_file: Path | None = None
 
     def setUp(self):
-        self._out_dir = path.randdir(prefix="out-")
+        self._tmp = tempfile.TemporaryDirectory()
+        self._out_dir = Path(self._tmp.name)
         self._report_file = write_datasets(self._out_dir,
                                            self.reads_per_sample(),
                                            self.reads_per_batch(),
@@ -190,7 +192,8 @@ class TestMask(ut.TestCase, ABC):
         set_config(verbosity=Level.FATAL, exit_on_error=True)
 
     def tearDown(self):
-        rmtree(self._out_dir)
+        self._tmp.cleanup()
+        self._tmp = None
         self._out_dir = None
         self._report_file = None
         set_config()
@@ -206,6 +209,7 @@ class TestMask(ut.TestCase, ABC):
                 mask_u: bool | None = None,
                 mask_discontig: bool = False,
                 min_ncov_read: int = 1,
+                min_fcov_read: float = 0.,
                 min_finfo_read: float = 0.,
                 max_fmut_read: float = 1.,
                 min_mut_gap: int = 0,
@@ -223,6 +227,7 @@ class TestMask(ut.TestCase, ABC):
                              mask_u=mask_u,
                              mask_discontig=mask_discontig,
                              min_ncov_read=min_ncov_read,
+                             min_fcov_read=min_fcov_read,
                              min_finfo_read=min_finfo_read,
                              max_fmut_read=max_fmut_read,
                              min_mut_gap=min_mut_gap,
@@ -420,7 +425,7 @@ class TestMaskSingle1Sample1Batch(TestMaskSingle,
                              [[0, 1, 2, 3, 4, 5, 6, 7, 8]])
 
     def test_mask_pos_file(self):
-        mask_pos_file = self._out_dir.joinpath("mask-position-list.csv")
+        mask_pos_file = self._out_dir / "mask-position-list.csv"
         with open(mask_pos_file, "x") as f:
             f.write("\n".join(["Reference,Position",
                                f"{REF},1",
@@ -434,9 +439,9 @@ class TestMaskSingle1Sample1Batch(TestMaskSingle,
 
     def test_mask_pos_files(self):
         mask_pos_files = [
-            self._out_dir.joinpath("1", "mask-position-list.csv"),
-            self._out_dir.joinpath("2", "mask-position-list.csv"),
-            self._out_dir.joinpath("3", "mask-position-list.csv")
+            self._out_dir / "1" / "mask-position-list.csv",
+            self._out_dir / "2" / "mask-position-list.csv",
+            self._out_dir / "3" / "mask-position-list.csv",
         ]
         for file in mask_pos_files:
             file.parent.mkdir()
@@ -459,7 +464,7 @@ class TestMaskSingle1Sample1Batch(TestMaskSingle,
                              [[0, 1, 2, 3, 4, 5, 6, 7, 8]])
 
     def test_mask_pos_and_mask_pos_file(self):
-        mask_pos_file = self._out_dir.joinpath("mask-position-list.csv")
+        mask_pos_file = self._out_dir / "mask-position-list.csv"
         with open(mask_pos_file, "x") as f:
             f.write("\n".join(["Reference,Position",
                                f"{REF},1",
@@ -473,7 +478,7 @@ class TestMaskSingle1Sample1Batch(TestMaskSingle,
                              [[0, 1, 2, 3, 4, 5, 6, 7, 8]])
 
     def test_mask_pos_multiple(self):
-        mask_pos_file = self._out_dir.joinpath("mask-position-list.csv")
+        mask_pos_file = self._out_dir / "mask-position-list.csv"
         with open(mask_pos_file, "x") as f:
             f.write("\n".join(["Reference,Position",
                                f"{REF},8"]))
@@ -501,7 +506,7 @@ class TestMaskSingle1Sample1Batch(TestMaskSingle,
                              [[0, 1, 3, 4, 5, 6, 7]])
 
     def test_mask_read_file(self):
-        mask_read_file = self._out_dir.joinpath("mask-read-list.csv.gz")
+        mask_read_file = self._out_dir / "mask-read-list.csv.gz"
         with open(mask_read_file, "x") as f:
             f.write("\n".join(["Read0", "Read2"]))
         dataset = self.dataset(mask_read_file=[mask_read_file])
@@ -512,9 +517,9 @@ class TestMaskSingle1Sample1Batch(TestMaskSingle,
 
     def test_mask_read_files(self):
         mask_read_files = [
-            self._out_dir.joinpath("1", "mask-read-list.csv.gz"),
-            self._out_dir.joinpath("2", "mask-read-list.csv.gz"),
-            self._out_dir.joinpath("3", "mask-read-list.csv.gz")
+            self._out_dir / "1" / "mask-read-list.csv.gz",
+            self._out_dir / "2" / "mask-read-list.csv.gz",
+            self._out_dir / "3" / "mask-read-list.csv.gz",
         ]
         for file in mask_read_files:
             file.parent.mkdir()
@@ -531,7 +536,7 @@ class TestMaskSingle1Sample1Batch(TestMaskSingle,
                              [[1, 3, 4, 7, 8]])
 
     def test_mask_read_and_mask_read_file(self):
-        mask_read_file = self._out_dir.joinpath("mask-read-list.csv.gz")
+        mask_read_file = self._out_dir / "mask-read-list.csv.gz"
         with open(mask_read_file, "x") as f:
             f.write("\n".join(["Read0", "Read2"]))
         dataset = self.dataset(mask_read=["Read8", "Read2"],
@@ -620,6 +625,24 @@ class TestMaskSingle1Sample1Batch(TestMaskSingle,
                              [1, 2, 3, 4, 5, 6, 7, 8])
         self.assertListEqual(extract_read_nums(dataset),
                              [[0, 3, 4, 5, 6, 7, 8]])
+
+    def test_min_fcov_read_amplicons(self):
+        """Two-PCR-amplicon scenario: filter reads that partially cover the useful region.
+
+        Positions 1 and 8 simulate 5' and 3' primers and are masked.
+        Kept region after primer masking: positions 2-7 (6 nt, region.size=6).
+
+        Read5 (start=3, end=8) represents a read from an adjacent amplicon
+        that begins inside amplicon A's primer region.  After masking position
+        8 (3' primer), it covers positions 3-7 = 5/6 ≈ 0.83 → filtered.
+
+        All other reads start at position 1 or 2 and end at position 7 or 8,
+        so after primer masking they each cover all 6 kept positions
+        (positions 2-7) → fcov = 1.0 → kept.
+        """
+        dataset = self.dataset(mask_pos=[(REF, 1), (REF, 8)], min_fcov_read=1.)
+        self.assertListEqual(extract_positions(dataset), [2, 3, 4, 5, 6, 7])
+        self.assertListEqual(extract_read_nums(dataset), [[0, 1, 2, 3, 4, 6, 7, 8]])
 
 
 if __name__ == "__main__":

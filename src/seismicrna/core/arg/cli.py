@@ -848,6 +848,13 @@ opt_min_ncov_read = Option(
     help="Mask reads with fewer than this many bases covering the region"
 )
 
+opt_min_fcov_read = Option(
+    ("--min-fcov-read",),
+    type=float,
+    default=0.,
+    help="Mask reads covering less than this fraction of the region"
+)
+
 opt_min_finfo_read = Option(
     ("--min-finfo-read",),
     type=float,
