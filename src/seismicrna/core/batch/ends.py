@@ -340,7 +340,7 @@ def simulate_segment_ends(uniq_end5s: np.ndarray,
     valid_ends = np.less_equal(uniq_end5s, uniq_end3s)
     num_ends = np.count_nonzero(valid_ends)
     if num_ends == 0:
-        raise ValueError("Got 0 pairs of 5'/3' ends for which 5' > 3'")
+        raise ValueError("Got 0 valid pairs of 5'/3' ends (all have 5' end > 3' end)")
     elif num_ends < valid_ends.size:
         logger.warning(f"Got {valid_ends.size - num_ends} pairs of 5'/3' ends "
                        f"for which 5' > 3'")

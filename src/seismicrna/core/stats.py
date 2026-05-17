@@ -17,7 +17,7 @@ def _validate_alpha(alpha: np.ndarray):
 
 def _validate_mean_variance(mean: np.ndarray, variance: np.ndarray, n: int = 1):
     if (length := ensure_same_length(mean, variance, "mean", "variance")) < 2:
-        raise ValueError(f"Must have at least 2 alpha parameters, but got {n}")
+        raise ValueError(f"Must have at least 2 alpha parameters, but got {length}")
     if mean.min() <= 0.:
         raise ValueError(f"Every mean must be > 0, but got {mean}")
     if mean.max() >= n:

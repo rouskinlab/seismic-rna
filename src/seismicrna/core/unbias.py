@@ -352,7 +352,7 @@ def _calc_p_nomut_window(p_mut_given_span: np.ndarray, min_gap: int):
     Returns
     -------
     np.ndarray
-        3D (window x positions x clusters) array of the probability that
+        3D (window x positions + 1 x clusters) array of the probability that
         (window) consecutive bases, ending at position (position), would
         have 0 mutations at all.
     """

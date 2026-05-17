@@ -24,5 +24,6 @@ class ClusterMutsBatch(ClusterReadBatch, PartialRegionMutsBatch):
 
     @property
     def read_weights(self):
-        self.resps.loc[self.masked_reads_bool] = 0
-        return self.resps
+        weights = self.resps.copy()
+        weights.loc[self.masked_reads_bool] = 0
+        return weights

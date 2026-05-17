@@ -308,7 +308,7 @@ def sim_pmut(positions: pd.Index,
     rng = np.random.default_rng(seed)
     if not isinstance(positions, pd.MultiIndex):
         raise TypeError(f"positions must be a MultiIndex, "
-                        f"but got {type(mean).__name__}")
+                        f"but got {type(positions).__name__}")
     if not isinstance(mean, pd.DataFrame):
         raise TypeError(f"mean must be a DataFrame, "
                         f"but got {type(mean).__name__}")

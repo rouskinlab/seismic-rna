@@ -157,6 +157,8 @@ def find_enclosing_pairs(table: pd.Series):
 def map_nested(pairs: Iterable[tuple[int, int]]):
     """ Map each pair to the pair in which it is nested. """
     pair_dict = pairs_to_dict(pairs)
+    if not pair_dict:
+        return {}
     min_pos = min(pair_dict)
     max_pos = max(pair_dict)
     root_pos = set()
@@ -183,9 +185,9 @@ def map_nested(pairs: Iterable[tuple[int, int]]):
         if p5 != c3 or p3 != c5:
             raise ValueError(f"{pair} and {c3} are not nested")
         if pair_dict.get(p5) != p3:
-            raise ValueError(f"{pair} and")
+            raise ValueError(f"{pair} is a pseudoknot with {(p5, c5)}")
         if p3 <= max_pos:
-            raise ValueError("Found a pseudoknot: {}")
+            raise ValueError(f"Found a pseudoknot: {pair}")
         return None
 
     return {(a, b): find_nested((a, b)) for a, b in pair_dict.items() if a < b}

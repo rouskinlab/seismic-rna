@@ -55,8 +55,8 @@ class RNAProfile(RNARegion):
 
     def _renumber_from_args(self, seq5: int):
         return super()._renumber_from_args(seq5) | dict(
-            data=pd.Series(self.mus.values,
-                           index=self.region.renumber_from(seq5).range)
+            mus=pd.Series(self.mus.values,
+                          index=self.region.renumber_from(seq5).range)
         )
 
     @property

@@ -64,7 +64,7 @@ def _stochastic_round_sum(values: np.ndarray | list | float | int,
     rng = np.random.default_rng(seed)
     values = np.asarray_chkfinite(values)
     if values.size == 0:
-        return np.zeros(values.shape, dtype=bool)
+        return np.zeros(values.shape, dtype=int)
     # Shuffle the values so that the outcome of each will be independent
     # of the others.
     order = rng.permutation(values.size)

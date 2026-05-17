@@ -585,7 +585,8 @@ class EMRun(object):
     @cached_property
     def max_gini(self):
         """ Maximum Gini coefficient among all clusters. """
-        return np.max(calc_gini(self.mus.values))
+        gini = calc_gini(self.mus.values)
+        return np.max(gini) if gini.size > 0 else np.nan
 
     def __str__(self):
         return f"{type(self).__name__}: {self.uniq_reads}; {self.k} cluster(s)"
