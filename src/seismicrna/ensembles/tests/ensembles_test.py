@@ -1,4 +1,4 @@
-import shutil
+import tempfile
 import unittest as ut
 from functools import reduce
 from itertools import product
@@ -11,7 +11,6 @@ from click.testing import CliRunner
 
 from seismicrna.cluster.data import ClusterMutsDataset
 from seismicrna.core import path
-from seismicrna.core.arg.cli import opt_sim_dir
 from seismicrna.core.logs import Level, get_config, set_config
 from seismicrna.core.report import ClusterDirsF
 from seismicrna.main import cli as seismic_cli
@@ -454,7 +453,6 @@ class TestExpandRegionsIntoGaps(ut.TestCase):
 
 
 class TestEnsembles(ut.TestCase):
-    SIM_DIR = Path(opt_sim_dir.default).absolute()
     SAMPLE = "test_sample"
     REFS = "test_refs"
     REF = "test_ref"
@@ -472,31 +470,42 @@ class TestEnsembles(ut.TestCase):
           "((((.(((...)))))))...((((((.((((..................))))))))))"]),
     ]
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._config = None
+        self._tmpdir = None
+
+    @property
+    def sim_dir(self):
+        if self._tmpdir is None:
+            return None
+        return Path(self._tmpdir.name)
+
     def setUp(self):
         self._config = get_config()
         set_config(verbosity=Level.ERROR,
                    log_file_path=None,
                    exit_on_error=True)
-        self.SIM_DIR.mkdir()
+        self._tmpdir = tempfile.TemporaryDirectory()
 
     def tearDown(self):
-        shutil.rmtree(self.SIM_DIR)
+        self._tmpdir.cleanup()
+        self._tmpdir = None
         set_config(*self._config)
 
-    @classmethod
-    def sim_data(cls, module_nums: list[int], read_length: int, seed: int):
+    def sim_data(self, module_nums: list[int], read_length: int, seed: int):
         # Assemble and write the reference sequence.
-        modules = dict(cls.MODULES[m] for m in module_nums)
+        modules = dict(self.MODULES[m] for m in module_nums)
         refseq = DNA("".join(modules.keys()))
-        refs_dir = cls.SIM_DIR.joinpath("refs")
+        refs_dir = self.sim_dir.joinpath("refs")
         refs_dir.mkdir()
-        fasta = refs_dir.joinpath(f"{cls.REFS}.fa")
-        write_fasta(fasta, [(cls.REF, refseq)])
+        fasta = refs_dir.joinpath(f"{self.REFS}.fa")
+        write_fasta(fasta, [(self.REF, refseq)])
         # Assemble and write the secondary structures.
         structures = list(map("".join, product(*modules.values())))
-        param_dir = cls.SIM_DIR.joinpath("params", cls.REF, FULL_NAME)
+        param_dir = self.sim_dir.joinpath("params", self.REF, FULL_NAME)
         param_dir.mkdir(parents=True)
-        db_file = param_dir.joinpath(f"{cls.PROFILE}.db")
+        db_file = param_dir.joinpath(f"{self.PROFILE}.db")
         with open(db_file, "x") as f:
             for i, struct in enumerate(structures):
                 if i == 0:
@@ -519,8 +528,8 @@ class TestEnsembles(ut.TestCase):
                    clust_conc=1000.,
                    seed=seed)
         relate_dirs = sim_relate(param_dir=[param_dir],
-                                 sample=cls.SAMPLE,
-                                 profile_name=cls.PROFILE,
+                                 sample=self.SAMPLE,
+                                 profile_name=self.PROFILE,
                                  num_reads=200000,
                                  paired_end=False,
                                  brotli_level=0,

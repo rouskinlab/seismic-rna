@@ -804,7 +804,7 @@ def calc_semi_g_anomaly(num_obs: int | np.ndarray,
     with np.errstate(divide="ignore"):
         result = num_obs * (np.log(num_obs) - log_exp)
     # By convention, 0 * log(0/E) = 0 (the limit as O→0⁺).
-    if isinstance(result, np.ndarray):
+    if not np.isscalar(num_obs):
         result = np.where(num_obs == 0, 0., result)
     elif num_obs == 0:
         result = 0.

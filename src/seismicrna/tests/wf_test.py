@@ -1,5 +1,5 @@
 import os
-import shutil
+import tempfile
 import unittest as ut
 from itertools import chain, combinations, product
 from pathlib import Path
@@ -70,8 +70,23 @@ def list_profiles(num_structs: int):
 
 
 class TestWorkflow(ut.TestCase):
-    OUT_DIR = Path("wf-test-out").absolute()
-    SIM_DIR = Path("wf-test-sim").absolute()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._config = None
+        self._tmpdir = None
+
+    @property
+    def sim_dir(self):
+        if self._tmpdir is None:
+            return None
+        return Path(self._tmpdir.name) / "sim"
+
+    @property
+    def out_dir(self):
+        if self._tmpdir is None:
+            return None
+        return Path(self._tmpdir.name) / "out"
 
     def setUp(self):
         self.maxDiff = 10000
@@ -79,12 +94,13 @@ class TestWorkflow(ut.TestCase):
         set_config(verbosity=Level.ERROR,
                    log_file_path=None,
                    exit_on_error=True)
-        self.SIM_DIR.mkdir()
-        self.OUT_DIR.mkdir()
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self.sim_dir.mkdir()
+        self.out_dir.mkdir()
 
     def tearDown(self):
-        shutil.rmtree(self.SIM_DIR)
-        shutil.rmtree(self.OUT_DIR)
+        self._tmpdir.cleanup()
+        self._tmpdir = None
         set_config(*self._config)
 
     def test_wf_sim_2samples_2refs_20000reads_2clusts(self):
@@ -95,15 +111,15 @@ class TestWorkflow(ut.TestCase):
         num_batches = (num_reads + 1) // batch_size + 1
         samples = ["test-sample-1", "test-sample-2"]
         refs = {"ref-A": 100, "ref-B": 150}
-        samples_dir = self.SIM_DIR.joinpath("samples")
+        samples_dir = self.sim_dir.joinpath("samples")
         all_fastas = list()
         for ref, reflen in refs.items():
-            run_sim_ref(refs=ref, ref=ref, reflen=reflen, sim_dir=self.SIM_DIR, seed=0)
-            fasta = self.SIM_DIR.joinpath("refs", f"{ref}.fa")
+            run_sim_ref(refs=ref, ref=ref, reflen=reflen, sim_dir=self.sim_dir, seed=0)
+            fasta = self.sim_dir.joinpath("refs", f"{ref}.fa")
             all_fastas.append(fasta)
             run_sim_fold(fasta, probe=PROBE_DMS, fold_max=num_structs,
-                         sim_dir=self.SIM_DIR)
-            param_dir = self.SIM_DIR.joinpath("params", ref, "full")
+                         sim_dir=self.sim_dir)
+            param_dir = self.sim_dir.joinpath("params", ref, "full")
             ct_file = param_dir.joinpath("simulated.ct")
             run_sim_params(ct_file=[ct_file], probe=PROBE_DMS, seed=0)
             for sample in samples:
@@ -121,7 +137,7 @@ class TestWorkflow(ut.TestCase):
                     )
                     self.assertTrue(os.path.isfile(fastq))
         # Merge the FASTA files for all references.
-        fasta = self.SIM_DIR.joinpath("refs", "test-refs.fa")
+        fasta = self.sim_dir.joinpath("refs", "test-refs.fa")
         with open(fasta, "x") as f:
             for ref in all_fastas:
                 with open(ref) as r:
@@ -144,7 +160,7 @@ class TestWorkflow(ut.TestCase):
                                                                    (2, 2)],
                                                      "k": None,
                                                      "clust": None}
-        pair_graph_kwargs = rel_graph_kwargs | dict(out_dir=self.OUT_DIR,
+        pair_graph_kwargs = rel_graph_kwargs | dict(out_dir=self.out_dir,
                                                     comppair=True,
                                                     compself=False)
         refs_coords = {"ref-A": [(1, 70), (31, 90)],
@@ -153,7 +169,7 @@ class TestWorkflow(ut.TestCase):
                         for ref, ref_coords in refs_coords.items()}
         run_wf(fasta=fasta,
                input_path=[],
-               out_dir=self.OUT_DIR,
+               out_dir=self.out_dir,
                dmfastqx=[samples_dir],
                seed=0,
                batch_size=batch_size,
@@ -185,35 +201,35 @@ class TestWorkflow(ut.TestCase):
                mutdist_null=True,
                **graph_kwargs)
         # Create additional graphs that are not part of wf.
-        RollingSNRRunner.run([self.OUT_DIR],
+        RollingSNRRunner.run([self.out_dir],
                              window=21,
                              winmin=7,
                              **rel_graph_kwargs)
-        PositionHistogramRunner.run([self.OUT_DIR],
+        PositionHistogramRunner.run([self.out_dir],
                                     hist_bins=37,
                                     hist_margin=0.01,
                                     **rel_graph_kwargs)
-        RollingCorrelationRunner.run([self.OUT_DIR],
+        RollingCorrelationRunner.run([self.out_dir],
                                      metric=KEY_PEARSON,
                                      window=21,
                                      winmin=7,
                                      **pair_graph_kwargs)
-        DeltaProfileRunner.run([self.OUT_DIR],
+        DeltaProfileRunner.run([self.out_dir],
                                **pair_graph_kwargs)
-        ScatterRunner.run([self.OUT_DIR],
+        ScatterRunner.run([self.out_dir],
                           metric=KEY_PEARSON,
                           **pair_graph_kwargs)
         # Re-run profile graph for clusters with arbitray (k, clust) list.
-        ProfileRunner.run([self.OUT_DIR.joinpath(sample).joinpath("cluster")
+        ProfileRunner.run([self.out_dir.joinpath(sample).joinpath("cluster")
                            for sample in samples],
                           **clust_rel_graph_kwargs)
         # Confirm that all expected output files exist.
         graph_formats = [".csv", ".html", ".svg", ".pdf", ".png"]
         for sample in samples:
             self.assertTrue(
-                self.OUT_DIR.joinpath(f"{sample}__webapp.json").is_file()
+                self.out_dir.joinpath(f"{sample}__webapp.json").is_file()
             )
-            sample_dir = self.OUT_DIR.joinpath(sample)
+            sample_dir = self.out_dir.joinpath(sample)
             align_dir = sample_dir.joinpath("align")
             self.assertListEqual(
                 sorted(align_dir.iterdir()),
@@ -320,7 +336,7 @@ class TestWorkflow(ut.TestCase):
         self.assertListEqual(tracks, target_tracks)
         for sample1, sample2 in combinations(sorted(samples), 2):
             sample = f"{sample1}_VS_{sample2}"
-            sample_dir = self.OUT_DIR.joinpath(sample)
+            sample_dir = self.out_dir.joinpath(sample)
             for ref, ref_regions in refs_regions.items():
                 graph_full_dir = sample_dir.joinpath("graph", ref, "full")
                 for ext in graph_formats:
@@ -358,15 +374,15 @@ class TestWorkflow(ut.TestCase):
         num_batches = (num_reads + 1) // batch_size + 1
         samples = ["test-sample-1", "test-sample-2"]
         refs = {"ref-A": 100, "ref-B": 150}
-        samples_dir = self.SIM_DIR.joinpath("samples")
+        samples_dir = self.sim_dir.joinpath("samples")
         all_fastas = list()
         for ref, reflen in refs.items():
-            run_sim_ref(refs=ref, ref=ref, reflen=reflen, sim_dir=self.SIM_DIR, seed=0)
-            fasta = self.SIM_DIR.joinpath("refs", f"{ref}.fa")
+            run_sim_ref(refs=ref, ref=ref, reflen=reflen, sim_dir=self.sim_dir, seed=0)
+            fasta = self.sim_dir.joinpath("refs", f"{ref}.fa")
             all_fastas.append(fasta)
             run_sim_fold(fasta, probe=PROBE_DMS, fold_max=num_structs,
-                         sim_dir=self.SIM_DIR)
-            param_dir = self.SIM_DIR.joinpath("params", ref, "full")
+                         sim_dir=self.sim_dir)
+            param_dir = self.sim_dir.joinpath("params", ref, "full")
             ct_file = param_dir.joinpath("simulated.ct")
             run_sim_params(ct_file=[ct_file], probe=PROBE_DMS, seed=0)
             for sample in samples:
@@ -384,7 +400,7 @@ class TestWorkflow(ut.TestCase):
                     )
                     self.assertTrue(os.path.isfile(fastq))
         # Merge the FASTA files for all references.
-        fasta = self.SIM_DIR.joinpath("refs", "test-refs.fa")
+        fasta = self.sim_dir.joinpath("refs", "test-refs.fa")
         with open(fasta, "x") as f:
             for ref in all_fastas:
                 with open(ref) as r:
@@ -404,7 +420,7 @@ class TestWorkflow(ut.TestCase):
                  "--exit-on-error",
                  "wf",
                  str(fasta),
-                 "-o", str(self.OUT_DIR),
+                 "-o", str(self.out_dir),
                  "-X", str(samples_dir),
                  "--seed", "0",
                  "--batch-size", str(batch_size),
@@ -464,20 +480,20 @@ class TestWorkflow(ut.TestCase):
                                                                    (2, 2)],
                                                      "k": None,
                                                      "clust": None}
-        PositionHistogramRunner.run([self.OUT_DIR],
+        PositionHistogramRunner.run([self.out_dir],
                                     hist_bins=37,
                                     hist_margin=0.01,
                                     **rel_graph_kwargs)
         # Re-run profile graph for clusters with arbitrary (k, clust) list.
-        ProfileRunner.run([self.OUT_DIR.joinpath(sample).joinpath("cluster")
+        ProfileRunner.run([self.out_dir.joinpath(sample).joinpath("cluster")
                            for sample in samples],
                           **clust_rel_graph_kwargs)
         graph_formats = [".csv", ".html", ".svg", ".pdf", ".png"]
         for sample in samples:
             self.assertTrue(
-                self.OUT_DIR.joinpath(f"{sample}__webapp.json").is_file()
+                self.out_dir.joinpath(f"{sample}__webapp.json").is_file()
             )
-            sample_dir = self.OUT_DIR.joinpath(sample)
+            sample_dir = self.out_dir.joinpath(sample)
             align_dir = sample_dir.joinpath("align")
             self.assertListEqual(
                 sorted(align_dir.iterdir()),
@@ -584,10 +600,6 @@ class TestWorkflow(ut.TestCase):
 
 class TestWorkflowTwoOutDirs(ut.TestCase):
     NUMBERS = [1, 2]
-    SIM_DIR = Path("wf2-test-sim").absolute()
-    OUT_DIR = Path("wf2-test-out").absolute()
-    SIM_DIRS = tuple(Path(f"wf2-test-sim{i}").absolute() for i in NUMBERS)
-    OUT_DIRS = tuple(Path(f"wf2-test-out{i}").absolute() for i in NUMBERS)
     REFS = "test_refs"
     REF = "test_ref"
     SAMPLE = "test_sample"
@@ -595,23 +607,50 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
     MJOINED = "mjoined_region"
     CJOINED = "cjoined_region"
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._config = None
+        self._tmpdir = None
+
+    @property
+    def sim_dir(self):
+        if self._tmpdir is None:
+            return None
+        return Path(self._tmpdir.name) / "sim"
+
+    @property
+    def out_dir(self):
+        if self._tmpdir is None:
+            return None
+        return Path(self._tmpdir.name) / "out"
+
+    @property
+    def sim_dirs(self):
+        if self._tmpdir is None:
+            return None
+        return tuple(Path(self._tmpdir.name) / f"sim{i}" for i in self.NUMBERS)
+
+    @property
+    def out_dirs(self):
+        if self._tmpdir is None:
+            return None
+        return tuple(Path(self._tmpdir.name) / f"out{i}" for i in self.NUMBERS)
+
     def setUp(self):
         self._config = get_config()
         set_config(verbosity=Level.ERROR,
                    log_file_path=None,
                    exit_on_error=True)
-        self.SIM_DIR.mkdir()
-        self.OUT_DIR.mkdir()
-        for sim_dir, out_dir in zip(self.SIM_DIRS, self.OUT_DIRS, strict=True):
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self.sim_dir.mkdir()
+        self.out_dir.mkdir()
+        for sim_dir, out_dir in zip(self.sim_dirs, self.out_dirs, strict=True):
             sim_dir.mkdir()
             out_dir.mkdir()
 
     def tearDown(self):
-        shutil.rmtree(self.SIM_DIR)
-        shutil.rmtree(self.OUT_DIR)
-        for sim_dir, out_dir in zip(self.SIM_DIRS, self.OUT_DIRS, strict=True):
-            shutil.rmtree(sim_dir)
-            shutil.rmtree(out_dir)
+        self._tmpdir.cleanup()
+        self._tmpdir = None
         set_config(*self._config)
 
     def check_no_identical(self, files: Iterable[Path | str], binary: bool):
@@ -622,16 +661,16 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
                 self.assertNotEqual(f1.read(), f2.read())
 
     def test_wf_two_out_dirs(self):
-        fasta = run_sim_ref(sim_dir=self.SIM_DIR,
+        fasta = run_sim_ref(sim_dir=self.sim_dir,
                             ref=self.REF,
                             refs=self.REFS,
                             reflen=60)
-        ct_file, = run_sim_fold(fasta, probe=PROBE_DMS, sim_dir=self.SIM_DIR,
+        ct_file, = run_sim_fold(fasta, probe=PROBE_DMS, sim_dir=self.sim_dir,
                                 fold_max=1)
         dmfastqxs = list()
-        for sim_dir, out_dir in zip(self.SIM_DIRS, self.OUT_DIRS, strict=True):
+        for sim_dir, out_dir in zip(self.sim_dirs, self.out_dirs, strict=True):
             ct_file_copy = path.transpath(sim_dir,
-                                          self.SIM_DIR,
+                                          self.sim_dir,
                                           ct_file,
                                           strict=True)
             param_dir = ct_file_copy.parent
@@ -659,11 +698,11 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
                                run_align,
                                fasta,
                                dmfastqx=list(chain(*dmfastqxs)),
-                               out_dir=self.OUT_DIR,
+                               out_dir=self.out_dir,
                                **align_kwargs)
         # Align FASTQ files in different output directories.
         bam_files = list()
-        for dmfastqx, out_dir in zip(dmfastqxs, self.OUT_DIRS, strict=True):
+        for dmfastqx, out_dir in zip(dmfastqxs, self.out_dirs, strict=True):
             bam_dir, = run_align(fasta,
                                  dmfastqx=dmfastqx,
                                  out_dir=out_dir,
@@ -682,11 +721,11 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
                                run_relate,
                                fasta,
                                bam_files,
-                               out_dir=str(self.OUT_DIR),
+                               out_dir=str(self.out_dir),
                                **relate_kwargs)
         # Relate BAM files in different output directories.
         relate_reports = list()
-        for bam_file, out_dir in zip(bam_files, self.OUT_DIRS, strict=True):
+        for bam_file, out_dir in zip(bam_files, self.out_dirs, strict=True):
             relate_dir, = run_relate(fasta,
                                      (str(bam_file),),
                                      out_dir=str(out_dir),
@@ -705,7 +744,7 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
                                                "relate",
                                                self.REF,
                                                "relate-report.json")
-                              for out_dir in self.OUT_DIRS)
+                              for out_dir in self.out_dirs)
         for pool_report, pool_dir in zip(pool_reports, pool_dirs, strict=True):
             self.assertTrue(pool_report.is_file())
             self.assertEqual(pool_dir, pool_report.parent)
@@ -718,7 +757,7 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
                                                self.REF,
                                                "5-50",
                                                "mask-report.json")
-                              for out_dir in self.OUT_DIRS)
+                              for out_dir in self.out_dirs)
         for mask_report, mask_dir in zip(mask_reports, mask_dirs, strict=True):
             self.assertTrue(mask_report.is_file())
             self.assertEqual(mask_dir, mask_report.parent)
@@ -730,7 +769,7 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
                                                 self.REF,
                                                 self.MJOINED,
                                                 "mask-report.json")
-                               for out_dir in self.OUT_DIRS)
+                               for out_dir in self.out_dirs)
         for mjoin_report, mjoin_dir in zip(mjoin_reports,
                                            mjoin_dirs,
                                            strict=True):
@@ -746,7 +785,7 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
                                                   self.REF,
                                                   "5-50",
                                                   "cluster-report.json")
-                                 for out_dir in self.OUT_DIRS)
+                                 for out_dir in self.out_dirs)
         for cluster_report, cluster_dir in zip(cluster_reports,
                                                cluster_dirs,
                                                strict=True):
@@ -761,7 +800,7 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
                                                 self.CJOINED,
                                                 f"{step}-report.json")
                                for step in ["mask", "cluster"]
-                               for out_dir in self.OUT_DIRS)
+                               for out_dir in self.out_dirs)
         for cjoin_report, cjoin_dir in zip(cjoin_reports,
                                            cjoin_dirs,
                                            strict=True):
@@ -777,7 +816,7 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
                                               "fold",
                                               self.REF,
                                               "full")
-                             for out_dir in self.OUT_DIRS]
+                             for out_dir in self.out_dirs]
                 ct_name = f"{region}__{profile}.ct"
                 self.check_no_identical([fold_dir.joinpath(ct_name)
                                          for fold_dir in fold_dirs],

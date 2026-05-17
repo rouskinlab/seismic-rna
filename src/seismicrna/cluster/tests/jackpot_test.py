@@ -1,4 +1,5 @@
 import shutil
+import tempfile
 import unittest as ut
 from pathlib import Path
 
@@ -377,7 +378,6 @@ class TestCalcSemiGAnomaly(ut.TestCase):
 
 
 class TestBootstrapJackpotScores(ut.TestCase):
-    SIM_DIR = Path("test_sim").absolute()
     REFS = "test_refs"
     REF = "test_ref"
     SAMPLE = "test_sample"
@@ -385,17 +385,25 @@ class TestBootstrapJackpotScores(ut.TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._config = None
+        self._tmpdir = None
+
+    @property
+    def sim_dir(self):
+        if self._tmpdir is None:
+            return None
+        return Path(self._tmpdir.name) / "sim"
 
     def setUp(self):
-        self.SIM_DIR.mkdir()
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self.sim_dir.mkdir()
         self._config = get_config()
         set_config(verbosity=Level.ERROR,
                    log_file_path=None,
                    exit_on_error=True)
 
     def tearDown(self):
-        if self.SIM_DIR.exists():
-            shutil.rmtree(self.SIM_DIR)
+        self._tmpdir.cleanup()
+        self._tmpdir = None
         set_config(*self._config)
 
     def sim_jackpot_quotient(self,
@@ -411,11 +419,11 @@ class TestBootstrapJackpotScores(ut.TestCase):
         run_sim_ref(refs=self.REFS,
                     ref=self.REF,
                     reflen=n_pos,
-                    sim_dir=self.SIM_DIR,
+                    sim_dir=self.sim_dir,
                     seed=seed)
-        fasta = self.SIM_DIR.joinpath("refs", f"{self.REFS}.fa")
-        run_sim_fold(fasta, probe=PROBE_DMS, fold_max=n_clusts, sim_dir=self.SIM_DIR)
-        param_dir = self.SIM_DIR.joinpath("params", self.REF, "full")
+        fasta = self.sim_dir.joinpath("refs", f"{self.REFS}.fa")
+        run_sim_fold(fasta, probe=PROBE_DMS, fold_max=n_clusts, sim_dir=self.sim_dir)
+        param_dir = self.sim_dir.joinpath("params", self.REF, "full")
         ct_file = param_dir.joinpath("simulated.ct")
         pmut = [("loq", 0.),
                 ("ac", 0.25),
@@ -485,7 +493,8 @@ class TestBootstrapJackpotScores(ut.TestCase):
                        jackpot_max_data=opt_jackpot_max_data.default)
         # Delete the simulated files so that this function can run again
         # if necessary.
-        shutil.rmtree(self.SIM_DIR)
+        shutil.rmtree(self.sim_dir)
+        self.sim_dir.mkdir()
         return em_run.jackpot_quotient
 
     @staticmethod
