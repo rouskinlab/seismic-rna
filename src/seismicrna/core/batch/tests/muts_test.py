@@ -322,7 +322,9 @@ class TestMergeCloseMuts(ut.TestCase):
         batch = self._make_batch(4,
                                  {3: {DELET: [2, 3], SUB_T: [0]},
                                   5: {SUB_T: [0, 1]}})
-        result = batch.merge_close_muts(RelPattern.from_counts(), min_gap=3)
+        result = batch.merge_close_muts(RelPattern.from_counts(count_del=False,
+                                                               count_ins=False),
+                                        min_gap=3)
         expected = {1: {}, 2: {}, 3: {DELET: [2, 3]}, 4: {}, 5: {SUB_T: [0, 1]}}
         self._assert_muts_equal(result, expected)
 

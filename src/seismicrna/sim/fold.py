@@ -21,11 +21,14 @@ from ..core.arg import (FOLD_BACKEND_RNAFOLD,
                         opt_fold_md,
                         opt_fold_mfe,
                         opt_fold_max,
+                        opt_fold_min,
                         opt_fold_percent,
                         opt_keep_tmp,
                         opt_force,
                         opt_num_cpus,
                         optional_path)
+from ..core.rna import from_ct
+from ..core.logs import logger
 from ..core.run import run_func
 from ..core.seq import DNA, RefRegions, Region, parse_fasta, write_fasta
 from ..core.task import as_list_of_tuples, dispatch
@@ -58,6 +61,7 @@ def fold_region(region: Region, *,
                 fold_md: int,
                 fold_mfe: bool,
                 fold_max: int,
+                fold_min: int,
                 fold_percent: float,
                 keep_tmp: bool,
                 force: bool,
@@ -161,6 +165,14 @@ def fold_region(region: Region, *,
                     db_tmp.unlink(missing_ok=True)
                 if ct_tmp != ct_sim:
                     ct_tmp.unlink(missing_ok=True)
+    if not fold_mfe:
+        num_structures = sum(1 for _ in from_ct(ct_sim))
+        if num_structures < fold_min:
+            ct_sim.unlink(missing_ok=True)
+            raise ValueError(
+                f"Folded {num_structures} structure(s) for "
+                f"{region.ref}/{region.name} but need >= {fold_min}"
+            )
     return ct_sim
 
 
@@ -178,6 +190,7 @@ def run(fasta: str | Path, *,
         fold_md: int,
         fold_mfe: bool,
         fold_max: int,
+        fold_min: int,
         fold_percent: float,
         keep_tmp: bool,
         tmp_dir: Path,
@@ -210,6 +223,8 @@ def run(fasta: str | Path, *,
         Whether to predict only the minimum free energy structure.
     fold_max: int
         Maximum number of structures per region.
+    fold_min: int
+        Minimum number of structures required per region.
     fold_percent: float
         Maximum percent energy difference from the MFE structure.
     keep_tmp: bool
@@ -228,6 +243,12 @@ def run(fasta: str | Path, *,
     """
     fold_backend = resolve_fold_backend(probe, fold_backend)
     check_fold_deps(fold_backend)
+    if not fold_mfe and fold_min > fold_max:
+        logger.warning(
+            f"fold_min ({fold_min}) > fold_max ({fold_max}): "
+            f"setting fold_min = fold_max"
+        )
+        fold_min = fold_max
     # List the regions.
     regions = RefRegions(parse_fasta(Path(fasta), DNA),
                          regs_file=(Path(fold_regions_file)
@@ -251,6 +272,7 @@ def run(fasta: str | Path, *,
                                 fold_md=fold_md,
                                 fold_mfe=fold_mfe,
                                 fold_max=fold_max,
+                                fold_min=fold_min,
                                 fold_percent=fold_percent,
                                 keep_tmp=keep_tmp,
                                 force=force))
@@ -270,6 +292,7 @@ params = [arg_fasta,
           opt_fold_md,
           opt_fold_mfe,
           opt_fold_max,
+          opt_fold_min,
           opt_fold_percent,
           opt_keep_tmp,
           opt_force,

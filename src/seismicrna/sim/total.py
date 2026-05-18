@@ -1,7 +1,9 @@
 import os
+from itertools import combinations
 from pathlib import Path
 from typing import Iterable
 
+import numpy as np
 from click import command
 
 from . import (fastq as fastq_mod,
@@ -9,20 +11,101 @@ from . import (fastq as fastq_mod,
                params as params_mod,
                ref as ref_mod,
                relate as relate_mod)
+from .muts import calc_pmut_pattern, load_pmut
 from ..core import path
 from ..core.arg import (arg_fasta,
                         arg_input_path,
                         opt_branch,
                         opt_batch_size,
                         opt_brotli_level,
+                        opt_count_del,
+                        opt_count_ins,
                         opt_ct_file,
+                        opt_mask_a,
+                        opt_mask_c,
+                        opt_mask_coords,
+                        opt_mask_g,
+                        opt_mask_polya,
+                        opt_mask_primers,
+                        opt_mask_u,
+                        opt_max_fraction_ident,
+                        opt_max_pearson_sim,
+                        opt_max_tries,
+                        opt_min_marcd_sim,
                         opt_param_dir,
                         opt_write_read_names,
                         merge_params)
+from ..core.logs import logger
+from ..core.mu.compare import calc_mean_arcsine_distance, calc_pearson
+from ..core.rel import MATCH, RelPattern
+from ..core.rna import from_ct
 from ..core.run import run_func
-from ..core.seq import DNA
+from ..core.seq import DNA, parse_fasta, RefRegions
+from ..mask.main import set_mask_acgu
 
 COMMAND = __name__.split(os.path.extsep)[-1]
+
+
+def _clusters_distinct(ct_file: Path,
+                        fasta: str | Path,
+                        mask_coords: Iterable[tuple[str, int, int]],
+                        mask_primers: Iterable[tuple[str, DNA, DNA]],
+                        probe: str,
+                        mask_a: bool | None,
+                        mask_c: bool | None,
+                        mask_g: bool | None,
+                        mask_u: bool | None,
+                        mask_polya: int,
+                        max_fraction_ident: float,
+                        max_pearson: float,
+                        min_marcd: float) -> bool:
+    """Return True if all cluster pairs satisfy the similarity thresholds."""
+    try:
+        region = next(from_ct(ct_file)).region
+    except StopIteration:
+        raise ValueError(f"CT file {ct_file} contains 0 structures") from None
+    # Mask positions from the coordinates and primers.
+    mask_coords = list(mask_coords)
+    mask_primers = list(mask_primers)
+    select_regs = (list(RefRegions(parse_fasta(Path(fasta), DNA),
+                                   ends=mask_coords,
+                                   primers=mask_primers,
+                                   exclude_primers=True).regions)
+                   if (mask_coords or mask_primers) else [])
+    for reg in select_regs:
+        if reg.ref == region.ref:
+            region.mask_list(range(region.end5, reg.end5 + 1))
+            region.mask_list(range(reg.end3, region.end3 + 1))
+    # Apply per-nucleotide masking.
+    mask_a, mask_c, mask_g, mask_u = set_mask_acgu(probe, mask_a, mask_c,
+                                                    mask_g, mask_u)
+    if mask_a:
+        region.mask_a()
+    if mask_c:
+        region.mask_c()
+    if mask_g:
+        region.mask_g()
+    if mask_u:
+        region.mask_t()
+    region.mask_polya(mask_polya)
+    # Compute per-cluster mutation rates over unmasked positions.
+    pmut_path = ct_file.with_suffix(path.PARAM_MUTS_EXT)
+    mus = calc_pmut_pattern(load_pmut(pmut_path),
+                            RelPattern.from_counts(count_del=True,
+                                                   count_ins=True))
+    mus = mus.loc[region.unmasked_int]
+    if not mus.empty:
+        # Pairwise checks.
+        for col1, col2 in combinations(mus.columns, 2):
+            mu1 = mus[col1]
+            mu2 = mus[col2]
+            if np.mean(np.isclose(mu1, mu2)) >= max_fraction_ident:
+                return False
+            if float(calc_pearson(mu1, mu2)) >= max_pearson:
+                return False
+            if min_marcd > 0. and float(calc_mean_arcsine_distance(mu1, mu2)) < min_marcd:
+                return False
+    return True
 
 
 @run_func(COMMAND, default=None)
@@ -43,6 +126,7 @@ def run(*,
         fold_md: int,
         fold_mfe: bool,
         fold_max: int,
+        fold_min: int,
         fold_percent: float,
         pmut_paired: Iterable[tuple[str, float]],
         pmut_unpaired: Iterable[tuple[str, float]],
@@ -53,6 +137,17 @@ def run(*,
         length_fmean: float,
         length_fvar: float,
         clust_conc: float,
+        mask_coords: Iterable[tuple[str, int, int]],
+        mask_primers: Iterable[tuple[str, DNA, DNA]],
+        mask_a: bool | None,
+        mask_c: bool | None,
+        mask_g: bool | None,
+        mask_u: bool | None,
+        mask_polya: int,
+        max_fraction_ident: float,
+        max_pearson_sim: float,
+        min_marcd_sim: float,
+        max_tries: int,
         paired_end: bool,
         read_length: int,
         reverse_fraction: float,
@@ -67,53 +162,100 @@ def run(*,
         num_cpus: int,
         seed: int | None):
     """ Simulate FASTQ files from scratch. """
-    fasta = str(ref_mod.run(
-        sim_dir=sim_dir,
-        refs=refs,
-        ref=ref,
-        reflen=reflen,
-        force=force,
-        seed=seed)
-    )
-    ct_file = fold_mod.run(
-        fasta=fasta,
-        sim_dir=sim_dir,
-        tmp_pfx=tmp_pfx,
-        profile_name=profile_name,
-        fold_backend=fold_backend,
-        probe=probe,
-        fold_coords=fold_coords,
-        fold_primers=fold_primers,
-        fold_regions_file=fold_regions_file,
-        fold_constraint=fold_constraint,
-        fold_temp=fold_temp,
-        fold_md=fold_md,
-        fold_mfe=fold_mfe,
-        fold_max=fold_max,
-        fold_percent=fold_percent,
-        keep_tmp=keep_tmp,
-        force=force,
-        num_cpus=num_cpus
-    )
-    params_mod.run(
-        ct_file=ct_file,
-        pmut_paired=pmut_paired,
-        pmut_unpaired=pmut_unpaired,
-        vmut_paired=vmut_paired,
-        vmut_unpaired=vmut_unpaired,
-        probe=probe,
-        center_fmean=center_fmean,
-        center_fvar=center_fvar,
-        length_fmean=length_fmean,
-        length_fvar=length_fvar,
-        clust_conc=clust_conc,
-        force=force,
-        num_cpus=num_cpus,
-        seed=seed
-    )
+    for attempt in range(1, max(max_tries, 1) + 1):
+        logger.routine(
+            f"Began simulation attempt {attempt} of up to {max_tries}"
+        )
+        # Simulate the reference sequence.
+        fasta = str(ref_mod.run(
+            sim_dir=sim_dir,
+            refs=refs,
+            ref=ref,
+            reflen=reflen,
+            force=force,
+            seed=seed)
+        )
+        # Simulate the structures.
+        ct_files = fold_mod.run(
+            fasta=fasta,
+            sim_dir=sim_dir,
+            tmp_pfx=tmp_pfx,
+            profile_name=profile_name,
+            fold_backend=fold_backend,
+            probe=probe,
+            fold_coords=fold_coords,
+            fold_primers=fold_primers,
+            fold_regions_file=fold_regions_file,
+            fold_constraint=fold_constraint,
+            fold_temp=fold_temp,
+            fold_md=fold_md,
+            fold_mfe=fold_mfe,
+            fold_max=fold_max,
+            fold_min=fold_min,
+            fold_percent=fold_percent,
+            keep_tmp=keep_tmp,
+            force=force,
+            num_cpus=num_cpus
+        )
+        # Check whether folding succeeded.
+        if len(ct_files) == 0:
+            # If not, delete the simulated FASTA and start over.
+            Path(fasta).unlink(missing_ok=True)
+            logger.warning(
+                f"Got fewer than fold_min={fold_min} clusters "
+                f"on attempt {attempt} of up to {max_tries}"
+            )
+            continue
+        elif len(ct_files) > 1:
+            raise ValueError(f"Folding produced {ct_files} CT files")
+        params_mod.run(
+            ct_file=ct_files,
+            pmut_paired=pmut_paired,
+            pmut_unpaired=pmut_unpaired,
+            vmut_paired=vmut_paired,
+            vmut_unpaired=vmut_unpaired,
+            probe=probe,
+            mask_coords=mask_coords,
+            mask_primers=mask_primers,
+            center_fmean=center_fmean,
+            center_fvar=center_fvar,
+            length_fmean=length_fmean,
+            length_fvar=length_fvar,
+            clust_conc=clust_conc,
+            force=force,
+            num_cpus=num_cpus,
+            seed=seed
+        )
+        # Check if the clusters are sufficiently distinct.
+        ct_file = ct_files[0]
+        if not _clusters_distinct(ct_file, fasta,
+                                mask_coords, mask_primers,
+                                probe,
+                                mask_a, mask_c, mask_g, mask_u,
+                                mask_polya,
+                                max_fraction_ident, max_pearson_sim,
+                                min_marcd_sim):
+            # If so, delete the simulated files and start over.
+            Path(fasta).unlink(missing_ok=True)
+            ct_file.unlink(missing_ok=True)
+            for suffix in [path.PARAM_MUTS_EXT,
+                            path.PARAM_ENDS_EXT,
+                            path.PARAM_CLUSTS_EXT]:
+                ct_file.with_suffix(suffix).unlink(missing_ok=True)  
+            logger.warning(
+                f"Clusters were too similar on attempt {attempt} of up to {max_tries}"
+            )
+            continue
+        # Successfully generated structures and parameters.
+        break
+    else:
+        # Failed to generate structures and parameters in max_attempts.
+        raise RuntimeError(
+            f"Failed to simulate references, structures, and parameters within {max_tries} attempt(s)"
+        )
     return fastq_mod.run(
         input_path=(),
-        param_dir=path.deduplicate(f.parent for f in ct_file),
+        param_dir=[ct_file.parent],
         profile_name=profile_name,
         sample=sample,
         paired_end=paired_end,
@@ -131,19 +273,29 @@ def run(*,
     )
 
 
-params = merge_params(fastq_mod.params,
-                      fold_mod.params,
-                      params_mod.params,
-                      ref_mod.params,
-                      relate_mod.params,
-                      exclude=[arg_fasta,
-                               arg_input_path,
-                               opt_branch,
-                               opt_batch_size,
-                               opt_brotli_level,
-                               opt_ct_file,
-                               opt_param_dir,
-                               opt_write_read_names])
+params = merge_params(
+    [opt_max_tries,
+    opt_mask_a,
+    opt_mask_c,
+    opt_mask_g,
+    opt_mask_u,
+    opt_mask_polya,
+    opt_max_fraction_ident,
+    opt_max_pearson_sim,
+    opt_min_marcd_sim],
+    fastq_mod.params,
+    fold_mod.params,
+    params_mod.params,
+    ref_mod.params,
+    relate_mod.params,
+    exclude=[arg_fasta,
+            arg_input_path,
+            opt_branch,
+            opt_batch_size,
+            opt_brotli_level,
+            opt_ct_file,
+            opt_param_dir,
+            opt_write_read_names])
 
 
 @command(COMMAND, params=params)

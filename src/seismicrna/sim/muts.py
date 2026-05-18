@@ -9,6 +9,8 @@ from click import command
 
 from ..core import path
 from ..core.arg import (opt_ct_file,
+                        opt_mask_coords,
+                        opt_mask_primers,
                         opt_pmut_paired,
                         opt_pmut_unpaired,
                         opt_probe,
@@ -48,6 +50,7 @@ from ..core.seq import (BASE_NAME,
                         BASEN,
                         DNA,
                         POS_NAME,
+                        RegionFinder,
                         get_shared_index)
 from ..core.stats import calc_beta_params, calc_dirichlet_params
 from ..core.task import as_list_of_tuples, dispatch
@@ -288,6 +291,8 @@ def make_pmut_means_unpaired(probe: str, **kwargs: float):
 def sim_pmut(positions: pd.Index,
              mean: pd.DataFrame,
              relative_variance: float,
+             end5: int | None,
+             end3: int | None,
              seed: int | None):
     """ Simulate mutation rates using a Dirichlet distribution.
 
@@ -319,7 +324,7 @@ def sim_pmut(positions: pd.Index,
     if MATCH not in rels:
         raise ValueError(f"Relationships omit matches ({MATCH}): {rels}")
     if NOCOV in rels:
-        raise ValueError(f"Relationships include no coverage ({NOCOV}): {rels}")
+        raise ValueError(f"Relationships include no coverage ({NOCOV}): {rels}")    
     # Simulate mutation rates for each kind of base.
     pmut = pd.DataFrame(0., index=positions, columns=rels)
     for base in DNA.alph():
@@ -341,6 +346,13 @@ def sim_pmut(positions: pd.Index,
             pmut_base = np.broadcast_to(mean_nonzero.values[np.newaxis, :],
                                         (base_pos.size, mean_nonzero.size))
         pmut.loc[base_pos, mean_nonzero.index] = pmut_base
+    if end5 is not None and end3 is not None:
+        outside = positions[
+            (positions.get_level_values(POS_NAME) < end5) |
+            (positions.get_level_values(POS_NAME) > end3)
+        ]
+        pmut.loc[outside] = 0.
+        pmut.loc[outside, MATCH] = 1.
     return pmut
 
 
@@ -356,7 +368,9 @@ def run_struct(ct_file: Path,
                vmut_unpaired: float,
                probe: str,
                force: bool,
-               seed: int | None):
+               seed: int | None,
+               mask_coords: Iterable[tuple[str, int, int]] = (),
+               mask_primers: Iterable[tuple[str, DNA, DNA]] = ()):
     """
     Simulate per-position mutation rates for a CT file and write them.
 
@@ -401,6 +415,25 @@ def run_struct(ct_file: Path,
         num_structures = len(structures)
         index = get_shared_index(structure.table.index
                                  for structure in structures)
+        # Compute the coordinate limits from mask_coords/mask_primers if given.
+        region = structures[0].region
+        ref = region.ref
+        seq = region.seq
+        seq5 = region.end5
+        reg_end5 = None
+        reg_end3 = None
+        mask_coords = list(mask_coords)
+        mask_primers = list(mask_primers)
+        ref_coords = [(e5, e3) for r, e5, e3 in mask_coords if r == ref]
+        ref_primers = [(fwd, rev) for r, fwd, rev in mask_primers if r == ref]
+        if ref_coords or ref_primers:
+            regs = ([RegionFinder(ref, seq, seq5=seq5, end5=e5, end3=e3)
+                     for e5, e3 in ref_coords]
+                    + [RegionFinder(ref, seq, seq5=seq5, fwd=fwd, rev=rev,
+                                    exclude_primers=True)
+                       for fwd, rev in ref_primers])
+            reg_end5 = max(r.end5 for r in regs)
+            reg_end3 = min(r.end3 for r in regs)
         # For every unique base pair, simulate paired/unpaied mutation
         # rates for the bases enclosed by the pair.
         mu_paired = dict()
@@ -417,8 +450,10 @@ def run_struct(ct_file: Path,
                     index.get_level_values(POS_NAME) >= end5,
                     index.get_level_values(POS_NAME) <= end3
                 )]
-            mu_paired[pair_] = sim_pmut(use_index, pm, vmut_paired, seed=seed)
-            mu_unpaired[pair_] = sim_pmut(use_index, um, vmut_unpaired, seed=seed)
+            mu_paired[pair_] = sim_pmut(use_index, pm, vmut_paired,
+                                        reg_end5, reg_end3, seed=seed)
+            mu_unpaired[pair_] = sim_pmut(use_index, um, vmut_unpaired,
+                                          reg_end5, reg_end3, seed=seed)
 
         unpair = UNPAIRED, UNPAIRED
         update_mus(unpair)
@@ -484,6 +519,8 @@ def run(*,
         vmut_paired: float,
         vmut_unpaired: float,
         probe: str,
+        mask_coords: Iterable[tuple[str, int, int]],
+        mask_primers: Iterable[tuple[str, DNA, DNA]],
         force: bool,
         num_cpus: int,
         seed: int | None):
@@ -500,6 +537,8 @@ def run(*,
                                 vmut_paired=vmut_paired,
                                 vmut_unpaired=vmut_unpaired,
                                 probe=probe,
+                                mask_coords=mask_coords,
+                                mask_primers=mask_primers,
                                 force=force,
                                 seed=seed))
 
@@ -511,6 +550,8 @@ params = [
     opt_vmut_paired,
     opt_vmut_unpaired,
     opt_probe,
+    opt_mask_coords,
+    opt_mask_primers,
     opt_force,
     opt_num_cpus,
     opt_seed,

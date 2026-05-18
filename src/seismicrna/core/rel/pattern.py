@@ -275,18 +275,27 @@ class RelPattern(object):
 
     @classmethod
     def from_counts(cls,
-                    count_del: bool = False,
-                    count_ins: bool = False,
-                    no_count: Iterable[str] = ()):
+                    count_del: bool = True,
+                    count_ins: bool = True,
+                    no_count: Iterable[str] = (),
+                    only_count: Iterable[str] = ()):
         """ Return a new RelPattern by specifying which general types of
         mutations are to be counted, with optional ones to not count. """
         no_count = list(no_count)
-        return cls(HalfRelPattern.from_counts(count_sub=True,
+        only_count = list(only_count)
+        if only_count:
+            yes = HalfRelPattern.from_counts(count=only_count,
+                                            no_count=no_count),
+            nos = HalfRelPattern.from_counts(count_ref=True,
+                                            no_count=no_count)
+        else:
+            yes = HalfRelPattern.from_counts(count_sub=True,
                                               count_del=count_del,
                                               count_ins=count_ins,
-                                              no_count=no_count),
-                   HalfRelPattern.from_counts(count_ref=True,
-                                              no_count=no_count))
+                                              no_count=no_count)
+            nos = HalfRelPattern.from_counts(count_ref=True,
+                                              no_count=no_count)
+        return cls(yes, nos)
 
     @classmethod
     @cache

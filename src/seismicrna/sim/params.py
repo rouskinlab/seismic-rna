@@ -9,6 +9,7 @@ from . import (clusts as clusts_mod,
                muts as muts_mod)
 from ..core.arg import merge_params
 from ..core.run import run_func
+from ..core.seq import DNA
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -21,6 +22,8 @@ def run(*,
         vmut_paired: float,
         vmut_unpaired: float,
         probe: str,
+        mask_coords: Iterable[tuple[str, int, int]],
+        mask_primers: Iterable[tuple[str, DNA, DNA]],
         center_fmean: float,
         center_fvar: float,
         length_fmean: float,
@@ -39,6 +42,8 @@ def run(*,
                  vmut_paired=vmut_paired,
                  vmut_unpaired=vmut_unpaired,
                  probe=probe,
+                 mask_coords=mask_coords,
+                 mask_primers=mask_primers,
                  force=force,
                  num_cpus=num_cpus,
                  seed=seed)

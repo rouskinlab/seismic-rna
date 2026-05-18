@@ -1332,6 +1332,13 @@ opt_fold_max = Option(
     help="Output at most this many structures (overriden by --fold-mfe)"
 )
 
+opt_fold_min = Option(
+    ("--fold-min",),
+    type=int,
+    default=1,
+    help="Require at least this many structures (overriden by --fold-mfe)"
+)
+
 opt_fold_percent = Option(
     ("--fold-percent",),
     type=float,
@@ -1763,6 +1770,34 @@ opt_reflen = Option(
     type=int,
     default=280,
     help="Simulate a reference sequence with this many bases"
+)
+
+opt_max_tries = Option(
+    ("--max-tries",),
+    type=int,
+    default=10,
+    help="Simulate the parameters with up to this many attempts"
+)
+
+opt_max_fraction_ident = Option(
+    ("--max-fraction-ident",),
+    type=float,
+    default=1.0,
+    help="Retry if any two clusters have more than this fraction of identical mutation rates"
+)
+
+opt_max_pearson_sim = Option(
+    ("--max-pearson-sim",),
+    type=float,
+    default=1.0,
+    help="Retry if any two clusters have a Pearson correlation larger than this"
+)
+
+opt_min_marcd_sim = Option(
+    ("--min-marcd-sim",),
+    type=float,
+    default=0.0,
+    help="Retry if any two clusters have a MARCD less than this (0 disables)"
 )
 
 opt_profile_name = Option(
