@@ -14,7 +14,9 @@ from seismicrna.core.arg import (FOLD_BACKEND_AUTO,
                                  FOLD_ENERGY_METHOD_CORDERO,
                                  FOLD_ENERGY_METHOD_EDDY,
                                  PROBE_DMS,
-                                 PROBE_SHAPE)
+                                 PROBE_SHAPE,
+                                 PROBE_ETC,
+                                 PROBE_NONE)
 from seismicrna.core.extern import (RNASTRUCTURE_FOLD_CMD,
                                     RNASTRUCTURE_SHAPEKNOTS_CMD,
                                     VIENNA_RNAFOLD_CMD,
@@ -164,78 +166,65 @@ BOOLEAN_VARIANTS = [
 class FoldCombinationsBase(ut.TestCase):
     """ Run ``seismic fold`` over the parameter combination matrix. """
 
-    # Override in concrete subclasses.
-    PROBE: str | None = None
-
     def setUp(self):
-        if self.PROBE is None:
-            self.skipTest("abstract base class")
         self._tmp = tempfile.TemporaryDirectory()
         self._out_dir = Path(self._tmp.name)
         set_config(verbosity=Level.FATAL, exit_on_error=True)
-        self._tmp_pfx = self._out_dir / "tmp"
         relate_report = write_relate(self._out_dir)
-        self._mask_dirs = run_mask([relate_report],
-                                   probe=self.PROBE,
-                                   mask_pos_table=True,
-                                   tmp_pfx=self._tmp_pfx)
-        if not self._mask_dirs:
-            self.skipTest("mask produced no output")
+        self._mask_dirs = {
+            probe: run_mask([relate_report],
+                            probe=probe,
+                            branch=probe,
+                            mask_pos_table=True)
+            for probe in [PROBE_DMS, PROBE_SHAPE, PROBE_ETC, PROBE_NONE]
+        }
 
     def tearDown(self):
-        if self._tmp is not None:
-            self._tmp.cleanup()
+        self._tmp.cleanup()
         self._tmp = None
         self._out_dir = None
-        self._mask_dirs = None
+        self._mask_dirs = {}
         set_config()
 
     def test_fold_combinations(self):
-        for backend, method in BACKEND_METHOD_COMBOS:
-            resolved_backend, resolved_method = _resolve(self.PROBE,
-                                                         backend,
-                                                         method)
-            if not _valid_combo(resolved_backend, resolved_method):
-                continue
-            if not _backend_available(resolved_backend):
-                continue
-            for booleans in BOOLEAN_VARIANTS:
-                for dry_run in (True, False):
-                    with self.subTest(probe=self.PROBE,
-                                      fold_backend=backend,
-                                      fold_energy_method=method,
-                                      fold_dry_run=dry_run,
-                                      **booleans):
-                        report_files = run_fold(
-                            self._mask_dirs,
-                            fold_backend=backend,
-                            fold_energy_method=method,
-                            fold_dry_run=dry_run,
-                            tmp_pfx=self._tmp_pfx,
-                            force=True,
-                            **booleans,
-                        )
-                        self.assertGreaterEqual(len(report_files), 1)
-                        report = FoldReport.load(report_files[0])
-                        self.assertEqual(report.get_field(FoldBackendF),
-                                         resolved_backend)
-                        self.assertEqual(report.get_field(FoldEnergyMethodF),
-                                         resolved_method)
-                        self.assertEqual(report.get_field(FoldDryRunF),
-                                         dry_run)
-                        self.assertEqual(report.get_field(FoldMinFreeEnergyF),
-                                         booleans["fold_mfe"])
-                        self.assertEqual(report.get_field(FoldIsolatedF),
-                                         booleans["fold_isolated"])
-                        self.assertEqual(report.get_field(FoldTempF), 37.0)
-
-
-class TestFoldDMS(FoldCombinationsBase):
-    PROBE = PROBE_DMS
-
-
-class TestFoldSHAPE(FoldCombinationsBase):
-    PROBE = PROBE_SHAPE
+        for probe, mask_dirs in self._mask_dirs.items():
+            for backend, method in BACKEND_METHOD_COMBOS:
+                resolved_backend, resolved_method = _resolve(probe,
+                                                            backend,
+                                                            method)
+                if not _valid_combo(resolved_backend, resolved_method):
+                    continue
+                if not _backend_available(resolved_backend):
+                    continue
+                for booleans in BOOLEAN_VARIANTS:
+                    for dry_run in (True, False):
+                        with self.subTest(probe=probe,
+                                        fold_backend=backend,
+                                        fold_energy_method=method,
+                                        fold_dry_run=dry_run,
+                                        **booleans):
+                            report_files = run_fold(
+                                mask_dirs,
+                                fold_backend=backend,
+                                fold_energy_method=method,
+                                fold_dry_run=dry_run,
+                                tmp_pfx=self._tmp.name,
+                                force=True,
+                                **booleans,
+                            )
+                            self.assertGreaterEqual(len(report_files), 1)
+                            report = FoldReport.load(report_files[0])
+                            self.assertEqual(report.get_field(FoldBackendF),
+                                            resolved_backend)
+                            self.assertEqual(report.get_field(FoldEnergyMethodF),
+                                            resolved_method)
+                            self.assertEqual(report.get_field(FoldDryRunF),
+                                            dry_run)
+                            self.assertEqual(report.get_field(FoldMinFreeEnergyF),
+                                            booleans["fold_mfe"])
+                            self.assertEqual(report.get_field(FoldIsolatedF),
+                                            booleans["fold_isolated"])
+                            self.assertEqual(report.get_field(FoldTempF), 37.0)
 
 
 if __name__ == "__main__":
