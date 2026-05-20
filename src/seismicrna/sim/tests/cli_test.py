@@ -97,3 +97,7 @@ class TestSimCLIInvocation(ut.TestCase):
     def test_ref_empty(self):      self._invoke_empty(ref)
     def test_relate_empty(self):   self._invoke_empty(relate)
     def test_total_empty(self):    self._invoke_empty(total)
+
+
+if __name__ == "__main__":
+    ut.main()

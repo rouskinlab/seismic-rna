@@ -18,6 +18,7 @@ from ..core.arg import (opt_param_dir,
                         opt_reverse_fraction,
                         opt_probe,
                         opt_min_mut_gap,
+                        opt_min_mut_gap_weights,
                         opt_mut_collisions,
                         opt_mut_probs,
                         opt_num_reads,
@@ -34,6 +35,41 @@ from ..mask.main import set_mut_gap_params
 from ..relate.sim import simulate_relate
 
 COMMAND = __name__.split(os.path.extsep)[-1]
+
+
+def parse_min_mut_gap_weights(min_mut_gap_weights: str) -> dict[int, float]:
+    """ Parse a comma-separated 'gap:weight' string into a dict. """
+    weights = dict()
+    for pair in min_mut_gap_weights.split(","):
+        if not pair.strip():
+            continue
+        items = tuple(pair.split(":"))
+        if len(items) != 2:
+            raise ValueError(
+                f"Each pair must have exactly 2 items, but got {len(items)} ({items})"
+            )
+        try:
+            gap = int(items[0])
+            weight = float(items[1])
+        except ValueError:
+            raise ValueError(
+                f"Each pair must be an integer and a float, but got {items}"
+            ) from None
+        if gap < 0:
+            raise ValueError(f"gap must be ≥ 0, but got {gap}")
+        if not 0 <= weight <= 1:
+            raise ValueError(f"weight must be in [0, 1], but got {weight}")
+        if gap in weights:
+            raise ValueError(f"gap {gap} is repeated")
+        weights[gap] = weight
+    if weights:
+        weights_sum = sum(weights.values())
+        if not np.isclose(weights_sum, 1.0):
+            raise ValueError(
+                f"weights must sum to 1, but got {weights_sum} ({weights})"
+            )
+    return {gap: weight for gap in sorted(weights)
+            if (weight := weights[gap]) > 0.0}
 
 
 def _get_param_dir_fields(param_dir: Path):
@@ -85,6 +121,7 @@ def run(*,
         reverse_fraction: float,
         probe: str,
         min_mut_gap: int | None,
+        min_mut_gap_weights: str,
         mut_collisions: str,
         mut_probs: str | None,
         num_reads: int,
@@ -101,6 +138,7 @@ def run(*,
                                                      mut_collisions)
     mut_probs_arr = (np.array(list(map(float, mut_probs.split(","))), dtype=float)
                      if mut_probs is not None else None)
+    min_mut_gap_weights_dict = parse_min_mut_gap_weights(min_mut_gap_weights)
     return dispatch(_from_param_dir,
                     num_cpus=num_cpus,
                     pass_num_cpus=False,
@@ -115,6 +153,7 @@ def run(*,
                                 read_length=read_length,
                                 p_rev=reverse_fraction,
                                 min_mut_gap=min_mut_gap,
+                                min_mut_gap_weights=min_mut_gap_weights_dict,
                                 mut_probs=mut_probs_arr,
                                 mut_collisions=mut_collisions,
                                 num_reads=num_reads,
@@ -136,6 +175,7 @@ params = [
     opt_reverse_fraction,
     opt_probe,
     opt_min_mut_gap,
+    opt_min_mut_gap_weights,
     opt_mut_collisions,
     opt_mut_probs,
     opt_num_reads,

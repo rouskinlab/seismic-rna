@@ -25,7 +25,7 @@ from ..core.arg import (opt_ct_file,
                         PROBE_SHAPE,
                         PROBES)
 from ..core.error import NoDataError
-from ..core.header import RelClustHeader, list_clusts, make_header, parse_header
+from ..core.header import RelClustHeader, list_clusts, make_header
 from ..core.rel import (MATCH,
                         NOCOV,
                         DELET,
@@ -38,8 +38,7 @@ from ..core.rel import (MATCH,
                         ANY_H,
                         ANY_V,
                         ANY_N,
-                        REL_TYPE,
-                        RelPattern)
+                        REL_TYPE)
 from ..core.rna import UNPAIRED, find_enclosing_pairs, from_ct
 from ..core.run import run_func
 from ..core.seq import (BASE_NAME,
@@ -52,6 +51,7 @@ from ..core.seq import (BASE_NAME,
                         POS_NAME,
                         RegionFinder,
                         get_shared_index)
+from ..core.random import get_random_integer_generator
 from ..core.stats import calc_beta_params, calc_dirichlet_params
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write
@@ -438,6 +438,7 @@ def run_struct(ct_file: Path,
         # rates for the bases enclosed by the pair.
         mu_paired = dict()
         mu_unpaired = dict()
+        seeds = get_random_integer_generator(seed)
 
         def update_mus(pair_: tuple[int, int]):
             """ Simulate mutation rates for paired/unpaired bases that
@@ -451,9 +452,9 @@ def run_struct(ct_file: Path,
                     index.get_level_values(POS_NAME) <= end3
                 )]
             mu_paired[pair_] = sim_pmut(use_index, pm, vmut_paired,
-                                        reg_end5, reg_end3, seed=seed)
+                                        reg_end5, reg_end3, seed=next(seeds))
             mu_unpaired[pair_] = sim_pmut(use_index, um, vmut_unpaired,
-                                          reg_end5, reg_end3, seed=seed)
+                                          reg_end5, reg_end3, seed=next(seeds))
 
         unpair = UNPAIRED, UNPAIRED
         update_mus(unpair)
@@ -493,22 +494,6 @@ def load_pmut(pmut_file: Path):
         names=pmut.columns.names
     )
     return pmut
-
-
-def calc_pmut_pattern(pmut: pd.DataFrame, pattern: RelPattern):
-    """ Calculate the rate of a given type of mutation. """
-    header = parse_header(pmut.columns)
-    rels = list(map(int, header.get_rel_header().index))
-    # Accumulate the frequencies of all selected mutations.
-    fmut = pd.DataFrame(0., pmut.index, header.get_clust_header().index)
-    for base in DNA.alph():
-        positions = fmut.index[fmut.index.get_level_values(BASE_NAME) == base]
-        for rel in rels:
-            if all(pattern.fits(base, rel)):
-                fmut.loc[positions] += pmut.loc[positions, rel]
-    # Divide the frequency of mutations by the frequency of mutations plus
-    # matches (i.e. informative bases) to calculate the mutation rate.
-    return fmut / (pmut.loc[:, MATCH] + fmut)
 
 
 @run_func(COMMAND)

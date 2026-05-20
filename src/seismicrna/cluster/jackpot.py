@@ -154,7 +154,7 @@ def _sim_clusters_dropped(p_clust_given_read: np.ndarray, seed: int | None):
     )) != n_reads:
         pass
     # Choose the cluster for each read.
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(next(seeds))
     _assign_clusters_dropped(clusters,
                      p_clust_given_read,
                      n_reads_per_clust,
@@ -208,7 +208,7 @@ def _sim_clusters_merged(p_clust: np.ndarray, n_reads: int, seed: int | None):
     )) != n_reads:
         pass
     # Choose the cluster for each read.
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(next(seeds))
     return rng.permutation(np.repeat(np.arange(n_clust), n_reads_per_clust))
 
 

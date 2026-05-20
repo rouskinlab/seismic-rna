@@ -723,7 +723,7 @@ opt_mask_coords = Option(
 )
 
 opt_mask_primers = Option(
-    ("--mask-primers", "-p"),
+    ("--mask-primers", "-P"),
     type=(str, DNA, DNA),
     multiple=True,
     default=(),
@@ -874,6 +874,15 @@ opt_min_mut_gap = Option(
     type=int,
     default=None,
     help="Mask reads with two mutations separated by fewer than this many bases"
+)
+
+opt_min_mut_gap_weights = Option(
+    ("--min-mut-gap-weights",),
+    type=str,
+    default="",
+    help=("Comma-separated gap:weight pairs defining a mixture of min_mut_gap "
+          "biases, e.g. '0:0.18,2:0.05,3:0.21'. When given, overrides "
+          "--min-mut-gap.")
 )
 
 opt_mut_collisions = Option(

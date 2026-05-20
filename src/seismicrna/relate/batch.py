@@ -12,6 +12,7 @@ from ..core.batch import (ReadBatch,
                           RegionMutsBatch,
                           simulate_muts,
                           simulate_segment_ends)
+from ..core.random import get_random_integer_generator
 from ..core.rel import RelPattern
 from ..core.seq import Region, index_to_pos, index_to_seq
 
@@ -141,6 +142,7 @@ class RelateRegionMutsBatch(RelateMutsBatch, RegionMutsBatch):
         seed: int | None
             Random seed for reproducibility; None for no fixed seed.
         """
+        seeds = get_random_integer_generator(seed)
         check_naturals(index_to_pos(pmut.index), "positions")
         region = Region(ref, index_to_seq(pmut.index))
         # Simulate a batch, ignoring min_mut_gap.
@@ -151,16 +153,16 @@ class RelateRegionMutsBatch(RelateMutsBatch, RegionMutsBatch):
                                                      (read_length if paired
                                                       else 0),
                                                      p_rev,
-                                                     seed=seed)
+                                                     seed=next(seeds))
         simulated_all = cls(region=region,
                             seg_end5s=seg_end5s,
                             seg_end3s=seg_end3s,
                             muts=simulate_muts(pmut,
                                                seg_end5s,
                                                seg_end3s,
-                                               seed=seed),
+                                               seed=next(seeds)),
                             **kwargs)
-        if min_mut_gap == 0:
+        if min_mut_gap <= 0:
             # No additional changes needed.
             return simulated_all
         if mut_collisions == MUT_COLLISIONS_DROP:
@@ -201,7 +203,7 @@ class RelateRegionMutsBatch(RelateMutsBatch, RegionMutsBatch):
                 seg_end3s=seg_end3s,
                 muts=merged.inject_close_muts(RelPattern.muts(),
                                               mut_probs,
-                                              seed),
+                                              seed=next(seeds)),
                 **kwargs
             )
         raise ValueError(f"Invalid mut_collisions: {repr(mut_collisions)}")

@@ -8,7 +8,7 @@ import numpy as np
 from click import command
 from numba import jit
 
-from .relate import _get_param_dir_fields, _load_param_dir
+from .relate import _get_param_dir_fields, _load_param_dir, parse_min_mut_gap_weights
 from ..core import path
 from ..core.arg import (ILLUMINA_TRUSEQ_ADAPTER_R1,
                         ILLUMINA_TRUSEQ_ADAPTER_R2,
@@ -21,6 +21,7 @@ from ..core.arg import (ILLUMINA_TRUSEQ_ADAPTER_R1,
                         opt_reverse_fraction,
                         opt_probe,
                         opt_min_mut_gap,
+                        opt_min_mut_gap_weights,
                         opt_mut_collisions,
                         opt_mut_probs,
                         opt_fq_gzip,
@@ -373,6 +374,7 @@ def run(*,
         reverse_fraction: float,
         probe: str,
         min_mut_gap: int | None,
+        min_mut_gap_weights: str,
         mut_collisions: str,
         mut_probs: str | None,
         fq_gzip: bool,
@@ -405,6 +407,9 @@ def run(*,
         Probe type (e.g. DMS); used to set default `min_mut_gap`.
     min_mut_gap: int | None
         Minimum gap between mutations; None to use the probe default.
+    min_mut_gap_weights: str
+        Comma-separated gap:weight pairs for a bias mixture; empty string
+        to use the single min_mut_gap.
     mut_collisions: str
         How to handle reads with close mutations: "drop" or "merge".
     fq_gzip: bool
@@ -428,6 +433,7 @@ def run(*,
                                                      mut_collisions)
     mut_probs_arr = (np.array(list(map(float, mut_probs.split(","))), dtype=float)
                      if mut_probs is not None else None)
+    min_mut_gap_weights_dict = parse_min_mut_gap_weights(min_mut_gap_weights)
     report_files = as_list_of_tuples(path.find_files_chain(
         input_path,
         load_relate_dataset.report_path_seg_types
@@ -461,6 +467,7 @@ def run(*,
                                                   read_length=read_length,
                                                   p_rev=reverse_fraction,
                                                   min_mut_gap=min_mut_gap,
+                                                  min_mut_gap_weights=min_mut_gap_weights_dict,
                                                   mut_probs=mut_probs_arr,
                                                   mut_collisions=mut_collisions,
                                                   fq_gzip=fq_gzip,
@@ -481,6 +488,7 @@ params = [arg_input_path,
           opt_reverse_fraction,
           opt_probe,
           opt_min_mut_gap,
+          opt_min_mut_gap_weights,
           opt_mut_collisions,
           opt_mut_probs,
           opt_fq_gzip,

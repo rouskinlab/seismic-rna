@@ -11,7 +11,7 @@ from . import (fastq as fastq_mod,
                params as params_mod,
                ref as ref_mod,
                relate as relate_mod)
-from .muts import calc_pmut_pattern, load_pmut
+from .muts import load_pmut
 from ..core import path
 from ..core.arg import (arg_fasta,
                         arg_input_path,
@@ -37,11 +37,12 @@ from ..core.arg import (arg_fasta,
                         merge_params)
 from ..core.logs import logger
 from ..core.mu.compare import calc_mean_arcsine_distance, calc_pearson
-from ..core.rel import MATCH, RelPattern
+from ..core.rel import RelPattern
 from ..core.rna import from_ct
 from ..core.run import run_func
 from ..core.seq import DNA, parse_fasta, RefRegions
 from ..mask.main import set_mask_acgu
+from ..relate.sim import calc_pmut_pattern
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -153,6 +154,7 @@ def run(*,
         reverse_fraction: float,
         probe: str,
         min_mut_gap: int,
+        min_mut_gap_weights: str,
         mut_collisions: str,
         mut_probs: str | None,
         fq_gzip: bool,
@@ -263,6 +265,7 @@ def run(*,
         reverse_fraction=reverse_fraction,
         probe=probe,
         min_mut_gap=min_mut_gap,
+        min_mut_gap_weights=min_mut_gap_weights,
         mut_collisions=mut_collisions,
         mut_probs=mut_probs,
         fq_gzip=fq_gzip,
