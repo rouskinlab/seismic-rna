@@ -1313,6 +1313,24 @@ opt_fold_commands = Option(
     help="Command file for RNAFold"
 )
 
+opt_eddy_prior_paired_file = Option(
+    ("--eddy-prior-paired-file",),
+    type=Path(exists=True, dir_okay=False),
+    help=(f"File of per-position prior probabilities of being paired for the "
+          f"Eddy method (passed as --sp-data with --sp-strategy Pp); "
+          f"only used with --fold-energy-method={FOLD_ENERGY_METHOD_EDDY} "
+          f"and --fold-backend={FOLD_BACKEND_RNAFOLD}")
+)
+
+opt_eddy_prior_unpaired_file = Option(
+    ("--eddy-prior-unpaired-file",),
+    type=Path(exists=True, dir_okay=False),
+    help=(f"File of per-position prior probabilities of being unpaired for the "
+          f"Eddy method (passed as --sp-data with --sp-strategy Pu); "
+          f"only used with --fold-energy-method={FOLD_ENERGY_METHOD_EDDY} "
+          f"and --fold-backend={FOLD_BACKEND_RNAFOLD}")
+)
+
 opt_fold_isolated = Option(
     ("--fold-isolated/--fold-stacked",),
     type=bool,

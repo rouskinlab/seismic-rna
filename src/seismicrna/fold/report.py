@@ -19,7 +19,9 @@ from ..core.report import (RegReport,
                            FoldMaxStructsF,
                            FoldPercent,
                            CommandsChecksumF,
-                           ConstraintChecksumF)
+                           ConstraintChecksumF,
+                           EddyPriorPairedFileChecksumF,
+                           EddyPriorUnpairedFileChecksumF)
 
 
 class FoldIO(RegFileIO, ABC):
@@ -55,4 +57,6 @@ class FoldReport(RegReport, FoldIO, ABC):
     @classmethod
     def get_checksum_report_fields(cls):
         return [CommandsChecksumF,
-                ConstraintChecksumF]
+                ConstraintChecksumF,
+                EddyPriorPairedFileChecksumF,
+                EddyPriorUnpairedFileChecksumF]

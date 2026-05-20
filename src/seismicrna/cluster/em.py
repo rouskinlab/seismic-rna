@@ -530,7 +530,7 @@ class EMRun(object):
             return np.nan
         try:
             null_jackpot_scores = self._null_jackpot_scores
-        except MemoryError as error:  # FIXME
+        except Exception as error:
             logger.warning(error)
             return np.nan
         return calc_jackpot_quotient(

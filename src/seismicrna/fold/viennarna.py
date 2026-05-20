@@ -28,6 +28,8 @@ def make_rnafold_cmd(fasta_file: Path,
                      vienna_file: Path, *,
                      sp_data: Path | None,
                      sp_strategy: str | None,
+                     eddy_prior_paired_file: Path | None,
+                     eddy_prior_unpaired_file: Path | None,
                      fold_constraint: Path | None,
                      fold_commands: Path | None,
                      fold_temp_c: float,
@@ -90,6 +92,12 @@ def make_rnafold_cmd(fasta_file: Path,
             cmd.extend(["--sp-data", sp_data])
             if sp_strategy is not None:
                 cmd.extend(["--sp-strategy", sp_strategy])
+        if eddy_prior_paired_file is not None:
+            cmd.extend(["--sp-data", eddy_prior_paired_file,
+                        "--sp-strategy", "Pp"])
+        if eddy_prior_unpaired_file is not None:
+            cmd.extend(["--sp-data", eddy_prior_unpaired_file,
+                        "--sp-strategy", "Pu"])
         if fold_constraint is not None:
             # File of constraints.
             cmd.extend(["--constraint", fold_constraint])
@@ -128,6 +136,8 @@ def run_rnafold(fasta_tmp: Path,
                 db_tmp: Path, *,
                 sp_data: Path | None,
                 sp_strategy: str | None,
+                eddy_prior_paired_file: Path | None,
+                eddy_prior_unpaired_file: Path | None,
                 fold_constraint: Path | None,
                 fold_commands: Path | None,
                 fold_temp_c: float,
@@ -143,6 +153,8 @@ def run_rnafold(fasta_tmp: Path,
                                 vienna_tmp,
                                 sp_data=sp_data,
                                 sp_strategy=sp_strategy,
+                                eddy_prior_paired_file=eddy_prior_paired_file,
+                                eddy_prior_unpaired_file=eddy_prior_unpaired_file,
                                 fold_constraint=fold_constraint,
                                 fold_commands=fold_commands,
                                 fold_temp_c=fold_temp_c,

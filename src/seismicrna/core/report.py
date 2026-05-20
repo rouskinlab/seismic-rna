@@ -672,6 +672,20 @@ ConstraintChecksumF = ReportField(
     default=""
 )
 
+EddyPriorPairedFileChecksumF = ReportField(
+    "eddy_prior_paired_file_checksum",
+    "Checksum of the Eddy paired-prior file (SHA-512)",
+    str,
+    default=""
+)
+
+EddyPriorUnpairedFileChecksumF = ReportField(
+    "eddy_prior_unpaired_file_checksum",
+    "Checksum of the Eddy unpaired-prior file (SHA-512)",
+    str,
+    default=""
+)
+
 
 # Field exceptions
 
