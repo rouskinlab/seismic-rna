@@ -675,8 +675,6 @@ def main():
                   alpha=p_clust[:, k], mask_pos=mask_pos, mask_reads=mask_reads)
         graph_mus(f"cluster-0-{k + 1}-mus.{FILE_FORMAT}", mu[:, k],
                   start=region_end5, y_max=calc_mu_y_max(mu))
-        print(f"Mutation rates for cluster {k + 1}:")
-        print(np.round(mu[:, k], 3))
 
 
 if __name__ == "__main__":
