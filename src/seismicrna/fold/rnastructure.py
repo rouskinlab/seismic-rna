@@ -329,13 +329,23 @@ def make_rnastructure_cmd(fasta_file: Path,
             cmd.extend(["--temperature", fold_temp_k])
     if fold_isolated:
         # Allow isolated pairs.
-        cmd.append("--isolated")
+        if fold_backend == FOLD_BACKEND_SHAPEKNOTS:
+            logger.warning(
+                "ShapeKnots does not support --isolated; "
+                "isolated pairs cannot be allowed with this backend"
+            )
+        else:
+            cmd.append("--isolated")
     if fold_md > 0:
         # Maximum distance between paired bases.
         cmd.extend(["--maxdistance", fold_md])
     if fold_mfe:
         # Predict only the minimum free energy structure.
-        cmd.append("--MFE")
+        if fold_backend == FOLD_BACKEND_SHAPEKNOTS:
+            # ShapeKnots has no --MFE flag; request a single structure instead.
+            cmd.extend(["--maximum", 1])
+        else:
+            cmd.append("--MFE")
     else:
         if fold_max > 0:
             # Maximum number of structures.
