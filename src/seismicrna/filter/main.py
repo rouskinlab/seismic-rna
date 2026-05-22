@@ -50,6 +50,7 @@ from ..core.arg import (CMD_FILTER,
                         opt_filter_pos_table,
                         opt_filter_read_table,
                         opt_brotli_level,
+                        opt_self_contained,
                         opt_num_cpus,
                         opt_force,
                         optional_path)
@@ -209,6 +210,8 @@ def run(input_path: Iterable[str | Path], *,
         filter_read_table: bool,
         # Compression
         brotli_level: int,
+        # Self-contained batches
+        self_contained: bool,
         # Parallelization
         num_cpus: int,
         # Effort
@@ -271,6 +274,7 @@ def run(input_path: Iterable[str | Path], *,
                                 filter_pos_table=filter_pos_table,
                                 filter_read_table=filter_read_table,
                                 brotli_level=brotli_level,
+                                self_contained=self_contained,
                                 force=force))
 
 
@@ -320,6 +324,8 @@ params = [
     opt_filter_read_table,
     # Compression
     opt_brotli_level,
+    # Self-contained batches
+    opt_self_contained,
     # Parallelization
     opt_num_cpus,
     # Effort

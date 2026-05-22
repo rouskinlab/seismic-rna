@@ -45,7 +45,7 @@ from ..core.table import (MUTAT_REL,
                           RelTypeTable,
                           PositionTableWriter,
                           AbundanceTableWriter)
-from ..filter.batch import FilterMutsBatch
+from ..filter.batch import FilterMutsBatch, apply_filters
 from ..filter.dataset import load_filter_dataset
 from ..filter.table import (PartialTable,
                           PartialPositionTable,
@@ -144,13 +144,35 @@ class ClusterMutsDataset(ClusterDataset, MultistepDataset, UnbiasDataset):
     def best_k(self):
         return getattr(self.dataset2, "best_k")
 
-    def _integrate(self, batch1: FilterMutsBatch, batch2: ClusterBatchIO):
-        return ClusterMutsBatch(batch=batch1.batch,
-                                region=batch1.region,
-                                seg_end5s=batch1.seg_end5s,
-                                seg_end3s=batch1.seg_end3s,
-                                muts=batch1.muts,
-                                resps=batch2.resps,
+    def _integrate(self,
+                   batch1: FilterMutsBatch | None,
+                   batch2: ClusterBatchIO):
+        if batch2.is_self_contained:
+            if batch1 is not None:
+                raise ValueError(
+                    f"batch1 must be None when {batch2} is self-contained"
+                )
+            muts_source = batch2.to_muts_batch()
+        else:
+            if batch1 is None:
+                raise ValueError(
+                    f"batch1 is required when {batch2} is not self-contained"
+                )
+            muts_source = batch1
+        resps = batch2.resps
+        if self.masked_read_nums is not None:
+            read_nums = np.setdiff1d(batch2.read_nums,
+                                     self.masked_read_nums.get(batch2.batch),
+                                     assume_unique=True)
+            muts_source = apply_filters(muts_source, read_nums,
+                                        muts_source.region, sanitize=False)
+            resps = resps.loc[read_nums]
+        return ClusterMutsBatch(batch=muts_source.batch,
+                                region=muts_source.region,
+                                seg_end5s=muts_source.seg_end5s,
+                                seg_end3s=muts_source.seg_end3s,
+                                muts=muts_source.muts,
+                                resps=resps,
                                 sanitize=False)
 
 

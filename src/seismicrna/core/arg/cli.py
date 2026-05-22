@@ -603,6 +603,15 @@ opt_brotli_level = Option(
     help="Compress pickle files with this level of Brotli (0 - 11)"
 )
 
+opt_self_contained = Option(
+    ("--self-contained/--no-self-contained",),
+    type=bool,
+    default=False,
+    help="Write self-contained batch files that do not require loading "
+         "predecessor batches (Filter and Cluster steps), at the cost of "
+         "larger files on disk"
+)
+
 opt_overhangs = Option(
     ("--overhangs/--no-overhangs",),
     type=bool,

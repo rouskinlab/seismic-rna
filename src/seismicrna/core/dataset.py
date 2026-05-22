@@ -687,13 +687,24 @@ class MultistepDataset(MutsDataset, ABC):
         return self.dataset1.data_dirs + self.dataset2.data_dirs
 
     @abstractmethod
-    def _integrate(self, batch1: MutsBatch, batch2: ReadBatch) -> MutsBatch:
-        """ Integrate corresponding batches of data. """
+    def _integrate(self, batch1: MutsBatch | None, batch2: ReadBatch) -> MutsBatch:
+        """ Integrate corresponding batches of data.
+
+        Parameters
+        ----------
+        batch1: MutsBatch or None
+            Predecessor batch supplying mutation/coordinate data.
+            Must be None if and only if batch2.is_self_contained is True.
+        batch2: ReadBatch
+            Current step's batch (e.g. FilterBatchIO, ClusterBatchIO).
+        """
 
     @property
     def num_batches(self):
         return self.report.get_field(NumBatchesF)
 
     def get_batch(self, batch_num: int):
-        return self._integrate(self.dataset1.get_batch(batch_num),
-                               self.dataset2.get_batch(batch_num))
+        batch2 = self.dataset2.get_batch(batch_num)
+        batch1 = (None if batch2.is_self_contained
+                  else self.dataset1.get_batch(batch_num))
+        return self._integrate(batch1, batch2)

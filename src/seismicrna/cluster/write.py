@@ -199,6 +199,7 @@ def cluster(dataset: FilterMutsDataset | JoinFilterMutsDataset, *,
             max_em_runs: int,
             num_cpus: int,
             brotli_level: int,
+            self_contained: bool,
             force: bool,
             cluster_pos_table: bool,
             cluster_abundance_table: bool,
@@ -286,7 +287,8 @@ def cluster(dataset: FilterMutsDataset | JoinFilterMutsDataset, *,
                                           write_ks,
                                           brotli_level,
                                           tmp_dir,
-                                          branch)
+                                          branch,
+                                          self_contained)
         batch_writer.write_batches()
         # Write the observed and expected counts for every best run.
         counts_dir = tmp_clust_dir.joinpath(path.CLUST_COUNTS_DIR)

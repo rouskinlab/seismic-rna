@@ -90,6 +90,7 @@ class Filterer(object):
                  brotli_level: int,
                  top: Path,
                  branch: str,
+                 self_contained: bool,
                  num_cpus: int = 1):
         """
         Parameters
@@ -211,6 +212,7 @@ class Filterer(object):
         self.top = top
         self.count_read = count_read
         self.brotli_level = brotli_level
+        self.self_contained = self_contained
         self.checksums = [""] * dataset.num_batches
         # After the first iteration, self.dataset will become the new,
         # filtered dataset, which will also have a branch for the filter
@@ -596,12 +598,19 @@ class Filterer(object):
         # Record the number of reads remaining after filtering.
         n_reads[self.DROP_READ_KEPT] = n
         # Save the batch.
+        sc_kwargs = (dict(region=batch.region,
+                          seg_end5s=batch.seg_end5s,
+                          seg_end3s=batch.seg_end3s,
+                          muts=batch.muts)
+                     if self.self_contained
+                     else {})
         batch_file = FilterBatchIO(sample=self.dataset.sample,
-                                 branches=self.branches,
-                                 ref=self.dataset.ref,
-                                 reg=self.region.name,
-                                 batch=batch.batch,
-                                 read_nums=batch.read_nums)
+                                   branches=self.branches,
+                                   ref=self.dataset.ref,
+                                   reg=self.region.name,
+                                   batch=batch.batch,
+                                   read_nums=batch.read_nums,
+                                   **sc_kwargs)
         _, checksum = batch_file.save(self.top,
                                       brotli_level=self.brotli_level,
                                       force=self._force_write)
@@ -813,6 +822,7 @@ def filter_region(dataset: IDmutMutsDataset | PoolMutsDataset,
                 only_mut: Iterable[str],
                 filter_pos_table: bool,
                 filter_read_table: bool,
+                self_contained: bool,
                 force: bool,
                 num_cpus: int,
                 **kwargs):
@@ -832,6 +842,7 @@ def filter_region(dataset: IDmutMutsDataset | PoolMutsDataset,
                             top=tmp_dir,
                             branch=branch,
                             count_read=filter_read_table,
+                            self_contained=self_contained,
                             num_cpus=num_cpus,
                             **kwargs)
         tabulator, report_saved = filterer.run_filtering()

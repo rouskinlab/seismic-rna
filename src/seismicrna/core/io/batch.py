@@ -14,6 +14,13 @@ class ReadBatchIO(ReadBatch, BrickleIO, ABC):
         btype, = re.match("^([a-z_]*)batchio", cls.__name__.lower()).groups()
         return btype
 
+    @property
+    def is_self_contained(self) -> bool:
+        """ Whether this batch file contains full mutation/coordinate data
+        and does not require loading its predecessor batch to be useful. """
+        return (getattr(self, "muts", None) is not None
+                and getattr(self, "region", None) is not None)
+
 
 class MutsBatchIO(MutsBatch, ReadBatchIO, ABC):
     """ Pickled file of a batch of mutational data. """

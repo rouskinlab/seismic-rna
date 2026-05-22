@@ -830,5 +830,112 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
             self.assertTrue(fold_report.is_file())
 
 
+    def test_self_contained_filter_and_cluster(self):
+        """Filter and cluster batches written with self_contained=True carry full
+        mutation data and load correctly from the self-contained path."""
+        import numpy as np
+        from seismicrna.filter.dataset import FilterMutsDataset
+
+        # Simulate data.
+        fasta = run_sim_ref(sim_dir=self.sim_dir,
+                            ref=self.REF,
+                            refs=self.REFS,
+                            reflen=60)
+        ct_file, = run_sim_fold(fasta, probe=PROBE_DMS,
+                                sim_dir=self.sim_dir, fold_max=1)
+        param_dir = ct_file.parent
+        run_sim_params(ct_file=[ct_file], probe=PROBE_DMS)
+        dmfastqx = run_sim_fastq(input_path=[],
+                                  param_dir=[param_dir],
+                                  sample=self.SAMPLE,
+                                  seed=0,
+                                  read_length=30,
+                                  num_reads=2000,
+                                  fq_gzip=False)
+        # Align and ID mutations.
+        bam_dir, = run_align(fasta,
+                             dmfastqx=dmfastqx,
+                             out_dir=self.out_dir,
+                             min_reads=1,
+                             min_mapq=10,
+                             bt2_score_min_loc="L,1,0.5",
+                             fastp_poly_g="yes",
+                             seed=0,
+                             force=True)
+        bam_file = self.out_dir.joinpath(self.SAMPLE, "align",
+                                         f"{self.REF}.bam")
+        idmut_dir, = run_idmut(fasta,
+                                (str(bam_file),),
+                                out_dir=str(self.out_dir),
+                                min_reads=1,
+                                min_mapq=10,
+                                batch_size=256)
+        idmut_report = idmut_dir.joinpath("idmut-report.json")
+        # Run filter without self_contained to get a baseline.
+        filter_dir, = run_filter([idmut_report],
+                                  region_coords=[(self.REF, 5, 50)],
+                                  min_ninfo_pos=1,
+                                  self_contained=False)
+        filter_report = filter_dir.joinpath("filter-report.json")
+        filter_dataset_base = FilterMutsDataset(filter_report)
+        base_filter_batch = filter_dataset_base.get_batch(0)
+        # Re-run filter with self_contained=True (overwrite).
+        run_filter([idmut_report],
+                   region_coords=[(self.REF, 5, 50)],
+                   min_ninfo_pos=1,
+                   self_contained=True,
+                   force=True)
+        filter_dataset_sc = FilterMutsDataset(filter_report)
+        raw_filter_batch = filter_dataset_sc.dataset2.get_batch(0)
+        sc_filter_batch = filter_dataset_sc.get_batch(0)
+        # The raw FilterBatchIO should be self-contained.
+        self.assertTrue(raw_filter_batch.is_self_contained)
+        self.assertIsNotNone(raw_filter_batch.seg_end5s)
+        self.assertIsNotNone(raw_filter_batch.seg_end3s)
+        self.assertIsNotNone(raw_filter_batch.muts)
+        # The self-contained integrated batch must match the baseline.
+        np.testing.assert_array_equal(sc_filter_batch.read_nums,
+                                      base_filter_batch.read_nums)
+        np.testing.assert_array_equal(sc_filter_batch.seg_end5s,
+                                      base_filter_batch.seg_end5s)
+        np.testing.assert_array_equal(sc_filter_batch.seg_end3s,
+                                      base_filter_batch.seg_end3s)
+        self.assertEqual(sc_filter_batch.muts.keys(),
+                         base_filter_batch.muts.keys())
+        # Run cluster without self_contained to get a baseline.
+        cluster_dir, = run_cluster([filter_dir],
+                                    max_clusters=1,
+                                    seed=0,
+                                    jackpot=False,
+                                    self_contained=False)
+        cluster_report = cluster_dir.joinpath("cluster-report.json")
+        cluster_dataset_base = ClusterMutsDataset(cluster_report)
+        base_cluster_batch = cluster_dataset_base.get_batch(0)
+        # Re-run cluster with self_contained=True (overwrite).
+        run_cluster([filter_dir],
+                    max_clusters=1,
+                    seed=0,
+                    jackpot=False,
+                    self_contained=True,
+                    force=True)
+        cluster_dataset_sc = ClusterMutsDataset(cluster_report)
+        raw_cluster_batch = cluster_dataset_sc.dataset2.get_batch(0)
+        sc_cluster_batch = cluster_dataset_sc.get_batch(0)
+        # The raw ClusterBatchIO should be self-contained.
+        self.assertTrue(raw_cluster_batch.is_self_contained)
+        self.assertIsNotNone(raw_cluster_batch.seg_end5s)
+        self.assertIsNotNone(raw_cluster_batch.seg_end3s)
+        self.assertIsNotNone(raw_cluster_batch.muts)
+        # The self-contained integrated batch must match the baseline.
+        np.testing.assert_array_equal(sc_cluster_batch.read_nums,
+                                      base_cluster_batch.read_nums)
+        np.testing.assert_array_equal(sc_cluster_batch.seg_end5s,
+                                      base_cluster_batch.seg_end5s)
+        np.testing.assert_array_equal(sc_cluster_batch.seg_end3s,
+                                      base_cluster_batch.seg_end3s)
+        self.assertEqual(sc_cluster_batch.muts.keys(),
+                         base_cluster_batch.muts.keys())
+
+
 if __name__ == "__main__":
     ut.main(verbosity=2)

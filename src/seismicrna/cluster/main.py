@@ -34,6 +34,7 @@ from ..core.arg import (CMD_CLUSTER,
                         opt_cluster_abundance_table,
                         opt_verify_times,
                         opt_brotli_level,
+                        opt_self_contained,
                         opt_num_cpus,
                         opt_seed,
                         opt_force)
@@ -72,6 +73,7 @@ def run(input_path: Iterable[str | Path], *,
         cluster_abundance_table: bool,
         verify_times: bool,
         brotli_level: int,
+        self_contained: bool,
         num_cpus: int,
         force: bool,
         seed: int | None) -> list[Path]:
@@ -112,6 +114,7 @@ def run(input_path: Iterable[str | Path], *,
                                 cluster_abundance_table=cluster_abundance_table,
                                 verify_times=verify_times,
                                 brotli_level=brotli_level,
+                                self_contained=self_contained,
                                 force=force,
                                 seed=seed))
 
@@ -149,6 +152,8 @@ params = [
     opt_verify_times,
     # Compression
     opt_brotli_level,
+    # Self-contained batches
+    opt_self_contained,
     # Parallelization
     opt_num_cpus,
     # Effort

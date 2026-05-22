@@ -132,13 +132,16 @@ class FilterMutsDataset(FilterDataset, MultistepDataset, UnbiasDataset):
                         complement=True)
         return region
 
-    def _integrate(self, batch1: IDmutMutsBatch, batch2: FilterBatchIO):
+    def _integrate(self,
+                   batch1: IDmutMutsBatch | None,
+                   batch2: FilterBatchIO):
         """ Combine an idmut batch with a filter batch into a FilterMutsBatch.
 
         Parameters
         ----------
-        batch1: IDmutMutsBatch
-            Batch of mutation data from the IDmut step.
+        batch1: IDmutMutsBatch or None
+            Batch of mutation data from the IDmut step.  Must be None
+            if and only if batch2.is_self_contained is True.
         batch2: FilterBatchIO
             Batch of read numbers that passed the filter filters.
 
@@ -148,6 +151,25 @@ class FilterMutsDataset(FilterDataset, MultistepDataset, UnbiasDataset):
             A batch containing only the reads and positions that pass
             the filter, clipped to the dataset's region.
         """
+        if batch2.is_self_contained:
+            if batch1 is not None:
+                raise ValueError(
+                    f"batch1 must be None when {batch2} is self-contained"
+                )
+            source = batch2.to_muts_batch()
+            if self.masked_read_nums is not None:
+                read_nums = np.setdiff1d(
+                    batch2.read_nums,
+                    self.masked_read_nums.get(batch2.batch),
+                    assume_unique=True
+                )
+                source = apply_filters(source, read_nums, batch2.region,
+                                       sanitize=False)
+            return source
+        if batch1 is None:
+            raise ValueError(
+                f"batch1 is required when {batch2} is not self-contained"
+            )
         if self.masked_read_nums is not None:
             read_nums = np.setdiff1d(batch2.read_nums,
                                      self.masked_read_nums.get(batch2.batch),
@@ -155,9 +177,9 @@ class FilterMutsDataset(FilterDataset, MultistepDataset, UnbiasDataset):
         else:
             read_nums = batch2.read_nums
         filtered_batch = apply_filters(batch1,
-                                  read_nums,
-                                  self.region,
-                                  sanitize=False)
+                                       read_nums,
+                                       self.region,
+                                       sanitize=False)
         if self.min_mut_gap > 0 and self.mut_collisions == MUT_COLLISIONS_MERGE:
             return FilterMutsBatch(
                 batch=filtered_batch.batch,
@@ -166,7 +188,7 @@ class FilterMutsDataset(FilterDataset, MultistepDataset, UnbiasDataset):
                 seg_end5s=filtered_batch.seg_end5s,
                 seg_end3s=filtered_batch.seg_end3s,
                 muts=filtered_batch.merge_close_muts(self.pattern,
-                                                   self.min_mut_gap),
+                                                     self.min_mut_gap),
             )
         return filtered_batch
 
