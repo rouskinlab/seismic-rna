@@ -83,7 +83,7 @@ Reference sequences for these commands must be input as FASTA files:
 
 - ``seismic wf``
 - ``seismic align``
-- ``seismic relate``
+- ``seismic idmut``
 - ``seismic fold``
 
 FASTA as output file

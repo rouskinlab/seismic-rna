@@ -6,4 +6,4 @@ Data Structures
 .. toctree::
     :maxdepth: 2
 
-    relate/index
+    idmut/index

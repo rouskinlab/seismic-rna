@@ -9,8 +9,8 @@ from ..cluster.data import (ClusterPositionTableLoader,
                             ClusterAbundanceTableLoader)
 from ..core.arg import opt_use_ratio, opt_verify_times, opt_graph_quantile
 from ..core.table import Table, PositionTable
-from ..mask.table import MaskPositionTableLoader, MaskReadTableLoader
-from ..relate.table import RelatePositionTableLoader, RelateReadTableLoader
+from ..filter.table import FilterPositionTableLoader, FilterReadTableLoader
+from ..idmut.table import IDmutPositionTableLoader, IDmutReadTableLoader
 
 
 class TableGraph(BaseGraph, ABC):
@@ -108,8 +108,8 @@ class TableWriter(BaseWriter, ABC):
 def load_pos_tables(input_paths: Iterable[str | Path], **kwargs):
     """ Load position tables. """
     paths = list(input_paths)
-    for table_type in [RelatePositionTableLoader,
-                       MaskPositionTableLoader,
+    for table_type in [IDmutPositionTableLoader,
+                       FilterPositionTableLoader,
                        ClusterPositionTableLoader]:
         yield from table_type.load_tables(paths, **kwargs)
 
@@ -117,8 +117,8 @@ def load_pos_tables(input_paths: Iterable[str | Path], **kwargs):
 def load_read_tables(input_paths: Iterable[str | Path], **kwargs):
     """ Load read tables. """
     paths = list(input_paths)
-    for table_type in [RelateReadTableLoader,
-                       MaskReadTableLoader]:
+    for table_type in [IDmutReadTableLoader,
+                       FilterReadTableLoader]:
         yield from table_type.load_tables(paths, **kwargs)
 
 

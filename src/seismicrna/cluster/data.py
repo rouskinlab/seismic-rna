@@ -45,9 +45,9 @@ from ..core.table import (MUTAT_REL,
                           RelTypeTable,
                           PositionTableWriter,
                           AbundanceTableWriter)
-from ..mask.batch import MaskMutsBatch
-from ..mask.dataset import load_mask_dataset
-from ..mask.table import (PartialTable,
+from ..filter.batch import FilterMutsBatch
+from ..filter.dataset import load_filter_dataset
+from ..filter.table import (PartialTable,
                           PartialPositionTable,
                           PartialTabulator,
                           PartialDatasetTabulator)
@@ -86,7 +86,7 @@ class ClusterMutsDataset(ClusterDataset, MultistepDataset, UnbiasDataset):
 
     @classmethod
     def get_dataset1_load_func(cls):
-        return load_mask_dataset
+        return load_filter_dataset
 
     @classmethod
     def get_dataset2_type(cls):
@@ -144,7 +144,7 @@ class ClusterMutsDataset(ClusterDataset, MultistepDataset, UnbiasDataset):
     def best_k(self):
         return getattr(self.dataset2, "best_k")
 
-    def _integrate(self, batch1: MaskMutsBatch, batch2: ClusterBatchIO):
+    def _integrate(self, batch1: FilterMutsBatch, batch2: ClusterBatchIO):
         return ClusterMutsBatch(batch=batch1.batch,
                                 region=batch1.region,
                                 seg_end5s=batch1.seg_end5s,
@@ -328,7 +328,7 @@ def _join_regions_k(region_params: dict[str, pd.DataFrame]):
         )
     logger.detail("Ended solving mixed-integer linear program: "
                   f"minimum total cost is {result.fun}")
-    # Return a list of the selected hyperedges.
+    # Return a list of the filtered hyperedges.
     selected_hyperedges = [hyperedge for hyperedge, is_selected
                            in zip(hyperedges, result.x, strict=True)
                            if is_selected]

@@ -364,7 +364,6 @@ class FastqUnit(object):
                         raise ValueError("FASTQs are not properly paired. Read names do not match: " +
                                         str(tuple(rec[0] for rec in recs)))
                     full_record = tuple(tuple(rec) for rec in recs)
-                    # print(slices)
                     if slices:
                         if self.paired:
                             segs = tuple(tuple(safe_slice(rec[1], s[0], s[1]) for rec in recs)

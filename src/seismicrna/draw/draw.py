@@ -22,7 +22,7 @@ from ..core.rna.state import RNAState
 from ..core.task import dispatch
 from ..core.write import need_write
 from ..fold.report import FoldReport
-from ..mask.table import MaskPositionTable, MaskPositionTableLoader
+from ..filter.table import FilterPositionTable, FilterPositionTableLoader
 
 TEMPLATE_STRING = """
 rnartist {
@@ -95,8 +95,8 @@ RNARTIST_ARTIFACT_NO_VERSION = f"{RNARTIST_GROUP_ID}:{RNARTIST_ARTIFACT_ID}:{RNA
 RNARTIST_ARTIFACT_WITH_VERSION = f"{RNARTIST_GROUP_ID}:{RNARTIST_ARTIFACT_ID}:{RNARTIST_VERSION}:{RNARTIST_MAIN_CLASS}"
 RNARTIST_ARTIFACT_FALLBACK = f"{RNARTIST_GROUP_ID}:{RNARTIST_ARTIFACT_ID}:{RNARTIST_FALLBACK_VERSION}:{RNARTIST_MAIN_CLASS}"
 
-TABLES = {AVERAGE_PREFIX: (MaskPositionTable,
-                           MaskPositionTableLoader),
+TABLES = {AVERAGE_PREFIX: (FilterPositionTable,
+                           FilterPositionTableLoader),
           path.CLUSTER_STEP: (ClusterPositionTable,
                               ClusterPositionTableLoader)}
 

@@ -8,7 +8,7 @@ import numpy as np
 from click import command
 from numba import jit
 
-from .relate import _get_param_dir_fields, _load_param_dir, parse_min_mut_gap_weights
+from .idmut import _get_param_dir_fields, _load_param_dir, parse_min_mut_gap_weights
 from ..core import path
 from ..core.arg import (ILLUMINA_TRUSEQ_ADAPTER_R1,
                         ILLUMINA_TRUSEQ_ADAPTER_R2,
@@ -45,13 +45,13 @@ from ..core.run import run_func
 from ..core.seq import DNA, BASEA, BASEC, BASEG, BASET, BASEN
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write, write_mode
-from ..mask.main import set_mut_gap_params
-from ..relate.batch import ReadNamesBatch, RelateRegionMutsBatch
-from ..relate.dataset import (ReadNamesDataset,
-                              RelateMutsDataset,
-                              load_relate_dataset)
-from ..relate.report import RelateReport
-from ..relate.sim import simulate_batches
+from ..filter.main import set_mut_gap_params
+from ..idmut.batch import ReadNamesBatch, IDmutRegionMutsBatch
+from ..idmut.dataset import (ReadNamesDataset,
+                              IDmutMutsDataset,
+                              load_idmut_dataset)
+from ..idmut.report import IDmutReport
+from ..idmut.sim import simulate_batches
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -204,7 +204,7 @@ def generate_fastq(
         refseq: DNA,
         paired: bool,
         read_length: int,
-        batches: Iterable[tuple[RelateRegionMutsBatch, ReadNamesBatch]],
+        batches: Iterable[tuple[IDmutRegionMutsBatch, ReadNamesBatch]],
         p_rev: float = 0.5,
         fq_gzip: bool = True,
         force: bool = False,
@@ -297,10 +297,10 @@ def from_report(report_file: Path, *,
                 fq_gzip: bool,
                 force: bool,
                 seed: int | None):
-    """ Simulate a FASTQ file from a Relate report. """
-    report = RelateReport.load(report_file)
+    """ Simulate a FASTQ file from an IDmut report. """
+    report = IDmutReport.load(report_file)
     sample = report.get_field(SampleF)
-    rdata = RelateMutsDataset(report_file)
+    rdata = IDmutMutsDataset(report_file)
     ndata = ReadNamesDataset(report_file)
     sim_dir = _get_common_attr(rdata, ndata, "top")
     region = rdata.region
@@ -346,7 +346,7 @@ def from_param_dir(param_dir: Path, *,
                                write_read_names=True,
                                seed=seed,
                                **kwargs)
-    # Convert each RelateBatchIO into a RelateRegionMutsBatch, which is
+    # Convert each IDmutBatchIO into an IDmutRegionMutsBatch, which is
     # required by generate_fastq().
     batches = [(rbatch.to_region_batch(region), nbatch)
                for rbatch, nbatch in batches]
@@ -383,13 +383,13 @@ def run(*,
         force: bool,
         seed: int | None):
     """
-    Simulate FASTQ file(s) from relate reports or parameter directories.
+    Simulate FASTQ file(s) from idmut reports or parameter directories.
 
     Parameters
     ----------
     input_path: Iterable[str | Path]
-        Paths to relate report files or directories containing them;
-        used to generate FASTQ files from existing relate data.
+        Paths to idmut report files or directories containing them;
+        used to generate FASTQ files from existing IDmut data.
     param_dir: Iterable[str | Path]
         Paths to simulation parameter directories; used to generate
         FASTQ files from CT/parameter files.
@@ -436,7 +436,7 @@ def run(*,
     min_mut_gap_weights_dict = parse_min_mut_gap_weights(min_mut_gap_weights)
     report_files = as_list_of_tuples(path.find_files_chain(
         input_path,
-        load_relate_dataset.report_path_seg_types
+        load_idmut_dataset.report_path_seg_types
     ))
     param_dirs = as_list_of_tuples(map(Path, param_dir))
     fastqs = list()

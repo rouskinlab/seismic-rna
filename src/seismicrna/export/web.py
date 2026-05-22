@@ -13,10 +13,10 @@ from ..core.logs import logger
 from ..core.rna import parse_db_file_as_strings
 from ..core.write import need_write, write_mode
 from ..fold.rnastructure import parse_energy
-from ..mask.dataset import MaskMutsDataset
-from ..mask.report import MaskReport
-from ..relate.dataset import load_relate_dataset
-from ..relate.report import RelateReport
+from ..filter.dataset import FilterMutsDataset
+from ..filter.report import FilterReport
+from ..idmut.dataset import load_idmut_dataset
+from ..idmut.report import IDmutReport
 from ..core.table import (COVER_REL,
                           INFOR_REL,
                           MUTAT_REL,
@@ -102,7 +102,7 @@ def get_ref_metadata(top: Path,
         Metadata including the reference sequence and number of aligned
         reads, merged with any additional parsed metadata.
     """
-    dataset = load_relate_dataset(RelateReport.build_path(
+    dataset = load_idmut_dataset(IDmutReport.build_path(
         {path.TOP: top,
          path.SAMPLE: sample,
          path.BRANCHES: dict(),
@@ -121,7 +121,7 @@ def get_reg_metadata(top: Path,
                      ref: str,
                      reg: str,
                      all_pos: bool):
-    """ Build metadata dict for a masked region.
+    """ Build metadata dict for a region.
 
     Parameters
     ----------
@@ -142,7 +142,7 @@ def get_reg_metadata(top: Path,
     dict[str, Any]
         Metadata including 5'/3' end coordinates and included positions.
     """
-    dataset = MaskMutsDataset(MaskReport.build_path(
+    dataset = FilterMutsDataset(FilterReport.build_path(
         {path.TOP: top,
          path.SAMPLE: sample,
          path.BRANCHES: dict(),

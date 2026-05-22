@@ -2,7 +2,7 @@ from pathlib import Path
 
 from .core.table import TableWriter
 from .core.dataset import FailedToLoadDatasetError
-from .relate.dataset import MutsDataset
+from .idmut.dataset import MutsDataset
 from .cluster.data import load_cluster_dataset
 from .table import load_all_datasets, get_tabulator_type
 
@@ -14,14 +14,14 @@ def dataset_from_report(report_path: str | Path,
     Parameters
     ----------
     report_path: str | Path
-        The path to a report json file from the relate, mask, or cluster steps.
+        The path to a report json file from the idmut, filter, or cluster steps.
     verify_times: bool = True
         Ensure that the report file does not have a timestamp
         that is earlier than that of one of its constituents.
 
     Returns
     -------
-    RelateMutsDataset | MaskMutsDataset | ClusterMutsDataset
+    IDmutMutsDataset | FilterMutsDataset | ClusterMutsDataset
         The type of MutsDataset returned depends on the report file.
     """
     datasets = list(load_all_datasets([report_path], verify_times=verify_times, raise_on_error=True))
@@ -39,8 +39,8 @@ def table_from_dataset(dataset: MutsDataset,
 
     Parameters
     ----------
-    dataset: RelateMutsDataset | MaskMutsDataset | ClusterMutsDataset
-        A dataset from the Relate, Mask, or Cluster steps.
+    dataset: IDmutMutsDataset | FilterMutsDataset | ClusterMutsDataset
+        A dataset from the IDmut, Filter, or Cluster steps.
     table: str = "pos"
         The type of table to generate. Valid options include 
         "pos" for per-position table,
@@ -81,7 +81,7 @@ def table_from_report(report_path: str | Path,
     Parameters
     ----------
     report_path: str | Path
-        Path to a report JSON file from the relate, mask, or cluster step.
+        Path to a report JSON file from the IDmut, Filter, or Cluster step.
     verify_times: bool
         If True, ensure the report file does not have a timestamp
         earlier than any of its constituent files.

@@ -300,7 +300,7 @@ Otherwise, SEISMIC-RNA will build and use a temporary index.
     If you use a pre-built Bowtie 2 index, then SEISMIC-RNA does *not* verify
     that the index was actually built from the FASTA file of the same name.
     Discrepancies between the FASTA file and the index files can crash the Align
-    and Relate steps or produce erroneous results.
+    and IDmut steps or produce erroneous results.
 
 How to choose between local and end-to-end alignment
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -408,7 +408,7 @@ See :ref:`cli_align` for the full list of options that SEISMIC-RNA can use with
 Bowtie 2, and the `Bowtie 2 manual`_ for details on each of these options.
 These options suffice for most users.
 If you need more customization, then you can align your FASTQ files externally
-and pass the alignment maps into SEISMIC-RNA during :doc:`./relate`.
+and pass the alignment maps into SEISMIC-RNA during :doc:`./idmut`.
 
 .. _bam_vs_cram:
 
@@ -442,13 +442,13 @@ However, the better compression of CRAM files comes at three costs:
   effort needed for compressing and decompressing CRAM files.
 - In the `CIGAR strings`_, distinction between reference matches (``=``) and
   substitutions (``X``) is lost upon compressing to CRAM format.
-  Thus, the Relate step must perform extra work to determine if each non-indel
+  Thus, the IDmut step must perform extra work to determine if each non-indel
   position is a match or substitution, which makes it run more slowly than it
   would if the distinction had been preserved.
 
 In general, use CRAM format if minimizing the size of your alignment map files
 is a priority, especially for long-term storage.
-Use BAM format to make the ``align`` and ``relate`` steps run faster, and to
+Use BAM format to make the ``align`` and ``idmut`` steps run faster, and to
 make the output files more portable (since BAM files are self-contained, while
 CRAM files will break without the FASTA file that accompanies them).
 
@@ -484,7 +484,7 @@ SEISMIC-RNA outputs alignment maps where every read aligns to the same reference
 (although this is not a restriction outside of SEISMIC-RNA).
 Each alignment map is written to ``{ref}.{xam}``, where ``{ref}`` is the name of
 the reference to which the reads aligned, and ``{xam}`` is the file extension
-(depending on the selected format).
+(depending on the filtered format).
 SEISMIC-RNA can output alignment maps in either BAM or CRAM format.
 For a comparison of these formats, see :ref:`bam_vs_cram`.
 

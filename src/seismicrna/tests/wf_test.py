@@ -15,6 +15,7 @@ from seismicrna.core.header import list_ks_clusts, K_CLUST_KEY
 from seismicrna.core.logs import Level, get_config, set_config
 from seismicrna.core.ngs import DuplicateSampleReferenceError
 from seismicrna.fold import run as run_fold
+from seismicrna.graph.base import ACTION_IDMUT
 from seismicrna.graph.cgroup import make_tracks
 from seismicrna.graph.profile import ProfileRunner
 from seismicrna.graph.corroll import RollingCorrelationRunner
@@ -23,9 +24,9 @@ from seismicrna.graph.histpos import PositionHistogramRunner
 from seismicrna.graph.scatter import ScatterRunner
 from seismicrna.graph.snrroll import RollingSNRRunner
 from seismicrna.join import run as run_join
-from seismicrna.mask import run as run_mask
+from seismicrna.filter import run as run_filter
 from seismicrna.pool import run as run_pool
-from seismicrna.relate import run as run_relate
+from seismicrna.idmut import run as run_idmut
 from seismicrna.sim.fastq import run as run_sim_fastq
 from seismicrna.sim.fold import run as run_sim_fold
 from seismicrna.sim.params import run as run_sim_params
@@ -40,11 +41,11 @@ def list_step_dir_contents(parent_dir: Path,
                            num_batches: int,
                            write_read_names: bool = True):
     files = [f"{step}-report.json", f"{step}-position-table.csv"]
-    if step == "relate":
+    if step == "idmut":
         files.append("refseq.brickle")
         if write_read_names:
             files.extend(f"names-batch-{i}.brickle" for i in range(num_batches))
-    elif step == "mask":
+    elif step == "filter":
         files.append(f"{step}-read-table.csv.gz")
     elif step == "cluster":
         files.extend([f"{step}-abundance-table.csv",
@@ -175,7 +176,7 @@ class TestWorkflow(ut.TestCase):
                batch_size=batch_size,
                brotli_level=0,
                write_read_names=True,
-               mask_coords=[(ref, end5, end3)
+               region_coords=[(ref, end5, end3)
                             for ref, ref_coords in refs_coords.items()
                             for end5, end3 in ref_coords],
                cluster=True,
@@ -243,21 +244,21 @@ class TestWorkflow(ut.TestCase):
                                     f"{ref}__fastp.json"])
             )
             for ref, ref_coords in refs_coords.items():
-                relate_dir = sample_dir.joinpath("relate", ref)
-                self.assertListEqual(sorted(relate_dir.iterdir()),
+                idmut_dir = sample_dir.joinpath("idmut", ref)
+                self.assertListEqual(sorted(idmut_dir.iterdir()),
                                      sorted(list_step_dir_contents(
-                                         relate_dir, "relate", num_batches
+                                         idmut_dir, "idmut", num_batches
                                      )))
                 graph_full_dir = sample_dir.joinpath("graph", ref, "full")
                 for ext in graph_formats:
-                    for name in ["giniroll_all_45-9_m-ratio-q0",
-                                 "histpos_all_m-ratio-q0",
-                                 "mutdist_all_m",
-                                 "poscorr_all_m",
-                                 "profile_all_acgtdi-ratio-q0",
-                                 "profile_all_m-ratio-q0",
-                                 "profile_all_n-count",
-                                 "snrroll_all_21-7_m-ratio-q0"]:
+                    for name in [f"giniroll_{ACTION_IDMUT}_45-9_m-ratio-q0",
+                                 f"histpos_{ACTION_IDMUT}_m-ratio-q0",
+                                 f"mutdist_{ACTION_IDMUT}_m",
+                                 f"poscorr_{ACTION_IDMUT}_m",
+                                 f"profile_{ACTION_IDMUT}_acgtdi-ratio-q0",
+                                 f"profile_{ACTION_IDMUT}_m-ratio-q0",
+                                 f"profile_{ACTION_IDMUT}_n-count",
+                                 f"snrroll_{ACTION_IDMUT}_21-7_m-ratio-q0"]:
                         file = graph_full_dir.joinpath(f"{name}{ext}")
                         with self.subTest(file=file):
                             self.assertTrue(file.is_file())
@@ -271,10 +272,10 @@ class TestWorkflow(ut.TestCase):
                                 with self.subTest(file=file):
                                     self.assertTrue(file.is_file())
                 for reg in refs_regions[ref]:
-                    mask_dir = sample_dir.joinpath("mask", ref, reg)
-                    self.assertListEqual(sorted(mask_dir.iterdir()),
+                    filter_dir = sample_dir.joinpath("filter", ref, reg)
+                    self.assertListEqual(sorted(filter_dir.iterdir()),
                                          sorted(list_step_dir_contents(
-                                             mask_dir, "mask", num_batches
+                                             filter_dir, "filter", num_batches
                                          )))
                     cluster_dir = sample_dir.joinpath("cluster", ref, reg)
                     self.assertListEqual(sorted(cluster_dir.iterdir()),
@@ -340,9 +341,9 @@ class TestWorkflow(ut.TestCase):
             for ref, ref_regions in refs_regions.items():
                 graph_full_dir = sample_dir.joinpath("graph", ref, "full")
                 for ext in graph_formats:
-                    for name in ["corroll_all_21-7_m-ratio-q0_pcc",
-                                 "delprof_all_m-ratio-q0",
-                                 "scatter_all_m-ratio-q0"]:
+                    for name in [f"corroll_{ACTION_IDMUT}_21-7_m-ratio-q0_pcc",
+                                 f"delprof_{ACTION_IDMUT}_m-ratio-q0",
+                                 f"scatter_{ACTION_IDMUT}_m-ratio-q0"]:
                         file = graph_full_dir.joinpath(f"{name}{ext}")
                         with self.subTest(file=file):
                             self.assertTrue(file.is_file())
@@ -405,15 +406,15 @@ class TestWorkflow(ut.TestCase):
             for ref in all_fastas:
                 with open(ref) as r:
                     f.write(r.read())
-        # Build mask_coords for CLI: -c ref end5 end3 per region.
+        # Build region_coords for CLI: -c ref end5 end3 per region.
         refs_coords = {"ref-A": [(1, 70), (31, 90)],
                        "ref-B": [(31, 90), (101, 150)]}
         refs_regions = {ref: [f"{end5}-{end3}" for end5, end3 in ref_coords]
                         for ref, ref_coords in refs_coords.items()}
-        mask_coords_args = []
+        region_coords_args = []
         for ref, ref_coords in refs_coords.items():
             for end5, end3 in ref_coords:
-                mask_coords_args += ["-c", ref, str(end5), str(end3)]
+                region_coords_args += ["-c", ref, str(end5), str(end3)]
         # Invoke `seismic wf` via the CLI runner.
         runner = CliRunner()
         args = (["-qq",
@@ -426,7 +427,7 @@ class TestWorkflow(ut.TestCase):
                  "--batch-size", str(batch_size),
                  "--brotli-level", "0",
                  "--write-read-names"]
-                + mask_coords_args
+                + region_coords_args
                 + ["--cluster",
                    "--max-clusters", str(num_structs),
                    "--try-all-ks",
@@ -507,20 +508,20 @@ class TestWorkflow(ut.TestCase):
                                     f"{ref}__fastp.json"])
             )
             for ref, ref_coords in refs_coords.items():
-                relate_dir = sample_dir.joinpath("relate", ref)
-                self.assertListEqual(sorted(relate_dir.iterdir()),
+                idmut_dir = sample_dir.joinpath("idmut", ref)
+                self.assertListEqual(sorted(idmut_dir.iterdir()),
                                      sorted(list_step_dir_contents(
-                                         relate_dir, "relate", num_batches
+                                         idmut_dir, "idmut", num_batches
                                      )))
                 graph_full_dir = sample_dir.joinpath("graph", ref, "full")
                 for ext in graph_formats:
-                    for name in ["giniroll_all_45-9_m-ratio-q0",
-                                 "histpos_all_m-ratio-q0",
-                                 "mutdist_all_m",
-                                 "poscorr_all_m",
-                                 "profile_all_acgtdi-ratio-q0",
-                                 "profile_all_m-ratio-q0",
-                                 "profile_all_n-count"]:
+                    for name in [f"giniroll_{ACTION_IDMUT}_45-9_m-ratio-q0",
+                                 f"histpos_{ACTION_IDMUT}_m-ratio-q0",
+                                 f"mutdist_{ACTION_IDMUT}_m",
+                                 f"poscorr_{ACTION_IDMUT}_m",
+                                 f"profile_{ACTION_IDMUT}_acgtdi-ratio-q0",
+                                 f"profile_{ACTION_IDMUT}_m-ratio-q0",
+                                 f"profile_{ACTION_IDMUT}_n-count"]:
                         file = graph_full_dir.joinpath(f"{name}{ext}")
                         with self.subTest(file=file):
                             self.assertTrue(file.is_file())
@@ -534,10 +535,10 @@ class TestWorkflow(ut.TestCase):
                                 with self.subTest(file=file):
                                     self.assertTrue(file.is_file())
                 for reg in refs_regions[ref]:
-                    mask_dir = sample_dir.joinpath("mask", ref, reg)
-                    self.assertListEqual(sorted(mask_dir.iterdir()),
+                    filter_dir = sample_dir.joinpath("filter", ref, reg)
+                    self.assertListEqual(sorted(filter_dir.iterdir()),
                                          sorted(list_step_dir_contents(
-                                             mask_dir, "mask", num_batches
+                                             filter_dir, "filter", num_batches
                                          )))
                     cluster_dir = sample_dir.joinpath("cluster", ref, reg)
                     self.assertListEqual(sorted(cluster_dir.iterdir()),
@@ -712,71 +713,71 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
             self.assertEqual(bam_dir, bam_file.parent)
             bam_files.append(bam_file)
         self.check_no_identical(bam_files, True)
-        # Relate BAM files in the same output directory.
-        relate_kwargs = dict(min_reads=min_reads,
+        # ID mutations within BAM files in the same output directory.
+        idmut_kwargs = dict(min_reads=min_reads,
                              min_mapq=min_mapq,
                              batch_size=256)
         self.assertRaisesRegex(DuplicateSampleReferenceError,
                                str((self.SAMPLE, self.REF)),
-                               run_relate,
+                               run_idmut,
                                fasta,
                                bam_files,
                                out_dir=str(self.out_dir),
-                               **relate_kwargs)
-        # Relate BAM files in different output directories.
-        relate_reports = list()
+                               **idmut_kwargs)
+        # ID mutations in BAM files in different output directories.
+        idmut_reports = list()
         for bam_file, out_dir in zip(bam_files, self.out_dirs, strict=True):
-            relate_dir, = run_relate(fasta,
+            idmut_dir, = run_idmut(fasta,
                                      (str(bam_file),),
                                      out_dir=str(out_dir),
-                                     **relate_kwargs)
-            relate_report = out_dir.joinpath(self.SAMPLE,
-                                             "relate",
+                                     **idmut_kwargs)
+            idmut_report = out_dir.joinpath(self.SAMPLE,
+                                             "idmut",
                                              self.REF,
-                                             "relate-report.json")
-            self.assertTrue(relate_report.is_file())
-            self.assertEqual(relate_dir, relate_report.parent)
-            relate_reports.append(relate_report)
-        self.check_no_identical(relate_reports, False)
-        # Pool relate reports.
-        pool_dirs = sorted(run_pool(self.POOLED, relate_reports))
+                                             "idmut-report.json")
+            self.assertTrue(idmut_report.is_file())
+            self.assertEqual(idmut_dir, idmut_report.parent)
+            idmut_reports.append(idmut_report)
+        self.check_no_identical(idmut_reports, False)
+        # Pool the IDmut datasets.
+        pool_dirs = sorted(run_pool(self.POOLED, idmut_reports))
         pool_reports = sorted(out_dir.joinpath(self.POOLED,
-                                               "relate",
+                                               "idmut",
                                                self.REF,
-                                               "relate-report.json")
+                                               "idmut-report.json")
                               for out_dir in self.out_dirs)
         for pool_report, pool_dir in zip(pool_reports, pool_dirs, strict=True):
             self.assertTrue(pool_report.is_file())
             self.assertEqual(pool_dir, pool_report.parent)
-        # Mask relate reports.
-        mask_dirs = sorted(run_mask(relate_reports,
-                                    mask_coords=[(self.REF, 5, 50)],
+        # Filter the IDmut datasets.
+        filter_dirs = sorted(run_filter(idmut_reports,
+                                    region_coords=[(self.REF, 5, 50)],
                                     min_ninfo_pos=1))
-        mask_reports = sorted(out_dir.joinpath(self.SAMPLE,
-                                               "mask",
+        filter_reports = sorted(out_dir.joinpath(self.SAMPLE,
+                                               "filter",
                                                self.REF,
                                                "5-50",
-                                               "mask-report.json")
+                                               "filter-report.json")
                               for out_dir in self.out_dirs)
-        for mask_report, mask_dir in zip(mask_reports, mask_dirs, strict=True):
-            self.assertTrue(mask_report.is_file())
-            self.assertEqual(mask_dir, mask_report.parent)
-        self.check_no_identical(mask_reports, False)
-        # Join mask reports.
-        mjoin_dirs = sorted(run_join(self.MJOINED, mask_reports))
-        mjoin_reports = sorted(out_dir.joinpath(self.SAMPLE,
-                                                "mask",
+        for filter_report, filter_dir in zip(filter_reports, filter_dirs, strict=True):
+            self.assertTrue(filter_report.is_file())
+            self.assertEqual(filter_dir, filter_report.parent)
+        self.check_no_identical(filter_reports, False)
+        # Join the Filter datasets.
+        sjoin_dirs = sorted(run_join(self.MJOINED, filter_reports))
+        sjoin_reports = sorted(out_dir.joinpath(self.SAMPLE,
+                                                "filter",
                                                 self.REF,
                                                 self.MJOINED,
-                                                "mask-report.json")
+                                                "filter-report.json")
                                for out_dir in self.out_dirs)
-        for mjoin_report, mjoin_dir in zip(mjoin_reports,
-                                           mjoin_dirs,
+        for sjoin_report, sjoin_dir in zip(sjoin_reports,
+                                           sjoin_dirs,
                                            strict=True):
-            self.assertTrue(mjoin_report.is_file())
-            self.assertEqual(mjoin_dir, mjoin_report.parent)
-        # Cluster mask reports.
-        cluster_dirs = sorted(run_cluster(mask_dirs,
+            self.assertTrue(sjoin_report.is_file())
+            self.assertEqual(sjoin_dir, sjoin_report.parent)
+        # Cluster the Filter datasets.
+        cluster_dirs = sorted(run_cluster(filter_dirs,
                                           max_clusters=1,
                                           seed=0,
                                           jackpot=False))
@@ -792,22 +793,22 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
             self.assertTrue(cluster_report.is_file())
             self.assertEqual(cluster_dir, cluster_report.parent)
         self.check_no_identical(cluster_reports, False)
-        # Join cluster reports.
+        # Join the Cluster datasets.
         cjoin_dirs = sorted(run_join(self.CJOINED, cluster_reports))
         cjoin_reports = sorted(out_dir.joinpath(self.SAMPLE,
                                                 step,
                                                 self.REF,
                                                 self.CJOINED,
                                                 f"{step}-report.json")
-                               for step in ["mask", "cluster"]
+                               for step in ["filter", "cluster"]
                                for out_dir in self.out_dirs)
         for cjoin_report, cjoin_dir in zip(cjoin_reports,
                                            cjoin_dirs,
                                            strict=True):
             self.assertTrue(cjoin_report.is_file())
             self.assertEqual(cjoin_dir, cjoin_report.parent)
-        # Fold mask and cluster reports.
-        fold_reports = run_fold(mask_dirs + cluster_dirs,
+        # Fold the Filter and Cluster datasets.
+        fold_reports = run_fold(filter_dirs + cluster_dirs,
                                 fold_quantile=1.)
         expect_fold_reports = list()
         for region in ["5-50"]:

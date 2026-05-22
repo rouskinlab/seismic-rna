@@ -19,7 +19,7 @@ List of Positions file: Uses
 List of Positions as input file
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-- The ``mask`` command accepts a List of Positions file via ``--exclude-file``.
+- The ``filter`` command accepts a List of Positions file via ``--exclude-file``.
 
 List of Positions as output file
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

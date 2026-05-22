@@ -30,7 +30,7 @@ rates as constraints (``--fold``), generate a model of the folded sequence
 Output
 --------------------------------------------------------------------------------
 
-SEISMIC-RNA will automatically create the index, align, relate, mask, and
+SEISMIC-RNA will automatically create the index, align, idmut, filter, and
 produce a number of graphs (see :doc:`../../works/index`). By default,
 the graphs that are provided are:
 

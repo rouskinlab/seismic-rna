@@ -13,7 +13,7 @@ from seismicrna.core.rel.code import (DELET,
                                       SUB_G,
                                       SUB_T)
 from seismicrna.core.seq import DNA, Region
-from seismicrna.mask.batch import MaskMutsBatch
+from seismicrna.filter.batch import FilterMutsBatch
 
 
 class TestCalcMutsMatrix(ut.TestCase):
@@ -235,7 +235,7 @@ class TestMergeCloseMuts(ut.TestCase):
         full_muts = {pos: {} for pos in self.region.unmasked_int}
         for pos, rels in sparse_muts.items():
             full_muts[pos] = {rel: np.array(reads) for rel, reads in rels.items()}
-        return MaskMutsBatch(batch=0,
+        return FilterMutsBatch(batch=0,
                              region=self.region,
                              read_nums=read_nums,
                              seg_end5s=seg_end5s,
@@ -340,7 +340,7 @@ class TestInjectCloseMuts(ut.TestCase):
         full_muts = {pos: {} for pos in self.region.unmasked_int}
         for pos, rels in sparse_muts.items():
             full_muts[pos] = {rel: np.array(reads) for rel, reads in rels.items()}
-        return MaskMutsBatch(batch=0,
+        return FilterMutsBatch(batch=0,
                              region=self.region,
                              read_nums=read_nums,
                              seg_end5s=seg_end5s,
@@ -427,7 +427,7 @@ class TestInjectCloseMuts(ut.TestCase):
         seg_end3s = np.array([[5], [5]])
         full_muts = {1: {}, 2: {}, 3: {}, 4: {},
                      5: {SUB_T: np.array([0, 1])}}
-        batch = MaskMutsBatch(batch=0,
+        batch = FilterMutsBatch(batch=0,
                               region=self.region,
                               read_nums=read_nums,
                               seg_end5s=seg_end5s,
@@ -450,7 +450,7 @@ class TestInjectCloseMuts(ut.TestCase):
         seg_end3s = np.full((num_reads, 1), region.end3, dtype=int)
         full_muts = {pos: {} for pos in region.unmasked_int}
         full_muts[3] = {SUB_T: np.array([0, 1])}
-        batch = MaskMutsBatch(batch=0,
+        batch = FilterMutsBatch(batch=0,
                               region=region,
                               read_nums=read_nums,
                               seg_end5s=seg_end5s,

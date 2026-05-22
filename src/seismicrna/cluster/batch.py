@@ -2,7 +2,7 @@ from functools import cached_property
 
 import pandas as pd
 
-from ..mask.batch import PartialRegionMutsBatch, PartialReadBatch
+from ..filter.batch import PartialRegionMutsBatch, PartialReadBatch
 
 
 class ClusterReadBatch(PartialReadBatch):

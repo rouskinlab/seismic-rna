@@ -5,14 +5,14 @@ Fold: Predict RNA secondary structures using mutation rates
 Fold: Input files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Fold input file: Mask or Cluster positional table
+Fold input file: Filter or Cluster positional table
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 You can give any number of positional table files of masked or clustered reads
-(``mask-per-pos.csv`` or ``clust-per-pos.csv``, respectively) as inputs.
+(``filter-per-pos.csv`` or ``clust-per-pos.csv``, respectively) as inputs.
 See :doc:`../inputs` for ways to list multiple files.
 (SEISMIC-RNA will not crash if you give other type of table files, such as a
-``relate-per-pos.csv`` or ``mask-per-read.csv.gz`` file, but will ignore them.)
+``idmut-per-pos.csv`` or ``filter-per-read.csv.gz`` file, but will ignore them.)
 
 To predict structures using the mutational profiles in all valid tables in the
 directory ``{out}``, you could use the command ::
@@ -69,11 +69,11 @@ Fold setting: Define regions
 You can predict structures of the full reference sequences or specific regions.
 See :doc:`../regions` for ways to define regions.
 
-Defining regions in ``seismic fold`` works identically to ``seismic mask`` but
+Defining regions in ``seismic fold`` works identically to ``seismic filter`` but
 accomplishes a very different purpose.
 Regions in ``seismic fold`` determine for which parts of the reference sequence
 to predict structures.
-Regions in ``seismic mask`` determine for which parts of the reference sequence
+Regions in ``seismic filter`` determine for which parts of the reference sequence
 to use mutational data.
 SEISMIC-RNA allows these regions to be different.
 There are several common scenarios:

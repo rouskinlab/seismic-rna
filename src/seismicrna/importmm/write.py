@@ -11,9 +11,9 @@ from ..core.seq import DNA, Region
 from ..core.table import all_patterns
 from ..core.tmp import get_release_working_dirs, release_to_out
 from ..core.write import need_write
-from ..relate.io import from_reads, ReadNamesBatchIO, RelateBatchIO, RefseqIO
-from ..relate.report import RelateReport
-from ..relate.table import RelateCountTabulator
+from ..idmut.io import from_reads, ReadNamesBatchIO, IDmutBatchIO, RefseqIO
+from ..idmut.report import IDmutReport
+from ..idmut.table import IDmutCountTabulator
 
 # All substitution codes except the one that would match the reference base.
 _SUB_FOR_BASE: dict[str, int] = {
@@ -67,12 +67,12 @@ def _import_one_ref(ref_id: str,
                     batch_size: int,
                     insert3: bool,
                     write_read_names: bool,
-                    relate_pos_table: bool,
-                    relate_read_table: bool,
+                    idmut_pos_table: bool,
+                    idmut_read_table: bool,
                     brotli_level: int,
                     force: bool) -> Path | None:
-    """ Convert one MM transcript block into relate batches and a report. """
-    report_path = RelateReport.build_path(
+    """ Convert one MM transcript block into IDmut batches and a report. """
+    report_path = IDmutReport.build_path(
         {path.TOP: out_dir,
          path.SAMPLE: sample,
          path.BRANCHES: branches,
@@ -104,14 +104,14 @@ def _import_one_ref(ref_id: str,
 
     # Write batches.
     region = Region(ref_id, refseq)
-    relate_checksums: list[str] = []
+    idmut_checksums: list[str] = []
     name_checksums: list[str | None] = []
     batch_counts = []
     n_reads_rel = 0
     batch_num = 0
     batch_start = 0
     while batch_start < n_reads_xam:
-        relate_batch, name_batch = from_reads(
+        idmut_batch, name_batch = from_reads(
             _iter_batch_reads(reads, batch_start, batch_size, mut_codes),
             sample=sample,
             branches=branches,
@@ -120,15 +120,15 @@ def _import_one_ref(ref_id: str,
             batch=batch_num,
             write_read_names=write_read_names,
         )
-        _, rc = relate_batch.save(release_dir, brotli_level)
-        relate_checksums.append(rc)
-        n_reads_rel += relate_batch.num_reads
-        if relate_pos_table or relate_read_table:
+        _, rc = idmut_batch.save(release_dir, brotli_level)
+        idmut_checksums.append(rc)
+        n_reads_rel += idmut_batch.num_reads
+        if idmut_pos_table or idmut_read_table:
             batch_counts.append(
-                relate_batch.to_region_batch(region).count_all(
+                idmut_batch.to_region_batch(region).count_all(
                     all_patterns(),
-                    count_pos=relate_pos_table,
-                    count_read=relate_read_table,
+                    count_pos=idmut_pos_table,
+                    count_read=idmut_read_table,
                     count_ends=False,
                 )
             )
@@ -141,28 +141,28 @@ def _import_one_ref(ref_id: str,
         batch_num += 1
         batch_start += batch_size
 
-    checksums = {RelateBatchIO.btype(): relate_checksums}
+    checksums = {IDmutBatchIO.btype(): idmut_checksums}
     if write_read_names:
         checksums[ReadNamesBatchIO.btype()] = name_checksums
 
-    if relate_pos_table or relate_read_table:
-        tabulator = RelateCountTabulator(
+    if idmut_pos_table or idmut_read_table:
+        tabulator = IDmutCountTabulator(
             batch_counts=batch_counts,
             top=release_dir,
             branches=branches,
             sample=sample,
             ref=ref_id,
             refseq=refseq,
-            count_pos=relate_pos_table,
-            count_read=relate_read_table,
+            count_pos=idmut_pos_table,
+            count_read=idmut_read_table,
             validate=False,
         )
-        tabulator.write_tables(pos=relate_pos_table, read=relate_read_table)
+        tabulator.write_tables(pos=idmut_pos_table, read=idmut_read_table)
 
     ended = datetime.now()
 
     # Write the report.
-    report = RelateReport(
+    report = IDmutReport(
         sample=sample,
         ref=ref_id,
         branches=branches,
@@ -177,7 +177,7 @@ def _import_one_ref(ref_id: str,
         min_reads=min_reads,
         n_reads_xam=n_reads_xam,
         n_reads_rel=n_reads_rel,
-        n_batches=len(relate_checksums),
+        n_batches=len(idmut_checksums),
         checksums=checksums,
         refseq_checksum=refseq_checksum,
         began=began,
@@ -198,17 +198,17 @@ def import_mm(mm_path: Path, *,
               batch_size: int,
               insert3: bool,
               write_read_names: bool,
-              relate_pos_table: bool,
-              relate_read_table: bool,
+              idmut_pos_table: bool,
+              idmut_read_table: bool,
               brotli_level: int,
               force: bool) -> list[Path]:
-    """ Convert all transcript blocks in one MM file into relate outputs.
+    """ Convert all transcript blocks in one MM file into idmut outputs.
 
     Returns a list of output directories (one per reference that was
     successfully imported).
     """
     release_dir, _ = get_release_working_dirs(tmp_dir)
-    branches = path.add_branch(path.RELATE_STEP, branch, {})
+    branches = path.add_branch(path.IDMUT_STEP, branch, {})
     results = []
     for ref_id, refseq, reads in iter_mm_file(mm_path):
         result = _import_one_ref(
@@ -221,8 +221,8 @@ def import_mm(mm_path: Path, *,
             batch_size=batch_size,
             insert3=insert3,
             write_read_names=write_read_names,
-            relate_pos_table=relate_pos_table,
-            relate_read_table=relate_read_table,
+            idmut_pos_table=idmut_pos_table,
+            idmut_read_table=idmut_read_table,
             brotli_level=brotli_level,
             force=force,
         )

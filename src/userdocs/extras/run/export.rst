@@ -10,14 +10,14 @@ Export input file: Table files
 
 You can give any number of table files of masked or clustered reads as inputs:
 
-- ``mask-per-pos.csv``
-- ``mask-per-read.csv``
+- ``filter-per-pos.csv``
+- ``filter-per-read.csv``
 - ``clust-per-pos.csv``
 - ``clust-per-read.csv``
 - ``clust-freq.csv``
 
 See :doc:`../inputs` for ways to list multiple files.
-(SEISMIC-RNA will just ignore ``relate-per-pos.csv``/``relate-per-read.csv.gz``
+(SEISMIC-RNA will just ignore ``idmut-per-pos.csv``/``idmut-per-read.csv.gz``
 files.)
 
 To export all data for all samples in the output directory ``{out}``, you could
@@ -33,7 +33,7 @@ you could use the command ::
 To export only masked data for reference ``{ref}`` in the output directory
 ``{out}``, you could use the command ::
 
-    seismic export {out}/*/{ref}/*/mask*
+    seismic export {out}/*/{ref}/*/filter*
 
 Export: Settings
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

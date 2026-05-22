@@ -9,8 +9,8 @@ from click import command
 
 from ..core import path
 from ..core.arg import (opt_ct_file,
-                        opt_mask_coords,
-                        opt_mask_primers,
+                        opt_region_coords,
+                        opt_region_primers,
                         opt_pmut_paired,
                         opt_pmut_unpaired,
                         opt_probe,
@@ -369,8 +369,8 @@ def run_struct(ct_file: Path,
                probe: str,
                force: bool,
                seed: int | None,
-               mask_coords: Iterable[tuple[str, int, int]] = (),
-               mask_primers: Iterable[tuple[str, DNA, DNA]] = ()):
+               region_coords: Iterable[tuple[str, int, int]] = (),
+               region_primers: Iterable[tuple[str, DNA, DNA]] = ()):
     """
     Simulate per-position mutation rates for a CT file and write them.
 
@@ -415,17 +415,17 @@ def run_struct(ct_file: Path,
         num_structures = len(structures)
         index = get_shared_index(structure.table.index
                                  for structure in structures)
-        # Compute the coordinate limits from mask_coords/mask_primers if given.
+        # Compute the coordinate limits from region_coords/region_primers if given.
         region = structures[0].region
         ref = region.ref
         seq = region.seq
         seq5 = region.end5
         reg_end5 = None
         reg_end3 = None
-        mask_coords = list(mask_coords)
-        mask_primers = list(mask_primers)
-        ref_coords = [(e5, e3) for r, e5, e3 in mask_coords if r == ref]
-        ref_primers = [(fwd, rev) for r, fwd, rev in mask_primers if r == ref]
+        region_coords = list(region_coords)
+        region_primers = list(region_primers)
+        ref_coords = [(e5, e3) for r, e5, e3 in region_coords if r == ref]
+        ref_primers = [(fwd, rev) for r, fwd, rev in region_primers if r == ref]
         if ref_coords or ref_primers:
             regs = ([RegionFinder(ref, seq, seq5=seq5, end5=e5, end3=e3)
                      for e5, e3 in ref_coords]
@@ -504,8 +504,8 @@ def run(*,
         vmut_paired: float,
         vmut_unpaired: float,
         probe: str,
-        mask_coords: Iterable[tuple[str, int, int]],
-        mask_primers: Iterable[tuple[str, DNA, DNA]],
+        region_coords: Iterable[tuple[str, int, int]],
+        region_primers: Iterable[tuple[str, DNA, DNA]],
         force: bool,
         num_cpus: int,
         seed: int | None):
@@ -522,8 +522,8 @@ def run(*,
                                 vmut_paired=vmut_paired,
                                 vmut_unpaired=vmut_unpaired,
                                 probe=probe,
-                                mask_coords=mask_coords,
-                                mask_primers=mask_primers,
+                                region_coords=region_coords,
+                                region_primers=region_primers,
                                 force=force,
                                 seed=seed))
 
@@ -535,8 +535,8 @@ params = [
     opt_vmut_paired,
     opt_vmut_unpaired,
     opt_probe,
-    opt_mask_coords,
-    opt_mask_primers,
+    opt_region_coords,
+    opt_region_primers,
     opt_force,
     opt_num_cpus,
     opt_seed,

@@ -8,7 +8,7 @@ from . import (abstract,
                muts,
                params,
                ref,
-               relate,
+               idmut,
                total)
 from ..core.arg import CMD_SIM
 
@@ -28,6 +28,6 @@ for module in [abstract,
                muts,
                params,
                ref,
-               relate,
+               idmut,
                total]:
     cli.add_command(module.cli)

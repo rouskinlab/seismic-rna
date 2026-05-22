@@ -23,12 +23,12 @@ TL;DR
 #. Process the DMS-treated replicates separately::
 
     seismic wf -x fq/dms1 -x fq/dms2 --mask-pos rre 176 -P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC hiv-rre.fa
-    seismic graph scatter out/dms[12]/mask/rre/26-204/mask-position-table.csv
+    seismic graph scatter out/dms[12]/filter/rre/26-204/filter-position-table.csv
 
 #. Pool the replicates and process them together::
 
     seismic pool -p dms-pool out/dms[12]
-    seismic wf --mask-pos rre 176 -P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC --cluster --fold -q 0.95 hiv-rre.fa out/dms-pool/relate
+    seismic wf --mask-pos rre 176 -P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC --cluster --fold -q 0.95 hiv-rre.fa out/dms-pool/idmut
 
 
 Scientific premise
@@ -125,7 +125,7 @@ Open ``out/nodms/graph/rre/full/profile_filtered_n-count.html`` in a web broser.
 - ``rre`` is the reference (i.e. name of the RNA)
 - ``full`` is the region of the reference you are looking at
 - ``profile`` is the type of graph (a bar graph with position on the x-axis)
-- ``filtered`` means graph the data come from the Mask step
+- ``filtered`` means graph the data come from the Filter step
 - ``n`` is the shorthand for "unambiguous"
 - ``count`` means graph the *number* of reads
 
@@ -191,7 +191,7 @@ so that it does not skew the results.
 
 Rerun the workflow with the option ``--mask-pos rre 176``::
 
-    seismic wf --force --keep-gu --mask-polya 0 --min-mut-gap 0 --mask-pos rre 176 hiv-rre.fa out/nodms/relate/rre
+    seismic wf --force --keep-gu --mask-polya 0 --min-mut-gap 0 --mask-pos rre 176 hiv-rre.fa out/nodms/idmut/rre
 
 This is what each of the arguments does:
 
@@ -206,8 +206,8 @@ This is what each of the arguments does:
 - ``--mask-pos rre 176`` means mask position 176 in reference ``rre``.
 - ``hiv-rre.fa`` means use the sequence in this FASTA file as the reference
   (i.e. mutation-free) sequence for the RNA.
-- ``out/nodms/relate/rre`` means search this directory for data files: in this
-  case, the data from the Relate step for sample ``nodms``, reference ``rre``.
+- ``out/nodms/idmut/rre`` means search this directory for data files: in this
+  case, the data from the IDmut step for sample ``nodms``, reference ``rre``.
 
 After the command finishes running, you can see that position 176 was masked out
 by opening ``out/nodms/graph/rre/full/profile_filtered_m-ratio-q0.html`` (position
@@ -252,13 +252,13 @@ replicates, to ensure they are reproducible.
 To create a scatter plot of the mutation rates and calculate the correlation,
 run the command ::
 
-    seismic graph scatter out/dms[12]/mask/rre/26-204/mask-position-table.csv
+    seismic graph scatter out/dms[12]/filter/rre/26-204/filter-position-table.csv
 
 - ``graph scatter`` means graph a scatter plot.
-- ``out/dms[12]/table/rre/26-204/mask-position-table.csv`` means graph data from
+- ``out/dms[12]/table/rre/26-204/filter-position-table.csv`` means graph data from
   these tables, where ``[12]`` is a `glob pattern`_ that is expanded by the
   shell into all files that match the pattern -- which in this case is
-  ``out/dms1/table/rre/26-204/mask-position-table.csv out/dms2/table/rre/26-204/mask-position-table.csv``.
+  ``out/dms1/table/rre/26-204/filter-position-table.csv out/dms2/table/rre/26-204/filter-position-table.csv``.
   You could instead type this expression to list both table files explicitly,
   but the former requires fewer key strokes.
 
@@ -299,7 +299,7 @@ Now that the replicates are pooled, the overall coverage will be higher, and so
 clustering is more likely to detect true alternative structures.
 Process the pooled sample, including with clustering, by running this command::
 
-    seismic -v wf --mask-pos rre 176 -P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC --cluster --fold -q 0.95 hiv-rre.fa out/dms-pool/relate
+    seismic -v wf --mask-pos rre 176 -P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC --cluster --fold -q 0.95 hiv-rre.fa out/dms-pool/idmut
 
 This is what each of the arguments does:
 
@@ -316,8 +316,8 @@ This is what each of the arguments does:
   rest of the data accordingly (required if using ``--fold``).
 - ``hiv-rre.fa`` means use the sequence in this FASTA file as the reference
   (i.e. mutation-free) sequence for the RNA.
-- ``out/dms-pool/relate`` means search inside ``out/dms-pool/relate`` for data
-  to feed into the workflow: in this case, a report from the Relate step.
+- ``out/dms-pool/idmut`` means search inside ``out/dms-pool/idmut`` for data
+  to feed into the workflow: in this case, a report from the IDmut step.
 
 Check whether the RNA forms alternative structures
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

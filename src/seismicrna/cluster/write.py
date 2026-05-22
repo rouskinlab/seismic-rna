@@ -22,7 +22,7 @@ from ..core.random import get_random_integer_generator
 from ..core.task import dispatch
 from ..core.tmp import release_to_out, with_tmp_dir
 from ..core.write import need_write
-from ..mask.dataset import MaskMutsDataset, JoinMaskMutsDataset
+from ..filter.dataset import FilterMutsDataset, JoinFilterMutsDataset
 
 
 def run_k(uniq_reads: UniqReads,
@@ -189,7 +189,7 @@ def run_ks(uniq_reads: UniqReads,
 
 
 @with_tmp_dir(pass_keep_tmp=False)
-def cluster(dataset: MaskMutsDataset | JoinMaskMutsDataset, *,
+def cluster(dataset: FilterMutsDataset | JoinFilterMutsDataset, *,
             branch: str,
             tmp_dir: Path,
             min_clusters: int,
@@ -205,7 +205,7 @@ def cluster(dataset: MaskMutsDataset | JoinMaskMutsDataset, *,
             verify_times: bool,
             seed: int | None,
             **kwargs):
-    """ Cluster unique reads from one mask dataset. """
+    """ Cluster unique reads from one filter dataset. """
     # Check if the report file already exists.
     branches = path.add_branch(path.CLUSTER_STEP, branch, dataset.branches)
     report_file = ClusterReport.build_path({path.TOP: dataset.top,

@@ -43,7 +43,7 @@ class ProfileGraph(OneTableRelClusterGroupGraph, ColorMapGraph, ABC):
 
     @cached_property
     def data_header(self):
-        """ Header of the selected data (not of the entire table). """
+        """ Header of the filtered data (not of the entire table). """
         return parse_header(self.data.columns)
 
 

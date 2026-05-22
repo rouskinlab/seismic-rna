@@ -4,7 +4,7 @@ from typing import Iterable
 from click import command
 
 from .write import ensembles
-from .. import mask as mask_mod, cluster as cluster_mod
+from .. import filter as filter_mod, cluster as cluster_mod
 from ..core import path
 from ..core.arg import (CMD_ENSEMBLES,
                         merge_params,
@@ -20,7 +20,7 @@ from ..core.arg import (CMD_ENSEMBLES,
 from ..core.run import run_func
 from ..core.seq import (DNA)
 from ..core.task import as_list_of_tuples, dispatch
-from ..relate.dataset import load_relate_dataset
+from ..idmut.dataset import load_idmut_dataset
 
 
 @run_func(CMD_ENSEMBLES)
@@ -42,11 +42,11 @@ def run(input_path: Iterable[str | Path], *,
         min_cluster_length: int,
         max_cluster_length: int,
         gap_mode: str,
-        # Mask options
-        mask_coords: Iterable[tuple[str, int, int]],
-        mask_primers: Iterable[tuple[str, DNA, DNA]],
+        # Filter options
+        region_coords: Iterable[tuple[str, int, int]],
+        region_primers: Iterable[tuple[str, DNA, DNA]],
         primer_gap: int,
-        mask_regions_file: str | None,
+        regions_file: str | None,
         count_del: bool,
         count_ins: bool,
         no_mut: Iterable[str],
@@ -59,9 +59,9 @@ def run(input_path: Iterable[str | Path], *,
         mask_polya: int,
         mask_pos: Iterable[tuple[str, int]],
         mask_pos_file: Iterable[str | Path],
-        mask_read: Iterable[str],
-        mask_read_file: Iterable[str | Path],
-        mask_discontig: bool,
+        drop_read: Iterable[str],
+        drop_read_file: Iterable[str | Path],
+        drop_discontig: bool,
         min_ncov_read: int,
         min_fcov_read: float,
         min_finfo_read: float,
@@ -72,9 +72,9 @@ def run(input_path: Iterable[str | Path], *,
         max_fmut_pos: float,
         quick_unbias: bool,
         quick_unbias_thresh: float,
-        max_mask_iter: int,
-        mask_pos_table: bool,
-        mask_read_table: bool,
+        max_filter_iter: int,
+        filter_pos_table: bool,
+        filter_read_table: bool,
         # Cluster options
         min_clusters: int,
         max_clusters: int,
@@ -102,8 +102,8 @@ def run(input_path: Iterable[str | Path], *,
         verify_times: bool,
         seed: int | None):
     """ Infer independent structure ensembles along an entire RNA. """
-    seg_types = load_relate_dataset.report_path_seg_types
-    relate_report_files = list(path.find_files_chain(input_path, seg_types))
+    seg_types = load_idmut_dataset.report_path_seg_types
+    idmut_report_files = list(path.find_files_chain(input_path, seg_types))
     kwargs = dict(branch=branch,
                   tmp_pfx=tmp_pfx,
                   keep_tmp=keep_tmp,
@@ -120,11 +120,11 @@ def run(input_path: Iterable[str | Path], *,
                   min_cluster_length=min_cluster_length,
                   max_cluster_length=max_cluster_length,
                   gap_mode=gap_mode,
-                  # Mask options
-                  mask_coords=mask_coords,
-                  mask_primers=mask_primers,
+                  # Filter options
+                  region_coords=region_coords,
+                  region_primers=region_primers,
                   primer_gap=primer_gap,
-                  mask_regions_file=mask_regions_file,
+                  regions_file=regions_file,
                   count_del=count_del,
                   count_ins=count_ins,
                   no_mut=no_mut,
@@ -137,9 +137,9 @@ def run(input_path: Iterable[str | Path], *,
                   mask_polya=mask_polya,
                   mask_pos=mask_pos,
                   mask_pos_file=mask_pos_file,
-                  mask_read=mask_read,
-                  mask_read_file=mask_read_file,
-                  mask_discontig=mask_discontig,
+                  drop_read=drop_read,
+                  drop_read_file=drop_read_file,
+                  drop_discontig=drop_discontig,
                   min_ncov_read=min_ncov_read,
                   min_fcov_read=min_fcov_read,
                   min_finfo_read=min_finfo_read,
@@ -150,9 +150,9 @@ def run(input_path: Iterable[str | Path], *,
                   max_fmut_pos=max_fmut_pos,
                   quick_unbias=quick_unbias,
                   quick_unbias_thresh=quick_unbias_thresh,
-                  max_mask_iter=max_mask_iter,
-                  mask_pos_table=mask_pos_table,
-                  mask_read_table=mask_read_table,
+                  max_filter_iter=max_filter_iter,
+                  filter_pos_table=filter_pos_table,
+                  filter_read_table=filter_read_table,
                   # Cluster options
                   min_clusters=min_clusters,
                   max_clusters=max_clusters,
@@ -185,11 +185,11 @@ def run(input_path: Iterable[str | Path], *,
                     as_list=True,
                     ordered=False,
                     raise_on_error=False,
-                    args=as_list_of_tuples(relate_report_files),
+                    args=as_list_of_tuples(idmut_report_files),
                     kwargs=kwargs)
 
 
-params = merge_params(mask_mod.params,
+params = merge_params(filter_mod.params,
                       cluster_mod.params,
                       [opt_tile_length,
                        opt_tile_min_overlap,

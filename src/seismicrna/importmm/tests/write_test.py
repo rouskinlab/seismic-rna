@@ -10,7 +10,7 @@ from seismicrna.core.rel.code import DELET, INS_3, INS_5, SUB_A, SUB_C, SUB_G, S
 from seismicrna.core.report import NumReadsXamF, NumReadsRelF, RefF, SampleF
 from seismicrna.core.seq import DNA
 from seismicrna.importmm.write import _build_mut_codes, import_mm
-from seismicrna.relate.report import RelateReport
+from seismicrna.idmut.report import IDmutReport
 
 _SAMPLE = "test_sample"
 _BRANCH = ""
@@ -51,9 +51,9 @@ def _build_mm_bytes() -> bytes:
 
 
 def _report_path(out_dir: Path, ref: str) -> Path:
-    """ Return the expected path of a RelateReport JSON file. """
-    branches = path.add_branch(path.RELATE_STEP, _BRANCH, {})
-    return RelateReport.build_path(
+    """ Return the expected path of an IDmutReport JSON file. """
+    branches = path.add_branch(path.IDMUT_STEP, _BRANCH, {})
+    return IDmutReport.build_path(
         {path.TOP: out_dir,
          path.SAMPLE: _SAMPLE,
          path.BRANCHES: branches,
@@ -138,8 +138,8 @@ class TestImportMM(ut.TestCase):
             batch_size=100,
             insert3=True,
             write_read_names=False,
-            relate_pos_table=False,
-            relate_read_table=False,
+            idmut_pos_table=False,
+            idmut_read_table=False,
             brotli_level=5,
             force=False,
         )
@@ -170,7 +170,7 @@ class TestImportMM(ut.TestCase):
 
     def test_ref1_batch_exists(self):
         ref1_dir = _report_path(self._out_dir, _REF1).parent
-        self.assertTrue((ref1_dir / "relate-batch-0.brickle").is_file())
+        self.assertTrue((ref1_dir / "idmut-batch-0.brickle").is_file())
 
     # --- output file existence: ref2 ---
 
@@ -183,7 +183,7 @@ class TestImportMM(ut.TestCase):
 
     def test_ref2_batch_exists(self):
         ref2_dir = _report_path(self._out_dir, _REF2).parent
-        self.assertTrue((ref2_dir / "relate-batch-0.brickle").is_file())
+        self.assertTrue((ref2_dir / "idmut-batch-0.brickle").is_file())
 
     # --- report field values: ref1 ---
 
@@ -234,8 +234,8 @@ class TestImportMM(ut.TestCase):
                 batch_size=100,
                 insert3=True,
                 write_read_names=False,
-                relate_pos_table=False,
-                relate_read_table=False,
+                idmut_pos_table=False,
+                idmut_read_table=False,
                 brotli_level=5,
                 force=False,
             )
@@ -251,17 +251,17 @@ class TestImportMM(ut.TestCase):
 # ---------------------------------------------------------------------------
 
 class TestRFCountIntegration(ut.TestCase):
-    """Verify importmm and relate produce identical position/read-table counts."""
+    """Verify importmm and idmut produce identical position/read-table counts."""
 
     _SAMPLE = "rfcount_integ"
     _REF = "integ_ref"
 
-    def test_matches_relate(self):
+    def test_matches_idmut(self):
         import shutil
         import subprocess
         import pandas as pd
         from seismicrna.align import run as run_align
-        from seismicrna.relate import run as run_relate
+        from seismicrna.idmut import run as run_idmut
         from seismicrna.sim.ref import run as run_sim_ref
         from seismicrna.core.arg.cli import PROBE_DMS
         from seismicrna.sim.fold import run as run_sim_fold
@@ -324,7 +324,7 @@ class TestRFCountIntegration(ut.TestCase):
                 # the reference; no adapter padding is needed, so all reads
                 # are clean reference-derived sequence.  Single-end avoids the
                 # factor-of-2 counting difference between rf-count (counts each
-                # BAM record) and relate (counts each paired read as one unit).
+                # BAM record) and idmut (counts each paired read as one unit).
                 fastqs = run_sim_fastq(input_path=(), param_dir=(param_dir,),
                                        sample=self._SAMPLE, num_reads=500,
                                        paired_end=False, read_length=50,
@@ -343,7 +343,7 @@ class TestRFCountIntegration(ut.TestCase):
 
                 # 6. rf-count → MM binary file.
                 # -q 0 / -mq 0: accept all base and mapping qualities so that
-                # neither threshold diverges from relate's min_phred=0, min_mapq=0.
+                # neither threshold diverges from idmut's min_phred=0, min_mapq=0.
                 subprocess.run(
                     ["rf-count", "-m", "-mm",
                      "-f", str(fasta),
@@ -356,7 +356,7 @@ class TestRFCountIntegration(ut.TestCase):
                 )
                 mm_file = next(rf_out.rglob("*.mm"))
 
-                # 7. Import MM → relate-format output with position and read tables.
+                # 7. Import MM → idmut-format output with position and read tables.
                 tmp_mm = root / "tmp_mm"
                 tmp_mm.mkdir()
                 import_mm(
@@ -369,23 +369,23 @@ class TestRFCountIntegration(ut.TestCase):
                     batch_size=1000,
                     insert3=True,
                     write_read_names=False,
-                    relate_pos_table=True,
-                    relate_read_table=True,
+                    idmut_pos_table=True,
+                    idmut_read_table=True,
                     brotli_level=5,
                     force=False,
                 )
 
-                # 8. Relate on the same BAM.
+                # 8. IDmut on the same BAM.
                 # clip_end5/3=0: rf-count does not clip read ends.
                 # min_phred=0:   sim reads have perfect quality, matching -q 0 above.
                 # ambindel=False: consistent with importmm sentinel value.
-                run_relate(fasta, align_dirs,
+                run_idmut(fasta, align_dirs,
                            out_dir=out_dir,
                            clip_end5=0, clip_end3=0,
                            insert3=True, ambindel=False, overhangs=True,
                            min_mapq=0, min_phred=0, min_reads=1,
-                           relate_pos_table=True, relate_read_table=True,
-                           relate_cx=False,
+                           idmut_pos_table=True, idmut_read_table=True,
+                           idmut_cx=False,
                            num_cpus=1, brotli_level=5,
                            force=False, tmp_pfx=tmp_pfx)
 
@@ -393,7 +393,7 @@ class TestRFCountIntegration(ut.TestCase):
                 #
                 # rf-count's MM format stores only reads that have ≥1 mutation;
                 # perfect-match reads are absent.  As a result, importmm's
-                # Covered and Matched totals will be lower than relate's (which
+                # Covered and Matched totals will be lower than idmut's (which
                 # processes all aligned reads), and read-table row counts will
                 # differ.  Only the Mutated column is directly comparable: both
                 # tools count the exact same mutations from the same BAM file.
@@ -415,9 +415,9 @@ class TestRFCountIntegration(ut.TestCase):
                                      "element-by-element")
 
                 # Read table: importmm contains only the mutated reads (those
-                # rf-count put in the MM file); relate contains all reads.
+                # rf-count put in the MM file); idmut contains all reads.
                 # Read names and row order differ, so compare sorted per-read
-                # Mutated counts: importmm's full list vs relate's mutated-only
+                # Mutated counts: importmm's full list vs idmut's mutated-only
                 # subset (Mutated > 0), both sorted ascending.
                 mm_read = next(out_importmm.rglob("*-read-table.csv.gz"))
                 rel_read = next(out_dir.rglob("*-read-table.csv.gz"))

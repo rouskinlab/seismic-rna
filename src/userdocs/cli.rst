@@ -35,15 +35,15 @@ Run individual steps of the workflow
 .. click:: seismicrna.align:cli
     :prog: seismic align
 
-.. _cli_relate:
+.. _cli_idmut:
 
-.. click:: seismicrna.relate:cli
-    :prog: seismic relate
+.. click:: seismicrna.idmut:cli
+    :prog: seismic idmut
 
-.. _cli_mask:
+.. _cli_filter:
 
-.. click:: seismicrna.mask:cli
-    :prog: seismic mask
+.. click:: seismicrna.filter:cli
+    :prog: seismic filter
 
 .. _cli_cluster:
 
@@ -145,8 +145,8 @@ seismic sim
 .. click:: seismicrna.sim.clusts:cli
     :prog: seismic sim clusts
    
-.. click:: seismicrna.sim.relate:cli
-    :prog: seismic sim relate
+.. click:: seismicrna.sim.idmut:cli
+    :prog: seismic sim idmut
 
 .. click:: seismicrna.sim.fastq:cli
     :prog: seismic sim fastq

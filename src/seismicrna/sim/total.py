@@ -10,7 +10,7 @@ from . import (fastq as fastq_mod,
                fold as fold_mod,
                params as params_mod,
                ref as ref_mod,
-               relate as relate_mod)
+               idmut as idmut_mod)
 from .muts import load_pmut
 from ..core import path
 from ..core.arg import (arg_fasta,
@@ -23,10 +23,10 @@ from ..core.arg import (arg_fasta,
                         opt_ct_file,
                         opt_mask_a,
                         opt_mask_c,
-                        opt_mask_coords,
+                        opt_region_coords,
                         opt_mask_g,
                         opt_mask_polya,
-                        opt_mask_primers,
+                        opt_region_primers,
                         opt_mask_u,
                         opt_max_fraction_ident,
                         opt_max_pearson_sim,
@@ -41,16 +41,16 @@ from ..core.rel import RelPattern
 from ..core.rna import from_ct
 from ..core.run import run_func
 from ..core.seq import DNA, parse_fasta, RefRegions
-from ..mask.main import set_mask_acgu
-from ..relate.sim import calc_pmut_pattern
+from ..filter.main import set_mask_acgu
+from ..idmut.sim import calc_pmut_pattern
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 
 def _clusters_distinct(ct_file: Path,
                         fasta: str | Path,
-                        mask_coords: Iterable[tuple[str, int, int]],
-                        mask_primers: Iterable[tuple[str, DNA, DNA]],
+                        region_coords: Iterable[tuple[str, int, int]],
+                        region_primers: Iterable[tuple[str, DNA, DNA]],
                         probe: str,
                         mask_a: bool | None,
                         mask_c: bool | None,
@@ -66,13 +66,13 @@ def _clusters_distinct(ct_file: Path,
     except StopIteration:
         raise ValueError(f"CT file {ct_file} contains 0 structures") from None
     # Mask positions from the coordinates and primers.
-    mask_coords = list(mask_coords)
-    mask_primers = list(mask_primers)
+    region_coords = list(region_coords)
+    region_primers = list(region_primers)
     select_regs = (list(RefRegions(parse_fasta(Path(fasta), DNA),
-                                   ends=mask_coords,
-                                   primers=mask_primers,
+                                   ends=region_coords,
+                                   primers=region_primers,
                                    exclude_primers=True).regions)
-                   if (mask_coords or mask_primers) else [])
+                   if (region_coords or region_primers) else [])
     for reg in select_regs:
         if reg.ref == region.ref:
             region.mask_list(range(region.end5, reg.end5 + 1))
@@ -138,8 +138,8 @@ def run(*,
         length_fmean: float,
         length_fvar: float,
         clust_conc: float,
-        mask_coords: Iterable[tuple[str, int, int]],
-        mask_primers: Iterable[tuple[str, DNA, DNA]],
+        region_coords: Iterable[tuple[str, int, int]],
+        region_primers: Iterable[tuple[str, DNA, DNA]],
         mask_a: bool | None,
         mask_c: bool | None,
         mask_g: bool | None,
@@ -217,8 +217,8 @@ def run(*,
             vmut_paired=vmut_paired,
             vmut_unpaired=vmut_unpaired,
             probe=probe,
-            mask_coords=mask_coords,
-            mask_primers=mask_primers,
+            region_coords=region_coords,
+            region_primers=region_primers,
             center_fmean=center_fmean,
             center_fvar=center_fvar,
             length_fmean=length_fmean,
@@ -231,7 +231,7 @@ def run(*,
         # Check if the clusters are sufficiently distinct.
         ct_file = ct_files[0]
         if not _clusters_distinct(ct_file, fasta,
-                                mask_coords, mask_primers,
+                                region_coords, region_primers,
                                 probe,
                                 mask_a, mask_c, mask_g, mask_u,
                                 mask_polya,
@@ -290,7 +290,7 @@ params = merge_params(
     fold_mod.params,
     params_mod.params,
     ref_mod.params,
-    relate_mod.params,
+    idmut_mod.params,
     exclude=[arg_fasta,
             arg_input_path,
             opt_branch,

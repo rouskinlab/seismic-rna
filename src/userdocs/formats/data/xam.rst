@@ -71,7 +71,7 @@ XAM file: Uses
 XAM as input file
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Alignment maps for the Relate step must be input as XAM files.
+Alignment maps for the IDmut step must be input as XAM files.
 
 XAM as output file
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -84,7 +84,7 @@ XAM as temporary file
 
 - The Align step writes a temporary BAM file for each input FASTQ, then splits
   that file into one BAM/CRAM file for each reference.
-- The Relate step filters and converts each input BAM/CRAM file into a temporary
+- The IDmut step filters and converts each input BAM/CRAM file into a temporary
   SAM file, which it parses to generate the relation vectors.
 
 .. _Samtools website: https://samtools.github.io/hts-specs/

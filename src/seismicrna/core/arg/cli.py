@@ -573,7 +573,7 @@ opt_min_reads = Option(
     help="Discard alignment maps with fewer than this many reads"
 )
 
-# Relate
+# IDmut
 
 opt_batch_size = Option(
     ("--batch-size",),
@@ -651,28 +651,28 @@ opt_write_read_names = Option(
     type=bool,
     default=False,
     help="Write the name of each read in a second set of batches (necessary "
-         "for the options --mask-read or --mask-read-file)"
+         "for the options --drop-read or --drop-read-file)"
 )
 
-opt_relate_pos_table = Option(
-    ("--relate-pos-table/--no-relate-pos-table",),
+opt_idmut_pos_table = Option(
+    ("--idmut-pos-table/--no-idmut-pos-table",),
     type=bool,
     default=True,
-    help="Tabulate relationships per position for relate data"
+    help="Tabulate relationships per position for idmut data"
 )
 
-opt_relate_read_table = Option(
-    ("--relate-read-table/--no-relate-read-table",),
+opt_idmut_read_table = Option(
+    ("--idmut-read-table/--no-idmut-read-table",),
     type=bool,
     default=False,
-    help="Tabulate relationships per read for relate data"
+    help="Tabulate relationships per read for idmut data"
 )
 
-opt_relate_cx = Option(
-    ("--relate-cx/--relate-py",),
+opt_idmut_cx = Option(
+    ("--idmut-cx/--idmut-py",),
     type=bool,
     default=True,
-    help=("Use a fast (C extension module) version of the relate algorithm; "
+    help=("Use a fast (C extension module) version of the idmut algorithm; "
           "the slow (Python) version is still avilable as a fallback if the "
           "C extension cannot be loaded, and for debugging/benchmarking")
 )
@@ -699,31 +699,31 @@ opt_max_marcd_pool = Option(
     help="Pool samples only if their mean arsince distance is at most this"
 )
 
-# Mask
+# Filter
 
 opt_probe = Option(
     ("--probe",),
     type=Choice(PROBES, case_sensitive=False),
     default=PROBE_DMS,
-    help="Use default mask options for this chemical probe"
+    help="Use default filter options for this chemical probe"
 )
 
-opt_mask_regions_file = Option(
-    ("--mask-regions-file", "-i"),
+opt_regions_file = Option(
+    ("--regions-file", "-i"),
     type=Path(exists=True, dir_okay=False),
     help="Select regions of references from coordinates/primers in a CSV file"
 )
 
-opt_mask_coords = Option(
-    ("--mask-coords", "-c"),
+opt_region_coords = Option(
+    ("--region-coords", "-c"),
     type=(str, int, int),
     multiple=True,
     default=(),
     help="Select a region of a reference given its 5' and 3' end coordinates"
 )
 
-opt_mask_primers = Option(
-    ("--mask-primers", "-P"),
+opt_region_primers = Option(
+    ("--region-primers", "-P"),
     type=(str, DNA, DNA),
     multiple=True,
     default=(),
@@ -818,62 +818,62 @@ opt_mask_pos_file = Option(
     help="Mask positions in references from a file"
 )
 
-opt_mask_read = Option(
-    ("--mask-read",),
+opt_drop_read = Option(
+    ("--drop-read",),
     type=str,
     multiple=True,
     default=(),
-    help="Mask the read with this name"
+    help="Drop the read with this name"
 )
 
-opt_mask_read_file = Option(
-    ("--mask-read-file",),
+opt_drop_read_file = Option(
+    ("--drop-read-file",),
     type=Path(exists=True),
     multiple=True,
     default=(),
-    help="Mask the reads with names in this file"
+    help="Drop the reads with names in this file"
 )
 
-opt_mask_discontig = Option(
-    ("--mask-discontig/--keep-discontig",),
+opt_drop_discontig = Option(
+    ("--drop-discontig/--keep-discontig",),
     type=bool,
     default=True,
-    help="Mask paired-end reads with discontiguous mates"
+    help="Drop paired-end reads with discontiguous mates"
 )
 
 opt_min_ncov_read = Option(
     ("--min-ncov-read",),
     type=int,
     default=1,
-    help="Mask reads with fewer than this many bases covering the region"
+    help="Drop reads with fewer than this many bases covering the region"
 )
 
 opt_min_fcov_read = Option(
     ("--min-fcov-read",),
     type=float,
     default=0.,
-    help="Mask reads covering less than this fraction of the region"
+    help="Drop reads covering less than this fraction of the region"
 )
 
 opt_min_finfo_read = Option(
     ("--min-finfo-read",),
     type=float,
     default=0.95,
-    help="Mask reads with less than this fraction of informative base calls"
+    help="Drop reads with less than this fraction of informative base calls"
 )
 
 opt_max_fmut_read = Option(
     ("--max-fmut-read",),
     type=float,
     default=1.,
-    help="Mask reads with more than this fraction of mutated base calls"
+    help="Drop reads with more than this fraction of mutated base calls"
 )
 
 opt_min_mut_gap = Option(
     ("--min-mut-gap",),
     type=int,
     default=None,
-    help="Mask reads with two mutations separated by fewer than this many bases"
+    help="Filter out mutations separated by fewer than this many bases"
 )
 
 opt_min_mut_gap_weights = Option(
@@ -881,8 +881,7 @@ opt_min_mut_gap_weights = Option(
     type=str,
     default="",
     help=("Comma-separated gap:weight pairs defining a mixture of min_mut_gap "
-          "biases, e.g. '0:0.18,2:0.05,3:0.21'. When given, overrides "
-          "--min-mut-gap.")
+          "biases, e.g. '0:0.2,1:0.3,2:0.5'. Overrides --min-mut-gap.")
 )
 
 opt_mut_collisions = Option(
@@ -930,25 +929,25 @@ opt_quick_unbias_thresh = Option(
     help="Treat mutated fractions under this threshold as 0 with --quick-unbias"
 )
 
-opt_max_mask_iter = Option(
-    ("--max-mask-iter",),
+opt_max_filter_iter = Option(
+    ("--max-filter-iter",),
     type=int,
     default=0,
-    help="Stop masking after this many iterations (0 for no limit)"
+    help="Stop the filter step after this many iterations (0 for no limit)"
 )
 
-opt_mask_pos_table = Option(
-    ("--mask-pos-table/--no-mask-pos-table",),
+opt_filter_pos_table = Option(
+    ("--filter-pos-table/--no-filter-pos-table",),
     type=bool,
     default=True,
-    help="Tabulate relationships per position for mask data"
+    help="Tabulate relationships per position for filter data"
 )
 
-opt_mask_read_table = Option(
-    ("--mask-read-table/--no-mask-read-table",),
+opt_filter_read_table = Option(
+    ("--filter-read-table/--no-filter-read-table",),
     type=bool,
     default=True,
-    help="Tabulate relationships per read for mask data"
+    help="Tabulate relationships per read for filter data"
 )
 
 opt_verify_times = Option(
@@ -1163,7 +1162,7 @@ opt_erase_tiles = Option(
     ("--erase-tiles/--keep-tiles",),
     type=bool,
     default=True,
-    help="Erase the mask reports/batches from the tiling step"
+    help="Erase the filter reports/batches from the tiling step"
 )
 
 opt_pair_fdr = Option(

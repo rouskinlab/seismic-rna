@@ -2,8 +2,8 @@
 Report Formats
 ========================================================================
 
-A report file is produced by the steps ``align``, ``relate``, ``pool``,
-``mask``, ``cluster``, ``join``, and ``fold`` and serves three purposes:
+A report file is produced by the steps ``align``, ``idmut``, ``pool``,
+``filter``, ``cluster``, ``join``, and ``fold`` and serves three purposes:
 
 - Record the parameters with which the step was run.
 - Summarize the results of the step.
@@ -17,9 +17,9 @@ read and widely supported by software.
     :maxdepth: 2
 
     align
-    relate
+    idmut
     pool
-    mask
+    filter
     cluster
     join
     fold

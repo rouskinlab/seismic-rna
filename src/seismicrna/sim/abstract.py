@@ -45,7 +45,7 @@ from ..export.web import (META_SYMBOL,
                           REG_POS,
                           STRUCTURE,
                           POS_DATA)
-from ..mask.table import MaskPositionTableLoader
+from ..filter.table import FilterPositionTableLoader
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -148,7 +148,7 @@ def _accumulate_ratios(paired_unpaired_ratios: Iterable[tuple[dict, dict]]):
     return all_paired_ratios, all_unpaired_ratios
 
 
-def abstract_table(table: MaskPositionTableLoader,
+def abstract_table(table: FilterPositionTableLoader,
                    struct_file: str | Path,
                    min_aucroc: float = 0.):
     path_fields = path.parse(struct_file, path.CT_FILE_LAST_SEGS)
@@ -296,7 +296,7 @@ def run(input_path: Iterable[str | Path], *,
         ref_struct_files[ref] = file
     # Accumulate ratios from table files.
     args = list()
-    for table in MaskPositionTableLoader.load_tables(
+    for table in FilterPositionTableLoader.load_tables(
             input_path, verify_times=verify_times
     ):
         try:

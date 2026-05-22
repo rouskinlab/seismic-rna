@@ -11,14 +11,14 @@ from ..core.array import get_length
 from ..core.batch import EndCoords, RegionMutsBatch
 from ..core.rel import RelPattern
 from ..core.seq import Region
-from ..mask.dataset import MaskMutsDataset
+from ..filter.dataset import FilterMutsDataset
 
 
 class UniqReads(EndCoords):
     """ Collection of bit vectors of unique reads. """
 
     @classmethod
-    def from_dataset(cls, dataset: MaskMutsDataset, branch: str, **kwargs):
+    def from_dataset(cls, dataset: FilterMutsDataset, branch: str, **kwargs):
         """ Get unique reads from a dataset. """
         ((seg_end5s, seg_end3s),
          muts_per_pos,
@@ -41,7 +41,7 @@ class UniqReads(EndCoords):
                    seg_end3s=seg_end3s)
 
     @classmethod
-    def from_dataset_contig(cls, dataset: MaskMutsDataset, branch: str):
+    def from_dataset_contig(cls, dataset: FilterMutsDataset, branch: str):
         """ Get unique reads from a dataset of contiguous reads. """
         return cls.from_dataset(dataset,
                                 branch,

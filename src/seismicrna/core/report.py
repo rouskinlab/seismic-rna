@@ -78,7 +78,7 @@ from .arg import (opt_seed,
                   opt_mut_collisions,
                   opt_min_ninfo_pos,
                   opt_max_fmut_pos,
-                  opt_max_mask_iter,
+                  opt_max_filter_iter,
                   opt_min_em_runs,
                   opt_max_em_runs,
                   opt_em_thresh,
@@ -106,7 +106,7 @@ from .arg import (opt_seed,
                   opt_mask_g,
                   opt_mask_u,
                   opt_mask_polya,
-                  opt_mask_discontig,
+                  opt_drop_discontig,
                   opt_min_phred,
                   opt_tile_length,
                   opt_tile_min_overlap,
@@ -387,12 +387,12 @@ XamChecksumF = ReportField("xam_checksum",
                            "Checksum of the input xam (SHA-512)",
                            str)
 
-# Relate fields
+# IDmut fields
 NumReadsXamF = ReportField("n_reads_xam",
                            "Number of reads in SAM/BAM/CRAM file",
                            int)
 NumReadsRelF = ReportField("n_reads_rel",
-                           "Number of reads processed by relate",
+                           "Number of reads processed successfully",
                            int)
 NumBatchesF = ReportField("n_batches", "Number of batches", int)
 ChecksumsF = ReportField("checksums", "Checksums of batches (SHA-512)", dict)
@@ -411,9 +411,9 @@ PooledSamplesF = ReportField("pooled_samples", "Pooled samples", list)
 MinPearsonPoolF = OptionReportField(opt_min_pearson_pool)
 MaxMarcdPoolF = OptionReportField(opt_max_marcd_pool)
 
-# Mask fields
+# Filter fields
 ProbeF = OptionReportField(opt_probe)
-mask_iter_no_convergence = 0
+filter_iter_no_convergence = 0
 CountMutsF = ReportField("count_muts",
                          "Count as mutations",
                          HalfRelPattern,
@@ -438,14 +438,14 @@ MinNInfoPosF = OptionReportField(opt_min_ninfo_pos)
 MaxFMutPosF = OptionReportField(opt_max_fmut_pos)
 MinNCovReadF = OptionReportField(opt_min_ncov_read)
 MinFCovReadF = OptionReportField(opt_min_fcov_read)
-DiscontigF = OptionReportField(opt_mask_discontig)
+DiscontigF = OptionReportField(opt_drop_discontig)
 MinMutGapF = OptionReportField(opt_min_mut_gap)
 MutCollisionsF = OptionReportField(opt_mut_collisions)
 QuickUnbiasF = OptionReportField(opt_quick_unbias)
 QuickUnbiasThreshF = OptionReportField(opt_quick_unbias_thresh)
 MinFInfoReadF = OptionReportField(opt_min_finfo_read)
 MaxFMutReadF = OptionReportField(opt_max_fmut_read)
-MaxMaskIterF = OptionReportField(opt_max_mask_iter)
+MaxFilterIterF = OptionReportField(opt_max_filter_iter)
 PosCutPolyAF = ReportField("pos_polya",
                            "Positions in stretches of consecutive A bases",
                            np.ndarray,
@@ -492,7 +492,7 @@ PosCutHiMutF = ReportField("pos_max_fmut",
                            iconv=iconv_array_int,
                            oconv=get_oconv_list(int))
 PosKeptF = ReportField("pos_kept",
-                       "Positions kept after masking",
+                       "Positions kept after filtering",
                        np.ndarray,
                        iconv=iconv_array_int,
                        oconv=get_oconv_list(int))
@@ -529,44 +529,55 @@ NumPosCutHiMutF = ReportField("n_pos_max_fmut",
                               "Number of positions with too many mutations",
                               int)
 NumPosKeptF = ReportField("n_pos_kept",
-                          "Number of positions kept after masking",
+                          "Number of positions kept after filtering",
                           int)
 NumReadsInitF = ReportField("n_reads_init",
-                            "Total number of reads before masking",
+                            "Total number of reads before filtering",
                             int)
 NumReadCutListF = ReportField("n_reads_list",
-                              "Number of reads masked from a list",
+                              "Number of reads dropped from a list",
                               int)
 NumReadsLoNCovF = ReportField(
     "n_reads_min_ncov",
-    "Number of reads with too few bases covering the region",
+    "Number of reads dropped due to too few bases covering the region",
     int
 )
 NumReadsLoFCovF = ReportField(
     "n_reads_min_fcov",
-    "Number of reads covering too small a fraction of the region",
+    "Number of reads dropped due to covering too small a fraction of the region",
     int
 )
-NumDiscontigF = ReportField("n_reads_discontig",
-                            "Number of reads with discontiguous mates",
-                            int)
-NumReadsLoInfoF = ReportField("n_reads_min_finfo",
-                              "Number of reads with too few informative "
-                              "base calls",
-                              int)
-NumReadsHiMutF = ReportField("n_reads_max_fmut",
-                             "Number of reads with too many mutations",
-                             int)
-NumReadsCloseMutF = ReportField("n_reads_min_gap",
-                                "Number of reads with two mutations too close",
-                                int)
-NumReadsKeptF = ReportField("n_reads_kept",
-                            "Number of reads kept after masking",
-                            int)
-NumMaskIterF = ReportField("n_mask_iter",
-                           "Number of iterations until convergence "
-                           f"({mask_iter_no_convergence} if not converged)",
-                           int)
+NumDiscontigF = ReportField(
+    "n_reads_discontig",
+    "Number of reads dropped due to discontiguous mates",
+    int
+)
+NumReadsLoInfoF = ReportField(
+    "n_reads_min_finfo",
+    "Number of reads dropped due to too few informative base calls",
+    int
+)
+NumReadsHiMutF = ReportField(
+    "n_reads_max_fmut",
+    "Number of reads dropped due to too many mutations",
+    int
+)
+NumReadsCloseMutF = ReportField(
+    "n_reads_min_gap",
+    "Number of reads dropped due to two mutations too close",
+    int
+)
+NumReadsKeptF = ReportField(
+    "n_reads_kept",
+    "Number of reads kept after filtering",
+    int
+)
+NumFilterIterF = ReportField(
+    "n_filter_iter",
+    "Number of iterations until convergence "
+    f"({filter_iter_no_convergence} if not converged)",
+    int
+)
 
 # Cluster fields
 

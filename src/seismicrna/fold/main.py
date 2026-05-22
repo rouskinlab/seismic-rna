@@ -61,7 +61,7 @@ from ..core.seq import DNA, RefRegions, RefSeqs, Region
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.tmp import with_tmp_dir
 from ..core.write import need_write
-from ..mask.table import MaskPositionTableLoader
+from ..filter.table import FilterPositionTableLoader
 
 
 def resolve_fold_backend(probe: str, fold_backend: str) -> str:
@@ -95,7 +95,7 @@ def load_foldable_tables(input_path: Iterable[str | Path], **kwargs):
     # Since table_type.load_tables() will be called multiple times, make
     # sure it is not an exhaustible generator.
     paths = list(input_path)
-    for table_type in [MaskPositionTableLoader, ClusterPositionTableLoader]:
+    for table_type in [FilterPositionTableLoader, ClusterPositionTableLoader]:
         yield from table_type.load_tables(paths, **kwargs)
 
 
@@ -229,7 +229,7 @@ def fold_region(rna: RNAFoldProfile, *,
     return report_file
 
 
-def fold_table(table: MaskPositionTableLoader | ClusterPositionTableLoader,
+def fold_table(table: FilterPositionTableLoader | ClusterPositionTableLoader,
                regions: list[Region],
                fold_temp: float,
                fold_energy_method: str,

@@ -9,7 +9,7 @@ install_subdir('src/seismicrna',
 # Build and install C extension modules.
 add_project_arguments(['-DNDEBUG', '-O2'],
                       language: 'c')
-python.extension_module('relate',
-                        sources: ['src/seismicrna/relate/cx/relate.c'],
-                        subdir: 'seismicrna/relate/cx',
+python.extension_module('idmut',
+                        sources: ['src/seismicrna/idmut/cx/idmut.c'],
+                        subdir: 'seismicrna/idmut/cx',
                         install: true)

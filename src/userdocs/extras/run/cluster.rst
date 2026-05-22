@@ -5,10 +5,10 @@ Cluster: Infer alternative structures by clustering reads' mutations
 Cluster: Input files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Cluster input file: Mask report
+Cluster input file: Filter report
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-You can give any number of Mask report files as inputs for the Cluster step.
+You can give any number of Filter report files as inputs for the Cluster step.
 See :doc:`../inputs` for ways to list multiple files.
 
 Cluster all masked reads in ``out``::
@@ -18,7 +18,7 @@ Cluster all masked reads in ``out``::
 Cluster reads from ``sample-1`` masked over reference reference ``ref-1``,
 region ``abc``::
 
-    seismic cluster out/sample-1/mask/ref-1/abc
+    seismic cluster out/sample-1/filter/ref-1/abc
 
 Cluster: Settings
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

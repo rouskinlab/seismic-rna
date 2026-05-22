@@ -44,9 +44,9 @@ RE_PATTERNS = {str: STR_PATTERN,
 # Names of steps
 DEMULT_STEP = "demult"
 ALIGN_STEP = "align"
-RELATE_STEP = "relate"
+IDMUT_STEP = "idmut"
 NAMES_BATCH = "names"
-MASK_STEP = "mask"
+FILTER_STEP = "filter"
 CLUSTER_STEP = "cluster"
 ENSEMBLES_STEP = "ensembles"
 FOLD_STEP = "fold"
@@ -85,7 +85,7 @@ CLUST_PARAMS_DIR = "parameters"
 CLUST_STATS_DIR = "statistics"
 CLUST_COUNTS_DIR = "read-counts"
 
-TABLES = (RELATE_STEP, MASK_STEP, CLUSTER_STEP)
+TABLES = (IDMUT_STEP, FILTER_STEP, CLUSTER_STEP)
 
 # File extensions
 
@@ -418,8 +418,8 @@ InfoField = PathField(str)
 StepField = PathField(str,
                       [DEMULT_STEP,
                        ALIGN_STEP,
-                       RELATE_STEP,
-                       MASK_STEP,
+                       IDMUT_STEP,
+                       FILTER_STEP,
                        CLUSTER_STEP,
                        ENSEMBLES_STEP,
                        FOLD_STEP,
@@ -655,27 +655,27 @@ SplitRepSeg = PathSegment("split-rep",
                           {EXT: ReportExt},
                           frmt="split-report{ext}")
 
-# Relate
+# IDmut
 RefseqFileSeg = PathSegment("refseq-file",
                             {EXT: RefseqFileExt},
                             frmt="refseq{ext}")
 ReadNamesBatSeg = PathSegment("names-bat",
                               {BATCH: IntField, EXT: BatchExt},
                               frmt=NAMES_BATCH + "-batch-{batch}{ext}")
-RelateBatSeg = PathSegment("relate-bat",
-                           {BATCH: IntField, EXT: BatchExt},
-                           frmt=RELATE_STEP + "-batch-{batch}{ext}")
-RelateRepSeg = PathSegment("relate-rep",
-                           {EXT: ReportExt},
-                           frmt=RELATE_STEP + "-report{ext}")
+IDmutBatSeg = PathSegment("idmut-bat",
+                          {BATCH: IntField, EXT: BatchExt},
+                          frmt=IDMUT_STEP + "-batch-{batch}{ext}")
+IDmutRepSeg = PathSegment("idmut-rep",
+                          {EXT: ReportExt},
+                          frmt=IDMUT_STEP + "-report{ext}")
 
-# Mask
-MaskBatSeg = PathSegment(f"{MASK_STEP}-bat",
-                         {BATCH: IntField, EXT: BatchExt},
-                         frmt=MASK_STEP + "-batch-{batch}{ext}")
-MaskRepSeg = PathSegment("mask-rep",
-                         {EXT: ReportExt},
-                         frmt=MASK_STEP + "-report{ext}")
+# Filter
+FilterBatSeg = PathSegment(f"{FILTER_STEP}-bat",
+                           {BATCH: IntField, EXT: BatchExt},
+                           frmt=FILTER_STEP + "-batch-{batch}{ext}")
+FilterRepSeg = PathSegment("filter-rep",
+                           {EXT: ReportExt},
+                           frmt=FILTER_STEP + "-report{ext}")
 
 # Cluster
 ClustParamsDirSeg = PathSegment("cluster-run-res-dir",

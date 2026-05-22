@@ -8,7 +8,7 @@ Table: Input files
 Table input file: Report
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-You can give any number of report files from the Relate, Mask, and Cluster steps
+You can give any number of report files from the IDmut, Filter, and Cluster steps
 as inputs for the Table step.
 See :doc:`../inputs` for ways to list multiple files.
 
@@ -32,20 +32,20 @@ Table: Output files
 All output files go into the directory ``{out}/{sample}/table/{ref}/{reg}``,
 where ``{out}`` is the output directory, ``{sample}`` is the sample, ``{ref}``
 is the reference, and ``{reg}`` is the region.
-Each output file from Relate, Mask, and Cluster reports are prefixed with
-``relate-``, ``mask-``, and ``clust-``, respectively.
+Each output file from IDmut, Filter, and Cluster reports are prefixed with
+``idmut-``, ``filter-``, and ``clust-``, respectively.
 
 Table output file: Relationships per position
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 SEISMIC-RNA outputs the number of relationships at each position to a CSV file
-named ``{step}-per-pos.csv``, where ``{step}`` is ``relate``/``mask``/``clust``.
+named ``{step}-per-pos.csv``, where ``{step}`` is ``idmut``/``filter``/``clust``.
 
 Table output file: Relationships per read
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 SEISMIC-RNA outputs the number of relationships in each read to a CSV file named
-``{step}-per-read.csv.gz``, where ``{step}`` is ``relate``/``mask``/``clust``.
+``{step}-per-read.csv.gz``, where ``{step}`` is ``idmut``/``filter``/``clust``.
 
 Table output file: Reads per cluster
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

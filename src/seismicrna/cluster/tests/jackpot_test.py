@@ -38,12 +38,12 @@ from seismicrna.core.unbias import (CLUSTERS,
                                     calc_p_ends_given_noclose,
                                     calc_p_mut_given_span_dropped,
                                     _calc_p_mut_given_span_merged)
-from seismicrna.mask import run as run_mask
-from seismicrna.mask.dataset import MaskMutsDataset
+from seismicrna.filter import run as run_filter
+from seismicrna.filter.dataset import FilterMutsDataset
 from seismicrna.sim.fold import run as run_sim_fold
 from seismicrna.sim.params import run as run_sim_params
 from seismicrna.sim.ref import run as run_sim_ref
-from seismicrna.sim.relate import run as run_sim_relate
+from seismicrna.sim.idmut import run as run_sim_idmut
 
 
 class TestSimClusters(ut.TestCase):
@@ -454,15 +454,15 @@ class TestBootstrapJackpotScores(ut.TestCase):
                        length_fmean=0.5,
                        clust_conc=2.,
                        seed=seed)
-        relate_report_file, = run_sim_relate(param_dir=[param_dir],
+        idmut_report_file, = run_sim_idmut(param_dir=[param_dir],
                                              sample=self.SAMPLE,
                                              num_reads=n_reads,
                                              min_mut_gap=min_mut_gap,
                                              mut_collisions=mut_collisions,
                                              mut_probs=mut_probs,
                                              seed=seed)
-        # Mask the data.
-        mask_dir, = run_mask([relate_report_file],
+        # Filter the data.
+        filter_dir, = run_filter([idmut_report_file],
                              mask_polya=0,
                              count_del=True,
                              count_ins=True,
@@ -476,10 +476,10 @@ class TestBootstrapJackpotScores(ut.TestCase):
                              min_finfo_read=1.,
                              min_ninfo_pos=1,
                              quick_unbias_thresh=0.)
-        mask_report_file = mask_dir.joinpath("mask-report.json")
+        filter_report_file = filter_dir.joinpath("filter-report.json")
         # Cluster the data and calculate the jackpotting quotient.
-        mask_dataset = MaskMutsDataset(mask_report_file)
-        uniq_reads = UniqReads.from_dataset_contig(mask_dataset, "")
+        filter_dataset = FilterMutsDataset(filter_report_file)
+        uniq_reads = UniqReads.from_dataset_contig(filter_dataset, "")
         em_run = EMRun(uniq_reads,
                        k=n_clusts,
                        seed=seed,

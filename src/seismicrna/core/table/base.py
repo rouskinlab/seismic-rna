@@ -78,12 +78,12 @@ def get_pattern(rel: str):
 
 
 def get_subpattern(rel: str, subpattern: RelPattern | None = None):
-    """ Get a RelPattern, optionally with masking. """
+    """ Get a RelPattern, optionally intersected with a subpattern. """
     if rel == COVER_REL:
         # Still match everything except the non-covered relationship.
         return get_pattern(rel)
     if rel == MATCH_REL and subpattern is not None:
-        # Because select_muts specifies the types of mutations, it must
+        # Because subpattern specifies the types of mutations, it must
         # be inverted before intersecting with matches.
         subpattern = subpattern.invert()
     # All other relationships are mutations needing no special handling.

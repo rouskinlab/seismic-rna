@@ -14,7 +14,7 @@ cli_defaults = {param.name: param.default
                 if param.default is not None}
 
 defaults_to_none = dict(fastp_adapter_fasta=None,
-                        mask_regions_file=None,
+                        regions_file=None,
                         min_mut_gap=None,
                         mask_a=None,
                         mask_c=None,

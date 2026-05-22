@@ -5,7 +5,7 @@ from click.testing import CliRunner
 
 from seismicrna.core.logs import Level, get_config, set_config
 from seismicrna.sim import (abstract, clusts, ends, fastq, fold,
-                            muts, params, ref, relate, total)
+                            muts, params, ref, idmut, total)
 
 
 class TestSimCLIParams(ut.TestCase):
@@ -39,7 +39,7 @@ class TestSimCLIParams(ut.TestCase):
     def test_muts(self):      self._assert_params_match_run(muts)
     def test_params(self):    self._assert_params_match_run(params)
     def test_ref(self):       self._assert_params_match_run(ref)
-    def test_relate(self):    self._assert_params_match_run(relate)
+    def test_idmut(self):    self._assert_params_match_run(idmut)
     def test_total(self):     self._assert_params_match_run(total)
 
 
@@ -84,7 +84,7 @@ class TestSimCLIInvocation(ut.TestCase):
     def test_muts_help(self):      self._invoke_help(muts)
     def test_params_help(self):    self._invoke_help(params)
     def test_ref_help(self):       self._invoke_help(ref)
-    def test_relate_help(self):    self._invoke_help(relate)
+    def test_idmut_help(self):    self._invoke_help(idmut)
     def test_total_help(self):     self._invoke_help(total)
 
     # Empty-invocation tests (all commands except fold)
@@ -95,7 +95,7 @@ class TestSimCLIInvocation(ut.TestCase):
     def test_muts_empty(self):     self._invoke_empty(muts)
     def test_params_empty(self):   self._invoke_empty(params)
     def test_ref_empty(self):      self._invoke_empty(ref)
-    def test_relate_empty(self):   self._invoke_empty(relate)
+    def test_idmut_empty(self):   self._invoke_empty(idmut)
     def test_total_empty(self):    self._invoke_empty(total)
 
 

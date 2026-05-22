@@ -9,7 +9,7 @@ import pandas as pd
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
-from .. import mask as mask_mod, cluster as cluster_mod
+from .. import filter as filter_mod, cluster as cluster_mod
 from ..core import path
 from ..core.arg import (GAP_MODE_OMIT,
                         GAP_MODE_INSERT,
@@ -31,10 +31,10 @@ from ..core.validate import require_atleast
 from ..core.write import need_write
 from ..cluster.report import ClusterReport
 from ..core.report import BestKF
-from ..mask.dataset import MaskMutsDataset, load_mask_dataset
-from ..mask.io import MaskBatchIO
-from ..mask.main import load_regions, set_mut_gap_params
-from ..mask.report import MaskReport
+from ..filter.dataset import FilterMutsDataset, load_filter_dataset
+from ..filter.io import FilterBatchIO
+from ..filter.main import load_regions, set_mut_gap_params
+from ..filter.report import FilterReport
 from .report import EnsemblesReport
 
 PAIRS_CSV = "pairs.csv"
@@ -124,7 +124,7 @@ def _calc_tile_coords(dataset,
                        tile_length: int,
                        tile_min_overlap: float,
                        num_cpus: int):
-    """ Calculate the tiled coordinates for one relate dataset. """
+    """ Calculate the tiled coordinates for one IDmut dataset. """
     ref = dataset.ref
     logger.routine(f"Began calculating tiles for reference {repr(ref)}")
     if tile_length > 0:
@@ -163,7 +163,7 @@ def _calc_tile_coords(dataset,
     return [(ref, end5, end3) for end5, end3 in tiles]
 
 
-def _find_correlated_pairs(dataset: MaskMutsDataset,
+def _find_correlated_pairs(dataset: FilterMutsDataset,
                            pair_fdr: float,
                            num_cpus: int):
     # Calculate the confusion matrix for the region.
@@ -497,7 +497,7 @@ def _write_pairs_to_csv(pairs: list[tuple[int, int]],
     df.to_csv(csv_file, index=False)
 
 
-def _calc_cluster_modules(mask_dirs: list[Path],
+def _calc_cluster_modules(filter_dirs: list[Path],
                           report_dir: Path,
                           num_cpus: int,
                           pair_fdr: float,
@@ -510,7 +510,7 @@ def _calc_cluster_modules(mask_dirs: list[Path],
                           gap_mode: str):
     """ Calculate the cluster regions for all tiles of one reference. """
     # Each dataset corresponds to one tile.
-    datasets = list(load_mask_dataset.iterate(mask_dirs))
+    datasets = list(load_filter_dataset.iterate(filter_dirs))
     if not datasets:
         return list(), 0
     # Find the common ref, refseq, top, and branches (must be
@@ -579,7 +579,7 @@ def _calc_cluster_modules(mask_dirs: list[Path],
     return [(ref, end5, end3) for end5, end3 in modules], len(pairs)
 
 
-def ensembles(relate_report_file: Path, *,
+def ensembles(idmut_report_file: Path, *,
             # General options
             branch: str,
                tmp_pfx: str | Path,
@@ -597,11 +597,11 @@ def ensembles(relate_report_file: Path, *,
                min_cluster_length: int,
                max_cluster_length: int,
                gap_mode: str,
-               # Mask options
-               mask_coords: Iterable[tuple[str, int, int]],
-               mask_primers: Iterable[tuple[str, DNA, DNA]],
+               # Filter options
+               region_coords: Iterable[tuple[str, int, int]],
+               region_primers: Iterable[tuple[str, DNA, DNA]],
                primer_gap: int,
-               mask_regions_file: str | None,
+               regions_file: str | None,
                count_del: bool,
                count_ins: bool,
                no_mut: Iterable[str],
@@ -614,9 +614,9 @@ def ensembles(relate_report_file: Path, *,
                mask_polya: int,
                mask_pos: Iterable[tuple[str, int]],
                mask_pos_file: Iterable[str | Path],
-               mask_read: Iterable[str],
-               mask_read_file: Iterable[str | Path],
-               mask_discontig: bool,
+               drop_read: Iterable[str],
+               drop_read_file: Iterable[str | Path],
+               drop_discontig: bool,
                min_ncov_read: int,
                min_fcov_read: float,
                min_finfo_read: float,
@@ -627,9 +627,9 @@ def ensembles(relate_report_file: Path, *,
                max_fmut_pos: float,
                quick_unbias: bool,
                quick_unbias_thresh: float,
-               max_mask_iter: int,
-               mask_pos_table: bool,
-               mask_read_table: bool,
+               max_filter_iter: int,
+               filter_pos_table: bool,
+               filter_read_table: bool,
                # Cluster options
                min_clusters: int,
                max_clusters: int,
@@ -656,13 +656,13 @@ def ensembles(relate_report_file: Path, *,
                cluster_abundance_table: bool,
                verify_times: bool,
             seed: int | None):
-    """ Run one relate report through the full ensembles pipeline. """
+    """ Run one IDmut report through the full ensembles pipeline. """
     # Load region info cheaply (reads JSON only, no batch I/O).
-    datasets, total_regions = load_regions([relate_report_file],
-                                           mask_coords,
-                                           mask_primers,
+    datasets, total_regions = load_regions([idmut_report_file],
+                                           region_coords,
+                                           region_primers,
                                            primer_gap,
-                                           mask_regions_file)
+                                           regions_file)
     refs = total_regions.refs
     assert len(refs) == 1
     ref = refs[0]
@@ -671,34 +671,34 @@ def ensembles(relate_report_file: Path, *,
     total_region = ref_total_regions[0]
     assert list(datasets.keys()) == [ref]
     assert len(datasets[ref]) == 1
-    relate_dataset = datasets[ref][0]
+    idmut_dataset = datasets[ref][0]
     # Check if the EnsemblesReport already exists.
     report_branches = path.add_branch(path.ENSEMBLES_STEP, branch,
-                                      relate_dataset.branches)
+                                      idmut_dataset.branches)
     report_file = EnsemblesReport.build_path({
-        path.TOP:      relate_dataset.top,
-        path.SAMPLE:   relate_dataset.sample,
+        path.TOP:      idmut_dataset.top,
+        path.SAMPLE:   idmut_dataset.sample,
         path.BRANCHES: report_branches,
-        path.REF:      relate_dataset.ref,
+        path.REF:      idmut_dataset.ref,
         path.REG:      total_region.name,
     })
     if need_write(report_file, force):
         began = datetime.now()
         # Compute tile coordinates (potentially expensive when tile_length <= 0).
-        tile_coords = _calc_tile_coords(relate_dataset,
+        tile_coords = _calc_tile_coords(idmut_dataset,
                                           total_region,
                                           tile_length,
                                           tile_min_overlap,
                                           num_cpus)
-        tiled_dirs = mask_mod.run(
-            input_path=[relate_report_file],
+        tiled_dirs = filter_mod.run(
+            input_path=[idmut_report_file],
             branch=branch,
             tmp_pfx=tmp_pfx,
             keep_tmp=keep_tmp,
-            mask_coords=tile_coords,
-            mask_primers=(),
+            region_coords=tile_coords,
+            region_primers=(),
             primer_gap=0,
-            mask_regions_file=None,
+            regions_file=None,
             count_del=count_del,
             count_ins=count_ins,
             no_mut=no_mut,
@@ -711,9 +711,9 @@ def ensembles(relate_report_file: Path, *,
             mask_polya=mask_polya,
             mask_pos=mask_pos,
             mask_pos_file=mask_pos_file,
-            mask_read=mask_read,
-            mask_read_file=mask_read_file,
-            mask_discontig=mask_discontig,
+            drop_read=drop_read,
+            drop_read_file=drop_read_file,
+            drop_discontig=drop_discontig,
             min_ncov_read=min_ncov_read,
             min_fcov_read=min_fcov_read,
             min_finfo_read=min_finfo_read,
@@ -724,9 +724,9 @@ def ensembles(relate_report_file: Path, *,
             max_fmut_pos=max_fmut_pos,
             quick_unbias=quick_unbias,
             quick_unbias_thresh=quick_unbias_thresh,
-            max_mask_iter=max_mask_iter,
-            mask_pos_table=False,
-            mask_read_table=False,
+            max_filter_iter=max_filter_iter,
+            filter_pos_table=False,
+            filter_read_table=False,
             brotli_level=brotli_level,
             num_cpus=num_cpus,
             force=force
@@ -748,15 +748,15 @@ def ensembles(relate_report_file: Path, *,
         )
         if module_coords:
             # Generate the regions spanned by correlated base pairs.
-            module_dirs = mask_mod.run(
-                input_path=[relate_report_file],
+            module_dirs = filter_mod.run(
+                input_path=[idmut_report_file],
                 branch=branch,
                 tmp_pfx=tmp_pfx,
                 keep_tmp=keep_tmp,
-                mask_coords=tuple(module_coords),
-                mask_primers=(),
+                region_coords=tuple(module_coords),
+                region_primers=(),
                 primer_gap=0,
-                mask_regions_file=None,
+                regions_file=None,
                 count_del=count_del,
                 count_ins=count_ins,
                 no_mut=no_mut,
@@ -769,9 +769,9 @@ def ensembles(relate_report_file: Path, *,
                 mask_polya=mask_polya,
                 mask_pos=mask_pos,
                 mask_pos_file=mask_pos_file,
-                mask_read=mask_read,
-                mask_read_file=mask_read_file,
-                mask_discontig=mask_discontig,
+                drop_read=drop_read,
+                drop_read_file=drop_read_file,
+                drop_discontig=drop_discontig,
                 min_ncov_read=min_ncov_read,
                 min_fcov_read=min_fcov_read,
                 min_finfo_read=min_finfo_read,
@@ -782,9 +782,9 @@ def ensembles(relate_report_file: Path, *,
                 max_fmut_pos=max_fmut_pos,
                 quick_unbias=quick_unbias,
                 quick_unbias_thresh=quick_unbias_thresh,
-                max_mask_iter=max_mask_iter,
-                mask_pos_table=mask_pos_table,
-                mask_read_table=mask_read_table,
+                max_filter_iter=max_filter_iter,
+                filter_pos_table=filter_pos_table,
+                filter_read_table=filter_read_table,
                 brotli_level=brotli_level,
                 num_cpus=num_cpus,
                 force=force
@@ -832,13 +832,13 @@ def ensembles(relate_report_file: Path, *,
         else:
             # Skip clustering if no modules were found.
             logger.warning(
-                f"No modules of correlated pairs found in {relate_report_file}"
+                f"No modules of correlated pairs found in {idmut_report_file}"
             )
             cluster_dirs = list()
             best_ks = list()
         EnsemblesReport(
-            sample=relate_dataset.sample,
-            ref=relate_dataset.ref,
+            sample=idmut_dataset.sample,
+            ref=idmut_dataset.ref,
             reg=total_region.name,
             branches=report_branches,
             tile_length=tile_length,
@@ -858,16 +858,16 @@ def ensembles(relate_report_file: Path, *,
             best_ks=best_ks,
             began=began,
             ended=datetime.now(),
-        ).save(relate_dataset.top, force=force)
+        ).save(idmut_dataset.top, force=force)
         # Erase the tiles at the 
         if erase_tiles:
-            # Delete the mask reports and batches of the tiles.
+            # Delete the filter reports and batches of the tiles.
             logger.routine("Began deleting tiled reports and batches")
             for file in path.find_files_chain(tiled_dirs,
-                                            MaskReport.get_path_seg_types()):
+                                            FilterReport.get_path_seg_types()):
                 file.unlink(missing_ok=True)
             for file in path.find_files_chain(tiled_dirs,
-                                            MaskBatchIO.get_path_seg_types()):
+                                            FilterBatchIO.get_path_seg_types()):
                 file.unlink(missing_ok=True)
             logger.routine("Ended deleting tiled reports and batches")
     return report_file.parent

@@ -49,7 +49,7 @@ Command line for adding orders
 
 Suppose you have already run clustering with a maximum order of 3 (``-k 3``)::
 
-    seismic cluster -k 3 {out}/{sample}/mask/{ref}/{reg}
+    seismic cluster -k 3 {out}/{sample}/filter/{ref}/{reg}
 
 If this dataset stopped at order 1 or 2 (because the BIC failed to decrease),
 then you cannot add any higher orders.
@@ -82,7 +82,7 @@ Command line for deleting orders
 
 Suppose you have already run clustering with a maximum order of 3 (``-k 3``)::
 
-    seismic cluster -k 3 {out}/{sample}/mask/{ref}/{reg}
+    seismic cluster -k 3 {out}/{sample}/filter/{ref}/{reg}
 
 You can delete orders above a limit using ``seismic +delclust``, specifying a
 new maximum order (e.g. 2) and the Cluster report(s) as input file(s)::

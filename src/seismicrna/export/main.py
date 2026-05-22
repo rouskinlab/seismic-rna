@@ -16,7 +16,7 @@ from ..core.arg import (CMD_EXPORT,
                         opt_num_cpus)
 from ..core.run import run_func
 from ..core.task import dispatch
-from ..mask.table import MaskPositionTableLoader, MaskReadTableLoader
+from ..filter.table import FilterPositionTableLoader, FilterReadTableLoader
 
 
 @run_func(CMD_EXPORT)
@@ -34,8 +34,8 @@ def run(input_path: Iterable[str | Path], *,
     refs_metadata = (parse_refs_metadata(Path(refs_meta))
                      if refs_meta
                      else dict())
-    for table_type in [MaskPositionTableLoader,
-                       MaskReadTableLoader,
+    for table_type in [FilterPositionTableLoader,
+                       FilterReadTableLoader,
                        ClusterPositionTableLoader,
                        ClusterAbundanceTableLoader]:
         for table in table_type.load_tables(input_path):

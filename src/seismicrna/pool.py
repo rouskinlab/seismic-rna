@@ -12,8 +12,8 @@ from .core.arg import (CMD_POOL,
                        arg_pooled_sample,
                        opt_min_pearson_pool,
                        opt_max_marcd_pool,
-                       opt_relate_pos_table,
-                       opt_relate_read_table,
+                       opt_idmut_pos_table,
+                       opt_idmut_read_table,
                        opt_verify_times,
                        opt_tmp_pfx,
                        opt_keep_tmp,
@@ -28,27 +28,27 @@ from .core.table import INFOR_REL, MUTAT_REL
 from .core.task import dispatch
 from .core.tmp import release_to_out, with_tmp_dir
 from .core.write import need_write
-from .relate.dataset import PoolMutsDataset, load_relate_dataset
-from .relate.report import PoolReport, RelateReport
-from .relate.table import RelateDatasetTabulator, RelatePositionTableLoader
+from .idmut.dataset import PoolMutsDataset, load_idmut_dataset
+from .idmut.report import PoolReport, IDmutReport
+from .idmut.table import IDmutDatasetTabulator, IDmutPositionTableLoader
 from .table import tabulate
 
 
-def _calc_sample_mus(relate_dataset, num_cpus: int):
-    """ Get per-position mutation rates for a relate dataset.
+def _calc_sample_mus(idmut_dataset, num_cpus: int):
+    """ Get per-position mutation rates for an IDmut dataset.
 
     Uses an existing position table CSV if available (fast), otherwise
-    computes from batch files via RelateDatasetTabulator (slow).
+    computes from batch files via IDmutDatasetTabulator (slow).
     """
-    table_files = list(RelatePositionTableLoader.find_tables([relate_dataset.dir]))
+    table_files = list(IDmutPositionTableLoader.find_tables([idmut_dataset.dir]))
     if len(table_files) > 1:
-        raise ValueError(f"Expected at most 1 position table in {relate_dataset.dir}, "
+        raise ValueError(f"Expected at most 1 position table in {idmut_dataset.dir}, "
                          f"but found {len(table_files)}: {table_files}")
     if table_files:
-        table = RelatePositionTableLoader(table_files[0])
+        table = IDmutPositionTableLoader(table_files[0])
         return table.fetch_ratio(rel=MUTAT_REL, squeeze=True)
-    tabulator = RelateDatasetTabulator(
-        dataset=relate_dataset, count_pos=True, count_read=False, num_cpus=num_cpus
+    tabulator = IDmutDatasetTabulator(
+        dataset=idmut_dataset, count_pos=True, count_read=False, num_cpus=num_cpus
     )
     data = tabulator.data_per_pos
     return data[MUTAT_REL] / data[INFOR_REL]
@@ -68,8 +68,8 @@ def pool_samples(out_dir: Path,
                  tmp_dir: Path,
                  min_pearson: float,
                  max_marcd: float,
-                 relate_pos_table: bool,
-                 relate_read_table: bool,
+                 idmut_pos_table: bool,
+                 idmut_read_table: bool,
                  verify_times: bool,
                  num_cpus: int,
                  force: bool):
@@ -93,10 +93,10 @@ def pool_samples(out_dir: Path,
         Skip pooling if any pair of samples has Pearson r below this.
     max_marcd: float
         Skip pooling if any pair of samples has MARCD above this.
-    relate_pos_table: bool
-        Tabulate relationships per position for relate data.
-    relate_read_table: bool
-        Tabulate relationships per read for relate data
+    idmut_pos_table: bool
+        Tabulate relationships per position for IDmut data.
+    idmut_read_table: bool
+        Tabulate relationships per read for IDmut data.
     verify_times: bool
         Verify that report files from later steps have later timestamps.
     num_cpus: bool
@@ -123,9 +123,9 @@ def pool_samples(out_dir: Path,
                                               path.BRANCHES: branches_flat,
                                               path.REF: ref})
     if need_write(pool_report_file, force):
-        # Because Relate and Pool report files have the same name, it
-        # would be possible to overwrite a Relate report with a Pool
-        # report, rendering the Relate dataset unusable; prevent this.
+        # Because IDmut and Pool report files have the same name, it
+        # would be possible to overwrite an IDmut report with a Pool
+        # report, rendering the IDmut dataset unusable; prevent this.
         if pool_report_file.is_file():
             # Check whether the report file contains a Pool report.
             try:
@@ -135,7 +135,7 @@ def pool_samples(out_dir: Path,
                 raise TypeError(f"Cannot overwrite {pool_report_file} with "
                                 f"{PoolReport.__name__}: would cause data loss")
         # To be able to load, the pooled dataset must have access to the
-        # original relate dataset(s) in the temporary directory.
+        # original IDmut dataset(s) in the temporary directory.
         report_kwargs = dict(sample=pooled_sample,
                              ref=ref,
                              pooled_samples=samples,
@@ -144,8 +144,8 @@ def pool_samples(out_dir: Path,
                              began=began)
         sample_mus = {}
         for sample in samples:
-            relate_dataset = load_relate_dataset(
-                RelateReport.build_path({path.TOP: out_dir,
+            idmut_dataset = load_idmut_dataset(
+                IDmutReport.build_path({path.TOP: out_dir,
                                          path.SAMPLE: sample,
                                          path.BRANCHES: branches_flat,
                                          path.REF: ref}),
@@ -155,19 +155,19 @@ def pool_samples(out_dir: Path,
             # for two datasets to have different branches despite having
             # the same flattened branches.
             if BranchesF.key in report_kwargs:
-                if relate_dataset.branches != report_kwargs[BranchesF.key]:
+                if idmut_dataset.branches != report_kwargs[BranchesF.key]:
                     raise InconsistentValueError(
                         "Cannot pool datasets with different branches: "
                         f"{report_kwargs[BranchesF.key]} ≠ "
-                        f"{relate_dataset.branches}"
+                        f"{idmut_dataset.branches}"
                     )
             else:
-                report_kwargs[BranchesF.key] = relate_dataset.branches
+                report_kwargs[BranchesF.key] = idmut_dataset.branches
             # Make links to the files for this dataset in the temporary
             # directory.
-            relate_dataset.link_data_dirs_to_tmp(tmp_dir)
+            idmut_dataset.link_data_dirs_to_tmp(tmp_dir)
             # Calculate the mutation rates for the sample.
-            sample_mus[sample] = _calc_sample_mus(relate_dataset, num_cpus)
+            sample_mus[sample] = _calc_sample_mus(idmut_dataset, num_cpus)
         if BranchesF.key not in report_kwargs:
             raise NoDataError(
                 f"No samples were given to make pooled sample {repr(pooled_sample)} "
@@ -197,13 +197,13 @@ def pool_samples(out_dir: Path,
                 )
                 return None
         # Tabulate the pooled dataset.
-        pool_dataset = load_relate_dataset(write_report(tmp_dir,
+        pool_dataset = load_idmut_dataset(write_report(tmp_dir,
                                                         **report_kwargs),
                                            verify_times=verify_times)
         tabulate(pool_dataset,
-                 RelateDatasetTabulator,
-                 pos_table=relate_pos_table,
-                 read_table=relate_read_table,
+                 IDmutDatasetTabulator,
+                 pos_table=idmut_pos_table,
+                 read_table=idmut_read_table,
                  clust_table=False,
                  num_cpus=num_cpus,
                  force=True)
@@ -217,8 +217,8 @@ def pool_samples(out_dir: Path,
 @run_func(CMD_POOL)
 def run(pooled_sample: str,
         input_path: Iterable[str | Path], *,
-        relate_pos_table: bool,
-        relate_read_table: bool,
+        idmut_pos_table: bool,
+        idmut_read_table: bool,
         min_pearson: float,
         max_marcd: float,
         verify_times: bool,
@@ -226,12 +226,12 @@ def run(pooled_sample: str,
         keep_tmp: bool,
         num_cpus: int,
         force: bool) -> list[Path]:
-    """ Merge samples (vertically) from the Relate step. """
+    """ Merge samples (vertically) from the IDmut step. """
     if not pooled_sample:
         raise ValueError("No name for the pooled sample was given")
     # Group the datasets by output directory, branches, and reference.
     pools = defaultdict(list)
-    for dataset in load_relate_dataset.iterate(input_path,
+    for dataset in load_idmut_dataset.iterate(input_path,
                                                verify_times=verify_times):
         # Check whether the dataset was pooled.
         if isinstance(dataset, PoolMutsDataset):
@@ -263,8 +263,8 @@ def run(pooled_sample: str,
                                          in pools.items()],
                                    kwargs=dict(min_pearson=min_pearson,
                                                max_marcd=max_marcd,
-                                               relate_pos_table=relate_pos_table,
-                                               relate_read_table=relate_read_table,
+                                               idmut_pos_table=idmut_pos_table,
+                                               idmut_read_table=idmut_read_table,
                                                verify_times=verify_times,
                                                tmp_pfx=tmp_pfx,
                                                keep_tmp=keep_tmp,
@@ -275,8 +275,8 @@ def run(pooled_sample: str,
 params = [
     arg_pooled_sample,
     arg_input_path,
-    opt_relate_pos_table,
-    opt_relate_read_table,
+    opt_idmut_pos_table,
+    opt_idmut_read_table,
     opt_min_pearson_pool,
     opt_max_marcd_pool,
     opt_verify_times,
@@ -289,5 +289,5 @@ params = [
 
 @command(CMD_POOL, params=params)
 def cli(*args, **kwargs):
-    """ Merge samples (vertically) from the Relate step. """
+    """ Merge samples (vertically) from the IDmut step. """
     return run(*args, **kwargs)

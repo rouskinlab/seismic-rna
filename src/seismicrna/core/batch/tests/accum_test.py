@@ -12,8 +12,8 @@ from seismicrna.core.header import RelClustHeader
 from seismicrna.core.rel import RelPattern
 from seismicrna.core.seq.region import Region
 from seismicrna.core.seq.xna import DNA
-from seismicrna.mask.batch import MaskMutsBatch
-from seismicrna.relate.batch import RelateRegionMutsBatch
+from seismicrna.filter.batch import FilterMutsBatch
+from seismicrna.idmut.batch import IDmutRegionMutsBatch
 
 
 def get_batch_count_all_func(batches: list[RegionMutsBatch]):
@@ -25,7 +25,7 @@ def get_batch_count_all_func(batches: list[RegionMutsBatch]):
 
 class TestAccumulateBatches(ut.TestCase):
 
-    def test_relate_1_batch(self):
+    def test_idmut_1_batch(self):
         """
         . = Match, ! = Mutation, ? = Ambiguous, _ = Not Covered
 
@@ -44,7 +44,7 @@ class TestAccumulateBatches(ut.TestCase):
         patterns = {"Matches": RelPattern.muts().invert(),
                     "Mutations": RelPattern.muts()}
         batches = [
-            RelateRegionMutsBatch(region=region,
+            IDmutRegionMutsBatch(region=region,
                                   batch=0,
                                   muts={1: {128: np.array([2, 3]),
                                             129: np.array([4])},
@@ -98,7 +98,7 @@ class TestAccumulateBatches(ut.TestCase):
                                       names=[END5_COORD, END3_COORD])
         )))
 
-    def test_relate_2_batches(self):
+    def test_idmut_2_batches(self):
         """
         . = Match, ! = Mutation, ? = Ambiguous, _ = Not Covered
 
@@ -118,7 +118,7 @@ class TestAccumulateBatches(ut.TestCase):
         patterns = {"Matches": RelPattern.muts().invert(),
                     "Mutations": RelPattern.muts()}
         batches = [
-            RelateRegionMutsBatch(region=region,
+            IDmutRegionMutsBatch(region=region,
                                   batch=0,
                                   muts={1: {128: np.array([2])},
                                         2: {16: np.array([0, 1, 2])},
@@ -131,7 +131,7 @@ class TestAccumulateBatches(ut.TestCase):
                                   seg_end3s=np.array([[4],
                                                       [4],
                                                       [3]])),
-            RelateRegionMutsBatch(region=region,
+            IDmutRegionMutsBatch(region=region,
                                   batch=1,
                                   muts={1: {128: np.array([0]),
                                             129: np.array([1])},
@@ -199,7 +199,7 @@ class TestAccumulateBatches(ut.TestCase):
         patterns = {"Matches": RelPattern.muts().invert(),
                     "Mutations": RelPattern.muts()}
         batches = [
-            MaskMutsBatch(region=region,
+            FilterMutsBatch(region=region,
                           batch=0,
                           muts={3: {128: np.array([7])},
                                 4: {16: np.array([2, 4, 7])},
@@ -213,7 +213,7 @@ class TestAccumulateBatches(ut.TestCase):
                                               [8],
                                               [7]]),
                           read_nums=np.array([2, 4, 7])),
-            MaskMutsBatch(region=region,
+            FilterMutsBatch(region=region,
                           batch=1,
                           muts={3: {128: np.array([0]),
                                     129: np.array([6])},

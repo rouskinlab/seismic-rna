@@ -39,7 +39,7 @@ from ..core.arg import (CMD_CLUSTER,
                         opt_force)
 from ..core.run import run_func
 from ..core.task import as_list_of_tuples, dispatch
-from ..mask.dataset import load_mask_dataset
+from ..filter.dataset import load_filter_dataset
 
 
 @run_func(CMD_CLUSTER)
@@ -76,7 +76,7 @@ def run(input_path: Iterable[str | Path], *,
         force: bool,
         seed: int | None) -> list[Path]:
     """ Infer alternative structures by clustering reads' mutations. """
-    datasets = load_mask_dataset.iterate(input_path, verify_times=verify_times)
+    datasets = load_filter_dataset.iterate(input_path, verify_times=verify_times)
     return dispatch(cluster,
                     num_cpus=num_cpus,
                     pass_num_cpus=True,

@@ -31,7 +31,7 @@ from seismicrna.ensembles.write import (_calc_tiles,
                                         _expand_modules_into_gaps,
                                         _filter_modules_length)
 from seismicrna.sim.params import run as sim_params
-from seismicrna.sim.relate import run as sim_relate
+from seismicrna.sim.idmut import run as sim_idmut
 
 
 class TestCalcTiles(ut.TestCase):
@@ -527,27 +527,27 @@ class TestEnsembles(ut.TestCase):
                    # clustering easier.
                    clust_conc=1000.,
                    seed=seed)
-        relate_dirs = sim_relate(param_dir=[param_dir],
+        idmut_dirs = sim_idmut(param_dir=[param_dir],
                                  sample=self.SAMPLE,
                                  profile_name=self.PROFILE,
                                  num_reads=200000,
                                  paired_end=False,
                                  brotli_level=0,
                                  seed=seed)
-        return relate_dirs
+        return idmut_dirs
 
     def run_ensembles(self,
-                      relate_dirs: list[Path],
+                      idmut_dirs: list[Path],
                       expect_regions: dict[tuple[int, int], int],
                       **kwargs):
-        ensembles_dirs = run_ensembles(relate_dirs,
+        ensembles_dirs = run_ensembles(idmut_dirs,
                                        # Optimize for speed.
                                        min_em_runs=1,
                                        max_em_runs=1,
                                        jackpot=False,
                                        brotli_level=0,
-                                       mask_pos_table=False,
-                                       mask_read_table=False,
+                                       filter_pos_table=False,
+                                       filter_read_table=False,
                                        cluster_pos_table=False,
                                        cluster_abundance_table=False,
                                        **kwargs)
@@ -575,46 +575,46 @@ class TestEnsembles(ut.TestCase):
                                  f"among {sorted(cluster_dirs)}")
 
     def test_modules012_read180(self):
-        relate_dirs = self.sim_data([0, 1, 2], 180, seed=0)
-        self.run_ensembles(relate_dirs,
+        idmut_dirs = self.sim_data([0, 1, 2], 180, seed=0)
+        self.run_ensembles(idmut_dirs,
                            {(1, 60): 2,
                             (121, 180): 2},
                             seed=0)
 
     def test_modules012_read120(self):
-        relate_dirs = self.sim_data([0, 1, 2], 120, seed=0)
-        self.run_ensembles(relate_dirs,
+        idmut_dirs = self.sim_data([0, 1, 2], 120, seed=0)
+        self.run_ensembles(idmut_dirs,
                            {(1, 60): 2,
                             (121, 180): 2},
                             seed=0)
 
     def test_modules012_read60(self):
-        relate_dirs = self.sim_data([0, 1, 2], 60, seed=0)
-        self.run_ensembles(relate_dirs,
+        idmut_dirs = self.sim_data([0, 1, 2], 60, seed=0)
+        self.run_ensembles(idmut_dirs,
                            {(1, 60): 2,
                             (121, 180): 2},
                             seed=0)
 
     def test_modules02_read60(self):
-        relate_dirs = self.sim_data([0, 2], 60, seed=0)
-        self.run_ensembles(relate_dirs,
+        idmut_dirs = self.sim_data([0, 2], 60, seed=0)
+        self.run_ensembles(idmut_dirs,
                            {(1, 60): 2,
                             (61, 120): 2},
                             seed=0)
 
     def test_modules012_read180_cli(self):
-        relate_dirs = self.sim_data([0, 1, 2], 180, seed=0)
+        idmut_dirs = self.sim_data([0, 1, 2], 180, seed=0)
         runner = CliRunner()
         args = (["-qq",
                  "--exit-on-error",
                  "ensembles"]
-                + [str(d) for d in relate_dirs]
+                + [str(d) for d in idmut_dirs]
                 + ["--min-em-runs", "1",
                    "--max-em-runs", "1",
                    "--no-jackpot",
                    "--brotli-level", "0",
-                   "--no-mask-pos-table",
-                   "--no-mask-read-table",
+                   "--no-filter-pos-table",
+                   "--no-filter-read-table",
                    "--no-cluster-pos-table",
                    "--no-cluster-abundance-table",
                    "--seed", "0"])

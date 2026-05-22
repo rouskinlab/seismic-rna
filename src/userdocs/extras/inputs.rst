@@ -39,11 +39,11 @@ How to list input files
 You can also combine any of the above methods at your convenience.
 For example, to process all files in the directories ``out/sample-1``,
 ``out/sample-2``, and ``out/sample-3``, as well as ``out/sample-26``;
-plus the files ``out/sample-7/mask/ref-6/full/mask-report.json``,
+plus the files ``out/sample-7/filter/ref-6/full/filter-report.json``,
 ``out/sample-7/cluster/ref-6/full/cluster-report.json`` and
-``out/sample-9/relate/ref-3/relate-report.json``, you could use::
+``out/sample-9/idmut/ref-3/idmut-report.json``, you could use::
 
-    seismic {command} out/sample-[123] out/sample-26 out/sample-7/*/ref-6/full/*-report.json out/sample-9/relate/ref-3/relate-report.json
+    seismic {command} out/sample-[123] out/sample-26 out/sample-7/*/ref-6/full/*-report.json out/sample-9/idmut/ref-3/idmut-report.json
 
 
 .. note::

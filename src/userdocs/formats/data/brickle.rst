@@ -50,14 +50,14 @@ passed as an input file, the brickle files will be read.
 This process happens during the following commands:
 
 - ``all``
-- ``mask``
+- ``filter``
 - ``cluster``
 - ``table``
 
 Brickle as output file
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-- The ``relate``, ``mask``, and ``cluster`` commands all output brickle
+- The ``idmut``, ``filter``, and ``cluster`` commands all output brickle
   files containing data along with their report files.
 
 Brickle as temporary file

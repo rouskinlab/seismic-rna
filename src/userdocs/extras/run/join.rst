@@ -1,14 +1,14 @@
 
-Join: Merge regions (horizontally) from the Mask or Cluster step
+Join: Merge regions (horizontally) from the Filter or Cluster step
 --------------------------------------------------------------------------------
 
 Join: Input files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Join input file: Mask/Cluster/Join report
+Join input file: Filter/Cluster/Join report
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-You can give any number of Mask or Cluster reports as inputs for the Join step.
+You can give any number of Filter or Cluster reports as inputs for the Join step.
 You can also give Join report files, to join regions that were themselves made
 by joining other regions.
 See :doc:`../inputs` for ways to list multiple files.
@@ -18,22 +18,22 @@ See :doc:`../inputs` for ways to list multiple files.
     they appear in multiple report files you are joining.
     It will just log a warning if it finds any regions given multiple times.
 
-Mask, Cluster, and Join reports will be joined only if they share all of
+Filter, Cluster, and Join reports will be joined only if they share all of
 
 - the top-level output directory, i.e. ``--out-dir`` (``-o``)
 - the sample
 - the reference
-- whether they are clustered (i.e. regions from Mask will not be joined with
+- whether they are clustered (i.e. regions from Filter will not be joined with
   regions from Cluster)
 
 For each combination of these attributes, SEISMIC-RNA will produce a joined
-region from all Mask/Cluster/Join reports with those attributes.
-The original Mask/Cluster/Join report files will not be deleted or modified;
+region from all Filter/Cluster/Join reports with those attributes.
+The original Filter/Cluster/Join report files will not be deleted or modified;
 you will merely get a new Join report file for each joined region.
 
 For example, if you ran the command ::
 
-    seismic join -J {joined} {out}/{sample}/cluster/ref-1/reg-1 {out}/{sample}/cluster/ref-1/reg-2 {out}/{sample}/mask/ref-1/reg-1 {out}/{sample}/mask/ref-1/reg-2 {out}/{sample}/mask/ref-2/reg-1 {out}/{sample}/mask/ref-2/reg-2
+    seismic join -J {joined} {out}/{sample}/cluster/ref-1/reg-1 {out}/{sample}/cluster/ref-1/reg-2 {out}/{sample}/filter/ref-1/reg-1 {out}/{sample}/filter/ref-1/reg-2 {out}/{sample}/filter/ref-2/reg-1 {out}/{sample}/filter/ref-2/reg-2
 
 where ``{out}`` is the path of your output directory and ``{joined}`` is the
 name you want to give to each joined region, then you would get three new Join
@@ -42,14 +42,14 @@ reports representing the joined regions:
 - ``{out}/{sample}/cluster/ref-1/{joined}/cluster-report.json``: made from
   ``{out}/{sample}/cluster/ref-1/reg-1/cluster-report.json`` and
   ``{out}/{sample}/cluster/ref-1/reg-2/cluster-report.json``
-- ``{out}/{sample}/mask/ref-1/{joined}/mask-report.json``: made from
-  ``{out}/{sample}/mask/ref-1/reg-1/mask-report.json`` and
-  ``{out}/{sample}/mask/ref-1/reg-2/mask-report.json``
-- ``{out}/{sample}/mask/ref-2/{joined}/mask-report.json``: made from
-  ``{out}/{sample}/mask/ref-2/reg-1/mask-report.json`` and
-  ``{out}/{sample}/mask/ref-2/reg-2/mask-report.json``
+- ``{out}/{sample}/filter/ref-1/{joined}/filter-report.json``: made from
+  ``{out}/{sample}/filter/ref-1/reg-1/filter-report.json`` and
+  ``{out}/{sample}/filter/ref-1/reg-2/filter-report.json``
+- ``{out}/{sample}/filter/ref-2/{joined}/filter-report.json``: made from
+  ``{out}/{sample}/filter/ref-2/reg-1/filter-report.json`` and
+  ``{out}/{sample}/filter/ref-2/reg-2/filter-report.json``
 
-To join all valid combinations of Mask/Cluster/Join reports in ``{out}`` into
+To join all valid combinations of Filter/Cluster/Join reports in ``{out}`` into
 regions named ``{joined}``, you can use the command::
 
     seismic join -J {joined} {out}
@@ -89,7 +89,7 @@ See :doc:`../../formats/meta/joined` for more information on this file.
 Join: Output files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-All output files go into the directories ``{out}/{sample}/mask/{ref}/{joined}``
+All output files go into the directories ``{out}/{sample}/filter/{ref}/{joined}``
 and/or ``{out}/{sample}/cluster/{ref}/{joined}``, where ``{out}`` is the output
 directory, ``{sample}`` is the sample name, ``{ref}`` is the reference name,
 and ``{joined}`` is the joined region name.
@@ -97,15 +97,15 @@ and ``{joined}`` is the joined region name.
 Join output file: Join report
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-SEISMIC-RNA writes a Join report file called either ``mask-report.json`` or
-``cluster-report.json``, depending on whether the joined regions came from Mask
+SEISMIC-RNA writes a Join report file called either ``filter-report.json`` or
+``cluster-report.json``, depending on whether the joined regions came from Filter
 or Cluster reports.
 See :doc:`../../formats/report/join` for more information.
-The file is named ``mask-report.json`` or ``cluster-report.json`` not because
-its contents are identical to those of a Mask/Cluster report file (they aren't)
+The file is named ``filter-report.json`` or ``cluster-report.json`` not because
+its contents are identical to those of a Filter/Cluster report file (they aren't)
 but because SEISMIC-RNA can more easily use them interchangably when they have
 the same file names.
-You can give Join reports to the Table step just as you would Mask or Cluster
+You can give Join reports to the Table step just as you would Filter or Cluster
 reports.
 
 Join: Troubleshoot and optimize
@@ -119,11 +119,11 @@ in the report files you are joining.
 
 For example, suppose that you join ``region-A`` and ``region-B``::
 
-    seismic join -J region-AB out/sample/mask/ref/region-A out/sample/mask/ref/region-B
+    seismic join -J region-AB out/sample/filter/ref/region-A out/sample/filter/ref/region-B
 
 Then you try to join ``region-A`` with the joined region ``region-AB``::
 
-    seismic join -J region-AAB out/sample/mask/ref/region-A out/sample/mask/ref/region-AB
+    seismic join -J region-AAB out/sample/filter/ref/region-A out/sample/filter/ref/region-AB
 
 This second command will warn that ``region-A`` is duplicated because it
 appears in both the report files for ``sample-A`` and ``pool-1``.
@@ -141,7 +141,7 @@ name as an existing non-joined region while using ``--force``, e.g. ::
 
 if ``region-A`` already exists.
 
-Doing so would overwrite the Mask/Cluster report for the original, non-joined
+Doing so would overwrite the Filter/Cluster report for the original, non-joined
 region, making it unusable.
-To prevent data loss, the Join step refuses to overwrite Mask/Cluster reports,
+To prevent data loss, the Join step refuses to overwrite Filter/Cluster reports,
 even with ``--force``.

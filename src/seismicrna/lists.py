@@ -15,8 +15,8 @@ from .core.run import run_func
 from .core.table import MUTAT_REL, PositionTable, PositionTableLoader
 from .core.task import dispatch
 from .core.write import need_write
-from .mask.lists import MaskPositionList
-from .relate.lists import RelatePositionList
+from .filter.lists import FilterPositionList
+from .idmut.lists import IDmutPositionList
 
 
 def find_pos(table: PositionTable,
@@ -78,8 +78,8 @@ def iter_tables(input_path: Iterable[str | Path], **kwargs):
         # Make sure input_path is not an iterator that will be exhausted
         # on the first run-through.
         input_path = list(input_path)
-    for list_type in [RelatePositionList,
-                      MaskPositionList]:
+    for list_type in [IDmutPositionList,
+                      FilterPositionList]:
         for table in list_type.get_table_type().load_tables(input_path,
                                                             **kwargs):
             yield table, list_type

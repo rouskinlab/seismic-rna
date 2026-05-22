@@ -611,24 +611,24 @@ def main():
     draw_reads(f"reads.{FILE_FORMAT}", seq, rels)
     remove_edge_muts(rels, end5s, end3s)
     draw_reads(f"align.{FILE_FORMAT}", seq, rels, end5s)
-    # Illustrate relate.
-    draw_rels(f"relate-0.{FILE_FORMAT}", rels)
+    # Illustrate IDmut.
+    draw_rels(f"idmut-0.{FILE_FORMAT}", rels)
     clip_rels(rels, end5s, end3s)
-    draw_rels(f"relate-1.{FILE_FORMAT}", rels)
-    graph_cov(f"relate-1-cov.{FILE_FORMAT}", calc_coverage(rels))
-    graph_mus(f"relate-1-mus.{FILE_FORMAT}", calc_mus_avg(mu, pi))
-    # Illustrate mask: define region.
+    draw_rels(f"idmut-1.{FILE_FORMAT}", rels)
+    graph_cov(f"idmut-1-cov.{FILE_FORMAT}", calc_coverage(rels))
+    graph_mus(f"idmut-1-mus.{FILE_FORMAT}", calc_mus_avg(mu, pi))
+    # Illustrate filter: define region.
     end5s = np.maximum(end5s, region_end5)
     end3s = np.minimum(end3s, region_end3)
     rels = rels[:, region_end5: region_end3 + 1]
     mu = mu[region_end5: region_end3 + 1]
     seq = seq[region_end5: region_end3 + 1]
-    draw_rels(f"mask-0.{FILE_FORMAT}", rels)
-    # Illustrate mask: exclude positions.
+    draw_rels(f"filter-0.{FILE_FORMAT}", rels)
+    # Illustrate filter: exclude positions.
     mask_pos = np.array([base not in "AC" for base in seq])
-    draw_rels(f"mask-1.{FILE_FORMAT}", rels,
+    draw_rels(f"filter-1.{FILE_FORMAT}", rels,
               mask_pos=mask_pos)
-    # Illustrate mask: define mutations.
+    # Illustrate filter: define mutations.
     muts = np.isin(rels, USE_MUTS)
     matches = rels == MATCH
     rels = np.full_like(rels, UNINF)
@@ -638,9 +638,9 @@ def main():
     for i, (end5, end3) in enumerate(zip(end5s, end3s, strict=True)):
         rels[i, :end5 - region_end5] = NOCOV
         rels[i, end3 - region_end5 + 1:] = NOCOV
-    draw_rels(f"mask-2.{FILE_FORMAT}", rels,
+    draw_rels(f"filter-2.{FILE_FORMAT}", rels,
               mask_pos=mask_pos)
-    # Illustrate mask: mask reads.
+    # Illustrate filter: filter reads.
     mask_reads = np.count_nonzero(rels != NOCOV, axis=1) < min_ncov_read
     cumsum = np.cumsum(rels == MUTAT, axis=1)
     mask_reads |= np.max(
@@ -648,21 +648,21 @@ def main():
         axis=1
     ) > 1
     rels[mask_reads] = NOCOV
-    draw_rels(f"mask-3.{FILE_FORMAT}", rels,
+    draw_rels(f"filter-3.{FILE_FORMAT}", rels,
               mask_pos=mask_pos, mask_reads=mask_reads)
-    graph_cov(f"mask-3-cov.{FILE_FORMAT}",
+    graph_cov(f"filter-3-cov.{FILE_FORMAT}",
               calc_coverage(rels),
               start=region_end5)
-    # Illustrate mask: mask positions.
+    # Illustrate filter: filter positions.
     mask_pos |= np.count_nonzero(rels != NOCOV, axis=0) < min_ninfo_pos
     rels[:, mask_pos] = NOCOV
     mu[mask_pos] = 0.
-    draw_rels(f"mask-4.{FILE_FORMAT}", rels,
+    draw_rels(f"filter-4.{FILE_FORMAT}", rels,
               mask_pos=mask_pos, mask_reads=mask_reads)
-    graph_cov(f"mask-4-cov.{FILE_FORMAT}",
+    graph_cov(f"filter-4-cov.{FILE_FORMAT}",
               calc_coverage(rels),
               start=region_end5)
-    graph_mus(f"mask-4-mus.{FILE_FORMAT}",
+    graph_mus(f"filter-4-mus.{FILE_FORMAT}",
               calc_mus_avg(mu, pi),
               start=region_end5)
     # Illustrate cluster:

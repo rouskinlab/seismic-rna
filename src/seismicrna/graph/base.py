@@ -23,26 +23,26 @@ from ..core.dataset import MutsDataset
 from ..core.seq import DNA
 from ..core.table import Table
 from ..core.write import need_write
-from ..mask.dataset import MaskDataset
-from ..mask.table import MaskTable
-from ..relate.dataset import RelateDataset
-from ..relate.table import RelateTable
+from ..filter.dataset import FilterDataset
+from ..filter.table import FilterTable
+from ..idmut.dataset import IDmutDataset
+from ..idmut.table import IDmutTable
 
 # Define actions.
-ACTION_REL = "all"
-ACTION_MASK = "filtered"
-ACTION_CLUST = "clustered"
+ACTION_IDMUT = "unfiltered"
+ACTION_FILTER = "filtered"
+ACTION_CLUSTER = "clustered"
 
 
 def get_action_name(source: MutsDataset | Table):
-    if isinstance(source, (RelateDataset, RelateTable)):
-        return ACTION_REL
-    if isinstance(source, (MaskDataset, MaskTable)):
-        return ACTION_MASK
+    if isinstance(source, (IDmutDataset, IDmutTable)):
+        return ACTION_IDMUT
+    if isinstance(source, (FilterDataset, FilterTable)):
+        return ACTION_FILTER
     if isinstance(source, (ClusterDataset,
                            ClusterTable,
                            ClusterAbundanceTable)):
-        return ACTION_CLUST
+        return ACTION_CLUSTER
     raise TypeError(source)
 
 
@@ -56,8 +56,8 @@ def make_path_subject(action: str, k: int | None, clust: int | None):
     Parameters
     ----------
     action: str
-        Action name (one of ``ACTION_REL``, ``ACTION_MASK``, or
-        ``ACTION_CLUST``).
+        Action name (one of ``ACTION_IDMUT``, ``ACTION_FILTER``, or
+        ``ACTION_CLUSTER``).
     k: int or None
         Number of clusters; must be None or 0 for non-cluster actions.
     clust: int or None
@@ -70,12 +70,12 @@ def make_path_subject(action: str, k: int | None, clust: int | None):
         path (e.g. ``"all"``, ``"filtered"``, or
         ``"clustered-2-1"``).
     """
-    if action == ACTION_REL or action == ACTION_MASK:
+    if action == ACTION_IDMUT or action == ACTION_FILTER:
         if k or clust:
             raise ValueError(f"For {action} data, k and clust must both "
                              f"be 0 or None, but got {k} and {clust}")
         return action
-    if action == ACTION_CLUST:
+    if action == ACTION_CLUSTER:
         return "-".join(map(str, [action,
                                   k if k is not None else "x",
                                   clust if clust is not None else "x"]))
@@ -323,7 +323,7 @@ class BaseGraph(ABC):
               pdf: bool,
               png: bool,
               force: bool = False):
-        """ Write the selected files. """
+        """ Write the filtered files. """
         files = list()
         if csv:
             files.append(self.write_csv(force))

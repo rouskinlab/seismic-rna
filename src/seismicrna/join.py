@@ -12,8 +12,8 @@ from .core.arg import (CMD_JOIN,
                        arg_joined_region,
                        arg_input_path,
                        opt_join_clusts,
-                       opt_mask_pos_table,
-                       opt_mask_read_table,
+                       opt_filter_pos_table,
+                       opt_filter_read_table,
                        opt_cluster_pos_table,
                        opt_cluster_abundance_table,
                        opt_verify_times,
@@ -30,42 +30,42 @@ from .core.run import run_func
 from .core.task import dispatch
 from .core.tmp import release_to_out, with_tmp_dir
 from .core.write import need_write
-from .mask.dataset import load_mask_dataset
-from .mask.report import JoinMaskReport
-from .mask.table import MaskDatasetTabulator
+from .filter.dataset import load_filter_dataset
+from .filter.report import JoinFilterReport
+from .filter.table import FilterDatasetTabulator
 from .table import tabulate
 
 
-def joined_mask_report_exists(top: Path,
+def joined_filter_report_exists(top: Path,
                               sample: str,
                               branches_flat: Iterable[str],
                               ref: str,
                               joined_region: str,
                               regs: Iterable[str]):
-    """ Return whether a mask report for the joined region exists. """
-    mask_report_file = JoinMaskReport.build_path(
+    """ Return whether a filter report for the joined region exists. """
+    filter_report_file = JoinFilterReport.build_path(
         {path.TOP: top,
          path.SAMPLE: sample,
          path.BRANCHES: list(branches_flat),
          path.REF: ref,
          path.REG: joined_region}
     )
-    if not mask_report_file.is_file():
+    if not filter_report_file.is_file():
         logger.detail(
-            f"Joined mask report {mask_report_file} does not already exist"
+            f"Joined filter report {filter_report_file} does not already exist"
         )
         return False
-    mask_report = JoinMaskReport.load(mask_report_file)
-    report_regs = sorted(mask_report.get_field(JoinedRegionsF))
+    filter_report = JoinFilterReport.load(filter_report_file)
+    report_regs = sorted(filter_report.get_field(JoinedRegionsF))
     cluster_regs = sorted(regs)
     if report_regs != cluster_regs:
         raise InconsistentValueError(
-            f"The regions in the mask report file {mask_report_file} "
+            f"The regions in the filter report file {filter_report_file} "
             f"are {report_regs}, which differ from the regions that "
             f"are being joined for the cluster step: {cluster_regs} "
-            f"(use --force to overwrite {mask_report_file})"
+            f"(use --force to overwrite {filter_report_file})"
         )
-    logger.detail(f"Joined mask report {mask_report_file} already exists")
+    logger.detail(f"Joined filter report {filter_report_file} already exists")
     return True
 
 
@@ -120,8 +120,8 @@ def join_regions(out_dir: Path,
                  clustered: bool, *,
                  tmp_dir: Path,
                  clusts: dict[str, dict[int, dict[int, int]]],
-                 mask_pos_table: bool,
-                 mask_read_table: bool,
+                 filter_pos_table: bool,
+                 filter_read_table: bool,
                  cluster_pos_table: bool,
                  cluster_abundance_table: bool,
                  verify_times: bool,
@@ -151,14 +151,14 @@ def join_regions(out_dir: Path,
         For each region, for each number of clusters, the cluster from
         the original region to use as the cluster in the joined region
         (ignored if `clustered` is False).
-    mask_pos_table: bool
-        Tabulate relationships per position for mask data.
-    mask_read_table: bool
-        Tabulate relationships per read for mask data
+    filter_pos_table: bool
+        Tabulate relationships per position for filtered data.
+    filter_read_table: bool
+        Tabulate relationships per read for filtered data.
     cluster_pos_table: bool
-        Tabulate relationships per position for cluster data.
+        Tabulate relationships per position for clustered data.
     cluster_abundance_table: bool
-        Tabulate number of reads per cluster for cluster data.
+        Tabulate number of reads per cluster for clustered data.
     verify_times: bool
         Verify that report files from later steps have later timestamps.
     num_cpus: bool
@@ -193,9 +193,9 @@ def join_regions(out_dir: Path,
         read_table = False
         clust_table = cluster_abundance_table
     else:
-        tabulator_type = MaskDatasetTabulator
-        pos_table = mask_pos_table
-        read_table = mask_read_table
+        tabulator_type = FilterDatasetTabulator
+        pos_table = filter_pos_table
+        read_table = filter_read_table
         clust_table = False
     load_function = tabulator_type.get_load_function()
     _, dataset_type = load_function.dataset_types
@@ -207,7 +207,7 @@ def join_regions(out_dir: Path,
                                                path.REF: ref,
                                                path.REG: joined_region})
     if need_write(join_report_file, force):
-        # Because a Join report file has the same name as a Mask/Cluster
+        # Because a Join report file has the same name as a Filter/Cluster
         # report, it would be possible to overwrite the latter with a
         # Join report, rendering its datasets unusable; prevent this.
         if join_report_file.is_file():
@@ -220,7 +220,7 @@ def join_regions(out_dir: Path,
                                 f"{report_type.__name__} "
                                 "would cause data loss")
         # To be able to load, the joined dataset must have access to the
-        # original mask/cluster dataset(s) in the temporary directory.
+        # original Filter/Cluster dataset(s) in the temporary directory.
         for reg in regs:
             region_dataset = load_function(
                 report_type.build_path({path.TOP: out_dir,
@@ -281,8 +281,8 @@ def join_regions(out_dir: Path,
 def run(joined_region: str,
         input_path: Iterable[str | Path], *,
         join_clusts: str | None,
-        mask_pos_table: bool,
-        mask_read_table: bool,
+        filter_pos_table: bool,
+        filter_read_table: bool,
         cluster_pos_table: bool,
         cluster_abundance_table: bool,
         verify_times: bool,
@@ -290,7 +290,7 @@ def run(joined_region: str,
         keep_tmp: bool,
         num_cpus: int,
         force: bool) -> list[Path]:
-    """ Merge regions (horizontally) from the Mask or Cluster step. """
+    """ Merge regions (horizontally) from the Filter or Cluster step. """
     if join_clusts is not None:
         clusts = parse_join_clusts_file(join_clusts)
     else:
@@ -298,7 +298,7 @@ def run(joined_region: str,
     # Group the datasets by output directory, sample, branches, and
     # reference.
     joins = defaultdict(list)
-    load_funcs = {False: load_mask_dataset,
+    load_funcs = {False: load_filter_dataset,
                   True: load_cluster_dataset}
     for clustered, load_func in load_funcs.items():
         for dataset in load_func.iterate(input_path,
@@ -321,20 +321,20 @@ def run(joined_region: str,
                    clustered)
             joins[key].extend(regs)
             logger.detail(f"Added regions {regs} for {dataset}")
-    # For every joined cluster dataset that does not have a joined mask
-    # dataset, also create the joined mask dataset.
+    # For every joined Cluster dataset that does not have a joined Filter
+    # dataset, also create the joined Filter dataset.
     for ((top, sample, branches_flat, ref, clustered),
          regs) in list(joins.items()):
-        if clustered and (force or not joined_mask_report_exists(top,
+        if clustered and (force or not joined_filter_report_exists(top,
                                                                  sample,
                                                                  branches_flat,
                                                                  ref,
                                                                  joined_region,
                                                                  regs)):
-            mask_joins = joins[top, sample, branches_flat, ref, False]
-            mask_joins.extend(reg for reg in regs if reg not in mask_joins)
-    # Join the masked regions first, then the clustered regions, because
-    # the clustered regions require the masked regions.
+            filter_joins = joins[top, sample, branches_flat, ref, False]
+            filter_joins.extend(reg for reg in regs if reg not in filter_joins)
+    # Join the Filter regions first, then the Cluster regions, because
+    # the Cluster regions require the Filter regions.
     results = list()
     for use_clustered in [False, True]:
         args = [(out_dir, joined_region, sample, branches_flat, ref, regs, clustered)
@@ -342,8 +342,8 @@ def run(joined_region: str,
                 in joins.items()
                 if clustered == use_clustered]
         kwargs = dict(clusts=clusts,
-                      mask_pos_table=mask_pos_table,
-                      mask_read_table=mask_read_table,
+                      filter_pos_table=filter_pos_table,
+                      filter_read_table=filter_read_table,
                       cluster_pos_table=cluster_pos_table,
                       cluster_abundance_table=cluster_abundance_table,
                       verify_times=verify_times,
@@ -365,8 +365,8 @@ params = [
     arg_joined_region,
     arg_input_path,
     opt_join_clusts,
-    opt_mask_pos_table,
-    opt_mask_read_table,
+    opt_filter_pos_table,
+    opt_filter_read_table,
     opt_cluster_pos_table,
     opt_cluster_abundance_table,
     opt_verify_times,
@@ -379,5 +379,5 @@ params = [
 
 @command(CMD_JOIN, params=params)
 def cli(*args, **kwargs):
-    """ Merge regions (horizontally) from the Mask or Cluster step. """
+    """ Merge regions (horizontally) from the Filter or Cluster step. """
     return run(*args, **kwargs)

@@ -22,18 +22,18 @@ seismic align
     align.png
 
 
-seismic relate
+seismic idmut
 ================================================================================
 
 .. image::
-    relate.png
+    idmut.png
 
 
-seismic mask
+seismic filter
 ================================================================================
 
 .. image::
-    mask.png
+    filter.png
 
 
 seismic cluster

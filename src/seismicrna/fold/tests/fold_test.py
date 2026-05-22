@@ -34,9 +34,9 @@ from seismicrna.core.seq.xna import DNA
 from seismicrna.fold.main import run as run_fold
 from seismicrna.fold.report import FoldReport
 from seismicrna.fold.rnastructure import guess_data_path
-from seismicrna.mask.main import run as run_mask
-from seismicrna.relate.io import RelateBatchIO, ReadNamesBatchIO, RefseqIO
-from seismicrna.relate.report import RelateReport
+from seismicrna.filter.main import run as run_filter
+from seismicrna.idmut.io import IDmutBatchIO, ReadNamesBatchIO, RefseqIO
+from seismicrna.idmut.report import IDmutReport
 
 
 REF = "ref"
@@ -46,8 +46,8 @@ N_READS = 6
 READ_NAMES = [f"Read{i}" for i in range(N_READS)]
 END5S = [[1] for _ in range(N_READS)]
 END3S = [[len(REF_SEQ)] for _ in range(N_READS)]
-# {position: {relation_byte: [read_indices]}}.  Byte 32 is a substitution
-# to C in the relate-flag encoding; the actual code does not matter for
+# {position: {relation_byte: [read_indices]}}. Byte 32 is a substitution
+# to C in the relationship encoding; the actual code does not matter for
 # fold tests as long as the position table is non-trivial.
 MUTS = {3: {32: [0, 3]},
         7: {32: [1, 4]},
@@ -57,8 +57,8 @@ MUTS = {3: {32: [0, 3]},
         28: {32: [4, 5]}}
 
 
-def write_relate(out_dir: Path) -> Path:
-    """ Build a minimal relate report covering one batch of reads. """
+def write_idmut(out_dir: Path) -> Path:
+    """ Build a minimal idmut report covering one batch of reads. """
     branches = dict()
     began = datetime.now()
     refseq = RefseqIO(sample=SAMPLE,
@@ -69,21 +69,21 @@ def write_relate(out_dir: Path) -> Path:
     muts = {pos: {rel: np.array(reads, dtype=int)
                   for rel, reads in MUTS.get(pos, {}).items()}
             for pos in range(1, len(REF_SEQ) + 1)}
-    relate_batch = RelateBatchIO(sample=SAMPLE,
+    idmut_batch = IDmutBatchIO(sample=SAMPLE,
                                  branches=branches,
                                  region=Region(REF, REF_SEQ),
                                  batch=0,
                                  seg_end5s=np.array(END5S),
                                  seg_end3s=np.array(END3S),
                                  muts=muts)
-    _, relate_checksum = relate_batch.save(out_dir)
+    _, idmut_checksum = idmut_batch.save(out_dir)
     name_batch = ReadNamesBatchIO(sample=SAMPLE,
                                   branches=branches,
                                   ref=REF,
                                   batch=0,
                                   names=np.array(READ_NAMES))
     _, names_checksum = name_batch.save(out_dir)
-    report = RelateReport(sample=SAMPLE,
+    report = IDmutReport(sample=SAMPLE,
                           branches=branches,
                           ref=REF,
                           min_mapq=0,
@@ -99,7 +99,7 @@ def write_relate(out_dir: Path) -> Path:
                           n_reads_rel=N_READS,
                           n_batches=1,
                           checksums={ReadNamesBatchIO.btype(): [names_checksum],
-                                     RelateBatchIO.btype(): [relate_checksum]},
+                                     IDmutBatchIO.btype(): [idmut_checksum]},
                           refseq_checksum=refseq_checksum,
                           began=began,
                           ended=datetime.now())
@@ -170,12 +170,12 @@ class FoldCombinationsBase(ut.TestCase):
         self._tmp = tempfile.TemporaryDirectory()
         self._out_dir = Path(self._tmp.name)
         set_config(verbosity=Level.FATAL, exit_on_error=True)
-        relate_report = write_relate(self._out_dir)
-        self._mask_dirs = {
-            probe: run_mask([relate_report],
+        idmut_report = write_idmut(self._out_dir)
+        self._filter_dirs = {
+            probe: run_filter([idmut_report],
                             probe=probe,
                             branch=probe,
-                            mask_pos_table=True)
+                            filter_pos_table=True)
             for probe in [PROBE_DMS, PROBE_SHAPE, PROBE_ETC, PROBE_NONE]
         }
 
@@ -183,11 +183,11 @@ class FoldCombinationsBase(ut.TestCase):
         self._tmp.cleanup()
         self._tmp = None
         self._out_dir = None
-        self._mask_dirs = {}
+        self._filter_dirs = {}
         set_config()
 
     def test_fold_combinations(self):
-        for probe, mask_dirs in self._mask_dirs.items():
+        for probe, filter_dirs in self._filter_dirs.items():
             for backend, method in BACKEND_METHOD_COMBOS:
                 resolved_backend, resolved_method = _resolve(probe,
                                                             backend,
@@ -204,7 +204,7 @@ class FoldCombinationsBase(ut.TestCase):
                                         fold_dry_run=dry_run,
                                         **booleans):
                             report_files = run_fold(
-                                mask_dirs,
+                                filter_dirs,
                                 fold_backend=backend,
                                 fold_energy_method=method,
                                 fold_dry_run=dry_run,

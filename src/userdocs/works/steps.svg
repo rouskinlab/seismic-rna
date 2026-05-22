@@ -593,7 +593,7 @@
        x="10"
        y="290"
        clip-path="none"
-       inkscape:export-filename="relate.png"
+       inkscape:export-filename="idmut.png"
        inkscape:export-xdpi="254"
        inkscape:export-ydpi="254" />
     <rect
@@ -604,7 +604,7 @@
        x="10"
        y="481.99994"
        clip-path="none"
-       inkscape:export-filename="mask.png"
+       inkscape:export-filename="filter.png"
        inkscape:export-xdpi="254"
        inkscape:export-ydpi="254" />
     <rect
@@ -8668,7 +8668,7 @@
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#d44d5c;fill-opacity:1;stroke-width:0.5"
          x="78.223305"
          y="202.37645"
-         id="tspan436">- This bias is corrected during the relate step.</tspan></text>
+         id="tspan436">- This bias is corrected during the IDmut step.</tspan></text>
     <text
        xml:space="preserve"
        style="font-weight:bold;font-size:4.23333px;line-height:0.9;font-family:Arial;-inkscape-font-specification:'Arial, Bold';text-align:center;text-anchor:middle;fill:#d44d5c;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
@@ -8754,7 +8754,7 @@
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.409569"
          y="236.80516"
-         id="tspan259-8-8-4-6">- This format is required by the relate step.</tspan></text>
+         id="tspan259-8-8-4-6">- This format is required by the IDmut step.</tspan></text>
     <text
        xml:space="preserve"
        style="font-weight:bold;font-size:4.23333px;line-height:0.9;font-family:Arial;-inkscape-font-specification:'Arial, Bold';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"

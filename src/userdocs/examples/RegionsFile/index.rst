@@ -22,11 +22,11 @@ https://raw.githubusercontent.com/rouskinlab/seismic-rna/main/src/userdocs/examp
 Run the SEISMIC-RNA workflow
 --------------------------------------------------------------------------------
 
-The regions file can be included using ``--mask-regions-file``. This will
+The regions file can be included using ``--regions-file``. This will
 mask the sequences determined by the file, and then use the rest for folding
 (for which the flags ``--fold`` and ``--draw`` are added)::
 
-    seismic wf fq/Regions_Ref.fa -x fq/ --mask-regions-file fq/regions_file.csv --fold --draw
+    seismic wf fq/Regions_Ref.fa -x fq/ --regions-file fq/regions_file.csv --fold --draw
 
 Output
 --------------------------------------------------------------------------------
