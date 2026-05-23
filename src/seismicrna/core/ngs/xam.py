@@ -3,7 +3,7 @@ from pathlib import Path
 from subprocess import CompletedProcess
 
 from ..error import DuplicateValueError
-from ..extern import SAMTOOLS_CMD, args_to_cmd, ShellCommand
+from ..extern import SAMTOOLS_CMD, args_to_cmd, cmds_to_redirect_out, ShellCommand
 from ..logs import logger
 
 # SAM file format specifications
@@ -467,6 +467,7 @@ def xam_to_fastq_cmd(xam_inp: Path | None,
         # Do not add /1 or /2 labels to names of paired-end reads.
         args.append("-n")
     args.append(xam_inp if xam_inp is not None else "-")
+    cmd = args_to_cmd(args)
     if fq_out is not None:
-        args.extend([">", fq_out])
-    return args_to_cmd(args)
+        cmd = cmds_to_redirect_out([cmd, str(fq_out)])
+    return cmd
