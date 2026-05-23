@@ -6,9 +6,10 @@ from click import command
 
 from .ref import get_fasta_path
 from ..core import path
-from ..core.arg import (FOLD_BACKEND_RNAFOLD,
+from ..core.arg import (FOLD_BACKEND_VIENNARNA,
                         arg_fasta,
                         opt_fold_backend,
+                        opt_pseudoknots,
                         opt_sim_dir,
                         opt_tmp_pfx,
                         opt_profile_name,
@@ -23,6 +24,7 @@ from ..core.arg import (FOLD_BACKEND_RNAFOLD,
                         opt_fold_max,
                         opt_fold_min,
                         opt_fold_percent,
+                        opt_fold_edelta,
                         opt_keep_tmp,
                         opt_force,
                         opt_num_cpus,
@@ -56,6 +58,7 @@ def fold_region(region: Region, *,
                 tmp_dir: Path,
                 profile_name: str,
                 fold_backend: str,
+                pseudoknots: bool,
                 fold_constraint: Path | None,
                 fold_temp: float,
                 fold_md: int,
@@ -63,6 +66,7 @@ def fold_region(region: Region, *,
                 fold_max: int,
                 fold_min: int,
                 fold_percent: float,
+                fold_edelta: float,
                 keep_tmp: bool,
                 force: bool,
                 num_cpus: int):
@@ -93,6 +97,9 @@ def fold_region(region: Region, *,
         Maximum number of structures to predict.
     fold_percent: float
         Maximum percent energy difference from the MFE structure.
+    fold_edelta: float
+        Maximum absolute energy difference (kcal/mol) from the MFE for
+        suboptimal structures (RNAsubopt only).
     keep_tmp: bool
         Whether to retain temporary files after folding.
     force: bool
@@ -110,17 +117,17 @@ def fold_region(region: Region, *,
         fasta_tmp = get_fasta_path(tmp_dir, region.ref)
         ct_tmp = get_ct_path(tmp_dir, region, profile_name)
         vienna_tmp = (ct_tmp.with_suffix(path.VIENNA_EXT)
-                      if fold_backend == FOLD_BACKEND_RNAFOLD
+                      if fold_backend == FOLD_BACKEND_VIENNARNA
                       else None)
         db_tmp = (ct_tmp.with_suffix(path.DB_EXT)
-                  if fold_backend == FOLD_BACKEND_RNAFOLD
+                  if fold_backend == FOLD_BACKEND_VIENNARNA
                   else None)
         try:
             write_fasta(fasta_tmp,
                         [(region.ref, region.seq.tr())],
                         force=force)
             fold_temp_c = guess_temperature_to_celsius(fold_temp)
-            if fold_backend == FOLD_BACKEND_RNAFOLD:
+            if fold_backend == FOLD_BACKEND_VIENNARNA:
                 run_rnafold(fasta_tmp,
                             ct_tmp,
                             ct_sim,
@@ -137,13 +144,14 @@ def fold_region(region: Region, *,
                             fold_md=fold_md,
                             fold_max=fold_max,
                             fold_mfe=fold_mfe,
+                            fold_edelta=fold_edelta,
                             end5=region.end5,
                             num_cpus=num_cpus)
             else:
                 run_rnastructure(fasta_tmp,
                                  ct_tmp,
                                  ct_sim,
-                                 fold_backend=fold_backend,
+                                 pseudoknots=pseudoknots,
                                  fold_temp_k=celsius_to_kelvin(fold_temp_c),
                                  dms_file=None,
                                  shape_file=None,
@@ -162,8 +170,6 @@ def fold_region(region: Region, *,
                 fasta_tmp.unlink(missing_ok=True)
                 if vienna_tmp is not None:
                     vienna_tmp.unlink(missing_ok=True)
-                    vienna_tmp.with_suffix(path.VIENNA_SUBOPT_EXT).unlink(
-                        missing_ok=True)
                     db_tmp.unlink(missing_ok=True)
                 if ct_tmp != ct_sim:
                     ct_tmp.unlink(missing_ok=True)
@@ -184,6 +190,7 @@ def run(fasta: str | Path, *,
         profile_name: str,
         probe: str,
         fold_backend: str,
+        pseudoknots: bool,
         fold_coords: Iterable[tuple[str, int, int]],
         fold_primers: Iterable[tuple[str, DNA, DNA]],
         fold_regions_file: str | None,
@@ -194,6 +201,7 @@ def run(fasta: str | Path, *,
         fold_max: int,
         fold_min: int,
         fold_percent: float,
+        fold_edelta: float,
         keep_tmp: bool,
         tmp_dir: Path,
         force: bool,
@@ -229,6 +237,9 @@ def run(fasta: str | Path, *,
         Minimum number of structures required per region.
     fold_percent: float
         Maximum percent energy difference from the MFE structure.
+    fold_edelta: float
+        Maximum absolute energy difference (kcal/mol) from the MFE for
+        suboptimal structures (RNAsubopt only).
     keep_tmp: bool
         Whether to retain temporary files.
     tmp_dir: Path
@@ -244,7 +255,7 @@ def run(fasta: str | Path, *,
         Paths of all written CT files.
     """
     fold_backend = resolve_fold_backend(probe, fold_backend)
-    check_fold_deps(fold_backend)
+    check_fold_deps(fold_backend, pseudoknots)
     if not fold_mfe and fold_min > fold_max:
         logger.warning(
             f"fold_min ({fold_min}) > fold_max ({fold_max}): "
@@ -269,6 +280,7 @@ def run(fasta: str | Path, *,
                                 tmp_dir=tmp_dir,
                                 profile_name=profile_name,
                                 fold_backend=fold_backend,
+                                pseudoknots=pseudoknots,
                                 fold_constraint=optional_path(fold_constraint),
                                 fold_temp=fold_temp,
                                 fold_md=fold_md,
@@ -276,6 +288,7 @@ def run(fasta: str | Path, *,
                                 fold_max=fold_max,
                                 fold_min=fold_min,
                                 fold_percent=fold_percent,
+                                fold_edelta=fold_edelta,
                                 keep_tmp=keep_tmp,
                                 force=force))
 
@@ -286,6 +299,7 @@ params = [arg_fasta,
           opt_profile_name,
           opt_probe,
           opt_fold_backend,
+          opt_pseudoknots,
           opt_fold_regions_file,
           opt_fold_coords,
           opt_fold_primers,
@@ -296,6 +310,7 @@ params = [arg_fasta,
           opt_fold_max,
           opt_fold_min,
           opt_fold_percent,
+          opt_fold_edelta,
           opt_keep_tmp,
           opt_force,
           opt_num_cpus]

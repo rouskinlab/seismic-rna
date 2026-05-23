@@ -6,9 +6,8 @@ from pathlib import Path
 import numpy as np
 
 from seismicrna.core.arg import (FOLD_BACKEND_AUTO,
-                                 FOLD_BACKEND_FOLD,
-                                 FOLD_BACKEND_SHAPEKNOTS,
-                                 FOLD_BACKEND_RNAFOLD,
+                                 FOLD_BACKEND_RNASTRUCTURE,
+                                 FOLD_BACKEND_VIENNARNA,
                                  FOLD_ENERGY_METHOD_AUTO,
                                  FOLD_ENERGY_METHOD_DEIGAN,
                                  FOLD_ENERGY_METHOD_CORDERO,
@@ -114,44 +113,48 @@ def _datapath_ok() -> bool:
     return True
 
 
-def _backend_available(backend: str) -> bool:
-    if backend == FOLD_BACKEND_RNAFOLD:
+def _backend_available(backend: str, pseudoknots: bool) -> bool:
+    if backend == FOLD_BACKEND_VIENNARNA:
+        if pseudoknots:
+            return False
         return (dependency_exists(VIENNA_RNAFOLD_CMD)
                 and dependency_exists(VIENNA_RNASUBOPT_CMD))
-    if backend == FOLD_BACKEND_FOLD:
+    if backend == FOLD_BACKEND_RNASTRUCTURE:
+        if pseudoknots:
+            return (dependency_exists(RNASTRUCTURE_SHAPEKNOTS_CMD)
+                    and _datapath_ok())
         return dependency_exists(RNASTRUCTURE_FOLD_CMD) and _datapath_ok()
-    if backend == FOLD_BACKEND_SHAPEKNOTS:
-        return (dependency_exists(RNASTRUCTURE_SHAPEKNOTS_CMD)
-                and _datapath_ok())
     return False
 
 
 def _resolve(probe: str, backend: str, method: str) -> tuple[str, str]:
     if backend == FOLD_BACKEND_AUTO:
-        backend = (FOLD_BACKEND_FOLD if probe == PROBE_DMS
-                   else FOLD_BACKEND_RNAFOLD)
+        backend = (FOLD_BACKEND_RNASTRUCTURE if probe == PROBE_DMS
+                   else FOLD_BACKEND_VIENNARNA)
     if method == FOLD_ENERGY_METHOD_AUTO:
         method = (FOLD_ENERGY_METHOD_CORDERO if probe == PROBE_DMS
                   else FOLD_ENERGY_METHOD_EDDY)
     return backend, method
 
 
-def _valid_combo(backend: str, method: str) -> bool:
+def _valid_combo(backend: str, method: str, pseudoknots: bool) -> bool:
+    if pseudoknots and backend != FOLD_BACKEND_RNASTRUCTURE:
+        return False
     if method == FOLD_ENERGY_METHOD_EDDY:
-        return backend == FOLD_BACKEND_RNAFOLD
+        return backend == FOLD_BACKEND_VIENNARNA
     if method == FOLD_ENERGY_METHOD_CORDERO:
-        return backend in (FOLD_BACKEND_FOLD, FOLD_BACKEND_SHAPEKNOTS)
+        return backend == FOLD_BACKEND_RNASTRUCTURE
     return True
 
 
 BACKEND_METHOD_COMBOS = [
-    (FOLD_BACKEND_AUTO, FOLD_ENERGY_METHOD_AUTO),
-    (FOLD_BACKEND_FOLD, FOLD_ENERGY_METHOD_DEIGAN),
-    (FOLD_BACKEND_FOLD, FOLD_ENERGY_METHOD_CORDERO),
-    (FOLD_BACKEND_SHAPEKNOTS, FOLD_ENERGY_METHOD_DEIGAN),
-    (FOLD_BACKEND_SHAPEKNOTS, FOLD_ENERGY_METHOD_CORDERO),
-    (FOLD_BACKEND_RNAFOLD, FOLD_ENERGY_METHOD_DEIGAN),
-    (FOLD_BACKEND_RNAFOLD, FOLD_ENERGY_METHOD_EDDY),
+    (FOLD_BACKEND_AUTO, FOLD_ENERGY_METHOD_AUTO, False),
+    (FOLD_BACKEND_RNASTRUCTURE, FOLD_ENERGY_METHOD_DEIGAN, False),
+    (FOLD_BACKEND_RNASTRUCTURE, FOLD_ENERGY_METHOD_CORDERO, False),
+    (FOLD_BACKEND_RNASTRUCTURE, FOLD_ENERGY_METHOD_DEIGAN, True),
+    (FOLD_BACKEND_RNASTRUCTURE, FOLD_ENERGY_METHOD_CORDERO, True),
+    (FOLD_BACKEND_VIENNARNA, FOLD_ENERGY_METHOD_DEIGAN, False),
+    (FOLD_BACKEND_VIENNARNA, FOLD_ENERGY_METHOD_EDDY, False),
 ]
 
 # Defaults + each boolean flipped individually.
@@ -188,24 +191,28 @@ class FoldCombinationsBase(ut.TestCase):
 
     def test_fold_combinations(self):
         for probe, filter_dirs in self._filter_dirs.items():
-            for backend, method in BACKEND_METHOD_COMBOS:
+            for backend, method, pseudoknots in BACKEND_METHOD_COMBOS:
                 resolved_backend, resolved_method = _resolve(probe,
                                                             backend,
                                                             method)
-                if not _valid_combo(resolved_backend, resolved_method):
+                if not _valid_combo(resolved_backend,
+                                    resolved_method,
+                                    pseudoknots):
                     continue
-                if not _backend_available(resolved_backend):
+                if not _backend_available(resolved_backend, pseudoknots):
                     continue
                 for booleans in BOOLEAN_VARIANTS:
                     for dry_run in (True, False):
                         with self.subTest(probe=probe,
                                         fold_backend=backend,
+                                        pseudoknots=pseudoknots,
                                         fold_energy_method=method,
                                         fold_dry_run=dry_run,
                                         **booleans):
                             report_files = run_fold(
                                 filter_dirs,
                                 fold_backend=backend,
+                                pseudoknots=pseudoknots,
                                 fold_energy_method=method,
                                 fold_dry_run=dry_run,
                                 tmp_pfx=self._tmp.name,

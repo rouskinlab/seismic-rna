@@ -16,12 +16,7 @@ def _from_file(file: str | Path,
                *args,
                branch: str = "",
                **kwargs):
-    titles: set[str] = set()
     for title, region, pairs in parser(file, *args, **kwargs):
-        if title in titles:
-            logger.warning(f"Title {repr(title)} is repeated in {file}")
-        else:
-            titles.add(title)
         yield RNAStructure(title=title,
                            region=region,
                            pairs=pairs,

@@ -9,9 +9,7 @@ from shutil import which
 
 from .dryrun import dry_run
 from .profile import ZERO_CELSIUS
-from ..core.arg import (FOLD_BACKEND_FOLD,
-                        FOLD_BACKEND_SHAPEKNOTS,
-                        opt_fold_temp)
+from ..core.arg import opt_fold_temp
 from ..core.error import IncompatibleValuesError
 from ..core.extern import (RNASTRUCTURE_FOLD_CMD,
                            RNASTRUCTURE_FOLD_SMP_CMD,
@@ -267,7 +265,7 @@ def require_data_path():
 
 def make_rnastructure_cmd(fasta_file: Path,
                           ct_file: Path, *,
-                          fold_backend: str,
+                          pseudoknots: bool,
                           fold_constraint: Path | None,
                           dms_file: Path | None,
                           shape_file: Path | None,
@@ -281,44 +279,40 @@ def make_rnastructure_cmd(fasta_file: Path,
                           fold_percent: float,
                           num_cpus: int = 1):
     """ Make a command for 'Fold', 'Fold-smp', or 'ShapeKnots'. """
-    if fold_backend == FOLD_BACKEND_FOLD:
-        if num_cpus > 1:
-            # Fold with multiple threads using the Fold-smp program.
-            cmd = [RNASTRUCTURE_FOLD_SMP_CMD]
-            os.environ[FOLD_SMP_NUM_THREADS] = str(num_cpus)
-        else:
-            # Fold with one thread using the Fold program.
-            cmd = [RNASTRUCTURE_FOLD_CMD]
-    elif fold_backend == FOLD_BACKEND_SHAPEKNOTS:
+    if pseudoknots:
         if num_cpus > 1:
             logger.warning(
                 f"ShapeKnots cannot use {num_cpus} threads; defaulting to 1"
             )
-        cmd = [RNASTRUCTURE_SHAPEKNOTS_CMD]
+        args = [RNASTRUCTURE_SHAPEKNOTS_CMD]
     else:
-        raise ValueError(
-            f"RNAstructure cannot use fold_backend {repr(fold_backend)}"
-        )
+        if num_cpus > 1:
+            # Fold with multiple threads using the Fold-smp program.
+            args = [RNASTRUCTURE_FOLD_SMP_CMD]
+            os.environ[FOLD_SMP_NUM_THREADS] = str(num_cpus)
+        else:
+            # Fold with one thread using the Fold program.
+            args = [RNASTRUCTURE_FOLD_CMD]
     if fold_constraint is not None:
         # File of constraints.
-        cmd.extend(["--constraint", fold_constraint])
+        args.extend(["--constraint", fold_constraint])
     if dms_file is not None:
         # File of DMS reactivities.
         if shape_file is not None:
             raise IncompatibleValuesError("Cannot give both DMS and SHAPE files")
-        cmd.extend(["--DMS", dms_file])
+        args.extend(["--DMS", dms_file])
     if shape_file is not None:
         # File of SHAPE reactivities.
-        cmd.extend(["--SHAPE", shape_file])
+        args.extend(["--SHAPE", shape_file])
     if deigan_intercept is not None:
         # SHAPE intercept parameter (kcal/mol).
-        cmd.extend(["--SHAPEintercept", deigan_intercept])
+        args.extend(["--SHAPEintercept", deigan_intercept])
     if deigan_slope is not None:
         # SHAPE slope parameter (kcal/mol).
-        cmd.extend(["--SHAPEslope", deigan_slope])
+        args.extend(["--SHAPEslope", deigan_slope])
     if fold_temp_k is not None:
         # Temperature of folding (Kelvin).
-        if fold_backend == FOLD_BACKEND_SHAPEKNOTS:
+        if pseudoknots:
             default_temp_k = opt_fold_temp.default + ZERO_CELSIUS
             if abs(fold_temp_k - default_temp_k) > 0.01:
                 logger.warning(
@@ -326,42 +320,42 @@ def make_rnastructure_cmd(fasta_file: Path,
                     f"defaulting to {default_temp_k} K"
                 )
         else:
-            cmd.extend(["--temperature", fold_temp_k])
+            args.extend(["--temperature", fold_temp_k])
     if fold_isolated:
         # Allow isolated pairs.
-        if fold_backend == FOLD_BACKEND_SHAPEKNOTS:
+        if pseudoknots:
             logger.warning(
                 "ShapeKnots does not support --isolated; "
                 "isolated pairs cannot be allowed with this backend"
             )
         else:
-            cmd.append("--isolated")
+            args.append("--isolated")
     if fold_md > 0:
         # Maximum distance between paired bases.
-        cmd.extend(["--maxdistance", fold_md])
+        args.extend(["--maxdistance", fold_md])
     if fold_mfe:
         # Predict only the minimum free energy structure.
-        if fold_backend == FOLD_BACKEND_SHAPEKNOTS:
+        if pseudoknots:
             # ShapeKnots has no --MFE flag; request a single structure instead.
-            cmd.extend(["--maximum", 1])
+            args.extend(["--maximum", 1])
         else:
-            cmd.append("--MFE")
+            args.append("--MFE")
     else:
         if fold_max > 0:
             # Maximum number of structures.
-            cmd.extend(["--maximum", fold_max])
+            args.extend(["--maximum", fold_max])
         if fold_percent > 0.:
             # Maximum % difference between free energies of structures.
-            cmd.extend(["--percent", fold_percent])
+            args.extend(["--percent", fold_percent])
     # Input and output files.
-    cmd.extend([fasta_file, ct_file])
-    return cmd
+    args.extend([fasta_file, ct_file])
+    return args_to_cmd(args)
 
 
 def run_rnastructure(fasta_tmp: Path,
                      ct_tmp: Path,
                      ct_out: Path, *,
-                     fold_backend: str,
+                     pseudoknots: bool,
                      fold_temp_k: float | None,
                      dms_file: Path | None,
                      shape_file: Path | None,
@@ -377,15 +371,15 @@ def run_rnastructure(fasta_tmp: Path,
                      num_cpus: int,
                      fold_dry_run: bool = False):
     """ Run Fold/ShapeKnots on pre-built paths, retitle, and renumber. """
-    if fold_backend == FOLD_BACKEND_FOLD and num_cpus > 1:
+    if not pseudoknots and num_cpus > 1:
         parallel_options = [True, False]
     else:
         parallel_options = [False]
     fold_cmds = [
-        args_to_cmd(make_rnastructure_cmd(
+        make_rnastructure_cmd(
             fasta_tmp,
             ct_tmp,
-            fold_backend=fold_backend,
+            pseudoknots=pseudoknots,
             fold_temp_k=fold_temp_k,
             dms_file=dms_file,
             shape_file=shape_file,
@@ -398,7 +392,7 @@ def run_rnastructure(fasta_tmp: Path,
             fold_max=fold_max,
             fold_percent=fold_percent,
             num_cpus=(num_cpus if parallel else 1),
-        ))
+        )
         for parallel in parallel_options
     ]
     if fold_dry_run:

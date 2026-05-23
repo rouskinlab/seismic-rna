@@ -80,20 +80,17 @@ DEFAULT_MUT_COLLISIONS = {
     PROBE_NONE: MUT_COLLISIONS_MERGE
 }
 
-
 GAP_MODE_OMIT = "omit"
 GAP_MODE_INSERT = "insert"
 GAP_MODE_EXPAND = "expand"
 GAP_MODE = GAP_MODE_OMIT, GAP_MODE_INSERT, GAP_MODE_EXPAND
 
 FOLD_BACKEND_AUTO = "auto"
-FOLD_BACKEND_FOLD = "Fold"
-FOLD_BACKEND_SHAPEKNOTS = "ShapeKnots"
-FOLD_BACKEND_RNAFOLD = "RNAFold"
+FOLD_BACKEND_RNASTRUCTURE = "RNAstructure"
+FOLD_BACKEND_VIENNARNA = "ViennaRNA"
 FOLD_BACKENDS = (FOLD_BACKEND_AUTO,
-                 FOLD_BACKEND_FOLD,
-                 FOLD_BACKEND_SHAPEKNOTS,
-                 FOLD_BACKEND_RNAFOLD)
+                 FOLD_BACKEND_RNASTRUCTURE,
+                 FOLD_BACKEND_VIENNARNA)
 
 FOLD_ENERGY_METHOD_AUTO = "auto"
 FOLD_ENERGY_METHOD_DEIGAN = "Deigan"
@@ -714,7 +711,7 @@ opt_probe = Option(
     ("--probe",),
     type=Choice(PROBES, case_sensitive=False),
     default=PROBE_DMS,
-    help="Use default filter options for this chemical probe"
+    help="Use the default options for this chemical probe"
 )
 
 opt_regions_file = Option(
@@ -1260,10 +1257,20 @@ opt_fold_backend = Option(
      ("--fold-backend",),
      type=Choice(FOLD_BACKENDS, case_sensitive=False),
      default=FOLD_BACKEND_AUTO,
-     help=("Model RNA structures using Fold (RNAstructure), "
-           "ShapeKnots (RNAstructure), or RNAfold (ViennaRNA); "
-           f"auto selects {FOLD_BACKEND_FOLD} for {PROBE_DMS} "
-           f"and {FOLD_BACKEND_RNAFOLD} for other probes")
+     help=(f"Model RNA structures using {FOLD_BACKEND_RNASTRUCTURE} "
+           "(Fold/ShapeKnots) "
+           f"or {FOLD_BACKEND_VIENNARNA} (RNAfold/RNAsubopt); "
+           f"auto selects {FOLD_BACKEND_RNASTRUCTURE} for {PROBE_DMS} "
+           f"and {FOLD_BACKEND_VIENNARNA} for other probes")
+)
+
+opt_pseudoknots = Option(
+    ("--pseudoknots/--no-pseudoknots",),
+    type=bool,
+    default=False,
+    help=(f"Predict pseudoknotted structures (requires "
+          f"--fold-backend={FOLD_BACKEND_RNASTRUCTURE}; "
+          f"uses ShapeKnots when set, Fold otherwise)")
 )
 
 opt_fold_energy_method = Option(
@@ -1274,9 +1281,9 @@ opt_fold_energy_method = Option(
           f"auto selects {FOLD_ENERGY_METHOD_CORDERO} for {PROBE_DMS} "
           f"and {FOLD_ENERGY_METHOD_EDDY} for other probes; "
           f"{FOLD_ENERGY_METHOD_EDDY} requires "
-          f"--fold-backend={FOLD_BACKEND_RNAFOLD}; "
+          f"--fold-backend={FOLD_BACKEND_VIENNARNA}; "
           f"{FOLD_ENERGY_METHOD_CORDERO} requires "
-          f"--fold-backend={FOLD_BACKEND_FOLD} or {FOLD_BACKEND_SHAPEKNOTS}")
+          f"--fold-backend={FOLD_BACKEND_RNASTRUCTURE}")
 )
 
 opt_deigan_slope = Option(
@@ -1327,7 +1334,7 @@ opt_eddy_prior_paired_file = Option(
     help=(f"File of per-position prior probabilities of being paired for the "
           f"Eddy method (passed as --sp-data with --sp-strategy Pp); "
           f"only used with --fold-energy-method={FOLD_ENERGY_METHOD_EDDY} "
-          f"and --fold-backend={FOLD_BACKEND_RNAFOLD}")
+          f"and --fold-backend={FOLD_BACKEND_VIENNARNA}")
 )
 
 opt_eddy_prior_unpaired_file = Option(
@@ -1336,7 +1343,7 @@ opt_eddy_prior_unpaired_file = Option(
     help=(f"File of per-position prior probabilities of being unpaired for the "
           f"Eddy method (passed as --sp-data with --sp-strategy Pu); "
           f"only used with --fold-energy-method={FOLD_ENERGY_METHOD_EDDY} "
-          f"and --fold-backend={FOLD_BACKEND_RNAFOLD}")
+          f"and --fold-backend={FOLD_BACKEND_VIENNARNA}")
 )
 
 opt_fold_isolated = Option(
@@ -1380,6 +1387,14 @@ opt_fold_percent = Option(
     default=20.,
     help="Stop outputting structures when the % difference in energy exceeds "
          "this value (overriden by --fold-mfe)"
+)
+
+opt_fold_edelta = Option(
+    ("--fold-edelta",),
+    type=float,
+    default=1.,
+    help="Maximum absolute energy difference (kcal/mol) from the MFE for "
+         "suboptimal structures output by RNAsubopt (overriden by --fold-mfe)"
 )
 
 # Draw

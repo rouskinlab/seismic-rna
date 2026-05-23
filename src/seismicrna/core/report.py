@@ -69,6 +69,8 @@ from .arg import (opt_seed,
                   opt_fold_mfe,
                   opt_fold_max,
                   opt_fold_percent,
+                  opt_fold_edelta,
+                  opt_pseudoknots,
                   opt_quick_unbias,
                   opt_quick_unbias_thresh,
                   opt_min_ncov_read,
@@ -670,6 +672,8 @@ FoldMaxDistF = OptionReportField(opt_fold_md)
 FoldMinFreeEnergyF = OptionReportField(opt_fold_mfe)
 FoldMaxStructsF = OptionReportField(opt_fold_max)
 FoldPercent = OptionReportField(opt_fold_percent)
+FoldEnergyDeltaF = OptionReportField(opt_fold_edelta)
+PseudoknotsF = OptionReportField(opt_pseudoknots)
 CommandsChecksumF = ReportField(
     "commands_checksum",
     "Checksum of the ViennaRNA command file (SHA-512)",

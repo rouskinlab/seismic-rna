@@ -100,6 +100,7 @@ def run(input_path: Iterable[str | Path], *,
         cluster_pos_table: bool,
         cluster_abundance_table: bool,
         verify_times: bool,
+        self_contained: bool,
         seed: int | None):
     """ Infer independent structure ensembles along an entire RNA. """
     seg_types = load_idmut_dataset.report_path_seg_types
@@ -178,6 +179,7 @@ def run(input_path: Iterable[str | Path], *,
                   cluster_pos_table=cluster_pos_table,
                   cluster_abundance_table=cluster_abundance_table,
                   verify_times=verify_times,
+                  self_contained=self_contained,
                   seed=seed)
     return dispatch(ensembles,
                     num_cpus=num_cpus,

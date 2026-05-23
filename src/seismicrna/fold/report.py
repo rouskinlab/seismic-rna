@@ -18,6 +18,8 @@ from ..core.report import (RegReport,
                            FoldMinFreeEnergyF,
                            FoldMaxStructsF,
                            FoldPercent,
+                           FoldEnergyDeltaF,
+                           PseudoknotsF,
                            CommandsChecksumF,
                            ConstraintChecksumF,
                            EddyPriorPairedFileChecksumF,
@@ -52,6 +54,8 @@ class FoldReport(RegReport, FoldIO, ABC):
                 FoldMinFreeEnergyF,
                 FoldMaxStructsF,
                 FoldPercent,
+                FoldEnergyDeltaF,
+                PseudoknotsF,
                 *super().get_param_report_fields()]
 
     @classmethod

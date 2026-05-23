@@ -13,7 +13,8 @@ from . import (fastq as fastq_mod,
                idmut as idmut_mod)
 from .muts import load_pmut
 from ..core import path
-from ..core.arg import (arg_fasta,
+from ..core.arg import (PROBE_NONE,
+                        arg_fasta,
                         arg_input_path,
                         opt_branch,
                         opt_batch_size,
@@ -51,11 +52,10 @@ def _clusters_distinct(ct_file: Path,
                         fasta: str | Path,
                         region_coords: Iterable[tuple[str, int, int]],
                         region_primers: Iterable[tuple[str, DNA, DNA]],
-                        probe: str,
-                        mask_a: bool | None,
-                        mask_c: bool | None,
-                        mask_g: bool | None,
-                        mask_u: bool | None,
+                        mask_a: bool,
+                        mask_c: bool,
+                        mask_g: bool,
+                        mask_u: bool,
                         mask_polya: int,
                         max_fraction_ident: float,
                         max_pearson: float,
@@ -78,8 +78,6 @@ def _clusters_distinct(ct_file: Path,
             region.mask_list(range(region.end5, reg.end5 + 1))
             region.mask_list(range(reg.end3, region.end3 + 1))
     # Apply per-nucleotide masking.
-    mask_a, mask_c, mask_g, mask_u = set_mask_acgu(probe, mask_a, mask_c,
-                                                    mask_g, mask_u)
     if mask_a:
         region.mask_a()
     if mask_c:
@@ -119,6 +117,7 @@ def run(*,
         reflen: int,
         profile_name: str,
         fold_backend: str,
+        pseudoknots: bool,
         fold_coords: Iterable[tuple[str, int, int]],
         fold_primers: Iterable[tuple[str, DNA, DNA]],
         fold_regions_file: str | None,
@@ -129,6 +128,7 @@ def run(*,
         fold_max: int,
         fold_min: int,
         fold_percent: float,
+        fold_edelta: float,
         pmut_paired: Iterable[tuple[str, float]],
         pmut_unpaired: Iterable[tuple[str, float]],
         vmut_paired: float,
@@ -164,6 +164,9 @@ def run(*,
         num_cpus: int,
         seed: int | None):
     """ Simulate FASTQ files from scratch. """
+    mask_a, mask_c, mask_g, mask_u = set_mask_acgu(
+        probe, mask_a, mask_c, mask_g, mask_u
+    )
     for attempt in range(1, max(max_tries, 1) + 1):
         logger.routine(
             f"Began simulation attempt {attempt} of up to {max_tries}"
@@ -184,6 +187,7 @@ def run(*,
             tmp_pfx=tmp_pfx,
             profile_name=profile_name,
             fold_backend=fold_backend,
+            pseudoknots=pseudoknots,
             probe=probe,
             fold_coords=fold_coords,
             fold_primers=fold_primers,
@@ -195,6 +199,7 @@ def run(*,
             fold_max=fold_max,
             fold_min=fold_min,
             fold_percent=fold_percent,
+            fold_edelta=fold_edelta,
             keep_tmp=keep_tmp,
             force=force,
             num_cpus=num_cpus
@@ -207,6 +212,9 @@ def run(*,
                 f"Got fewer than fold_min={fold_min} clusters "
                 f"on attempt {attempt} of up to {max_tries}"
             )
+            # Increase fold_edelta in case that parameter is limiting
+            # the number of structures.
+            fold_edelta += 1.0  # kcal/mol
             continue
         elif len(ct_files) > 1:
             raise ValueError(f"Folding produced {ct_files} CT files")
@@ -228,15 +236,17 @@ def run(*,
             num_cpus=num_cpus,
             seed=seed
         )
-        # Check if the clusters are sufficiently distinct.
+        # Check if the clusters are sufficiently distinct, unless probe
+        # is none, in which case there should be no distinct clusters.
         ct_file = ct_files[0]
-        if not _clusters_distinct(ct_file, fasta,
-                                region_coords, region_primers,
-                                probe,
-                                mask_a, mask_c, mask_g, mask_u,
-                                mask_polya,
-                                max_fraction_ident, max_pearson_sim,
-                                min_marcd_sim):
+        if probe != PROBE_NONE and not _clusters_distinct(
+            ct_file, fasta,
+            region_coords, region_primers,
+            mask_a, mask_c, mask_g, mask_u,
+            mask_polya,
+            max_fraction_ident, max_pearson_sim,
+            min_marcd_sim
+        ):
             # If so, delete the simulated files and start over.
             Path(fasta).unlink(missing_ok=True)
             ct_file.unlink(missing_ok=True)
