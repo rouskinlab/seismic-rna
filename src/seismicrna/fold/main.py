@@ -141,15 +141,12 @@ def fold_region(rna: RNAFoldProfile, *,
         began = datetime.now()
         rna.write_varna_color_file(out_dir, branch)
         logger.routine(f"Began folding {rna}")
-        ct_out = rna.get_ct_file(out_dir, branch)
         fasta_tmp = rna.write_fasta(tmp_dir, branch)
-        ct_tmp = rna.get_ct_file(tmp_dir, branch)
         mus_file = rna.write_mus_file(tmp_dir, branch)
-        if fold_backend == FOLD_BACKEND_VIENNARNA:
-            db_tmp = rna.get_db_file(tmp_dir, branch)
-            vienna_tmp = rna.get_vienna_file(tmp_dir, branch)
-        else:
-            rnastructure_shape_args = rna.get_rnastructure_shape_args(tmp_dir, branch)
+        ct_tmp = rna.get_ct_file(tmp_dir, branch)
+        ct_out = rna.get_ct_file(out_dir, branch)
+        vienna_tmp = None
+        db_tmp = None
         try:
             if fold_backend == FOLD_BACKEND_VIENNARNA:
                 if pseudoknots:
@@ -157,6 +154,8 @@ def fold_region(rna: RNAFoldProfile, *,
                         f"fold_backend={FOLD_BACKEND_VIENNARNA} "
                         f"is incompatible with pseudoknots={pseudoknots}"
                     )
+                vienna_tmp = rna.get_vienna_file(tmp_dir, branch)
+                db_tmp = rna.get_db_file(tmp_dir, branch)
                 run_rnafold(fasta_tmp,
                             ct_tmp,
                             ct_out,
@@ -178,6 +177,7 @@ def fold_region(rna: RNAFoldProfile, *,
                             num_cpus=num_cpus,
                             fold_dry_run=fold_dry_run)
             else:
+                rnastructure_shape_args = rna.get_rnastructure_shape_args(tmp_dir, branch)
                 run_rnastructure(fasta_tmp,
                                  ct_tmp,
                                  ct_out,
@@ -199,8 +199,9 @@ def fold_region(rna: RNAFoldProfile, *,
                 mus_file.unlink(missing_ok=True)
                 if ct_tmp != ct_out:
                     ct_tmp.unlink(missing_ok=True)
-                if fold_backend == FOLD_BACKEND_VIENNARNA:
+                if db_tmp is not None:
                     db_tmp.unlink(missing_ok=True)
+                if vienna_tmp is not None:
                     vienna_tmp.unlink(missing_ok=True)
         logger.routine(f"Ended folding {rna}")
         ct_file = ct_out
