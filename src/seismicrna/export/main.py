@@ -13,7 +13,8 @@ from ..core.arg import (CMD_EXPORT,
                         opt_refs_meta,
                         opt_all_pos,
                         opt_force,
-                        opt_num_cpus)
+                        opt_num_cpus,
+                        opt_verify_times)
 from ..core.run import run_func
 from ..core.task import dispatch
 from ..filter.table import FilterPositionTableLoader, FilterReadTableLoader
@@ -23,6 +24,7 @@ from ..filter.table import FilterPositionTableLoader, FilterReadTableLoader
 def run(input_path: Iterable[str | Path], *,
         samples_meta: str,
         refs_meta: str,
+        verify_times: bool,
         all_pos: bool,
         force: bool,
         num_cpus: int) -> list[Path]:
@@ -38,7 +40,7 @@ def run(input_path: Iterable[str | Path], *,
                        FilterReadTableLoader,
                        ClusterPositionTableLoader,
                        ClusterAbundanceTableLoader]:
-        for table in table_type.load_tables(input_path):
+        for table in table_type.load_tables(input_path, verify_times=verify_times):
             tables[(table.top, table.sample)].append(table)
     return dispatch(export_sample,
                     num_cpus=num_cpus,
@@ -57,6 +59,7 @@ params = [
     arg_input_path,
     opt_samples_meta,
     opt_refs_meta,
+    opt_verify_times,
     opt_all_pos,
     opt_force,
     opt_num_cpus,
