@@ -161,7 +161,7 @@ class TestSimulateBatches(ut.TestCase):
             paired=False,
             read_length=0,
             p_rev=0.5,
-            mut_probs=None,
+            injected_mut_probs=None,
         ))
 
     def _expected_drop_with_weights(self, seed: int):

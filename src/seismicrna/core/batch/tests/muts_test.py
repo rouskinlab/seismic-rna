@@ -365,54 +365,54 @@ class TestInjectCloseMuts(ut.TestCase):
                     err_msg=f"Position {pos}, rel {rel}: read arrays differ"
                 )
 
-    def test_empty_mut_probs(self):
+    def test_empty_injected_mut_probs(self):
         batch = self._make_batch(3, {3: {SUB_T: [0, 1, 2]}})
-        result = batch.inject_close_muts(RelPattern.muts(), [], seed=0)
+        result = batch.inject_close_muts(RelPattern.muts(), {}, seed=0)
         expected = {1: {}, 2: {}, 3: {SUB_T: [0, 1, 2]}, 4: {}, 5: {}}
         self._assert_muts_equal(result, expected)
 
     def test_all_zero_probs(self):
         batch = self._make_batch(3, {3: {SUB_T: [0, 1, 2]}})
-        result = batch.inject_close_muts(RelPattern.muts(), [0.0], seed=0)
+        result = batch.inject_close_muts(RelPattern.muts(), {1: 0.0}, seed=0)
         np.testing.assert_array_equal(self._reads_with_any_mut(result, 2), [])
 
-    def test_invalid_ndim(self):
+    def test_invalid_offset_zero(self):
         batch = self._make_batch(2, {})
         with self.assertRaises(ValueError):
-            batch.inject_close_muts(RelPattern.muts(), np.array([[0.5]]), seed=0)
+            batch.inject_close_muts(RelPattern.muts(), {0: 0.5}, seed=0)
 
     def test_invalid_negative(self):
         batch = self._make_batch(2, {})
         with self.assertRaises(ValueError):
-            batch.inject_close_muts(RelPattern.muts(), [-0.1], seed=0)
+            batch.inject_close_muts(RelPattern.muts(), {1: -0.1}, seed=0)
 
     def test_invalid_above_one(self):
         batch = self._make_batch(2, {})
         with self.assertRaises(ValueError):
-            batch.inject_close_muts(RelPattern.muts(), [1.1], seed=0)
+            batch.inject_close_muts(RelPattern.muts(), {1: 1.1}, seed=0)
 
     def test_prob_one_injects_all(self):
         # All 3 reads have a mutation at pos 3; with prob=1.0 all should get one at pos 2.
         batch = self._make_batch(3, {3: {SUB_T: [0, 1, 2]}})
-        result = batch.inject_close_muts(RelPattern.muts(), [1.0], seed=0)
+        result = batch.inject_close_muts(RelPattern.muts(), {1: 1.0}, seed=0)
         np.testing.assert_array_equal(self._reads_with_any_mut(result, 2), [0, 1, 2])
 
     def test_original_mutation_preserved(self):
         batch = self._make_batch(3, {3: {SUB_T: [0, 1, 2]}})
-        result = batch.inject_close_muts(RelPattern.muts(), [1.0], seed=0)
+        result = batch.inject_close_muts(RelPattern.muts(), {1: 1.0}, seed=0)
         np.testing.assert_array_equal(np.sort(result[3][SUB_T]), [0, 1, 2])
 
     def test_only_mutated_reads_injected(self):
         # Only read 0 is mutated at pos 3; reads 1-2 should not appear at pos 2.
         batch = self._make_batch(3, {3: {SUB_T: [0]}})
-        result = batch.inject_close_muts(RelPattern.muts(), [1.0], seed=0)
+        result = batch.inject_close_muts(RelPattern.muts(), {1: 1.0}, seed=0)
         np.testing.assert_array_equal(self._reads_with_any_mut(result, 2), [0])
         np.testing.assert_array_equal(self._reads_with_any_mut(result, 1), [])
 
     def test_window_of_two(self):
         # Mutation at pos 4; window of 2 covers pos 3 and pos 2.
         batch = self._make_batch(2, {4: {SUB_T: [0, 1]}})
-        result = batch.inject_close_muts(RelPattern.muts(), [1.0, 1.0], seed=0)
+        result = batch.inject_close_muts(RelPattern.muts(), {1: 1.0, 2: 1.0}, seed=0)
         np.testing.assert_array_equal(self._reads_with_any_mut(result, 3), [0, 1])
         np.testing.assert_array_equal(self._reads_with_any_mut(result, 2), [0, 1])
         np.testing.assert_array_equal(self._reads_with_any_mut(result, 1), [])
@@ -433,7 +433,9 @@ class TestInjectCloseMuts(ut.TestCase):
                               seg_end5s=seg_end5s,
                               seg_end3s=seg_end3s,
                               muts=full_muts)
-        result = batch.inject_close_muts(RelPattern.muts(), [1.0, 1.0, 1.0, 1.0], seed=0)
+        result = batch.inject_close_muts(
+            RelPattern.muts(), {1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0}, seed=0
+        )
         np.testing.assert_array_equal(self._reads_with_any_mut(result, 4), [0, 1])
         np.testing.assert_array_equal(self._reads_with_any_mut(result, 3), [1])
         np.testing.assert_array_equal(self._reads_with_any_mut(result, 2), [1])
@@ -456,7 +458,9 @@ class TestInjectCloseMuts(ut.TestCase):
                               seg_end5s=seg_end5s,
                               seg_end3s=seg_end3s,
                               muts=full_muts)
-        result = batch.inject_close_muts(RelPattern.muts(), [1.0, 1.0], seed=0)
+        result = batch.inject_close_muts(
+            RelPattern.muts(), {1: 1.0, 2: 1.0}, seed=0
+        )
         self.assertNotIn(2, result)
         np.testing.assert_array_equal(self._reads_with_any_mut(result, 1), [0, 1])
 
@@ -465,7 +469,7 @@ class TestInjectCloseMuts(ut.TestCase):
         # Injection skips read 0 at pos 2 (already mutated there), so read 0
         # stays in SUB_T and read 1 gets a new injection — total == 2.
         batch = self._make_batch(2, {2: {SUB_T: [0]}, 3: {SUB_T: [0, 1]}})
-        result = batch.inject_close_muts(RelPattern.muts(), [1.0], seed=0)
+        result = batch.inject_close_muts(RelPattern.muts(), {1: 1.0}, seed=0)
         np.testing.assert_array_equal(self._reads_with_any_mut(result, 2), [0, 1])
         total = sum(len(v) for v in result[2].values())
         self.assertEqual(total, 2)

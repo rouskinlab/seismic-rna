@@ -407,10 +407,11 @@ class TestBootstrapJackpotScores(ut.TestCase):
         set_config(*self._config)
 
     def sim_jackpot_quotient(self,
-                             min_mut_gap: int,
                              mut_collisions: str,
-                             seed: int,
-                             mut_probs: str | None = None):
+                             min_mut_gap: int,
+                             min_mut_gap_weights: str,
+                             injected_mut_probs: str,
+                             seed: int):
         """ Simulate a dataset and return its jackpotting quotient. """
         n_pos = 60
         n_reads = 50000
@@ -457,9 +458,11 @@ class TestBootstrapJackpotScores(ut.TestCase):
         idmut_report_file, = run_sim_idmut(param_dir=[param_dir],
                                              sample=self.SAMPLE,
                                              num_reads=n_reads,
-                                             min_mut_gap=min_mut_gap,
+                                             probe="none",
                                              mut_collisions=mut_collisions,
-                                             mut_probs=mut_probs,
+                                             min_mut_gap=min_mut_gap,
+                                             min_mut_gap_weights=min_mut_gap_weights,
+                                             injected_mut_probs=injected_mut_probs,
                                              seed=seed)
         # Filter the data.
         filter_dir, = run_filter([idmut_report_file],
@@ -510,8 +513,11 @@ class TestBootstrapJackpotScores(ut.TestCase):
         j_up = mean + std_err * t_up
         return j_lo, j_up
 
-    def run_ideal_jackpot(self, min_mut_gap: int, mut_collisions: str,
-                          mut_probs: str | None = None):
+    def run_ideal_jackpot(self,
+                          mut_collisions: str,
+                          min_mut_gap: int,
+                          min_mut_gap_weights: str = "",
+                          injected_mut_probs: str = ""):
         """ Test that bootstrapping "perfect" data correctly returns a
         jackpotting quotient that is expected to be 1. """
         confidence_level = 0.99
@@ -519,10 +525,11 @@ class TestBootstrapJackpotScores(ut.TestCase):
         log_jackpot_quotients = list()
         seeds = get_random_integer_generator(0)
         for seed in seeds:
-            jackpot_quotient = self.sim_jackpot_quotient(min_mut_gap,
-                                                         mut_collisions,
-                                                         seed,
-                                                         mut_probs=mut_probs)
+            jackpot_quotient = self.sim_jackpot_quotient(mut_collisions,
+                                                         min_mut_gap,
+                                                         min_mut_gap_weights,
+                                                         injected_mut_probs,
+                                                         seed)
             log_jackpot_quotients.append(np.log(jackpot_quotient))
             jq_lo, jq_up = self.calc_confidence_interval(log_jackpot_quotients,
                                                          confidence_level)
@@ -535,15 +542,19 @@ class TestBootstrapJackpotScores(ut.TestCase):
                     break
     
     def test_ideal_jackpot_uncorrected(self):
-        self.run_ideal_jackpot(min_mut_gap=0, mut_collisions="drop")
-        self.run_ideal_jackpot(min_mut_gap=0, mut_collisions="merge")
+        self.run_ideal_jackpot(mut_collisions="drop",
+                               min_mut_gap=0)
+        self.run_ideal_jackpot(mut_collisions="merge",
+                               min_mut_gap=0)
     
     def test_ideal_jackpot_drop(self):
-        self.run_ideal_jackpot(min_mut_gap=4, mut_collisions="drop")
+        self.run_ideal_jackpot(mut_collisions="drop",
+                               min_mut_gap=4)
     
     def test_ideal_jackpot_merge(self):
-        self.run_ideal_jackpot(min_mut_gap=6, mut_collisions="merge",
-                               mut_probs="0.5,0.25,0.125")
+        self.run_ideal_jackpot(mut_collisions="merge",
+                               min_mut_gap=6, 
+                               injected_mut_probs="1:0.5,2:0.25,3:0.125")
 
 
 class TestLinearizeEndsMatrix(ut.TestCase):

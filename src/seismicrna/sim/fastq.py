@@ -8,7 +8,11 @@ import numpy as np
 from click import command
 from numba import jit
 
-from .idmut import _get_param_dir_fields, _load_param_dir, parse_min_mut_gap_weights
+from .idmut import (_get_param_dir_fields,
+                    _load_param_dir,
+                    parse_injected_mut_probs,
+                    parse_min_mut_gap_weights,
+                    set_sim_mut_params)
 from ..core import path
 from ..core.arg import (ILLUMINA_TRUSEQ_ADAPTER_R1,
                         ILLUMINA_TRUSEQ_ADAPTER_R2,
@@ -23,7 +27,7 @@ from ..core.arg import (ILLUMINA_TRUSEQ_ADAPTER_R1,
                         opt_min_mut_gap,
                         opt_min_mut_gap_weights,
                         opt_mut_collisions,
-                        opt_mut_probs,
+                        opt_injected_mut_probs,
                         opt_fq_gzip,
                         opt_num_reads,
                         opt_batch_size,
@@ -374,9 +378,9 @@ def run(*,
         reverse_fraction: float,
         probe: str,
         min_mut_gap: int | None,
-        min_mut_gap_weights: str,
+        min_mut_gap_weights: str | None,
         mut_collisions: str,
-        mut_probs: str | None,
+        injected_mut_probs: str | None,
         fq_gzip: bool,
         num_reads: int,
         num_cpus: int,
@@ -407,11 +411,15 @@ def run(*,
         Probe type (e.g. DMS); used to set default `min_mut_gap`.
     min_mut_gap: int | None
         Minimum gap between mutations; None to use the probe default.
-    min_mut_gap_weights: str
-        Comma-separated gap:weight pairs for a bias mixture; empty string
-        to use the single min_mut_gap.
+    min_mut_gap_weights: str | None
+        Comma-separated gap:weight pairs for a bias mixture; None to use
+        the probe default, empty string to use the single min_mut_gap.
     mut_collisions: str
         How to handle reads with close mutations: "drop" or "merge".
+    injected_mut_probs: str | None
+        Comma-separated offset:prob pairs (offset ≥ 1) for injecting a
+        mutation at each offset 5' of an existing mutation; None to use
+        the probe default, empty string to disable injection.
     fq_gzip: bool
         Whether to gzip-compress the output FASTQ files.
     num_reads: int
@@ -431,8 +439,10 @@ def run(*,
     min_mut_gap, mut_collisions = set_mut_gap_params(probe,
                                                      min_mut_gap,
                                                      mut_collisions)
-    mut_probs_arr = (np.array(list(map(float, mut_probs.split(","))), dtype=float)
-                     if mut_probs is not None else None)
+    min_mut_gap_weights, injected_mut_probs = set_sim_mut_params(
+        probe, min_mut_gap_weights, injected_mut_probs
+    )
+    injected_mut_probs_dict = parse_injected_mut_probs(injected_mut_probs)
     min_mut_gap_weights_dict = parse_min_mut_gap_weights(min_mut_gap_weights)
     report_files = as_list_of_tuples(path.find_files_chain(
         input_path,
@@ -468,7 +478,7 @@ def run(*,
                                                   p_rev=reverse_fraction,
                                                   min_mut_gap=min_mut_gap,
                                                   min_mut_gap_weights=min_mut_gap_weights_dict,
-                                                  mut_probs=mut_probs_arr,
+                                                  injected_mut_probs=injected_mut_probs_dict,
                                                   mut_collisions=mut_collisions,
                                                   fq_gzip=fq_gzip,
                                                   num_reads=num_reads,
@@ -490,7 +500,7 @@ params = [arg_input_path,
           opt_min_mut_gap,
           opt_min_mut_gap_weights,
           opt_mut_collisions,
-          opt_mut_probs,
+          opt_injected_mut_probs,
           opt_fq_gzip,
           opt_num_reads,
           opt_num_cpus,

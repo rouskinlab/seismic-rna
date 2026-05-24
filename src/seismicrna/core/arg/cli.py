@@ -73,11 +73,32 @@ DEFAULT_MUT_COLLISIONS = {
     PROBE_DMS: MUT_COLLISIONS_DROP,
     # For other probe types (e.g. SHAPE-MaP) with retroviral RTs, when
     # the RT encounters a modification, it can make several mutations
-    # for up to 6 nt as it moves 3' to 5'. It's best to merge nearby 
+    # for up to 6 nt as it moves 3' to 5'. It's best to merge nearby
     # mutations, keeping the 3'-most (the original modification).
     PROBE_SHAPE: MUT_COLLISIONS_MERGE,
     PROBE_ETC: MUT_COLLISIONS_MERGE,
     PROBE_NONE: MUT_COLLISIONS_DROP,
+}
+
+DEFAULT_MIN_MUT_GAP_WEIGHTS = {
+    # DMS-MaPseq has a bias toward certain min_mut_gap values; this
+    # mixture reproduces that bias when simulating reads.
+    PROBE_DMS: "0:0.2,1:0.05,2:0.05,3:0.2,4:0.3,5:0.1,6:0.05,7:0.05",
+    # Other probe types don't exhibit the same bias.
+    PROBE_SHAPE: "",
+    PROBE_ETC: "",
+    PROBE_NONE: "",
+}
+
+DEFAULT_INJECTED_MUT_PROBS = {
+    # DMS-MaPseq with group II intron RTs drops reads with close
+    # mutations, so no extra mutations should be injected.
+    PROBE_DMS: "",
+    # Retroviral RTs make extra mutations 5' of true modifications; the
+    # default models this RT-artifact bleed-through.
+    PROBE_SHAPE: "1:0.1,2:0.01",
+    PROBE_ETC: "1:0.1,2:0.01",
+    PROBE_NONE: "",
 }
 
 GAP_MODE_OMIT = "omit"
@@ -885,9 +906,10 @@ opt_min_mut_gap = Option(
 opt_min_mut_gap_weights = Option(
     ("--min-mut-gap-weights",),
     type=str,
-    default="0:0.2,1:0.05,2:0.05,3:0.2,4:0.3,5:0.1,6:0.05,7:0.05",
+    default=None,
     help=("Comma-separated gap:weight pairs defining a mixture of min_mut_gap "
-          "biases, e.g. '0:0.2,1:0.3,2:0.5'. Overrides --min-mut-gap.")
+          "biases, e.g. '0:0.2,1:0.3,2:0.5'. Overrides --min-mut-gap. "
+          "Defaults are probe-specific; pass an empty string to disable.")
 )
 
 opt_mut_collisions = Option(
@@ -898,13 +920,15 @@ opt_mut_collisions = Option(
           "the mutations, DROP the read, or AUTO-select based on the probe.")
 )
 
-opt_mut_probs = Option(
-    ("--mut-probs",),
+opt_injected_mut_probs = Option(
+    ("--injected-mut-probs",),
     type=str,
-    default="0.1,0.01",
-    help=("Comma-separated probabilities of injecting a mutation at each "
-          "successive position 5' of an existing mutation (used with "
-          "--mut-collisions merge)")
+    default=None,
+    help=("Comma-separated offset:prob pairs (offset ≥ 1) defining the "
+          "probability of injecting a mutation that many positions 5' of "
+          "an existing mutation, e.g. '1:0.1,2:0.01' (used with "
+          "--mut-collisions merge). Defaults are probe-specific; pass an "
+          "empty string to disable.")
 )
 
 opt_min_ninfo_pos = Option(

@@ -9,7 +9,9 @@ from .clusts import load_pclust
 from .ends import load_pends
 from .muts import load_pmut
 from ..core import path
-from ..core.arg import (opt_param_dir,
+from ..core.arg import (DEFAULT_INJECTED_MUT_PROBS,
+                        DEFAULT_MIN_MUT_GAP_WEIGHTS,
+                        opt_param_dir,
                         opt_profile_name,
                         opt_sample_sim,
                         opt_branch,
@@ -20,7 +22,7 @@ from ..core.arg import (opt_param_dir,
                         opt_min_mut_gap,
                         opt_min_mut_gap_weights,
                         opt_mut_collisions,
-                        opt_mut_probs,
+                        opt_injected_mut_probs,
                         opt_num_reads,
                         opt_batch_size,
                         opt_write_read_names,
@@ -28,6 +30,7 @@ from ..core.arg import (opt_param_dir,
                         opt_force,
                         opt_num_cpus,
                         opt_seed)
+from ..core.logs import logger
 from ..core.rna import find_ct_region
 from ..core.run import run_func
 from ..core.task import as_list_of_tuples, dispatch
@@ -35,6 +38,44 @@ from ..filter.main import set_mut_gap_params
 from ..idmut.sim import simulate_idmut
 
 COMMAND = __name__.split(os.path.extsep)[-1]
+
+
+def set_sim_mut_params(probe: str,
+                       min_mut_gap_weights: str | None = None,
+                       injected_mut_probs: str | None = None):
+    """ Resolve simulation mutation parameters based on probe type.
+
+    Parameters
+    ----------
+    probe: str
+        Probe type (one of the values in ``PROBES``), used to set
+        defaults when a parameter is ``None``.
+    min_mut_gap_weights: str or None, optional
+        Comma-separated gap:weight pairs; if None, a probe-specific
+        default is used. Pass an empty string to disable.
+    injected_mut_probs: str or None, optional
+        Comma-separated probabilities for injecting mutations 5' of
+        existing mutations; if None, a probe-specific default is used.
+        Pass an empty string to disable.
+
+    Returns
+    -------
+    tuple[str, str]
+        Resolved ``(min_mut_gap_weights, injected_mut_probs)`` strings.
+    """
+    if min_mut_gap_weights is None:
+        min_mut_gap_weights = DEFAULT_MIN_MUT_GAP_WEIGHTS[probe]
+        logger.detail(
+            f"Auto-selected min_mut_gap_weights={repr(min_mut_gap_weights)} "
+            f"for probe {repr(probe)}"
+        )
+    if injected_mut_probs is None:
+        injected_mut_probs = DEFAULT_INJECTED_MUT_PROBS[probe]
+        logger.detail(
+            f"Auto-selected injected_mut_probs={repr(injected_mut_probs)} "
+            f"for probe {repr(probe)}"
+        )
+    return min_mut_gap_weights, injected_mut_probs
 
 
 def parse_min_mut_gap_weights(min_mut_gap_weights: str) -> dict[int, float]:
@@ -70,6 +111,35 @@ def parse_min_mut_gap_weights(min_mut_gap_weights: str) -> dict[int, float]:
             )
     return {gap: weight for gap in sorted(weights)
             if (weight := weights[gap]) > 0.0}
+
+
+def parse_injected_mut_probs(injected_mut_probs: str) -> dict[int, float]:
+    """ Parse a comma-separated 'offset:prob' string into a dict. """
+    probs = dict()
+    for pair in injected_mut_probs.split(","):
+        if not pair.strip():
+            continue
+        items = tuple(pair.split(":"))
+        if len(items) != 2:
+            raise ValueError(
+                f"Each pair must have exactly 2 items, but got {len(items)} ({items})"
+            )
+        try:
+            offset = int(items[0])
+            prob = float(items[1])
+        except ValueError:
+            raise ValueError(
+                f"Each pair must be an integer and a float, but got {items}"
+            ) from None
+        if offset < 1:
+            raise ValueError(f"offset must be ≥ 1, but got {offset}")
+        if not 0 <= prob <= 1:
+            raise ValueError(f"prob must be in [0, 1], but got {prob}")
+        if offset in probs:
+            raise ValueError(f"offset {offset} is repeated")
+        probs[offset] = prob
+    return {offset: prob for offset in sorted(probs)
+            if (prob := probs[offset]) > 0.0}
 
 
 def _get_param_dir_fields(param_dir: Path):
@@ -121,9 +191,9 @@ def run(*,
         reverse_fraction: float,
         probe: str,
         min_mut_gap: int | None,
-        min_mut_gap_weights: str,
+        min_mut_gap_weights: str | None,
         mut_collisions: str,
-        mut_probs: str | None,
+        injected_mut_probs: str | None,
         num_reads: int,
         batch_size: int,
         write_read_names: bool,
@@ -136,8 +206,10 @@ def run(*,
     min_mut_gap, mut_collisions = set_mut_gap_params(probe,
                                                      min_mut_gap,
                                                      mut_collisions)
-    mut_probs_arr = (np.array(list(map(float, mut_probs.split(","))), dtype=float)
-                     if mut_probs is not None else None)
+    min_mut_gap_weights, injected_mut_probs = set_sim_mut_params(
+        probe, min_mut_gap_weights, injected_mut_probs
+    )
+    injected_mut_probs_dict = parse_injected_mut_probs(injected_mut_probs)
     min_mut_gap_weights_dict = parse_min_mut_gap_weights(min_mut_gap_weights)
     return dispatch(_from_param_dir,
                     num_cpus=num_cpus,
@@ -154,7 +226,7 @@ def run(*,
                                 p_rev=reverse_fraction,
                                 min_mut_gap=min_mut_gap,
                                 min_mut_gap_weights=min_mut_gap_weights_dict,
-                                mut_probs=mut_probs_arr,
+                                injected_mut_probs=injected_mut_probs_dict,
                                 mut_collisions=mut_collisions,
                                 num_reads=num_reads,
                                 batch_size=batch_size,
@@ -177,7 +249,7 @@ params = [
     opt_min_mut_gap,
     opt_min_mut_gap_weights,
     opt_mut_collisions,
-    opt_mut_probs,
+    opt_injected_mut_probs,
     opt_num_reads,
     opt_batch_size,
     opt_write_read_names,

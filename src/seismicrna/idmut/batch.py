@@ -104,7 +104,7 @@ class IDmutRegionMutsBatch(IDmutMutsBatch, RegionMutsBatch):
                  read_length: int,
                  p_rev: float,
                  min_mut_gap: int,
-                 mut_probs: np.ndarray | None,
+                 injected_mut_probs: dict[int, float],
                  mut_collisions: str,
                  num_reads: int,
                  seed: int | None,
@@ -131,9 +131,10 @@ class IDmutRegionMutsBatch(IDmutMutsBatch, RegionMutsBatch):
             Probability that mate 1 is reversed (paired-end reads only).
         min_mut_gap: int
             Minimum number of positions between two mutations.
-        mut_probs: np.ndarray | None
-            Probabilities of injecting a mutation at each successive position
-            5' of an existing mutation; passed directly to `inject_close_muts`.
+        injected_mut_probs: dict[int, float]
+            Mapping of offset (positions 5' of an existing mutation) to
+            injection probability; passed directly to `inject_close_muts`.
+            An empty dict disables injection.
         mut_collisions: str
             How to handle reads with mutations closer than `min_mut_gap`:
             "drop" to remove such reads, or "merge" to merge them.
@@ -194,7 +195,7 @@ class IDmutRegionMutsBatch(IDmutMutsBatch, RegionMutsBatch):
                                                     min_mut_gap),
                 **kwargs
             )
-            if mut_probs is None:
+            if not injected_mut_probs:
                 return merged
             # Then inject RT artifacts 5' of true modifications only.
             return cls(
@@ -202,7 +203,7 @@ class IDmutRegionMutsBatch(IDmutMutsBatch, RegionMutsBatch):
                 seg_end5s=seg_end5s,
                 seg_end3s=seg_end3s,
                 muts=merged.inject_close_muts(RelPattern.muts(),
-                                              mut_probs,
+                                              injected_mut_probs,
                                               seed=next(seeds)),
                 **kwargs
             )

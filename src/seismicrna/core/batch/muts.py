@@ -489,33 +489,27 @@ class RegionMutsBatch(MutsBatch, ABC):
 
     def inject_close_muts(self,
                           pattern: RelPattern,
-                          mut_probs: Iterable[float] | np.ndarray,
+                          injected_mut_probs: dict[int, float],
                           seed: int | None):
-        """ Return a new muts dictionary with extra mutations within
-        min_gap positions 5' of existing mutations. """
+        """ Return a new muts dictionary with extra mutations injected
+        at each offset 5' of existing mutations. """
         rng = np.random.default_rng(seed)
         # Make a deep copy of muts; for speed, make only shallow copies
         # of the NumPy arrays.
         new_muts = {pos: rels.copy() for pos, rels in self.muts.items()}
         # Validate the mutation probabilities.
-        mut_probs = np.asarray_chkfinite(mut_probs)
-        if mut_probs.ndim != 1:
-            raise ValueError(
-                f"mut_probs must have 1 dimension, but got {mut_probs.ndim}"
-            )
-        mut_window_size = mut_probs.size
-        if mut_window_size == 0:
-            # No mutations to inject.
-            return new_muts
-        if mut_probs.min() < 0:
-            raise ValueError(
-                f"All mut_probs must be ≥ 0, but got {mut_probs}"
-            )
-        if mut_probs.max() > 1:
-            raise ValueError(
-                f"All mut_probs must be ≤ 1, but got {mut_probs}"
-            )
-        if mut_probs.sum() == 0:
+        for offset, prob in injected_mut_probs.items():
+            if offset < 1:
+                raise ValueError(
+                    f"All injected_mut_probs offsets must be ≥ 1, "
+                    f"but got {offset}"
+                )
+            if not 0 <= prob <= 1:
+                raise ValueError(
+                    f"All injected_mut_probs values must be in [0, 1], "
+                    f"but got {prob}"
+                )
+        if sum(injected_mut_probs.values()) == 0.0:
             # No mutations to inject.
             return new_muts
         # For each position, list the reads with a mutation.
@@ -543,13 +537,10 @@ class RegionMutsBatch(MutsBatch, ABC):
             # 5'/3' ends of all reads with a mutation at this position.
             pos_mut_end5s = self.seg_end5s[pos_mut_indexes]
             pos_mut_end3s = self.seg_end3s[pos_mut_indexes]            
-            for new_pos, mut_prob in zip(
-                range(pos - 1, pos - mut_window_size - 1, -1),
-                mut_probs,
-                strict=True
-            ):
-                if new_pos not in new_muts:
-                    # Skip masked positions.
+            for offset, mut_prob in injected_mut_probs.items():
+                new_pos = pos - offset
+                if new_pos < 1 or new_pos not in new_muts:
+                    # Skip out-of-bounds and masked positions.
                     continue
                 # Whether each read has a segment that covers new_pos.
                 # Note: self.seg_ends_mask does not need to be applied

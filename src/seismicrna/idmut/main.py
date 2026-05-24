@@ -164,5 +164,5 @@ params = [
 
 @command(CMD_IDMUT, params=params)
 def cli(**kwargs):
-    """ Compute relationships between references and aligned reads. """
+    """ Identify mutations in aligned reads. """
     return run(**kwargs)
