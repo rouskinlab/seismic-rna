@@ -166,9 +166,7 @@ def conform_series(series: pd.Series | pd.DataFrame):
     return series
 
 
-def get_db_structs(
-    table: PositionTable, k: int | None = None, clust: int | None = None
-):
+def get_db_structs(table: PositionTable, k: int | None, clust: int | None):
     """Parse dot-bracket structures and free energies for a table.
 
     Parameters
@@ -189,7 +187,7 @@ def get_db_structs(
     """
     structs = dict()
     energies = dict()
-    for profile in table.iter_profiles(k=k, clust=clust):
+    for _, profile in table.iter_profiles(fold_table_region=True, k=k, clust=clust):
         db_file = profile.get_db_file(table.top, branch="")
         if db_file.is_file():
             try:

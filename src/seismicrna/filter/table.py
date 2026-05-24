@@ -50,6 +50,7 @@ class PartialPositionTable(PartialTable, PositionTable, ABC):
     def _iter_profiles(
         self,
         *,
+        fold_table_region: bool,
         regions: Iterable[Region] | None,
         quantile: float,
         rel: str,
@@ -59,20 +60,25 @@ class PartialPositionTable(PartialTable, PositionTable, ABC):
         """Yield RNA mutational profiles from a table."""
         if regions is not None:
             regions = list(regions)
-        else:
+        elif fold_table_region:
             regions = [self.region]
+        else:
+            regions = [Region(self.ref, self.refseq)]
         for hk, hc in self.header.clusts:
             if (k is None or k == hk) and (clust is None or clust == hc):
                 mus_name = path.fill_whitespace(format_clust_name(hk, hc), fill="-")
                 for region in regions:
-                    yield RNAProfile(
-                        region=region,
-                        sample=self.sample,
-                        branches=self.branches,
-                        mus_reg=self.reg,
-                        mus_name=mus_name,
-                        mus=self.fetch_ratio(
-                            quantile=quantile, rel=rel, k=hk, clust=hc, squeeze=True
+                    yield (
+                        (hk, hc),
+                        RNAProfile(
+                            region=region,
+                            sample=self.sample,
+                            branches=self.branches,
+                            mus_reg=self.reg,
+                            mus_name=mus_name,
+                            mus=self.fetch_ratio(
+                                quantile=quantile, rel=rel, k=hk, clust=hc, squeeze=True
+                            ),
                         ),
                     )
 

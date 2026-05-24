@@ -372,6 +372,8 @@ class TestRFCountIntegration(ut.TestCase):
                     paired_end=False,
                     read_length=50,
                     seed=42,
+                    injected_mut_probs="1:0.2,2:0.04,3:0.008",
+                    min_mut_gap_weights="",
                 )
                 samples_dir = fastqs[0].parent.parent.parent
 

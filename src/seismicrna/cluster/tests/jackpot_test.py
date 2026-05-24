@@ -548,7 +548,7 @@ class TestBootstrapJackpotScores(ut.TestCase):
         self.run_ideal_jackpot(
             mut_collisions="drop",
             min_mut_gap=4,
-            min_mut_gap_weights="0:0.1,1:0.1,2:0.1,3:0.2,4:0.5"
+            min_mut_gap_weights="0:0.1,1:0.1,2:0.1,3:0.2,4:0.5",
         )
 
     def test_ideal_jackpot_merge(self):

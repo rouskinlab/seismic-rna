@@ -1,14 +1,11 @@
-import json
 import tempfile
 import unittest as ut
-from itertools import chain
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 from seismicrna.core import path
-from seismicrna.core.error import NoDataError
 from seismicrna.core.header import format_clust_name
 from seismicrna.core.logs import Level, set_config
 from seismicrna.core.rna import RNAStructure, to_ct
@@ -26,29 +23,11 @@ from seismicrna.core.table import (
     DELET_REL,
     INSRT_REL,
 )
-from seismicrna.export.web import (
-    META_SYMBOL,
-    REF_SEQ,
-    REG_END5,
-    REG_END3,
-    REG_POS,
-    STRUCTURE,
-    COVER_COUNT,
-    INFOR_COUNT,
-    SUBST_COUNT,
-    SUB_A_COUNT,
-    SUB_C_COUNT,
-    SUB_G_COUNT,
-    SUB_T_COUNT,
-    DELET_COUNT,
-    INSRT_COUNT,
-)
 from seismicrna.sim.abstract import (
     _calc_ratios,
     _calc_ratio_stats,
     _accumulate_ratios,
     _format_param_tokens,
-    abstract_seismicgraph_file,
     abstract_table,
     new_parameter_dict,
 )
@@ -166,89 +145,32 @@ class FakeFilterPositionTable:
         self._counts = counts_per_clust
 
     @property
+    def branches(self) -> dict:
+        return {}
+
+    @property
     def reg(self) -> str:
         return self.region.name
 
+    def iter_profiles(self, *, fold_table_region=True, regions=None, **kwargs):
+        from seismicrna.core.rna.profile import RNAProfile
+
+        for hk, hc in self.header.clusts:
+            mus_name = path.fill_whitespace(format_clust_name(hk, hc), fill="-")
+            yield (
+                (hk, hc),
+                RNAProfile(
+                    region=self.region,
+                    sample=self.sample,
+                    branches={},
+                    mus_reg=self.reg,
+                    mus_name=mus_name,
+                    mus=pd.Series(dtype=float),
+                ),
+            )
+
     def fetch_count(self, *, k: int, clust: int) -> pd.DataFrame:
         return self._counts[(k, clust)].copy()
-
-
-def _write_seismicgraph_json(json_path: Path, sample: str, entries: list[dict]) -> Path:
-    """Serialise a SEISMICgraph JSON file.
-
-    Each ``entries`` item is a dict shaped like::
-
-        {
-            "ref": str,
-            "refseq": DNA,
-            "regions": [
-                {
-                    "name": str,
-                    "end5": int,
-                    "end3": int,
-                    "positions": list[int],  # unmasked
-                    "profiles": {
-                        profile_name: {
-                            COVER_COUNT: list[int],
-                            INFOR_COUNT: list[int],
-                            SUBST_COUNT: list[int],
-                            SUB_A_COUNT/SUB_C/SUB_G/SUB_T: list[int],
-                            DELET_COUNT: list[int],
-                            INSRT_COUNT: list[int],
-                            STRUCTURE: dot_bracket,
-                        },
-                        ...
-                    }
-                }, ...
-            ]
-        }
-    """
-    data = {f"{META_SYMBOL}sample": sample}
-    for entry in entries:
-        ref_block = {f"{META_SYMBOL}{REF_SEQ}": str(entry["refseq"])}
-        for region in entry["regions"]:
-            reg_block = {
-                f"{META_SYMBOL}{REG_END5}": region["end5"],
-                f"{META_SYMBOL}{REG_END3}": region["end3"],
-                f"{META_SYMBOL}{REG_POS}": list(region["positions"]),
-            }
-            for profile_name, profile_data in region["profiles"].items():
-                reg_block[profile_name] = profile_data
-            ref_block[region["name"]] = reg_block
-        data[entry["ref"]] = ref_block
-    json_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(json_path, "w") as f:
-        json.dump(data, f)
-    return json_path
-
-
-def _profile_data(
-    length: int,
-    *,
-    cov: int = 10,
-    info: int = 8,
-    per_position: dict[int, dict[str, int]] | None = None,
-    structure: str = "",
-) -> dict:
-    """Build a per-profile count dict for SEISMICgraph JSON."""
-    profile: dict = {
-        COVER_COUNT: [cov] * length,
-        INFOR_COUNT: [info] * length,
-        SUBST_COUNT: [0] * length,
-        SUB_A_COUNT: [0] * length,
-        SUB_C_COUNT: [0] * length,
-        SUB_G_COUNT: [0] * length,
-        SUB_T_COUNT: [0] * length,
-        DELET_COUNT: [0] * length,
-        INSRT_COUNT: [0] * length,
-        STRUCTURE: structure,
-    }
-    if per_position:
-        for pos_1, overrides in per_position.items():
-            idx = pos_1 - 1
-            for key, value in overrides.items():
-                profile[key][idx] = value
-    return profile
 
 
 class AbstractTestBase(ut.TestCase):
@@ -432,219 +354,6 @@ class TestAccumulateRatios(AbstractTestBase):
 
 
 # ---------------------------------------------------------------------------
-# abstract_seismicgraph_file
-# ---------------------------------------------------------------------------
-
-
-class TestAbstractSeismicgraphFile(AbstractTestBase):
-    REF = "ref"
-    REFSEQ = DNA("ACGTACGT")
-    REG = "ACGTACGT"  # default hyphenless name when end5=1, end3=8 → 'full'
-    # Use an explicit name to avoid Region name defaulting.
-
-    def setUp(self):
-        self._tmp = tempfile.TemporaryDirectory()
-        self.tmpdir = Path(self._tmp.name)
-
-    def tearDown(self):
-        self._tmp.cleanup()
-
-    def _profile_full_mutated_at(
-        self,
-        positions: list[int],
-        sub_col: str = SUB_C_COUNT,
-        *,
-        structure: str | None = None,
-    ) -> dict:
-        """Profile where each ``positions`` entry contributes one C-sub."""
-        length = len(self.REFSEQ)
-        if structure is None:
-            structure = "." * length
-        per_position = {p: {sub_col: 1, SUBST_COUNT: 1} for p in positions}
-        return _profile_data(length, per_position=per_position, structure=structure)
-
-    def test_single_profile_single_region(self):
-        # Put a substitution at A positions 1 (paired) and 5 (unpaired).
-        # SUBST → MUTAT (via the function's MUTAT = SUBST+DELET+INSRT line).
-        structure = "((....))"  # positions 1,2,7,8 paired; 3-6 unpaired
-        profile = self._profile_full_mutated_at([1, 5], structure=structure)
-        json_path = _write_seismicgraph_json(
-            self.tmpdir / "data.json",
-            sample="s",
-            entries=[
-                {
-                    "ref": self.REF,
-                    "refseq": self.REFSEQ,
-                    "regions": [
-                        {
-                            "name": "reg1",
-                            "end5": 1,
-                            "end3": len(self.REFSEQ),
-                            "positions": list(range(1, len(self.REFSEQ) + 1)),
-                            "profiles": {"reg1__average": profile},
-                        }
-                    ],
-                }
-            ],
-        )
-        paired, unpaired = abstract_seismicgraph_file(json_path)
-        # Position 1 is A and paired; MUTAT=1, INFOR=8 → am paired = 1/8.
-        np.testing.assert_array_almost_equal(paired["am"], np.array([1 / 8]))
-        # Position 5 is A and unpaired; MUTAT=1, INFOR=8 → am unpaired = 1/8.
-        np.testing.assert_array_almost_equal(unpaired["am"], np.array([1 / 8]))
-        # ac for position 1: SUB_C=1, MUTAT=1 → 1.0
-        np.testing.assert_array_almost_equal(paired["ac"], np.array([1.0]))
-
-    def test_multiple_profiles_within_region(self):
-        structure = "((....))"
-        prof_a = self._profile_full_mutated_at([1], structure=structure)
-        prof_b = self._profile_full_mutated_at([5], structure=structure)
-        json_path = _write_seismicgraph_json(
-            self.tmpdir / "data.json",
-            sample="s",
-            entries=[
-                {
-                    "ref": self.REF,
-                    "refseq": self.REFSEQ,
-                    "regions": [
-                        {
-                            "name": "reg1",
-                            "end5": 1,
-                            "end3": len(self.REFSEQ),
-                            "positions": list(range(1, len(self.REFSEQ) + 1)),
-                            "profiles": {
-                                "reg1__cluster-2-1": prof_a,
-                                "reg1__cluster-2-2": prof_b,
-                            },
-                        }
-                    ],
-                }
-            ],
-        )
-        paired, unpaired = abstract_seismicgraph_file(json_path)
-        # Profile A: position 1 (A, paired) substituted → paired am has 1/8.
-        # Profile B: position 5 (A, unpaired) substituted → unpaired am has 1/8.
-        # Profile A's position 5 has no substitution → unpaired am 0/8 = 0.
-        # Profile B's position 1 has no substitution → paired am 0/8 = 0.
-        # Each profile contributes both A positions to the paired/unpaired
-        # buckets that match its structure.
-        self.assertEqual(paired["am"].size, 2)
-        self.assertEqual(unpaired["am"].size, 2)
-        # Sums should match: paired am total = 1/8 + 0 from both profiles.
-        self.assertAlmostEqual(float(paired["am"].sum()), 1 / 8)
-        self.assertAlmostEqual(float(unpaired["am"].sum()), 1 / 8)
-
-    def test_multiple_regions(self):
-        structure_full = "." * len(self.REFSEQ)
-        # Region 1 (full length): substitution at position 5 (A, unpaired).
-        prof1 = self._profile_full_mutated_at([5], structure=structure_full)
-        # Region 2 spans positions 1-4 only: substitution at position 2 (C).
-        refseq_short_len = 4
-        per_position = {2: {SUB_A_COUNT: 1, SUBST_COUNT: 1}}
-        prof2 = _profile_data(
-            refseq_short_len,
-            per_position=per_position,
-            structure="." * refseq_short_len,
-        )
-        json_path = _write_seismicgraph_json(
-            self.tmpdir / "data.json",
-            sample="s",
-            entries=[
-                {
-                    "ref": self.REF,
-                    "refseq": self.REFSEQ,
-                    "regions": [
-                        {
-                            "name": "reg_full",
-                            "end5": 1,
-                            "end3": len(self.REFSEQ),
-                            "positions": list(range(1, len(self.REFSEQ) + 1)),
-                            "profiles": {"reg_full__average": prof1},
-                        },
-                        {
-                            "name": "reg_short",
-                            "end5": 1,
-                            "end3": refseq_short_len,
-                            "positions": list(range(1, refseq_short_len + 1)),
-                            "profiles": {"reg_short__average": prof2},
-                        },
-                    ],
-                }
-            ],
-        )
-        paired, unpaired = abstract_seismicgraph_file(json_path)
-        # reg_full unpaired A positions: 1 and 5 (2 entries); reg_short
-        # unpaired A position: 1 (1 entry).  Total = 3.
-        self.assertEqual(unpaired["am"].size, 3)
-        # reg_short contributes a single C subbed to A: unpaired ca = 1.0
-        np.testing.assert_array_almost_equal(unpaired["ca"], np.array([1.0]))
-
-    def test_min_aucroc_skips_profile(self):
-        # A profile whose mutations sit on a paired position has AUC < 0.5
-        # for paired-detection (mutation rate higher when paired).
-        structure = "((....))"  # 1,2,7,8 paired
-        # Substitute every paired position only.
-        prof = self._profile_full_mutated_at([1, 2, 7, 8], structure=structure)
-        json_path = _write_seismicgraph_json(
-            self.tmpdir / "data.json",
-            sample="s",
-            entries=[
-                {
-                    "ref": self.REF,
-                    "refseq": self.REFSEQ,
-                    "regions": [
-                        {
-                            "name": "reg1",
-                            "end5": 1,
-                            "end3": len(self.REFSEQ),
-                            "positions": list(range(1, len(self.REFSEQ) + 1)),
-                            "profiles": {"reg1__average": prof},
-                        }
-                    ],
-                }
-            ],
-        )
-        paired_skip, unpaired_skip = abstract_seismicgraph_file(
-            json_path, min_aucroc=0.99
-        )
-        # All accumulators should be empty since the only profile is skipped.
-        for key, values in paired_skip.items():
-            self.assertEqual(values.size, 0, msg=f"paired[{key!r}] not empty: {values}")
-        for key, values in unpaired_skip.items():
-            self.assertEqual(
-                values.size, 0, msg=f"unpaired[{key!r}] not empty: {values}"
-            )
-
-    def test_metadata_keys_ignored(self):
-        # Extra '#'-prefixed keys at every level must not be treated as data.
-        structure = "((....))"
-        prof = self._profile_full_mutated_at([1], structure=structure)
-        # Manually craft JSON because _write_seismicgraph_json doesn't emit
-        # extra metadata keys.
-        data = {
-            f"{META_SYMBOL}sample": "s",
-            f"{META_SYMBOL}custom": "ignore-me",
-            self.REF: {
-                f"{META_SYMBOL}{REF_SEQ}": str(self.REFSEQ),
-                f"{META_SYMBOL}extra": "ignore-me",
-                "reg1": {
-                    f"{META_SYMBOL}{REG_END5}": 1,
-                    f"{META_SYMBOL}{REG_END3}": len(self.REFSEQ),
-                    f"{META_SYMBOL}{REG_POS}": list(range(1, len(self.REFSEQ) + 1)),
-                    f"{META_SYMBOL}note": "ignore-me",
-                    "reg1__average": prof,
-                },
-            },
-        }
-        json_path = self.tmpdir / "data.json"
-        with open(json_path, "w") as f:
-            json.dump(data, f)
-        paired, _ = abstract_seismicgraph_file(json_path)
-        # Should still process the single A position; not raise on '#' keys.
-        np.testing.assert_array_almost_equal(paired["am"], np.array([1 / 8]))
-
-
-# ---------------------------------------------------------------------------
 # abstract_table
 # ---------------------------------------------------------------------------
 
@@ -709,7 +418,9 @@ class TestAbstractTable(AbstractTestBase):
         counts = self._seed_counts()
         table = self._make_table(clusts=[(0, 0)], counts_per_clust={(0, 0): counts})
         self._write_ct(_profile_name(self.REG, 0, 0))  # "myreg__average"
-        result = abstract_table(table, struct_file=None)
+        result = abstract_table(
+            table, None, dict(), fold_table_region=False, branch="", min_aucroc=0.0
+        )
         self.assertIsNotNone(result)
         paired, unpaired = result
         # Paired am: position 1 has MUTAT=1, INFOR=8 → 1/8.
@@ -723,8 +434,16 @@ class TestAbstractTable(AbstractTestBase):
     def test_non_clustered_with_explicit_struct_file(self):
         counts = self._seed_counts(mutated_paired=2, mutated_unpaired=3)
         table = self._make_table(clusts=[(0, 0)], counts_per_clust={(0, 0): counts})
-        ct_path = self._write_ct(_profile_name(self.REG, 0, 0))
-        result = abstract_table(table, struct_file=[ct_path])
+        profile_name = _profile_name(self.REG, 0, 0)
+        ct_path = self._write_ct(profile_name)
+        result = abstract_table(
+            table,
+            None,
+            {profile_name: ct_path},
+            fold_table_region=False,
+            branch="",
+            min_aucroc=0.0,
+        )
         self.assertIsNotNone(result)
         paired, unpaired = result
         np.testing.assert_array_almost_equal(paired["am"], np.array([2 / 8]))
@@ -750,7 +469,9 @@ class TestAbstractTable(AbstractTestBase):
         table.fetch_count = fetch_clustered  # type: ignore[assignment]
         self._write_ct(_profile_name(self.REG, 2, 1))
         self._write_ct(_profile_name(self.REG, 2, 2))
-        result = abstract_table(table, struct_file=None)
+        result = abstract_table(
+            table, None, dict(), fold_table_region=False, branch="", min_aucroc=0.0
+        )
         self.assertIsNotNone(result)
         paired, unpaired = result
         # Paired am should have one entry per cluster: 1/8 and 3/8.
@@ -760,10 +481,10 @@ class TestAbstractTable(AbstractTestBase):
         self.assertEqual(unpaired["am"].size, 2)
         self.assertEqual(set(unpaired["am"].tolist()), {0.0, 2 / 8})
 
-    def test_struct_file_ref_mismatch_raises(self):
+    def test_no_matching_ct_ref_skips_profile(self):
         counts = self._seed_counts()
         table = self._make_table(clusts=[(0, 0)], counts_per_clust={(0, 0): counts})
-        # Write a CT file under a different ref/reg directory tree.
+        # CT file written under other_ref — auto-detect for table.ref won't find it.
         other_ct = _fold_ct_path(
             self.tmpdir,
             self.SAMPLE,
@@ -779,11 +500,13 @@ class TestAbstractTable(AbstractTestBase):
             self.DB_STRING,
             _profile_name(self.REG, 0, 0),
         )
-        with self.assertRaises(ValueError) as cm:
-            abstract_table(table, struct_file=[other_ct])
-        self.assertIn("reference", str(cm.exception))
+        result = abstract_table(
+            table, None, dict(), fold_table_region=False, branch="", min_aucroc=0.0
+        )
+        paired, unpaired = result
+        self.assertEqual(paired["am"].size, 0)
 
-    def test_struct_file_reg_mismatch_raises(self):
+    def test_no_matching_ct_reg_skips_profile(self):
         counts = self._seed_counts()
         table = self._make_table(clusts=[(0, 0)], counts_per_clust={(0, 0): counts})
         other_ct = _fold_ct_path(
@@ -797,16 +520,20 @@ class TestAbstractTable(AbstractTestBase):
             self.DB_STRING,
             "other_reg__average",
         )
-        with self.assertRaises(ValueError) as cm:
-            abstract_table(table, struct_file=[other_ct])
-        self.assertIn("region", str(cm.exception))
+        result = abstract_table(
+            table, None, dict(), fold_table_region=False, branch="", min_aucroc=0.0
+        )
+        paired, unpaired = result
+        self.assertEqual(paired["am"].size, 0)
 
-    def test_no_ct_files_raises_no_data_error(self):
+    def test_no_ct_files_returns_empty(self):
         counts = self._seed_counts()
         table = self._make_table(clusts=[(0, 0)], counts_per_clust={(0, 0): counts})
-        # No CT file written.
-        with self.assertRaises(NoDataError):
-            abstract_table(table, struct_file=None)
+        result = abstract_table(
+            table, None, dict(), fold_table_region=False, branch="", min_aucroc=0.0
+        )
+        paired, unpaired = result
+        self.assertEqual(paired["am"].size, 0)
 
     def test_missing_cluster_ct_file_uses_only_available(self):
         counts_c1 = self._seed_counts(mutated_paired=1, mutated_unpaired=0)
@@ -827,7 +554,9 @@ class TestAbstractTable(AbstractTestBase):
         table.fetch_count = fetch_clustered  # type: ignore[assignment]
         # Only write CT for cluster-2-1.
         self._write_ct(_profile_name(self.REG, 2, 1))
-        result = abstract_table(table, struct_file=None)
+        result = abstract_table(
+            table, None, dict(), fold_table_region=False, branch="", min_aucroc=0.0
+        )
         self.assertIsNotNone(result)
         paired, _ = result
         # Only cluster (2,1) contributes; paired am should be 1/8 only.
@@ -847,9 +576,11 @@ class TestAbstractTable(AbstractTestBase):
         self._write_ct(_profile_name(self.REG, 0, 0))
         # AUC for paired ~ 1.0 here (mutations on paired), so set threshold
         # very high to force skipping.
-        result = abstract_table(table, struct_file=None, min_aucroc=1.5)
-        # All clusters skipped → returns None.
-        self.assertIsNone(result)
+        result = abstract_table(
+            table, None, dict(), fold_table_region=False, branch="", min_aucroc=1.5
+        )
+        paired, unpaired = result
+        self.assertEqual(paired["am"].size, 0)
 
 
 # ---------------------------------------------------------------------------
@@ -905,41 +636,8 @@ class TestEndToEndComposition(AbstractTestBase):
         )
         return table
 
-    def _write_json(
-        self, name: str, reg: str, mutated_paired: int, mutated_unpaired: int
-    ):
-        # Place mutations at positions 1 (paired A) and 5 (unpaired A).
-        per_position = {
-            1: {SUB_C_COUNT: mutated_paired, SUBST_COUNT: mutated_paired},
-            5: {SUB_G_COUNT: mutated_unpaired, SUBST_COUNT: mutated_unpaired},
-        }
-        profile = _profile_data(
-            len(self.REFSEQ), per_position=per_position, structure=self.DB_STRING
-        )
-        return _write_seismicgraph_json(
-            self.tmpdir / f"{name}.json",
-            sample="s",
-            entries=[
-                {
-                    "ref": self.REF,
-                    "refseq": self.REFSEQ,
-                    "regions": [
-                        {
-                            "name": reg,
-                            "end5": 1,
-                            "end3": len(self.REFSEQ),
-                            "positions": list(range(1, len(self.REFSEQ) + 1)),
-                            "profiles": {f"{reg}__average": profile},
-                        }
-                    ],
-                }
-            ],
-        )
-
-    def _final_stats(self, table_results, json_results):
-        paired, unpaired = _accumulate_ratios(
-            chain(filter(None, table_results), json_results)
-        )
+    def _final_stats(self, results):
+        paired, unpaired = _accumulate_ratios(iter(results))
         paired_means, paired_fvar = _calc_ratio_stats(paired)
         unpaired_means, unpaired_fvar = _calc_ratio_stats(unpaired)
         return (
@@ -951,19 +649,21 @@ class TestEndToEndComposition(AbstractTestBase):
             unpaired_fvar,
         )
 
-    def test_one_table_one_json(self):
-        table = self._make_table("s1", "r1", 1, 2)
-        json_path = self._write_json("export1", "r1", 3, 4)
-        results = self._final_stats(
-            [abstract_table(table, struct_file=None)],
-            [abstract_seismicgraph_file(json_path)],
+    def test_two_tables_accumulate(self):
+        table1 = self._make_table("s1", "r1", 1, 2)
+        table2 = self._make_table("s2", "r2", 3, 4)
+        r1 = abstract_table(
+            table1, None, {}, fold_table_region=False, branch="", min_aucroc=0.0
         )
-        paired, unpaired, p_means, p_fvar, u_means, u_fvar = results
-        # paired am array: table contributes 1/8; JSON contributes 3/8.
+        r2 = abstract_table(
+            table2, None, {}, fold_table_region=False, branch="", min_aucroc=0.0
+        )
+        paired, unpaired, p_means, p_fvar, u_means, u_fvar = self._final_stats([r1, r2])
+        # paired am: table1 contributes 1/8; table2 contributes 3/8.
         np.testing.assert_array_almost_equal(
             np.sort(paired["am"]), np.sort(np.array([1 / 8, 3 / 8]))
         )
-        # unpaired am array: table 2/8; JSON 4/8.
+        # unpaired am: table1 2/8; table2 4/8.
         np.testing.assert_array_almost_equal(
             np.sort(unpaired["am"]), np.sort(np.array([2 / 8, 4 / 8]))
         )
@@ -978,17 +678,20 @@ class TestEndToEndComposition(AbstractTestBase):
         )
         self.assertEqual(set(p_fvar), {"a", "c", "g", "t"})
 
-    def test_multiple_tables_and_jsons(self):
+    def test_four_tables_accumulate(self):
         tables = [
             self._make_table("s1", "r1", 1, 2),
             self._make_table("s2", "r2", 5, 6),
+            self._make_table("s3", "r3", 3, 4),
+            self._make_table("s4", "r4", 7, 8),
         ]
-        jsons = [self._write_json("e1", "r1", 3, 4), self._write_json("e2", "r2", 7, 8)]
-        table_results = [abstract_table(t, struct_file=None) for t in tables]
-        json_results = [abstract_seismicgraph_file(j) for j in jsons]
-        paired, unpaired, p_means, p_fvar, u_means, u_fvar = self._final_stats(
-            table_results, json_results
-        )
+        results = [
+            abstract_table(
+                t, None, {}, fold_table_region=False, branch="", min_aucroc=0.0
+            )
+            for t in tables
+        ]
+        paired, unpaired, p_means, p_fvar, u_means, u_fvar = self._final_stats(results)
         # paired am: 1/8, 3/8, 5/8, 7/8
         np.testing.assert_array_almost_equal(
             np.sort(paired["am"]), np.sort(np.array([1 / 8, 3 / 8, 5 / 8, 7 / 8]))
@@ -997,7 +700,6 @@ class TestEndToEndComposition(AbstractTestBase):
         np.testing.assert_array_almost_equal(
             np.sort(unpaired["am"]), np.sort(np.array([2 / 8, 4 / 8, 6 / 8, 8 / 8]))
         )
-        # Verify the per-base variance derived from the combined sources.
         combined = paired["am"]
         expected_mean = float(np.nanmean(combined))
         expected_var = float(np.nanvar(combined))
@@ -1008,21 +710,13 @@ class TestEndToEndComposition(AbstractTestBase):
             places=10,
         )
 
-    def test_only_one_source_type(self):
-        # Single table, no JSON.
+    def test_single_table(self):
         table = self._make_table("s1", "r1", 1, 2)
-        paired, unpaired, p_means, p_fvar, _, _ = self._final_stats(
-            [abstract_table(table, struct_file=None)], []
+        r = abstract_table(
+            table, None, {}, fold_table_region=False, branch="", min_aucroc=0.0
         )
+        paired, unpaired, p_means, p_fvar, _, _ = self._final_stats([r])
         np.testing.assert_array_almost_equal(paired["am"], np.array([1 / 8]))
-        # Single value → fvar falls back to margin.
-        self.assertEqual(p_fvar["a"], 1.0e-6)
-        # Single JSON, no table.
-        json_path = self._write_json("e1", "r1", 3, 4)
-        paired, _, p_means, p_fvar, _, _ = self._final_stats(
-            [], [abstract_seismicgraph_file(json_path)]
-        )
-        np.testing.assert_array_almost_equal(paired["am"], np.array([3 / 8]))
         self.assertEqual(p_fvar["a"], 1.0e-6)
 
 

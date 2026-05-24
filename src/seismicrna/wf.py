@@ -609,6 +609,7 @@ def run(
             flatten(
                 draw_mod.run(
                     input_path=input_path,
+                    fold_table_region=fold_table_region,
                     struct_num=struct_num,
                     color=color,
                     draw_svg=draw_svg,

@@ -39,6 +39,7 @@ class IDmutPositionTable(IDmutTable, PositionTable, ABC):
     def _iter_profiles(
         self,
         *,
+        fold_table_region: bool,
         regions: Iterable[Region] | None,
         quantile: float,
         rel: str,

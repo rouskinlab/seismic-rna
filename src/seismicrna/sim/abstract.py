@@ -1,6 +1,6 @@
-import json
 import os
 import sys
+from collections import defaultdict
 from functools import cache
 from itertools import chain
 from pathlib import Path
@@ -14,6 +14,10 @@ from ..core import path
 from ..core.arg import (
     arg_input_path,
     opt_branch,
+    opt_fold_coords,
+    opt_fold_primers,
+    opt_fold_regions_file,
+    opt_fold_table_region,
     opt_min_aucroc,
     opt_struct_file,
     opt_verify_times,
@@ -22,37 +26,25 @@ from ..core.arg import (
     opt_pmut_unpaired,
     opt_vmut_paired,
     opt_vmut_unpaired,
+    optional_path,
 )
-from ..core.header import format_clust_name
 from ..core.logs import logger
-from ..core.rna import UNPAIRED_MARK, from_ct
-from ..core.rna.roc import compute_auc_roc
+from ..core.rna import RNAState, from_ct
 from ..core.run import run_func
-from ..core.seq import DNA, Region, BASE_NAME, BASEN
+from ..core.seq import DNA, RefRegions, Region, BASE_NAME, BASEN
 from ..core.table import (
     COVER_REL,
     INFOR_REL,
     MUTAT_REL,
-    SUBST_REL,
     SUB_A_REL,
     SUB_C_REL,
     SUB_G_REL,
     SUB_T_REL,
-    DELET_REL,
-    INSRT_REL,
 )
-from ..core.task import as_list_of_tuples, dispatch
-from ..core.validate import require_equal, require_between, require_isinstance
-from ..export.web import (
-    META_SYMBOL,
-    REF_SEQ,
-    REG_END5,
-    REG_END3,
-    REG_POS,
-    STRUCTURE,
-    POS_DATA,
-)
-from ..filter.table import FilterPositionTableLoader
+from ..core.task import dispatch
+from ..core.validate import require_between
+from ..filter.table import FilterPositionTableLoader, PartialPositionTable
+from ..cluster.data import ClusterPositionTableLoader
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -70,11 +62,7 @@ def get_acgt_parameters():
 
 @cache
 def get_other_parameters():
-    return {
-        "loq": (INFOR_REL, COVER_REL),
-        "nm": (MUTAT_REL, INFOR_REL),
-        "nd": (DELET_REL, MUTAT_REL),
-    }
+    return {"loq": (INFOR_REL, COVER_REL), "nm": (MUTAT_REL, INFOR_REL)}
 
 
 def new_parameter_dict():
@@ -155,169 +143,60 @@ def _accumulate_ratios(paired_unpaired_ratios: Iterable[tuple[dict, dict]]):
 
 
 def abstract_table(
-    table: FilterPositionTableLoader,
-    struct_file: list[str | Path] | None = None,
-    branch: str = "",
-    min_aucroc: float = 0.0,
+    table: PartialPositionTable,
+    regions: Iterable[Region] | None,
+    ct_files: dict[str, Path],
+    *,
+    fold_table_region: bool,
+    branch: str,
+    min_aucroc: float,
 ):
-    fold_branches = path.add_branch(path.FOLD_STEP, branch, table.branches)
-    # Build a mapping from profile name to CT file when explicit files are given.
-    profile_to_ct: dict[str, Path] = {}
-    if struct_file is not None:
-        for sf in path.find_files_chain(struct_file, path.CT_FILE_LAST_SEGS):
-            fields = path.parse(sf, path.CT_FILE_LAST_SEGS)
-            if fields[path.REF] == table.ref and fields[path.REG] == table.reg:
-                profile_to_ct[fields[path.PROFILE]] = sf
-        if not profile_to_ct:
-            logger.warning(
-                f"No CT files in struct_file matched reference {table.ref!r}, "
-                f"region {table.reg!r}"
-            )
     # Compute ratios for each cluster, pairing it with its CT file.
     all_ratios = []
-    for hk, hc in table.header.clusts:
-        mus_name = path.fill_whitespace(format_clust_name(hk, hc), fill="-")
-        profile_name = f"{table.reg}__{mus_name}"
-        # First, get the CT file from the struct_file list, if given.
-        ct_file = profile_to_ct.get(profile_name)
+    for (hk, hc), profile in table.iter_profiles(
+        fold_table_region=fold_table_region, regions=regions
+    ):
+        # First, get the CT file for the profile, if any.
+        ct_file = ct_files.get(profile.profile)
         if ct_file is None:
-            # If no CT file was given for this table via struct_file, then
+            # If no CT file was given for this profile via struct_file, then
             # determine the path of the CT file from the fold step.
-            ct_file = path.build(
-                path.CT_FILE_ALL_SEGS,
-                {
-                    path.TOP: table.top,
-                    path.SAMPLE: table.sample,
-                    path.STEP: path.FOLD_STEP,
-                    path.BRANCHES: fold_branches,
-                    path.REF: table.ref,
-                    path.REG: table.reg,
-                    path.PROFILE: profile_name,
-                    path.EXT: path.CT_EXT,
-                },
-            )
+            ct_file = profile.get_ct_file(table.top, branch)
             if not ct_file.is_file():
                 # If no CT file exists from the fold step either, then stop.
                 logger.warning(
-                    f"No CT file for {table.ref!r}/{table.reg!r} profile "
-                    f"{profile_name!r}: {ct_file}"
+                    f"CT file for {repr(table.ref)} profile {repr(profile.profile)} "
+                    f"does not exist: {ct_file}"
                 )
                 continue
         structures = iter(from_ct(ct_file))
+        # Check if there is at least one structure in the CT file.
         try:
             struct = next(structures)
         except StopIteration:
             logger.warning(f"{ct_file} contains 0 structures: skipping")
             continue
+        # Check if there is more than one structure in the CT file.
         try:
             next(structures)
         except StopIteration:
             pass
         else:
             logger.warning(f"{ct_file} contains > 1 structure; using the first")
-        require_equal("struct.ref", struct.ref, table.ref, "table.ref", classes=str)
-        require_equal(
-            "struct.region.name",
-            struct.region.name,
-            table.region.name,
-            "table.region.name",
-            classes=str,
-        )
-        require_equal(
-            "struct.region.seq",
-            struct.region.seq,
-            table.region.seq,
-            "table.region.seq",
-            classes=DNA,
-        )
         counts = table.fetch_count(k=hk, clust=hc)
         counts = counts.set_axis(counts.columns.get_level_values(-1), axis=1)
+        counts = counts.reindex(struct.is_paired.index)
         if min_aucroc > 0.0:
-            auc = compute_auc_roc(
-                counts[MUTAT_REL] / counts[INFOR_REL], struct.is_paired
-            )
+            state = RNAState.from_struct_profile(struct, profile)
+            auc = state.calc_auc()
             if not (auc >= min_aucroc):
-                logger.detail(
-                    f"Skipping {table} cluster {hk}-{hc}: AUC-ROC {auc} < {min_aucroc}"
+                cluster = f" cluster {hk}-{hc}" if hk > 0 else ""
+                logger.warning(
+                    f"Skipping {table}{cluster}: AUC-ROC = {auc} (< {min_aucroc})"
                 )
                 continue
         all_ratios.append(_calc_ratios(counts, struct.is_paired.values))
-    if not all_ratios:
-        return None
     return _accumulate_ratios(iter(all_ratios))
-
-
-def _abstract_seismicgraph_file(seismicgraph_file: Path, min_aucroc: float = 0.0):
-    with open(seismicgraph_file) as f:
-        sample_data = json.load(f)
-    require_isinstance("sample_data", sample_data, dict)
-    for ref in sample_data:
-        if ref.startswith(META_SYMBOL):
-            # Skip metadata.
-            continue
-        ref_data = sample_data[ref]
-        require_isinstance("ref_data", ref_data, dict)
-        refseq = DNA(ref_data[f"{META_SYMBOL}{REF_SEQ}"])
-        for reg in ref_data:
-            if reg.startswith(META_SYMBOL):
-                # Skip metadata.
-                continue
-            reg_data = ref_data[reg]
-            require_isinstance("reg_data", reg_data, dict)
-            end5 = reg_data[f"{META_SYMBOL}{REG_END5}"]
-            end3 = reg_data[f"{META_SYMBOL}{REG_END3}"]
-            positions = reg_data[f"{META_SYMBOL}{REG_POS}"]
-            region = Region(ref, refseq, end5=end5, end3=end3)
-            region.add_mask("mask", positions, complement=True)
-            for profile in reg_data:
-                if profile.startswith(META_SYMBOL):
-                    # Skip metadata.
-                    continue
-                profile_data = reg_data[profile]
-                require_isinstance("profile_data", profile_data, dict)
-                counts = pd.DataFrame.from_dict(
-                    {
-                        rel: dict(zip(region.unmasked, profile_data[key], strict=True))
-                        for key, rel in POS_DATA.items()
-                    }
-                ).reindex(region.range)
-                counts[MUTAT_REL] = (
-                    counts[SUBST_REL] + counts[DELET_REL] + counts[INSRT_REL]
-                )
-                dot_bracket = profile_data[STRUCTURE]
-                require_equal(
-                    "len(dot_bracket)",
-                    len(dot_bracket),
-                    region.length,
-                    "region.length",
-                    classes=int,
-                )
-                is_paired = np.array([x != UNPAIRED_MARK for x in dot_bracket])
-                if min_aucroc > 0.0:
-                    auc = compute_auc_roc(
-                        counts[MUTAT_REL] / counts[INFOR_REL],
-                        pd.Series(is_paired, index=counts.index),
-                    )
-                    if not (auc >= min_aucroc):
-                        logger.detail(
-                            f"Skipping profile {profile!r}: "
-                            f"AUC-ROC {auc} < {min_aucroc}"
-                        )
-                        continue
-                yield _calc_ratios(counts, is_paired)
-
-
-def abstract_seismicgraph_file(seismicgraph_file: Path, min_aucroc: float = 0.0):
-    return _accumulate_ratios(
-        _abstract_seismicgraph_file(seismicgraph_file, min_aucroc)
-    )
-
-
-# Keys present in the means dicts that are NOT accepted by
-# `make_pmut_means`.  "nd" (N-base deletion-given-mutation) is computed
-# for sanity-checking but the model assumes pnd == 1.0, so emitting it
-# would crash `sim total` / `sim muts` with an unexpected-kwarg error.
-_NON_MODEL_PMUT_KEYS = frozenset({"nd"})
 
 
 def _format_param_tokens(
@@ -330,13 +209,11 @@ def _format_param_tokens(
     """
     tokens: list[str] = []
     for key, mean in paired_means.items():
-        if key not in _NON_MODEL_PMUT_KEYS:
-            tokens.append(f"{opt_pmut_paired.opts[-1]} {key} {mean}")
+        tokens.append(f"{opt_pmut_paired.opts[-1]} {key} {mean}")
     for base, var in paired_fvar.items():
         tokens.append(f"{opt_vmut_paired.opts[-1]} {base} {var}")
     for key, mean in unpaired_means.items():
-        if key not in _NON_MODEL_PMUT_KEYS:
-            tokens.append(f"{opt_pmut_unpaired.opts[-1]} {key} {mean}")
+        tokens.append(f"{opt_pmut_unpaired.opts[-1]} {key} {mean}")
     for base, var in unpaired_fvar.items():
         tokens.append(f"{opt_vmut_unpaired.opts[-1]} {base} {var}")
     return tokens
@@ -365,6 +242,10 @@ def _calc_ratio_stats(ratios: dict[str, np.ndarray], margin: float = 1.0e-6):
 def run(
     input_path: Iterable[str | Path],
     *,
+    fold_table_region: bool,
+    fold_coords: Iterable[tuple[str, int, int]],
+    fold_primers: Iterable[tuple[str, DNA, DNA]],
+    fold_regions_file: str | None,
     struct_file: Iterable[str | Path],
     branch: str,
     min_aucroc: float,
@@ -372,13 +253,62 @@ def run(
     verify_times: bool,
     num_cpus: int,
 ):
-    """Abstract simulation parameters from existing datasets."""
+    """Abstract simulation parameters from tables and structures."""
+    # Ensure input_path is a list to prevent exhausting an iterable.
     input_path = list(input_path)
-    struct_file_arg = list(struct_file) or None
-    # Accumulate ratios from table files.
-    args = as_list_of_tuples(
-        FilterPositionTableLoader.load_tables(input_path, verify_times=verify_times)
+    tables = list(
+        chain(
+            FilterPositionTableLoader.load_tables(
+                input_path, verify_times=verify_times
+            ),
+            ClusterPositionTableLoader.load_tables(
+                input_path, verify_times=verify_times
+            ),
+        )
     )
+    # Compute the fold regions from coordinates/primers/file.
+    ref_regions = RefRegions(
+        {(table.ref, table.refseq) for table in tables},
+        regs_file=optional_path(fold_regions_file),
+        ends=fold_coords,
+        primers=fold_primers,
+        default_full=(not fold_table_region),
+    )
+    # Ensure struct_file is a list to prevent exhausting an iterable.
+    struct_file = list(struct_file)
+    # Build a mapping from reference and profile name to CT file when
+    # explicit structure files are given.
+    ref_profile_to_ct: dict[str, dict[str, Path]] = defaultdict(dict)
+    for ct in path.find_files_chain(struct_file, path.CT_FILE_LAST_SEGS):
+        fields = path.parse(ct, path.CT_FILE_LAST_SEGS)
+        ref = fields[path.REF]
+        profile = fields[path.PROFILE]
+        try:
+            ct_curr = ref_profile_to_ct[ref][profile]
+        except KeyError:
+            # This is a new profile for this reference.
+            ref_profile_to_ct[ref][profile] = ct
+        else:
+            # The profile is repeated.
+            raise ValueError(
+                "More than one CT file in struct_file matched reference "
+                f"{repr(ref)} and profile {repr(profile)}: {ct_curr}, {ct}"
+            )
+    # List the tables and their region(s).
+    args = list()
+    for table in tables:
+        # If there are no explicit regions for this table, then pass
+        # None to use the default region.
+        regions = ref_regions.list(table.ref) or None
+        # Use the CT files for the reference if there are any, otherwise
+        # an empty dict.
+        ct_files = ref_profile_to_ct[table.ref]
+        if not ct_files and struct_file:
+            logger.warning(
+                "No CT files given with --struct-file matched tables with reference "
+                f"{repr(table.ref)}"
+            )
+        args.append((table, regions, ct_files))
     table_ratios = dispatch(
         abstract_table,
         num_cpus=num_cpus,
@@ -387,24 +317,12 @@ def run(
         ordered=False,
         raise_on_error=False,
         args=args,
-        kwargs=dict(struct_file=struct_file_arg, branch=branch, min_aucroc=min_aucroc),
-    )
-    # Accumulate ratios from SEISMICgraph files.
-    seismicgraph_files = path.find_files_chain(input_path, [path.WebAppFileSeg])
-    seismicgraph_ratios = dispatch(
-        abstract_seismicgraph_file,
-        num_cpus=num_cpus,
-        pass_num_cpus=False,
-        as_list=False,
-        ordered=False,
-        raise_on_error=True,
-        args=as_list_of_tuples(seismicgraph_files),
-        kwargs=dict(min_aucroc=min_aucroc),
+        kwargs=dict(
+            fold_table_region=fold_table_region, branch=branch, min_aucroc=min_aucroc
+        ),
     )
     # Accumulate all ratios and calculate statistics.
-    paired_ratios, unpaired_ratios = _accumulate_ratios(
-        chain(filter(None, table_ratios), seismicgraph_ratios)
-    )
+    paired_ratios, unpaired_ratios = _accumulate_ratios(table_ratios)
     paired_means, paired_fvar = _calc_ratio_stats(paired_ratios)
     unpaired_means, unpaired_fvar = _calc_ratio_stats(unpaired_ratios)
     if print_params:
@@ -419,6 +337,10 @@ def run(
 
 params = [
     arg_input_path,
+    opt_fold_table_region,
+    opt_fold_regions_file,
+    opt_fold_coords,
+    opt_fold_primers,
     opt_struct_file,
     opt_branch,
     opt_min_aucroc,
@@ -429,5 +351,5 @@ params = [
 
 @command(COMMAND, params=params)
 def cli(*args, **kwargs):
-    """Abstract simulation parameters from existing datasets."""
+    """Abstract simulation parameters from tables and structures."""
     run(*args, **kwargs)

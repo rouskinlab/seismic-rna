@@ -1557,8 +1557,10 @@ opt_fold_table_region = Option(
     ("--fold-table-region/--fold-full-region",),
     type=bool,
     default=False,
-    help=("If no regions are specified, whether to default to the table's region "
-          "or to the full region"),
+    help=(
+        "If no regions are specified, whether to default to the table's region "
+        "or to the full region"
+    ),
 )
 
 opt_hist_bins = Option(

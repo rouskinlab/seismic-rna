@@ -276,6 +276,7 @@ def fold_region(
 def fold_table(
     table: FilterPositionTableLoader | ClusterPositionTableLoader,
     regions: list[Region],
+    fold_table_region: bool,
     fold_temp: float,
     fold_energy_method: str,
     fold_quantile: float,
@@ -311,7 +312,9 @@ def fold_table(
                 deigan_slope=deigan_slope,
                 deigan_intercept=deigan_intercept,
             )
-            for profile in table.iter_profiles(regions=regions)
+            for _, profile in table.iter_profiles(
+                fold_table_region=fold_table_region, regions=regions
+            )
         ),
         kwargs=dict(
             out_dir=table.top,
@@ -379,10 +382,7 @@ def run(
     # For each table whose reference had no regions defined, default to
     # the table's region.
     args = [
-        (
-            table,
-            (fold_regions[table.ref] if fold_regions[table.ref] else [table.region]),
-        )
+        (table, (region if (region := fold_regions[table.ref]) else [table.region]))
         for table in tables
     ]
     # Fold the RNA profiles.
@@ -397,6 +397,7 @@ def run(
                 raise_on_error=False,
                 args=args,
                 kwargs=dict(
+                    fold_table_region=fold_table_region,
                     branch=branch,
                     tmp_pfx=tmp_pfx,
                     keep_tmp=keep_tmp,

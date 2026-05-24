@@ -33,6 +33,7 @@ class StructOneTableGraph(OneTableRelClusterGroupGraph, OneRelGraph, ABC):
     def __init__(
         self,
         *,
+        fold_table_region: bool,
         struct_file: Path | None,
         struct_reg: str | None,
         terminal_pairs: bool,
@@ -42,6 +43,9 @@ class StructOneTableGraph(OneTableRelClusterGroupGraph, OneRelGraph, ABC):
         """
         Parameters
         ----------
+        fold_table_region: bool
+            Whether to use the table's region when no explicit regions
+            are given; passed through to ``iter_profiles``.
         struct_file: Path or None
             Path to a CT file of RNA structures.  If given, the
             structure region is inferred from the file path.  If None,
@@ -58,6 +62,7 @@ class StructOneTableGraph(OneTableRelClusterGroupGraph, OneRelGraph, ABC):
             Forwarded to the parent class.
         """
         super().__init__(**kwargs)
+        self.fold_table_region = fold_table_region
         self._struct_file = struct_file
         self._struct_reg = struct_reg
         self._terminal_pairs = terminal_pairs
@@ -138,12 +143,16 @@ class StructOneTableGraph(OneTableRelClusterGroupGraph, OneRelGraph, ABC):
     def iter_profiles(self):
         """Yield each RNAProfile from the table."""
         yield from self.table.iter_profiles(
-            quantile=self.quantile, rel=self.rel_name, k=self.k, clust=self.clust
+            fold_table_region=self.fold_table_region,
+            quantile=self.quantile,
+            rel=self.rel_name,
+            k=self.k,
+            clust=self.clust,
         )
 
     def iter_states(self):
         """Yield each RNAState."""
-        for profile in self.iter_profiles():
+        for _, profile in self.iter_profiles():
             ct_file = self._get_struct_file(profile.profile)
             try:
                 for struct in from_ct(ct_file):
@@ -236,6 +245,7 @@ class StructOneTableWriter(OneTableRelClusterGroupWriter, ABC):
                 for file in struct_files:
                     yield self.get_graph(
                         rels_group,
+                        fold_table_region=fold_table_region,
                         struct_file=file,
                         struct_reg=None,
                         branch=branch,
@@ -244,6 +254,7 @@ class StructOneTableWriter(OneTableRelClusterGroupWriter, ABC):
                 for reg in fold_regs:
                     yield self.get_graph(
                         rels_group,
+                        fold_table_region=fold_table_region,
                         struct_file=None,
                         struct_reg=reg,
                         branch=branch,

@@ -325,6 +325,7 @@ class RNArtistRun(object):
         draw_png: bool,
         update: bool,
         num_cpus: int,
+        fold_table_region: bool,
     ):
         """
         Parameters
@@ -351,6 +352,9 @@ class RNArtistRun(object):
             running.
         num_cpus: int
             Number of CPUs to use for parallel structure drawing.
+        fold_table_region: bool
+            Whether to use the table's region when no explicit regions
+            are given; forwarded to ``iter_profiles``.
         """
         self.top, _ = FoldReport.parse_path(report_file)
         report = FoldReport.load(report_file)
@@ -367,6 +371,7 @@ class RNArtistRun(object):
         self.update = update
         self.num_cpus = num_cpus
         self.verify_times = verify_times
+        self.fold_table_region = fold_table_region
         self._parse_profile()
 
     def _get_dir_fields(self, top: Path):
@@ -599,7 +604,9 @@ class RNArtistRun(object):
         best_auc = 0
         structs = [struct for struct in from_ct(self.get_ct_file(self.top))]
         regions = [structs[0].region]
-        for profile in self.table.iter_profiles(regions=regions):
+        for _, profile in self.table.iter_profiles(
+            fold_table_region=self.fold_table_region, regions=regions
+        ):
             if self.profile == profile.profile:
                 for struct_num, struct in enumerate(structs):
                     state = RNAState.from_struct_profile(struct, profile)
@@ -805,6 +812,7 @@ class RNArtistRun(object):
 def draw(
     report_path: Path,
     *,
+    fold_table_region: bool,
     struct_num: Iterable[int],
     color: bool,
     draw_svg: bool,
@@ -827,6 +835,7 @@ def draw(
         draw_png,
         update,
         num_cpus,
+        fold_table_region,
     )
     # By convention, a function must return a Path for dispatch to deem
     # that it has completed successfully.

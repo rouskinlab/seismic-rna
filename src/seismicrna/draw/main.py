@@ -5,6 +5,7 @@ from ..core import path
 from ..core.arg import (
     CMD_DRAW,
     arg_input_path,
+    opt_fold_table_region,
     opt_force,
     opt_keep_tmp,
     opt_struct_num,
@@ -24,6 +25,7 @@ from .draw import draw
 def run(
     input_path: Iterable[str | Path],
     *,
+    fold_table_region: bool,
     struct_num: Iterable[int],
     color: bool,
     draw_svg: bool,
@@ -48,6 +50,7 @@ def run(
         raise_on_error=False,
         args=args,
         kwargs=dict(
+            fold_table_region=fold_table_region,
             struct_num=struct_num,
             color=color,
             draw_svg=draw_svg,
@@ -63,6 +66,7 @@ def run(
 
 params = [
     arg_input_path,
+    opt_fold_table_region,
     opt_struct_num,
     opt_color,
     opt_draw_svg,
