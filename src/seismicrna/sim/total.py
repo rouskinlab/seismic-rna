@@ -285,7 +285,8 @@ def run(
     else:
         # Failed to generate structures and parameters in max_attempts.
         raise RuntimeError(
-            f"Failed to simulate references, structures, and parameters within {max_tries} attempt(s)"
+            "Failed to simulate references, structures, and parameters within "
+            f"{max_tries} attempt(s)"
         )
     return fastq_mod.run(
         input_path=(),

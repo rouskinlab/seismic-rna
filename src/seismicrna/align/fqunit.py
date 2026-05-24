@@ -309,7 +309,8 @@ class FastqUnit(object):
 
     def iter_records(self, segments: Iterable[tuple[int, int]] = None):
         """
-        Yields processed sequences (or segments) along with the full FASTQ records from the FastqUnit.
+        Yields processed sequences (or segments) along with the full FASTQ
+        records from the FastqUnit.
 
         Output structure: a tuple ``(processed_seqs, full_records)`` where:
 
@@ -343,8 +344,8 @@ class FastqUnit(object):
         def get_open_func(path):
             return gzip.open if fastq_gz(path) else open
 
-        # If segments is provided, use it; otherwise, we'll later compute full sequences trimmed
-        # to equal length.
+        # If segments is provided, use it; otherwise, we'll later compute full
+        # sequences trimmed to equal length.
         if segments:
             slices = segments
         else:

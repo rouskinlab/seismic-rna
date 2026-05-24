@@ -111,13 +111,15 @@ def get_ref_barcodes(ref_meta_file: Path):
         try:
             if not pd.isnull(bc) and pd.isnull(read_pos):
                 raise ValueError(
-                    f"To directly specify barcodes, {FIELD_BARCODE} and {FIELD_READ_POS} columns must be populated"
+                    f"To directly specify barcodes, {FIELD_BARCODE} "
+                    f"and {FIELD_READ_POS} columns must be populated"
                 )
 
             ref_opts = [not pd.isnull(ref), not pd.isnull(end5), not pd.isnull(end3)]
             if any(ref_opts) and not all(ref_opts):
                 raise ValueError(
-                    f"To extract barcodes from references, {FIELD_REF}, {FIELD_BARCODE5} and {FIELD_BARCODE3} columns must be populated"
+                    f"To extract barcodes from references, {FIELD_REF}, "
+                    f"{FIELD_BARCODE5} and {FIELD_BARCODE3} columns must be populated"
                 )
 
             if not pd.isnull(ref):
@@ -131,7 +133,8 @@ def get_ref_barcodes(ref_meta_file: Path):
 
             if (not pd.isnull(end5)) and (not pd.isnull(read_pos)):
                 raise ValueError(
-                    f"Only one of {FIELD_BARCODE5} or {FIELD_READ_POS} columns may be filled"
+                    f"Only one of {FIELD_BARCODE5} or {FIELD_READ_POS} columns "
+                    "may be filled"
                 )
 
             if pd.isnull(read_pos):
@@ -357,7 +360,8 @@ class RefBarcodes(object):
         range_size = read_range_end - read_range_start
         for read_position, rc_barcode in zip(
             self.rc_read_positions, self.rc_barcodes
-        ):  # TODO: Make more efficient. Also combine with normal barcodes to avoide code duplication.
+        ):  # TODO: Make more efficient. Also combine with normal barcodes to avoid
+            # code duplication.
             slice_position = (read_position - read_range_start + len(rc_barcode)) - 1
             slice_positions.append(
                 (slice_position, slice_position + range_size + 1)
@@ -440,13 +444,16 @@ class RefBarcodes(object):
                     for check_automaton in check:
                         if check_automaton.exists(barcode):
                             assert (name, barcode) not in collisions, (
-                                f"{(name, barcode)} already collided. {collisions[(name, barcode)]} {check_automaton.get(barcode)}"
+                                f"{(name, barcode)} already collided. "
+                                f"{collisions[(name, barcode)]} "
+                                f"{check_automaton.get(barcode)}"
                             )
                             collisions[(name, barcode)] = check_automaton.get(barcode)
                     automaton.add_word(str(barcode), barcode_idx + start)
         if collisions:
             raise ValueError(
-                f"The following barcodes collide with --mismatch-tolerance {self.mismatches}: "
+                f"The following barcodes collide with "
+                f"--mismatch-tolerance {self.mismatches}: "
                 f"{[f'{key} and {val}' for key, val in collisions.items()]}"
             )
         automaton.make_automaton()

@@ -98,8 +98,17 @@ RNARTIST_MAIN_CLASS = "io.github.fjossinet.rnartist.core.MainKt"
 RNARTIST_ARTIFACT_NO_VERSION = (
     f"{RNARTIST_GROUP_ID}:{RNARTIST_ARTIFACT_ID}:{RNARTIST_MAIN_CLASS}"
 )
-RNARTIST_ARTIFACT_WITH_VERSION = f"{RNARTIST_GROUP_ID}:{RNARTIST_ARTIFACT_ID}:{RNARTIST_VERSION}:{RNARTIST_MAIN_CLASS}"
-RNARTIST_ARTIFACT_FALLBACK = f"{RNARTIST_GROUP_ID}:{RNARTIST_ARTIFACT_ID}:{RNARTIST_FALLBACK_VERSION}:{RNARTIST_MAIN_CLASS}"
+RNARTIST_ARTIFACT_WITH_VERSION = ":".join(
+    [RNARTIST_GROUP_ID, RNARTIST_ARTIFACT_ID, RNARTIST_VERSION, RNARTIST_MAIN_CLASS]
+)
+RNARTIST_ARTIFACT_FALLBACK = ":".join(
+    [
+        RNARTIST_GROUP_ID,
+        RNARTIST_ARTIFACT_ID,
+        RNARTIST_FALLBACK_VERSION,
+        RNARTIST_MAIN_CLASS,
+    ]
+)
 
 TABLES = {
     AVERAGE_PREFIX: (FilterPositionTable, FilterPositionTableLoader),
@@ -729,7 +738,8 @@ class RNArtistRun(object):
                     continue
             else:
                 logger.warning(
-                    "Running RNArtistCore with jgo failed. Falling back to manual installation."
+                    "Running RNArtistCore with jgo failed. Falling back to manual "
+                    "installation."
                 )
                 from ..core.arg import CMD_DRAW
                 from ..core.extern import require_env_var

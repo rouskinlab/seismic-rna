@@ -154,7 +154,8 @@ def run_rnafold(
     num_cpus: int,
     fold_dry_run: bool = False,
 ):
-    """Run RNAfold/RNAsubopt on pre-built paths, convert to CT, retitle, and renumber."""
+    """Run RNAfold/RNAsubopt on pre-built paths, convert to CT, retitle, and
+    renumber."""
     fold_cmd = make_rnafold_cmd(
         fasta_tmp,
         vienna_tmp,
@@ -186,7 +187,8 @@ def run_rnafold(
 
 
 def get_subopt(subopt_out: Path, db_target: Path, force: bool = False):
-    """Extract suboptimal structures from the output of RNAsubopt and write them to a DB file.
+    """Extract suboptimal structures from the output of RNAsubopt and write them
+    to a DB file.
 
     RNAsubopt output format (per sequence):
         >NAME [N]          <- title; N = energy window in 0.01 kcal/mol units
@@ -228,7 +230,8 @@ def get_subopt(subopt_out: Path, db_target: Path, force: bool = False):
 
 
 def extract_energies(vienna_input: Path, db_output: Path, force: bool = False):
-    """Extract the free energies from a vienna file and prepend them to the reference name.
+    """Extract the free energies from a vienna file and prepend them to the reference
+    name.
 
     The title will follow this format:
 

@@ -250,31 +250,41 @@ opt_clipped_demultiplexing = Option(
     ("--clipped",),
     type=int,
     default=0,
-    help="Designates the amount of clipped patterns to search for in the sample, will raise compution time",
+    help=(
+        "Search for this amount of clipped patterns in the sample. Will increase "
+        "computation time"
+    ),
 )
 
 opt_mismatch_tolerance = Option(
     ("--mismatch-tolerance",),
     type=int,
     default=0,
-    help="Designates the allowable amount of mismatches allowed in a string and still be considered a valid pattern "
-    "find. will increase non-parallel computation at a factorial rate. use caution going above 2 mismatches. "
-    "does not apply to clipped sequences.",
+    help=(
+        "Consider patterns to match if they have up to this many mismatches. "
+        "Will increase non-parallel computation at a factorial rate. Use caution "
+        "Going above 2 mismatches. Does not apply to clipped sequences."
+    ),
 )
 
 opt_index_tolerance = Option(
     ("--index-tolerance",),
     type=int,
     default=0,
-    help="Designates the allowable amount of distance you allow the pattern to be found in a read from the reference "
-    "index",
+    help=(
+        "Allow patterns to be found in reads up to this distance from the "
+        "reference index."
+    ),
 )
 
 opt_allow_n = Option(
     ("--allow-n/--no-allow-n",),
     type=bool,
     default=False,
-    help="Allow N as a valid mismatch when --mismatch-tolerance ≥ 1. Increases memory consumption.",
+    help=(
+        "Allow N as a valid mismatch when --mismatch-tolerance ≥ 1. Increases "
+        "memory consumption."
+    ),
 )
 
 opt_barcode = Option(
@@ -1025,7 +1035,10 @@ opt_jackpot_max_data = Option(
     ("--jackpot-max-data",),
     type=int,
     default=2**28,
-    help="Skip calculating the jackpotting quotient if reads × positions exceeds this limit",
+    help=(
+        "Skip calculating the jackpotting quotient if the reads × positions "
+        "exceeds this limit"
+    ),
 )
 
 opt_max_pearson_run = Option(
@@ -1687,7 +1700,10 @@ opt_group = Option(
     ("--group",),
     type=str,
     default="sample",
-    help="Group collated graphs by one of 'sample', 'graph', 'branches', 'region', or 'all'.",
+    help=(
+        "Group collated graphs by one of 'sample', 'graph', 'branches', 'region', "
+        "or 'all'."
+    ),
 )
 
 opt_portable = Option(
@@ -1695,8 +1711,8 @@ opt_portable = Option(
     type=bool,
     default=False,
     help=(
-        "Embed collated graphs into the output HTML file for "
-        "portability at the expense of live updates and file size."
+        "Embed collated graphs into the output HTML file for portability at the "
+        "expense of live updates and file size."
     ),
 )
 
@@ -1841,7 +1857,10 @@ opt_max_fraction_ident = Option(
     ("--max-fraction-ident",),
     type=float,
     default=1.0,
-    help="Retry if any two clusters have more than this fraction of identical mutation rates",
+    help=(
+        "Retry if any two clusters have more than this fraction of identical "
+        "mutation rates"
+    ),
 )
 
 opt_max_pearson_sim = Option(

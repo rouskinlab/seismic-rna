@@ -29,22 +29,22 @@ _IDMUT_FIELD_RENAMES = {
 # Field title renames for filter (was mask) reports.
 _FILTER_FIELD_RENAMES = {
     # Option-field title renames.
-    "Mask paired-end reads with discontiguous mates": "Drop paired-end reads with discontiguous mates",
-    "Mask reads with fewer than this many bases covering the region": "Drop reads with fewer than this many bases covering the region",
-    "Mask reads with less than this fraction of informative base calls": "Drop reads with less than this fraction of informative base calls",
-    "Mask reads with more than this fraction of mutated base calls": "Drop reads with more than this fraction of mutated base calls",
-    "Mask reads with two mutations separated by fewer than this many bases": "Filter out mutations separated by fewer than this many bases",
-    "Stop masking after this many iterations (0 for no limit)": "Stop the filter step after this many iterations (0 for no limit)",
+    "Mask paired-end reads with discontiguous mates": "Drop paired-end reads with discontiguous mates",  # noqa: E501
+    "Mask reads with fewer than this many bases covering the region": "Drop reads with fewer than this many bases covering the region",  # noqa: E501
+    "Mask reads with less than this fraction of informative base calls": "Drop reads with less than this fraction of informative base calls",  # noqa: E501
+    "Mask reads with more than this fraction of mutated base calls": "Drop reads with more than this fraction of mutated base calls",  # noqa: E501
+    "Mask reads with two mutations separated by fewer than this many bases": "Filter out mutations separated by fewer than this many bases",  # noqa: E501
+    "Stop masking after this many iterations (0 for no limit)": "Stop the filter step after this many iterations (0 for no limit)",  # noqa: E501
     # Result-field title renames.
     "Positions kept after masking": "Positions kept after filtering",
-    "Number of positions kept after masking": "Number of positions kept after filtering",
+    "Number of positions kept after masking": "Number of positions kept after filtering",  # noqa: E501
     "Total number of reads before masking": "Total number of reads before filtering",
     "Number of reads masked from a list": "Number of reads dropped from a list",
-    "Number of reads with too few bases covering the region": "Number of reads dropped due to too few bases covering the region",
-    "Number of reads with discontiguous mates": "Number of reads dropped due to discontiguous mates",
-    "Number of reads with too few informative base calls": "Number of reads dropped due to too few informative base calls",
-    "Number of reads with too many mutations": "Number of reads dropped due to too many mutations",
-    "Number of reads with two mutations too close": "Number of reads dropped due to two mutations too close",
+    "Number of reads with too few bases covering the region": "Number of reads dropped due to too few bases covering the region",  # noqa: E501
+    "Number of reads with discontiguous mates": "Number of reads dropped due to discontiguous mates",  # noqa: E501
+    "Number of reads with too few informative base calls": "Number of reads dropped due to too few informative base calls",  # noqa: E501
+    "Number of reads with too many mutations": "Number of reads dropped due to too many mutations",  # noqa: E501
+    "Number of reads with two mutations too close": "Number of reads dropped due to two mutations too close",  # noqa: E501
     "Number of reads kept after masking": "Number of reads kept after filtering",
 }
 

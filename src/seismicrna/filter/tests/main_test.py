@@ -552,7 +552,8 @@ class TestFilterSingle1Sample1Batch(
         self.assertListEqual(extract_read_nums(dataset), [[0, 3, 4, 5, 6, 7, 8]])
 
     def test_min_fcov_read_amplicons(self):
-        """Two-PCR-amplicon scenario: filter reads that partially cover the useful region.
+        """Two-PCR-amplicon scenario: filter reads that partially cover the useful
+        region.
 
         Positions 1 and 8 simulate 5' and 3' primers and are masked.
         Kept region after primer masking: positions 2-7 (6 nt, region.size=6).

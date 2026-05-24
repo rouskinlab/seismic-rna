@@ -57,3 +57,11 @@ quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = true
 line-ending = "lf"
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = "E203"
+per-file-ignores = [
+    "__init__.py:F401",
+    "path_test.py:F403,F405",
+]

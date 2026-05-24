@@ -308,14 +308,16 @@ class TestMergeCloseMuts(ut.TestCase):
         self._assert_muts_equal(result, expected)
 
     def test_min_gap_zero_keeps_all(self):
-        # With min_gap=0, last_mod_pos > pos+0 = pos is always True once set, so nothing filtered
+        # With min_gap=0, last_mod_pos > pos+0 = pos is always True once set,
+        # so nothing filtered
         batch = self._make_batch(3, {1: {SUB_T: [0]}, 2: {SUB_T: [0]}, 3: {SUB_T: [0]}})
         result = batch.merge_close_muts(RelPattern.muts(), min_gap=0)
         expected = {1: {SUB_T: [0]}, 2: {SUB_T: [0]}, 3: {SUB_T: [0]}, 4: {}, 5: {}}
         self._assert_muts_equal(result, expected)
 
     def test_non_pattern_relationships_preserved(self):
-        # RelPattern.from_counts() matches substitutions only (not DELET) at 'A' positions.
+        # RelPattern.from_counts() matches substitutions only (not DELET) at 'A'
+        # positions.
         # pos 5: SUB_T for reads [0,1] → both true mods
         # pos 3: SUB_T for read [0] (close artifact: 5>3+3=6? No), DELET for reads [2,3]
         # DELET is not matched by the sub-only pattern, so reads [2,3] are outside the
@@ -397,7 +399,8 @@ class TestInjectCloseMuts(ut.TestCase):
             batch.inject_close_muts(RelPattern.muts(), {1: 1.1}, seed=0)
 
     def test_prob_one_injects_all(self):
-        # All 3 reads have a mutation at pos 3; with prob=1.0 all should get one at pos 2.
+        # All 3 reads have a mutation at pos 3; with prob=1.0 all should get
+        # one at pos 2.
         batch = self._make_batch(3, {3: {SUB_T: [0, 1, 2]}})
         result = batch.inject_close_muts(RelPattern.muts(), {1: 1.0}, seed=0)
         np.testing.assert_array_equal(self._reads_with_any_mut(result, 2), [0, 1, 2])
@@ -449,7 +452,8 @@ class TestInjectCloseMuts(ut.TestCase):
 
     def test_masked_position_skipped(self):
         # Mask pos 2; mutation at pos 3 with window of 2 (covers pos 2 and pos 1).
-        # pos 2 is masked so injection skips it; pos 1 is unmasked and receives injection.
+        # pos 2 is masked so injection skips it; pos 1 is unmasked and receives
+        # injection.
         region = Region("r", DNA("AAAAA"))
         region.mask_list([2])
         num_reads = 2
