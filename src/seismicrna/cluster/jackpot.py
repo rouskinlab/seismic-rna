@@ -231,7 +231,7 @@ def _sim_muts_dropped_jit(
     end5s: np.ndarray,
     end3s: np.ndarray,
     clusts: np.ndarray,
-    p_mut: np.ndarray,
+    p_mut_t: np.ndarray,
     min_mut_gap: int,
     max_attempts: int,
     rng: np.random.Generator,
@@ -242,49 +242,51 @@ def _sim_muts_dropped_jit(
     This function is meant to be called only after the arguments have
     been validated and thus makes the following assumptions:
 
-    - muts is a NumPy boolean array with shape (reads x positions),
-      initially all False
+    - muts is a C-contiguous NumPy boolean array with shape
+      (reads x positions), initially all False.
     - end5s, end3s, and clusts are 1D NumPy integer arrays of the same
       length.
-    - p_mut is a 2D NumPy array of floats.
-    - p_mut has at least one column.
+    - p_mut_t is a C-contiguous 2D NumPy float array with shape
+      (clusters x positions) — the transpose of the usual p_mut so that
+      each cluster's per-position rates are a contiguous 1D row.
+    - p_mut_t has at least one row.
     - max_attempts ≥ 1
     """
     (n_reads,) = clusts.shape
-    # Initialize a flag for if any read has an error.
+    n_pos = muts.shape[1]
+    # Reusable scratch buffer of positions placed during the current
+    # attempt. Deferred commit (write to muts only on success) avoids
+    # ever having to clear muts on a failed attempt.
+    placed = np.empty(n_pos, dtype=np.int64)
     error = False
-    # Assign mutations to each read.
     for i in range(n_reads):
         k = clusts[i]
         end5 = end5s[i]
         end3 = end3s[i]
-        # Attempt to assign mutations to the read.
+        p_mut_k = p_mut_t[k]
         read_valid = False
-        remaining_attempts = max_attempts
-        while not read_valid and remaining_attempts > 0:
+        n_placed = 0
+        for _ in range(max_attempts):
             read_valid = True
-            remaining_attempts -= 1
-            # Assign mutations one position j at a time to avoid needing
-            # a temporary array.
+            n_placed = 0
+            # Sentinel chosen so the first candidate j cannot collide.
+            last_mut = end5 - min_mut_gap - 1
             for j in range(end5, end3 + 1):
-                if rng.random() < p_mut[j, k]:
-                    # Attempt to mutate this position. First, check for
-                    # existing mutations too close before this position.
-                    if min_mut_gap > 0 and np.any(muts[i, max(j - min_mut_gap, 0) : j]):
-                        # An existing mutation is too close.
+                if rng.random() < p_mut_k[j]:
+                    if j - last_mut <= min_mut_gap:
                         read_valid = False
-                        # Erase the existing mutations so that the next
-                        # attempt will start fresh.
-                        muts[i, :j] = False
-                        # Break the for loop to abort this attempt.
                         break
-                    else:
-                        # Mutate this position.
-                        muts[i, j] = True
+                    placed[n_placed] = j
+                    n_placed += 1
+                    last_mut = j
+            if read_valid:
+                break
         if not read_valid:
-            # Flag that a read had an error and abort the whole simulation.
             error = True
             break
+        muts_i = muts[i]
+        for p in range(n_placed):
+            muts_i[placed[p]] = True
     return error
 
 
@@ -294,7 +296,7 @@ def _sim_muts_merged_jit(
     end5s: np.ndarray,
     end3s: np.ndarray,
     clusts: np.ndarray,
-    p_mut: np.ndarray,
+    p_mut_t: np.ndarray,
     min_mut_gap: int,
     rng: np.random.Generator,
 ):
@@ -303,33 +305,30 @@ def _sim_muts_merged_jit(
     This function is meant to be called only after the arguments have
     been validated and thus makes the following assumptions:
 
-    - muts is a NumPy boolean array with shape (reads x positions),
-      initially all False
+    - muts is a C-contiguous NumPy boolean array with shape
+      (reads x positions), initially all False.
     - end5s, end3s, and clusts are 1D NumPy integer arrays of the same
       length.
-    - p_mut is a 2D NumPy array of floats.
-    - p_mut has at least one column.
+    - p_mut_t is a C-contiguous 2D NumPy float array with shape
+      (clusters x positions) — the transpose of the usual p_mut so that
+      each cluster's per-position rates are a contiguous 1D row.
+    - p_mut_t has at least one row.
     - min_mut_gap ≥ 0
     """
     (n_reads,) = clusts.shape
-    # Assign mutations to each read.
+    skip = min_mut_gap + 1
     for i in range(n_reads):
         k = clusts[i]
         end5 = end5s[i]
         end3 = end3s[i]
-        # Assign mutations one position j at a time to avoid needing
-        # a temporary array.
+        p_mut_k = p_mut_t[k]
+        muts_i = muts[i]
         j = end3
         while j >= end5:
-            if rng.random() < p_mut[j, k]:
-                # Mutate this position.
-                muts[i, j] = True
-                # Skip over min_mut_gap positions, none of which can
-                # have a mutation.
-                j -= min_mut_gap + 1
+            if rng.random() < p_mut_k[j]:
+                muts_i[j] = True
+                j -= skip
             else:
-                # Leave the position without a mutation and go to the
-                # next position.
                 j -= 1
 
 
@@ -391,8 +390,11 @@ def _sim_muts_dropped(
     # Initialize an array for the mutated positions; all positions start
     # out as not mutated (False).
     muts = np.zeros((n_reads, n_pos), dtype=bool)
+    # Transpose to (clusters x positions) so each cluster's per-position
+    # rates are a contiguous 1D row inside the JIT inner loop.
+    p_mut_t = np.ascontiguousarray(p_mut.T)
     error = _sim_muts_dropped_jit(
-        muts, end5s, end3s, clusts, p_mut, min_mut_gap, max_attempts, rng
+        muts, end5s, end3s, clusts, p_mut_t, min_mut_gap, max_attempts, rng
     )
     if error:
         raise RuntimeError(
@@ -455,7 +457,10 @@ def _sim_muts_merged(
     # Initialize an array for the mutated positions; all positions start
     # out as not mutated (False).
     muts = np.zeros((n_reads, n_pos), dtype=bool)
-    _sim_muts_merged_jit(muts, end5s, end3s, clusts, p_mut, min_mut_gap, rng)
+    # Transpose to (clusters x positions) so each cluster's per-position
+    # rates are a contiguous 1D row inside the JIT inner loop.
+    p_mut_t = np.ascontiguousarray(p_mut.T)
+    _sim_muts_merged_jit(muts, end5s, end3s, clusts, p_mut_t, min_mut_gap, rng)
     return muts
 
 

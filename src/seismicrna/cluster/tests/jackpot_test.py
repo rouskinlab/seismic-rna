@@ -538,12 +538,18 @@ class TestBootstrapJackpotScores(ut.TestCase):
                     # The confidence interval has converged around 0.
                     break
 
-    def test_ideal_jackpot_uncorrected(self):
+    def test_ideal_jackpot_uncorrected_drop(self):
         self.run_ideal_jackpot(mut_collisions="drop", min_mut_gap=0)
+
+    def test_ideal_jackpot_uncorrected_merge(self):
         self.run_ideal_jackpot(mut_collisions="merge", min_mut_gap=0)
 
     def test_ideal_jackpot_drop(self):
-        self.run_ideal_jackpot(mut_collisions="drop", min_mut_gap=4)
+        self.run_ideal_jackpot(
+            mut_collisions="drop",
+            min_mut_gap=4,
+            min_mut_gap_weights="0:0.1,1:0.1,2:0.1,3:0.2,4:0.5"
+        )
 
     def test_ideal_jackpot_merge(self):
         self.run_ideal_jackpot(
