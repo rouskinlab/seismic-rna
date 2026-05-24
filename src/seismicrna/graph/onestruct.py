@@ -17,7 +17,7 @@ from ..core.arg import (
     opt_fold_regions_file,
     opt_fold_coords,
     opt_fold_primers,
-    opt_fold_full,
+    opt_fold_table_region,
     opt_terminal_pairs,
     optional_path,
 )
@@ -166,7 +166,7 @@ class StructOneTableWriter(OneTableRelClusterGroupWriter, ABC):
         fold_coords: Iterable[tuple[str, int, int]] = (),
         fold_primers: Iterable[tuple[str, DNA, DNA]] = (),
         fold_regions_file: str | None = None,
-        fold_full: bool = opt_fold_full.default,
+        fold_table_region: bool = opt_fold_table_region.default,
         **kwargs,
     ):
         """Yield graphs for every relationship, cluster, and structure.
@@ -188,8 +188,8 @@ class StructOneTableWriter(OneTableRelClusterGroupWriter, ABC):
             regions.
         fold_regions_file: str or None, optional
             Path to a file of fold region definitions.
-        fold_full: bool, optional
-            Whether to use the full reference as the fold region.
+        fold_table_region: bool, optional
+            Whether to use the table's region as the fold region.
         **kwargs
             Forwarded to ``get_graph``.
 
@@ -223,7 +223,7 @@ class StructOneTableWriter(OneTableRelClusterGroupWriter, ABC):
                 regs_file=optional_path(fold_regions_file),
                 ends=fold_coords,
                 primers=fold_primers,
-                default_full=fold_full,
+                default_full=(not fold_table_region),
             )
             fold_regs = [region.name for region in ref_regions.list(self.table.ref)]
             if not fold_regs:
@@ -264,6 +264,6 @@ class StructOneTableRunner(OneTableRelClusterGroupRunner, ABC):
             opt_fold_regions_file,
             opt_fold_coords,
             opt_fold_primers,
-            opt_fold_full,
+            opt_fold_table_region,
             opt_terminal_pairs,
         ]

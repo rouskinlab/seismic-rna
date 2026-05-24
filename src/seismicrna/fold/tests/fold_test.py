@@ -175,10 +175,10 @@ BACKEND_METHOD_COMBOS = [
 
 # Defaults + each boolean flipped individually.
 BOOLEAN_VARIANTS = [
-    {"fold_full": True, "fold_mfe": False, "fold_isolated": False},
-    {"fold_full": False, "fold_mfe": False, "fold_isolated": False},
-    {"fold_full": True, "fold_mfe": True, "fold_isolated": False},
-    {"fold_full": True, "fold_mfe": False, "fold_isolated": True},
+    {"fold_table_region": False, "fold_mfe": False, "fold_isolated": False},
+    {"fold_table_region": True, "fold_mfe": False, "fold_isolated": False},
+    {"fold_table_region": False, "fold_mfe": True, "fold_isolated": False},
+    {"fold_table_region": False, "fold_mfe": False, "fold_isolated": True},
 ]
 
 

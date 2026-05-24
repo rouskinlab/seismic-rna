@@ -28,7 +28,7 @@ from ..core.arg import (
     opt_fold_regions_file,
     opt_fold_coords,
     opt_fold_primers,
-    opt_fold_full,
+    opt_fold_table_region,
     opt_fold_backend,
     opt_pseudoknots,
     opt_fold_temp,
@@ -334,7 +334,7 @@ def run(
     fold_coords: Iterable[tuple[str, int, int]],
     fold_primers: Iterable[tuple[str, DNA, DNA]],
     fold_regions_file: str | None,
-    fold_full: bool,
+    fold_table_region: bool,
     fold_dry_run: bool,
     fold_backend: str,
     pseudoknots: bool,
@@ -374,7 +374,7 @@ def run(
         regs_file=optional_path(fold_regions_file),
         ends=fold_coords,
         primers=fold_primers,
-        default_full=fold_full,
+        default_full=(not fold_table_region),
     ).dict
     # For each table whose reference had no regions defined, default to
     # the table's region.
@@ -431,7 +431,7 @@ params = [
     opt_fold_regions_file,
     opt_fold_coords,
     opt_fold_primers,
-    opt_fold_full,
+    opt_fold_table_region,
     opt_fold_dry_run,
     opt_fold_backend,
     opt_pseudoknots,

@@ -13,6 +13,7 @@ from click import command
 from ..core import path
 from ..core.arg import (
     arg_input_path,
+    opt_branch,
     opt_min_aucroc,
     opt_struct_file,
     opt_verify_times,
@@ -22,7 +23,6 @@ from ..core.arg import (
     opt_vmut_paired,
     opt_vmut_unpaired,
 )
-from ..core.error import NoDataError
 from ..core.header import format_clust_name
 from ..core.logs import logger
 from ..core.rna import UNPAIRED_MARK, from_ct
@@ -157,54 +157,58 @@ def _accumulate_ratios(paired_unpaired_ratios: Iterable[tuple[dict, dict]]):
 def abstract_table(
     table: FilterPositionTableLoader,
     struct_file: list[str | Path] | None = None,
+    branch: str = "",
     min_aucroc: float = 0.0,
 ):
-    # Validate any explicitly provided files and set search paths.
-    if struct_file is not None:
-        for sf in struct_file:
-            sf = Path(sf)
-            if sf.is_file():
-                fields = path.parse(sf, path.CT_FILE_LAST_SEGS)
-                if fields[path.REF] != table.ref:
-                    raise ValueError(
-                        f"struct_file reference {fields[path.REF]!r} does not "
-                        f"match table reference {table.ref!r}"
-                    )
-                if fields[path.REG] != table.reg:
-                    raise ValueError(
-                        f"struct_file region {fields[path.REG]!r} does not "
-                        f"match table region {table.reg!r}"
-                    )
-        search_paths = struct_file
-    else:
-        search_paths = [table.top / table.sample]
-    # Build a mapping from profile name to CT file path, filtered to
-    # files whose ref and reg match the table.
+    fold_branches = path.add_branch(path.FOLD_STEP, branch, table.branches)
+    # Build a mapping from profile name to CT file when explicit files are given.
     profile_to_ct: dict[str, Path] = {}
-    for file in path.find_files_chain(search_paths, path.CT_FILE_LAST_SEGS):
-        fields = path.parse(file, path.CT_FILE_LAST_SEGS)
-        if fields[path.REF] == table.ref and fields[path.REG] == table.reg:
-            profile_to_ct[fields[path.PROFILE]] = file
-    if not profile_to_ct:
-        raise NoDataError(
-            f"No CT files found for reference {table.ref!r}, region {table.reg!r}"
-        )
+    if struct_file is not None:
+        for sf in path.find_files_chain(struct_file, path.CT_FILE_LAST_SEGS):
+            fields = path.parse(sf, path.CT_FILE_LAST_SEGS)
+            if fields[path.REF] == table.ref and fields[path.REG] == table.reg:
+                profile_to_ct[fields[path.PROFILE]] = sf
+        if not profile_to_ct:
+            logger.warning(
+                f"No CT files in struct_file matched reference {table.ref!r}, "
+                f"region {table.reg!r}"
+            )
     # Compute ratios for each cluster, pairing it with its CT file.
     all_ratios = []
     for hk, hc in table.header.clusts:
         mus_name = path.fill_whitespace(format_clust_name(hk, hc), fill="-")
         profile_name = f"{table.reg}__{mus_name}"
+        # First, get the CT file from the struct_file list, if given.
         ct_file = profile_to_ct.get(profile_name)
         if ct_file is None:
-            logger.warning(
-                f"No CT file for {table.ref!r}/{table.reg!r} profile {profile_name!r}"
+            # If no CT file was given for this table via struct_file, then
+            # determine the path of the CT file from the fold step.
+            ct_file = path.build(
+                path.CT_FILE_ALL_SEGS,
+                {
+                    path.TOP: table.top,
+                    path.SAMPLE: table.sample,
+                    path.STEP: path.FOLD_STEP,
+                    path.BRANCHES: fold_branches,
+                    path.REF: table.ref,
+                    path.REG: table.reg,
+                    path.PROFILE: profile_name,
+                    path.EXT: path.CT_EXT,
+                },
             )
-            continue
+            if not ct_file.is_file():
+                # If no CT file exists from the fold step either, then stop.
+                logger.warning(
+                    f"No CT file for {table.ref!r}/{table.reg!r} profile "
+                    f"{profile_name!r}: {ct_file}"
+                )
+                continue
         structures = iter(from_ct(ct_file))
         try:
             struct = next(structures)
         except StopIteration:
-            raise NoDataError(f"{ct_file} contains 0 structures") from None
+            logger.warning(f"{ct_file} contains 0 structures: skipping")
+            continue
         try:
             next(structures)
         except StopIteration:
@@ -362,6 +366,7 @@ def run(
     input_path: Iterable[str | Path],
     *,
     struct_file: Iterable[str | Path],
+    branch: str,
     min_aucroc: float,
     print_params: bool = True,
     verify_times: bool,
@@ -382,7 +387,7 @@ def run(
         ordered=False,
         raise_on_error=False,
         args=args,
-        kwargs=dict(struct_file=struct_file_arg, min_aucroc=min_aucroc),
+        kwargs=dict(struct_file=struct_file_arg, branch=branch, min_aucroc=min_aucroc),
     )
     # Accumulate ratios from SEISMICgraph files.
     seismicgraph_files = path.find_files_chain(input_path, [path.WebAppFileSeg])
@@ -415,6 +420,7 @@ def run(
 params = [
     arg_input_path,
     opt_struct_file,
+    opt_branch,
     opt_min_aucroc,
     opt_verify_times,
     opt_num_cpus,

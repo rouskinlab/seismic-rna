@@ -1553,12 +1553,12 @@ opt_min_aucroc = Option(
     help="Skip tables/profiles where the AUC-ROC is less than this value",
 )
 
-opt_fold_full = Option(
-    ("--fold-full/--fold-table",),
+opt_fold_table_region = Option(
+    ("--fold-table-region/--fold-full-region",),
     type=bool,
-    default=True,
-    help="If no regions are specified, whether to default to the full region "
-    "or to the table's region",
+    default=False,
+    help=("If no regions are specified, whether to default to the table's region "
+          "or to the full region"),
 )
 
 opt_hist_bins = Option(
