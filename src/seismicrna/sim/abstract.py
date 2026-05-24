@@ -20,7 +20,8 @@ from ..core.arg import (arg_input_path,
                         opt_pmut_unpaired,
                         opt_vmut_paired,
                         opt_vmut_unpaired)
-from ..core.error import DuplicateValueError, NoDataError
+from ..core.error import NoDataError
+from ..core.header import format_clust_name
 from ..core.logs import logger
 from ..core.rna import UNPAIRED_MARK, from_ct
 from ..core.rna.roc import compute_auc_roc
@@ -149,48 +150,93 @@ def _accumulate_ratios(paired_unpaired_ratios: Iterable[tuple[dict, dict]]):
 
 
 def abstract_table(table: FilterPositionTableLoader,
-                   struct_file: str | Path,
+                   struct_file: list[str | Path] | None = None,
                    min_aucroc: float = 0.):
-    path_fields = path.parse(struct_file, path.CT_FILE_LAST_SEGS)
-    require_equal("table.ref",
-                  table.ref,
-                  path_fields[path.REF],
-                  "path_fields[ref]",
-                  classes=str)
-    structures = iter(from_ct(struct_file))
-    try:
-        struct = next(structures)
-    except StopIteration:
-        raise NoDataError(f"{struct_file} contains 0 structures") from None
-    try:
-        next(structures)
-    except StopIteration:
-        pass
+    # Validate any explicitly provided files and set search paths.
+    if struct_file is not None:
+        for sf in struct_file:
+            sf = Path(sf)
+            if sf.is_file():
+                fields = path.parse(sf, path.CT_FILE_LAST_SEGS)
+                if fields[path.REF] != table.ref:
+                    raise ValueError(
+                        f"struct_file reference {fields[path.REF]!r} does not "
+                        f"match table reference {table.ref!r}"
+                    )
+                if fields[path.REG] != table.reg:
+                    raise ValueError(
+                        f"struct_file region {fields[path.REG]!r} does not "
+                        f"match table region {table.reg!r}"
+                    )
+        search_paths = struct_file
     else:
-        logger.warning(f"{struct_file} contains > 1 structure; using the first")
-    require_equal("struct.ref",
-                  struct.ref,
-                  table.ref,
-                  "table.ref",
-                  classes=str)
-    require_equal("struct.region.name",
-                  struct.region.name,
-                  table.region.name,
-                  "table.region.name",
-                  classes=str)
-    require_equal("struct.region.seq",
-                  struct.region.seq,
-                  table.region.seq,
-                  "table.region.seq",
-                  classes=DNA)
-    counts = table.fetch_count()
-    if min_aucroc > 0.:
-        auc = compute_auc_roc(counts[MUTAT_REL] / counts[INFOR_REL],
-                              struct.is_paired)
-        if not (auc >= min_aucroc):
-            logger.detail(f"Skipping {table}: AUC-ROC {auc} < {min_aucroc}")
-            return None
-    return _calc_ratios(counts, struct.is_paired.values)
+        search_paths = [table.top / table.sample]
+    # Build a mapping from profile name to CT file path, filtered to
+    # files whose ref and reg match the table.
+    profile_to_ct: dict[str, Path] = {}
+    for file in path.find_files_chain(search_paths, path.CT_FILE_LAST_SEGS):
+        fields = path.parse(file, path.CT_FILE_LAST_SEGS)
+        if (fields[path.REF] == table.ref
+                and fields[path.REG] == table.reg):
+            profile_to_ct[fields[path.PROFILE]] = file
+    if not profile_to_ct:
+        raise NoDataError(
+            f"No CT files found for reference {table.ref!r}, "
+            f"region {table.reg!r}"
+        )
+    # Compute ratios for each cluster, pairing it with its CT file.
+    all_ratios = []
+    for hk, hc in table.header.clusts:
+        mus_name = path.fill_whitespace(format_clust_name(hk, hc), fill="-")
+        profile_name = f"{table.reg}__{mus_name}"
+        ct_file = profile_to_ct.get(profile_name)
+        if ct_file is None:
+            logger.warning(
+                f"No CT file for {table.ref!r}/{table.reg!r} "
+                f"profile {profile_name!r}"
+            )
+            continue
+        structures = iter(from_ct(ct_file))
+        try:
+            struct = next(structures)
+        except StopIteration:
+            raise NoDataError(f"{ct_file} contains 0 structures") from None
+        try:
+            next(structures)
+        except StopIteration:
+            pass
+        else:
+            logger.warning(f"{ct_file} contains > 1 structure; using the first")
+        require_equal("struct.ref",
+                      struct.ref,
+                      table.ref,
+                      "table.ref",
+                      classes=str)
+        require_equal("struct.region.name",
+                      struct.region.name,
+                      table.region.name,
+                      "table.region.name",
+                      classes=str)
+        require_equal("struct.region.seq",
+                      struct.region.seq,
+                      table.region.seq,
+                      "table.region.seq",
+                      classes=DNA)
+        counts = table.fetch_count(k=hk, clust=hc)
+        counts = counts.set_axis(counts.columns.get_level_values(-1), axis=1)
+        if min_aucroc > 0.:
+            auc = compute_auc_roc(counts[MUTAT_REL] / counts[INFOR_REL],
+                                  struct.is_paired)
+            if not (auc >= min_aucroc):
+                logger.detail(
+                    f"Skipping {table} cluster {hk}-{hc}: "
+                    f"AUC-ROC {auc} < {min_aucroc}"
+                )
+                continue
+        all_ratios.append(_calc_ratios(counts, struct.is_paired.values))
+    if not all_ratios:
+        return None
+    return _accumulate_ratios(iter(all_ratios))
 
 
 def _abstract_seismicgraph_file(seismicgraph_file: Path, min_aucroc: float = 0.):
@@ -256,23 +302,54 @@ def abstract_seismicgraph_file(seismicgraph_file: Path, min_aucroc: float = 0.):
                                                           min_aucroc))
 
 
+# Keys present in the means dicts that are NOT accepted by
+# `make_pmut_means`.  "nd" (N-base deletion-given-mutation) is computed
+# for sanity-checking but the model assumes pnd == 1.0, so emitting it
+# would crash `sim total` / `sim muts` with an unexpected-kwarg error.
+_NON_MODEL_PMUT_KEYS = frozenset({"nd"})
+
+
+def _format_param_tokens(paired_means: dict,
+                         paired_fvar: dict,
+                         unpaired_means: dict,
+                         unpaired_fvar: dict) -> list[str]:
+    """Format the parameter tokens emitted by ``sim abstract``.
+
+    Skips keys that are not parameters of ``make_pmut_means`` so the
+    output can be fed straight back into ``sim total`` / ``sim muts``.
+    """
+    tokens: list[str] = []
+    for key, mean in paired_means.items():
+        if key not in _NON_MODEL_PMUT_KEYS:
+            tokens.append(f"{opt_pmut_paired.opts[-1]} {key} {mean}")
+    for base, var in paired_fvar.items():
+        tokens.append(f"{opt_vmut_paired.opts[-1]} {base} {var}")
+    for key, mean in unpaired_means.items():
+        if key not in _NON_MODEL_PMUT_KEYS:
+            tokens.append(f"{opt_pmut_unpaired.opts[-1]} {key} {mean}")
+    for base, var in unpaired_fvar.items():
+        tokens.append(f"{opt_vmut_unpaired.opts[-1]} {base} {var}")
+    return tokens
+
+
 def _calc_ratio_stats(ratios: dict[str, np.ndarray], margin: float = 1.e-6):
-    require_between("margin", margin, 0., 1., classes=float)
+    require_between("margin", margin, 0., 1., classes=float, inclusive=False)
     max_value = 1. - margin
     means = {key: np.clip(np.nanmean(values) if values.size > 0 else 0.,
                           margin,
                           max_value)
              for key, values in ratios.items()}
-    if ratios:
-        ms = np.concatenate([values for key, values in ratios.items()
-                             if key.endswith("m")])
-    else:
-        ms = np.array([], dtype=float)
-    if ms.size >= 2:
-        mean = np.clip(np.nanmean(ms), margin, max_value)
-        fvar = np.nanvar(ms) / (mean * (1. - mean))
-    else:
-        fvar = 0.
+    fvar = {}
+    for key, values in ratios.items():
+        if key.endswith("m") and not key.startswith(BASEN.lower()):
+            base = key[0]
+            if values.size >= 2:
+                base_mean = np.clip(np.nanmean(values), margin, max_value)
+                fvar[base] = float(
+                    np.nanvar(values) / (base_mean * (1. - base_mean))
+                )
+            else:
+                fvar[base] = margin
     return means, fvar
 
 
@@ -285,32 +362,20 @@ def run(input_path: Iterable[str | Path], *,
         num_cpus: int):
     """ Abstract simulation parameters from existing datasets. """
     input_path = list(input_path)
-    # Group structure files by reference.
-    ref_struct_files = dict()
-    for file in path.find_files_chain(struct_file, path.CT_FILE_LAST_SEGS):
-        ref = path.parse(file, path.CT_FILE_LAST_SEGS)[path.REF]
-        if ref in ref_struct_files:
-            raise DuplicateValueError(
-                f"More than one structure file for reference {repr(ref)}"
-            )
-        ref_struct_files[ref] = file
+    struct_file_arg = list(struct_file) or None
     # Accumulate ratios from table files.
-    args = list()
-    for table in FilterPositionTableLoader.load_tables(
-            input_path, verify_times=verify_times
-    ):
-        try:
-            args.append((table, ref_struct_files[table.ref]))
-        except KeyError:
-            logger.error(f"No structure for reference {repr(table.ref)}")
+    args = as_list_of_tuples(
+        FilterPositionTableLoader.load_tables(input_path, verify_times=verify_times)
+    )
     table_ratios = dispatch(abstract_table,
                             num_cpus=num_cpus,
                             pass_num_cpus=False,
                             as_list=False,
                             ordered=False,
-                            raise_on_error=True,
+                            raise_on_error=False,
                             args=args,
-                            kwargs=dict(min_aucroc=min_aucroc))
+                            kwargs=dict(struct_file=struct_file_arg,
+                                        min_aucroc=min_aucroc))
     # Accumulate ratios from SEISMICgraph files.
     seismicgraph_files = path.find_files_chain(input_path, [path.WebAppFileSeg])
     seismicgraph_ratios = dispatch(abstract_seismicgraph_file,
@@ -328,14 +393,11 @@ def run(input_path: Iterable[str | Path], *,
     paired_means, paired_fvar = _calc_ratio_stats(paired_ratios)
     unpaired_means, unpaired_fvar = _calc_ratio_stats(unpaired_ratios)
     if print_params:
-        params_items = [f"{opt_vmut_paired.opts[-1]} {paired_fvar}",
-                        f"{opt_vmut_unpaired.opts[-1]} {unpaired_fvar}"]
-        params_items.extend(f"{opt_pmut_paired.opts[-1]} {key} {mean}"
-                            for key, mean in paired_means.items())
-        params_items.extend(f"{opt_pmut_unpaired.opts[-1]} {key} {mean}"
-                            for key, mean in unpaired_means.items())
-        params_text = f"Abstracted parameters:\n{' '.join(params_items)}\n"
-        sys.stdout.write(params_text)
+        params_text = " ".join(_format_param_tokens(paired_means,
+                                                    paired_fvar,
+                                                    unpaired_means,
+                                                    unpaired_fvar))
+        sys.stdout.write(f"{params_text}\n")
     return (paired_means, paired_fvar), (unpaired_means, unpaired_fvar)
 
 

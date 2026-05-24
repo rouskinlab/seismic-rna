@@ -52,10 +52,10 @@ DEFAULT_MIN_MUT_GAPS = {
     PROBE_DMS: 4,
     # For other probe types (e.g. SHAPE-MaP) with retroviral RTs, when
     # the RT encounters a modification, it can make several mutations
-    # for up to 6 nt as it moves 3' to 5'. It's best to merge nearby 
+    # for up to 2 nt as it moves 3' to 5'. It's best to merge nearby 
     # mutations, keeping the 3'-most (the original modification).
-    PROBE_SHAPE: 6,
-    PROBE_ETC: 6,
+    PROBE_SHAPE: 2,
+    PROBE_ETC: 2,
     # With no probe, there should be no effect on nearby mutations.
     PROBE_NONE: 0,
 }
@@ -77,7 +77,7 @@ DEFAULT_MUT_COLLISIONS = {
     # mutations, keeping the 3'-most (the original modification).
     PROBE_SHAPE: MUT_COLLISIONS_MERGE,
     PROBE_ETC: MUT_COLLISIONS_MERGE,
-    PROBE_NONE: MUT_COLLISIONS_MERGE
+    PROBE_NONE: MUT_COLLISIONS_DROP,
 }
 
 GAP_MODE_OMIT = "omit"
@@ -885,7 +885,7 @@ opt_min_mut_gap = Option(
 opt_min_mut_gap_weights = Option(
     ("--min-mut-gap-weights",),
     type=str,
-    default="",
+    default="0:0.2,1:0.05,2:0.05,3:0.2,4:0.3,5:0.1,6:0.05,7:0.05",
     help=("Comma-separated gap:weight pairs defining a mixture of min_mut_gap "
           "biases, e.g. '0:0.2,1:0.3,2:0.5'. Overrides --min-mut-gap.")
 )
@@ -901,7 +901,7 @@ opt_mut_collisions = Option(
 opt_mut_probs = Option(
     ("--mut-probs",),
     type=str,
-    default="0.2,0.04,0.008",
+    default="0.1,0.01",
     help=("Comma-separated probabilities of injecting a mutation at each "
           "successive position 5' of an existing mutation (used with "
           "--mut-collisions merge)")
@@ -1883,16 +1883,18 @@ opt_pmut_unpaired = Option(
 
 opt_vmut_paired = Option(
     ("--vmut-paired", "-v"),
-    type=float,
-    default=0.001,
-    help="Set the relative variance of mutation rates of paired bases"
+    type=(str, float),
+    multiple=True,
+    default=(),
+    help="Set the relative variance of mutation rates of each kind of paired base"
 )
 
 opt_vmut_unpaired = Option(
     ("--vmut-unpaired", "-w"),
-    type=float,
-    default=0.02,
-    help="Set the relative variance of mutation rates of unpaired bases"
+    type=(str, float),
+    multiple=True,
+    default=(),
+    help="Set the relative variance of mutation rates of each kind of unpaired base"
 )
 
 opt_center_fmean = Option(

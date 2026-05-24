@@ -100,8 +100,7 @@ def make_pmut_means(*,
                     pta: float,
                     ptc: float,
                     ptg: float,
-                    pnm: float,
-                    pnd: float):
+                    pnm: float):
     """ Generate mean mutation rates.
 
     Mutations are assumed to behave as follows:
@@ -162,8 +161,6 @@ def make_pmut_means(*,
         Probability that a mutated T is a substitution to G.
     pnm: float
         Probability that an N is mutated.
-    pnd: float
-        Probability that a mutated N is a deletion.
 
     Returns
     -------
@@ -207,8 +204,8 @@ def make_pmut_means(*,
                    DELET: ptm * ptd,
                    ANY_V: (1. - ptm * ptd) * ploq})
     # Mutations at N bases.
-    n = pd.Series({DELET: pnm * pnd,
-                   ANY_N: 1. - pnm * pnd})
+    n = pd.Series({DELET: pnm,
+                   ANY_N: (1. - pnm) * ploq})
     pmut_means = pd.DataFrame.from_dict({BASEA: a,
                                          BASEC: c,
                                          BASEG: g,
@@ -219,30 +216,30 @@ def make_pmut_means(*,
 
 
 _PMUT_MEANS_PAIRED_DEFAULTS = {
-    PROBE_DMS: dict(ploq=0.02,
-                    pam=0.005, pac=0.30, pag=0.16, pat=0.50,
-                    pcm=0.003, pca=0.32, pcg=0.32, pct=0.32,
-                    pgm=0.003, pga=0.32, pgc=0.32, pgt=0.32,
+    PROBE_DMS: dict(ploq=0.002,
+                    pam=0.010, pac=0.32, pag=0.32, pat=0.32,
+                    pcm=0.010, pca=0.32, pcg=0.32, pct=0.32,
+                    pgm=0.001, pga=0.32, pgc=0.32, pgt=0.32,
                     ptm=0.001, pta=0.32, ptc=0.32, ptg=0.32,
-                    pnm=0.002, pnd=0.04),
-    PROBE_SHAPE: dict(ploq=0.02,
-                      pam=0.005, pac=0.30, pag=0.16, pat=0.50,
-                      pcm=0.003, pca=0.32, pcg=0.32, pct=0.32,
-                      pgm=0.003, pga=0.32, pgc=0.32, pgt=0.32,
-                      ptm=0.001, pta=0.32, ptc=0.32, ptg=0.32,
-                      pnm=0.002, pnd=0.04),
-    PROBE_ETC: dict(ploq=0.02,
-                    pam=0.005, pac=0.30, pag=0.16, pat=0.50,
-                    pcm=0.003, pca=0.32, pcg=0.32, pct=0.32,
-                    pgm=0.003, pga=0.32, pgc=0.32, pgt=0.32,
+                    pnm=0.001),
+    PROBE_SHAPE: dict(ploq=0.002,
+                    pam=0.010, pac=0.30, pag=0.30, pat=0.30,
+                    pcm=0.010, pca=0.30, pcg=0.30, pct=0.30,
+                    pgm=0.010, pga=0.30, pgc=0.30, pgt=0.30,
+                    ptm=0.010, pta=0.30, ptc=0.30, ptg=0.30,
+                    pnm=0.001),
+    PROBE_ETC: dict(ploq=0.002,
+                    pam=0.001, pac=0.30, pag=0.30, pat=0.30,
+                    pcm=0.001, pca=0.30, pcg=0.30, pct=0.30,
+                    pgm=0.010, pga=0.30, pgc=0.30, pgt=0.30,
+                    ptm=0.010, pta=0.30, ptc=0.30, ptg=0.30,
+                    pnm=0.001),
+    PROBE_NONE: dict(ploq=0.002,
+                    pam=0.001, pac=0.32, pag=0.32, pat=0.32,
+                    pcm=0.001, pca=0.32, pcg=0.32, pct=0.32,
+                    pgm=0.001, pga=0.32, pgc=0.32, pgt=0.32,
                     ptm=0.001, pta=0.32, ptc=0.32, ptg=0.32,
-                    pnm=0.002, pnd=0.04),
-    PROBE_NONE: dict(ploq=0.02,
-                     pam=0.005, pac=0.30, pag=0.16, pat=0.50,
-                     pcm=0.003, pca=0.32, pcg=0.32, pct=0.32,
-                     pgm=0.003, pga=0.32, pgc=0.32, pgt=0.32,
-                     ptm=0.001, pta=0.32, ptc=0.32, ptg=0.32,
-                     pnm=0.002, pnd=0.04),
+                    pnm=0.001),
 }
 
 
@@ -254,30 +251,30 @@ def make_pmut_means_paired(probe: str, **kwargs: float):
 
 
 _PMUT_MEANS_UNPAIRED_DEFAULTS = {
-    PROBE_DMS: dict(ploq=0.02,
-                    pam=0.045, pac=0.30, pag=0.16, pat=0.50,
-                    pcm=0.039, pca=0.32, pcg=0.32, pct=0.32,
-                    pgm=0.003, pga=0.32, pgc=0.32, pgt=0.32,
+    PROBE_DMS: dict(ploq=0.002,
+                    pam=0.045, pac=0.32, pag=0.32, pat=0.32,
+                    pcm=0.045, pca=0.32, pcg=0.32, pct=0.32,
+                    pgm=0.001, pga=0.32, pgc=0.32, pgt=0.32,
                     ptm=0.001, pta=0.32, ptc=0.32, ptg=0.32,
-                    pnm=0.002, pnd=0.04),
-    PROBE_SHAPE: dict(ploq=0.02,
-                      pam=0.045, pac=0.30, pag=0.16, pat=0.50,
-                      pcm=0.039, pca=0.32, pcg=0.32, pct=0.32,
-                      pgm=0.003, pga=0.32, pgc=0.32, pgt=0.32,
-                      ptm=0.001, pta=0.32, ptc=0.32, ptg=0.32,
-                      pnm=0.002, pnd=0.04),
-    PROBE_ETC: dict(ploq=0.02,
-                    pam=0.045, pac=0.30, pag=0.16, pat=0.50,
-                    pcm=0.039, pca=0.32, pcg=0.32, pct=0.32,
-                    pgm=0.003, pga=0.32, pgc=0.32, pgt=0.32,
+                    pnm=0.001),
+    PROBE_SHAPE: dict(ploq=0.002,
+                    pam=0.020, pac=0.30, pag=0.30, pat=0.30,
+                    pcm=0.020, pca=0.30, pcg=0.30, pct=0.30,
+                    pgm=0.020, pga=0.30, pgc=0.30, pgt=0.30,
+                    ptm=0.020, pta=0.30, ptc=0.30, ptg=0.30,
+                    pnm=0.001),
+    PROBE_ETC: dict(ploq=0.002,
+                    pam=0.001, pac=0.30, pag=0.30, pat=0.30,
+                    pcm=0.001, pca=0.30, pcg=0.30, pct=0.30,
+                    pgm=0.045, pga=0.30, pgc=0.30, pgt=0.30,
+                    ptm=0.045, pta=0.30, ptc=0.30, ptg=0.30,
+                    pnm=0.001),
+    PROBE_NONE: dict(ploq=0.002,
+                    pam=0.001, pac=0.32, pag=0.32, pat=0.32,
+                    pcm=0.001, pca=0.32, pcg=0.32, pct=0.32,
+                    pgm=0.001, pga=0.32, pgc=0.32, pgt=0.32,
                     ptm=0.001, pta=0.32, ptc=0.32, ptg=0.32,
-                    pnm=0.002, pnd=0.04),
-    PROBE_NONE: dict(ploq=0.02,
-                     pam=0.045, pac=0.30, pag=0.16, pat=0.50,
-                     pcm=0.039, pca=0.32, pcg=0.32, pct=0.32,
-                     pgm=0.003, pga=0.32, pgc=0.32, pgt=0.32,
-                     ptm=0.001, pta=0.32, ptc=0.32, ptg=0.32,
-                     pnm=0.002, pnd=0.04),
+                    pnm=0.001),
 }
 
 
@@ -288,9 +285,38 @@ def make_pmut_means_unpaired(probe: str, **kwargs: float):
     return make_pmut_means(**(_PMUT_MEANS_UNPAIRED_DEFAULTS[probe] | kwargs))
 
 
+_VMUT_PAIRED_DEFAULTS = {
+    PROBE_DMS:   dict(a=0.004, c=0.004, g=0.001, t=0.001, n=0.001),
+    PROBE_SHAPE: dict(a=0.004, c=0.004, g=0.004, t=0.004, n=0.001),
+    PROBE_ETC:   dict(a=0.001, c=0.001, g=0.004, t=0.004, n=0.001),
+    PROBE_NONE:  dict(a=0.001, c=0.001, g=0.001, t=0.001, n=0.001),
+}
+
+_VMUT_UNPAIRED_DEFAULTS = {
+    PROBE_DMS:   dict(a=0.025, c=0.025, g=0.001, t=0.001, n=0.001),
+    PROBE_SHAPE: dict(a=0.025, c=0.025, g=0.025, t=0.025, n=0.001),
+    PROBE_ETC:   dict(a=0.001, c=0.001, g=0.025, t=0.025, n=0.001),
+    PROBE_NONE:  dict(a=0.001, c=0.001, g=0.001, t=0.001, n=0.001),
+}
+
+
+def make_vmut_paired(probe: str, **kwargs: float):
+    """ Generate per-base relative variances for paired bases. """
+    if probe not in PROBES:
+        raise ValueError(f"probe must be one of {PROBES}, but got {probe!r}")
+    return _VMUT_PAIRED_DEFAULTS[probe] | kwargs
+
+
+def make_vmut_unpaired(probe: str, **kwargs: float):
+    """ Generate per-base relative variances for unpaired bases. """
+    if probe not in PROBES:
+        raise ValueError(f"probe must be one of {PROBES}, but got {probe!r}")
+    return _VMUT_UNPAIRED_DEFAULTS[probe] | kwargs
+
+
 def sim_pmut(positions: pd.Index,
              mean: pd.DataFrame,
-             relative_variance: float,
+             relative_variance: dict[str, float],
              end5: int | None,
              end3: int | None,
              seed: int | None):
@@ -302,8 +328,9 @@ def sim_pmut(positions: pd.Index,
         Index of positions and bases.
     mean: pd.DataFrame
         Mean of the mutation rates for each type of base.
-    relative_variance: float
-        Variance of the mutation rates, as a fraction of its supremum.
+    relative_variance: dict[str, float]
+        Variance of the mutation rates for each base (keyed by lower-case
+        base letter), as a fraction of its supremum.
 
     Returns
     -------
@@ -331,7 +358,8 @@ def sim_pmut(positions: pd.Index,
         base_pos = positions[positions.get_level_values(BASE_NAME) == base]
         # Determine which mean mutation rates are not zero.
         mean_nonzero = mean.loc[mean[base] != 0., base]
-        var_nonzero = relative_variance * (mean_nonzero * (1. - mean_nonzero))
+        rel_var = relative_variance[base.lower()]
+        var_nonzero = rel_var * (mean_nonzero * (1. - mean_nonzero))
         # Simulate the mutation rates.
         num_nonzero = np.count_nonzero(mean_nonzero)
         if num_nonzero > 1:
@@ -361,11 +389,16 @@ def _make_pmut_means_kwargs(pmut: Iterable[tuple[str, float]]):
     return {f"p{mut}": p for mut, p in pmut}
 
 
+def _make_vmut_kwargs(vmut: Iterable[tuple[str, float]]):
+    """ Make keyword arguments for `make_vmut_paired` / `make_vmut_unpaired`. """
+    return {base.lower(): v for base, v in vmut}
+
+
 def run_struct(ct_file: Path,
                pmut_paired: Iterable[tuple[str, float]],
                pmut_unpaired: Iterable[tuple[str, float]],
-               vmut_paired: float,
-               vmut_unpaired: float,
+               vmut_paired: Iterable[tuple[str, float]],
+               vmut_unpaired: Iterable[tuple[str, float]],
                probe: str,
                force: bool,
                seed: int | None,
@@ -389,10 +422,12 @@ def run_struct(ct_file: Path,
     pmut_unpaired: Iterable[tuple[str, float]]
         Mutation-type/probability pairs for unpaired bases, passed to
         `make_pmut_means_unpaired`.
-    vmut_paired: float
-        Relative variance of mutation rates for paired bases (0 to 1).
-    vmut_unpaired: float
-        Relative variance of mutation rates for unpaired bases (0 to 1).
+    vmut_paired: Iterable[tuple[str, float]]
+        Per-base relative variance of mutation rates for paired bases
+        (each value between 0 and 1), passed to `make_vmut_paired`.
+    vmut_unpaired: Iterable[tuple[str, float]]
+        Per-base relative variance of mutation rates for unpaired bases
+        (each value between 0 and 1), passed to `make_vmut_unpaired`.
     force: bool
         Whether to overwrite an existing output file.
     seed: int | None
@@ -408,6 +443,9 @@ def run_struct(ct_file: Path,
         # Calculate mean mutation rates.
         pm = make_pmut_means_paired(probe, **_make_pmut_means_kwargs(pmut_paired))
         um = make_pmut_means_unpaired(probe, **_make_pmut_means_kwargs(pmut_unpaired))
+        # Build per-base variance dicts.
+        vp = make_vmut_paired(probe, **_make_vmut_kwargs(vmut_paired))
+        vu = make_vmut_unpaired(probe, **_make_vmut_kwargs(vmut_unpaired))
         # Load the structures.
         structures = list(from_ct(ct_file))
         if not structures:
@@ -451,9 +489,9 @@ def run_struct(ct_file: Path,
                     index.get_level_values(POS_NAME) >= end5,
                     index.get_level_values(POS_NAME) <= end3
                 )]
-            mu_paired[pair_] = sim_pmut(use_index, pm, vmut_paired,
+            mu_paired[pair_] = sim_pmut(use_index, pm, vp,
                                         reg_end5, reg_end3, seed=next(seeds))
-            mu_unpaired[pair_] = sim_pmut(use_index, um, vmut_unpaired,
+            mu_unpaired[pair_] = sim_pmut(use_index, um, vu,
                                           reg_end5, reg_end3, seed=next(seeds))
 
         unpair = UNPAIRED, UNPAIRED
@@ -501,8 +539,8 @@ def run(*,
         ct_file: Iterable[str | Path],
         pmut_paired: Iterable[tuple[str, float]],
         pmut_unpaired: Iterable[tuple[str, float]],
-        vmut_paired: float,
-        vmut_unpaired: float,
+        vmut_paired: Iterable[tuple[str, float]],
+        vmut_unpaired: Iterable[tuple[str, float]],
         probe: str,
         region_coords: Iterable[tuple[str, int, int]],
         region_primers: Iterable[tuple[str, DNA, DNA]],
