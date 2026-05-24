@@ -10,7 +10,6 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 
 
 class PositionHistogramGraph(HistogramGraph):
-
     @classmethod
     def graph_kind(cls):
         return COMMAND
@@ -25,14 +24,12 @@ class PositionHistogramGraph(HistogramGraph):
 
 
 class PositionHistogramWriter(HistogramWriter, TableWriter):
-
     @classmethod
     def get_graph_type(cls):
         return PositionHistogramGraph
 
 
 class PositionHistogramRunner(HistogramRunner, PositionTableRunner):
-
     @classmethod
     def get_writer_type(cls):
         return PositionHistogramWriter
@@ -45,5 +42,5 @@ class PositionHistogramRunner(HistogramRunner, PositionTableRunner):
 
 @command(COMMAND, params=PositionHistogramRunner.params())
 def cli(*args, **kwargs):
-    """ Histogram of relationship(s) per position. """
+    """Histogram of relationship(s) per position."""
     return PositionHistogramRunner.run(*args, **kwargs)

@@ -11,7 +11,7 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 
 
 class PositionCorrelationGraph(PositionPairGraph, ABC):
-    """ Phi correlations between pairs of positions. """
+    """Phi correlations between pairs of positions."""
 
     @classmethod
     def graph_kind(cls):
@@ -23,19 +23,17 @@ class PositionCorrelationGraph(PositionPairGraph, ABC):
 
     @classmethod
     def get_pair_func(cls):
-        """ Function to compare each pair of positions. """
+        """Function to compare each pair of positions."""
         return calc_confusion_phi
 
 
 class PositionCorrelationWriter(PositionPairWriter):
-
     @classmethod
     def graph_type(cls):
         return PositionCorrelationGraph
 
 
 class PositionCorrelationRunner(PositionPairRunner):
-
     @classmethod
     def get_writer_type(cls):
         return PositionCorrelationWriter
@@ -48,5 +46,5 @@ class PositionCorrelationRunner(PositionPairRunner):
 
 @command(COMMAND, params=PositionCorrelationRunner.params())
 def cli(*args, **kwargs):
-    """ Phi correlations between pairs of positions. """
+    """Phi correlations between pairs of positions."""
     return PositionCorrelationRunner.run(*args, **kwargs)

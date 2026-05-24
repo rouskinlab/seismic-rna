@@ -9,15 +9,18 @@ from ..seq import write_fasta
 
 
 class RNAProfile(RNARegion):
-    """ Mutational profile of an RNA. """
+    """Mutational profile of an RNA."""
 
-    def __init__(self, *,
-                 sample: str,
-                 branches: dict[str, str],
-                 mus_reg: str,
-                 mus_name: str,
-                 mus: pd.Series,
-                 **kwargs):
+    def __init__(
+        self,
+        *,
+        sample: str,
+        branches: dict[str, str],
+        mus_reg: str,
+        mus_name: str,
+        mus: pd.Series,
+        **kwargs,
+    ):
         """
         Parameters
         ----------
@@ -41,31 +44,32 @@ class RNAProfile(RNARegion):
             raise TypeError(
                 f"Expected data to be a Series, but got {type(mus).__name__}"
             )
-        if mus.min() < 0. or mus.max() > 1.:
+        if mus.min() < 0.0 or mus.max() > 1.0:
             raise ValueError(f"Got mutation rates outside [0, 1]:\n{mus}")
         self.mus = mus.reindex(self.region.range)
 
     @cached_property
     def init_args(self):
-        return super().init_args | dict(sample=self.sample,
-                                        branches=self.branches,
-                                        mus_reg=self.mus_reg,
-                                        mus_name=self.mus_name,
-                                        mus=self.mus)
+        return super().init_args | dict(
+            sample=self.sample,
+            branches=self.branches,
+            mus_reg=self.mus_reg,
+            mus_name=self.mus_name,
+            mus=self.mus,
+        )
 
     def _renumber_from_args(self, seq5: int):
         return super()._renumber_from_args(seq5) | dict(
-            mus=pd.Series(self.mus.values,
-                          index=self.region.renumber_from(seq5).range)
+            mus=pd.Series(self.mus.values, index=self.region.renumber_from(seq5).range)
         )
 
     @property
     def profile(self):
-        """ Name of the mutational profile. """
+        """Name of the mutational profile."""
         return f"{self.mus_reg}__{self.mus_name}"
 
     def _get_dir_fields(self, top: Path, branch: str):
-        """ Get the path fields for the directory of this RNA.
+        """Get the path fields for the directory of this RNA.
 
         Parameters
         ----------
@@ -79,76 +83,78 @@ class RNAProfile(RNARegion):
         dict[str, str | pathlib.Path]
             Path fields.
         """
-        return {path.TOP: top,
-                path.SAMPLE: self.sample,
-                path.STEP: path.FOLD_STEP,
-                path.BRANCHES: path.add_branch(path.FOLD_STEP,
-                                               branch,
-                                               self.branches),
-                path.REF: self.ref,
-                path.REG: self.reg}
+        return {
+            path.TOP: top,
+            path.SAMPLE: self.sample,
+            path.STEP: path.FOLD_STEP,
+            path.BRANCHES: path.add_branch(path.FOLD_STEP, branch, self.branches),
+            path.REF: self.ref,
+            path.REG: self.reg,
+        }
 
     def _get_dir(self, top: Path, branch: str):
-        """ Get the directory in which to write files of this RNA. """
-        return path.builddir(path.REG_DIR_SEGS,
-                             self._get_dir_fields(top, branch))
+        """Get the directory in which to write files of this RNA."""
+        return path.builddir(path.REG_DIR_SEGS, self._get_dir_fields(top, branch))
 
-    def _get_file(self,
-                  top: Path,
-                  branch: str,
-                  path_seg: path.PathSegment,
-                  path_fields):
-        """ Get the path to a file of the RNA. """
+    def _get_file(
+        self, top: Path, branch: str, path_seg: path.PathSegment, path_fields
+    ):
+        """Get the path to a file of the RNA."""
         return self._get_dir(top, branch).joinpath(path_seg.build(path_fields))
 
     def get_fasta(self, top: Path, branch: str):
-        """ Get the path to the FASTA file. """
-        return self._get_file(top,
-                              branch,
-                              path.FastaSeg,
-                              {path.REF: self.profile,
-                               path.EXT: path.FASTA_EXTS[0]})
+        """Get the path to the FASTA file."""
+        return self._get_file(
+            top,
+            branch,
+            path.FastaSeg,
+            {path.REF: self.profile, path.EXT: path.FASTA_EXTS[0]},
+        )
 
     def get_ct_file(self, top: Path, branch: str):
-        """ Get the path to the connectivity table (CT) file. """
-        return self._get_file(top,
-                              branch,
-                              path.ConnectTableSeg,
-                              {path.PROFILE: self.profile,
-                               path.EXT: path.CT_EXT})
+        """Get the path to the connectivity table (CT) file."""
+        return self._get_file(
+            top,
+            branch,
+            path.ConnectTableSeg,
+            {path.PROFILE: self.profile, path.EXT: path.CT_EXT},
+        )
 
     def get_db_file(self, top: Path, branch: str):
-        """ Get the path to the dot-bracket (DB) file. """
-        return self._get_file(top,
-                              branch,
-                              path.DotBracketSeg,
-                              {path.PROFILE: self.profile,
-                               path.EXT: path.DOT_EXTS[0]})
+        """Get the path to the dot-bracket (DB) file."""
+        return self._get_file(
+            top,
+            branch,
+            path.DotBracketSeg,
+            {path.PROFILE: self.profile, path.EXT: path.DOT_EXTS[0]},
+        )
 
     def get_dms_file(self, top: Path, branch: str):
-        """ Get the path to the DMS data file. """
-        return self._get_file(top,
-                              branch,
-                              path.DmsReactsSeg,
-                              {path.PROFILE: self.profile,
-                               path.EXT: path.DMS_EXT})
+        """Get the path to the DMS data file."""
+        return self._get_file(
+            top,
+            branch,
+            path.DmsReactsSeg,
+            {path.PROFILE: self.profile, path.EXT: path.DMS_EXT},
+        )
 
     def get_varna_color_file(self, top: Path, branch: str):
-        """ Get the path to the VARNA color file. """
-        return self._get_file(top,
-                              branch,
-                              path.VarnaColorSeg,
-                              {path.PROFILE: self.profile,
-                               path.EXT: path.TXT_EXT})
+        """Get the path to the VARNA color file."""
+        return self._get_file(
+            top,
+            branch,
+            path.VarnaColorSeg,
+            {path.PROFILE: self.profile, path.EXT: path.TXT_EXT},
+        )
 
     def to_fasta(self, top: Path, branch: str):
-        """ Write the RNA sequence to a FASTA file. """
+        """Write the RNA sequence to a FASTA file."""
         fasta = self.get_fasta(top, branch)
         write_fasta(fasta, [self.seq_record])
         return fasta
 
     def to_dms(self, top: Path, branch: str):
-        """ Write the DMS reactivities to a DMS file. """
+        """Write the DMS reactivities to a DMS file."""
         # The DMS reactivities must be numbered starting from 1 at the
         # beginning of the region, even if the region does not start
         # at 1. Renumber the region from 1.
@@ -162,13 +168,12 @@ class RNAProfile(RNARegion):
         return dms_file
 
     def to_varna_color_file(self, top: Path, branch: str):
-        """ Write the VARNA colors to a file. """
+        """Write the VARNA colors to a file."""
         # Fill missing reactivities with -1, to signify no data.
-        varna_color = self.mus.fillna(-1.)
+        varna_color = self.mus.fillna(-1.0)
         # Write the values to the VARNA color file.
         varna_color_file = self.get_varna_color_file(top, branch)
-        varna_color.to_csv(varna_color_file,
-                           float_format="%f",
-                           header=False,
-                           index=False)
+        varna_color.to_csv(
+            varna_color_file, float_format="%f", header=False, index=False
+        )
         return varna_color_file

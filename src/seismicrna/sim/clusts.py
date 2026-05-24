@@ -7,11 +7,7 @@ import pandas as pd
 from click import command
 
 from ..core import path
-from ..core.arg import (opt_ct_file,
-                        opt_clust_conc,
-                        opt_force,
-                        opt_num_cpus,
-                        opt_seed)
+from ..core.arg import opt_ct_file, opt_clust_conc, opt_force, opt_num_cpus, opt_seed
 from ..core.header import ClustHeader
 from ..core.rna import from_ct
 from ..core.run import run_func
@@ -24,11 +20,13 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 PROPORTION = "Proportion"
 
 
-def sim_pclust(num_clusters: int,
-               concentration: float | None = None,
-               sort: bool = True,
-               seed: int | None = None):
-    """ Simulate proportions of clusters using a Dirichlet distribution.
+def sim_pclust(
+    num_clusters: int,
+    concentration: float | None = None,
+    sort: bool = True,
+    seed: int | None = None,
+):
+    """Simulate proportions of clusters using a Dirichlet distribution.
 
     Parameters
     ----------
@@ -50,20 +48,17 @@ def sim_pclust(num_clusters: int,
         props = np.ones(num_clusters)
     else:
         if concentration is None:
-            concentration = 1. / (num_clusters - 1.)
+            concentration = 1.0 / (num_clusters - 1.0)
         rng = np.random.default_rng(seed)
         props = rng.dirichlet(np.full(num_clusters, concentration))
         if sort:
             props = np.sort(props)[::-1]
-    return pd.Series(props,
-                     index=ClustHeader(ks=[num_clusters]).index,
-                     name=PROPORTION)
+    return pd.Series(props, index=ClustHeader(ks=[num_clusters]).index, name=PROPORTION)
 
 
-def sim_pclust_ct(ct_file: Path, *,
-                  concentration: float,
-                  force: bool,
-                  seed: int | None):
+def sim_pclust_ct(
+    ct_file: Path, *, concentration: float, force: bool, seed: int | None
+):
     """
     Simulate cluster proportions for a CT file and write them to disk.
 
@@ -97,44 +92,40 @@ def sim_pclust_ct(ct_file: Path, *,
 
 
 def load_pclust(pclust_file: Path):
-    """ Load cluster proportions from a file. """
+    """Load cluster proportions from a file."""
     return pd.read_csv(
-        pclust_file,
-        index_col=list(range(ClustHeader.get_num_levels()))
+        pclust_file, index_col=list(range(ClustHeader.get_num_levels()))
     )[PROPORTION]
 
 
 @run_func(COMMAND)
-def run(*,
-        ct_file: Iterable[str | Path],
-        clust_conc: float,
-        force: bool,
-        num_cpus: int,
-        seed: int | None):
-    """ Simulate the rate of each kind of mutation at each position. """
-    return dispatch(sim_pclust_ct,
-                    num_cpus=num_cpus,
-                    pass_num_cpus=False,
-                    as_list=True,
-                    ordered=False,
-                    raise_on_error=False,
-                    args=as_list_of_tuples(map(Path, ct_file)),
-                    kwargs=dict(concentration=(clust_conc if clust_conc
-                                               else None),
-                                force=force,
-                                seed=seed))
+def run(
+    *,
+    ct_file: Iterable[str | Path],
+    clust_conc: float,
+    force: bool,
+    num_cpus: int,
+    seed: int | None,
+):
+    """Simulate the rate of each kind of mutation at each position."""
+    return dispatch(
+        sim_pclust_ct,
+        num_cpus=num_cpus,
+        pass_num_cpus=False,
+        as_list=True,
+        ordered=False,
+        raise_on_error=False,
+        args=as_list_of_tuples(map(Path, ct_file)),
+        kwargs=dict(
+            concentration=(clust_conc if clust_conc else None), force=force, seed=seed
+        ),
+    )
 
 
-params = [
-    opt_ct_file,
-    opt_clust_conc,
-    opt_force,
-    opt_num_cpus,
-    opt_seed,
-]
+params = [opt_ct_file, opt_clust_conc, opt_force, opt_num_cpus, opt_seed]
 
 
 @command(COMMAND, params=params)
 def cli(*args, **kwargs):
-    """ Simulate the proportions of 5' and 3' end coordinates. """
+    """Simulate the proportions of 5' and 3' end coordinates."""
     run(*args, **kwargs)

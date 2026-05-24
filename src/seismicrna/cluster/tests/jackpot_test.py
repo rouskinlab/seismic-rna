@@ -7,37 +7,43 @@ import numpy as np
 from scipy.stats import binom, t as studentt
 
 from seismicrna.cluster.em import EMRun
-from seismicrna.cluster.jackpot import (calc_jackpot_quotient,
-                                        calc_jackpot_score,
-                                        calc_jackpot_score_ci,
-                                        calc_semi_g_anomaly,
-                                        linearize_ends_matrix,
-                                        _sim_clusters_dropped,
-                                        _sim_clusters_merged,
-                                        _sim_reads_dropped,
-                                        _sim_reads_merged)
+from seismicrna.cluster.jackpot import (
+    calc_jackpot_quotient,
+    calc_jackpot_score,
+    calc_jackpot_score_ci,
+    calc_semi_g_anomaly,
+    linearize_ends_matrix,
+    _sim_clusters_dropped,
+    _sim_clusters_merged,
+    _sim_reads_dropped,
+    _sim_reads_merged,
+)
 from seismicrna.cluster.uniq import UniqReads
-from seismicrna.core.arg.cli import (opt_max_em_iter,
-                                     opt_em_thresh,
-                                     opt_jackpot_conf_level,
-                                     opt_max_jackpot_quotient,
-                                     opt_max_jackpot_sims,
-                                     opt_jackpot_max_data,
-                                     PROBE_DMS)
+from seismicrna.core.arg.cli import (
+    opt_max_em_iter,
+    opt_em_thresh,
+    opt_jackpot_conf_level,
+    opt_max_jackpot_quotient,
+    opt_max_jackpot_sims,
+    opt_jackpot_max_data,
+    PROBE_DMS,
+)
 from seismicrna.core.array import find_dims
 from seismicrna.core.logs import Level, get_config, set_config
 from seismicrna.core.random import get_random_integer_generator
-from seismicrna.core.unbias import (CLUSTERS,
-                                    READS,
-                                    calc_p_ends_given_clust_noclose,
-                                    calc_p_noclose_given_clust,
-                                    calc_p_clust_given_noclose,
-                                    calc_p_clust_given_ends_noclose,
-                                    calc_p_nomut_window,
-                                    calc_p_noclose_given_ends,
-                                    calc_p_ends_given_noclose,
-                                    calc_p_mut_given_span_dropped,
-                                    _calc_p_mut_given_span_merged)
+from seismicrna.core.unbias import (
+    CLUSTERS,
+    READS,
+    calc_p_ends_given_clust_noclose,
+    calc_p_noclose_given_clust,
+    calc_p_clust_given_noclose,
+    calc_p_clust_given_ends_noclose,
+    calc_p_nomut_window,
+    calc_p_noclose_given_ends,
+    calc_p_ends_given_noclose,
+    calc_p_mut_given_span_dropped,
+    _calc_p_mut_given_span_merged,
+)
 from seismicrna.filter import run as run_filter
 from seismicrna.filter.dataset import FilterMutsDataset
 from seismicrna.sim.fold import run as run_sim_fold
@@ -47,24 +53,31 @@ from seismicrna.sim.idmut import run as run_sim_idmut
 
 
 class TestSimClusters(ut.TestCase):
-
     def test_sim_clusters_dropped(self):
         confidence = 0.995
         read_fraction = 2 / 3
         n_trials = 1000
         n_blocks = 10
         # Define data and parameters.
-        p_clust_per_read = np.array([[1 / 4, 1 / 4, 1 / 4, 1 / 4],
-                                     [4 / 8, 2 / 8, 1 / 8, 1 / 8],
-                                     [3 / 8, 1 / 8, 2 / 8, 2 / 8]] * n_blocks)
-        dims = find_dims([(READS, CLUSTERS,)],
-                         [p_clust_per_read],
-                         ["p_clust_per_read"],
-                         nonzero=[CLUSTERS])
+        p_clust_per_read = np.array(
+            [
+                [1 / 4, 1 / 4, 1 / 4, 1 / 4],
+                [4 / 8, 2 / 8, 1 / 8, 1 / 8],
+                [3 / 8, 1 / 8, 2 / 8, 2 / 8],
+            ]
+            * n_blocks
+        )
+        dims = find_dims(
+            [(READS, CLUSTERS)],
+            [p_clust_per_read],
+            ["p_clust_per_read"],
+            nonzero=[CLUSTERS],
+        )
         n_clusts = dims[CLUSTERS]
         # Simulate the cluster for each read.
-        clusters = np.vstack([_sim_clusters_dropped(p_clust_per_read, seed=i)
-                              for i in range(n_trials)])
+        clusters = np.vstack(
+            [_sim_clusters_dropped(p_clust_per_read, seed=i) for i in range(n_trials)]
+        )
         for k in range(n_clusts):
             # Find the reads assigned to this cluster.
             read_in_k = clusters == k
@@ -75,10 +88,12 @@ class TestSimClusters(ut.TestCase):
             n_reads_per_clust_exp = p_clust_per_read[:, k].sum()
             n_reads_per_clust_min = int(np.floor(n_reads_per_clust_exp))
             n_reads_per_clust_max = int(np.ceil(n_reads_per_clust_exp))
-            self.assertTrue(np.all(np.greater_equal(n_reads_per_clust,
-                                                    n_reads_per_clust_min)))
-            self.assertTrue(np.all(np.less_equal(n_reads_per_clust,
-                                                 n_reads_per_clust_max)))
+            self.assertTrue(
+                np.all(np.greater_equal(n_reads_per_clust, n_reads_per_clust_min))
+            )
+            self.assertTrue(
+                np.all(np.less_equal(n_reads_per_clust, n_reads_per_clust_max))
+            )
             # Confirm that the number of trials in which the lower
             # integer was chosen is accurate.
             n_reads_per_clust_min_count = np.count_nonzero(
@@ -87,27 +102,23 @@ class TestSimClusters(ut.TestCase):
             n_reads_per_clust_min_lo, n_reads_per_clust_min_up = binom.interval(
                 confidence,
                 n_trials,
-                1. - (n_reads_per_clust_exp - n_reads_per_clust_min)
+                1.0 - (n_reads_per_clust_exp - n_reads_per_clust_min),
             )
-            self.assertGreaterEqual(n_reads_per_clust_min_count,
-                                    n_reads_per_clust_min_lo)
-            self.assertLessEqual(n_reads_per_clust_min_count,
-                                 n_reads_per_clust_min_up)
+            self.assertGreaterEqual(
+                n_reads_per_clust_min_count, n_reads_per_clust_min_lo
+            )
+            self.assertLessEqual(n_reads_per_clust_min_count, n_reads_per_clust_min_up)
             # Confirm that the number of trials in which each read was
             # assigned to this cluster is accurate.
             n_clust_per_read = np.count_nonzero(read_in_k, axis=0)
             n_clust_per_read_lo, n_clust_per_read_up = binom.interval(
-                confidence,
-                n_trials,
-                p_clust_per_read[:, k]
+                confidence, n_trials, p_clust_per_read[:, k]
             )
             self.assertGreaterEqual(
-                np.mean(n_clust_per_read >= n_clust_per_read_lo),
-                read_fraction
+                np.mean(n_clust_per_read >= n_clust_per_read_lo), read_fraction
             )
             self.assertGreaterEqual(
-                np.mean(n_clust_per_read <= n_clust_per_read_up),
-                read_fraction
+                np.mean(n_clust_per_read <= n_clust_per_read_up), read_fraction
             )
 
     def test_sim_clusters_merged(self):
@@ -119,8 +130,9 @@ class TestSimClusters(ut.TestCase):
         p_clust = np.array([1 / 4, 1 / 2, 1 / 4])
         n_clust = p_clust.size
         # Simulate the cluster for each read.
-        clusters = np.vstack([_sim_clusters_merged(p_clust, n_reads, seed=i)
-                              for i in range(n_trials)])
+        clusters = np.vstack(
+            [_sim_clusters_merged(p_clust, n_reads, seed=i) for i in range(n_trials)]
+        )
         for k in range(n_clust):
             # Find the reads assigned to this cluster.
             read_in_k = clusters == k
@@ -131,10 +143,12 @@ class TestSimClusters(ut.TestCase):
             n_reads_per_clust_exp = p_clust[k] * n_reads
             n_reads_per_clust_min = int(np.floor(n_reads_per_clust_exp))
             n_reads_per_clust_max = int(np.ceil(n_reads_per_clust_exp))
-            self.assertTrue(np.all(np.greater_equal(n_reads_per_clust,
-                                                    n_reads_per_clust_min)))
-            self.assertTrue(np.all(np.less_equal(n_reads_per_clust,
-                                                 n_reads_per_clust_max)))
+            self.assertTrue(
+                np.all(np.greater_equal(n_reads_per_clust, n_reads_per_clust_min))
+            )
+            self.assertTrue(
+                np.all(np.less_equal(n_reads_per_clust, n_reads_per_clust_max))
+            )
             # Confirm that the number of trials in which the lower
             # integer was chosen is accurate.
             n_reads_per_clust_min_count = np.count_nonzero(
@@ -143,38 +157,33 @@ class TestSimClusters(ut.TestCase):
             n_reads_per_clust_min_lo, n_reads_per_clust_min_up = binom.interval(
                 confidence,
                 n_trials,
-                1. - (n_reads_per_clust_exp - n_reads_per_clust_min)
+                1.0 - (n_reads_per_clust_exp - n_reads_per_clust_min),
             )
-            self.assertGreaterEqual(n_reads_per_clust_min_count,
-                                    n_reads_per_clust_min_lo)
-            self.assertLessEqual(n_reads_per_clust_min_count,
-                                 n_reads_per_clust_min_up)
+            self.assertGreaterEqual(
+                n_reads_per_clust_min_count, n_reads_per_clust_min_lo
+            )
+            self.assertLessEqual(n_reads_per_clust_min_count, n_reads_per_clust_min_up)
             # Confirm that each read is assigned to this cluster with the
             # correct probability.
             n_clust_per_read = np.count_nonzero(read_in_k, axis=0)
             n_clust_per_read_lo, n_clust_per_read_up = binom.interval(
-                confidence,
-                n_trials,
-                p_clust[k]
+                confidence, n_trials, p_clust[k]
             )
             self.assertGreaterEqual(
-                np.mean(n_clust_per_read >= n_clust_per_read_lo),
-                read_fraction
+                np.mean(n_clust_per_read >= n_clust_per_read_lo), read_fraction
             )
             self.assertGreaterEqual(
-                np.mean(n_clust_per_read <= n_clust_per_read_up),
-                read_fraction
+                np.mean(n_clust_per_read <= n_clust_per_read_up), read_fraction
             )
 
 
 class TestSimReads(ut.TestCase):
-
     @staticmethod
     def count_reads(reads: np.ndarray, clusts: np.ndarray, n_clust: int):
-        """ Count reads for each cluster and position. """
-        dims = find_dims([(READS, "positions + 2"), (READS,)],
-                         [reads, clusts],
-                         ["reads", "clusts"])
+        """Count reads for each cluster and position."""
+        dims = find_dims(
+            [(READS, "positions + 2"), (READS,)], [reads, clusts], ["reads", "clusts"]
+        )
         n_pos = dims["positions + 2"] - 2
         clust_counts = np.zeros(n_clust, dtype=int)
         span_counts = np.zeros((n_pos, n_clust), dtype=int)
@@ -183,7 +192,7 @@ class TestSimReads(ut.TestCase):
             reads_k = reads[clusts == k]
             clust_counts[k], _ = reads_k.shape
             for read in reads_k:
-                span_counts[read[-2]: read[-1] + 1, k] += 1
+                span_counts[read[-2] : read[-1] + 1, k] += 1
             mut_counts[:, k] = reads_k[:, :-2].sum(axis=0)
         return clust_counts, span_counts, mut_counts
 
@@ -194,24 +203,18 @@ class TestSimReads(ut.TestCase):
         n_clust = 3
         min_mut_gap = 4
         max_fmut = 0.3
-        cluster_alpha = 2.
+        cluster_alpha = 2.0
         p_mut = rng.random((n_pos, n_clust)) * max_fmut
         p_ends = np.triu(rng.random((n_pos, n_pos)))
         p_ends /= p_ends.sum()
         p_clust = rng.dirichlet(np.full(n_clust, cluster_alpha))
         # Calculate the parameters with no two mutations too close.
-        p_nomut_window = calc_p_nomut_window(
-            p_mut, min_mut_gap
-        )
-        p_noclose_given_ends = calc_p_noclose_given_ends(
-            p_mut, p_nomut_window
-        )
+        p_nomut_window = calc_p_nomut_window(p_mut, min_mut_gap)
+        p_noclose_given_ends = calc_p_noclose_given_ends(p_mut, p_nomut_window)
         p_mut_given_span_dropped = calc_p_mut_given_span_dropped(
             p_mut, p_ends, p_noclose_given_ends, p_nomut_window
         )
-        p_noclose_given_clust = calc_p_noclose_given_clust(
-            p_ends, p_noclose_given_ends
-        )
+        p_noclose_given_clust = calc_p_noclose_given_clust(p_ends, p_noclose_given_ends)
         p_ends_given_clust_noclose = calc_p_ends_given_clust_noclose(
             p_ends, p_noclose_given_ends
         )
@@ -222,26 +225,19 @@ class TestSimReads(ut.TestCase):
             p_ends_given_clust_noclose, p_clust_given_noclose
         )
         uniq_end5s, uniq_end3s, p_ends_given_noclose = linearize_ends_matrix(
-            calc_p_ends_given_noclose(
-                p_ends_given_clust_noclose, p_clust_given_noclose)
+            calc_p_ends_given_noclose(p_ends_given_clust_noclose, p_clust_given_noclose)
         )
         # Choose 5'/3' end coordinates.
-        ends = rng.choice(p_ends_given_noclose.size,
-                          n_reads,
-                          p=p_ends_given_noclose,
-                          replace=True)
+        ends = rng.choice(
+            p_ends_given_noclose.size, n_reads, p=p_ends_given_noclose, replace=True
+        )
         end5s = uniq_end5s[ends]
         end3s = uniq_end3s[ends]
         # Simulate reads and clusters.
-        reads, clusts = _sim_reads_dropped(end5s,
-                                   end3s,
-                                   p_clust_given_ends_noclose,
-                                   p_mut,
-                                   min_mut_gap,
-                                   seed=0)
-        clust_counts, span_counts, mut_counts = self.count_reads(reads,
-                                                                 clusts,
-                                                                 n_clust)
+        reads, clusts = _sim_reads_dropped(
+            end5s, end3s, p_clust_given_ends_noclose, p_mut, min_mut_gap, seed=0
+        )
+        clust_counts, span_counts, mut_counts = self.count_reads(reads, clusts, n_clust)
         # Confirm the 5'/3' coordinates match.
         self.assertTupleEqual(reads.shape, (n_reads, n_pos + 2))
         self.assertTupleEqual(clusts.shape, (n_reads,))
@@ -249,8 +245,7 @@ class TestSimReads(ut.TestCase):
         self.assertTrue(np.all(reads[:, -1] == end3s))
         # Number of reads in each cluster.
         self.assertEqual(clust_counts.sum(), n_reads)
-        clust_counts_expect = p_clust_given_ends_noclose[(end5s,
-                                                          end3s)].sum(axis=0)
+        clust_counts_expect = p_clust_given_ends_noclose[(end5s, end3s)].sum(axis=0)
         self.assertTrue(np.all(clust_counts >= np.floor(clust_counts_expect)))
         self.assertTrue(np.all(clust_counts <= np.ceil(clust_counts_expect)))
         # Number of reads covering each position in each cluster.
@@ -261,8 +256,7 @@ class TestSimReads(ut.TestCase):
             for j in range(n_pos):
                 self.assertEqual(
                     span_counts[j, k],
-                    np.count_nonzero(np.logical_and(j >= end5s_k,
-                                                    j <= end3s_k))
+                    np.count_nonzero(np.logical_and(j >= end5s_k, j <= end3s_k)),
                 )
         # Number of mutations at each position in each cluster.
         mut_counts_expect_lo, mut_counts_expect_up = binom.interval(
@@ -273,7 +267,7 @@ class TestSimReads(ut.TestCase):
         # Distance between each pair of mutations.
         for read in reads[:, :n_pos]:
             self.assertTrue(np.all(np.diff(np.flatnonzero(read)) > min_mut_gap))
-    
+
     def test_sim_reads_merged(self):
         rng = np.random.default_rng(seed=1)
         n_pos = 40
@@ -281,7 +275,7 @@ class TestSimReads(ut.TestCase):
         n_clust = 3
         min_mut_gap = 4
         max_fmut = 0.3
-        cluster_alpha = 2.
+        cluster_alpha = 2.0
         p_mut = rng.random((n_pos, n_clust)) * max_fmut
         p_ends = np.triu(rng.random((n_pos, n_pos)))
         p_ends /= p_ends.sum()
@@ -292,22 +286,14 @@ class TestSimReads(ut.TestCase):
         )
         uniq_end5s, uniq_end3s, p_ends_linear = linearize_ends_matrix(p_ends)
         # Choose 5'/3' end coordinates.
-        ends = rng.choice(p_ends_linear.size,
-                          n_reads,
-                          p=p_ends_linear,
-                          replace=True)
+        ends = rng.choice(p_ends_linear.size, n_reads, p=p_ends_linear, replace=True)
         end5s = uniq_end5s[ends]
         end3s = uniq_end3s[ends]
         # Simulate reads and clusters.
-        reads, clusts = _sim_reads_merged(end5s,
-                                   end3s,
-                                   p_clust,
-                                   p_mut,
-                                   min_mut_gap,
-                                   seed=0)
-        clust_counts, span_counts, mut_counts = self.count_reads(reads,
-                                                                 clusts,
-                                                                 n_clust)
+        reads, clusts = _sim_reads_merged(
+            end5s, end3s, p_clust, p_mut, min_mut_gap, seed=0
+        )
+        clust_counts, span_counts, mut_counts = self.count_reads(reads, clusts, n_clust)
         # Confirm the 5'/3' coordinates match.
         self.assertTupleEqual(reads.shape, (n_reads, n_pos + 2))
         self.assertTupleEqual(clusts.shape, (n_reads,))
@@ -326,8 +312,7 @@ class TestSimReads(ut.TestCase):
             for j in range(n_pos):
                 self.assertEqual(
                     span_counts[j, k],
-                    np.count_nonzero(np.logical_and(j >= end5s_k,
-                                                    j <= end3s_k))
+                    np.count_nonzero(np.logical_and(j >= end5s_k, j <= end3s_k)),
                 )
         # Number of mutations at each position in each cluster.
         mut_counts_expect_lo, mut_counts_expect_up = binom.interval(
@@ -341,37 +326,36 @@ class TestSimReads(ut.TestCase):
 
 
 class TestCalcSemiGAnomaly(ut.TestCase):
-
     def test_float_equal(self):
         num_obs = 8
-        num_exp = 8.
-        expect = 0.
+        num_exp = 8.0
+        expect = 0.0
         result = calc_semi_g_anomaly(num_obs, np.log(num_exp))
         self.assertIsInstance(result, float)
         self.assertTrue(np.isclose(result, expect))
 
     def test_float_unequal(self):
         num_obs = 8
-        num_exp = 7.
-        expect = 8 * np.log(8 / 7.)
+        num_exp = 7.0
+        expect = 8 * np.log(8 / 7.0)
         result = calc_semi_g_anomaly(num_obs, np.log(num_exp))
         self.assertIsInstance(result, float)
         self.assertTrue(np.isclose(result, expect))
 
     def test_array_all_equal(self):
         num_obs = np.array([2, 3, 1])
-        num_exp = np.array([2., 3., 1.])
-        expect = np.array([0., 0., 0.])
+        num_exp = np.array([2.0, 3.0, 1.0])
+        expect = np.array([0.0, 0.0, 0.0])
         result = calc_semi_g_anomaly(num_obs, np.log(num_exp))
         self.assertIsInstance(result, np.ndarray)
         self.assertTrue(np.allclose(result, expect))
 
     def test_array_all_unequal(self):
         num_obs = np.array([2, 3, 1])
-        num_exp = np.array([1., 2., 3.])
-        expect = np.array([2 * np.log(2 / 1.),
-                           3 * np.log(3 / 2.),
-                           1 * np.log(1 / 3.)])
+        num_exp = np.array([1.0, 2.0, 3.0])
+        expect = np.array(
+            [2 * np.log(2 / 1.0), 3 * np.log(3 / 2.0), 1 * np.log(1 / 3.0)]
+        )
         result = calc_semi_g_anomaly(num_obs, np.log(num_exp))
         self.assertIsInstance(result, np.ndarray)
         self.assertTrue(np.allclose(result, expect))
@@ -397,103 +381,110 @@ class TestBootstrapJackpotScores(ut.TestCase):
         self._tmpdir = tempfile.TemporaryDirectory()
         self.sim_dir.mkdir()
         self._config = get_config()
-        set_config(verbosity=Level.ERROR,
-                   log_file_path=None,
-                   exit_on_error=True)
+        set_config(verbosity=Level.ERROR, log_file_path=None, exit_on_error=True)
 
     def tearDown(self):
         self._tmpdir.cleanup()
         self._tmpdir = None
         set_config(*self._config)
 
-    def sim_jackpot_quotient(self,
-                             mut_collisions: str,
-                             min_mut_gap: int,
-                             min_mut_gap_weights: str,
-                             injected_mut_probs: str,
-                             seed: int):
-        """ Simulate a dataset and return its jackpotting quotient. """
+    def sim_jackpot_quotient(
+        self,
+        mut_collisions: str,
+        min_mut_gap: int,
+        min_mut_gap_weights: str,
+        injected_mut_probs: str,
+        seed: int,
+    ):
+        """Simulate a dataset and return its jackpotting quotient."""
         n_pos = 60
         n_reads = 50000
         n_clusts = 2
         # Simulate "ideal" data with no low-quality bases or deletions.
-        run_sim_ref(refs=self.REFS,
-                    ref=self.REF,
-                    reflen=n_pos,
-                    sim_dir=self.sim_dir,
-                    seed=seed)
+        run_sim_ref(
+            refs=self.REFS, ref=self.REF, reflen=n_pos, sim_dir=self.sim_dir, seed=seed
+        )
         fasta = self.sim_dir.joinpath("refs", f"{self.REFS}.fa")
         run_sim_fold(fasta, probe=PROBE_DMS, fold_max=n_clusts, sim_dir=self.sim_dir)
         param_dir = self.sim_dir.joinpath("params", self.REF, "full")
         ct_file = param_dir.joinpath("simulated.ct")
-        pmut = [("loq", 0.),
-                ("ac", 0.25),
-                ("ag", 0.25),
-                ("at", 0.50),
-                ("ca", 0.25),
-                ("cg", 0.50),
-                ("ct", 0.25),
-                ("ga", 0.25),
-                ("gc", 0.50),
-                ("gt", 0.25),
-                ("ta", 0.50),
-                ("tc", 0.25),
-                ("tg", 0.25)]
-        pmut_paired = pmut + [("am", 0.005),
-                              ("cm", 0.005),
-                              ("gm", 0.005),
-                              ("tm", 0.005)]
-        pmut_unpaired = pmut + [("am", 0.1),
-                                ("cm", 0.1),
-                                ("gm", 0.005),
-                                ("tm", 0.005)]
-        run_sim_params(ct_file=[ct_file],
-                       pmut_paired=pmut_paired,
-                       pmut_unpaired=pmut_unpaired,
-                       probe=PROBE_DMS,
-                       center_fmean=0.5,
-                       length_fmean=0.5,
-                       clust_conc=2.,
-                       seed=seed)
-        idmut_report_file, = run_sim_idmut(param_dir=[param_dir],
-                                             sample=self.SAMPLE,
-                                             num_reads=n_reads,
-                                             probe="none",
-                                             mut_collisions=mut_collisions,
-                                             min_mut_gap=min_mut_gap,
-                                             min_mut_gap_weights=min_mut_gap_weights,
-                                             injected_mut_probs=injected_mut_probs,
-                                             seed=seed)
+        pmut = [
+            ("loq", 0.0),
+            ("ac", 0.25),
+            ("ag", 0.25),
+            ("at", 0.50),
+            ("ca", 0.25),
+            ("cg", 0.50),
+            ("ct", 0.25),
+            ("ga", 0.25),
+            ("gc", 0.50),
+            ("gt", 0.25),
+            ("ta", 0.50),
+            ("tc", 0.25),
+            ("tg", 0.25),
+        ]
+        pmut_paired = pmut + [
+            ("am", 0.005),
+            ("cm", 0.005),
+            ("gm", 0.005),
+            ("tm", 0.005),
+        ]
+        pmut_unpaired = pmut + [("am", 0.1), ("cm", 0.1), ("gm", 0.005), ("tm", 0.005)]
+        run_sim_params(
+            ct_file=[ct_file],
+            pmut_paired=pmut_paired,
+            pmut_unpaired=pmut_unpaired,
+            probe=PROBE_DMS,
+            center_fmean=0.5,
+            length_fmean=0.5,
+            clust_conc=2.0,
+            seed=seed,
+        )
+        (idmut_report_file,) = run_sim_idmut(
+            param_dir=[param_dir],
+            sample=self.SAMPLE,
+            num_reads=n_reads,
+            probe="none",
+            mut_collisions=mut_collisions,
+            min_mut_gap=min_mut_gap,
+            min_mut_gap_weights=min_mut_gap_weights,
+            injected_mut_probs=injected_mut_probs,
+            seed=seed,
+        )
         # Filter the data.
-        filter_dir, = run_filter([idmut_report_file],
-                             mask_polya=0,
-                             count_del=True,
-                             count_ins=True,
-                             probe="none",
-                             mask_a=False,
-                             mask_c=False,
-                             mask_g=False,
-                             mask_u=False,
-                             min_mut_gap=min_mut_gap,
-                             mut_collisions=mut_collisions,
-                             min_finfo_read=1.,
-                             min_ninfo_pos=1,
-                             quick_unbias_thresh=0.)
+        (filter_dir,) = run_filter(
+            [idmut_report_file],
+            mask_polya=0,
+            count_del=True,
+            count_ins=True,
+            probe="none",
+            mask_a=False,
+            mask_c=False,
+            mask_g=False,
+            mask_u=False,
+            min_mut_gap=min_mut_gap,
+            mut_collisions=mut_collisions,
+            min_finfo_read=1.0,
+            min_ninfo_pos=1,
+            quick_unbias_thresh=0.0,
+        )
         filter_report_file = filter_dir.joinpath("filter-report.json")
         # Cluster the data and calculate the jackpotting quotient.
         filter_dataset = FilterMutsDataset(filter_report_file)
         uniq_reads = UniqReads.from_dataset_contig(filter_dataset, "")
-        em_run = EMRun(uniq_reads,
-                       k=n_clusts,
-                       seed=seed,
-                       min_iter=2,
-                       max_iter=opt_max_em_iter.default,
-                       em_thresh=opt_em_thresh.default,
-                       jackpot=True,
-                       jackpot_conf_level=opt_jackpot_conf_level.default,
-                       max_jackpot_quotient=opt_max_jackpot_quotient.default,
-                       max_jackpot_sims=opt_max_jackpot_sims.default,
-                       jackpot_max_data=opt_jackpot_max_data.default)
+        em_run = EMRun(
+            uniq_reads,
+            k=n_clusts,
+            seed=seed,
+            min_iter=2,
+            max_iter=opt_max_em_iter.default,
+            em_thresh=opt_em_thresh.default,
+            jackpot=True,
+            jackpot_conf_level=opt_jackpot_conf_level.default,
+            max_jackpot_quotient=opt_max_jackpot_quotient.default,
+            max_jackpot_sims=opt_max_jackpot_sims.default,
+            jackpot_max_data=opt_jackpot_max_data.default,
+        )
         # Delete the simulated files so that this function can run again
         # if necessary.
         shutil.rmtree(self.sim_dir)
@@ -501,8 +492,9 @@ class TestBootstrapJackpotScores(ut.TestCase):
         return em_run.jackpot_quotient
 
     @staticmethod
-    def calc_confidence_interval(log_jackpot_quotients: list[float],
-                                 confidence_level: float):
+    def calc_confidence_interval(
+        log_jackpot_quotients: list[float], confidence_level: float
+    ):
         n = len(log_jackpot_quotients)
         if n <= 1:
             return np.nan, np.nan
@@ -513,52 +505,55 @@ class TestBootstrapJackpotScores(ut.TestCase):
         j_up = mean + std_err * t_up
         return j_lo, j_up
 
-    def run_ideal_jackpot(self,
-                          mut_collisions: str,
-                          min_mut_gap: int,
-                          min_mut_gap_weights: str = "",
-                          injected_mut_probs: str = ""):
-        """ Test that bootstrapping "perfect" data correctly returns a
-        jackpotting quotient that is expected to be 1. """
+    def run_ideal_jackpot(
+        self,
+        mut_collisions: str,
+        min_mut_gap: int,
+        min_mut_gap_weights: str = "",
+        injected_mut_probs: str = "",
+    ):
+        """Test that bootstrapping "perfect" data correctly returns a
+        jackpotting quotient that is expected to be 1."""
         confidence_level = 0.99
         confidence_width = 0.01
         log_jackpot_quotients = list()
         seeds = get_random_integer_generator(0)
         for seed in seeds:
-            jackpot_quotient = self.sim_jackpot_quotient(mut_collisions,
-                                                         min_mut_gap,
-                                                         min_mut_gap_weights,
-                                                         injected_mut_probs,
-                                                         seed)
+            jackpot_quotient = self.sim_jackpot_quotient(
+                mut_collisions,
+                min_mut_gap,
+                min_mut_gap_weights,
+                injected_mut_probs,
+                seed,
+            )
             log_jackpot_quotients.append(np.log(jackpot_quotient))
-            jq_lo, jq_up = self.calc_confidence_interval(log_jackpot_quotients,
-                                                         confidence_level)
+            jq_lo, jq_up = self.calc_confidence_interval(
+                log_jackpot_quotients, confidence_level
+            )
             if not np.isnan(jq_lo) and not np.isnan(jq_up):
                 # Verify that the confidence interval contains 0.
-                self.assertLessEqual(jq_lo, 0.)
-                self.assertGreaterEqual(jq_up, 0.)
+                self.assertLessEqual(jq_lo, 0.0)
+                self.assertGreaterEqual(jq_up, 0.0)
                 if jq_up - jq_lo < confidence_width:
                     # The confidence interval has converged around 0.
                     break
-    
+
     def test_ideal_jackpot_uncorrected(self):
-        self.run_ideal_jackpot(mut_collisions="drop",
-                               min_mut_gap=0)
-        self.run_ideal_jackpot(mut_collisions="merge",
-                               min_mut_gap=0)
-    
+        self.run_ideal_jackpot(mut_collisions="drop", min_mut_gap=0)
+        self.run_ideal_jackpot(mut_collisions="merge", min_mut_gap=0)
+
     def test_ideal_jackpot_drop(self):
-        self.run_ideal_jackpot(mut_collisions="drop",
-                               min_mut_gap=4)
-    
+        self.run_ideal_jackpot(mut_collisions="drop", min_mut_gap=4)
+
     def test_ideal_jackpot_merge(self):
-        self.run_ideal_jackpot(mut_collisions="merge",
-                               min_mut_gap=6, 
-                               injected_mut_probs="1:0.5,2:0.25,3:0.125")
+        self.run_ideal_jackpot(
+            mut_collisions="merge",
+            min_mut_gap=6,
+            injected_mut_probs="1:0.5,2:0.25,3:0.125",
+        )
 
 
 class TestLinearizeEndsMatrix(ut.TestCase):
-
     def test_empty_matrix(self):
         m = np.zeros((4, 4))
         end5s, end3s, vals = linearize_ends_matrix(m)
@@ -584,8 +579,8 @@ class TestLinearizeEndsMatrix(ut.TestCase):
     def test_only_upper_triangle(self):
         # Lower-triangle entries should be ignored
         m = np.zeros((3, 3))
-        m[0, 1] = 1.0   # upper triangle
-        m[1, 0] = 9.0   # lower triangle — must be ignored
+        m[0, 1] = 1.0  # upper triangle
+        m[1, 0] = 9.0  # lower triangle — must be ignored
         end5s, end3s, vals = linearize_ends_matrix(m)
         self.assertEqual(list(end5s), [0])
         self.assertEqual(list(end3s), [1])
@@ -604,10 +599,9 @@ class TestLinearizeEndsMatrix(ut.TestCase):
 
 
 class TestCalcJackpotScore(ut.TestCase):
-
     def test_zero_reads_empty_anomalies(self):
         result = calc_jackpot_score(np.array([]), n_reads=0)
-        self.assertEqual(result, 0.)
+        self.assertEqual(result, 0.0)
 
     def test_zero_reads_nonempty_raises(self):
         with self.assertRaises(ValueError):
@@ -617,7 +611,7 @@ class TestCalcJackpotScore(ut.TestCase):
         # When obs == exp, semi-G anomaly = n * log(n/n) = 0 for all reads
         anomalies = np.zeros(5)
         result = calc_jackpot_score(anomalies, n_reads=10)
-        self.assertAlmostEqual(result, 0.)
+        self.assertAlmostEqual(result, 0.0)
 
     def test_formula(self):
         anomalies = np.array([3.0, 1.0, 2.0])
@@ -630,11 +624,10 @@ class TestCalcJackpotScore(ut.TestCase):
         # semi_g_anomaly = n_reads * log(1) = 0
         n = 100
         anomalies = np.array([0.0])
-        self.assertAlmostEqual(calc_jackpot_score(anomalies, n_reads=n), 0.)
+        self.assertAlmostEqual(calc_jackpot_score(anomalies, n_reads=n), 0.0)
 
 
 class TestCalcJackpotScoreCi(ut.TestCase):
-
     def test_single_score_returns_nan(self):
         lo, up = calc_jackpot_score_ci([0.5], confidence_level=0.95)
         self.assertTrue(np.isnan(lo))
@@ -669,7 +662,6 @@ class TestCalcJackpotScoreCi(ut.TestCase):
 
 
 class TestCalcJackpotQuotient(ut.TestCase):
-
     def test_equal_scores_returns_one(self):
         self.assertAlmostEqual(calc_jackpot_quotient(0.5, 0.5), 1.0)
 
@@ -687,8 +679,7 @@ class TestCalcJackpotQuotient(ut.TestCase):
     def test_formula(self):
         real = 0.7
         null = 0.3
-        self.assertAlmostEqual(calc_jackpot_quotient(real, null),
-                               np.exp(real - null))
+        self.assertAlmostEqual(calc_jackpot_quotient(real, null), np.exp(real - null))
 
 
 if __name__ == "__main__":

@@ -5,11 +5,11 @@ from ..validate import require_isinstance
 
 
 class BadChecksumError(ValueError):
-    """ A file or piece of data has the wrong checksum. """
+    """A file or piece of data has the wrong checksum."""
 
 
 def calc_sha512_bytes(data: bytes):
-    """ Calculate the SHA-512 checksum of a bytestring.
+    """Calculate the SHA-512 checksum of a bytestring.
 
     Parameters
     ----------
@@ -25,7 +25,7 @@ def calc_sha512_bytes(data: bytes):
 
 
 def calc_sha512_path(path: str | Path, chunk_size: int = 8192):
-    """ Calculate the SHA-512 checksum of a file.
+    """Calculate the SHA-512 checksum of a file.
 
     Parameters
     ----------

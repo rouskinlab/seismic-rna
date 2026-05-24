@@ -8,42 +8,40 @@ import numpy as np
 from click import command
 from numba import jit
 
-from .idmut import (_get_param_dir_fields,
-                    _load_param_dir,
-                    parse_injected_mut_probs,
-                    parse_min_mut_gap_weights,
-                    set_sim_mut_params)
+from .idmut import (
+    _get_param_dir_fields,
+    _load_param_dir,
+    parse_injected_mut_probs,
+    parse_min_mut_gap_weights,
+    set_sim_mut_params,
+)
 from ..core import path
-from ..core.arg import (ILLUMINA_TRUSEQ_ADAPTER_R1,
-                        ILLUMINA_TRUSEQ_ADAPTER_R2,
-                        arg_input_path,
-                        opt_param_dir,
-                        opt_profile_name,
-                        opt_sample_sim,
-                        opt_read_length,
-                        opt_paired_end,
-                        opt_reverse_fraction,
-                        opt_probe,
-                        opt_min_mut_gap,
-                        opt_min_mut_gap_weights,
-                        opt_mut_collisions,
-                        opt_injected_mut_probs,
-                        opt_fq_gzip,
-                        opt_num_reads,
-                        opt_batch_size,
-                        opt_num_cpus,
-                        opt_seed,
-                        opt_force)
+from ..core.arg import (
+    ILLUMINA_TRUSEQ_ADAPTER_R1,
+    ILLUMINA_TRUSEQ_ADAPTER_R2,
+    arg_input_path,
+    opt_param_dir,
+    opt_profile_name,
+    opt_sample_sim,
+    opt_read_length,
+    opt_paired_end,
+    opt_reverse_fraction,
+    opt_probe,
+    opt_min_mut_gap,
+    opt_min_mut_gap_weights,
+    opt_mut_collisions,
+    opt_injected_mut_probs,
+    opt_fq_gzip,
+    opt_num_reads,
+    opt_batch_size,
+    opt_num_cpus,
+    opt_seed,
+    opt_force,
+)
 from ..core.array import get_length
 from ..core.logs import logger
 from ..core.ngs import HI_QUAL, LO_QUAL
-from ..core.rel import (MATCH,
-                        NOCOV,
-                        SUB_A,
-                        SUB_C,
-                        SUB_G,
-                        SUB_T,
-                        DELET)
+from ..core.rel import MATCH, NOCOV, SUB_A, SUB_C, SUB_G, SUB_T, DELET
 from ..core.report import SampleF
 from ..core.run import run_func
 from ..core.seq import DNA, BASEA, BASEC, BASEG, BASET, BASEN
@@ -51,9 +49,7 @@ from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write, write_mode
 from ..filter.main import set_mut_gap_params
 from ..idmut.batch import ReadNamesBatch, IDmutRegionMutsBatch
-from ..idmut.dataset import (ReadNamesDataset,
-                              IDmutMutsDataset,
-                              load_idmut_dataset)
+from ..idmut.dataset import ReadNamesDataset, IDmutMutsDataset, load_idmut_dataset
 from ..idmut.report import IDmutReport
 from ..idmut.sim import simulate_batches
 
@@ -62,7 +58,7 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 
 @jit()
 def _complement(base: str):
-    """ JIT-compiled function to get the complement of a base. """
+    """JIT-compiled function to get the complement of a base."""
     if base == BASEA:
         return BASET
     if base == BASEC:
@@ -75,15 +71,17 @@ def _complement(base: str):
 
 
 @jit()
-def _generate_fastq_read_qual(rels: np.ndarray,
-                              refseq: str,
-                              adapter: str,
-                              read_length: int,
-                              revcomp: bool,
-                              hi_qual: str,
-                              lo_qual: str):
-    """ Generate a FASTQ line for a read. """
-    ref_length, = rels.shape
+def _generate_fastq_read_qual(
+    rels: np.ndarray,
+    refseq: str,
+    adapter: str,
+    read_length: int,
+    revcomp: bool,
+    hi_qual: str,
+    lo_qual: str,
+):
+    """Generate a FASTQ line for a read."""
+    (ref_length,) = rels.shape
     # Map each type of relationship to a type of base in the read.
     if revcomp:
         ref_pos = ref_length - 1
@@ -146,27 +144,27 @@ def _generate_fastq_read_qual(rels: np.ndarray,
     return "".join(read), "".join(qual)
 
 
-def generate_fastq_record(name: str,
-                          rels: np.ndarray,
-                          refseq: str,
-                          adapter: str,
-                          read_length: int,
-                          reverse: bool = False,
-                          hi_qual: str = HI_QUAL,
-                          lo_qual: str = LO_QUAL):
-    """ Generate a FASTQ line for a read. """
+def generate_fastq_record(
+    name: str,
+    rels: np.ndarray,
+    refseq: str,
+    adapter: str,
+    read_length: int,
+    reverse: bool = False,
+    hi_qual: str = HI_QUAL,
+    lo_qual: str = LO_QUAL,
+):
+    """Generate a FASTQ line for a read."""
     if len(refseq) < get_length(rels, "rels"):
-        raise ValueError(f"Length of the reference sequence ({len(refseq)}) "
-                         f"is less than that of rels ({get_length(rels)})")
+        raise ValueError(
+            f"Length of the reference sequence ({len(refseq)}) "
+            f"is less than that of rels ({get_length(rels)})"
+        )
     if np.any(rels == NOCOV):
         raise ValueError(f"rels contains {NOCOV}: {rels}")
-    read, qual = _generate_fastq_read_qual(rels,
-                                           refseq,
-                                           adapter,
-                                           read_length,
-                                           reverse,
-                                           hi_qual,
-                                           lo_qual)
+    read, qual = _generate_fastq_read_qual(
+        rels, refseq, adapter, read_length, reverse, hi_qual, lo_qual
+    )
     return f"@{name}\n{read}\n+\n{qual}\n"
 
 
@@ -196,25 +194,27 @@ def _get_common_attr(a: Any, b: Any, attr: str):
     rval = getattr(a, attr)
     nval = getattr(b, attr)
     if rval != nval:
-        raise ValueError(f"Got different values of {repr(attr)} for {a} "
-                         f"({repr(rval)}) and {b} ({repr(nval)})")
+        raise ValueError(
+            f"Got different values of {repr(attr)} for {a} "
+            f"({repr(rval)}) and {b} ({repr(nval)})"
+        )
     return rval
 
 
 def generate_fastq(
-        top: Path,
-        sample: str,
-        ref: str,
-        refseq: DNA,
-        paired: bool,
-        read_length: int,
-        batches: Iterable[tuple[IDmutRegionMutsBatch, ReadNamesBatch]],
-        p_rev: float = 0.5,
-        fq_gzip: bool = True,
-        force: bool = False,
-        seed: int | None = None,
+    top: Path,
+    sample: str,
+    ref: str,
+    refseq: DNA,
+    paired: bool,
+    read_length: int,
+    batches: Iterable[tuple[IDmutRegionMutsBatch, ReadNamesBatch]],
+    p_rev: float = 0.5,
+    fq_gzip: bool = True,
+    force: bool = False,
+    seed: int | None = None,
 ):
-    """ Generate FASTQ file(s) from a dataset. """
+    """Generate FASTQ file(s) from a dataset."""
     rng = np.random.default_rng(seed)
     if paired:
         segs_list = [path.DMFASTQ1_SEGS, path.DMFASTQ2_SEGS]
@@ -225,23 +225,31 @@ def generate_fastq(
         exts = [path.FQ_EXTS[0]]
         adapters = [ILLUMINA_TRUSEQ_ADAPTER_R1]
     if fq_gzip:
-        exts = [(ext if ext.endswith(path.GZIP_EXT)
-                 else f"{ext}{path.GZIP_EXT}")
-                for ext in exts]
+        exts = [
+            (ext if ext.endswith(path.GZIP_EXT) else f"{ext}{path.GZIP_EXT}")
+            for ext in exts
+        ]
         open_func = gzip.open
     else:
-        exts = [(ext if not ext.endswith(path.GZIP_EXT)
-                 else ext[:-len(path.GZIP_EXT)])
-                for ext in exts]
+        exts = [
+            (ext if not ext.endswith(path.GZIP_EXT) else ext[: -len(path.GZIP_EXT)])
+            for ext in exts
+        ]
         open_func = open
-    fastq_paths = [path.buildpar(segs,
-                                 {path.TOP: top,
-                                  path.SAMPLE: sample,
-                                  path.STEP: path.DEMULT_STEP,
-                                  path.BRANCHES: dict(),
-                                  path.REF: ref,
-                                  path.EXT: ext})
-                   for segs, ext in zip(segs_list, exts, strict=True)]
+    fastq_paths = [
+        path.buildpar(
+            segs,
+            {
+                path.TOP: top,
+                path.SAMPLE: sample,
+                path.STEP: path.DEMULT_STEP,
+                path.BRANCHES: dict(),
+                path.REF: ref,
+                path.EXT: ext,
+            },
+        )
+        for segs, ext in zip(segs_list, exts, strict=True)
+    ]
     if any(need_write(fastq, force, warn=False) for fastq in fastq_paths):
         seq_str = str(refseq)
         fastq_files = list()
@@ -257,28 +265,28 @@ def generate_fastq(
                 elif rbatch.num_segments == 2:
                     reverse = seg_end5s[:, 0] > seg_end5s[:, 1]
                 else:
-                    raise ValueError("Each batch must have 1 or 2 segments, "
-                                     f"but got {rbatch.num_segments}")
-                for rels, end5s, end3s, name, rev in zip(rbatch.matrix.values,
-                                                         seg_end5s,
-                                                         seg_end3s,
-                                                         nbatch.names,
-                                                         reverse,
-                                                         strict=True):
-                    for i, (fq, end5, end3, adapter) in enumerate(zip(
-                            fastq_files,
-                            end5s,
-                            end3s,
-                            adapters,
-                            strict=True
-                    )):
+                    raise ValueError(
+                        "Each batch must have 1 or 2 segments, "
+                        f"but got {rbatch.num_segments}"
+                    )
+                for rels, end5s, end3s, name, rev in zip(
+                    rbatch.matrix.values,
+                    seg_end5s,
+                    seg_end3s,
+                    nbatch.names,
+                    reverse,
+                    strict=True,
+                ):
+                    for i, (fq, end5, end3, adapter) in enumerate(
+                        zip(fastq_files, end5s, end3s, adapters, strict=True)
+                    ):
                         record = generate_fastq_record(
                             name,
-                            rels[end5 - 1: end3],
-                            seq_str[end5 - 1: end3],
+                            rels[end5 - 1 : end3],
+                            seq_str[end5 - 1 : end3],
                             adapter,
                             read_length,
-                            bool((rev + i) % 2)
+                            bool((rev + i) % 2),
                         )
                         fq.write(record.encode() if fq_gzip else record)
         finally:
@@ -295,13 +303,16 @@ def generate_fastq(
     return fastq_paths
 
 
-def from_report(report_file: Path, *,
-                read_length: int,
-                p_rev: float,
-                fq_gzip: bool,
-                force: bool,
-                seed: int | None):
-    """ Simulate a FASTQ file from an IDmut report. """
+def from_report(
+    report_file: Path,
+    *,
+    read_length: int,
+    p_rev: float,
+    fq_gzip: bool,
+    force: bool,
+    seed: int | None,
+):
+    """Simulate a FASTQ file from an IDmut report."""
     report = IDmutReport.load(report_file)
     sample = report.get_field(SampleF)
     rdata = IDmutMutsDataset(report_file)
@@ -309,83 +320,93 @@ def from_report(report_file: Path, *,
     sim_dir = _get_common_attr(rdata, ndata, "top")
     region = rdata.region
     batches = zip(rdata.iter_batches(), ndata.iter_batches())
-    return generate_fastq(sim_dir,
-                          sample,
-                          region.ref,
-                          region.seq,
-                          rdata.paired,
-                          read_length,
-                          batches,
-                          p_rev=p_rev,
-                          fq_gzip=fq_gzip,
-                          force=force,
-                          seed=seed)
+    return generate_fastq(
+        sim_dir,
+        sample,
+        region.ref,
+        region.seq,
+        rdata.paired,
+        read_length,
+        batches,
+        p_rev=p_rev,
+        fq_gzip=fq_gzip,
+        force=force,
+        seed=seed,
+    )
 
 
-def from_param_dir(param_dir: Path, *,
-                   sample: str,
-                   profile: str,
-                   read_length: int,
-                   paired: bool,
-                   p_rev: float,
-                   fq_gzip: bool,
-                   force: bool,
-                   seed: int | None,
-                   **kwargs):
-    """ Simulate a FASTQ file from parameter files. """
+def from_param_dir(
+    param_dir: Path,
+    *,
+    sample: str,
+    profile: str,
+    read_length: int,
+    paired: bool,
+    p_rev: float,
+    fq_gzip: bool,
+    force: bool,
+    seed: int | None,
+    **kwargs,
+):
+    """Simulate a FASTQ file from parameter files."""
     sim_dir, _, _ = _get_param_dir_fields(param_dir)
     region, pmut, u5s, u3s, pends, pclust = _load_param_dir(param_dir, profile)
-    batches = simulate_batches(sample=sample,
-                               branches=dict(),
-                               ref=region.ref,
-                               pmut=pmut,
-                               uniq_end5s=u5s,
-                               uniq_end3s=u3s,
-                               pends=pends,
-                               pclust=pclust,
-                               paired=paired,
-                               read_length=read_length,
-                               p_rev=p_rev,
-                               batch_size=opt_batch_size.default,
-                               write_read_names=True,
-                               seed=seed,
-                               **kwargs)
+    batches = simulate_batches(
+        sample=sample,
+        branches=dict(),
+        ref=region.ref,
+        pmut=pmut,
+        uniq_end5s=u5s,
+        uniq_end3s=u3s,
+        pends=pends,
+        pclust=pclust,
+        paired=paired,
+        read_length=read_length,
+        p_rev=p_rev,
+        batch_size=opt_batch_size.default,
+        write_read_names=True,
+        seed=seed,
+        **kwargs,
+    )
     # Convert each IDmutBatchIO into an IDmutRegionMutsBatch, which is
     # required by generate_fastq().
-    batches = [(rbatch.to_region_batch(region), nbatch)
-               for rbatch, nbatch in batches]
-    return generate_fastq(sim_dir.joinpath(path.SIM_SAMPLES_DIR),
-                          sample,
-                          region.ref,
-                          region.seq,
-                          paired,
-                          read_length,
-                          batches,
-                          p_rev=p_rev,
-                          fq_gzip=fq_gzip,
-                          force=force,
-                          seed=seed)
+    batches = [(rbatch.to_region_batch(region), nbatch) for rbatch, nbatch in batches]
+    return generate_fastq(
+        sim_dir.joinpath(path.SIM_SAMPLES_DIR),
+        sample,
+        region.ref,
+        region.seq,
+        paired,
+        read_length,
+        batches,
+        p_rev=p_rev,
+        fq_gzip=fq_gzip,
+        force=force,
+        seed=seed,
+    )
 
 
 @run_func(COMMAND)
-def run(*,
-        input_path: Iterable[str | Path],
-        param_dir: Iterable[str | Path],
-        profile_name: str,
-        sample: str,
-        paired_end: bool,
-        read_length: int,
-        reverse_fraction: float,
-        probe: str,
-        min_mut_gap: int | None,
-        min_mut_gap_weights: str | None,
-        mut_collisions: str,
-        injected_mut_probs: str | None,
-        fq_gzip: bool,
-        num_reads: int,
-        num_cpus: int,
-        force: bool,
-        seed: int | None):
+def run(
+    *,
+    input_path: Iterable[str | Path],
+    param_dir: Iterable[str | Path],
+    profile_name: str,
+    sample: str,
+    paired_end: bool,
+    read_length: int,
+    reverse_fraction: float,
+    probe: str,
+    min_mut_gap: int | None,
+    min_mut_gap_weights: str | None,
+    mut_collisions: str,
+    injected_mut_probs: str | None,
+    fq_gzip: bool,
+    num_reads: int,
+    num_cpus: int,
+    force: bool,
+    seed: int | None,
+):
     """
     Simulate FASTQ file(s) from idmut reports or parameter directories.
 
@@ -436,79 +457,94 @@ def run(*,
     list[Path]
         Paths of all generated FASTQ files.
     """
-    min_mut_gap, mut_collisions = set_mut_gap_params(probe,
-                                                     min_mut_gap,
-                                                     mut_collisions)
+    min_mut_gap, mut_collisions = set_mut_gap_params(probe, min_mut_gap, mut_collisions)
     min_mut_gap_weights, injected_mut_probs = set_sim_mut_params(
         probe, min_mut_gap_weights, injected_mut_probs
     )
     injected_mut_probs_dict = parse_injected_mut_probs(injected_mut_probs)
     min_mut_gap_weights_dict = parse_min_mut_gap_weights(min_mut_gap_weights)
-    report_files = as_list_of_tuples(path.find_files_chain(
-        input_path,
-        load_idmut_dataset.report_path_seg_types
-    ))
+    report_files = as_list_of_tuples(
+        path.find_files_chain(input_path, load_idmut_dataset.report_path_seg_types)
+    )
     param_dirs = as_list_of_tuples(map(Path, param_dir))
     fastqs = list()
     if report_files:
-        fastqs.extend(chain(*dispatch(from_report,
-                                      num_cpus=num_cpus,
-                                      pass_num_cpus=False,
-                                      as_list=False,
-                                      ordered=False,
-                                      raise_on_error=False,
-                                      args=report_files,
-                                      kwargs=dict(read_length=read_length,
-                                                  p_rev=reverse_fraction,
-                                                  fq_gzip=fq_gzip,
-                                                  force=force,
-                                                  seed=seed))))
+        fastqs.extend(
+            chain(
+                *dispatch(
+                    from_report,
+                    num_cpus=num_cpus,
+                    pass_num_cpus=False,
+                    as_list=False,
+                    ordered=False,
+                    raise_on_error=False,
+                    args=report_files,
+                    kwargs=dict(
+                        read_length=read_length,
+                        p_rev=reverse_fraction,
+                        fq_gzip=fq_gzip,
+                        force=force,
+                        seed=seed,
+                    ),
+                )
+            )
+        )
     if param_dirs:
-        fastqs.extend(chain(*dispatch(from_param_dir,
-                                      num_cpus=num_cpus,
-                                      pass_num_cpus=False,
-                                      as_list=False,
-                                      ordered=False,
-                                      raise_on_error=False,
-                                      args=param_dirs,
-                                      kwargs=dict(sample=sample,
-                                                  profile=profile_name,
-                                                  paired=paired_end,
-                                                  read_length=read_length,
-                                                  p_rev=reverse_fraction,
-                                                  min_mut_gap=min_mut_gap,
-                                                  min_mut_gap_weights=min_mut_gap_weights_dict,
-                                                  injected_mut_probs=injected_mut_probs_dict,
-                                                  mut_collisions=mut_collisions,
-                                                  fq_gzip=fq_gzip,
-                                                  num_reads=num_reads,
-                                                  force=force,
-                                                  seed=seed))))
+        fastqs.extend(
+            chain(
+                *dispatch(
+                    from_param_dir,
+                    num_cpus=num_cpus,
+                    pass_num_cpus=False,
+                    as_list=False,
+                    ordered=False,
+                    raise_on_error=False,
+                    args=param_dirs,
+                    kwargs=dict(
+                        sample=sample,
+                        profile=profile_name,
+                        paired=paired_end,
+                        read_length=read_length,
+                        p_rev=reverse_fraction,
+                        min_mut_gap=min_mut_gap,
+                        min_mut_gap_weights=min_mut_gap_weights_dict,
+                        injected_mut_probs=injected_mut_probs_dict,
+                        mut_collisions=mut_collisions,
+                        fq_gzip=fq_gzip,
+                        num_reads=num_reads,
+                        force=force,
+                        seed=seed,
+                    ),
+                )
+            )
+        )
     if not fastqs:
         logger.warning("No FASTQ files were generated")
     return fastqs
 
 
-params = [arg_input_path,
-          opt_param_dir,
-          opt_profile_name,
-          opt_sample_sim,
-          opt_paired_end,
-          opt_read_length,
-          opt_reverse_fraction,
-          opt_probe,
-          opt_min_mut_gap,
-          opt_min_mut_gap_weights,
-          opt_mut_collisions,
-          opt_injected_mut_probs,
-          opt_fq_gzip,
-          opt_num_reads,
-          opt_num_cpus,
-          opt_force,
-          opt_seed]
+params = [
+    arg_input_path,
+    opt_param_dir,
+    opt_profile_name,
+    opt_sample_sim,
+    opt_paired_end,
+    opt_read_length,
+    opt_reverse_fraction,
+    opt_probe,
+    opt_min_mut_gap,
+    opt_min_mut_gap_weights,
+    opt_mut_collisions,
+    opt_injected_mut_probs,
+    opt_fq_gzip,
+    opt_num_reads,
+    opt_num_cpus,
+    opt_force,
+    opt_seed,
+]
 
 
 @command(COMMAND, params=params)
 def cli(*args, **kwargs):
-    """ Simulate a FASTQ file. """
+    """Simulate a FASTQ file."""
     run(*args, **kwargs)

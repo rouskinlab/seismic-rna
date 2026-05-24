@@ -27,7 +27,7 @@ ATTRS = {
 
 
 def tabulate_attr(ks: list[EMRunsK], attr: str):
-    """ Tabulate the values for one attribute. """
+    """Tabulate the values for one attribute."""
     # Cast runs.k and run from int to str to make them both categorial.
     # If runs.k is numeric, then the bars will be stacked, not grouped.
     # If run is numeric, then the run number will be indicated with a
@@ -43,16 +43,17 @@ def tabulate_attr(ks: list[EMRunsK], attr: str):
         runs_values = pd.Series(runs_values)
         runs_values.index.set_names(K_RUN_NAMES, inplace=True)
     else:
-        runs_values = pd.Series([],
-                                pd.MultiIndex.from_arrays([[], []],
-                                                          names=K_RUN_NAMES))
+        runs_values = pd.Series(
+            [], pd.MultiIndex.from_arrays([[], []], names=K_RUN_NAMES)
+        )
     return runs_values
 
 
 def tabulate(ks: list[EMRunsK]):
-    """ Tabulate all attributes. """
-    return pd.DataFrame.from_dict({title: tabulate_attr(ks, key)
-                                   for key, title in ATTRS.items()})
+    """Tabulate all attributes."""
+    return pd.DataFrame.from_dict(
+        {title: tabulate_attr(ks, key) for key, title in ATTRS.items()}
+    )
 
 
 def write_table(table: pd.DataFrame, cluster_dir: Path):
@@ -62,18 +63,20 @@ def write_table(table: pd.DataFrame, cluster_dir: Path):
 
 
 def graph_attr(attr: pd.Series, passing_text: list[str] | None = None):
-    """ Graph one attribute. """
-    return px.bar(attr.to_frame().reset_index(names=K_RUN_NAMES),
-                  x=NUM_CLUSTS_NAME,
-                  y=attr.name,
-                  title=attr.name,
-                  color=EM_RUN_NAME,
-                  text=passing_text,
-                  barmode="group")
+    """Graph one attribute."""
+    return px.bar(
+        attr.to_frame().reset_index(names=K_RUN_NAMES),
+        x=NUM_CLUSTS_NAME,
+        y=attr.name,
+        title=attr.name,
+        color=EM_RUN_NAME,
+        text=passing_text,
+        barmode="group",
+    )
 
 
 def graph_attrs(table: pd.DataFrame, to_dir: Path):
-    """ Graph every attribute. """
+    """Graph every attribute."""
     passing = table[ATTRS[RUN_PASSING]]
     if passing.all():
         passing_text = None

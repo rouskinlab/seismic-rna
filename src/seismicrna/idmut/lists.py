@@ -10,7 +10,6 @@ class IDmutList(List, IDmutFile, ABC):
 
 
 class IDmutPositionList(PositionList, IDmutList):
-
     @classmethod
     def get_table_type(cls):
         return IDmutPositionTableLoader

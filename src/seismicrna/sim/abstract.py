@@ -11,15 +11,17 @@ import pandas as pd
 from click import command
 
 from ..core import path
-from ..core.arg import (arg_input_path,
-                        opt_min_aucroc,
-                        opt_struct_file,
-                        opt_verify_times,
-                        opt_num_cpus,
-                        opt_pmut_paired,
-                        opt_pmut_unpaired,
-                        opt_vmut_paired,
-                        opt_vmut_unpaired)
+from ..core.arg import (
+    arg_input_path,
+    opt_min_aucroc,
+    opt_struct_file,
+    opt_verify_times,
+    opt_num_cpus,
+    opt_pmut_paired,
+    opt_pmut_unpaired,
+    opt_vmut_paired,
+    opt_vmut_unpaired,
+)
 from ..core.error import NoDataError
 from ..core.header import format_clust_name
 from ..core.logs import logger
@@ -27,25 +29,29 @@ from ..core.rna import UNPAIRED_MARK, from_ct
 from ..core.rna.roc import compute_auc_roc
 from ..core.run import run_func
 from ..core.seq import DNA, Region, BASE_NAME, BASEN
-from ..core.table import (COVER_REL,
-                          INFOR_REL,
-                          MUTAT_REL,
-                          SUBST_REL,
-                          SUB_A_REL,
-                          SUB_C_REL,
-                          SUB_G_REL,
-                          SUB_T_REL,
-                          DELET_REL,
-                          INSRT_REL)
+from ..core.table import (
+    COVER_REL,
+    INFOR_REL,
+    MUTAT_REL,
+    SUBST_REL,
+    SUB_A_REL,
+    SUB_C_REL,
+    SUB_G_REL,
+    SUB_T_REL,
+    DELET_REL,
+    INSRT_REL,
+)
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.validate import require_equal, require_between, require_isinstance
-from ..export.web import (META_SYMBOL,
-                          REF_SEQ,
-                          REG_END5,
-                          REG_END3,
-                          REG_POS,
-                          STRUCTURE,
-                          POS_DATA)
+from ..export.web import (
+    META_SYMBOL,
+    REF_SEQ,
+    REG_END5,
+    REG_END3,
+    REG_POS,
+    STRUCTURE,
+    POS_DATA,
+)
 from ..filter.table import FilterPositionTableLoader
 
 COMMAND = __name__.split(os.path.extsep)[-1]
@@ -53,23 +59,26 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 
 @cache
 def get_acgt_parameters():
-    return {"m": (MUTAT_REL, INFOR_REL),
-            "a": (SUB_A_REL, MUTAT_REL),
-            "c": (SUB_C_REL, MUTAT_REL),
-            "g": (SUB_G_REL, MUTAT_REL),
-            "t": (SUB_T_REL, MUTAT_REL)}
+    return {
+        "m": (MUTAT_REL, INFOR_REL),
+        "a": (SUB_A_REL, MUTAT_REL),
+        "c": (SUB_C_REL, MUTAT_REL),
+        "g": (SUB_G_REL, MUTAT_REL),
+        "t": (SUB_T_REL, MUTAT_REL),
+    }
 
 
 @cache
 def get_other_parameters():
-    return {"loq": (INFOR_REL, COVER_REL),
-            "nm": (MUTAT_REL, INFOR_REL),
-            "nd": (DELET_REL, MUTAT_REL)}
+    return {
+        "loq": (INFOR_REL, COVER_REL),
+        "nm": (MUTAT_REL, INFOR_REL),
+        "nd": (DELET_REL, MUTAT_REL),
+    }
 
 
 def new_parameter_dict():
-    parameters = {code: np.array([], dtype=float)
-                  for code in get_other_parameters()}
+    parameters = {code: np.array([], dtype=float) for code in get_other_parameters()}
     for base in DNA.four():
         lower_base = base.lower()
         for code in get_acgt_parameters():
@@ -79,11 +88,11 @@ def new_parameter_dict():
 
 
 def _calc_ratios(counts: pd.DataFrame, is_paired: np.ndarray):
-    message = "\n".join(map(str, ["calculating ratios from",
-                                  "counts:",
-                                  counts,
-                                  "is_paired:",
-                                  is_paired]))
+    message = "\n".join(
+        map(
+            str, ["calculating ratios from", "counts:", counts, "is_paired:", is_paired]
+        )
+    )
     logger.routine(f"Began {message}")
     is_unpaired = ~is_paired
 
@@ -93,9 +102,9 @@ def _calc_ratios(counts: pd.DataFrame, is_paired: np.ndarray):
     # Get fraction of low-quality bases.
     key = "loq"
     numer, denom = get_other_parameters()[key]
-    paired_ratios = {key: 1. - calc_ratio(numer, denom, is_paired)}
+    paired_ratios = {key: 1.0 - calc_ratio(numer, denom, is_paired)}
     logger.detail(f"paired[{key}] = {paired_ratios[key]}")
-    unpaired_ratios = {key: 1. - calc_ratio(numer, denom, is_unpaired)}
+    unpaired_ratios = {key: 1.0 - calc_ratio(numer, denom, is_unpaired)}
     logger.detail(f"unpaired[{key}] = {unpaired_ratios[key]}")
     # Get fraction of mutated Ns.
     is_n = counts.index.get_level_values(BASE_NAME) == BASEN
@@ -116,13 +125,9 @@ def _calc_ratios(counts: pd.DataFrame, is_paired: np.ndarray):
         for code, (numer, denom) in get_acgt_parameters().items():
             if lower_base != code:
                 key = f"{lower_base}{code}"
-                paired_ratios[key] = calc_ratio(numer,
-                                                denom,
-                                                is_base_paired)
+                paired_ratios[key] = calc_ratio(numer, denom, is_base_paired)
                 logger.detail(f"paired[{key}] = {paired_ratios[key]}")
-                unpaired_ratios[key] = calc_ratio(numer,
-                                                  denom,
-                                                  is_base_unpaired)
+                unpaired_ratios[key] = calc_ratio(numer, denom, is_base_unpaired)
                 logger.detail(f"unpaired[{key}] = {unpaired_ratios[key]}")
     logger.routine(f"Ended {message}")
     return paired_ratios, unpaired_ratios
@@ -136,22 +141,24 @@ def _accumulate_ratios(paired_unpaired_ratios: Iterable[tuple[dict, dict]]):
     for paired_ratios, unpaired_ratios in paired_unpaired_ratios:
         assert paired_ratios.keys() == all_paired_ratios.keys()
         for key, ratios in paired_ratios.items():
-            all_paired_ratios[key] = np.concatenate([all_paired_ratios[key],
-                                                     ratios])
+            all_paired_ratios[key] = np.concatenate([all_paired_ratios[key], ratios])
             logger.detail(f"accum_paired[{key}] = {all_paired_ratios[key]}")
         assert unpaired_ratios.keys() == all_unpaired_ratios.keys()
         for key, ratios in unpaired_ratios.items():
-            all_unpaired_ratios[key] = np.concatenate([all_unpaired_ratios[key],
-                                                       ratios])
+            all_unpaired_ratios[key] = np.concatenate(
+                [all_unpaired_ratios[key], ratios]
+            )
             logger.detail(f"accum_unpaired[{key}] = {all_unpaired_ratios[key]}")
         count += 1
     logger.routine(f"Ended accumulating {count} group(s) of ratios")
     return all_paired_ratios, all_unpaired_ratios
 
 
-def abstract_table(table: FilterPositionTableLoader,
-                   struct_file: list[str | Path] | None = None,
-                   min_aucroc: float = 0.):
+def abstract_table(
+    table: FilterPositionTableLoader,
+    struct_file: list[str | Path] | None = None,
+    min_aucroc: float = 0.0,
+):
     # Validate any explicitly provided files and set search paths.
     if struct_file is not None:
         for sf in struct_file:
@@ -176,13 +183,11 @@ def abstract_table(table: FilterPositionTableLoader,
     profile_to_ct: dict[str, Path] = {}
     for file in path.find_files_chain(search_paths, path.CT_FILE_LAST_SEGS):
         fields = path.parse(file, path.CT_FILE_LAST_SEGS)
-        if (fields[path.REF] == table.ref
-                and fields[path.REG] == table.reg):
+        if fields[path.REF] == table.ref and fields[path.REG] == table.reg:
             profile_to_ct[fields[path.PROFILE]] = file
     if not profile_to_ct:
         raise NoDataError(
-            f"No CT files found for reference {table.ref!r}, "
-            f"region {table.reg!r}"
+            f"No CT files found for reference {table.ref!r}, region {table.reg!r}"
         )
     # Compute ratios for each cluster, pairing it with its CT file.
     all_ratios = []
@@ -192,8 +197,7 @@ def abstract_table(table: FilterPositionTableLoader,
         ct_file = profile_to_ct.get(profile_name)
         if ct_file is None:
             logger.warning(
-                f"No CT file for {table.ref!r}/{table.reg!r} "
-                f"profile {profile_name!r}"
+                f"No CT file for {table.ref!r}/{table.reg!r} profile {profile_name!r}"
             )
             continue
         structures = iter(from_ct(ct_file))
@@ -207,30 +211,30 @@ def abstract_table(table: FilterPositionTableLoader,
             pass
         else:
             logger.warning(f"{ct_file} contains > 1 structure; using the first")
-        require_equal("struct.ref",
-                      struct.ref,
-                      table.ref,
-                      "table.ref",
-                      classes=str)
-        require_equal("struct.region.name",
-                      struct.region.name,
-                      table.region.name,
-                      "table.region.name",
-                      classes=str)
-        require_equal("struct.region.seq",
-                      struct.region.seq,
-                      table.region.seq,
-                      "table.region.seq",
-                      classes=DNA)
+        require_equal("struct.ref", struct.ref, table.ref, "table.ref", classes=str)
+        require_equal(
+            "struct.region.name",
+            struct.region.name,
+            table.region.name,
+            "table.region.name",
+            classes=str,
+        )
+        require_equal(
+            "struct.region.seq",
+            struct.region.seq,
+            table.region.seq,
+            "table.region.seq",
+            classes=DNA,
+        )
         counts = table.fetch_count(k=hk, clust=hc)
         counts = counts.set_axis(counts.columns.get_level_values(-1), axis=1)
-        if min_aucroc > 0.:
-            auc = compute_auc_roc(counts[MUTAT_REL] / counts[INFOR_REL],
-                                  struct.is_paired)
+        if min_aucroc > 0.0:
+            auc = compute_auc_roc(
+                counts[MUTAT_REL] / counts[INFOR_REL], struct.is_paired
+            )
             if not (auc >= min_aucroc):
                 logger.detail(
-                    f"Skipping {table} cluster {hk}-{hc}: "
-                    f"AUC-ROC {auc} < {min_aucroc}"
+                    f"Skipping {table} cluster {hk}-{hc}: AUC-ROC {auc} < {min_aucroc}"
                 )
                 continue
         all_ratios.append(_calc_ratios(counts, struct.is_paired.values))
@@ -239,7 +243,7 @@ def abstract_table(table: FilterPositionTableLoader,
     return _accumulate_ratios(iter(all_ratios))
 
 
-def _abstract_seismicgraph_file(seismicgraph_file: Path, min_aucroc: float = 0.):
+def _abstract_seismicgraph_file(seismicgraph_file: Path, min_aucroc: float = 0.0):
     with open(seismicgraph_file) as f:
         sample_data = json.load(f)
     require_isinstance("sample_data", sample_data, dict)
@@ -268,25 +272,27 @@ def _abstract_seismicgraph_file(seismicgraph_file: Path, min_aucroc: float = 0.)
                 profile_data = reg_data[profile]
                 require_isinstance("profile_data", profile_data, dict)
                 counts = pd.DataFrame.from_dict(
-                    {rel: dict(zip(region.unmasked,
-                                   profile_data[key],
-                                   strict=True))
-                     for key, rel in POS_DATA.items()}
+                    {
+                        rel: dict(zip(region.unmasked, profile_data[key], strict=True))
+                        for key, rel in POS_DATA.items()
+                    }
                 ).reindex(region.range)
-                counts[MUTAT_REL] = (counts[SUBST_REL]
-                                     + counts[DELET_REL]
-                                     + counts[INSRT_REL])
+                counts[MUTAT_REL] = (
+                    counts[SUBST_REL] + counts[DELET_REL] + counts[INSRT_REL]
+                )
                 dot_bracket = profile_data[STRUCTURE]
-                require_equal("len(dot_bracket)",
-                              len(dot_bracket),
-                              region.length,
-                              "region.length",
-                              classes=int)
+                require_equal(
+                    "len(dot_bracket)",
+                    len(dot_bracket),
+                    region.length,
+                    "region.length",
+                    classes=int,
+                )
                 is_paired = np.array([x != UNPAIRED_MARK for x in dot_bracket])
-                if min_aucroc > 0.:
+                if min_aucroc > 0.0:
                     auc = compute_auc_roc(
                         counts[MUTAT_REL] / counts[INFOR_REL],
-                        pd.Series(is_paired, index=counts.index)
+                        pd.Series(is_paired, index=counts.index),
                     )
                     if not (auc >= min_aucroc):
                         logger.detail(
@@ -297,9 +303,10 @@ def _abstract_seismicgraph_file(seismicgraph_file: Path, min_aucroc: float = 0.)
                 yield _calc_ratios(counts, is_paired)
 
 
-def abstract_seismicgraph_file(seismicgraph_file: Path, min_aucroc: float = 0.):
-    return _accumulate_ratios(_abstract_seismicgraph_file(seismicgraph_file,
-                                                          min_aucroc))
+def abstract_seismicgraph_file(seismicgraph_file: Path, min_aucroc: float = 0.0):
+    return _accumulate_ratios(
+        _abstract_seismicgraph_file(seismicgraph_file, min_aucroc)
+    )
 
 
 # Keys present in the means dicts that are NOT accepted by
@@ -309,10 +316,9 @@ def abstract_seismicgraph_file(seismicgraph_file: Path, min_aucroc: float = 0.):
 _NON_MODEL_PMUT_KEYS = frozenset({"nd"})
 
 
-def _format_param_tokens(paired_means: dict,
-                         paired_fvar: dict,
-                         unpaired_means: dict,
-                         unpaired_fvar: dict) -> list[str]:
+def _format_param_tokens(
+    paired_means: dict, paired_fvar: dict, unpaired_means: dict, unpaired_fvar: dict
+) -> list[str]:
     """Format the parameter tokens emitted by ``sim abstract``.
 
     Skips keys that are not parameters of ``make_pmut_means`` so the
@@ -332,60 +338,64 @@ def _format_param_tokens(paired_means: dict,
     return tokens
 
 
-def _calc_ratio_stats(ratios: dict[str, np.ndarray], margin: float = 1.e-6):
-    require_between("margin", margin, 0., 1., classes=float, inclusive=False)
-    max_value = 1. - margin
-    means = {key: np.clip(np.nanmean(values) if values.size > 0 else 0.,
-                          margin,
-                          max_value)
-             for key, values in ratios.items()}
+def _calc_ratio_stats(ratios: dict[str, np.ndarray], margin: float = 1.0e-6):
+    require_between("margin", margin, 0.0, 1.0, classes=float, inclusive=False)
+    max_value = 1.0 - margin
+    means = {
+        key: np.clip(np.nanmean(values) if values.size > 0 else 0.0, margin, max_value)
+        for key, values in ratios.items()
+    }
     fvar = {}
     for key, values in ratios.items():
         if key.endswith("m") and not key.startswith(BASEN.lower()):
             base = key[0]
             if values.size >= 2:
                 base_mean = np.clip(np.nanmean(values), margin, max_value)
-                fvar[base] = float(
-                    np.nanvar(values) / (base_mean * (1. - base_mean))
-                )
+                fvar[base] = float(np.nanvar(values) / (base_mean * (1.0 - base_mean)))
             else:
                 fvar[base] = margin
     return means, fvar
 
 
 @run_func(COMMAND, default=None)
-def run(input_path: Iterable[str | Path], *,
-        struct_file: Iterable[str | Path],
-        min_aucroc: float,
-        print_params: bool = True,
-        verify_times: bool,
-        num_cpus: int):
-    """ Abstract simulation parameters from existing datasets. """
+def run(
+    input_path: Iterable[str | Path],
+    *,
+    struct_file: Iterable[str | Path],
+    min_aucroc: float,
+    print_params: bool = True,
+    verify_times: bool,
+    num_cpus: int,
+):
+    """Abstract simulation parameters from existing datasets."""
     input_path = list(input_path)
     struct_file_arg = list(struct_file) or None
     # Accumulate ratios from table files.
     args = as_list_of_tuples(
         FilterPositionTableLoader.load_tables(input_path, verify_times=verify_times)
     )
-    table_ratios = dispatch(abstract_table,
-                            num_cpus=num_cpus,
-                            pass_num_cpus=False,
-                            as_list=False,
-                            ordered=False,
-                            raise_on_error=False,
-                            args=args,
-                            kwargs=dict(struct_file=struct_file_arg,
-                                        min_aucroc=min_aucroc))
+    table_ratios = dispatch(
+        abstract_table,
+        num_cpus=num_cpus,
+        pass_num_cpus=False,
+        as_list=False,
+        ordered=False,
+        raise_on_error=False,
+        args=args,
+        kwargs=dict(struct_file=struct_file_arg, min_aucroc=min_aucroc),
+    )
     # Accumulate ratios from SEISMICgraph files.
     seismicgraph_files = path.find_files_chain(input_path, [path.WebAppFileSeg])
-    seismicgraph_ratios = dispatch(abstract_seismicgraph_file,
-                                   num_cpus=num_cpus,
-                                   pass_num_cpus=False,
-                                   as_list=False,
-                                   ordered=False,
-                                   raise_on_error=True,
-                                   args=as_list_of_tuples(seismicgraph_files),
-                                   kwargs=dict(min_aucroc=min_aucroc))
+    seismicgraph_ratios = dispatch(
+        abstract_seismicgraph_file,
+        num_cpus=num_cpus,
+        pass_num_cpus=False,
+        as_list=False,
+        ordered=False,
+        raise_on_error=True,
+        args=as_list_of_tuples(seismicgraph_files),
+        kwargs=dict(min_aucroc=min_aucroc),
+    )
     # Accumulate all ratios and calculate statistics.
     paired_ratios, unpaired_ratios = _accumulate_ratios(
         chain(filter(None, table_ratios), seismicgraph_ratios)
@@ -393,22 +403,25 @@ def run(input_path: Iterable[str | Path], *,
     paired_means, paired_fvar = _calc_ratio_stats(paired_ratios)
     unpaired_means, unpaired_fvar = _calc_ratio_stats(unpaired_ratios)
     if print_params:
-        params_text = " ".join(_format_param_tokens(paired_means,
-                                                    paired_fvar,
-                                                    unpaired_means,
-                                                    unpaired_fvar))
+        params_text = " ".join(
+            _format_param_tokens(
+                paired_means, paired_fvar, unpaired_means, unpaired_fvar
+            )
+        )
         sys.stdout.write(f"{params_text}\n")
     return (paired_means, paired_fvar), (unpaired_means, unpaired_fvar)
 
 
-params = [arg_input_path,
-          opt_struct_file,
-          opt_min_aucroc,
-          opt_verify_times,
-          opt_num_cpus]
+params = [
+    arg_input_path,
+    opt_struct_file,
+    opt_min_aucroc,
+    opt_verify_times,
+    opt_num_cpus,
+]
 
 
 @command(COMMAND, params=params)
 def cli(*args, **kwargs):
-    """ Abstract simulation parameters from existing datasets. """
+    """Abstract simulation parameters from existing datasets."""
     run(*args, **kwargs)

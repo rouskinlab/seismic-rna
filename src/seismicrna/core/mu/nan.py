@@ -8,7 +8,7 @@ from .dim import count_pos, counts_pos_consensus
 
 
 def any_nan(mus: np.ndarray | pd.Series | pd.DataFrame):
-    """ Boolean array of positions where any mutation rate is NaN.
+    """Boolean array of positions where any mutation rate is NaN.
 
     Parameters
     ----------
@@ -29,12 +29,13 @@ def any_nan(mus: np.ndarray | pd.Series | pd.DataFrame):
         # exist to reduce with np.any(). Compute isnan without reducing.
         return np.isnan(mus)
     # Otherwise, reduce over the non-positional axes with np.any().
-    return np.any(np.isnan(mus),
-                  axis=(1 if mus.ndim == 2 else tuple(range(1, mus.ndim))))
+    return np.any(
+        np.isnan(mus), axis=(1 if mus.ndim == 2 else tuple(range(1, mus.ndim)))
+    )
 
 
 def no_nan(mus: np.ndarray | pd.Series | pd.DataFrame):
-    """ Boolean array of positions where no mutation rate is NaN.
+    """Boolean array of positions where no mutation rate is NaN.
 
     Parameters
     ----------
@@ -51,7 +52,7 @@ def no_nan(mus: np.ndarray | pd.Series | pd.DataFrame):
 
 
 def remove_nan(mus: np.ndarray | pd.Series | pd.DataFrame):
-    """ Remove positions at which any mutation rate is NaN.
+    """Remove positions at which any mutation rate is NaN.
 
     Parameters
     ----------
@@ -73,7 +74,7 @@ def remove_nan(mus: np.ndarray | pd.Series | pd.DataFrame):
 
 
 def removes_nan(*mus: np.ndarray | pd.Series | pd.DataFrame):
-    """ Remove positions at which any mutation rate in any group is NaN.
+    """Remove positions at which any mutation rate in any group is NaN.
 
     Parameters
     ----------
@@ -95,7 +96,7 @@ def removes_nan(*mus: np.ndarray | pd.Series | pd.DataFrame):
 
 
 def auto_remove_nan(func: Callable):
-    """ Decorate a function with one positional argument of mutation
+    """Decorate a function with one positional argument of mutation
     rates so that it automatically removes positions with NaNs from the
     input argument (but, if while using the NaN-less input, the function
     produces any new NaNs, then those NaNs will be returned).
@@ -117,10 +118,10 @@ def auto_remove_nan(func: Callable):
 
 
 def auto_removes_nan(func: Callable):
-    """ Decorate a function with positional argument(s) of mutation
+    """Decorate a function with positional argument(s) of mutation
     rates so that it automatically removes positions with NaNs from the
     input argument (but, if while using the NaN-less input, the function
-    produces any new NaNs, then those NaNs will be returned). """
+    produces any new NaNs, then those NaNs will be returned)."""
 
     @wraps(func)
     def wrapper(*mus: np.ndarray | pd.Series | pd.DataFrame, **kwargs):

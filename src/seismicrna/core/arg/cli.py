@@ -52,7 +52,7 @@ DEFAULT_MIN_MUT_GAPS = {
     PROBE_DMS: 4,
     # For other probe types (e.g. SHAPE-MaP) with retroviral RTs, when
     # the RT encounters a modification, it can make several mutations
-    # for up to 2 nt as it moves 3' to 5'. It's best to merge nearby 
+    # for up to 2 nt as it moves 3' to 5'. It's best to merge nearby
     # mutations, keeping the 3'-most (the original modification).
     PROBE_SHAPE: 2,
     PROBE_ETC: 2,
@@ -63,9 +63,7 @@ DEFAULT_MIN_MUT_GAPS = {
 MUT_COLLISIONS_DROP = "drop"
 MUT_COLLISIONS_MERGE = "merge"
 MUT_COLLISIONS_AUTO = "auto"
-MUT_COLLISIONS = (MUT_COLLISIONS_DROP,
-                  MUT_COLLISIONS_MERGE,
-                  MUT_COLLISIONS_AUTO)
+MUT_COLLISIONS = (MUT_COLLISIONS_DROP, MUT_COLLISIONS_MERGE, MUT_COLLISIONS_AUTO)
 DEFAULT_MUT_COLLISIONS = {
     # For DMS-MaPseq with group II intron RTs, there is a bias against
     # mutations less than 4 nt apart. The formula that corrects the bias
@@ -109,18 +107,18 @@ GAP_MODE = GAP_MODE_OMIT, GAP_MODE_INSERT, GAP_MODE_EXPAND
 FOLD_BACKEND_AUTO = "auto"
 FOLD_BACKEND_RNASTRUCTURE = "RNAstructure"
 FOLD_BACKEND_VIENNARNA = "ViennaRNA"
-FOLD_BACKENDS = (FOLD_BACKEND_AUTO,
-                 FOLD_BACKEND_RNASTRUCTURE,
-                 FOLD_BACKEND_VIENNARNA)
+FOLD_BACKENDS = (FOLD_BACKEND_AUTO, FOLD_BACKEND_RNASTRUCTURE, FOLD_BACKEND_VIENNARNA)
 
 FOLD_ENERGY_METHOD_AUTO = "auto"
 FOLD_ENERGY_METHOD_DEIGAN = "Deigan"
 FOLD_ENERGY_METHOD_CORDERO = "Cordero"
 FOLD_ENERGY_METHOD_EDDY = "Eddy"
-FOLD_ENERGY_METHODS = (FOLD_ENERGY_METHOD_AUTO,
-                       FOLD_ENERGY_METHOD_DEIGAN,
-                       FOLD_ENERGY_METHOD_CORDERO,
-                       FOLD_ENERGY_METHOD_EDDY)
+FOLD_ENERGY_METHODS = (
+    FOLD_ENERGY_METHOD_AUTO,
+    FOLD_ENERGY_METHOD_DEIGAN,
+    FOLD_ENERGY_METHOD_CORDERO,
+    FOLD_ENERGY_METHOD_EDDY,
+)
 
 NO_GROUP = "c"
 GROUP_BY_K = "k"
@@ -131,33 +129,23 @@ KEY_MARCD = "marcd"
 KEY_PEARSON = "pcc"
 KEY_SPEARMAN = "scc"
 KEY_DETERM = "r2"
-METRIC_KEYS = [KEY_MARCD,
-               KEY_PEARSON,
-               KEY_SPEARMAN,
-               KEY_DETERM]
+METRIC_KEYS = [KEY_MARCD, KEY_PEARSON, KEY_SPEARMAN, KEY_DETERM]
 
 # Configuration options
 
 opt_config = Option(
     ("--config", "-g"),
     type=Path(exists=True, dir_okay=False),
-    help="Specify parameters in this configuration file"
+    help="Specify parameters in this configuration file",
 )
 
 # Input files
 
 arg_fasta = Argument(
-    ("fasta",),
-    type=Path(exists=True, dir_okay=False),
-    nargs=1,
-    required=True
+    ("fasta",), type=Path(exists=True, dir_okay=False), nargs=1, required=True
 )
 
-arg_input_path = Argument(
-    ("input-path",),
-    type=Path(exists=True),
-    nargs=-1
-)
+arg_input_path = Argument(("input-path",), type=Path(exists=True), nargs=-1)
 
 # Input/output options
 
@@ -165,28 +153,28 @@ opt_out_dir = Option(
     ("--out-dir", "-o"),
     type=Path(file_okay=False),
     default=os.path.join(".", "out"),
-    help="Write all output files to this directory"
+    help="Write all output files to this directory",
 )
 
 opt_tmp_pfx = Option(
     ("--tmp-pfx", "-t"),
     type=Path(file_okay=False),
     default=os.path.join(".", "tmp"),
-    help="Write all temporary files to a directory with this prefix"
+    help="Write all temporary files to a directory with this prefix",
 )
 
 opt_keep_tmp = Option(
     ("--keep-tmp/--erase-tmp",),
     type=bool,
     default=False,
-    help="Keep temporary files after finishing"
+    help="Keep temporary files after finishing",
 )
 
 opt_branch = Option(
     ("--branch", "-b"),
     type=str,
     default="",
-    help="Create a new branch of the workflow with this name"
+    help="Create a new branch of the workflow with this name",
 )
 
 # Resource usage options
@@ -195,14 +183,11 @@ opt_num_cpus = Option(
     ("--num-cpus",),
     type=int,
     default=CPU_COUNT,
-    help="Use up to this many CPUs simultaneously"
+    help="Use up to this many CPUs simultaneously",
 )
 
 opt_seed = Option(
-    ("--seed",),
-    type=int,
-    default=None,
-    help="Seed for the random number generator"
+    ("--seed",), type=int, default=None, help="Seed for the random number generator"
 )
 
 # Experiment and analysis setup options
@@ -211,7 +196,7 @@ opt_force = Option(
     ("--force/--no-force",),
     type=bool,
     default=False,
-    help="Force all tasks to run, overwriting any existing output files"
+    help="Force all tasks to run, overwriting any existing output files",
 )
 
 # Sequencing read (FASTQ) files
@@ -220,7 +205,7 @@ opt_fastqz = Option(
     type=Path(exists=True),
     multiple=True,
     default=(),
-    help="FASTQ file(s) of single-end reads"
+    help="FASTQ file(s) of single-end reads",
 )
 
 opt_fastqy = Option(
@@ -228,7 +213,7 @@ opt_fastqy = Option(
     type=Path(exists=True),
     multiple=True,
     default=(),
-    help="FASTQ file(s) of paired-end reads with mates 1 and 2 interleaved"
+    help="FASTQ file(s) of paired-end reads with mates 1 and 2 interleaved",
 )
 
 opt_fastqx = Option(
@@ -236,7 +221,7 @@ opt_fastqx = Option(
     type=Path(exists=True),
     multiple=True,
     default=(),
-    help="FASTQ files of paired-end reads with mates 1 and 2 in separate files"
+    help="FASTQ files of paired-end reads with mates 1 and 2 in separate files",
 )
 
 # Sequencing read (FASTQ/XAM) options
@@ -245,30 +230,27 @@ opt_phred_enc = Option(
     ("--phred-enc",),
     type=int,
     default=33,
-    help="Specify the Phred score encoding of FASTQ and SAM/BAM/CRAM files"
+    help="Specify the Phred score encoding of FASTQ and SAM/BAM/CRAM files",
 )
 
 opt_min_phred = Option(
     ("--min-phred",),
     type=int,
     default=DEFAULT_MIN_PHRED,
-    help="Mark base calls with Phred scores lower than this threshold as ambiguous"
+    help="Mark base calls with Phred scores lower than this threshold as ambiguous",
 )
 
 # Demultiplexing options
 
 opt_demultiplex = Option(
-    ("--demult/--no-demult",),
-    type=bool,
-    default=False,
-    help="Enable demultiplexing"
+    ("--demult/--no-demult",), type=bool, default=False, help="Enable demultiplexing"
 )
 
 opt_clipped_demultiplexing = Option(
     ("--clipped",),
     type=int,
     default=0,
-    help="Designates the amount of clipped patterns to search for in the sample, will raise compution time"
+    help="Designates the amount of clipped patterns to search for in the sample, will raise compution time",
 )
 
 opt_mismatch_tolerance = Option(
@@ -276,8 +258,8 @@ opt_mismatch_tolerance = Option(
     type=int,
     default=0,
     help="Designates the allowable amount of mismatches allowed in a string and still be considered a valid pattern "
-         "find. will increase non-parallel computation at a factorial rate. use caution going above 2 mismatches. "
-         "does not apply to clipped sequences."
+    "find. will increase non-parallel computation at a factorial rate. use caution going above 2 mismatches. "
+    "does not apply to clipped sequences.",
 )
 
 opt_index_tolerance = Option(
@@ -285,14 +267,14 @@ opt_index_tolerance = Option(
     type=int,
     default=0,
     help="Designates the allowable amount of distance you allow the pattern to be found in a read from the reference "
-         "index"
+    "index",
 )
 
 opt_allow_n = Option(
     ("--allow-n/--no-allow-n",),
     type=bool,
     default=False,
-    help="Allow N as a valid mismatch when --mismatch-tolerance ≥ 1. Increases memory consumption."
+    help="Allow N as a valid mismatch when --mismatch-tolerance ≥ 1. Increases memory consumption.",
 )
 
 opt_barcode = Option(
@@ -300,29 +282,27 @@ opt_barcode = Option(
     type=(str, DNA, int),
     multiple=True,
     default=(),
-    help=("A list of barcode name, barcode sequence, and barcode position "
-          "(1-indexed relative to read start) to demultiplex")
+    help=(
+        "A list of barcode name, barcode sequence, and barcode position "
+        "(1-indexed relative to read start) to demultiplex"
+    ),
 )
 
 opt_barcode_start = Option(
-    ("--barcode-start",),
-    type=int,
-    default=0,
-    help="Index of start of barcode"
+    ("--barcode-start",), type=int, default=0, help="Index of start of barcode"
 )
 
 opt_barcode_end = Option(
-    ("--barcode-end",),
-    type=int,
-    default=0,
-    help="Index of end of barcode"
+    ("--barcode-end",), type=int, default=0, help="Index of end of barcode"
 )
 
 opt_read_pos = Option(
     ("--read-pos",),
     type=int,
-    help=("Expected position of the barcode in the read (1-indexed). "
-          "Defaults to --barcode-start")
+    help=(
+        "Expected position of the barcode in the read (1-indexed). "
+        "Defaults to --barcode-start"
+    ),
 )
 
 # Demultiplexed sequencing read (FASTQ) directories
@@ -332,7 +312,7 @@ opt_dmfastqz = Option(
     type=Path(exists=True, file_okay=True),
     multiple=True,
     default=(),
-    help="Demultiplexed FASTQ files of single-end reads"
+    help="Demultiplexed FASTQ files of single-end reads",
 )
 
 opt_dmfastqy = Option(
@@ -340,7 +320,7 @@ opt_dmfastqy = Option(
     type=Path(exists=True, file_okay=True),
     multiple=True,
     default=(),
-    help="Demultiplexed FASTQ files of paired-end reads interleaved in one file"
+    help="Demultiplexed FASTQ files of paired-end reads interleaved in one file",
 )
 
 opt_dmfastqx = Option(
@@ -348,7 +328,7 @@ opt_dmfastqx = Option(
     type=Path(exists=True, file_okay=True),
     multiple=True,
     default=(),
-    help="Demultiplexed FASTQ files of mate 1 and mate 2 reads"
+    help="Demultiplexed FASTQ files of mate 1 and mate 2 reads",
 )
 
 # Adapter trimming options with Fastp
@@ -357,104 +337,104 @@ opt_fastp = Option(
     ("--fastp/--no-fastp",),
     type=bool,
     default=True,
-    help="Use fastp to QC, filter, and trim reads before alignment"
+    help="Use fastp to QC, filter, and trim reads before alignment",
 )
 
 opt_fastp_5 = Option(
     ("--fastp-5/--no-fastp-5",),
     type=bool,
     default=False,
-    help="Trim low-quality bases from the 5' ends of reads"
+    help="Trim low-quality bases from the 5' ends of reads",
 )
 
 opt_fastp_3 = Option(
     ("--fastp-3/--no-fastp-3",),
     type=bool,
     default=True,
-    help="Trim low-quality bases from the 3' ends of reads"
+    help="Trim low-quality bases from the 3' ends of reads",
 )
 
 opt_fastp_w = Option(
     ("--fastp-w",),
     type=int,
     default=6,
-    help="Use this window size (nt) for --fastp-5 and --fastp-3"
+    help="Use this window size (nt) for --fastp-5 and --fastp-3",
 )
 
 opt_fastp_m = Option(
     ("--fastp-m",),
     type=int,
     default=opt_min_phred.default,
-    help="Use this mean quality threshold for --fastp-5 and --fastp-3"
+    help="Use this mean quality threshold for --fastp-5 and --fastp-3",
 )
 
 opt_fastp_adapter_trimming = Option(
     ("--fastp-adapter-trimming/--no-fastp-adapter-trimming",),
     type=bool,
     default=True,
-    help="Trim adapter sequences from the 3' ends of reads"
+    help="Trim adapter sequences from the 3' ends of reads",
 )
 
 opt_fastp_adapter_1 = Option(
     ("--fastp-adapter-1",),
     type=str,
     default="",
-    help="Trim this adapter sequence from the 3' ends of read 1s"
+    help="Trim this adapter sequence from the 3' ends of read 1s",
 )
 
 opt_fastp_adapter_2 = Option(
     ("--fastp-adapter-2",),
     type=str,
     default="",
-    help="Trim this adapter sequence from the 3' ends of read 2s"
+    help="Trim this adapter sequence from the 3' ends of read 2s",
 )
 
 opt_fastp_adapter_fasta = Option(
     ("--fastp-adapter-fasta",),
     type=Path(exists=True, dir_okay=False),
-    help="Trim adapter sequences in this FASTA file from the 3' ends of reads"
+    help="Trim adapter sequences in this FASTA file from the 3' ends of reads",
 )
 
 opt_fastp_detect_adapter_for_pe = Option(
     ("--fastp-detect-adapter-for-pe/--no-fastp-detect-adapter-for-pe",),
     type=bool,
     default=True,
-    help="Automatically detect the adapter sequences for paired-end reads"
+    help="Automatically detect the adapter sequences for paired-end reads",
 )
 
 opt_fastp_poly_g = Option(
     ("--fastp-poly-g",),
     type=Choice(TRIM_POLY_G, case_sensitive=False),
     default=TRIM_POLY_G_AUTO,
-    help="Trim poly(G) tails (two-color sequencing artifacts) from the 3' end"
+    help="Trim poly(G) tails (two-color sequencing artifacts) from the 3' end",
 )
 
 opt_fastp_poly_g_min_len = Option(
     ("--fastp-poly-g-min-len",),
     type=int,
     default=10,
-    help="Minimum number of Gs to consider a poly(G) tail for --fastp-poly-g"
+    help="Minimum number of Gs to consider a poly(G) tail for --fastp-poly-g",
 )
 
 opt_fastp_poly_x = Option(
     ("--fastp-poly-x/--no-fastp-poly-x",),
     type=bool,
     default=False,
-    help="Trim poly(X) tails (i.e. of any nucleotide) from the 3' end"
+    help="Trim poly(X) tails (i.e. of any nucleotide) from the 3' end",
 )
 
 opt_fastp_poly_x_min_len = Option(
     ("--fastp-poly-x-min-len",),
     type=int,
     default=10,
-    help="Minimum number of bases to consider a poly(X) tail for --fastp-poly-x"
+    help="Minimum number of bases to consider a poly(X) tail for --fastp-poly-x",
 )
 
 opt_fastp_min_length = Option(
     ("--fastp-min-length",),
     type=int,
     default=MIN_READ_LENGTH_DEFAULT,
-    help="Discard reads shorter than this length"
+    help="Discard reads shorter than this length",
 )
 
 # Alignment options with Bowtie2
@@ -463,132 +443,130 @@ opt_bt2_local = Option(
     ("--bt2-local/--bt2-end-to-end",),
     type=bool,
     default=True,
-    help="Align reads in local mode rather than end-to-end mode"
+    help="Align reads in local mode rather than end-to-end mode",
 )
 
 opt_bt2_discordant = Option(
     ("--bt2-discordant/--bt2-no-discordant",),
     type=bool,
     default=False,
-    help="Output paired-end reads whose mates align discordantly")
+    help="Output paired-end reads whose mates align discordantly",
+)
 
 opt_bt2_mixed = Option(
     ("--bt2-mixed/--bt2-no-mixed",),
     type=bool,
     default=False,
-    help="Attempt to align individual mates of pairs that fail to align"
+    help="Attempt to align individual mates of pairs that fail to align",
 )
 
 opt_bt2_dovetail = Option(
     ("--bt2-dovetail/--bt2-no-dovetail",),
     type=bool,
     default=False,
-    help="Consider dovetailed mate pairs to align concordantly"
+    help="Consider dovetailed mate pairs to align concordantly",
 )
 
 opt_bt2_contain = Option(
     ("--bt2-contain/--bt2-no-contain",),
     type=bool,
     default=True,
-    help="Consider nested mate pairs to align concordantly"
+    help="Consider nested mate pairs to align concordantly",
 )
 
 opt_bt2_un = Option(
     ("--bt2-un/--bt2-no-un",),
     type=bool,
     default=True,
-    help="Output unaligned reads to a FASTQ file"
+    help="Output unaligned reads to a FASTQ file",
 )
 
 opt_bt2_i = Option(
     ("--bt2-I",),
     type=int,
     default=0,
-    help="Discard paired-end alignments shorter than this many bases"
+    help="Discard paired-end alignments shorter than this many bases",
 )
 
 opt_bt2_x = Option(
     ("--bt2-X",),
     type=int,
     default=600,
-    help="Discard paired-end alignments longer than this many bases"
+    help="Discard paired-end alignments longer than this many bases",
 )
 
 opt_bt2_score_min_e2e = Option(
     ("--bt2-score-min-e2e",),
     type=str,
     default="L,-1,-0.8",
-    help="Discard alignments that score below this threshold in end-to-end mode"
+    help="Discard alignments that score below this threshold in end-to-end mode",
 )
 
 opt_bt2_score_min_loc = Option(
     ("--bt2-score-min-loc",),
     type=str,
     default="L,1,0.8",
-    help="Discard alignments that score below this threshold in local mode"
+    help="Discard alignments that score below this threshold in local mode",
 )
 
 opt_bt2_s = Option(
     ("--bt2-i", "bt2_s"),
     type=str,
     default="L,1,0.1",
-    help="Seed Bowtie2 alignments at this interval"
+    help="Seed Bowtie2 alignments at this interval",
 )
 
 opt_bt2_l = Option(
-    ("--bt2-L",),
-    type=int,
-    default=20,
-    help="Use this seed length for Bowtie2"
+    ("--bt2-L",), type=int, default=20, help="Use this seed length for Bowtie2"
 )
 
 opt_bt2_gbar = Option(
     ("--bt2-gbar",),
     type=int,
     default=4,
-    help="Do not place gaps within this many bases from the end of a read"
+    help="Do not place gaps within this many bases from the end of a read",
 )
 
 opt_bt2_d = Option(
     ("--bt2-D",),
     type=int,
     default=4,
-    help="Discard alignments if over this many consecutive seed extensions fail"
+    help="Discard alignments if over this many consecutive seed extensions fail",
 )
 
 opt_bt2_r = Option(
     ("--bt2-R",),
     type=int,
     default=2,
-    help="Re-seed reads with repetitive seeds up to this many times"
+    help="Re-seed reads with repetitive seeds up to this many times",
 )
 
 opt_bt2_dpad = Option(
     ("--bt2-dpad",),
     type=int,
     default=2,
-    help="Pad the alignment matrix with this many bases (to allow gaps)"
+    help="Pad the alignment matrix with this many bases (to allow gaps)",
 )
 
 opt_bt2_orient = Option(
     ("--bt2-orient",),
     type=Choice(BOWTIE2_ORIENT, case_sensitive=False),
     default=BOWTIE2_ORIENT_FR,
-    help="Require paired mates to have this orientation"
+    help="Require paired mates to have this orientation",
 )
 
 opt_min_mapq = Option(
     ("--min-mapq",),
     type=int,
     default=25,
-    help="Discard reads with mapping qualities below this threshold"
+    help="Discard reads with mapping qualities below this threshold",
 )
 
 opt_min_reads = Option(
     ("--min-reads", "-N"),
     type=int,
     default=1000,
-    help="Discard alignment maps with fewer than this many reads"
+    help="Discard alignment maps with fewer than this many reads",
 )
 
 # IDmut
@@ -596,29 +574,29 @@ opt_min_reads = Option(
 opt_batch_size = Option(
     ("--batch-size",),
     type=int,
-    default=2 ** 16,
-    help="Limit batches to at most this many reads"
+    default=2**16,
+    help="Limit batches to at most this many reads",
 )
 
 opt_ambindel = Option(
     ("--ambindel/--no-ambindel",),
     type=bool,
     default=True,
-    help="Mark all ambiguous insertions and deletions (indels)"
+    help="Mark all ambiguous insertions and deletions (indels)",
 )
 
 opt_insert3 = Option(
     ("--insert3/--insert5",),
     type=bool,
     default=True,
-    help="Mark each insertion on the base to its 3' (True) or 5' (False) side"
+    help="Mark each insertion on the base to its 3' (True) or 5' (False) side",
 )
 
 opt_brotli_level = Option(
     ("--brotli-level",),
     type=int,
     default=DEFAULT_BROTLI_LEVEL,
-    help="Compress pickle files with this level of Brotli (0 - 11)"
+    help="Compress pickle files with this level of Brotli (0 - 11)",
 )
 
 opt_self_contained = Option(
@@ -626,51 +604,53 @@ opt_self_contained = Option(
     type=bool,
     default=False,
     help="Write self-contained batch files that do not require loading "
-         "predecessor batches (Filter and Cluster steps), at the cost of "
-         "larger files on disk"
+    "predecessor batches (Filter and Cluster steps), at the cost of "
+    "larger files on disk",
 )
 
 opt_overhangs = Option(
     ("--overhangs/--no-overhangs",),
     type=bool,
     default=True,
-    help="Retain the overhangs of paired-end mates that dovetail"
+    help="Retain the overhangs of paired-end mates that dovetail",
 )
 
 opt_clip_end5 = Option(
     ("--clip-end5", "-5"),
     type=int,
     default=CLIP_END5_DEFAULT,
-    help="Clip this many bases from the 5' end of each read"
+    help="Clip this many bases from the 5' end of each read",
 )
 
 opt_clip_end3 = Option(
     ("--clip-end3", "-3"),
     type=int,
     default=CLIP_END3_DEFAULT,
-    help="Clip this many bases from the 3' end of each read"
+    help="Clip this many bases from the 3' end of each read",
 )
 
 opt_sep_strands = Option(
     ("--sep-strands/--mix-strands",),
     type=bool,
     default=False,
-    help="Separate each alignment map into forward- and reverse-strand reads"
+    help="Separate each alignment map into forward- and reverse-strand reads",
 )
 
 opt_rev_label = Option(
     ("--rev-label",),
     type=str,
     default="-rev",
-    help="With --sep-strands, add this label to each reverse-strand reference"
+    help="With --sep-strands, add this label to each reverse-strand reference",
 )
 
 opt_f1r2_fwd = Option(
     ("--f1r2-fwd/--f1r2-rev",),
     type=bool,
     default=False,
-    help=("With --sep-strands, consider forward mate 1s and reverse mate 2s "
-          "to be forward-stranded")
+    help=(
+        "With --sep-strands, consider forward mate 1s and reverse mate 2s "
+        "to be forward-stranded"
+    ),
 )
 
 opt_write_read_names = Option(
@@ -678,52 +658,50 @@ opt_write_read_names = Option(
     type=bool,
     default=False,
     help="Write the name of each read in a second set of batches (necessary "
-         "for the options --drop-read or --drop-read-file)"
+    "for the options --drop-read or --drop-read-file)",
 )
 
 opt_idmut_pos_table = Option(
     ("--idmut-pos-table/--no-idmut-pos-table",),
     type=bool,
     default=True,
-    help="Tabulate relationships per position for idmut data"
+    help="Tabulate relationships per position for idmut data",
 )
 
 opt_idmut_read_table = Option(
     ("--idmut-read-table/--no-idmut-read-table",),
     type=bool,
     default=False,
-    help="Tabulate relationships per read for idmut data"
+    help="Tabulate relationships per read for idmut data",
 )
 
 opt_idmut_cx = Option(
     ("--idmut-cx/--idmut-py",),
     type=bool,
     default=True,
-    help=("Use a fast (C extension module) version of the idmut algorithm; "
-          "the slow (Python) version is still avilable as a fallback if the "
-          "C extension cannot be loaded, and for debugging/benchmarking")
+    help=(
+        "Use a fast (C extension module) version of the idmut algorithm; "
+        "the slow (Python) version is still avilable as a fallback if the "
+        "C extension cannot be loaded, and for debugging/benchmarking"
+    ),
 )
 
 # Pool
 
-arg_pooled_sample = Argument(
-    ("pooled_sample",),
-    type=str,
-    required=True
-)
+arg_pooled_sample = Argument(("pooled_sample",), type=str, required=True)
 
 opt_min_pearson_pool = Option(
     ("--min-pearson",),
     type=float,
-    default=0.,
-    help="Pool samples only if their Pearson correlation is at least this large"
+    default=0.0,
+    help="Pool samples only if their Pearson correlation is at least this large",
 )
 
 opt_max_marcd_pool = Option(
     ("--max-marcd",),
     type=float,
     default=1.0,
-    help="Pool samples only if their mean arsince distance is at most this"
+    help="Pool samples only if their mean arsince distance is at most this",
 )
 
 # Filter
@@ -732,13 +710,13 @@ opt_probe = Option(
     ("--probe",),
     type=Choice(PROBES, case_sensitive=False),
     default=PROBE_DMS,
-    help="Use the default options for this chemical probe"
+    help="Use the default options for this chemical probe",
 )
 
 opt_regions_file = Option(
     ("--regions-file", "-i"),
     type=Path(exists=True, dir_okay=False),
-    help="Select regions of references from coordinates/primers in a CSV file"
+    help="Select regions of references from coordinates/primers in a CSV file",
 )
 
 opt_region_coords = Option(
@@ -746,7 +724,7 @@ opt_region_coords = Option(
     type=(str, int, int),
     multiple=True,
     default=(),
-    help="Select a region of a reference given its 5' and 3' end coordinates"
+    help="Select a region of a reference given its 5' and 3' end coordinates",
 )
 
 opt_region_primers = Option(
@@ -754,28 +732,28 @@ opt_region_primers = Option(
     type=(str, DNA, DNA),
     multiple=True,
     default=(),
-    help="Select a region of a reference given its forward and reverse primers"
+    help="Select a region of a reference given its forward and reverse primers",
 )
 
 opt_primer_gap = Option(
     ("--primer-gap",),
     type=int,
     default=0,
-    help="Leave a gap of this many bases between the primer and the region"
+    help="Leave a gap of this many bases between the primer and the region",
 )
 
 opt_count_del = Option(
     ("--count-del/--no-del",),
     type=bool,
     default=True,
-    help="Count deletions as mutations"
+    help="Count deletions as mutations",
 )
 
 opt_count_ins = Option(
     ("--count-ins/--no-ins",),
     type=bool,
     default=True,
-    help="Count insertions as mutations"
+    help="Count insertions as mutations",
 )
 
 opt_no_mut = Option(
@@ -783,7 +761,7 @@ opt_no_mut = Option(
     type=str,
     multiple=True,
     default=(),
-    help="Do not count this type of mutation (overrides --count-del/ins)"
+    help="Do not count this type of mutation (overrides --count-del/ins)",
 )
 
 opt_only_mut = Option(
@@ -791,42 +769,30 @@ opt_only_mut = Option(
     type=str,
     multiple=True,
     default=(),
-    help="Count only this type of mutation (overrides other mutation settings)"
+    help="Count only this type of mutation (overrides other mutation settings)",
 )
 
 opt_mask_polya = Option(
     ("--mask-polya",),
     type=int,
     default=5,
-    help="Mask stretches of at least this many consecutive A bases (0 disables)"
+    help="Mask stretches of at least this many consecutive A bases (0 disables)",
 )
 
 opt_mask_a = Option(
-    ("--mask-a/--keep-a",),
-    type=bool,
-    default=None,
-    help="Mask positions with base A"
+    ("--mask-a/--keep-a",), type=bool, default=None, help="Mask positions with base A"
 )
 
 opt_mask_c = Option(
-    ("--mask-c/--keep-c",),
-    type=bool,
-    default=None,
-    help="Mask positions with base C"
+    ("--mask-c/--keep-c",), type=bool, default=None, help="Mask positions with base C"
 )
 
 opt_mask_g = Option(
-    ("--mask-g/--keep-g",),
-    type=bool,
-    default=None,
-    help="Mask positions with base G"
+    ("--mask-g/--keep-g",), type=bool, default=None, help="Mask positions with base G"
 )
 
 opt_mask_u = Option(
-    ("--mask-u/--keep-u",),
-    type=bool,
-    default=None,
-    help="Mask positions with base U"
+    ("--mask-u/--keep-u",), type=bool, default=None, help="Mask positions with base U"
 )
 
 opt_mask_pos = Option(
@@ -834,7 +800,7 @@ opt_mask_pos = Option(
     type=(str, int),
     multiple=True,
     default=(),
-    help="Mask this position in this reference"
+    help="Mask this position in this reference",
 )
 
 opt_mask_pos_file = Option(
@@ -842,7 +808,7 @@ opt_mask_pos_file = Option(
     type=Path(exists=True),
     multiple=True,
     default=(),
-    help="Mask positions in references from a file"
+    help="Mask positions in references from a file",
 )
 
 opt_drop_read = Option(
@@ -850,7 +816,7 @@ opt_drop_read = Option(
     type=str,
     multiple=True,
     default=(),
-    help="Drop the read with this name"
+    help="Drop the read with this name",
 )
 
 opt_drop_read_file = Option(
@@ -858,133 +824,139 @@ opt_drop_read_file = Option(
     type=Path(exists=True),
     multiple=True,
     default=(),
-    help="Drop the reads with names in this file"
+    help="Drop the reads with names in this file",
 )
 
 opt_drop_discontig = Option(
     ("--drop-discontig/--keep-discontig",),
     type=bool,
     default=True,
-    help="Drop paired-end reads with discontiguous mates"
+    help="Drop paired-end reads with discontiguous mates",
 )
 
 opt_min_ncov_read = Option(
     ("--min-ncov-read",),
     type=int,
     default=1,
-    help="Drop reads with fewer than this many bases covering the region"
+    help="Drop reads with fewer than this many bases covering the region",
 )
 
 opt_min_fcov_read = Option(
     ("--min-fcov-read",),
     type=float,
-    default=0.,
-    help="Drop reads covering less than this fraction of the region"
+    default=0.0,
+    help="Drop reads covering less than this fraction of the region",
 )
 
 opt_min_finfo_read = Option(
     ("--min-finfo-read",),
     type=float,
     default=0.95,
-    help="Drop reads with less than this fraction of informative base calls"
+    help="Drop reads with less than this fraction of informative base calls",
 )
 
 opt_max_fmut_read = Option(
     ("--max-fmut-read",),
     type=float,
-    default=1.,
-    help="Drop reads with more than this fraction of mutated base calls"
+    default=1.0,
+    help="Drop reads with more than this fraction of mutated base calls",
 )
 
 opt_min_mut_gap = Option(
     ("--min-mut-gap",),
     type=int,
     default=None,
-    help="Filter out mutations separated by fewer than this many bases"
+    help="Filter out mutations separated by fewer than this many bases",
 )
 
 opt_min_mut_gap_weights = Option(
     ("--min-mut-gap-weights",),
     type=str,
     default=None,
-    help=("Comma-separated gap:weight pairs defining a mixture of min_mut_gap "
-          "biases, e.g. '0:0.2,1:0.3,2:0.5'. Overrides --min-mut-gap. "
-          "Defaults are probe-specific; pass an empty string to disable.")
+    help=(
+        "Comma-separated gap:weight pairs defining a mixture of min_mut_gap "
+        "biases, e.g. '0:0.2,1:0.3,2:0.5'. Overrides --min-mut-gap. "
+        "Defaults are probe-specific; pass an empty string to disable."
+    ),
 )
 
 opt_mut_collisions = Option(
     ("--mut-collisions",),
     type=Choice(MUT_COLLISIONS, case_sensitive=False),
     default=MUT_COLLISIONS_AUTO,
-    help=("If two mutations are closer than --min-mut-gap positions, MERGE "
-          "the mutations, DROP the read, or AUTO-select based on the probe.")
+    help=(
+        "If two mutations are closer than --min-mut-gap positions, MERGE "
+        "the mutations, DROP the read, or AUTO-select based on the probe."
+    ),
 )
 
 opt_injected_mut_probs = Option(
     ("--injected-mut-probs",),
     type=str,
     default=None,
-    help=("Comma-separated offset:prob pairs (offset ≥ 1) defining the "
-          "probability of injecting a mutation that many positions 5' of "
-          "an existing mutation, e.g. '1:0.1,2:0.01' (used with "
-          "--mut-collisions merge). Defaults are probe-specific; pass an "
-          "empty string to disable.")
+    help=(
+        "Comma-separated offset:prob pairs (offset ≥ 1) defining the "
+        "probability of injecting a mutation that many positions 5' of "
+        "an existing mutation, e.g. '1:0.1,2:0.01' (used with "
+        "--mut-collisions merge). Defaults are probe-specific; pass an "
+        "empty string to disable."
+    ),
 )
 
 opt_min_ninfo_pos = Option(
     ("--min-ninfo-pos",),
     type=int,
     default=1000,
-    help="Mask positions with fewer than this many informative base calls"
+    help="Mask positions with fewer than this many informative base calls",
 )
 
 opt_max_fmut_pos = Option(
     ("--max-fmut-pos",),
     type=float,
-    default=1.,
-    help="Mask positions with more than this fraction of mutated base calls"
+    default=1.0,
+    help="Mask positions with more than this fraction of mutated base calls",
 )
 
 opt_quick_unbias = Option(
     ("--quick-unbias/--exact-unbias",),
     type=bool,
     default=True,
-    help="Correct observer bias using a quick (typically linear time) heuristic"
+    help="Correct observer bias using a quick (typically linear time) heuristic",
 )
 
 opt_quick_unbias_thresh = Option(
     ("--quick-unbias-thresh",),
     type=float,
     default=0.001,
-    help="Treat mutated fractions under this threshold as 0 with --quick-unbias"
+    help="Treat mutated fractions under this threshold as 0 with --quick-unbias",
 )
 
 opt_max_filter_iter = Option(
     ("--max-filter-iter",),
     type=int,
     default=0,
-    help="Stop the filter step after this many iterations (0 for no limit)"
+    help="Stop the filter step after this many iterations (0 for no limit)",
 )
 
 opt_filter_pos_table = Option(
     ("--filter-pos-table/--no-filter-pos-table",),
     type=bool,
     default=True,
-    help="Tabulate relationships per position for filter data"
+    help="Tabulate relationships per position for filter data",
 )
 
 opt_filter_read_table = Option(
     ("--filter-read-table/--no-filter-read-table",),
     type=bool,
     default=True,
-    help="Tabulate relationships per read for filter data"
+    help="Tabulate relationships per read for filter data",
 )
 
 opt_verify_times = Option(
     ("--verify-times/--no-verify-times",),
     type=bool,
     default=True,
-    help="Verify that report files from later steps have later timestamps"
+    help="Verify that report files from later steps have later timestamps",
 )
 
 # Cluster options
@@ -993,84 +965,81 @@ opt_cluster = Option(
     ("--cluster/--no-cluster",),
     type=bool,
     default=False,
-    help="Cluster reads to find alternative structures"
+    help="Cluster reads to find alternative structures",
 )
 
 opt_min_clusters = Option(
-    ("--min-clusters",),
-    type=int,
-    default=1,
-    help="Start at this many clusters"
+    ("--min-clusters",), type=int, default=1, help="Start at this many clusters"
 )
 
 opt_max_clusters = Option(
     ("--max-clusters", "-k"),
     type=int,
     default=0,
-    help="Stop at this many clusters (0 for no limit)"
+    help="Stop at this many clusters (0 for no limit)",
 )
 
 opt_try_all_ks = Option(
     ("--try-all-ks/--stop-best-k",),
     type=bool,
     default=False,
-    help="Try all numbers of clusters (Ks), even after finding the best number"
+    help="Try all numbers of clusters (Ks), even after finding the best number",
 )
 
 opt_write_all_ks = Option(
     ("--write-all-ks/--write-best-k",),
     type=bool,
     default=False,
-    help="Write all numbers of clusters (Ks), rather than only the best number"
+    help="Write all numbers of clusters (Ks), rather than only the best number",
 )
 
 opt_jackpot = Option(
     ("--jackpot/--no-jackpot",),
     type=bool,
     default=True,
-    help="Calculate the jackpotting quotient to find over-represented reads"
+    help="Calculate the jackpotting quotient to find over-represented reads",
 )
 
 opt_jackpot_conf_level = Option(
     ("--jackpot-conf-level",),
     type=float,
     default=0.95,
-    help="Confidence level for the jackpotting quotient confidence interval"
+    help="Confidence level for the jackpotting quotient confidence interval",
 )
 
 opt_max_jackpot_quotient = Option(
     ("--max-jackpot-quotient",),
     type=float,
     default=1.1,
-    help="Remove runs whose jackpotting quotient exceeds this limit"
+    help="Remove runs whose jackpotting quotient exceeds this limit",
 )
 
 opt_max_jackpot_sims = Option(
     ("--max-jackpot-sims",),
     type=int,
     default=12,
-    help="Maximum number of simulations to compute the jackpotting quotient"
+    help="Maximum number of simulations to compute the jackpotting quotient",
 )
 
 opt_jackpot_max_data = Option(
     ("--jackpot-max-data",),
     type=int,
     default=2**28,
-    help="Skip calculating the jackpotting quotient if reads × positions exceeds this limit"
+    help="Skip calculating the jackpotting quotient if reads × positions exceeds this limit",
 )
 
 opt_max_pearson_run = Option(
     ("--max-pearson-run",),
     type=float,
     default=0.9,
-    help="Remove runs with two clusters more similar than this correlation"
+    help="Remove runs with two clusters more similar than this correlation",
 )
 
 opt_min_marcd_run = Option(
     ("--min-marcd-run",),
     type=float,
     default=0.016,
-    help="Remove runs with two clusters that differ by less than this MARCD"
+    help="Remove runs with two clusters that differ by less than this MARCD",
 )
 
 opt_max_arcd_vs_ens_avg = Option(
@@ -1078,104 +1047,100 @@ opt_max_arcd_vs_ens_avg = Option(
     type=float,
     default=0.2,
     help="Remove runs where a cluster differs by more than this ARCD from the "
-         "ensemble average at any position"
+    "ensemble average at any position",
 )
 
 opt_max_gini_run = Option(
     ("--max-gini-run",),
     type=float,
     default=round(2 / 3, 3),
-    help="Remove runs where any cluster's Gini coefficient exceeds this limit"
+    help="Remove runs where any cluster's Gini coefficient exceeds this limit",
 )
 
 opt_max_loglike_vs_best = Option(
     ("--max-loglike-vs-best",),
     type=float,
-    default=0.,
-    help="Remove Ks with a log likelihood gap larger than this (0 for no limit)"
+    default=0.0,
+    help="Remove Ks with a log likelihood gap larger than this (0 for no limit)",
 )
 
 opt_min_pearson_vs_best = Option(
     ("--min-pearson-vs-best",),
     type=float,
     default=0.97,
-    help="Remove Ks where every run has less than this correlation vs. the best"
+    help="Remove Ks where every run has less than this correlation vs. the best",
 )
 
 opt_max_marcd_vs_best = Option(
     ("--max-marcd-vs-best",),
     type=float,
     default=0.008,
-    help="Remove Ks where every run has more than this MARCD vs. the best"
+    help="Remove Ks where every run has more than this MARCD vs. the best",
 )
 
 opt_min_em_runs = Option(
     ("--min-em-runs", "-e"),
     type=int,
     default=6,
-    help="Run EM (successfully) at least this number of times for each K"
+    help="Run EM (successfully) at least this number of times for each K",
 )
 
 opt_max_em_runs = Option(
     ("--max-em-runs", "-E"),
     type=int,
     default=30,
-    help="Run EM (successfully or not) at most this number of times for each K"
+    help="Run EM (successfully or not) at most this number of times for each K",
 )
 
 opt_min_em_iter = Option(
     ("--min-em-iter",),
     type=int,
     default=10,
-    help="Run EM for at least this many iterations"
+    help="Run EM for at least this many iterations",
 )
 
 opt_max_em_iter = Option(
     ("--max-em-iter",),
     type=int,
     default=500,
-    help="Run EM for at most this many iterations"
+    help="Run EM for at most this many iterations",
 )
 
 opt_em_thresh = Option(
     ("--em-thresh",),
     type=float,
-    default=round(1. / math.e, 2),
-    help="Stop EM when the log likelihood increases by less than this threshold"
+    default=round(1.0 / math.e, 2),
+    help="Stop EM when the log likelihood increases by less than this threshold",
 )
 
 opt_cluster_pos_table = Option(
     ("--cluster-pos-table/--no-cluster-pos-table",),
     type=bool,
     default=True,
-    help="Tabulate relationships per position for cluster data"
+    help="Tabulate relationships per position for cluster data",
 )
 
 opt_cluster_abundance_table = Option(
     ("--cluster-abundance-table/--no-cluster-abundance-table",),
     type=bool,
     default=True,
-    help="Tabulate number of reads per cluster for cluster data"
+    help="Tabulate number of reads per cluster for cluster data",
 )
 
 # Join options
 
-arg_joined_region = Argument(
-    ("joined_region",),
-    type=str,
-    required=True
-)
+arg_joined_region = Argument(("joined_region",), type=str, required=True)
 
 opt_join_clusts = Option(
     ("--join-clusts", "-j"),
     type=Path(dir_okay=False, exists=True),
-    help="Specify which clusters to join clusters using this CSV file"
+    help="Specify which clusters to join clusters using this CSV file",
 )
 
 # Ensembles options
 
 opt_tile_length = Option(
-    ("--tile-length", "-L",),
+    ("--tile-length", "-L"),
     type=int,
     default=0,
     help="Make each tile this length (if 0, use 2x the median read length)",
@@ -1192,7 +1157,7 @@ opt_erase_tiles = Option(
     ("--erase-tiles/--keep-tiles",),
     type=bool,
     default=True,
-    help="Erase the filter reports/batches from the tiling step"
+    help="Erase the filter reports/batches from the tiling step",
 )
 
 opt_pair_fdr = Option(
@@ -1228,8 +1193,8 @@ opt_gap_mode = Option(
     type=Choice(GAP_MODE, case_sensitive=False),
     default=GAP_MODE_OMIT,
     help="If there are gaps between regions to cluster, OMIT (do not cluster) "
-         "the gaps, INSERT a new region into each gap, or EXPAND the existing "
-         "regions to fill the gaps"
+    "the gaps, INSERT a new region into each gap, or EXPAND the existing "
+    "regions to fill the gaps",
 )
 
 opt_threshold_multiplier = Option(
@@ -1245,20 +1210,20 @@ opt_fold = Option(
     ("--fold/--no-fold",),
     type=bool,
     default=False,
-    help="Predict the secondary structure using the reactivities"
+    help="Predict the secondary structure using the reactivities",
 )
 
 opt_fold_dry_run = Option(
     ("--fold-dry-run/--fold-real-run",),
     type=bool,
     default=False,
-    help="Only generate the fold command and input files; do not run folding"
+    help="Only generate the fold command and input files; do not run folding",
 )
 
 opt_fold_regions_file = Option(
     ("--fold-regions-file", "-F"),
     type=Path(exists=True, dir_okay=False),
-    help="Fold regions of references from coordinates/primers in a CSV file"
+    help="Fold regions of references from coordinates/primers in a CSV file",
 )
 
 opt_fold_coords = Option(
@@ -1266,7 +1231,7 @@ opt_fold_coords = Option(
     type=(str, int, int),
     multiple=True,
     default=(),
-    help="Fold a region of a reference given its 5' and 3' end coordinates"
+    help="Fold a region of a reference given its 5' and 3' end coordinates",
 )
 
 opt_fold_primers = Option(
@@ -1274,151 +1239,165 @@ opt_fold_primers = Option(
     type=(str, DNA, DNA),
     multiple=True,
     default=(),
-    help="Fold a region of a reference given its forward and reverse primers"
+    help="Fold a region of a reference given its forward and reverse primers",
 )
 
 opt_fold_backend = Option(
-     ("--fold-backend",),
-     type=Choice(FOLD_BACKENDS, case_sensitive=False),
-     default=FOLD_BACKEND_AUTO,
-     help=(f"Model RNA structures using {FOLD_BACKEND_RNASTRUCTURE} "
-           "(Fold/ShapeKnots) "
-           f"or {FOLD_BACKEND_VIENNARNA} (RNAfold/RNAsubopt); "
-           f"auto selects {FOLD_BACKEND_RNASTRUCTURE} for {PROBE_DMS} "
-           f"and {FOLD_BACKEND_VIENNARNA} for other probes")
+    ("--fold-backend",),
+    type=Choice(FOLD_BACKENDS, case_sensitive=False),
+    default=FOLD_BACKEND_AUTO,
+    help=(
+        f"Model RNA structures using {FOLD_BACKEND_RNASTRUCTURE} "
+        "(Fold/ShapeKnots) "
+        f"or {FOLD_BACKEND_VIENNARNA} (RNAfold/RNAsubopt); "
+        f"auto selects {FOLD_BACKEND_RNASTRUCTURE} for {PROBE_DMS} "
+        f"and {FOLD_BACKEND_VIENNARNA} for other probes"
+    ),
 )
 
 opt_pseudoknots = Option(
     ("--pseudoknots/--no-pseudoknots",),
     type=bool,
     default=False,
-    help=(f"Predict pseudoknotted structures (requires "
-          f"--fold-backend={FOLD_BACKEND_RNASTRUCTURE}; "
-          f"uses ShapeKnots when set, Fold otherwise)")
+    help=(
+        f"Predict pseudoknotted structures (requires "
+        f"--fold-backend={FOLD_BACKEND_RNASTRUCTURE}; "
+        f"uses ShapeKnots when set, Fold otherwise)"
+    ),
 )
 
 opt_fold_energy_method = Option(
     ("--fold-energy-method",),
     type=Choice(FOLD_ENERGY_METHODS, case_sensitive=False),
     default=FOLD_ENERGY_METHOD_AUTO,
-    help=("Use this method to incorporate reactivities into folding energies. "
-          f"auto selects {FOLD_ENERGY_METHOD_CORDERO} for {PROBE_DMS} "
-          f"and {FOLD_ENERGY_METHOD_EDDY} for other probes; "
-          f"{FOLD_ENERGY_METHOD_EDDY} requires "
-          f"--fold-backend={FOLD_BACKEND_VIENNARNA}; "
-          f"{FOLD_ENERGY_METHOD_CORDERO} requires "
-          f"--fold-backend={FOLD_BACKEND_RNASTRUCTURE}")
+    help=(
+        "Use this method to incorporate reactivities into folding energies. "
+        f"auto selects {FOLD_ENERGY_METHOD_CORDERO} for {PROBE_DMS} "
+        f"and {FOLD_ENERGY_METHOD_EDDY} for other probes; "
+        f"{FOLD_ENERGY_METHOD_EDDY} requires "
+        f"--fold-backend={FOLD_BACKEND_VIENNARNA}; "
+        f"{FOLD_ENERGY_METHOD_CORDERO} requires "
+        f"--fold-backend={FOLD_BACKEND_RNASTRUCTURE}"
+    ),
 )
 
 opt_deigan_slope = Option(
     ("--deigan-slope",),
     type=float,
     default=1.8,
-    help=(f"Slope (kcal/mol) for SHAPE reactivities using Deigan method; "
-          f"used only with --fold-energy-method={FOLD_ENERGY_METHOD_DEIGAN}")
+    help=(
+        f"Slope (kcal/mol) for SHAPE reactivities using Deigan method; "
+        f"used only with --fold-energy-method={FOLD_ENERGY_METHOD_DEIGAN}"
+    ),
 )
 
 opt_deigan_intercept = Option(
     ("--deigan-intercept",),
     type=float,
     default=-0.6,
-    help=(f"Intercept (kcal/mol) for SHAPE reactivities using Deigan method; "
-          f"used only with --fold-energy-method={FOLD_ENERGY_METHOD_DEIGAN}")
+    help=(
+        f"Intercept (kcal/mol) for SHAPE reactivities using Deigan method; "
+        f"used only with --fold-energy-method={FOLD_ENERGY_METHOD_DEIGAN}"
+    ),
 )
 
 opt_fold_quantile = Option(
     ("--fold-quantile",),
     type=float,
     default=0.95,
-    help="Normalize and winsorize reactivities to this quantile for folding"
+    help="Normalize and winsorize reactivities to this quantile for folding",
 )
 
 opt_fold_temp = Option(
     ("--fold-temp",),
     type=float,
     default=37.0,
-    help="Predict structures at this temperature (Celsius)"
+    help="Predict structures at this temperature (Celsius)",
 )
 
 opt_fold_constraint = Option(
     ("--fold-constraint",),
     type=Path(exists=True, dir_okay=False),
-    help="Force bases to be paired/unpaired from a file of constraints"
+    help="Force bases to be paired/unpaired from a file of constraints",
 )
 
 opt_fold_commands = Option(
     ("--fold-commands",),
     type=Path(exists=True, dir_okay=False),
-    help="Command file for RNAFold"
+    help="Command file for RNAFold",
 )
 
 opt_eddy_prior_paired_file = Option(
     ("--eddy-prior-paired-file",),
     type=Path(exists=True, dir_okay=False),
-    help=(f"File of per-position prior probabilities of being paired for the "
-          f"Eddy method (passed as --sp-data with --sp-strategy Pp); "
-          f"only used with --fold-energy-method={FOLD_ENERGY_METHOD_EDDY} "
-          f"and --fold-backend={FOLD_BACKEND_VIENNARNA}")
+    help=(
+        f"File of per-position prior probabilities of being paired for the "
+        f"Eddy method (passed as --sp-data with --sp-strategy Pp); "
+        f"only used with --fold-energy-method={FOLD_ENERGY_METHOD_EDDY} "
+        f"and --fold-backend={FOLD_BACKEND_VIENNARNA}"
+    ),
 )
 
 opt_eddy_prior_unpaired_file = Option(
     ("--eddy-prior-unpaired-file",),
     type=Path(exists=True, dir_okay=False),
-    help=(f"File of per-position prior probabilities of being unpaired for the "
-          f"Eddy method (passed as --sp-data with --sp-strategy Pu); "
-          f"only used with --fold-energy-method={FOLD_ENERGY_METHOD_EDDY} "
-          f"and --fold-backend={FOLD_BACKEND_VIENNARNA}")
+    help=(
+        f"File of per-position prior probabilities of being unpaired for the "
+        f"Eddy method (passed as --sp-data with --sp-strategy Pu); "
+        f"only used with --fold-energy-method={FOLD_ENERGY_METHOD_EDDY} "
+        f"and --fold-backend={FOLD_BACKEND_VIENNARNA}"
+    ),
 )
 
 opt_fold_isolated = Option(
     ("--fold-isolated/--fold-stacked",),
     type=bool,
     default=False,
-    help="Allow isolated (non-stacked) base pairs when folding"
+    help="Allow isolated (non-stacked) base pairs when folding",
 )
 
 opt_fold_md = Option(
     ("--fold-md",),
     type=int,
     default=0,
-    help="Limit base pair distances to this number of bases (0 for no limit)"
+    help="Limit base pair distances to this number of bases (0 for no limit)",
 )
 
 opt_fold_mfe = Option(
     ("--fold-mfe/--fold-sub",),
     type=bool,
     default=False,
-    help="Predict only the minimum free energy (MFE) structure"
+    help="Predict only the minimum free energy (MFE) structure",
 )
 
 opt_fold_max = Option(
     ("--fold-max",),
     type=int,
     default=20,
-    help="Output at most this many structures (overriden by --fold-mfe)"
+    help="Output at most this many structures (overriden by --fold-mfe)",
 )
 
 opt_fold_min = Option(
     ("--fold-min",),
     type=int,
     default=1,
-    help="Require at least this many structures (overriden by --fold-mfe)"
+    help="Require at least this many structures (overriden by --fold-mfe)",
 )
 
 opt_fold_percent = Option(
     ("--fold-percent",),
     type=float,
-    default=20.,
+    default=20.0,
     help="Stop outputting structures when the % difference in energy exceeds "
-         "this value (overriden by --fold-mfe)"
+    "this value (overriden by --fold-mfe)",
 )
 
 opt_fold_edelta = Option(
     ("--fold-edelta",),
     type=float,
-    default=1.,
+    default=1.0,
     help="Maximum absolute energy difference (kcal/mol) from the MFE for "
-         "suboptimal structures output by RNAsubopt (overriden by --fold-mfe)"
+    "suboptimal structures output by RNAsubopt (overriden by --fold-mfe)",
 )
 
 # Draw
@@ -1427,7 +1406,7 @@ opt_draw = Option(
     ("--draw/--no-draw",),
     type=bool,
     default=False,
-    help="Draw secondary structures with RNArtist."
+    help="Draw secondary structures with RNArtist.",
 )
 
 opt_struct_num = Option(
@@ -1435,36 +1414,38 @@ opt_struct_num = Option(
     type=int,
     multiple=True,
     default=(),
-    help=("Draw the specified structure (zero-indexed) or -1 for all structures."
-          " By default, draw the structure with the best AUROC.")
+    help=(
+        "Draw the specified structure (zero-indexed) or -1 for all structures."
+        " By default, draw the structure with the best AUROC."
+    ),
 )
 
 opt_color = Option(
     ("--color/--no-color",),
     type=bool,
     default=True,
-    help="Color bases by their reactivity"
+    help="Color bases by their reactivity",
 )
 
 opt_draw_svg = Option(
     ("--draw-svg/--no-draw-svg",),
     type=bool,
     default=True,
-    help="Output each drawing in a Scalable Vector Graphics file"
+    help="Output each drawing in a Scalable Vector Graphics file",
 )
 
 opt_draw_png = Option(
     ("--draw-png/--no-draw-png",),
     type=bool,
     default=False,
-    help="Output each drawing in a Portable Network Graphics file"
+    help="Output each drawing in a Portable Network Graphics file",
 )
 
 opt_update_rnartistcore = Option(
     ("--update-rnartistcore/--no-update-rnartistcore",),
     type=bool,
     default=False,
-    help="Check for and install updates to RNArtistCore."
+    help="Check for and install updates to RNArtistCore.",
 )
 
 # Graph
@@ -1473,14 +1454,14 @@ opt_comppair = Option(
     ("--comppair/--no-comppair",),
     type=bool,
     default=True,
-    help="Compare every pair of table files"
+    help="Compare every pair of table files",
 )
 
 opt_compself = Option(
     ("--compself/--no-compself",),
     type=bool,
     default=False,
-    help="Compare every table file with itself"
+    help="Compare every table file with itself",
 )
 
 opt_cgroup = Option(
@@ -1488,7 +1469,7 @@ opt_cgroup = Option(
     type=Choice(GROUP_CLUST_OPTIONS, case_sensitive=False),
     default=GROUP_BY_K,
     help="Put each Cluster in its own file, each K in its own file, "
-         "or All clusters in one file"
+    "or All clusters in one file",
 )
 
 opt_rels = Option(
@@ -1496,53 +1477,52 @@ opt_rels = Option(
     type=str,
     multiple=True,
     default=("m",),
-    help="Graph these relationship(s)"
+    help="Graph these relationship(s)",
 )
 
 opt_use_ratio = Option(
-    ("--use-ratio/--use-count",),
-    type=bool,
-    default=True,
-    help="Graph ratios or counts"
+    ("--use-ratio/--use-count",), type=bool, default=True, help="Graph ratios or counts"
 )
 
 opt_graph_quantile = Option(
     ("--graph-quantile",),
     type=float,
-    default=0.,
-    help="Normalize and winsorize ratios to this quantile (0 disables)"
+    default=0.0,
+    help="Normalize and winsorize ratios to this quantile (0 disables)",
 )
 
 opt_window = Option(
     ("--window", "-w"),
     type=int,
     default=45,
-    help="Use a sliding window of this many bases"
+    help="Use a sliding window of this many bases",
 )
 
 opt_winmin = Option(
     ("--winmin", "-n"),
     type=int,
     default=9,
-    help="Mask sliding windows with fewer than this number of data"
+    help="Mask sliding windows with fewer than this number of data",
 )
 
 opt_metric = Option(
     ("--metric", "-m"),
     type=Choice(METRIC_KEYS, case_sensitive=False),
     default=KEY_PEARSON,
-    help=(f"Metric to compare mutation rates: "
-          f"{repr(KEY_PEARSON)} = Pearson correlation coefficient (r), "
-          f"{repr(KEY_SPEARMAN)} = Spearman correlation coefficient (ρ), "
-          f"{repr(KEY_DETERM)} = coefficient of determination (R²), "
-          f"{repr(KEY_MARCD)} = mean arcsine distance (MARCD)")
+    help=(
+        f"Metric to compare mutation rates: "
+        f"{repr(KEY_PEARSON)} = Pearson correlation coefficient (r), "
+        f"{repr(KEY_SPEARMAN)} = Spearman correlation coefficient (ρ), "
+        f"{repr(KEY_DETERM)} = coefficient of determination (R²), "
+        f"{repr(KEY_MARCD)} = mean arcsine distance (MARCD)"
+    ),
 )
 
 opt_terminal_pairs = Option(
     ("--terminal-pairs/--no-terminal-pairs",),
     type=bool,
     default=True,
-    help="Include terminal base pairs (at the ends of stems) in ROC curves"
+    help="Include terminal base pairs (at the ends of stems) in ROC curves",
 )
 
 opt_struct_file = Option(
@@ -1550,14 +1530,14 @@ opt_struct_file = Option(
     type=Path(exists=True, dir_okay=True),
     multiple=True,
     default=(),
-    help="Compare mutational profiles to the structure(s) in this CT file"
+    help="Compare mutational profiles to the structure(s) in this CT file",
 )
 
 opt_min_aucroc = Option(
     ("--min-aucroc",),
     type=float,
     default=0.85,
-    help="Skip tables/profiles where the AUC-ROC is less than this value"
+    help="Skip tables/profiles where the AUC-ROC is less than this value",
 )
 
 opt_fold_full = Option(
@@ -1565,133 +1545,133 @@ opt_fold_full = Option(
     type=bool,
     default=True,
     help="If no regions are specified, whether to default to the full region "
-         "or to the table's region"
+    "or to the table's region",
 )
 
 opt_hist_bins = Option(
     ("--hist-bins",),
     type=int,
     default=10,
-    help="Number of bins in each histogram; must be ≥ 1"
+    help="Number of bins in each histogram; must be ≥ 1",
 )
 
 opt_hist_margin = Option(
     ("--hist-margin",),
     type=float,
     default=0.1,
-    help="Autofill margins of at most this width in histograms of ratios"
+    help="Autofill margins of at most this width in histograms of ratios",
 )
 
 opt_csv = Option(
     ("--csv/--no-csv",),
     type=bool,
     default=True,
-    help="Output the data for each graph in a Comma-Separated Values file"
+    help="Output the data for each graph in a Comma-Separated Values file",
 )
 
 opt_html = Option(
     ("--html/--no-html",),
     type=bool,
     default=True,
-    help="Output each graph in an interactive HyperText Markup Language file"
+    help="Output each graph in an interactive HyperText Markup Language file",
 )
 
 opt_svg = Option(
     ("--svg/--no-svg",),
     type=bool,
     default=False,
-    help="Output each graph in a Scalable Vector Graphics file"
+    help="Output each graph in a Scalable Vector Graphics file",
 )
 
 opt_pdf = Option(
     ("--pdf/--no-pdf",),
     type=bool,
     default=False,
-    help="Output each graph in a Portable Document Format file"
+    help="Output each graph in a Portable Document Format file",
 )
 
 opt_png = Option(
     ("--png/--no-png",),
     type=bool,
     default=False,
-    help="Output each graph in a Portable Network Graphics file"
+    help="Output each graph in a Portable Network Graphics file",
 )
 
 opt_graph_mprof = Option(
     ("--graph-mprof/--no-graph-mprof",),
     type=bool,
     default=True,
-    help="Graph mutational profiles"
+    help="Graph mutational profiles",
 )
 
 opt_graph_tmprof = Option(
     ("--graph-tmprof/--no-graph-tmprof",),
     type=bool,
     default=True,
-    help="Graph typed mutational profiles"
+    help="Graph typed mutational profiles",
 )
 
 opt_graph_ncov = Option(
     ("--graph-ncov/--no-graph-ncov",),
     type=bool,
     default=True,
-    help="Graph coverages per position"
+    help="Graph coverages per position",
 )
 
 opt_graph_mhist = Option(
     ("--graph-mhist/--no-graph-mhist",),
     type=bool,
     default=True,
-    help="Graph histograms of mutations per read"
+    help="Graph histograms of mutations per read",
 )
 
 opt_graph_abundance = Option(
     ("--graph-abundance/--no-graph-abundance",),
     type=bool,
     default=True,
-    help="Graph abundance of each cluster"
+    help="Graph abundance of each cluster",
 )
 
 opt_graph_giniroll = Option(
     ("--graph-giniroll/--no-graph-giniroll",),
     type=bool,
     default=False,
-    help="Graph rolling Gini coefficients"
+    help="Graph rolling Gini coefficients",
 )
 
 opt_graph_roc = Option(
     ("--graph-roc/--no-graph-roc",),
     type=bool,
     default=True,
-    help="Graph receiver operating characteristic (ROC) curves"
+    help="Graph receiver operating characteristic (ROC) curves",
 )
 
 opt_graph_aucroll = Option(
     ("--graph-aucroll/--no-graph-aucroll",),
     type=bool,
     default=False,
-    help="Graph rolling areas under ROC curves (AUC-ROC)"
+    help="Graph rolling areas under ROC curves (AUC-ROC)",
 )
 
 opt_graph_poscorr = Option(
     ("--graph-poscorr/--no-graph-poscorr",),
     type=bool,
     default=False,
-    help="Graph phi correlations between positions"
+    help="Graph phi correlations between positions",
 )
 
 opt_graph_mutdist = Option(
     ("--graph-mutdist/--no-graph-mutdist",),
     type=bool,
     default=False,
-    help="Graph distances between mutations"
+    help="Graph distances between mutations",
 )
 
 opt_mutdist_null = Option(
     ("--mutdist-null/--no-mutdist-null",),
     type=bool,
     default=True,
-    help="Include the null distribution of distances between mutations"
+    help="Include the null distribution of distances between mutations",
 )
 
 # Collate
@@ -1700,57 +1680,61 @@ opt_collate = Option(
     ("--collate/--no-collate",),
     type=bool,
     default=True,
-    help="Collate HTML graphs and SVG drawings into an HTML report file."
+    help="Collate HTML graphs and SVG drawings into an HTML report file.",
 )
 
 opt_group = Option(
     ("--group",),
     type=str,
     default="sample",
-    help="Group collated graphs by one of 'sample', 'graph', 'branches', 'region', or 'all'."
+    help="Group collated graphs by one of 'sample', 'graph', 'branches', 'region', or 'all'.",
 )
 
 opt_portable = Option(
     ("--portable/--no-portable",),
     type=bool,
     default=False,
-    help=("Embed collated graphs into the output HTML file for "
-          "portability at the expense of live updates and file size.")
+    help=(
+        "Embed collated graphs into the output HTML file for "
+        "portability at the expense of live updates and file size."
+    ),
 )
 
 opt_name = Option(
     ("--name",),
     type=str,
     default="collated",
-    help="Prefix the HTML report with this name."
+    help="Prefix the HTML report with this name.",
 )
 
 opt_verbose_name = Option(
     ("--verbose-name/--no-verbose-name",),
     type=bool,
     default=False,
-    help="Add collated file information to report name."
+    help="Add collated file information to report name.",
 )
 
 opt_collate_out_dir = Option(
     ("--collate-out-dir",),
     type=Path(file_okay=False),
-    help=("Write collated report to this directory. By default, write to the "
-          "lowest level directory common to all input graphs.")
+    help=(
+        "Write collated report to this directory. By default, write to the "
+        "lowest level directory common to all input graphs."
+    ),
 )
 
 opt_include_svg = Option(
     ("--include-svg/--no-include-svg",),
     type=bool,
     default=True,
-    help="Include RNA structure drawings from the draw module."
+    help="Include RNA structure drawings from the draw module.",
 )
 
 opt_include_graph = Option(
     ("--include-graph/--no-include-graph",),
     type=bool,
     default=True,
-    help="Include graphs from the graph module."
+    help="Include graphs from the graph module.",
 )
 
 # CT renumbering
@@ -1761,7 +1745,7 @@ opt_ct_pos_5 = Option(
     multiple=True,
     default=(),
     help="Connectivity table (CT) file or directory of CT files "
-         "and the 5' position to assign to each file"
+    "and the 5' position to assign to each file",
 )
 
 opt_inplace = Option(
@@ -1769,7 +1753,7 @@ opt_inplace = Option(
     type=bool,
     default=False,
     help="Modify files in-place instead of writing new files "
-         "(CAUTION: you cannot recover the original files afterwards)"
+    "(CAUTION: you cannot recover the original files afterwards)",
 )
 
 # Export
@@ -1778,26 +1762,26 @@ opt_export = Option(
     ("--export/--no-export",),
     type=bool,
     default=False,
-    help="Export each sample to SEISMICgraph (https://seismicrna.org)"
+    help="Export each sample to SEISMICgraph (https://seismicrna.org)",
 )
 
 opt_samples_meta = Option(
     ("--samples-meta", "-S"),
     type=Path(dir_okay=False, exists=True),
-    help="Add sample metadata from this CSV file to exported results"
+    help="Add sample metadata from this CSV file to exported results",
 )
 
 opt_refs_meta = Option(
     ("--refs-meta", "-R"),
     type=Path(dir_okay=False, exists=True),
-    help="Add reference metadata from this CSV file to exported results"
+    help="Add reference metadata from this CSV file to exported results",
 )
 
 opt_all_pos = Option(
     ("--all-pos/--unmasked-pos",),
     type=bool,
     default=True,
-    help="Export all positions (not just unmasked positions)"
+    help="Export all positions (not just unmasked positions)",
 )
 
 # Import MM
@@ -1806,7 +1790,7 @@ opt_importmm_sample = Option(
     ("--sample", "-s"),
     type=str,
     required=True,
-    help="Give this name to the imported sample"
+    help="Give this name to the imported sample",
 )
 
 # Simulation
@@ -1815,70 +1799,70 @@ opt_sim_dir = Option(
     ("--sim-dir", "-o"),
     type=Path(file_okay=False),
     default=os.path.join(".", "sim"),
-    help="Write all simulated files to this directory"
+    help="Write all simulated files to this directory",
 )
 
 opt_sample_sim = Option(
     ("--sample", "-s"),
     type=str,
     default="sim-sample",
-    help="Give this name to the simulated sample"
+    help="Give this name to the simulated sample",
 )
 
 opt_refs = Option(
     ("--refs", "-R"),
     type=str,
     default="sim-refs",
-    help="Give this name to the file of simulated references"
+    help="Give this name to the file of simulated references",
 )
 
 opt_ref = Option(
     ("--ref", "-r"),
     type=str,
     default="sim-ref",
-    help="Give this name to the simulated reference"
+    help="Give this name to the simulated reference",
 )
 
 opt_reflen = Option(
     ("--reflen", "-N"),
     type=int,
     default=280,
-    help="Simulate a reference sequence with this many bases"
+    help="Simulate a reference sequence with this many bases",
 )
 
 opt_max_tries = Option(
     ("--max-tries",),
     type=int,
     default=10,
-    help="Simulate the parameters with up to this many attempts"
+    help="Simulate the parameters with up to this many attempts",
 )
 
 opt_max_fraction_ident = Option(
     ("--max-fraction-ident",),
     type=float,
     default=1.0,
-    help="Retry if any two clusters have more than this fraction of identical mutation rates"
+    help="Retry if any two clusters have more than this fraction of identical mutation rates",
 )
 
 opt_max_pearson_sim = Option(
     ("--max-pearson-sim",),
     type=float,
     default=1.0,
-    help="Retry if any two clusters have a Pearson correlation larger than this"
+    help="Retry if any two clusters have a Pearson correlation larger than this",
 )
 
 opt_min_marcd_sim = Option(
     ("--min-marcd-sim",),
     type=float,
     default=0.0,
-    help="Retry if any two clusters have a MARCD less than this (0 disables)"
+    help="Retry if any two clusters have a MARCD less than this (0 disables)",
 )
 
 opt_profile_name = Option(
     ("--profile-name", "-P"),
     type=str,
     default="simulated",
-    help="Give the simulated structure and parameters this profile name"
+    help="Give the simulated structure and parameters this profile name",
 )
 
 opt_ct_file = Option(
@@ -1886,7 +1870,7 @@ opt_ct_file = Option(
     type=Path(exists=True, dir_okay=False),
     multiple=True,
     default=(),
-    help="Simulate parameters using the structure(s) in this CT file"
+    help="Simulate parameters using the structure(s) in this CT file",
 )
 
 opt_pmut_paired = Option(
@@ -1894,7 +1878,7 @@ opt_pmut_paired = Option(
     type=(str, float),
     multiple=True,
     default=(),
-    help="Set the mean rate of each kind of mutation for paired bases"
+    help="Set the mean rate of each kind of mutation for paired bases",
 )
 
 opt_pmut_unpaired = Option(
@@ -1902,7 +1886,7 @@ opt_pmut_unpaired = Option(
     type=(str, float),
     multiple=True,
     default=(),
-    help="Set the mean rate of each kind of mutation for unpaired bases"
+    help="Set the mean rate of each kind of mutation for unpaired bases",
 )
 
 opt_vmut_paired = Option(
@@ -1910,7 +1894,7 @@ opt_vmut_paired = Option(
     type=(str, float),
     multiple=True,
     default=(),
-    help="Set the relative variance of mutation rates of each kind of paired base"
+    help="Set the relative variance of mutation rates of each kind of paired base",
 )
 
 opt_vmut_unpaired = Option(
@@ -1918,42 +1902,42 @@ opt_vmut_unpaired = Option(
     type=(str, float),
     multiple=True,
     default=(),
-    help="Set the relative variance of mutation rates of each kind of unpaired base"
+    help="Set the relative variance of mutation rates of each kind of unpaired base",
 )
 
 opt_center_fmean = Option(
     ("--center-fmean",),
     type=float,
     default=0.5,
-    help="Set the mean read center as a fraction of the region length"
+    help="Set the mean read center as a fraction of the region length",
 )
 
 opt_center_fvar = Option(
     ("--center-fvar",),
     type=float,
     default=1 / 3,
-    help="Set the variance of the read center as a fraction of its maximum"
+    help="Set the variance of the read center as a fraction of its maximum",
 )
 
 opt_length_fmean = Option(
     ("--length-fmean",),
     type=float,
     default=0.5,
-    help="Set the mean read length as a fraction of the region length"
+    help="Set the mean read length as a fraction of the region length",
 )
 
 opt_length_fvar = Option(
     ("--length-fvar",),
     type=float,
     default=1 / 81,
-    help="Set the variance of the read length as a fraction of its maximum"
+    help="Set the variance of the read length as a fraction of its maximum",
 )
 
 opt_clust_conc = Option(
     ("--clust-conc", "-c"),
     type=float,
-    default=0.,
-    help="Set the concentration parameter for simulating cluster proportions"
+    default=0.0,
+    help="Set the concentration parameter for simulating cluster proportions",
 )
 
 opt_param_dir = Option(
@@ -1961,42 +1945,42 @@ opt_param_dir = Option(
     type=Path(exists=True, file_okay=False),
     multiple=True,
     default=(),
-    help="Simulate data using parameter files in this directory"
+    help="Simulate data using parameter files in this directory",
 )
 
 opt_num_reads = Option(
     ("--num-reads", "-n"),
     type=int,
     default=opt_batch_size.default,
-    help="Simulate this many reads"
+    help="Simulate this many reads",
 )
 
 opt_read_length = Option(
     ("--read-length",),
     type=int,
     default=151,
-    help="Simulate reads with this many base calls"
+    help="Simulate reads with this many base calls",
 )
 
 opt_paired_end = Option(
     ("--paired-end/--single-end",),
     type=bool,
     default=True,
-    help="Simulate paired-end or single-end reads"
+    help="Simulate paired-end or single-end reads",
 )
 
 opt_reverse_fraction = Option(
     ("--reverse-fraction",),
     type=float,
     default=0.5,
-    help="Simulate this fraction of reverse-oriented reads"
+    help="Simulate this fraction of reverse-oriented reads",
 )
 
 opt_fq_gzip = Option(
     ("--fq-gzip/--fq-text",),
     type=bool,
     default=True,
-    help="Simulate FASTQ files with gzip compression or as plain text"
+    help="Simulate FASTQ files with gzip compression or as plain text",
 )
 
 # Logging options
@@ -2004,42 +1988,41 @@ opt_fq_gzip = Option(
 opt_verbose = Option(
     ("--verbose", "-v"),
     count=True,
-    help="Log more messages (-v, -vv, -vvv, -vvvv) on stderr"
+    help="Log more messages (-v, -vv, -vvv, -vvvv) on stderr",
 )
 
 opt_quiet = Option(
     ("--quiet", "-q"),
     count=True,
-    help="Log fewer messages (-q, -qq, -qqq, -qqqq) on stderr"
+    help="Log fewer messages (-q, -qq, -qqq, -qqqq) on stderr",
 )
 
 opt_log = Option(
     ("--log",),
     type=Path(exists=False, dir_okay=False),
-    default=os.path.join(CWD, "log", datetime.now().strftime(
-        "seismic-rna_%Y-%m-%d_%H-%M-%S.log"
-    )),
-    help="Log all messages to this file ('' to disable)"
+    default=os.path.join(
+        CWD, "log", datetime.now().strftime("seismic-rna_%Y-%m-%d_%H-%M-%S.log")
+    ),
+    help="Log all messages to this file ('' to disable)",
 )
 
 opt_log_color = Option(
     ("--log-color/--log-plain",),
     type=bool,
     default=True,
-    help="Log messages with or without color codes on stderr"
+    help="Log messages with or without color codes on stderr",
 )
 
 opt_exit_on_error = Option(
     ("--exit-on-error/--log-on-error",),
     type=bool,
     default=False,
-    help="If an error occurs, whether to log a message or exit SEISMIC-RNA"
+    help="If an error occurs, whether to log a message or exit SEISMIC-RNA",
 )
 
 
-def merge_params(*param_lists: list[Parameter],
-                 exclude: Iterable[Parameter] = ()):
-    """ Merge lists of Click parameters, dropping duplicates. """
+def merge_params(*param_lists: list[Parameter], exclude: Iterable[Parameter] = ()):
+    """Merge lists of Click parameters, dropping duplicates."""
     exclude_names = {param.name for param in exclude}
     params = list()
     names = set()

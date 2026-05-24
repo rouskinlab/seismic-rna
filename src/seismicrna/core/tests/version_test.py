@@ -1,17 +1,18 @@
 import unittest as ut
 
 from seismicrna.core.path import get_seismicrna_project_dir
-from seismicrna.core.version import (__version__,
-                                     MAJOR,
-                                     MINOR,
-                                     PATCH,
-                                     PRTAG,
-                                     format_version,
-                                     parse_version)
+from seismicrna.core.version import (
+    __version__,
+    MAJOR,
+    MINOR,
+    PATCH,
+    PRTAG,
+    format_version,
+    parse_version,
+)
 
 
 class TestFormatVersion(ut.TestCase):
-
     def test_format_default(self):
         self.assertEqual(format_version(), __version__)
 
@@ -23,7 +24,6 @@ class TestFormatVersion(ut.TestCase):
 
 
 class TestParseVersion(ut.TestCase):
-
     def test_parse_default(self):
         self.assertEqual(parse_version(), (MAJOR, MINOR, PATCH, PRTAG))
 
@@ -40,46 +40,44 @@ class TestParseVersion(ut.TestCase):
         self.assertEqual(parse_version("8.7.4xyz321"), (8, 7, 4, "xyz321"))
 
     def test_invalid_1(self):
-        self.assertRaisesRegex(ValueError,
-                               "Malformatted version",
-                               parse_version,
-                               "123456")
+        self.assertRaisesRegex(
+            ValueError, "Malformatted version", parse_version, "123456"
+        )
 
     def test_invalid_2(self):
-        self.assertRaisesRegex(ValueError,
-                               "Malformatted version",
-                               parse_version,
-                               "12.689")
+        self.assertRaisesRegex(
+            ValueError, "Malformatted version", parse_version, "12.689"
+        )
 
     def test_invalid_3(self):
-        self.assertRaisesRegex(ValueError,
-                               "Malformatted version",
-                               parse_version,
-                               "7.0.a")
+        self.assertRaisesRegex(
+            ValueError, "Malformatted version", parse_version, "7.0.a"
+        )
 
     def test_invalid_4(self):
-        self.assertRaisesRegex(ValueError,
-                               "Malformatted version",
-                               parse_version,
-                               "0.9.5.a")
+        self.assertRaisesRegex(
+            ValueError, "Malformatted version", parse_version, "0.9.5.a"
+        )
 
     def test_invalid_5(self):
-        self.assertRaisesRegex(ValueError,
-                               "Malformatted version",
-                               parse_version,
-                               "8.7.4xyz321b")
+        self.assertRaisesRegex(
+            ValueError, "Malformatted version", parse_version, "8.7.4xyz321b"
+        )
 
 
 class TestConsistentVersion(ut.TestCase):
-
     def test_meson_build(self):
         project_dir = get_seismicrna_project_dir()
         if project_dir is not None:
             meson_build_file = project_dir.joinpath("meson.build")
-            args = ", ".join(["'seismic-rna'",
-                              "'c'",
-                              f"version: '{__version__}'",
-                              "default_options: ['c_std=c99']"])
+            args = ", ".join(
+                [
+                    "'seismic-rna'",
+                    "'c'",
+                    f"version: '{__version__}'",
+                    "default_options: ['c_std=c99']",
+                ]
+            )
             expect = f"project({args})"
             with open(meson_build_file) as f:
                 line = f.readline().rstrip()

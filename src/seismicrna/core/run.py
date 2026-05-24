@@ -7,7 +7,7 @@ from .tmp import with_tmp_dir
 
 
 def log_command(command: str):
-    """ Log the name of the command. """
+    """Log the name of the command."""
 
     def decorator(func: Callable):
 
@@ -23,13 +23,15 @@ def log_command(command: str):
     return decorator
 
 
-def run_func(command: str,
-             default: Optional[Callable] = list,
-             with_tmp: bool = False,
-             pass_keep_tmp: bool = False,
-             *args,
-             **kwargs):
-    """ Decorator for a run function. """
+def run_func(
+    command: str,
+    default: Optional[Callable] = list,
+    with_tmp: bool = False,
+    pass_keep_tmp: bool = False,
+    *args,
+    **kwargs,
+):
+    """Decorator for a run function."""
 
     def decorator(func: Callable):
         # Apply each decorator to the run function.

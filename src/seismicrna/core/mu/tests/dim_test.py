@@ -4,18 +4,14 @@ from itertools import product
 import numpy as np
 import pandas as pd
 
-from seismicrna.core.mu.dim import (count_pos,
-                                    counts_pos,
-                                    counts_pos_consensus)
+from seismicrna.core.mu.dim import count_pos, counts_pos, counts_pos_consensus
 
 
 class TestCountPos(ut.TestCase):
-
     def test_array0d(self):
-        self.assertRaisesRegex(ValueError,
-                               "A 0-D array has no positional axis",
-                               count_pos,
-                               np.array(0.))
+        self.assertRaisesRegex(
+            ValueError, "A 0-D array has no positional axis", count_pos, np.array(0.0)
+        )
 
     def test_array1d(self):
         rng = np.random.default_rng(seed=0)
@@ -41,7 +37,6 @@ class TestCountPos(ut.TestCase):
 
 
 class TestCountsPos(ut.TestCase):
-
     def test_array1d(self):
         rng = np.random.default_rng(seed=0)
         for a in range(3):
@@ -66,11 +61,12 @@ class TestCountsPos(ut.TestCase):
 
 
 class TestCountsPosConsensus(ut.TestCase):
-
     def test_empty(self):
-        self.assertRaisesRegex(ValueError,
-                               "requires at least 1 array, but got 0 arrays",
-                               counts_pos_consensus)
+        self.assertRaisesRegex(
+            ValueError,
+            "requires at least 1 array, but got 0 arrays",
+            counts_pos_consensus,
+        )
 
     def test_equal(self):
         rng = np.random.default_rng(seed=0)
@@ -84,11 +80,13 @@ class TestCountsPosConsensus(ut.TestCase):
         for n in range(5):
             array1 = rng.random(n)
             array2 = rng.random(n + 1)
-            self.assertRaisesRegex(ValueError,
-                                   "requires all arrays to have the same",
-                                   counts_pos_consensus,
-                                   array1,
-                                   array2)
+            self.assertRaisesRegex(
+                ValueError,
+                "requires all arrays to have the same",
+                counts_pos_consensus,
+                array1,
+                array2,
+            )
 
 
 if __name__ == "__main__":

@@ -1,33 +1,38 @@
 import unittest as ut
 
-from ..xamops import (MATCH_BONUS, MISMATCH_PENALTY, N_PENALTY,
-                      REF_GAP_PENALTY, READ_GAP_PENALTY)
+from ..xamops import (
+    MATCH_BONUS,
+    MISMATCH_PENALTY,
+    N_PENALTY,
+    REF_GAP_PENALTY,
+    READ_GAP_PENALTY,
+)
 
 
 class TestAlignmentScoreParams(ut.TestCase):
-    """ Test that the bonuses and penalties satisfy both inequalities
-    described in the docstring of `fqutil.py` and repeated below. """
+    """Test that the bonuses and penalties satisfy both inequalities
+    described in the docstring of `fqutil.py` and repeated below."""
 
     @staticmethod
     def parse_scores(scores: str):
-        """ Parse Bowtie2 scores (strings of comma-separated integers)
-        into tuples of integers. """
-        return tuple(map(int, scores.split(',')))
+        """Parse Bowtie2 scores (strings of comma-separated integers)
+        into tuples of integers."""
+        return tuple(map(int, scores.split(",")))
 
     def parse_all_scores(self):
-        """ Parse all scores. """
+        """Parse all scores."""
         # Bonus for matches.
-        match, = self.parse_scores(MATCH_BONUS)
+        (match,) = self.parse_scores(MATCH_BONUS)
         # Penalty for substitutions.
         subst, _ = self.parse_scores(MISMATCH_PENALTY)
         # Penalty for ambiguous (N) bases.
-        ambig, = self.parse_scores(N_PENALTY)
+        (ambig,) = self.parse_scores(N_PENALTY)
         # Penalties for opening and extending gaps in the read.
         gapop, gapex = self.parse_scores(READ_GAP_PENALTY)
         return match, subst, ambig, gapop, gapex
 
     def test_score_consistency(self):
-        """ Test the self-consistency of the scores. """
+        """Test the self-consistency of the scores."""
         match, subst, ambig, gapop, gapex = self.parse_all_scores()
         # Min and max penalties for substitutions, depending on quality.
         _, subst2 = self.parse_scores(MISMATCH_PENALTY)
@@ -84,7 +89,7 @@ class TestAlignmentScoreParams(ut.TestCase):
         indels, the alignment with two substitutions should be preferred
         over the alignment with one insertion and one deletion (although
         both have two mutations).
-        
+
         Thus, (2 * match - 2 * substitution) must be greater than
         (3 * match - 2 * gap_open - 2 * gap_extend), which simplifies to
         (2 * gap_open + 2 * gap_extend > match + 2 * substitution).

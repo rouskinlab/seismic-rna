@@ -7,10 +7,8 @@ from .validate import require_greater, require_between
 
 def _validate_alpha(alpha: np.ndarray):
     if (length := get_length(alpha, "alpha")) < 2:
-        raise ValueError(
-            f"Must have at least 2 alpha parameters, but got {length}"
-        )
-    if alpha.min() <= 0.:
+        raise ValueError(f"Must have at least 2 alpha parameters, but got {length}")
+    if alpha.min() <= 0.0:
         raise ValueError(f"All alpha parameters must be > 0, but got {alpha}")
     return length
 
@@ -18,19 +16,19 @@ def _validate_alpha(alpha: np.ndarray):
 def _validate_mean_variance(mean: np.ndarray, variance: np.ndarray, n: int = 1):
     if (length := ensure_same_length(mean, variance, "mean", "variance")) < 2:
         raise ValueError(f"Must have at least 2 alpha parameters, but got {length}")
-    if mean.min() <= 0.:
+    if mean.min() <= 0.0:
         raise ValueError(f"Every mean must be > 0, but got {mean}")
     if mean.max() >= n:
         raise ValueError(f"Every mean must be < {n}, but got {mean}")
     if not np.isclose((mean_sum := mean.sum()), n):
         raise ValueError(f"All means must sum to {n}, but got {mean_sum}")
-    if variance.min() <= 0.:
+    if variance.min() <= 0.0:
         raise ValueError(f"Every variance must be > 0, but got {variance}")
     return length
 
 
 def calc_dirichlet_mv(alpha: np.ndarray):
-    """ Find the means and variances of a Dirichlet distribution from
+    """Find the means and variances of a Dirichlet distribution from
     its concentration parameters.
 
     Parameters
@@ -46,12 +44,12 @@ def calc_dirichlet_mv(alpha: np.ndarray):
     _validate_alpha(alpha)
     conc = alpha.sum()
     mean = alpha / conc
-    variance = (mean * (1. - mean)) / (conc + 1.)
+    variance = (mean * (1.0 - mean)) / (conc + 1.0)
     return mean, variance
 
 
 def calc_dirichlet_params(mean: np.ndarray, variance: np.ndarray):
-    """ Find the concentration parameters of a Dirichlet distribution
+    """Find the concentration parameters of a Dirichlet distribution
     from its mean and variance.
 
     Parameters
@@ -67,18 +65,20 @@ def calc_dirichlet_params(mean: np.ndarray, variance: np.ndarray):
         Concentration parameters.
     """
     _validate_mean_variance(mean, variance)
-    concentrations = (mean * (1. - mean)) / variance - 1.
+    concentrations = (mean * (1.0 - mean)) / variance - 1.0
     concentration = concentrations.mean()
     if not np.allclose(concentrations, concentration):
         raise ValueError(f"Incompatible means {mean} and variances {variance}")
-    if concentration <= 0.:
-        raise ValueError("Every variance must be < mean * (1 - mean), "
-                         f"but got {variance} > {mean * (1. - mean)}")
+    if concentration <= 0.0:
+        raise ValueError(
+            "Every variance must be < mean * (1 - mean), "
+            f"but got {variance} > {mean * (1.0 - mean)}"
+        )
     return concentration * mean
 
 
 def calc_beta_mv(alpha: float, beta: float):
-    """ Find the mean and variance of a beta distribution from its alpha
+    """Find the mean and variance of a beta distribution from its alpha
     and beta parameters.
 
     Parameters
@@ -98,7 +98,7 @@ def calc_beta_mv(alpha: float, beta: float):
 
 
 def calc_beta_params(mean: float, variance: float):
-    """ Find the alpha and beta parameters of a beta distribution from
+    """Find the alpha and beta parameters of a beta distribution from
     its mean and variance.
 
     Parameters
@@ -113,13 +113,14 @@ def calc_beta_params(mean: float, variance: float):
     tuple[float, float]
         Alpha and beta parameters of the beta distribution.
     """
-    alpha, beta = calc_dirichlet_params(np.array([mean, 1. - mean]),
-                                        np.array([variance, variance]))
+    alpha, beta = calc_dirichlet_params(
+        np.array([mean, 1.0 - mean]), np.array([variance, variance])
+    )
     return float(alpha), float(beta)
 
 
 def kumaraswamy_pdf(x: np.ndarray, a: float | int, b: float | int):
-    """ Kumaraswamy distribution probability density function (PDF).
+    """Kumaraswamy distribution probability density function (PDF).
 
     Parameters
     ----------
@@ -135,20 +136,20 @@ def kumaraswamy_pdf(x: np.ndarray, a: float | int, b: float | int):
     np.ndarray
         Kumaraswamy distribution PDF at input values.
     """
-    require_greater("a", a, 0., classes=(float, int))
-    require_greater("b", b, 0., classes=(float, int))
-    return ((a * b)
-            * np.power(x, a - 1.)
-            * np.power(1. - np.power(x, a), b - 1.))
+    require_greater("a", a, 0.0, classes=(float, int))
+    require_greater("b", b, 0.0, classes=(float, int))
+    return (a * b) * np.power(x, a - 1.0) * np.power(1.0 - np.power(x, a), b - 1.0)
 
 
-def double_kumaraswamy_pdf(x: np.ndarray, 
-                           w: float | int, 
-                           a1: float | int, 
-                           b1: float | int, 
-                           a2: float | int, 
-                           b2: float | int):
-    """ Double Kumaraswamy distribution probability density function
+def double_kumaraswamy_pdf(
+    x: np.ndarray,
+    w: float | int,
+    a1: float | int,
+    b1: float | int,
+    a2: float | int,
+    b2: float | int,
+):
+    """Double Kumaraswamy distribution probability density function
     (PDF).
 
     Parameters
@@ -171,5 +172,5 @@ def double_kumaraswamy_pdf(x: np.ndarray,
     np.ndarray
         Double Kumaraswamy distribution PDF at input values.
     """
-    require_between("w", w, 0., 1., classes=(float, int))
+    require_between("w", w, 0.0, 1.0, classes=(float, int))
     return w * kumaraswamy_pdf(x, a1, b1) + (1 - w) * kumaraswamy_pdf(x, a2, b2)

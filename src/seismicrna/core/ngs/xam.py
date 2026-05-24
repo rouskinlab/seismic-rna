@@ -13,43 +13,45 @@ SAM_NOREF = "*"
 SAM_SEQLINE = "@SQ"
 SAM_SEQNAME = "SN:"
 SAM_SEQLEN = "LN:"
-FLAG_PAIRED = 2 ** 0
-FLAG_PROPER = 2 ** 1
-FLAG_UNMAP = 2 ** 2
-FLAG_MUNMAP = 2 ** 3
-FLAG_REVERSE = 2 ** 4
-FLAG_MREVERSE = 2 ** 5
-FLAG_FIRST = 2 ** 6
-FLAG_SECOND = 2 ** 7
-FLAG_SECONDARY = 2 ** 8
-FLAG_QCFAIL = 2 ** 9
-FLAG_DUPLICATE = 2 ** 10
-FLAG_SUPPLEMENTARY = 2 ** 11
-MAX_FLAG = sum([FLAG_PAIRED,
-                FLAG_PROPER,
-                FLAG_UNMAP,
-                FLAG_MUNMAP,
-                FLAG_REVERSE,
-                FLAG_MREVERSE,
-                FLAG_FIRST,
-                FLAG_SECOND,
-                FLAG_SECONDARY,
-                FLAG_QCFAIL,
-                FLAG_DUPLICATE,
-                FLAG_SUPPLEMENTARY])
+FLAG_PAIRED = 2**0
+FLAG_PROPER = 2**1
+FLAG_UNMAP = 2**2
+FLAG_MUNMAP = 2**3
+FLAG_REVERSE = 2**4
+FLAG_MREVERSE = 2**5
+FLAG_FIRST = 2**6
+FLAG_SECOND = 2**7
+FLAG_SECONDARY = 2**8
+FLAG_QCFAIL = 2**9
+FLAG_DUPLICATE = 2**10
+FLAG_SUPPLEMENTARY = 2**11
+MAX_FLAG = sum(
+    [
+        FLAG_PAIRED,
+        FLAG_PROPER,
+        FLAG_UNMAP,
+        FLAG_MUNMAP,
+        FLAG_REVERSE,
+        FLAG_MREVERSE,
+        FLAG_FIRST,
+        FLAG_SECOND,
+        FLAG_SECONDARY,
+        FLAG_QCFAIL,
+        FLAG_DUPLICATE,
+        FLAG_SUPPLEMENTARY,
+    ]
+)
 
 
 class DuplicateSampleReferenceError(DuplicateValueError):
-    """ A sample-reference pair occurred more than once. """
+    """A sample-reference pair occurred more than once."""
 
 
 def calc_extra_threads(num_cpus: int):
-    """ Calculate the number of extra threads to use (option -@). """
+    """Calculate the number of extra threads to use (option -@)."""
     try:
         if not isinstance(num_cpus, int):
-            raise TypeError(
-                f"num_cpus must be int, but got {type(num_cpus).__name__}"
-            )
+            raise TypeError(f"num_cpus must be int, but got {type(num_cpus).__name__}")
         if num_cpus < 1:
             raise ValueError(f"num_cpus must be ≥ 1, but got {num_cpus}")
         return num_cpus - 1
@@ -59,23 +61,22 @@ def calc_extra_threads(num_cpus: int):
 
 
 def index_xam_cmd(bam: Path, *, num_cpus: int = 1):
-    """ Build an index of a XAM file using `samtools index`. """
-    return args_to_cmd([SAMTOOLS_CMD, "index",
-                        "-@", calc_extra_threads(num_cpus),
-                        bam])
+    """Build an index of a XAM file using `samtools index`."""
+    return args_to_cmd([SAMTOOLS_CMD, "index", "-@", calc_extra_threads(num_cpus), bam])
 
 
-run_index_xam = ShellCommand("indexing alignment map",
-                             index_xam_cmd,
-                             opath=False)
+run_index_xam = ShellCommand("indexing alignment map", index_xam_cmd, opath=False)
 
 
-def sort_xam_cmd(xam_inp: Path | None,
-                 xam_out: Path | None, *,
-                 tmp_pfx: Path | None = None,
-                 name: bool = False,
-                 num_cpus: int = 1):
-    """ Sort a SAM or BAM file using `samtools sort`.
+def sort_xam_cmd(
+    xam_inp: Path | None,
+    xam_out: Path | None,
+    *,
+    tmp_pfx: Path | None = None,
+    name: bool = False,
+    num_cpus: int = 1,
+):
+    """Sort a SAM or BAM file using `samtools sort`.
 
     Parameters
     ----------
@@ -96,8 +97,7 @@ def sort_xam_cmd(xam_inp: Path | None,
     str
         Shell command string.
     """
-    args = [SAMTOOLS_CMD, "sort",
-            "-@", calc_extra_threads(num_cpus)]
+    args = [SAMTOOLS_CMD, "sort", "-@", calc_extra_threads(num_cpus)]
     if name:
         # Sort by name instead of coordinate.
         args.append("-n")
@@ -119,12 +119,15 @@ def sort_xam_cmd(xam_inp: Path | None,
 run_sort_xam = ShellCommand("sorting alignment map", sort_xam_cmd)
 
 
-def collate_xam_cmd(xam_inp: Path | None,
-                    xam_out: Path | None, *,
-                    tmp_pfx: Path | None = None,
-                    fast: bool = False,
-                    num_cpus: int = 1):
-    """ Collate a SAM or BAM file using `samtools collate`.
+def collate_xam_cmd(
+    xam_inp: Path | None,
+    xam_out: Path | None,
+    *,
+    tmp_pfx: Path | None = None,
+    fast: bool = False,
+    num_cpus: int = 1,
+):
+    """Collate a SAM or BAM file using `samtools collate`.
 
     Parameters
     ----------
@@ -145,8 +148,7 @@ def collate_xam_cmd(xam_inp: Path | None,
     str
         Shell command string.
     """
-    args = [SAMTOOLS_CMD, "collate",
-            "-@", calc_extra_threads(num_cpus)]
+    args = [SAMTOOLS_CMD, "collate", "-@", calc_extra_threads(num_cpus)]
     if fast:
         # Use fast mode (outputs primary alignments only).
         args.append("-f")
@@ -168,22 +170,25 @@ def collate_xam_cmd(xam_inp: Path | None,
     return args_to_cmd(args)
 
 
-def view_xam_cmd(xam_inp: Path | None,
-                 xam_out: Path | None, *,
-                 sam: bool = False,
-                 bam: bool = False,
-                 cram: bool = False,
-                 with_header: bool = False,
-                 only_header: bool = False,
-                 min_mapq: int = 0,
-                 flags_req: int = 0,
-                 flags_exc: int = 0,
-                 ref: str | None = None,
-                 end5: int | None = None,
-                 end3: int | None = None,
-                 refs_file: Path | None = None,
-                 num_cpus: int = 1):
-    """ Convert between SAM and BAM formats, extract reads aligning to a
+def view_xam_cmd(
+    xam_inp: Path | None,
+    xam_out: Path | None,
+    *,
+    sam: bool = False,
+    bam: bool = False,
+    cram: bool = False,
+    with_header: bool = False,
+    only_header: bool = False,
+    min_mapq: int = 0,
+    flags_req: int = 0,
+    flags_exc: int = 0,
+    ref: str | None = None,
+    end5: int | None = None,
+    end3: int | None = None,
+    refs_file: Path | None = None,
+    num_cpus: int = 1,
+):
+    """Convert between SAM and BAM formats, extract reads aligning to a
     specific reference/region, and filter by flag and mapping quality
     using `samtools view`.
 
@@ -227,8 +232,7 @@ def view_xam_cmd(xam_inp: Path | None,
     str
         Shell command string.
     """
-    args = [SAMTOOLS_CMD, "view",
-            "-@", calc_extra_threads(num_cpus)]
+    args = [SAMTOOLS_CMD, "view", "-@", calc_extra_threads(num_cpus)]
     # Read filters
     if min_mapq:
         # Require minimum mapping quality.
@@ -286,43 +290,47 @@ def view_xam_cmd(xam_inp: Path | None,
 
 
 def flagstat_cmd(xam_inp: Path | None, *, num_cpus: int = 1):
-    """ Compute the statistics with `samtools flagstat`. """
-    args = [SAMTOOLS_CMD, "flagstat",
-            "-@", calc_extra_threads(num_cpus)]
+    """Compute the statistics with `samtools flagstat`."""
+    args = [SAMTOOLS_CMD, "flagstat", "-@", calc_extra_threads(num_cpus)]
     if xam_inp:
         args.append(xam_inp)
     return args_to_cmd(args)
 
 
 def parse_flagstat(process: CompletedProcess):
-    """ Convert the output into a dict with one entry per line. """
+    """Convert the output into a dict with one entry per line."""
     stats_pattern = "([0-9]+) [+] ([0-9]+) ([A-Za-z0-9 ]+)"
-    return {stat.strip(): (int(n1), int(n2))
-            for n1, n2, stat in map(re.Match.groups,
-                                    re.finditer(stats_pattern, process.stdout))}
+    return {
+        stat.strip(): (int(n1), int(n2))
+        for n1, n2, stat in map(
+            re.Match.groups, re.finditer(stats_pattern, process.stdout)
+        )
+    }
 
 
-run_flagstat = ShellCommand("computing flagstats",
-                            flagstat_cmd,
-                            parse_flagstat,
-                            opath=False)
+run_flagstat = ShellCommand(
+    "computing flagstats", flagstat_cmd, parse_flagstat, opath=False
+)
 
 
 def count_single_paired(flagstats: dict):
-    """ Count the records in a SAM/BAM file given an output dict from
-    `get_flagstats()`. """
+    """Count the records in a SAM/BAM file given an output dict from
+    `get_flagstats()`."""
     mapped, _ = flagstats["primary mapped"]
     # Count properly paired reads.
     paired_end_reads_proper, _ = flagstats["properly paired"]
     paired_end_pairs_proper, extra = divmod(paired_end_reads_proper, 2)
     if extra:
-        raise ValueError("Number of properly paired reads must be even, "
-                         f"but got {paired_end_reads_proper}")
+        raise ValueError(
+            "Number of properly paired reads must be even, "
+            f"but got {paired_end_reads_proper}"
+        )
     # Count improper paired-end reads (either only one mate exists or
     # both mates exist but did not pair properly with each other).
     paired_end_reads_both_mates, _ = flagstats["with itself and mate mapped"]
-    paired_end_reads_both_mates_improper = (paired_end_reads_both_mates
-                                            - paired_end_reads_proper)
+    paired_end_reads_both_mates_improper = (
+        paired_end_reads_both_mates - paired_end_reads_proper
+    )
     if paired_end_reads_both_mates_improper < 0:
         raise ValueError(
             "Number of paired-end reads with both mates mapped and paired "
@@ -332,8 +340,9 @@ def count_single_paired(flagstats: dict):
             f"> {paired_end_reads_both_mates}, which indicates a bug"
         )
     paired_end_reads_one_mate, _ = flagstats["singletons"]
-    paired_end_reads_improper = (paired_end_reads_both_mates_improper
-                                 + paired_end_reads_one_mate)
+    paired_end_reads_improper = (
+        paired_end_reads_both_mates_improper + paired_end_reads_one_mate
+    )
     # Count single-end reads.
     paired_end_reads = paired_end_reads_proper + paired_end_reads_improper
     single_end_reads = mapped - paired_end_reads
@@ -343,27 +352,31 @@ def count_single_paired(flagstats: dict):
             f"mapped reads in total, but got {paired_end_reads} > {mapped}, "
             "which indicates a bug"
         )
-    logger.detail(f"Proper pairs: {paired_end_pairs_proper}\n"
-                  f"Other paired-end reads: {paired_end_reads_improper}\n"
-                  f"Single-end reads: {single_end_reads}")
+    logger.detail(
+        f"Proper pairs: {paired_end_pairs_proper}\n"
+        f"Other paired-end reads: {paired_end_reads_improper}\n"
+        f"Single-end reads: {single_end_reads}"
+    )
     return paired_end_pairs_proper, paired_end_reads_improper, single_end_reads
 
 
 def count_total_reads(flagstats: dict):
-    """ Count the total records in a SAM/BAM file. """
+    """Count the total records in a SAM/BAM file."""
     return sum(count_single_paired(flagstats))
 
 
 def xam_paired(flagstats: dict):
-    """ Determine if the reads are single-end or paired-end. """
+    """Determine if the reads are single-end or paired-end."""
     # Determine if there are any paired-end and single-end reads.
     paired_two, paired_one, singles = count_single_paired(flagstats)
     paired = paired_two > 0 or paired_one > 0
     single = singles > 0
     # SEISMIC-RNA currently cannot handle both types in one sample.
     if paired and single:
-        raise ValueError(f"Got both single-end (n = {singles}) and paired-end "
-                         f"(n = {paired_one + paired_two}) reads")
+        raise ValueError(
+            f"Got both single-end (n = {singles}) and paired-end "
+            f"(n = {paired_one + paired_two}) reads"
+        )
     # The pairing status cannot be determined if there are no reads.
     if not paired and not single:
         logger.warning("Got 0 reads: neither single-end nor paired-end")
@@ -373,12 +386,12 @@ def xam_paired(flagstats: dict):
 
 
 def idxstats_cmd(xam_inp: Path):
-    """ Count the number of reads aligning to each reference. """
+    """Count the number of reads aligning to each reference."""
     return args_to_cmd([SAMTOOLS_CMD, "idxstats", xam_inp])
 
 
 def parse_idxstats(process: CompletedProcess):
-    """ Map each reference to the number of reads aligning to it. """
+    """Map each reference to the number of reads aligning to it."""
     counts = dict()
     for line in process.stdout.splitlines():
         if stripped_line := line.rstrip():
@@ -386,34 +399,30 @@ def parse_idxstats(process: CompletedProcess):
             if ref != SAM_NOREF:
                 counts[ref] = int(mapped)
     # Sort the references in from most to least abundant.
-    return {ref: counts[ref]
-            for ref in sorted(counts, key=counts.__getitem__, reverse=True)}
+    return {
+        ref: counts[ref] for ref in sorted(counts, key=counts.__getitem__, reverse=True)
+    }
 
 
-run_idxstats = ShellCommand("counting reads for each reference",
-                            idxstats_cmd,
-                            parse_idxstats,
-                            opath=False)
+run_idxstats = ShellCommand(
+    "counting reads for each reference", idxstats_cmd, parse_idxstats, opath=False
+)
 
 
 def ref_header_cmd(xam_inp: Path, *, num_cpus: int):
-    """ Get the header line for each reference. """
-    return view_xam_cmd(xam_inp,
-                        None,
-                        sam=True,
-                        only_header=True,
-                        num_cpus=num_cpus)
+    """Get the header line for each reference."""
+    return view_xam_cmd(xam_inp, None, sam=True, only_header=True, num_cpus=num_cpus)
 
 
 def parse_ref_header(process: CompletedProcess):
-    """ Map each reference to its header line. """
+    """Map each reference to its header line."""
     for line in process.stdout.splitlines():
         if line.startswith(SAM_SEQLINE):
             # Find the field that has the reference name.
             for field in line.split(SAM_DELIM):
                 if field.startswith(SAM_SEQNAME):
                     # Yield the reference name and the full line.
-                    ref = field[len(SAM_SEQNAME):]
+                    ref = field[len(SAM_SEQNAME) :]
                     yield ref, line.rstrip()
                     break
             else:
@@ -421,19 +430,24 @@ def parse_ref_header(process: CompletedProcess):
                 logger.warning(f"Failed to find sequence name in line:\n{line}")
 
 
-run_ref_header = ShellCommand("getting header line for each reference",
-                              ref_header_cmd,
-                              parse_ref_header,
-                              opath=False)
+run_ref_header = ShellCommand(
+    "getting header line for each reference",
+    ref_header_cmd,
+    parse_ref_header,
+    opath=False,
+)
 
 
-def xam_to_fastq_cmd(xam_inp: Path | None,
-                     fq_out: Path | None, *,
-                     flags_req: int | None = None,
-                     flags_exc: int | None = None,
-                     label_12: bool = False,
-                     num_cpus: int = 1):
-    """ Convert XAM format to FASTQ format, and filter by flags.
+def xam_to_fastq_cmd(
+    xam_inp: Path | None,
+    fq_out: Path | None,
+    *,
+    flags_req: int | None = None,
+    flags_exc: int | None = None,
+    label_12: bool = False,
+    num_cpus: int = 1,
+):
+    """Convert XAM format to FASTQ format, and filter by flags.
 
     Parameters
     ----------
@@ -455,8 +469,7 @@ def xam_to_fastq_cmd(xam_inp: Path | None,
     str
         Shell command string.
     """
-    args = [SAMTOOLS_CMD, "fastq",
-            "-@", calc_extra_threads(num_cpus)]
+    args = [SAMTOOLS_CMD, "fastq", "-@", calc_extra_threads(num_cpus)]
     if flags_req is not None:
         # Require these flags.
         args.extend(["-f", flags_req])

@@ -13,7 +13,6 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 
 
 class RollingSNRGraph(RollingStatGraph):
-
     @classmethod
     def stat_func(cls):
 
@@ -38,14 +37,12 @@ class RollingSNRGraph(RollingStatGraph):
 
 
 class RollingSNRWriter(RollingStatWriter):
-
     @classmethod
     def get_graph_type(cls):
         return RollingSNRGraph
 
 
 class RollingSNRRunner(RollingStatRunner):
-
     @classmethod
     def get_writer_type(cls):
         return RollingSNRWriter
@@ -58,5 +55,5 @@ class RollingSNRRunner(RollingStatRunner):
 
 @command(COMMAND, params=RollingSNRRunner.params())
 def cli(*args, **kwargs):
-    """ Rolling signal-to-noise ratio. """
+    """Rolling signal-to-noise ratio."""
     return RollingSNRRunner.run(*args, **kwargs)

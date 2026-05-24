@@ -30,27 +30,31 @@ IUPAC_ACG = "V"
 IUPAC_ACT = "H"
 IUPAC_AGT = "D"
 IUPAC_CGT = "B"
-IUPAC_CODES = frozenset([BASEA,
-                         BASEC,
-                         BASEG,
-                         BASET,
-                         BASEU,
-                         IUPAC_AC,
-                         IUPAC_AG,
-                         IUPAC_AT,
-                         IUPAC_CG,
-                         IUPAC_CT,
-                         IUPAC_GT,
-                         IUPAC_ACG,
-                         IUPAC_ACT,
-                         IUPAC_AGT,
-                         IUPAC_CGT,
-                         BASEN])
+IUPAC_CODES = frozenset(
+    [
+        BASEA,
+        BASEC,
+        BASEG,
+        BASET,
+        BASEU,
+        IUPAC_AC,
+        IUPAC_AG,
+        IUPAC_AT,
+        IUPAC_CG,
+        IUPAC_CT,
+        IUPAC_GT,
+        IUPAC_ACG,
+        IUPAC_ACT,
+        IUPAC_AGT,
+        IUPAC_CGT,
+        BASEN,
+    ]
+)
 
 # Nucleic acid compression symbols.
 COMPRESS_TYPE = get_uint_type(1)
 BITS_PER_BASE = 2
-NUM_BASES = 2 ** BITS_PER_BASE
+NUM_BASES = 2**BITS_PER_BASE
 BLOCK_SIZE = BITS_PER_BYTE // BITS_PER_BASE
 BLOCK_FORMAT = ":".join(["{}", f"{BASEN}<{BLOCK_SIZE}"])
 
@@ -63,26 +67,26 @@ PICTT = PICTU = "▼"
 
 
 class InvalidBaseError(ValueError):
-    """ Invalid base for a sequence. """
+    """Invalid base for a sequence."""
 
 
 class XNA(ABC):
-    __slots__ = "_seq",
+    __slots__ = ("_seq",)
 
     @classmethod
     @abstractmethod
     def alph(cls) -> tuple[str, str, str, str, str]:
-        """ Sequence alphabet. """
+        """Sequence alphabet."""
 
     @classmethod
     @abstractmethod
     def pict(cls) -> tuple[str, str, str, str, str]:
-        """ Sequence pictograms. """
+        """Sequence pictograms."""
 
     @classmethod
     @cache
     def four(cls):
-        """ Get the four standard bases. """
+        """Get the four standard bases."""
         four = tuple(n for n in cls.alph() if n != BASEN)
         if len(four) != NUM_BASES:
             raise ValueError(f"Expected {NUM_BASES} bases, but got {four}")
@@ -91,58 +95,60 @@ class XNA(ABC):
     @classmethod
     @cache
     def get_alphaset(cls):
-        """ Get the alphabet as a set. """
+        """Get the alphabet as a set."""
         return frozenset(cls.alph())
 
     @classmethod
     @cache
     def get_nonalphaset(cls):
-        """ Get the printable characters not in the alphabet. """
+        """Get the printable characters not in the alphabet."""
         return frozenset(printable) - cls.get_alphaset()
 
     @classmethod
     @cache
     def get_other_iupac(cls):
-        """ Get the IUPAC extended characters not in the alphabet. """
+        """Get the IUPAC extended characters not in the alphabet."""
         return frozenset(IUPAC_CODES - cls.get_alphaset())
 
     @classmethod
     @cache
     def get_comp(cls):
-        """ Get the complementary alphabet as a tuple. """
+        """Get the complementary alphabet as a tuple."""
         return tuple(reversed(cls.alph()))
 
     @classmethod
     @cache
     def get_comptrans(cls):
-        """ Get the translation table for complementary bases. """
+        """Get the translation table for complementary bases."""
         return str.maketrans(dict(zip(cls.alph(), cls.get_comp(), strict=True)))
 
     @classmethod
     @cache
     def get_pictrans(cls):
-        """ Get the translation table for pictogram characters. """
+        """Get the translation table for pictogram characters."""
         return str.maketrans(dict(zip(cls.alph(), cls.pict(), strict=True)))
 
     @classmethod
     def t_or_u(cls):
-        """ Get the base that is complementary to A. """
+        """Get the base that is complementary to A."""
         return max(cls.four())
 
     @classmethod
     @abstractmethod
     def from_any_seq(cls, seq: str | XNA) -> Self:
-        """ Create a sequence from a string or other sequence, possibly
-        of a different type. """
+        """Create a sequence from a string or other sequence, possibly
+        of a different type."""
 
     @classmethod
-    def random(cls,
-               nt: int,
-               a: float = 0.25,
-               c: float = 0.25,
-               g: float = 0.25,
-               t: float = 0.25,
-               seed: int | None = None):
+    def random(
+        cls,
+        nt: int,
+        a: float = 0.25,
+        c: float = 0.25,
+        g: float = 0.25,
+        t: float = 0.25,
+        seed: int | None = None,
+    ):
         """
         Return a random sequence of the given length.
 
@@ -165,14 +171,14 @@ class XNA(ABC):
             A random sequence.
         """
         # Calculate expected proportion of N.
-        n = 1. - (a + c + g + t)
-        if not 0. <= n <= 1.:
-            raise ValueError(f"Sum of A, C, G, and {cls.t_or_u()} proportions "
-                             f"must be in [0, 1], but got {1. - n}")
+        n = 1.0 - (a + c + g + t)
+        if not 0.0 <= n <= 1.0:
+            raise ValueError(
+                f"Sum of A, C, G, and {cls.t_or_u()} proportions "
+                f"must be in [0, 1], but got {1.0 - n}"
+            )
         rng = np.random.default_rng(seed)
-        return cls("".join(rng.choice(cls.alph(),
-                                      size=nt,
-                                      p=(a, c, n, g, t))))
+        return cls("".join(rng.choice(cls.alph(), size=nt, p=(a, c, n, g, t))))
 
     def __init__(self, seq: Any):
         self._seq = str(seq)
@@ -182,57 +188,55 @@ class XNA(ABC):
             # are valid if converted to uppercase.
             if inv := {i for i in inv if i.upper() not in self.get_alphaset()}:
                 # If there are invalid uppercase characters, then raise.
-                raise InvalidBaseError(
-                    f"Invalid {type(self).__name__} bases: {inv}"
-                )
+                raise InvalidBaseError(f"Invalid {type(self).__name__} bases: {inv}")
             self._seq = self._seq.upper()
 
     @cached_property
     def rc(self):
-        """ Reverse complement. """
+        """Reverse complement."""
         return self.__class__(str(self)[::-1].translate(self.get_comptrans()))
 
     @cached_property
     def picto(self):
-        """ Pictogram string. """
+        """Pictogram string."""
         return str(self).translate(self.get_pictrans())
 
     @cached_property
     def array(self):
-        """ NumPy array of Unicode characters for the sequence. """
+        """NumPy array of Unicode characters for the sequence."""
         return np.array(list(self))
 
     def compress(self):
-        """ Compress the sequence. """
+        """Compress the sequence."""
         return CompressedSeq(self)
 
     def kmers(self, k: int):
-        """ Every subsequence of length k (k-mer). """
+        """Every subsequence of length k (k-mer)."""
         if k < 0:
             raise ValueError(f"k must be ≥ 0, but got {k}")
         for i in range(len(self) - k + 1):
-            yield self[i: i + k]
+            yield self[i : i + k]
 
     def __str__(self):
         return self._seq
 
     def __repr__(self):
-        """ Encapsulate the sequence string with the class name. """
+        """Encapsulate the sequence string with the class name."""
         return f"{type(self).__name__}({str(self).__repr__()})"
 
     def __hash__(self):
-        """ Define __hash__ so that Seq subclasses can be used as keys
-        for dict-like mappings. Use the hash of the plain string. """
+        """Define __hash__ so that Seq subclasses can be used as keys
+        for dict-like mappings. Use the hash of the plain string."""
         return str(self).__hash__()
 
     def __getitem__(self, item):
-        """ If item is a slice, then return an instance of the class.
-        Otherwise, return an instance of str. """
+        """If item is a slice, then return an instance of the class.
+        Otherwise, return an instance of str."""
         value = str(self).__getitem__(item)
         return self.__class__(value) if isinstance(item, slice) else value
 
     def __contains__(self, item):
-        """ Check if a sequence is contained in this sequence. """
+        """Check if a sequence is contained in this sequence."""
         return isinstance(item, type(self)) and str(item) in str(self)
 
     def __iter__(self):
@@ -242,23 +246,23 @@ class XNA(ABC):
         return len(str(self))
 
     def __bool__(self):
-        """ Empty sequences return False; all else, True. """
+        """Empty sequences return False; all else, True."""
         return bool(str(self))
 
     def __add__(self, other):
-        """ Allow addition (concatenation) of two sequences only if the
-        sequences have the same class. """
+        """Allow addition (concatenation) of two sequences only if the
+        sequences have the same class."""
         if type(self) is type(other):
             return self.__class__(str(self).__add__(str(other)))
         return NotImplemented
 
     def __mul__(self, other):
-        """ Multiply a sequence by an int like a str times an int. """
+        """Multiply a sequence by an int like a str times an int."""
         return self.__class__(str(self).__mul__(other))
 
     def __eq__(self, other):
-        """ Return True if both the type of the sequence and the bases
-        in the sequence match, otherwise False. """
+        """Return True if both the type of the sequence and the bases
+        in the sequence match, otherwise False."""
         return type(self) is type(other) and str(self) == str(other)
 
     def __ne__(self, other):
@@ -266,7 +270,6 @@ class XNA(ABC):
 
 
 class DNA(XNA):
-
     @classmethod
     def alph(cls):
         return BASEA, BASEC, BASEN, BASEG, BASET
@@ -280,12 +283,11 @@ class DNA(XNA):
         return cls(str(seq).upper().replace(RNA.t_or_u(), DNA.t_or_u()))
 
     def tr(self):
-        """ Transcribe DNA to RNA. """
+        """Transcribe DNA to RNA."""
         return RNA(str(self).replace(BASET, BASEU))
 
 
 class RNA(XNA):
-
     @classmethod
     def alph(cls):
         return BASEA, BASEC, BASEN, BASEG, BASEU
@@ -299,14 +301,14 @@ class RNA(XNA):
         return cls(str(seq).upper().replace(DNA.t_or_u(), RNA.t_or_u()))
 
     def rt(self):
-        """ Reverse transcribe RNA to DNA. """
+        """Reverse transcribe RNA to DNA."""
         return DNA(str(self).replace(BASEU, BASET))
 
 
 def expand_degenerate_seq(seq: DNA):
-    """ Given a (possibly degenerate) sequence, yield every definite
+    """Given a (possibly degenerate) sequence, yield every definite
     sequence that could derive from it. Only the degenerate base N is
-    supported by this function; other IUPAC codes (e.g. R) are not. """
+    supported by this function; other IUPAC codes (e.g. R) are not."""
     # Split the sequence into every segment that does not have an N.
     segs = str(seq).split(BASEN)
     # The number of N bases is one less than the number of segments.
@@ -314,15 +316,14 @@ def expand_degenerate_seq(seq: DNA):
         # If the sequence contains at least one N, then yield every
         # possible sequence by replacing each N with each base.
         for bases in product(DNA.four(), repeat=ns):
-            yield DNA("".join(chain((segs[0],), *zip(bases, segs[1:],
-                                                     strict=True))))
+            yield DNA("".join(chain((segs[0],), *zip(bases, segs[1:], strict=True))))
     else:
         # If the sequence contains no N bases, then yield it as DNA.
         yield DNA(segs[0])
 
 
 class CompressedSeq(object):
-    """ Compress a sequence into two bits per base. """
+    """Compress a sequence into two bits per base."""
 
     def __init__(self, seq: XNA):
         self.r = isinstance(seq, RNA)
@@ -335,16 +336,18 @@ class CompressedSeq(object):
         return RNA if self.r else DNA
 
     def decompress(self):
-        """ Restore the original sequence. """
+        """Restore the original sequence."""
         return decompress(self)
 
     def __eq__(self, other):
         if not isinstance(other, CompressedSeq):
             return NotImplemented
-        return (self.r == other.r
-                and self.s == other.s
-                and self.b == other.b
-                and self.n == other.n)
+        return (
+            self.r == other.r
+            and self.s == other.s
+            and self.b == other.b
+            and self.n == other.n
+        )
 
 
 @cache
@@ -357,26 +360,28 @@ def _base_to_index(base: str, alph: tuple[str, str, str, str]):
 
 @cache
 def _compress_block(block: str, alph: tuple[str, str, str, str]):
-    """ Compress one block of a sequence. """
+    """Compress one block of a sequence."""
     if len(alph) != NUM_BASES:
         raise ValueError(f"Expected {NUM_BASES} bases, but got {alph}")
     if len(block) > BLOCK_SIZE:
-        raise ValueError(f"Expected block of no more than {BLOCK_SIZE} nt, "
-                         f"but got {repr(block)}")
+        raise ValueError(
+            f"Expected block of no more than {BLOCK_SIZE} nt, but got {repr(block)}"
+        )
     if len(block) < BLOCK_SIZE:
         # Pad the end of the block with Ns until it is long enough.
         block = BLOCK_FORMAT.format(block)
-    return sum(_base_to_index(base, alph) << (i * BITS_PER_BASE)
-               for i, base in enumerate(block))
+    return sum(
+        _base_to_index(base, alph) << (i * BITS_PER_BASE)
+        for i, base in enumerate(block)
+    )
 
 
 def _get_blocks(seq: str):
-    return (seq[i: i + BLOCK_SIZE] for i in range(0, len(seq), BLOCK_SIZE))
+    return (seq[i : i + BLOCK_SIZE] for i in range(0, len(seq), BLOCK_SIZE))
 
 
 def _compress_seq(seq: XNA):
-    return bytes(_compress_block(block, seq.four())
-                 for block in _get_blocks(str(seq)))
+    return bytes(_compress_block(block, seq.four()) for block in _get_blocks(str(seq)))
 
 
 def _find_ns(seq: XNA):
@@ -385,18 +390,20 @@ def _find_ns(seq: XNA):
 
 @cache
 def _decompress_block(byte: int, alph: tuple[str, str, str, str]):
-    """ Decompress one block of a sequence. """
+    """Decompress one block of a sequence."""
     if len(alph) != NUM_BASES:
         raise ValueError(f"Expected {NUM_BASES} bases, but got {alph}")
     byte = COMPRESS_TYPE(byte)
-    return "".join(alph[(byte >> (i * BITS_PER_BASE)) % len(alph)]
-                   for i in range(BLOCK_SIZE))
+    return "".join(
+        alph[(byte >> (i * BITS_PER_BASE)) % len(alph)] for i in range(BLOCK_SIZE)
+    )
 
 
 def decompress(seq: CompressedSeq):
-    """ Restore the original sequence from a CompressedSeq object. """
-    bases = [base for byte in seq.b
-             for base in _decompress_block(byte, seq.type.four())][:seq.s]
+    """Restore the original sequence from a CompressedSeq object."""
+    bases = [
+        base for byte in seq.b for base in _decompress_block(byte, seq.type.four())
+    ][: seq.s]
     for n in seq.n:
         bases[n] = BASEN
     return seq.type("".join(bases))

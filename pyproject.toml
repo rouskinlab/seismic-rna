@@ -48,3 +48,12 @@ seismic = "seismicrna.main:cli"
 
 [tool.mesonpy]
 build-dir = "build"
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = true
+line-ending = "lf"

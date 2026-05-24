@@ -3,7 +3,7 @@ import pandas as pd
 
 
 def count_pos(mus: np.ndarray | pd.Series | pd.DataFrame):
-    """ Count the positions in an array of mutation rates.
+    """Count the positions in an array of mutation rates.
 
     Parameters
     ----------
@@ -22,7 +22,7 @@ def count_pos(mus: np.ndarray | pd.Series | pd.DataFrame):
 
 
 def counts_pos(*mus: np.ndarray | pd.Series | pd.DataFrame):
-    """ Count the positions in each array of mutation rates.
+    """Count the positions in each array of mutation rates.
 
     Parameters
     ----------
@@ -39,7 +39,7 @@ def counts_pos(*mus: np.ndarray | pd.Series | pd.DataFrame):
 
 
 def counts_pos_consensus(*mus: np.ndarray | pd.Series | pd.DataFrame):
-    """ Find the number of positions in every array of mutation rates;
+    """Find the number of positions in every array of mutation rates;
     every array must have the same number of positions.
 
     Parameters
@@ -54,11 +54,15 @@ def counts_pos_consensus(*mus: np.ndarray | pd.Series | pd.DataFrame):
         Number of positions in every array of mutation rates.
     """
     if not mus:
-        raise ValueError("Finding the number of positions in every array "
-                         "requires at least 1 array, but got 0 arrays")
+        raise ValueError(
+            "Finding the number of positions in every array "
+            "requires at least 1 array, but got 0 arrays"
+        )
     counts = list(set(counts_pos(*mus)))
     if len(counts) > 1:
-        raise ValueError(f"Finding the number of positions in every array "
-                         f"requires all arrays to have the same number of "
-                         f"positions, but got {sorted(counts)}")
+        raise ValueError(
+            f"Finding the number of positions in every array "
+            f"requires all arrays to have the same number of "
+            f"positions, but got {sorted(counts)}"
+        )
     return counts[0]

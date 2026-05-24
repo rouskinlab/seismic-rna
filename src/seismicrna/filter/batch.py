@@ -11,7 +11,6 @@ from ..core.validate import require_isinstance
 
 
 class PartialReadBatch(ReadBatch, ABC):
-
     @cached_property
     def max_read(self):
         return self.read_nums.max(initial=0)
@@ -26,7 +25,6 @@ class PartialRegionMutsBatch(PartialReadBatch, RegionMutsBatch, ABC):
 
 
 class FilterReadBatch(PartialReadBatch):
-
     def __init__(self, *, read_nums: np.ndarray, **kwargs):
         require_isinstance("read_nums", read_nums, np.ndarray)
         self._read_nums = read_nums
@@ -42,7 +40,6 @@ class FilterReadBatch(PartialReadBatch):
 
 
 class FilterMutsBatch(FilterReadBatch, PartialRegionMutsBatch):
-
     @property
     def read_weights(self):
         read_weights = None
@@ -53,11 +50,13 @@ class FilterMutsBatch(FilterReadBatch, PartialRegionMutsBatch):
         return read_weights
 
 
-def apply_filters(batch: RegionMutsBatch,
-               read_nums: np.ndarray | None = None,
-               region: Region | None = None,
-               sanitize: bool = False):
-    """ Apply read/position filters to a batch, returning a FilterMutsBatch.
+def apply_filters(
+    batch: RegionMutsBatch,
+    read_nums: np.ndarray | None = None,
+    region: Region | None = None,
+    sanitize: bool = False,
+):
+    """Apply read/position filters to a batch, returning a FilterMutsBatch.
 
     Parameters
     ----------
@@ -102,17 +101,23 @@ def apply_filters(batch: RegionMutsBatch,
         # Use the same region as the given batch.
         region = batch.region
     # Put only the remaining positions and reads into muts.
-    muts = {pos: ({mut: np.setdiff1d(pos_mut_reads,
-                                     dropped_reads,
-                                     assume_unique=True)
-                   for mut, pos_mut_reads in batch.muts[pos].items()}
-                  if dropped_reads is not None
-                  else batch.muts[pos])
-            for pos in region.unmasked_int}
-    return FilterMutsBatch(batch=batch.batch,
-                         read_nums=read_nums,
-                         region=region,
-                         seg_end5s=seg_end5s,
-                         seg_end3s=seg_end3s,
-                         muts=muts,
-                         sanitize=sanitize)
+    muts = {
+        pos: (
+            {
+                mut: np.setdiff1d(pos_mut_reads, dropped_reads, assume_unique=True)
+                for mut, pos_mut_reads in batch.muts[pos].items()
+            }
+            if dropped_reads is not None
+            else batch.muts[pos]
+        )
+        for pos in region.unmasked_int
+    }
+    return FilterMutsBatch(
+        batch=batch.batch,
+        read_nums=read_nums,
+        region=region,
+        seg_end5s=seg_end5s,
+        seg_end3s=seg_end3s,
+        muts=muts,
+        sanitize=sanitize,
+    )

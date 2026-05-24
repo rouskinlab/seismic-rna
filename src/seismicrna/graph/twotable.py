@@ -7,19 +7,16 @@ from typing import Any, Callable, Iterable
 
 import pandas as pd
 
-from .base import (get_action_name,
-                   make_title_action_sample,
-                   make_path_subject)
-from .cgroup import (ClusterGroupGraph,
-                     ClusterGroupRunner,
-                     cgroup_table,
-                     make_tracks)
-from .table import (TableGraph,
-                    RelTableGraph,
-                    TableRunner,
-                    RelTableRunner,
-                    TableWriter,
-                    load_pos_tables)
+from .base import get_action_name, make_title_action_sample, make_path_subject
+from .cgroup import ClusterGroupGraph, ClusterGroupRunner, cgroup_table, make_tracks
+from .table import (
+    TableGraph,
+    RelTableGraph,
+    TableRunner,
+    RelTableRunner,
+    TableWriter,
+    load_pos_tables,
+)
 from ..cluster.data import ClusterTable
 from ..core.arg import opt_comppair, opt_compself, opt_out_dir
 from ..core.logs import logger
@@ -36,13 +33,16 @@ VERSUS_NAMES = f"{BRANCH_SEP}{VERSUS_BRANCH}{BRANCH_SEP}"
 
 
 class TwoTableGraph(TableGraph, ABC):
-    """ Graph of two Tables. """
+    """Graph of two Tables."""
 
-    def __init__(self, *,
-                 out_dir: str | Path,
-                 table1: Table | PositionTable,
-                 table2: Table | PositionTable,
-                 **kwargs):
+    def __init__(
+        self,
+        *,
+        out_dir: str | Path,
+        table1: Table | PositionTable,
+        table2: Table | PositionTable,
+        **kwargs,
+    ):
         """
         Parameters
         ----------
@@ -62,12 +62,14 @@ class TwoTableGraph(TableGraph, ABC):
         self.table2 = table2
 
     def _get_common_attribute(self, name: str):
-        """ Get the common attribute for tables 1 and 2. """
+        """Get the common attribute for tables 1 and 2."""
         attr1 = getattr(self.table1, name)
         attr2 = getattr(self.table2, name)
         if attr1 != attr2:
-            raise ValueError(f"Attribute {repr(name)} differs between "
-                             f"tables 1 ({repr(attr1)}) and 2 ({repr(attr2)})")
+            raise ValueError(
+                f"Attribute {repr(name)} differs between "
+                f"tables 1 ({repr(attr1)}) and 2 ({repr(attr2)})"
+            )
         return attr1
 
     @property
@@ -93,20 +95,22 @@ class TwoTableGraph(TableGraph, ABC):
             return branches_union
         # The tables have different branches, so make a new dict that
         # includes all branches and compares table1 and table2.
-        branches1 = {f"{step}1": branch
-                     for step, branch in self.table1.branches.items()}
-        branches2 = {f"{step}2": branch
-                     for step, branch in self.table2.branches.items()}
+        branches1 = {
+            f"{step}1": branch for step, branch in self.table1.branches.items()
+        }
+        branches2 = {
+            f"{step}2": branch for step, branch in self.table2.branches.items()
+        }
         return {**branches1, VERSUS_BRANCH: VERSUS_BRANCH, **branches2}
 
     @property
     def sample1(self):
-        """ Name of sample 1. """
+        """Name of sample 1."""
         return self.table1.sample
 
     @property
     def sample2(self):
-        """ Name of sample 2. """
+        """Name of sample 2."""
         return self.table2.sample
 
     @cached_property
@@ -129,42 +133,45 @@ class TwoTableGraph(TableGraph, ABC):
 
     @cached_property
     def action1(self):
-        """ Action that generated dataset 1. """
+        """Action that generated dataset 1."""
         return get_action_name(self.table1)
 
     @cached_property
     def action2(self):
-        """ Action that generated dataset 2. """
+        """Action that generated dataset 2."""
         return get_action_name(self.table2)
 
     @cached_property
     def action_sample1(self):
-        """ Action and sample of dataset 1. """
+        """Action and sample of dataset 1."""
         return make_title_action_sample(self.action1, self.sample1)
 
     @cached_property
     def action_sample2(self):
-        """ Action and sample of dataset 2. """
+        """Action and sample of dataset 2."""
         return make_title_action_sample(self.action2, self.sample2)
 
     @cached_property
     def title_action_sample(self):
-        return (self.action_sample1
-                if self.action_sample1 == self.action_sample2
-                else " vs. ".join([self.action_sample1, self.action_sample2]))
+        return (
+            self.action_sample1
+            if self.action_sample1 == self.action_sample2
+            else " vs. ".join([self.action_sample1, self.action_sample2])
+        )
 
 
-class TwoTableRelClusterGroupGraph(TwoTableGraph,
-                                   RelTableGraph,
-                                   ClusterGroupGraph,
-                                   ABC):
-
-    def __init__(self, *,
-                 k1: int | None,
-                 clust1: int | None,
-                 k2: int | None,
-                 clust2: int | None,
-                 **kwargs):
+class TwoTableRelClusterGroupGraph(
+    TwoTableGraph, RelTableGraph, ClusterGroupGraph, ABC
+):
+    def __init__(
+        self,
+        *,
+        k1: int | None,
+        clust1: int | None,
+        k2: int | None,
+        clust2: int | None,
+        **kwargs,
+    ):
         """
         Parameters
         ----------
@@ -187,17 +194,21 @@ class TwoTableRelClusterGroupGraph(TwoTableGraph,
 
     @cached_property
     def path_subject1(self):
-        """ Name of subject 1. """
-        return (make_path_subject(self.action1, self.k1, self.clust1)
-                if isinstance(self.table1, ClusterTable)
-                else self.action1)
+        """Name of subject 1."""
+        return (
+            make_path_subject(self.action1, self.k1, self.clust1)
+            if isinstance(self.table1, ClusterTable)
+            else self.action1
+        )
 
     @cached_property
     def path_subject2(self):
-        """ Name of subject 2. """
-        return (make_path_subject(self.action2, self.k2, self.clust2)
-                if isinstance(self.table2, ClusterTable)
-                else self.action2)
+        """Name of subject 2."""
+        return (
+            make_path_subject(self.action2, self.k2, self.clust2)
+            if isinstance(self.table2, ClusterTable)
+            else self.action2
+        )
 
     @cached_property
     def path_subject(self):
@@ -207,17 +218,13 @@ class TwoTableRelClusterGroupGraph(TwoTableGraph,
 
     @cached_property
     def data1(self):
-        """ Data from table 1. """
-        return self._fetch_data(self.table1,
-                                k=self.k1,
-                                clust=self.clust1)
+        """Data from table 1."""
+        return self._fetch_data(self.table1, k=self.k1, clust=self.clust1)
 
     @cached_property
     def data2(self):
-        """ Data from table 2. """
-        return self._fetch_data(self.table2,
-                                k=self.k2,
-                                clust=self.clust2)
+        """Data from table 2."""
+        return self._fetch_data(self.table2, k=self.k2, clust=self.clust2)
 
     @cached_property
     def row_tracks(self):
@@ -229,33 +236,36 @@ class TwoTableRelClusterGroupGraph(TwoTableGraph,
 
 
 class TwoTableMergedClusterGroupGraph(TwoTableRelClusterGroupGraph, ABC):
-    """ Graph of a pair of datasets over the same sequence in which the
+    """Graph of a pair of datasets over the same sequence in which the
     data series are merged in some fashion into another series, and the
-    original data are not graphed directly. """
+    original data are not graphed directly."""
 
     @classmethod
     @abstractmethod
     def _trace_function(cls) -> Callable:
-        """ Function to generate the graph's traces. """
+        """Function to generate the graph's traces."""
 
     @property
     def _trace_kwargs(self) -> dict[str, Any]:
-        """ Keyword arguments for self._trace_function. """
+        """Keyword arguments for self._trace_function."""
         return dict()
 
     @property
     @abstractmethod
     def _merge_data(self) -> Callable:
-        """ Function to merge the two datasets into one. """
+        """Function to merge the two datasets into one."""
 
     @cached_property
     def data(self):
         # Merge each pair in the Cartesian product of datasets 1 and 2.
         data = pd.DataFrame.from_dict(
-            {(row, col): self._merge_data(vals1, vals2)
-             for (col, (key1, vals1)), (row, (key2, vals2))
-             in product(enumerate(self.data1.items(), start=1),
-                        enumerate(self.data2.items(), start=1))}
+            {
+                (row, col): self._merge_data(vals1, vals2)
+                for (col, (key1, vals1)), (row, (key2, vals2)) in product(
+                    enumerate(self.data1.items(), start=1),
+                    enumerate(self.data2.items(), start=1),
+                )
+            }
         )
         # Indicate that the column index levels now correspond to the
         # rows and columns of the graph.
@@ -270,12 +280,12 @@ class TwoTableMergedClusterGroupGraph(TwoTableRelClusterGroupGraph, ABC):
 
 
 class TwoTableWriter(TableWriter, ABC):
-    """ Write the proper types of graphs for two given tables. """
+    """Write the proper types of graphs for two given tables."""
 
     @classmethod
     @abstractmethod
     def get_graph_type(cls, *args, **kwargs) -> type[TwoTableGraph]:
-        """ Type of graph. """
+        """Type of graph."""
 
     def __init__(self, table1: Table, table2: Table, **kwargs):
         """
@@ -294,21 +304,20 @@ class TwoTableWriter(TableWriter, ABC):
 
     @cached_property
     def table1(self):
-        """ The first table providing the data for the graph(s). """
+        """The first table providing the data for the graph(s)."""
         assert len(self.tables) == 2
         return self.tables[0]
 
     @cached_property
     def table2(self):
-        """ The second table providing the data for the graph(s). """
+        """The second table providing the data for the graph(s)."""
         assert len(self.tables) == 2
         return self.tables[1]
 
 
 class TwoTableRelClusterGroupWriter(TwoTableWriter, ABC):
-
     def iter_graphs(self, *, rels: list[str], cgroup: str, **kwargs):
-        """ Yield graphs for every relationship and cluster-group pair.
+        """Yield graphs for every relationship and cluster-group pair.
 
         Parameters
         ----------
@@ -325,28 +334,29 @@ class TwoTableRelClusterGroupWriter(TwoTableWriter, ABC):
             One graph per (cluster group from table1, cluster group from
             table2, relationship) combination.
         """
-        for cparams1, cparams2 in product(cgroup_table(self.table1, cgroup),
-                                          cgroup_table(self.table2, cgroup)):
+        for cparams1, cparams2 in product(
+            cgroup_table(self.table1, cgroup), cgroup_table(self.table2, cgroup)
+        ):
             for rel in rels:
                 graph_type = self.get_graph_type()
-                yield graph_type(rel=rel,
-                                 table1=self.table1,
-                                 k1=cparams1["k"],
-                                 clust1=cparams1["clust"],
-                                 table2=self.table2,
-                                 k2=cparams2["k"],
-                                 clust2=cparams2["clust"],
-                                 **kwargs)
+                yield graph_type(
+                    rel=rel,
+                    table1=self.table1,
+                    k1=cparams1["k"],
+                    clust1=cparams1["clust"],
+                    table2=self.table2,
+                    k2=cparams2["k"],
+                    clust2=cparams2["clust"],
+                    **kwargs,
+                )
 
 
 def _table_order(table: Table):
-    return (table.sample,
-            flatten_branches(table.branches),
-            get_action_name(table))
+    return (table.sample, flatten_branches(table.branches), get_action_name(table))
 
 
 def iter_table_pairs(tables: Iterable[Table]):
-    """ Yield every pair of tables whose reference and region match. """
+    """Yield every pair of tables whose reference and region match."""
     tables = list(tables)
     # Group the tables by reference and region.
     table_groups = defaultdict(list)
@@ -360,33 +370,37 @@ def iter_table_pairs(tables: Iterable[Table]):
     for (ref, reg), table_group in table_groups.items():
         n_files = len(table_group)
         n_pairs = n_files * (n_files - 1) // 2
-        logger.detail(f"Found {n_files} table(s) and {n_pairs} pair(s) "
-                      f"with reference {repr(ref)} and region {repr(reg)}")
+        logger.detail(
+            f"Found {n_files} table(s) and {n_pairs} pair(s) "
+            f"with reference {repr(ref)} and region {repr(reg)}"
+        )
         # Sort the tables by sample to ensure the order of combinations
         # is consistent no matter the order of the "tables" argument.
         yield from combinations(sorted(table_group, key=_table_order), 2)
 
 
 class TwoTableRunner(TableRunner, ABC):
-
     @classmethod
     @abstractmethod
     def get_writer_type(cls) -> type[TwoTableWriter]:
-        """ Type of Writer. """
+        """Type of Writer."""
 
     @classmethod
     def get_var_params(cls):
         return super().get_var_params() + [opt_comppair, opt_compself, opt_out_dir]
 
     @classmethod
-    def run(cls,
-            input_path: Iterable[str | Path], *,
-            compself: bool,
-            comppair: bool,
-            verify_times: bool,
-            num_cpus: int,
-            **kwargs):
-        """ Load all tables and write comparison graphs for each pair.
+    def run(
+        cls,
+        input_path: Iterable[str | Path],
+        *,
+        compself: bool,
+        comppair: bool,
+        verify_times: bool,
+        num_cpus: int,
+        **kwargs,
+    ):
+        """Load all tables and write comparison graphs for each pair.
 
         Parameters
         ----------
@@ -411,8 +425,7 @@ class TwoTableRunner(TableRunner, ABC):
             Paths of all written output files.
         """
         # List all table files.
-        tables = list(load_pos_tables(input_path,
-                                      verify_times=verify_times))
+        tables = list(load_pos_tables(input_path, verify_times=verify_times))
         # Determine all pairs of tables to compare.
         table_pairs = list()
         if compself:
@@ -423,19 +436,23 @@ class TwoTableRunner(TableRunner, ABC):
             table_pairs.extend(iter_table_pairs(tables))
         # Generate a table writer for each pair of tables.
         writer_type = cls.get_writer_type()
-        writers = [writer_type(table1, table2)
-                   for table1, table2 in table_pairs]
-        return list(chain(*dispatch([writer.write for writer in writers],
-                                    num_cpus=num_cpus,
-                                    pass_num_cpus=False,
-                                    as_list=False,
-                                    ordered=False,
-                                    raise_on_error=False,
-                                    kwargs=kwargs)))
+        writers = [writer_type(table1, table2) for table1, table2 in table_pairs]
+        return list(
+            chain(
+                *dispatch(
+                    [writer.write for writer in writers],
+                    num_cpus=num_cpus,
+                    pass_num_cpus=False,
+                    as_list=False,
+                    ordered=False,
+                    raise_on_error=False,
+                    kwargs=kwargs,
+                )
+            )
+        )
 
 
-class TwoTableRelClusterGroupRunner(TwoTableRunner,
-                                    RelTableRunner,
-                                    ClusterGroupRunner,
-                                    ABC):
+class TwoTableRelClusterGroupRunner(
+    TwoTableRunner, RelTableRunner, ClusterGroupRunner, ABC
+):
     pass

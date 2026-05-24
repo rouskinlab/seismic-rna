@@ -7,16 +7,15 @@ RAND_INT_DTYPE = np.uint32
 
 
 def get_random_integer_generator(seed: int | None):
-    """ Generate an infinite series of random integers. """
+    """Generate an infinite series of random integers."""
     rng = np.random.default_rng(seed)
     max_integer = get_max_uint(RAND_INT_DTYPE)
     while True:
         yield int(rng.integers(max_integer, dtype=RAND_INT_DTYPE))
 
 
-def _stochastic_round(values: np.ndarray | list | float | int,
-                      seed: int | None):
-    """ Round values to integers stochastically, so that the probability
+def _stochastic_round(values: np.ndarray | list | float | int, seed: int | None):
+    """Round values to integers stochastically, so that the probability
     of rounding up equals the fractional part of the original value.
 
     Parameters
@@ -42,9 +41,8 @@ def _stochastic_round(values: np.ndarray | list | float | int,
     return rounded
 
 
-def _stochastic_round_sum(values: np.ndarray | list | float | int,
-                          seed: int | None):
-    """ Like stochastic_round, but guarantees that the sums before and
+def _stochastic_round_sum(values: np.ndarray | list | float | int, seed: int | None):
+    """Like stochastic_round, but guarantees that the sums before and
     after rounding are equal. If the former is not an integer, then the
     sum after rounding will be either the nearest integer greater than
     the sum (with probability equal to the fractional part of the sum)
@@ -89,10 +87,12 @@ def _stochastic_round_sum(values: np.ndarray | list | float | int,
     return rounded[calc_inverse(order)].reshape(values.shape, order="C")
 
 
-def stochastic_round(values: np.ndarray | list | float | int,
-                     preserve_sum: bool = False,
-                     seed: int | None = None):
-    """ Round values to integers stochastically, so that the probability
+def stochastic_round(
+    values: np.ndarray | list | float | int,
+    preserve_sum: bool = False,
+    seed: int | None = None,
+):
+    """Round values to integers stochastically, so that the probability
     of rounding up equals the fractional part of the original value.
 
     Parameters

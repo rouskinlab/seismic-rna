@@ -7,20 +7,14 @@ from shutil import move
 from typing import Callable
 
 from .logs import logger
-from .path import (mkdir_if_needed,
-                   rmdir_if_needed,
-                   randdir,
-                   sanitize,
-                   transpath)
+from .path import mkdir_if_needed, rmdir_if_needed, randdir, sanitize, transpath
 
 PENDING = "release"
 WORKING = "working"
 
 
-def release_to_out(out_dir: Path,
-                   release_dir: Path,
-                   initial_path: Path):
-    """ Move a temporary path to the output directory.
+def release_to_out(out_dir: Path, release_dir: Path, initial_path: Path):
+    """Move a temporary path to the output directory.
 
     Parameters
     ----------
@@ -37,9 +31,7 @@ def release_to_out(out_dir: Path,
     Path
         Final path of the file or directory in the output directory.
     """
-    logger.routine(
-        f"Began releasing {initial_path} from {release_dir} to {out_dir}"
-    )
+    logger.routine(f"Began releasing {initial_path} from {release_dir} to {out_dir}")
     # Determine the path in the output directory.
     out_path = transpath(out_dir, release_dir, initial_path)
     if initial_path.exists():
@@ -81,8 +73,10 @@ def release_to_out(out_dir: Path,
                 # If an error occurred, then restore the original output
                 # path before raising the exception.
                 delete_path.rename(out_path)
-                logger.action(f"Moved {delete_path} (to be deleted) "
-                              f"back to output path {out_path}")
+                logger.action(
+                    f"Moved {delete_path} (to be deleted) "
+                    f"back to output path {out_path}"
+                )
             else:
                 # No original files were moved to the delete directory,
                 # which is therefore still empty. Delete it.
@@ -90,9 +84,7 @@ def release_to_out(out_dir: Path,
             raise
         # Once the initial path has been moved to its destination, the
         # original directory can be deleted safely.
-        rmdir_if_needed(delete_path,
-                        rmtree=True,
-                        raise_on_rmtree_error=False)
+        rmdir_if_needed(delete_path, rmtree=True, raise_on_rmtree_error=False)
     else:
         logger.detail(f"Skipped releasing {initial_path} (does not exist)")
     if not out_path.exists():
@@ -102,7 +94,7 @@ def release_to_out(out_dir: Path,
 
 
 def get_release_working_dirs(tmp_dir: Path):
-    """ Create and return the release and working subdirectories inside
+    """Create and return the release and working subdirectories inside
     a temporary directory.
 
     Parameters
@@ -123,15 +115,12 @@ def get_release_working_dirs(tmp_dir: Path):
 
 
 def with_tmp_dir(pass_keep_tmp: bool):
-    """ Make a temporary directory, and delete it after returning. """
+    """Make a temporary directory, and delete it after returning."""
 
     def decorator(func: Callable):
 
         @wraps(func)
-        def wrapper(*args,
-                    tmp_pfx: str | Path,
-                    keep_tmp: bool,
-                    **kwargs):
+        def wrapper(*args, tmp_pfx: str | Path, keep_tmp: bool, **kwargs):
             tmp_dir = None
             try:
                 tmp_pfx = sanitize(tmp_pfx)
@@ -141,9 +130,7 @@ def with_tmp_dir(pass_keep_tmp: bool):
                 return func(*args, tmp_dir=tmp_dir, **kwargs)
             finally:
                 if tmp_dir is not None and not keep_tmp:
-                    rmdir_if_needed(tmp_dir,
-                                    rmtree=True,
-                                    raise_on_rmtree_error=False)
+                    rmdir_if_needed(tmp_dir, rmtree=True, raise_on_rmtree_error=False)
 
         # Add tmp_pfx and keep_tmp to the signature of the wrapper, and
         # remove tmp_dir (functools.wraps does not do so automatically).

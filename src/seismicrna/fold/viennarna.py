@@ -1,4 +1,4 @@
-""" Wrapper around ViennaRNA from Lorenz and Hofacker at the
+"""Wrapper around ViennaRNA from Lorenz and Hofacker at the
 University of Vienna: https://www.tbi.univie.ac.at/RNA/
 """
 
@@ -7,13 +7,15 @@ from pathlib import Path
 
 from .dryrun import dry_run
 from .rnastructure import retitle_ct
-from ..core.extern import (VIENNA_RNAFOLD_CMD,
-                           VIENNA_RNASUBOPT_CMD,
-                           cmds_to_pipe,
-                           cmds_to_redirect_in,
-                           cmds_to_redirect_out,
-                           args_to_cmd,
-                           run_cmd)
+from ..core.extern import (
+    VIENNA_RNAFOLD_CMD,
+    VIENNA_RNASUBOPT_CMD,
+    cmds_to_pipe,
+    cmds_to_redirect_in,
+    cmds_to_redirect_out,
+    args_to_cmd,
+    run_cmd,
+)
 from ..core.logs import logger
 from ..core.rna import renumber_ct, db_to_ct
 from ..core.write import need_write, write_mode
@@ -22,22 +24,25 @@ ENERGY_UNIT = "kcal/mol"
 RNAFOLD_NUM_THREADS = "OMP_NUM_THREADS"
 
 
-def make_rnafold_cmd(fasta_file: Path,
-                     vienna_file: Path, *,
-                     sp_data: Path | None,
-                     sp_strategy: str | None,
-                     eddy_prior_paired_file: Path | None,
-                     eddy_prior_unpaired_file: Path | None,
-                     fold_constraint: Path | None,
-                     fold_commands: Path | None,
-                     fold_temp_c: float,
-                     fold_isolated: bool,
-                     fold_md: int,
-                     fold_max: int,
-                     fold_mfe: bool,
-                     fold_edelta: float,
-                     num_cpus: int = 1):
-    """ Build the shell command to run either RNAfold or RNAsubopt.
+def make_rnafold_cmd(
+    fasta_file: Path,
+    vienna_file: Path,
+    *,
+    sp_data: Path | None,
+    sp_strategy: str | None,
+    eddy_prior_paired_file: Path | None,
+    eddy_prior_unpaired_file: Path | None,
+    fold_constraint: Path | None,
+    fold_commands: Path | None,
+    fold_temp_c: float,
+    fold_isolated: bool,
+    fold_md: int,
+    fold_max: int,
+    fold_mfe: bool,
+    fold_edelta: float,
+    num_cpus: int = 1,
+):
+    """Build the shell command to run either RNAfold or RNAsubopt.
 
     Parameters
     ----------
@@ -86,9 +91,13 @@ def make_rnafold_cmd(fasta_file: Path,
         head_n = fold_max * 3
     else:
         # Use RNAsubopt to get the MFE and suboptimal structures.
-        args = [VIENNA_RNASUBOPT_CMD,
-                "--deltaEnergy", fold_edelta,
-                "--sorted", "--en-only"]
+        args = [
+            VIENNA_RNASUBOPT_CMD,
+            "--deltaEnergy",
+            fold_edelta,
+            "--sorted",
+            "--en-only",
+        ]
         # RNAsubopt: 2 header lines (title + sequence) + fold_max structure lines.
         head_n = fold_max + 2
     if sp_data is not None:
@@ -97,11 +106,9 @@ def make_rnafold_cmd(fasta_file: Path,
         if sp_strategy is not None:
             args.extend(["--sp-strategy", sp_strategy])
     if eddy_prior_paired_file is not None:
-        args.extend(["--sp-data", eddy_prior_paired_file,
-                    "--sp-strategy", "Pp"])
+        args.extend(["--sp-data", eddy_prior_paired_file, "--sp-strategy", "Pp"])
     if eddy_prior_unpaired_file is not None:
-        args.extend(["--sp-data", eddy_prior_unpaired_file,
-                    "--sp-strategy", "Pu"])
+        args.extend(["--sp-data", eddy_prior_unpaired_file, "--sp-strategy", "Pu"])
     if fold_constraint is not None:
         # File of constraints.
         args.extend(["--constraint", fold_constraint])
@@ -124,42 +131,47 @@ def make_rnafold_cmd(fasta_file: Path,
     return cmd
 
 
-def run_rnafold(fasta_tmp: Path,
-                ct_tmp: Path,
-                ct_out: Path,
-                vienna_tmp: Path,
-                db_tmp: Path, *,
-                sp_data: Path | None,
-                sp_strategy: str | None,
-                eddy_prior_paired_file: Path | None,
-                eddy_prior_unpaired_file: Path | None,
-                fold_constraint: Path | None,
-                fold_commands: Path | None,
-                fold_temp_c: float,
-                fold_isolated: bool,
-                fold_md: int,
-                fold_max: int,
-                fold_mfe: bool,
-                fold_edelta: float,
-                end5: int,
-                num_cpus: int,
-                fold_dry_run: bool = False):
-    """ Run RNAfold/RNAsubopt on pre-built paths, convert to CT, retitle, and renumber. """
-    fold_cmd = make_rnafold_cmd(fasta_tmp,
-                                vienna_tmp,
-                                sp_data=sp_data,
-                                sp_strategy=sp_strategy,
-                                eddy_prior_paired_file=eddy_prior_paired_file,
-                                eddy_prior_unpaired_file=eddy_prior_unpaired_file,
-                                fold_constraint=fold_constraint,
-                                fold_commands=fold_commands,
-                                fold_temp_c=fold_temp_c,
-                                fold_isolated=fold_isolated,
-                                fold_md=fold_md,
-                                fold_max=fold_max,
-                                fold_mfe=fold_mfe,
-                                fold_edelta=fold_edelta,
-                                num_cpus=num_cpus)
+def run_rnafold(
+    fasta_tmp: Path,
+    ct_tmp: Path,
+    ct_out: Path,
+    vienna_tmp: Path,
+    db_tmp: Path,
+    *,
+    sp_data: Path | None,
+    sp_strategy: str | None,
+    eddy_prior_paired_file: Path | None,
+    eddy_prior_unpaired_file: Path | None,
+    fold_constraint: Path | None,
+    fold_commands: Path | None,
+    fold_temp_c: float,
+    fold_isolated: bool,
+    fold_md: int,
+    fold_max: int,
+    fold_mfe: bool,
+    fold_edelta: float,
+    end5: int,
+    num_cpus: int,
+    fold_dry_run: bool = False,
+):
+    """Run RNAfold/RNAsubopt on pre-built paths, convert to CT, retitle, and renumber."""
+    fold_cmd = make_rnafold_cmd(
+        fasta_tmp,
+        vienna_tmp,
+        sp_data=sp_data,
+        sp_strategy=sp_strategy,
+        eddy_prior_paired_file=eddy_prior_paired_file,
+        eddy_prior_unpaired_file=eddy_prior_unpaired_file,
+        fold_constraint=fold_constraint,
+        fold_commands=fold_commands,
+        fold_temp_c=fold_temp_c,
+        fold_isolated=fold_isolated,
+        fold_md=fold_md,
+        fold_max=fold_max,
+        fold_mfe=fold_mfe,
+        fold_edelta=fold_edelta,
+        num_cpus=num_cpus,
+    )
     if fold_dry_run:
         dry_run([fold_cmd], ct_tmp.parent)
     else:
@@ -173,10 +185,8 @@ def run_rnafold(fasta_tmp: Path,
         renumber_ct(ct_tmp, ct_out, end5, force=True)
 
 
-def get_subopt(subopt_out: Path,
-               db_target: Path,
-               force: bool = False):
-    """ Extract suboptimal structures from the output of RNAsubopt and write them to a DB file.
+def get_subopt(subopt_out: Path, db_target: Path, force: bool = False):
+    """Extract suboptimal structures from the output of RNAsubopt and write them to a DB file.
 
     RNAsubopt output format (per sequence):
         >NAME [N]          <- title; N = energy window in 0.01 kcal/mol units
@@ -212,12 +222,13 @@ def get_subopt(subopt_out: Path,
         text = "".join(lines)
         with open(db_target, mode=write_mode(force=True)) as f:
             f.write(text)
-        logger.routine(f"Suboptimal structures from {subopt_out} written"
-                       + f" to {db_target}")
+        logger.routine(
+            f"Suboptimal structures from {subopt_out} written" + f" to {db_target}"
+        )
 
 
 def extract_energies(vienna_input: Path, db_output: Path, force: bool = False):
-    """ Extract the free energies from a vienna file and prepend them to the reference name.
+    """Extract the free energies from a vienna file and prepend them to the reference name.
 
     The title will follow this format:
 
@@ -243,8 +254,12 @@ def extract_energies(vienna_input: Path, db_output: Path, force: bool = False):
                 seq_line = f.readline()
                 struct_line = f.readline()
                 if " " not in struct_line:
-                    logger.error(("No energy value could be "
-                                  f"parsed from the vienna line {struct_line}"))
+                    logger.error(
+                        (
+                            "No energy value could be "
+                            f"parsed from the vienna line {struct_line}"
+                        )
+                    )
                 struct_line_parts = struct_line.split(" ")
                 struct_line = struct_line_parts[0] + "\n"
                 energy = struct_line_parts[-1].strip("\n").strip("()")
@@ -254,5 +269,6 @@ def extract_energies(vienna_input: Path, db_output: Path, force: bool = False):
         text = "".join(lines)
         with open(db_output, write_mode(force=True)) as f:
             f.write(text)
-        logger.routine(f"Energies extracted from file {vienna_input}"
-                       + f" to {db_output}")
+        logger.routine(
+            f"Energies extracted from file {vienna_input}" + f" to {db_output}"
+        )

@@ -60,7 +60,7 @@ def get_reg_ends_primers(regs_file: Path):
     primers: dict[tuple[str, DNA, DNA], str] = dict()
 
     def map_reg(mapping: dict[tuple, str], key: tuple, value: str):
-        """ Add one region to the map if not already present. """
+        """Add one region to the map if not already present."""
         # Check whether the mapping already contains the key.
         try:
             prev = mapping[key]
@@ -72,9 +72,7 @@ def get_reg_ends_primers(regs_file: Path):
             # the value given currently.
             if prev == value:
                 # If so, then warn about it.
-                logger.warning(
-                    f"Key {key} mapped to {repr(value)} multiple times"
-                )
+                logger.warning(f"Key {key} mapped to {repr(value)} multiple times")
             else:
                 # If not, then raise an error because it is ambiguous
                 # which value to use.
@@ -84,9 +82,14 @@ def get_reg_ends_primers(regs_file: Path):
 
     # Read every row of the regions file.
     regions = pd.read_csv(regs_file)
-    lines = zip(regions[FIELD_REF], regions[FIELD_REG],
-                regions[FIELD_END5], regions[FIELD_END3],
-                regions[FIELD_PFWD], regions[FIELD_PREV])
+    lines = zip(
+        regions[FIELD_REF],
+        regions[FIELD_REG],
+        regions[FIELD_END5],
+        regions[FIELD_END3],
+        regions[FIELD_PFWD],
+        regions[FIELD_PREV],
+    )
     for i, (ref, reg, end5, end3, fwd, rev) in enumerate(lines, start=1):
         try:
             # The reference name must have a value.
@@ -106,8 +109,10 @@ def get_reg_ends_primers(regs_file: Path):
             has_ends = not (pd.isnull(end5) or pd.isnull(end3))
             has_primers = not (pd.isnull(fwd) or pd.isnull(rev))
             if has_ends and has_primers:
-                raise ValueError(f"Got both 5'/3' ends ({end5}, {end3}) "
-                                 f"and fwd/rev primers ({fwd}, {rev})")
+                raise ValueError(
+                    f"Got both 5'/3' ends ({end5}, {end3}) "
+                    f"and fwd/rev primers ({fwd}, {rev})"
+                )
             elif has_ends:
                 # Map the reference and end positions to the region.
                 map_reg(ends, (ref, int(end5), int(end3)), reg)
@@ -150,15 +155,16 @@ def seq_pos_to_index(seq: DNA, positions: Sequence[int], start: int):
     # Validate the positions.
     if pos.size > 0 and np.min(pos) < start:
         raise ValueError(
-            f"All positions must be ≥ start ({start}), but got {positions}")
+            f"All positions must be ≥ start ({start}), but got {positions}"
+        )
     end = start + len(seq) - 1
     if pos.size > 0 and np.max(pos) > end:
-        raise ValueError(
-            f"All positions must be ≤ end ({end}), but got {positions}")
+        raise ValueError(f"All positions must be ≤ end ({end}), but got {positions}")
     # Create a 2-level MultiIndex from the positions and the bases in
     # the sequence at those positions.
-    index = pd.MultiIndex.from_arrays([pos, seq.array[pos - start]],
-                                      names=SEQ_INDEX_NAMES)
+    index = pd.MultiIndex.from_arrays(
+        [pos, seq.array[pos - start]], names=SEQ_INDEX_NAMES
+    )
     if index.has_duplicates:
         raise ValueError(f"Duplicated positions: {positions}")
     if not index.is_monotonic_increasing:
@@ -167,14 +173,15 @@ def seq_pos_to_index(seq: DNA, positions: Sequence[int], start: int):
 
 
 def verify_index_names(index: pd.MultiIndex):
-    """ Verify that the names of the index are correct. """
+    """Verify that the names of the index are correct."""
     if tuple(index.names) != SEQ_INDEX_NAMES:
-        raise ValueError(f"Expected index with names {SEQ_INDEX_NAMES}, "
-                         f"but got {index.names}")
+        raise ValueError(
+            f"Expected index with names {SEQ_INDEX_NAMES}, but got {index.names}"
+        )
 
 
 def index_to_pos(index: pd.MultiIndex):
-    """ Get the positions from a MultiIndex of (pos, base) pairs. """
+    """Get the positions from a MultiIndex of (pos, base) pairs."""
     verify_index_names(index)
     positions = index.get_level_values(POS_NAME)
     if positions.has_duplicates:
@@ -185,7 +192,7 @@ def index_to_pos(index: pd.MultiIndex):
 
 
 def index_to_seq(index: pd.MultiIndex, allow_gaps: bool = False):
-    """ Get the DNA sequence from a MultiIndex of (pos, base) pairs. """
+    """Get the DNA sequence from a MultiIndex of (pos, base) pairs."""
     # Get the numeric positions and verify that there is at least one.
     if index.size == 0:
         # Checks for sorted and contiguous positions will fail if there
@@ -194,14 +201,16 @@ def index_to_seq(index: pd.MultiIndex, allow_gaps: bool = False):
     pos = index_to_pos(index)
     # Verify that the positions are sorted and contiguous.
     if not (allow_gaps or np.array_equal(pos, np.arange(pos[0], pos[-1] + 1))):
-        raise ValueError("A sequence cannot be assembled from an index with "
-                         f"missing positions:\n{pos}")
+        raise ValueError(
+            "A sequence cannot be assembled from an index with "
+            f"missing positions:\n{pos}"
+        )
     # Join the bases in the index and convert them to a DNA sequence.
     return DNA("".join(index.get_level_values(BASE_NAME)))
 
 
 def get_shared_index(indexes: Iterable[pd.MultiIndex], empty_ok: bool = False):
-    """ Get the shared index among all those given, as follows:
+    """Get the shared index among all those given, as follows:
 
     - If indexes contains no elements and empty_ok is True, then return
       an empty MultiIndex with levels named 'Positions' and 'Base'.
@@ -224,17 +233,17 @@ def get_shared_index(indexes: Iterable[pd.MultiIndex], empty_ok: bool = False):
         The shared index.
     """
     # Ensure indexes is a list-like object.
-    indexes = [index.copy(deep=True).remove_unused_levels()
-               for index in indexes]
+    indexes = [index.copy(deep=True).remove_unused_levels() for index in indexes]
     try:
         # Get the first index.
         index = indexes[0]
     except IndexError:
         if empty_ok:
             # Return an empty MultiIndex.
-            return pd.MultiIndex.from_arrays([np.array([], dtype=int),
-                                              np.array([], dtype=str)],
-                                             names=SEQ_INDEX_NAMES)
+            return pd.MultiIndex.from_arrays(
+                [np.array([], dtype=int), np.array([], dtype=str)],
+                names=SEQ_INDEX_NAMES,
+            )
         raise ValueError("No indexes were given")
     # Ensure the first index is a MultiIndex with levels 'Positions' and
     # 'Base'.
@@ -247,20 +256,24 @@ def get_shared_index(indexes: Iterable[pd.MultiIndex], empty_ok: bool = False):
         if not index.equals(other):
             raise ValueError(f"Indexes 0 and {i} differ: {index} ≠ {other}")
         if index.nlevels != other.nlevels:
-            raise ValueError(f"Indexes 0 and {i} have {index.nlevels} and "
-                             f"{other.nlevels} levels, respectively")
+            raise ValueError(
+                f"Indexes 0 and {i} have {index.nlevels} and "
+                f"{other.nlevels} levels, respectively"
+            )
         for level in range(index.nlevels):
             # Compare sets because order does not matter.
             ilevel = index.levels[level]
             olevel = other.levels[level]
             if set(ilevel) != set(olevel):
-                raise ValueError(f"Indexes 0 and {i} level {level} is "
-                                 f"{ilevel} and {olevel}, respectively")
+                raise ValueError(
+                    f"Indexes 0 and {i} level {level} is "
+                    f"{ilevel} and {olevel}, respectively"
+                )
     return index
 
 
 def window_to_margins(window: int):
-    """ Compute the 5' and 3' margins from the size of the window. """
+    """Compute the 5' and 3' margins from the size of the window."""
     if not isinstance(window, int):
         raise TypeError(f"window must be int, but got {type(window).__name__}")
     if window <= 0:
@@ -270,24 +283,25 @@ def window_to_margins(window: int):
     return margin5, margin3
 
 
-def iter_windows(*series: pd.Series,
-                 size: int,
-                 min_count: int = 1,
-                 include_nan: bool = False):
+def iter_windows(
+    *series: pd.Series, size: int, min_count: int = 1, include_nan: bool = False
+):
     # Determine the index; the index of all series must match.
     index = get_shared_index((s.index for s in series), empty_ok=True)
     # Calculate the 5' and 3' margins.
     margin5, margin3 = window_to_margins(size)
     if min_count > size:
-        logger.warning(f"min_count ({min_count}) is > window size ({size}), "
-                       "so no positions will have enough data")
+        logger.warning(
+            f"min_count ({min_count}) is > window size ({size}), "
+            "so no positions will have enough data"
+        )
     # Yield each window from each series.
     for center in index_to_pos(index):
         # Determine the 5' and 3' ends of the window.
         end5 = center - margin5
         end3 = center + margin3
         # Slice the window from each series.
-        windows = tuple(s.loc[end5: end3] for s in series)
+        windows = tuple(s.loc[end5:end3] for s in series)
         if include_nan:
             if min_count > 0 and windows[0].size < min_count:
                 # If there are insufficient positions in this window,
@@ -295,8 +309,7 @@ def iter_windows(*series: pd.Series,
                 continue
         else:
             # Determine which positions have no NaN value in any series.
-            no_nan = np.logical_not(reduce(np.logical_or,
-                                           map(np.isnan, windows)))
+            no_nan = np.logical_not(reduce(np.logical_or, map(np.isnan, windows)))
             if min_count > 0 and np.count_nonzero(no_nan) < min_count:
                 # If there are insufficient positions where no series
                 # has a NaN value, then skip this window.
@@ -309,7 +322,7 @@ def iter_windows(*series: pd.Series,
 
 
 def hyphenate_ends(end5: int, end3: int):
-    """ Return the 5' and 3' ends as a hyphenated string.
+    """Return the 5' and 3' ends as a hyphenated string.
 
     Parameters
     ----------
@@ -327,19 +340,22 @@ def hyphenate_ends(end5: int, end3: int):
 
 
 class Region(object):
-    """ Region of a sequence between 5' and 3' end positions. """
+    """Region of a sequence between 5' and 3' end positions."""
 
     MASK_POLYA = "pos-polya"
     MASK_LIST = "pos-list"
 
-    def __init__(self,
-                 ref: str,
-                 seq: str | DNA | RNA, *,
-                 seq5: int = 1,
-                 reflen: int | None = None,
-                 end5: int | None = None,
-                 end3: int | None = None,
-                 name: str | None = None):
+    def __init__(
+        self,
+        ref: str,
+        seq: str | DNA | RNA,
+        *,
+        seq5: int = 1,
+        reflen: int | None = None,
+        end5: int | None = None,
+        end3: int | None = None,
+        name: str | None = None,
+    ):
         """
         Parameters
         ----------
@@ -371,8 +387,10 @@ class Region(object):
         elif reflen < 0:
             raise ValueError(f"reflen must be ≥ 0, but got {reflen}")
         elif reflen < seq3:
-            raise ValueError(f"The 3' end of the given sequence is {seq3}, "
-                             f"but the full reference is only {reflen} nt")
+            raise ValueError(
+                f"The 3' end of the given sequence is {seq3}, "
+                f"but the full reference is only {reflen} nt"
+            )
         # Validate that the region lies within the given sequence.
         if end5 is not None:
             if end5 < seq5:
@@ -387,22 +405,23 @@ class Region(object):
         else:
             self.end3 = seq3
         if self.end5 > self.end3 + 1:
-            raise ValueError("Need end5 ≤ end3 + 1, "
-                             f"but got {self.end5} > {self.end3 + 1}")
+            raise ValueError(
+                f"Need end5 ≤ end3 + 1, but got {self.end5} > {self.end3 + 1}"
+            )
         # Determine the sequence of the region and whether it is the
         # full reference sequence.
-        self.seq = DNA.from_any_seq(
-            seq[self.end5 - seq5: self.end3 - (seq5 - 1)]
-        )
+        self.seq = DNA.from_any_seq(seq[self.end5 - seq5 : self.end3 - (seq5 - 1)])
         self.full = self.end5 == 1 and self.end3 == reflen
         # Assign the name of the region.
         if name is None:
             # Default to "full" if the region spans the full reference
             # sequence and neither the 5' nor 3' end was given.
             # Otherwise, default to the hyphenated 5' and 3' ends.
-            self.name = (FULL_NAME
-                         if self.full and end5 is None and end3 is None
-                         else self.hyphen)
+            self.name = (
+                FULL_NAME
+                if self.full and end5 is None and end3 is None
+                else self.hyphen
+            )
         elif isinstance(name, str):
             # Use the given name unless it is an empty string, in which
             # case default to the hyphenated 5' and 3' ends.
@@ -414,12 +433,12 @@ class Region(object):
 
     @cached_property
     def length(self):
-        """ Length of the entire region. """
+        """Length of the entire region."""
         return self.end3 - self.end5 + 1
 
     @cached_property
     def ends(self):
-        """ Tuple of the 5' and 3' ends. """
+        """Tuple of the 5' and 3' ends."""
         return self.end5, self.end3
 
     @cached_property
@@ -431,98 +450,97 @@ class Region(object):
         return f"{self.ref}__{self.name}"
 
     def to_dict(self):
-        return dict(ref=self.ref,
-                    seq=self.seq,
-                    reg=self.name,
-                    end5=self.end5,
-                    end3=self.end3)
+        return dict(
+            ref=self.ref, seq=self.seq, reg=self.name, end5=self.end5, end3=self.end3
+        )
 
     @property
     def mask_names(self):
-        """ Names of the masks. """
+        """Names of the masks."""
         return list(self._masks)
 
     @property
     def masked_int(self) -> np.ndarray:
-        """ Masked positions as integers. """
+        """Masked positions as integers."""
         # Do not cache this method since self._masks can change.
         return reduce(np.union1d, self._masks.values(), np.array([], int))
 
     @property
     def masked_zero(self) -> np.ndarray:
-        """ Masked positions as integers (0-indexed with respect to the
-        first position in the region). """
+        """Masked positions as integers (0-indexed with respect to the
+        first position in the region)."""
         # Do not cache this method since self.masked_int can change.
         return self.masked_int - self.end5
 
     @property
     def masked_bool(self) -> np.ndarray:
-        """ Masked positions as a boolean array. """
+        """Masked positions as a boolean array."""
         # Do not cache this method since self.masked_int can change.
         return np.isin(self.range_int, self.masked_int)
 
     @property
     def unmasked_bool(self) -> np.ndarray:
-        """ Unmasked positions as a boolean array. """
+        """Unmasked positions as a boolean array."""
         # Do not cache this method since self.masked_bool can change.
         return np.logical_not(self.masked_bool)
 
     @property
     def unmasked_int(self) -> np.ndarray:
-        """ Unmasked positions as integers (1-indexed). """
+        """Unmasked positions as integers (1-indexed)."""
         # Do not cache this method since self.unmasked_bool can change.
         return self.range_int[self.unmasked_bool]
 
     @property
     def unmasked_zero(self) -> np.ndarray:
-        """ Unmasked positions as integers (0-indexed with respect to
-        the first position in the region). """
+        """Unmasked positions as integers (0-indexed with respect to
+        the first position in the region)."""
         # Do not cache this method since self.unmasked_int can change.
         return self.unmasked_int - self.end5
 
     @property
     def unmasked(self):
-        """ Index of unmasked positions in the region. """
+        """Index of unmasked positions in the region."""
         # Do not cache this method since self.unmasked_int can change.
         return seq_pos_to_index(self.seq, self.unmasked_int, self.end5)
 
     @cached_property
     def range_int(self):
-        """ All positions in the region as integers. """
+        """All positions in the region as integers."""
         return np.arange(self.end5, self.end3 + 1, dtype=int)
 
     @cached_property
     def range_one(self):
-        """ All 1-indexed positions in the region as integers. """
+        """All 1-indexed positions in the region as integers."""
         return np.arange(1, self.length + 1, dtype=int)
 
     @cached_property
     def range(self):
-        """ Index of all positions in the region. """
+        """Index of all positions in the region."""
         return seq_pos_to_index(self.seq, self.range_int, self.end5)
 
     @property
     def size(self):
-        """ Number of relevant positions in the region. """
+        """Number of relevant positions in the region."""
         return self.length - self.masked_int.size
 
     def copy(self, masks: bool = True):
-        """ Return an identical region. """
-        copied = self.__class__(ref=self.ref,
-                                seq=self.seq,
-                                seq5=self.end5,
-                                reflen=(self.end3 if self.full
-                                        else self.end3 + 1),
-                                end5=self.end5,
-                                end3=self.end3,
-                                name=self.name)
+        """Return an identical region."""
+        copied = self.__class__(
+            ref=self.ref,
+            seq=self.seq,
+            seq5=self.end5,
+            reflen=(self.end3 if self.full else self.end3 + 1),
+            end5=self.end5,
+            end3=self.end3,
+            name=self.name,
+        )
         if masks:
             for name, masked in self._masks.items():
                 copied.add_mask(name, masked)
         return copied
 
     def get_mask(self, name: str, missing_ok: bool = False):
-        """ Get the positions masked under the given name. """
+        """Get the positions masked under the given name."""
         try:
             return self._masks[name]
         except KeyError:
@@ -530,11 +548,8 @@ class Region(object):
                 return np.array([], dtype=int)
             raise
 
-    def add_mask(self,
-                 name: str,
-                 positions: Iterable[int],
-                 complement: bool = False):
-        """ Mask the integer positions in the array `positions`.
+    def add_mask(self, name: str, positions: Iterable[int], complement: bool = False):
+        """Mask the integer positions in the array `positions`.
 
         Parameters
         ----------
@@ -566,7 +581,7 @@ class Region(object):
         return self
 
     def remove_mask(self, name: str, missing_ok: bool = False):
-        """ Remove the specified mask from the region. """
+        """Remove the specified mask from the region."""
         try:
             self._masks.pop(name)
         except KeyError:
@@ -575,33 +590,32 @@ class Region(object):
 
     def _mask_base(self, base: str):
         if base not in self.seq.alph():
-            raise ValueError(f"Invalid {type(self.seq).__name__} base: "
-                             f"{repr(base)}")
+            raise ValueError(f"Invalid {type(self.seq).__name__} base: {repr(base)}")
         return self.add_mask(base, self.range_int[self.seq.array == base])
 
     def mask_a(self):
-        """ Mask out every A. """
+        """Mask out every A."""
         return self._mask_base(BASEA)
 
     def mask_c(self):
-        """ Mask out every C. """
+        """Mask out every C."""
         return self._mask_base(BASEC)
 
     def mask_g(self):
-        """ Mask out every G. """
+        """Mask out every G."""
         return self._mask_base(BASEG)
 
     def mask_t(self):
-        """ Mask out every T or U. """
+        """Mask out every T or U."""
         return self._mask_base(BASET)
 
     def mask_n(self):
-        """ Mask out every N. """
+        """Mask out every N."""
         return self._mask_base(BASEN)
 
     def _find_polya(self, min_length: int) -> np.ndarray:
-        """ Array of each position within a stretch of `min_length` or
-        more consecutive adenines. """
+        """Array of each position within a stretch of `min_length` or
+        more consecutive adenines."""
         if min_length < 0:
             raise ValueError(f"min_length must be ≥ 0, but got {min_length}")
         # Initialize a list of 0-indexed positions in poly(A) sequences.
@@ -617,31 +631,32 @@ class Region(object):
         return np.array(polya_pos, dtype=int) + self.end5
 
     def mask_polya(self, min_length: int):
-        """ Mask poly(A) stretches with length ≥ `min_length`. """
+        """Mask poly(A) stretches with length ≥ `min_length`."""
         return self.add_mask(self.MASK_POLYA, self._find_polya(min_length))
 
     def mask_list(self, pos: Iterable[int]):
-        """ Mask a list of positions. """
+        """Mask a list of positions."""
         return self.add_mask(self.MASK_LIST, pos)
 
-    def subregion(self,
-                  end5: int | None = None,
-                  end3: int | None = None,
-                  name: str | None = None):
-        """ Return a new region from part of this region. """
-        return self.__class__(self.ref,
-                              self.seq,
-                              seq5=self.end5,
-                              end5=end5 if end5 is not None else self.end5,
-                              end3=end3 if end3 is not None else self.end3,
-                              name=(FULL_NAME if (self.full
-                                                  and end5 is None
-                                                  and end3 is None
-                                                  and name is None)
-                                    else name))
+    def subregion(
+        self, end5: int | None = None, end3: int | None = None, name: str | None = None
+    ):
+        """Return a new region from part of this region."""
+        return self.__class__(
+            self.ref,
+            self.seq,
+            seq5=self.end5,
+            end5=end5 if end5 is not None else self.end5,
+            end3=end3 if end3 is not None else self.end3,
+            name=(
+                FULL_NAME
+                if (self.full and end5 is None and end3 is None and name is None)
+                else name
+            ),
+        )
 
     def renumber_from(self, seq5: int, name: str | None = None):
-        """ Return a new region renumbered starting from a position.
+        """Return a new region renumbered starting from a position.
 
         Parameters
         ----------
@@ -655,10 +670,9 @@ class Region(object):
         Region
             Region with renumbered positions.
         """
-        renumbered = self.__class__(self.ref,
-                                    self.seq,
-                                    seq5=seq5,
-                                    name=name if name is not None else "")
+        renumbered = self.__class__(
+            self.ref, self.seq, seq5=seq5, name=name if name is not None else ""
+        )
         # Copy any masked positions from this region, offseting them by
         # the difference between the numbering systems.
         offset = renumbered.end5 - self.end5
@@ -678,12 +692,16 @@ class Region(object):
         if not isinstance(other, Region):
             return NotImplemented
         # Compare the regions' sequences, positions, and names.
-        if any([self.ref != other.ref,
+        if any(
+            [
+                self.ref != other.ref,
                 self.seq != other.seq,
                 self.full != other.full,
                 self.end5 != other.end5,
                 self.end3 != other.end3,
-                self.name != other.name]):
+                self.name != other.name,
+            ]
+        ):
             return False
         # If that comparison passed, then compare their mask names.
         if sorted(self.mask_names) != sorted(other.mask_names):
@@ -700,7 +718,7 @@ class Region(object):
 
 
 def intersect(*regions: Region, name: str | None = None):
-    """ Intersect one or more regions.
+    """Intersect one or more regions.
 
     Parameters
     ----------
@@ -726,9 +744,12 @@ def intersect(*regions: Region, name: str | None = None):
     end3 = min(region.end3 for region in regions)
     if end5 <= end3:
         # Confirm that the sequences match over the intersection.
-        seqs = list(set(region.seq[end5 - region.end5:
-                                   end3 - region.end5 + 1]
-                        for region in regions))
+        seqs = list(
+            set(
+                region.seq[end5 - region.end5 : end3 - region.end5 + 1]
+                for region in regions
+            )
+        )
         if len(seqs) != 1:
             raise ValueError(f"Expected exactly one sequence, but got {seqs}")
         seq = seqs[0]
@@ -758,10 +779,10 @@ def intersect(*regions: Region, name: str | None = None):
     return intersection
 
 
-def unite(regions: Iterable[Region],
-          name: str | None = None,
-          refseq: DNA | None = None):
-    """ Unite one or more regions.
+def unite(
+    regions: Iterable[Region], name: str | None = None, refseq: DNA | None = None
+):
+    """Unite one or more regions.
 
     Parameters
     ----------
@@ -805,15 +826,18 @@ def unite(regions: Iterable[Region],
         seq_array = pd.Series(BASEN, index=np.arange(end5, end3 + 1))
         for reg in regions:
             # Verify that the region matches the sequence.
-            if np.any((reg.seq.array != seq_array.loc[reg.end5: reg.end3])
-                      & (seq_array.loc[reg.end5: reg.end3] != BASEN)):
-                seq = DNA("".join(seq_array.loc[reg.end5: reg.end3]))
+            if np.any(
+                (reg.seq.array != seq_array.loc[reg.end5 : reg.end3])
+                & (seq_array.loc[reg.end5 : reg.end3] != BASEN)
+            ):
+                seq = DNA("".join(seq_array.loc[reg.end5 : reg.end3]))
                 raise ValueError(f"Sequences differ: {reg.seq} ≠ {seq}")
             # Fill in the sequence based on the region.
-            seq_array.loc[reg.end5: reg.end3] = reg.seq.array
+            seq_array.loc[reg.end5 : reg.end3] = reg.seq.array
         seq = DNA("".join(seq_array))
     if all(region.full for region in regions) or (
-            refseq is not None and end5 == 1 and end3 == len(refseq)):
+        refseq is not None and end5 == 1 and end3 == len(refseq)
+    ):
         # If all regions are full-length, or if a refseq was given and
         # the union spans the full reference, make the union full-length.
         seq5 = 1
@@ -847,17 +871,20 @@ class RegionFinder(Region):
        - (primer_gap + 1) if rev is given, else the length of refseq
     """
 
-    def __init__(self,
-                 ref: str,
-                 seq: DNA, *,
-                 seq5: int = 1,
-                 end5: int | None = None,
-                 end3: int | None = None,
-                 fwd: DNA | None = None,
-                 rev: DNA | None = None,
-                 primer_gap: int = 0,
-                 exclude_primers: bool = False,
-                 **kwargs):
+    def __init__(
+        self,
+        ref: str,
+        seq: DNA,
+        *,
+        seq5: int = 1,
+        end5: int | None = None,
+        end3: int | None = None,
+        fwd: DNA | None = None,
+        rev: DNA | None = None,
+        primer_gap: int = 0,
+        exclude_primers: bool = False,
+        **kwargs,
+    ):
         """
         Parameters
         ----------
@@ -894,9 +921,11 @@ class RegionFinder(Region):
         if primer_gap < 0:
             raise ValueError(f"primer_gap must be ≥ 0, but got {primer_gap}")
         if seq is None:
-            raise ValueError(f"No sequence for reference {repr(ref)}. Check "
-                             "that you gave the right reference sequence file "
-                             "and spelled the name of the reference correctly.")
+            raise ValueError(
+                f"No sequence for reference {repr(ref)}. Check "
+                "that you gave the right reference sequence file "
+                "and spelled the name of the reference correctly."
+            )
         if end5 is None:
             # No 5' end was given.
             if fwd is not None:
@@ -954,8 +983,9 @@ class RegionFinder(Region):
         if not matches:
             raise ValueError(f"Primer {primer} is not in ref {seq}")
         if len(matches) > 1:
-            raise ValueError(f"Primer {primer} occurs {len(matches)} times "
-                             f"in ref {seq}")
+            raise ValueError(
+                f"Primer {primer} occurs {len(matches)} times in ref {seq}"
+            )
         pos5 = matches[0].start() + seq5
         pos3 = matches[0].end() + (seq5 - 1)
         return RegionTuple(pos5, pos3)
@@ -973,16 +1003,19 @@ def get_ends_by_ref(ends: Iterable[tuple[str, int | DNA, int | DNA]]):
 
 
 class RefRegions(object):
-    """ A collection of regions, grouped by reference. """
+    """A collection of regions, grouped by reference."""
 
-    def __init__(self,
-                 ref_seqs: Iterable[tuple[str, DNA]], *,
-                 regs_file: Path | None = None,
-                 ends: Iterable[tuple[str, int, int]] = (),
-                 primers: Iterable[tuple[str, DNA, DNA]] = (),
-                 primer_gap: int = 0,
-                 exclude_primers: bool = False,
-                 default_full: bool = True):
+    def __init__(
+        self,
+        ref_seqs: Iterable[tuple[str, DNA]],
+        *,
+        regs_file: Path | None = None,
+        ends: Iterable[tuple[str, int, int]] = (),
+        primers: Iterable[tuple[str, DNA, DNA]] = (),
+        primer_gap: int = 0,
+        exclude_primers: bool = False,
+        default_full: bool = True,
+    ):
         # Get the names of the regions from the regions file, if any.
         reg_ends = dict()
         reg_primers = dict()
@@ -1005,28 +1038,26 @@ class RefRegions(object):
             for end5, end3 in ref_ends[ref]:
                 # Add a region for each pair of 5'/3' ends.
                 reg = reg_ends.get((ref, end5, end3))
-                self._add_region(ref,
-                                 refseq,
-                                 end5=end5,
-                                 end3=end3,
-                                 name=reg)
+                self._add_region(ref, refseq, end5=end5, end3=end3, name=reg)
             for fwd, rev in ref_primers[ref]:
                 # Add a region for each pair of fwd and rev primers.
                 reg = reg_primers.get((ref, fwd, rev))
-                self._add_region(ref,
-                                 refseq,
-                                 fwd=fwd,
-                                 rev=rev,
-                                 primer_gap=primer_gap,
-                                 exclude_primers=exclude_primers,
-                                 name=reg)
+                self._add_region(
+                    ref,
+                    refseq,
+                    fwd=fwd,
+                    rev=rev,
+                    primer_gap=primer_gap,
+                    exclude_primers=exclude_primers,
+                    name=reg,
+                )
             if default_full and not self._regions[ref]:
                 # If no regions were given for the reference, then add
                 # a region that spans the full reference.
                 self._add_region(ref, refseq)
 
     def _add_region(self, *args, **kwargs):
-        """ Create a region and add it to the object. """
+        """Create a region and add it to the object."""
         try:
             region = RegionFinder(*args, **kwargs)
         except Exception as error:
@@ -1041,33 +1072,35 @@ class RefRegions(object):
                 logger.warning(f"Got duplicate region: {region}")
             else:
                 # The region was seen already with a different name.
-                logger.error(f"Region {seen} was redefined with as {region}; "
-                             f"using the first encountered: {seen}")
+                logger.error(
+                    f"Region {seen} was redefined with as {region}; "
+                    f"using the first encountered: {seen}"
+                )
 
     def list(self, ref: str):
-        """ List the regions for a given reference. """
+        """List the regions for a given reference."""
         return list(self._regions[ref].values())
 
     @property
     def refs(self):
-        """ Reference names. """
+        """Reference names."""
         return list(self._regions)
 
     @property
     def dict(self):
-        """ List the regions for every reference. """
-        return {ref: list(regions.values())
-                for ref, regions in self._regions.items()}
+        """List the regions for every reference."""
+        return {ref: list(regions.values()) for ref, regions in self._regions.items()}
 
     @property
     def regions(self):
-        """ List all regions. """
-        return [region for regions in self._regions.values()
-                for region in regions.values()]
+        """List all regions."""
+        return [
+            region for regions in self._regions.values() for region in regions.values()
+        ]
 
     @property
     def count(self):
-        """ Total number of regions. """
+        """Total number of regions."""
         return sum(map(len, self._regions.values()))
 
     def __str__(self):

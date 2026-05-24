@@ -2,14 +2,16 @@ import re
 from functools import cached_property
 from pathlib import Path
 
-from ..core.seq import (BASEN,
-                        BASET,
-                        BASEU,
-                        DNA,
-                        RNA,
-                        XNA,
-                        extract_fasta_seqname,
-                        format_fasta_name_line)
+from ..core.seq import (
+    BASEN,
+    BASET,
+    BASEU,
+    DNA,
+    RNA,
+    XNA,
+    extract_fasta_seqname,
+    format_fasta_name_line,
+)
 from ..core.write import need_write, write_mode
 
 
@@ -18,7 +20,6 @@ def get_non_seq_regex(seq_type: type[XNA]):
 
 
 class FastaCleaner(object):
-
     def __init__(self, seq_type: type[XNA]):
         self._seq_type = seq_type
 
@@ -43,13 +44,17 @@ class FastaCleaner(object):
         try:
             return f"{str(self._seq_type(cleaned))}\n"
         except ValueError:
-            raise ValueError("Line contains sequence characters other than "
-                             f"whitespace or IUPAC codes:\n{repr(line)}")
+            raise ValueError(
+                "Line contains sequence characters other than "
+                f"whitespace or IUPAC codes:\n{repr(line)}"
+            )
 
     def _clean_fasta_line(self, line: str):
-        return (format_fasta_name_line(name)
-                if (name := extract_fasta_seqname(line))
-                else self._clean_fasta_seq_line(line))
+        return (
+            format_fasta_name_line(name)
+            if (name := extract_fasta_seqname(line))
+            else self._clean_fasta_seq_line(line)
+        )
 
     def run(self, ifasta: Path, ofasta: Path, force: bool = False):
         if need_write(ofasta, force):
@@ -62,7 +67,7 @@ class FastaCleaner(object):
 
 
 def clean_fasta(fasta_in: Path, fasta_out: Path, force: bool = False):
-    """ Clean a FASTA file.
+    """Clean a FASTA file.
 
     Parameters
     ----------

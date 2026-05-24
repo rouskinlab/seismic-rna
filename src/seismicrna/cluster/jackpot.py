@@ -8,22 +8,24 @@ from ..core.arg import MUT_COLLISIONS_DROP, MUT_COLLISIONS_MERGE
 from ..core.array import find_dims, get_length
 from ..core.logs import logger
 from ..core.random import get_random_integer_generator, stochastic_round
-from ..core.unbias import (CLUSTERS,
-                           POSITIONS,
-                           READS,
-                           UNIQUE_READS,
-                           calc_p_noclose_given_clust,
-                           calc_p_noclose_given_ends_auto,
-                           calc_p_clust_given_noclose,
-                           calc_p_ends_given_clust_noclose,
-                           calc_p_clust_given_ends_noclose)
+from ..core.unbias import (
+    CLUSTERS,
+    POSITIONS,
+    READS,
+    UNIQUE_READS,
+    calc_p_noclose_given_clust,
+    calc_p_noclose_given_ends_auto,
+    calc_p_clust_given_noclose,
+    calc_p_ends_given_clust_noclose,
+    calc_p_clust_given_ends_noclose,
+)
 from ..core.validate import require_atleast
 
 SUM_EXP_PRECISION = 3
 
 
 def linearize_ends_matrix(p_ends: np.ndarray):
-    """ Linearize an N x N matrix of end coordinate probabilities/counts
+    """Linearize an N x N matrix of end coordinate probabilities/counts
     into parallel arrays of 5'/3' coordinates and their values.
 
     Only entries in the upper triangle (end5 ≤ end3) with non-zero
@@ -49,11 +51,13 @@ def linearize_ends_matrix(p_ends: np.ndarray):
 
 
 @jit()
-def _assign_clusters_dropped(clusters: np.ndarray,
-                     p_clust_given_read: np.ndarray,
-                     n_reads_per_clust: np.ndarray,
-                     rng: np.random.Generator):
-    """ Assign one cluster to each read.
+def _assign_clusters_dropped(
+    clusters: np.ndarray,
+    p_clust_given_read: np.ndarray,
+    n_reads_per_clust: np.ndarray,
+    rng: np.random.Generator,
+):
+    """Assign one cluster to each read.
 
     Parameters
     ----------
@@ -92,7 +96,7 @@ def _assign_clusters_dropped(clusters: np.ndarray,
         p_clust_i = p_clust_given_read[i] * n_reads_per_clust
         p_clust_i /= p_clust_i.sum()
         # Select the cluster based on the probabilities.
-        p_clust_i_sum = 0.
+        p_clust_i_sum = 0.0
         for k in range(n_clust):
             p_clust_i_sum += p_clust_i[k]
             if rand_i < p_clust_i_sum:
@@ -105,7 +109,7 @@ def _assign_clusters_dropped(clusters: np.ndarray,
 
 
 def _sim_clusters_dropped(p_clust_given_read: np.ndarray, seed: int | None):
-    """ Simulate a cluster assignment for each read (drop mode).
+    """Simulate a cluster assignment for each read (drop mode).
 
     Reads are assigned so that the number assigned to each cluster
     matches a stochastic rounding of the total probability mass for
@@ -128,15 +132,19 @@ def _sim_clusters_dropped(p_clust_given_read: np.ndarray, seed: int | None):
         read.
     """
     n_reads, n_clust = p_clust_given_read.shape
-    if p_clust_given_read.size > 0 and p_clust_given_read.min() <= 0.:
-        raise ValueError("All p_clust_given_read must be > 0, but got "
-                         f"{np.count_nonzero(p_clust_given_read <= 0.)} "
-                         "probabilities < 0")
-    if not np.allclose(p_clust_given_read.sum(axis=1), 1.):
+    if p_clust_given_read.size > 0 and p_clust_given_read.min() <= 0.0:
+        raise ValueError(
+            "All p_clust_given_read must be > 0, but got "
+            f"{np.count_nonzero(p_clust_given_read <= 0.0)} "
+            "probabilities < 0"
+        )
+    if not np.allclose(p_clust_given_read.sum(axis=1), 1.0):
         p_clust_given_read_sum = p_clust_given_read.sum(axis=1)
-        not_close = np.logical_not(np.isclose(p_clust_given_read_sum, 1.))
-        raise ValueError("All rows of p_clust_given_read must sum to 1, "
-                         f"but got {p_clust_given_read_sum[not_close]}")
+        not_close = np.logical_not(np.isclose(p_clust_given_read_sum, 1.0))
+        raise ValueError(
+            "All rows of p_clust_given_read must sum to 1, "
+            f"but got {p_clust_given_read_sum[not_close]}"
+        )
     # Initially assign all reads to cluster 0.
     clusters = np.zeros(n_reads, dtype=int)
     if n_clust == 1:
@@ -146,23 +154,23 @@ def _sim_clusters_dropped(p_clust_given_read: np.ndarray, seed: int | None):
     # equals the total number of reads.
     seeds = get_random_integer_generator(seed)
     p_clust_given_read_sum = p_clust_given_read.sum(axis=0)
-    while np.sum(n_reads_per_clust := stochastic_round(
-            p_clust_given_read_sum,
-            preserve_sum=True,
-            seed=next(seeds),
-    )) != n_reads:
+    while (
+        np.sum(
+            n_reads_per_clust := stochastic_round(
+                p_clust_given_read_sum, preserve_sum=True, seed=next(seeds)
+            )
+        )
+        != n_reads
+    ):
         pass
     # Choose the cluster for each read.
     rng = np.random.default_rng(next(seeds))
-    _assign_clusters_dropped(clusters,
-                     p_clust_given_read,
-                     n_reads_per_clust,
-                     rng)
+    _assign_clusters_dropped(clusters, p_clust_given_read, n_reads_per_clust, rng)
     return clusters
 
 
 def _sim_clusters_merged(p_clust: np.ndarray, n_reads: int, seed: int | None):
-    """ Simulate a cluster assignment for each read (merge mode).
+    """Simulate a cluster assignment for each read (merge mode).
 
     Each cluster receives a stochastically rounded number of reads
     proportional to `p_clust`, and reads are then permuted randomly
@@ -184,27 +192,33 @@ def _sim_clusters_merged(p_clust: np.ndarray, n_reads: int, seed: int | None):
         1D (reads) integer array of the cluster index assigned to each
         read.
     """
-    n_clust, = p_clust.shape
+    (n_clust,) = p_clust.shape
     if n_clust <= 0:
         raise ValueError("At least one cluster is required")
-    if p_clust.min() <= 0.:
-        raise ValueError("All p_clust must be > 0, but got "
-                         f"{np.count_nonzero(p_clust <= 0.)} "
-                         "probabilities ≤ 0")
-    if not np.isclose(p_clust.sum(), 1.):
-        raise ValueError("All p_clust must sum to 1, but got "
-                         f"{p_clust} (sum = {p_clust.sum()})")
+    if p_clust.min() <= 0.0:
+        raise ValueError(
+            "All p_clust must be > 0, but got "
+            f"{np.count_nonzero(p_clust <= 0.0)} "
+            "probabilities ≤ 0"
+        )
+    if not np.isclose(p_clust.sum(), 1.0):
+        raise ValueError(
+            f"All p_clust must sum to 1, but got {p_clust} (sum = {p_clust.sum()})"
+        )
     if n_clust == 1:
         # There is only one cluster, so all reads must be in it.
         return np.zeros(n_reads, dtype=int)
     # Choose the number of reads for each cluster, ensuring that the sum
     # equals the total number of reads.
     seeds = get_random_integer_generator(seed)
-    while np.sum(n_reads_per_clust := stochastic_round(
-            p_clust * n_reads,
-            preserve_sum=True,
-            seed=next(seeds),
-    )) != n_reads:
+    while (
+        np.sum(
+            n_reads_per_clust := stochastic_round(
+                p_clust * n_reads, preserve_sum=True, seed=next(seeds)
+            )
+        )
+        != n_reads
+    ):
         pass
     # Choose the cluster for each read.
     rng = np.random.default_rng(next(seeds))
@@ -220,9 +234,9 @@ def _sim_muts_dropped_jit(
     p_mut: np.ndarray,
     min_mut_gap: int,
     max_attempts: int,
-    rng: np.random.Generator
+    rng: np.random.Generator,
 ):
-    """ Simulate the array of mutations. Drop reads with mutations too
+    """Simulate the array of mutations. Drop reads with mutations too
     close.
 
     This function is meant to be called only after the arguments have
@@ -230,13 +244,13 @@ def _sim_muts_dropped_jit(
 
     - muts is a NumPy boolean array with shape (reads x positions),
       initially all False
-    - end5s, end3s, and clusts are 1D NumPy integer arrays of the same 
+    - end5s, end3s, and clusts are 1D NumPy integer arrays of the same
       length.
     - p_mut is a 2D NumPy array of floats.
     - p_mut has at least one column.
     - max_attempts ≥ 1
     """
-    n_reads, = clusts.shape
+    (n_reads,) = clusts.shape
     # Initialize a flag for if any read has an error.
     error = False
     # Assign mutations to each read.
@@ -256,8 +270,7 @@ def _sim_muts_dropped_jit(
                 if rng.random() < p_mut[j, k]:
                     # Attempt to mutate this position. First, check for
                     # existing mutations too close before this position.
-                    if (min_mut_gap > 0 
-                        and np.any(muts[i, max(j - min_mut_gap, 0): j])):
+                    if min_mut_gap > 0 and np.any(muts[i, max(j - min_mut_gap, 0) : j]):
                         # An existing mutation is too close.
                         read_valid = False
                         # Erase the existing mutations so that the next
@@ -283,22 +296,22 @@ def _sim_muts_merged_jit(
     clusts: np.ndarray,
     p_mut: np.ndarray,
     min_mut_gap: int,
-    rng: np.random.Generator
+    rng: np.random.Generator,
 ):
-    """ Simulate the array of mutations. Merge mutations too close.
+    """Simulate the array of mutations. Merge mutations too close.
 
     This function is meant to be called only after the arguments have
     been validated and thus makes the following assumptions:
 
     - muts is a NumPy boolean array with shape (reads x positions),
       initially all False
-    - end5s, end3s, and clusts are 1D NumPy integer arrays of the same 
+    - end5s, end3s, and clusts are 1D NumPy integer arrays of the same
       length.
     - p_mut is a 2D NumPy array of floats.
     - p_mut has at least one column.
     - min_mut_gap ≥ 0
     """
-    n_reads, = clusts.shape
+    (n_reads,) = clusts.shape
     # Assign mutations to each read.
     for i in range(n_reads):
         k = clusts[i]
@@ -313,7 +326,7 @@ def _sim_muts_merged_jit(
                 muts[i, j] = True
                 # Skip over min_mut_gap positions, none of which can
                 # have a mutation.
-                j -= (min_mut_gap + 1)
+                j -= min_mut_gap + 1
             else:
                 # Leave the position without a mutation and go to the
                 # next position.
@@ -327,9 +340,9 @@ def _sim_muts_dropped(
     p_mut: np.ndarray,
     min_mut_gap: int,
     seed: int | None,
-    max_attempts: int = 256
+    max_attempts: int = 256,
 ):
-    """ Simulate mutations and write them into reads (drop mode).
+    """Simulate mutations and write them into reads (drop mode).
 
     Mutations are simulated position by position for each read.  If a
     read ends up with two mutations closer than `min_mut_gap`, the read
@@ -366,19 +379,12 @@ def _sim_muts_dropped(
     """
     require_atleast("min_mut_gap", min_mut_gap, 0, classes=int)
     # Validate the dimensions.
-    dims = find_dims([(READS,),
-                      (READS,),
-                      (READS,),
-                      (POSITIONS, CLUSTERS)],
-                     [end5s,
-                      end3s,
-                      clusts,
-                      p_mut],
-                     ["end5s",
-                      "end3s",
-                      "clusts",
-                      "p_mut"],
-                     nonzero=[CLUSTERS])
+    dims = find_dims(
+        [(READS,), (READS,), (READS,), (POSITIONS, CLUSTERS)],
+        [end5s, end3s, clusts, p_mut],
+        ["end5s", "end3s", "clusts", "p_mut"],
+        nonzero=[CLUSTERS],
+    )
     n_reads = dims[READS]
     n_pos = dims[POSITIONS]
     rng = np.random.default_rng(seed)
@@ -403,7 +409,7 @@ def _sim_muts_merged(
     min_mut_gap: int,
     seed: int | None,
 ):
-    """ Simulate mutations and write them into reads (merge mode).
+    """Simulate mutations and write them into reads (merge mode).
 
     Mutations are simulated from the 3' end to the 5' end.  When a
     position is mutated, the `min_mut_gap` positions immediately 5' of
@@ -437,28 +443,19 @@ def _sim_muts_merged(
     """
     require_atleast("min_mut_gap", min_mut_gap, 0, classes=int)
     # Validate the dimensions.
-    dims = find_dims([(READS,),
-                      (READS,),
-                      (READS,),
-                      (POSITIONS, CLUSTERS)],
-                     [end5s,
-                      end3s,
-                      clusts,
-                      p_mut],
-                     ["end5s",
-                      "end3s",
-                      "clusts",
-                      "p_mut"],
-                     nonzero=[CLUSTERS])
+    dims = find_dims(
+        [(READS,), (READS,), (READS,), (POSITIONS, CLUSTERS)],
+        [end5s, end3s, clusts, p_mut],
+        ["end5s", "end3s", "clusts", "p_mut"],
+        nonzero=[CLUSTERS],
+    )
     n_reads = dims[READS]
     n_pos = dims[POSITIONS]
     rng = np.random.default_rng(seed)
     # Initialize an array for the mutated positions; all positions start
     # out as not mutated (False).
     muts = np.zeros((n_reads, n_pos), dtype=bool)
-    _sim_muts_merged_jit(
-        muts, end5s, end3s, clusts, p_mut, min_mut_gap, rng
-    )
+    _sim_muts_merged_jit(muts, end5s, end3s, clusts, p_mut, min_mut_gap, rng)
     return muts
 
 
@@ -468,9 +465,9 @@ def _sim_reads_dropped(
     p_clust_given_ends_noclose: np.ndarray,
     p_mut: np.ndarray,
     min_mut_gap: int,
-    seed: int | None
+    seed: int | None,
 ):
-    """ Simulate reads with cluster assignments and mutations (drop mode).
+    """Simulate reads with cluster assignments and mutations (drop mode).
 
     Parameters
     ----------
@@ -500,32 +497,17 @@ def _sim_reads_dropped(
     clusts: np.ndarray
         1D (reads) integer array of the cluster assigned to each read.
     """
-    find_dims([(READS,),
-               (READS,),
-               (POSITIONS, POSITIONS, CLUSTERS,),
-               (POSITIONS, CLUSTERS)],
-              [end5s,
-               end3s,
-               p_clust_given_ends_noclose,
-               p_mut],
-              ["end5s",
-               "end3s",
-               "p_clust_given_ends_noclose",
-               "p_mut_given_span_noclose"],
-              nonzero=[CLUSTERS])
+    find_dims(
+        [(READS,), (READS,), (POSITIONS, POSITIONS, CLUSTERS), (POSITIONS, CLUSTERS)],
+        [end5s, end3s, p_clust_given_ends_noclose, p_mut],
+        ["end5s", "end3s", "p_clust_given_ends_noclose", "p_mut_given_span_noclose"],
+        nonzero=[CLUSTERS],
+    )
     # Simulate the clusters and the mutations in each read.
     clusts = _sim_clusters_dropped(p_clust_given_ends_noclose[end5s, end3s], seed)
-    muts = _sim_muts_dropped(end5s,
-                     end3s,
-                     clusts,
-                     p_mut,
-                     min_mut_gap,
-                     seed)
+    muts = _sim_muts_dropped(end5s, end3s, clusts, p_mut, min_mut_gap, seed)
     # Merge the mutation data and 5'/3' ends into one array of reads.
-    reads = np.hstack([muts,
-                       end5s[:, np.newaxis],
-                       end3s[:, np.newaxis]],
-                      dtype=int)
+    reads = np.hstack([muts, end5s[:, np.newaxis], end3s[:, np.newaxis]], dtype=int)
     return reads, clusts
 
 
@@ -535,9 +517,9 @@ def _sim_reads_merged(
     p_clust: np.ndarray,
     p_mut: np.ndarray,
     min_mut_gap: int,
-    seed: int | None
+    seed: int | None,
 ):
-    """ Simulate reads with cluster assignments and mutations (merge mode).
+    """Simulate reads with cluster assignments and mutations (merge mode).
 
     Parameters
     ----------
@@ -566,45 +548,32 @@ def _sim_reads_merged(
     clusts: np.ndarray
         1D (reads) integer array of the cluster assigned to each read.
     """
-    dims = find_dims([(READS,),
-               (READS,),
-               (CLUSTERS,),
-               (POSITIONS, CLUSTERS)],
-              [end5s,
-               end3s,
-               p_clust,
-               p_mut],
-              ["end5s",
-               "end3s",
-               "p_clust_given_ends_noclose",
-               "p_mut_given_span_noclose"],
-              nonzero=[CLUSTERS])
+    dims = find_dims(
+        [(READS,), (READS,), (CLUSTERS,), (POSITIONS, CLUSTERS)],
+        [end5s, end3s, p_clust, p_mut],
+        ["end5s", "end3s", "p_clust_given_ends_noclose", "p_mut_given_span_noclose"],
+        nonzero=[CLUSTERS],
+    )
     # Simulate the clusters and the mutations in each read.
     n_reads = dims[READS]
     clusts = _sim_clusters_merged(p_clust, n_reads, seed)
-    muts = _sim_muts_merged(end5s,
-                     end3s,
-                     clusts,
-                     p_mut,
-                     min_mut_gap,
-                     seed)
+    muts = _sim_muts_merged(end5s, end3s, clusts, p_mut, min_mut_gap, seed)
     # Merge the mutation data and 5'/3' ends into one array of reads.
-    reads = np.hstack([muts,
-                       end5s[:, np.newaxis],
-                       end3s[:, np.newaxis]],
-                      dtype=int)
+    reads = np.hstack([muts, end5s[:, np.newaxis], end3s[:, np.newaxis]], dtype=int)
     return reads, clusts
 
 
-def _calc_obs_exp(reads: np.ndarray,
-                  clusts: np.ndarray,
-                  p_mut: np.ndarray,
-                  p_ends: np.ndarray,
-                  p_clust: np.ndarray,
-                  min_mut_gap: int,
-                  mut_collisions: str,
-                  unmasked: np.ndarray):
-    """ Calculate observed and expected counts for simulated reads.
+def _calc_obs_exp(
+    reads: np.ndarray,
+    clusts: np.ndarray,
+    p_mut: np.ndarray,
+    p_ends: np.ndarray,
+    p_clust: np.ndarray,
+    min_mut_gap: int,
+    mut_collisions: str,
+    unmasked: np.ndarray,
+):
+    """Calculate observed and expected counts for simulated reads.
 
     Parameters
     ----------
@@ -639,40 +608,42 @@ def _calc_obs_exp(reads: np.ndarray,
         1D (unique reads) float array of the log expected count of each
         unique read.
     """
-    dims = find_dims([(READS, POSITIONS), (READS,)],
-                     [reads, clusts],
-                     ["reads", "clusts"])
+    dims = find_dims(
+        [(READS, POSITIONS), (READS,)], [reads, clusts], ["reads", "clusts"]
+    )
     n_reads = dims[READS]
     # Count each unique read.
-    uniq_reads, num_obs = np.unique(reads,
-                                    axis=0,
-                                    return_counts=True)
+    uniq_reads, num_obs = np.unique(reads, axis=0, return_counts=True)
     uniq_end5s = uniq_reads[:, -2]
     uniq_end3s = uniq_reads[:, -1]
     # Calculate the properties of the simulated reads.
     muts_per_pos = [np.flatnonzero(uniq_reads[:, j]) for j in unmasked]
-    log_exp = np.log(n_reads) + calc_marginal(p_mut,
-                                              p_ends,
-                                              p_clust,
-                                              uniq_end5s,
-                                              uniq_end3s,
-                                              unmasked,
-                                              muts_per_pos,
-                                              min_mut_gap,
-                                              mut_collisions)
+    log_exp = np.log(n_reads) + calc_marginal(
+        p_mut,
+        p_ends,
+        p_clust,
+        uniq_end5s,
+        uniq_end3s,
+        unmasked,
+        muts_per_pos,
+        min_mut_gap,
+        mut_collisions,
+    )
     return num_obs, log_exp
 
 
-def sim_obs_exp(end5s: np.ndarray,
-                end3s: np.ndarray,
-                p_mut: np.ndarray,
-                p_ends: np.ndarray,
-                p_clust: np.ndarray,
-                min_mut_gap: int,
-                mut_collisions: str,
-                unmasked: np.ndarray,
-                seed: int | None):
-    """ Simulate observed and expected counts (infinite generator).
+def sim_obs_exp(
+    end5s: np.ndarray,
+    end3s: np.ndarray,
+    p_mut: np.ndarray,
+    p_ends: np.ndarray,
+    p_clust: np.ndarray,
+    min_mut_gap: int,
+    mut_collisions: str,
+    unmasked: np.ndarray,
+    seed: int | None,
+):
+    """Simulate observed and expected counts (infinite generator).
 
     Yields one (num_obs, log_exp) pair per simulated bootstrap replicate
     indefinitely.  The caller is responsible for stopping iteration.
@@ -712,23 +683,23 @@ def sim_obs_exp(end5s: np.ndarray,
         1D (unique reads) float array of log expected counts.
     """
     # Validate the dimensions.
-    find_dims([(READS,),
-               (READS,),
-               (POSITIONS, CLUSTERS),
-               (POSITIONS, POSITIONS),
-               (CLUSTERS,)],
-              [end5s, end3s, p_mut, p_ends, p_clust],
-              ["end5s", "end3s", "p_mut", "p_ends", "p_clust"])
+    find_dims(
+        [
+            (READS,),
+            (READS,),
+            (POSITIONS, CLUSTERS),
+            (POSITIONS, POSITIONS),
+            (CLUSTERS,),
+        ],
+        [end5s, end3s, p_mut, p_ends, p_clust],
+        ["end5s", "end3s", "p_mut", "p_ends", "p_clust"],
+    )
     # Generate a unique random seed for each simulation.
     seeds = get_random_integer_generator(seed)
     if mut_collisions == MUT_COLLISIONS_DROP:
         # Calculate the parameters of reads with no mutations too close.
-        p_noclose_given_ends = calc_p_noclose_given_ends_auto(
-            p_mut, min_mut_gap
-        )
-        p_noclose_given_clust = calc_p_noclose_given_clust(
-            p_ends, p_noclose_given_ends
-        )
+        p_noclose_given_ends = calc_p_noclose_given_ends_auto(p_mut, min_mut_gap)
+        p_noclose_given_clust = calc_p_noclose_given_clust(p_ends, p_noclose_given_ends)
         p_ends_given_clust_noclose = calc_p_ends_given_clust_noclose(
             p_ends, p_noclose_given_ends
         )
@@ -741,49 +712,40 @@ def sim_obs_exp(end5s: np.ndarray,
         for s in seeds:
             # Simulate the reads and the clusters to which they belong.
             reads, clusts = _sim_reads_dropped(
-                end5s,
-                end3s,
-                p_clust_given_ends_noclose,
-                p_mut,
-                min_mut_gap,
-                seed=s
+                end5s, end3s, p_clust_given_ends_noclose, p_mut, min_mut_gap, seed=s
             )
-            yield _calc_obs_exp(reads,
-                                clusts,
-                                p_mut,
-                                p_ends,
-                                p_clust,
-                                min_mut_gap,
-                                mut_collisions,
-                                unmasked)
+            yield _calc_obs_exp(
+                reads,
+                clusts,
+                p_mut,
+                p_ends,
+                p_clust,
+                min_mut_gap,
+                mut_collisions,
+                unmasked,
+            )
     elif mut_collisions == MUT_COLLISIONS_MERGE:
         for s in seeds:
             # Simulate the reads and the clusters to which they belong.
             reads, clusts = _sim_reads_merged(
-                end5s,
-                end3s,
-                p_clust,
-                p_mut,
-                min_mut_gap,
-                seed=s
+                end5s, end3s, p_clust, p_mut, min_mut_gap, seed=s
             )
-            yield _calc_obs_exp(reads,
-                                clusts,
-                                p_mut,
-                                p_ends,
-                                p_clust,
-                                min_mut_gap,
-                                mut_collisions,
-                                unmasked)
+            yield _calc_obs_exp(
+                reads,
+                clusts,
+                p_mut,
+                p_ends,
+                p_clust,
+                min_mut_gap,
+                mut_collisions,
+                unmasked,
+            )
     else:
-        raise ValueError(
-            f"Invalid value for mut_collisions: {repr(mut_collisions)}"
-        )
+        raise ValueError(f"Invalid value for mut_collisions: {repr(mut_collisions)}")
 
 
-def calc_semi_g_anomaly(num_obs: int | np.ndarray,
-                        log_exp: float | np.ndarray):
-    """ Calculate each read's semi-G-anomaly.
+def calc_semi_g_anomaly(num_obs: int | np.ndarray, log_exp: float | np.ndarray):
+    """Calculate each read's semi-G-anomaly.
 
     The semi-G-anomaly is half of each read's contribution to the
     G-test statistic: O * log(O / E) = O * (log(O) - log(E)).
@@ -804,14 +766,14 @@ def calc_semi_g_anomaly(num_obs: int | np.ndarray,
         result = num_obs * (np.log(num_obs) - log_exp)
     # By convention, 0 * log(0/E) = 0 (the limit as O→0⁺).
     if not np.isscalar(num_obs):
-        result = np.where(num_obs == 0, 0., result)
+        result = np.where(num_obs == 0, 0.0, result)
     elif num_obs == 0:
-        result = 0.
+        result = 0.0
     return result
 
 
 def calc_jackpot_score(semi_g_anomalies: np.ndarray, n_reads: int):
-    """ Calculate the jackpotting score.
+    """Calculate the jackpotting score.
 
     The jackpotting score is defined as the average log of the ratio of
     observed to expected counts for a read, weighted by the count of
@@ -838,15 +800,16 @@ def calc_jackpot_score(semi_g_anomalies: np.ndarray, n_reads: int):
     """
     if n_reads == 0:
         if semi_g_anomalies.size > 0:
-            raise ValueError("If n_reads is 0, then semi_g_anomalies must have "
-                             f"length 0, but got {semi_g_anomalies.size}")
-        return 0.
+            raise ValueError(
+                "If n_reads is 0, then semi_g_anomalies must have "
+                f"length 0, but got {semi_g_anomalies.size}"
+            )
+        return 0.0
     return semi_g_anomalies.sum() / n_reads
 
 
-def calc_jackpot_score_ci(jackpot_scores: Iterable[float],
-                          confidence_level: float):
-    """ Calculate a confidence interval for the mean of jackpotting scores.
+def calc_jackpot_score_ci(jackpot_scores: Iterable[float], confidence_level: float):
+    """Calculate a confidence interval for the mean of jackpotting scores.
 
     Uses a Student's t-distribution assuming the scores are normally
     distributed.  Returns (nan, nan) if fewer than two scores are given.
@@ -876,6 +839,7 @@ def calc_jackpot_score_ci(jackpot_scores: Iterable[float],
         # Import SciPy here instead of at the top of the module because
         # the latter would take so long as to slow down the start-up.
         from scipy.stats import t
+
         t_lo, t_up = t.interval(confidence_level, n - 1)
         mean = jackpot_scores.mean()
         std_err = np.sqrt(jackpot_scores.var() / n)
@@ -887,9 +851,8 @@ def calc_jackpot_score_ci(jackpot_scores: Iterable[float],
     return ci_lo, ci_up
 
 
-def calc_jackpot_quotient(real_jackpot_score: float,
-                          null_jackpot_score: float):
-    """ Calculate the jackpotting quotient.
+def calc_jackpot_quotient(real_jackpot_score: float, null_jackpot_score: float):
+    """Calculate the jackpotting quotient.
 
     The jackpotting quotient indicates how much more overrepresented the
     average read is in the real dataset compared to the null dataset.
@@ -922,21 +885,23 @@ def calc_jackpot_quotient(real_jackpot_score: float,
     return np.exp(real_jackpot_score - null_jackpot_score)
 
 
-def bootstrap_jackpot_scores(uniq_end5s: np.ndarray,
-                             uniq_end3s: np.ndarray,
-                             counts_per_uniq: np.ndarray,
-                             p_mut: np.ndarray,
-                             p_ends: np.ndarray,
-                             p_clust: np.ndarray,
-                             min_mut_gap: int,
-                             mut_collisions: str,
-                             unmasked: np.ndarray,
-                             real_jackpot_score: float,
-                             confidence_level: float,
-                             max_jackpot_quotient: float,
-                             max_jackpot_sims: int,
-                             seed: int | None):
-    """ Bootstrap jackpotting scores from the null model.
+def bootstrap_jackpot_scores(
+    uniq_end5s: np.ndarray,
+    uniq_end3s: np.ndarray,
+    counts_per_uniq: np.ndarray,
+    p_mut: np.ndarray,
+    p_ends: np.ndarray,
+    p_clust: np.ndarray,
+    min_mut_gap: int,
+    mut_collisions: str,
+    unmasked: np.ndarray,
+    real_jackpot_score: float,
+    confidence_level: float,
+    max_jackpot_quotient: float,
+    max_jackpot_sims: int,
+    seed: int | None,
+):
+    """Bootstrap jackpotting scores from the null model.
 
     Parameters
     ----------
@@ -983,57 +948,57 @@ def bootstrap_jackpot_scores(uniq_end5s: np.ndarray,
     np.ndarray
         1D array of jackpotting scores from the null bootstrap replicates.
     """
-    find_dims([(UNIQUE_READS,),
-               (UNIQUE_READS,),
-               (UNIQUE_READS,),
-               (POSITIONS, CLUSTERS),
-               (POSITIONS, POSITIONS),
-               (CLUSTERS,)],
-              [uniq_end5s,
-               uniq_end3s,
-               counts_per_uniq,
-               p_mut,
-               p_ends,
-               p_clust],
-              ["uniq_end5s",
-               "uniq_end3s",
-               "counts_per_uniq",
-               "p_mut",
-               "p_ends",
-               "p_clust"])
+    find_dims(
+        [
+            (UNIQUE_READS,),
+            (UNIQUE_READS,),
+            (UNIQUE_READS,),
+            (POSITIONS, CLUSTERS),
+            (POSITIONS, POSITIONS),
+            (CLUSTERS,),
+        ],
+        [uniq_end5s, uniq_end3s, counts_per_uniq, p_mut, p_ends, p_clust],
+        ["uniq_end5s", "uniq_end3s", "counts_per_uniq", "p_mut", "p_ends", "p_clust"],
+    )
     n_reads = counts_per_uniq.sum()
-    logger.routine(f"Began boostrapping null jackpotting scores for a dataset "
-                   f"with {n_reads} reads and a real jackpotting score of "
-                   f"{real_jackpot_score}")
+    logger.routine(
+        f"Began boostrapping null jackpotting scores for a dataset "
+        f"with {n_reads} reads and a real jackpotting score of "
+        f"{real_jackpot_score}"
+    )
     # Simulate observed and expected read counts.
     end5s = np.repeat(uniq_end5s, counts_per_uniq)
     end3s = np.repeat(uniq_end3s, counts_per_uniq)
     null_jackpotting_scores = list()
-    obs_exps = sim_obs_exp(end5s,
-                            end3s,
-                            p_mut,
-                            p_ends,
-                            p_clust,
-                            min_mut_gap,
-                            mut_collisions,
-                            unmasked,
-                            seed=seed)
+    obs_exps = sim_obs_exp(
+        end5s,
+        end3s,
+        p_mut,
+        p_ends,
+        p_clust,
+        min_mut_gap,
+        mut_collisions,
+        unmasked,
+        seed=seed,
+    )
     jq_ci_lo = np.nan
     jq_ci_up = np.nan
-    conf_pct = (f"{round(confidence_level * 100., 1)} % confidence interval "
-                "for the mean jackpotting quotient")
+    conf_pct = (
+        f"{round(confidence_level * 100.0, 1)} % confidence interval "
+        "for the mean jackpotting quotient"
+    )
     for _ in range(max_jackpot_sims):
         num_obs, log_exp = next(obs_exps)
         # Calculate this null model's jackpotting score.
         null_g_anomalies = calc_semi_g_anomaly(num_obs, log_exp)
-        null_jackpotting_score = calc_jackpot_score(null_g_anomalies,
-                                                    n_reads)
+        null_jackpotting_score = calc_jackpot_score(null_g_anomalies, n_reads)
         null_jackpotting_scores.append(null_jackpotting_score)
         logger.detail(f"Null jackpotting score: {null_jackpotting_score}")
         # Calculate a confidence interval for the mean jackpotting score
         # of the null models simulated so far.
-        js_ci_lo, js_ci_up = calc_jackpot_score_ci(null_jackpotting_scores,
-                                                   confidence_level)
+        js_ci_lo, js_ci_up = calc_jackpot_score_ci(
+            null_jackpotting_scores, confidence_level
+        )
         # Determine a confidence interval for the jackpotting quotient.
         # Since the jackpotting quotient depends inversely on the null
         # jackpotting score, the lower and upper bounds are swapped.

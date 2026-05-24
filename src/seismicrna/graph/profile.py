@@ -6,9 +6,11 @@ from click import command
 from plotly import graph_objects as go
 
 from .color import ColorMapGraph, RelColorMap, SeqColorMap
-from .onetable import (OneTableRelClusterGroupGraph,
-                       OneTableRelClusterGroupWriter,
-                       OneTableRelClusterGroupRunner)
+from .onetable import (
+    OneTableRelClusterGroupGraph,
+    OneTableRelClusterGroupWriter,
+    OneTableRelClusterGroupRunner,
+)
 from .rel import MultiRelsGraph, OneRelGraph
 from .table import PositionTableRunner
 from .trace import iter_seq_base_bar_traces, iter_seqbar_stack_traces
@@ -20,7 +22,7 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 
 
 class ProfileGraph(OneTableRelClusterGroupGraph, ColorMapGraph, ABC):
-    """ Bar graph of a mutational profile for one table. """
+    """Bar graph of a mutational profile for one table."""
 
     @classmethod
     def graph_kind(cls):
@@ -36,19 +38,18 @@ class ProfileGraph(OneTableRelClusterGroupGraph, ColorMapGraph, ABC):
 
     @cached_property
     def data(self):
-        return self._fetch_data(self.table,
-                                k=self.k,
-                                clust=self.clust,
-                                k_clust_list=self.k_clust_list)
+        return self._fetch_data(
+            self.table, k=self.k, clust=self.clust, k_clust_list=self.k_clust_list
+        )
 
     @cached_property
     def data_header(self):
-        """ Header of the filtered data (not of the entire table). """
+        """Header of the filtered data (not of the entire table)."""
         return parse_header(self.data.columns)
 
 
 class OneRelProfileGraph(OneRelGraph, ProfileGraph):
-    """ Bar graph with one relationship per position. """
+    """Bar graph with one relationship per position."""
 
     @classmethod
     def what(cls):
@@ -65,7 +66,7 @@ class OneRelProfileGraph(OneRelGraph, ProfileGraph):
 
 
 class MultiRelsProfileGraph(MultiRelsGraph, ProfileGraph):
-    """ Stacked bar graph with multiple relationships per position. """
+    """Stacked bar graph with multiple relationships per position."""
 
     @classmethod
     def what(cls):
@@ -81,28 +82,23 @@ class MultiRelsProfileGraph(MultiRelsGraph, ProfileGraph):
         figure.update_layout(barmode="stack")
 
     def get_traces(self):
-        for row, index in zip(range(1, self.nrows + 1),
-                              self.data_header.iter_clust_indexes(),
-                              strict=True):
-            for trace in iter_seqbar_stack_traces(self.data.loc[:, index],
-                                                  self.cmap):
+        for row, index in zip(
+            range(1, self.nrows + 1), self.data_header.iter_clust_indexes(), strict=True
+        ):
+            for trace in iter_seqbar_stack_traces(self.data.loc[:, index], self.cmap):
                 yield (row, 1), trace
 
 
 class ProfileWriter(OneTableRelClusterGroupWriter):
-
     def get_graph(self, rels_group: str, **kwargs):
-        return (OneRelProfileGraph(table=self.table,
-                                   rel=rels_group,
-                                   **kwargs)
-                if len(rels_group) == 1
-                else MultiRelsProfileGraph(table=self.table,
-                                           rels=rels_group,
-                                           **kwargs))
+        return (
+            OneRelProfileGraph(table=self.table, rel=rels_group, **kwargs)
+            if len(rels_group) == 1
+            else MultiRelsProfileGraph(table=self.table, rels=rels_group, **kwargs)
+        )
 
 
 class ProfileRunner(OneTableRelClusterGroupRunner, PositionTableRunner):
-
     @classmethod
     def get_writer_type(cls):
         return ProfileWriter
@@ -115,5 +111,5 @@ class ProfileRunner(OneTableRelClusterGroupRunner, PositionTableRunner):
 
 @command(COMMAND, params=ProfileRunner.params())
 def cli(*args, **kwargs):
-    """ Bar graph of relationships(s) per position. """
+    """Bar graph of relationships(s) per position."""
     return ProfileRunner.run(*args, **kwargs)

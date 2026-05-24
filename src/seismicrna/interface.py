@@ -7,8 +7,9 @@ from .cluster.data import load_cluster_dataset
 from .table import load_all_datasets, get_tabulator_type
 
 
-def dataset_from_report(report_path: str | Path,
-                        verify_times: bool = True) -> MutsDataset:
+def dataset_from_report(
+    report_path: str | Path, verify_times: bool = True
+) -> MutsDataset:
     """Load a dataset from a report file.
 
     Parameters
@@ -24,17 +25,20 @@ def dataset_from_report(report_path: str | Path,
     IDmutMutsDataset | FilterMutsDataset | ClusterMutsDataset
         The type of MutsDataset returned depends on the report file.
     """
-    datasets = list(load_all_datasets([report_path], verify_times=verify_times, raise_on_error=True))
+    datasets = list(
+        load_all_datasets([report_path], verify_times=verify_times, raise_on_error=True)
+    )
     if len(datasets) > 1:
-        raise FailedToLoadDatasetError(f"Multiple datasets were found at {report_path}:"
-                                       f"\n{[dataset.report_file for dataset in datasets]}")
+        raise FailedToLoadDatasetError(
+            f"Multiple datasets were found at {report_path}:"
+            f"\n{[dataset.report_file for dataset in datasets]}"
+        )
     if len(datasets) == 0:
         raise FailedToLoadDatasetError(f"No datasets were found at {report_path}")
     return datasets[0]
 
 
-def table_from_dataset(dataset: MutsDataset,
-                       table: str = "pos") -> TableWriter:
+def table_from_dataset(dataset: MutsDataset, table: str = "pos") -> TableWriter:
     """Tabulate a dataset to generate a TableWriter
 
     Parameters
@@ -42,7 +46,7 @@ def table_from_dataset(dataset: MutsDataset,
     dataset: IDmutMutsDataset | FilterMutsDataset | ClusterMutsDataset
         A dataset from the IDmut, Filter, or Cluster steps.
     table: str = "pos"
-        The type of table to generate. Valid options include 
+        The type of table to generate. Valid options include
         "pos" for per-position table,
         "read" for per-read table, and
         "abundance" for a cluster abundance table.
@@ -62,21 +66,24 @@ def table_from_dataset(dataset: MutsDataset,
         read_table = True
     elif table == "abundance":
         if not isinstance(dataset, load_cluster_dataset.dataset_types):
-            raise Exception('Abundance tables can only be produced for clustered datasets')
+            raise Exception(
+                "Abundance tables can only be produced for clustered datasets"
+            )
         clust_table = True
     else:
         raise Exception('table kwarg must be "pos", "read" or "abundance"')
-    table = next(tabulator_type(dataset=dataset,
-                                count_pos=pos_table,
-                                count_read=read_table).generate_tables(pos=pos_table,
-                                                                       read=read_table,
-                                                                       clust=clust_table))
+    table = next(
+        tabulator_type(
+            dataset=dataset, count_pos=pos_table, count_read=read_table
+        ).generate_tables(pos=pos_table, read=read_table, clust=clust_table)
+    )
     return table
 
-def table_from_report(report_path: str | Path,
-                      verify_times: bool = True,
-                      table: str = "pos"):
-    """ Load a dataset from a report file and tabulate it.
+
+def table_from_report(
+    report_path: str | Path, verify_times: bool = True, table: str = "pos"
+):
+    """Load a dataset from a report file and tabulate it.
 
     Parameters
     ----------

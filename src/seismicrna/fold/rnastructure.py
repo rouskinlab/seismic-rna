@@ -1,4 +1,4 @@
-""" Wrapper around RNAstructure from the Mathews Lab at the University
+"""Wrapper around RNAstructure from the Mathews Lab at the University
 of Rochester: https://rna.urmc.rochester.edu/RNAstructure.html
 """
 
@@ -11,11 +11,13 @@ from .dryrun import dry_run
 from .profile import ZERO_CELSIUS
 from ..core.arg import opt_fold_temp
 from ..core.error import IncompatibleValuesError
-from ..core.extern import (RNASTRUCTURE_FOLD_CMD,
-                           RNASTRUCTURE_FOLD_SMP_CMD,
-                           RNASTRUCTURE_SHAPEKNOTS_CMD,
-                           args_to_cmd,
-                           run_cmd)
+from ..core.extern import (
+    RNASTRUCTURE_FOLD_CMD,
+    RNASTRUCTURE_FOLD_SMP_CMD,
+    RNASTRUCTURE_SHAPEKNOTS_CMD,
+    args_to_cmd,
+    run_cmd,
+)
 from ..core.logs import logger
 from ..core.rna import renumber_ct
 from ..core.write import need_write, write_mode
@@ -174,8 +176,8 @@ tstackm.dat
 
 
 def check_data_path(data_path: str | Path | None = None) -> Path:
-    """ Confirm the DATAPATH environment variable indicates the correct
-    directory. """
+    """Confirm the DATAPATH environment variable indicates the correct
+    directory."""
     if data_path is None:
         data_path = os.environ.get(DATAPATH)
     if data_path is None:
@@ -189,37 +191,36 @@ def check_data_path(data_path: str | Path | None = None) -> Path:
     extant_files = set(os.listdir(data_path))
     for expected_file in DATAPATH_FILES.strip().split():
         if expected_file not in extant_files:
-            raise FileNotFoundError(f"{data_path} is missing the required "
-                                    f"file {repr(expected_file)}")
+            raise FileNotFoundError(
+                f"{data_path} is missing the required file {repr(expected_file)}"
+            )
     return data_path
 
 
 def _guess_data_path_conda():
-    """ Guess the DATAPATH if RNAstructure was installed with Conda. """
+    """Guess the DATAPATH if RNAstructure was installed with Conda."""
     fold_path = which(RNASTRUCTURE_FOLD_CMD)
     if fold_path is None:
-        raise OSError(
-            f"RNAstructure not seem to be installed: {RNASTRUCTURE_FOLD_CMD}"
-        )
+        raise OSError(f"RNAstructure not seem to be installed: {RNASTRUCTURE_FOLD_CMD}")
     fold_path = Path(fold_path)
     env_dir = fold_path.parent.parent
     data_path = env_dir.joinpath("share", "rnastructure", "data_tables")
     if not data_path.is_dir():
-        raise OSError("It seems RNAstructure is not installed with Conda: "
-                      f"{data_path} does not exist")
+        raise OSError(
+            "It seems RNAstructure is not installed with Conda: "
+            f"{data_path} does not exist"
+        )
     check_data_path(data_path)
     logger.detail(f"Successfully guessed {DATAPATH}: {data_path}")
     return data_path
 
 
 def _guess_data_path_manual():
-    """ Guess the DATAPATH if RNAstructure was installed manually
-    (e.g. by downloading from the Mathews Lab website). """
+    """Guess the DATAPATH if RNAstructure was installed manually
+    (e.g. by downloading from the Mathews Lab website)."""
     fold_path = which(RNASTRUCTURE_FOLD_CMD)
     if fold_path is None:
-        raise OSError(
-            f"RNAstructure not seem to be installed: {RNASTRUCTURE_FOLD_CMD}"
-        )
+        raise OSError(f"RNAstructure not seem to be installed: {RNASTRUCTURE_FOLD_CMD}")
     fold_path = Path(fold_path)
     data_path = fold_path.parent.parent.joinpath("data_tables")
     check_data_path(data_path)
@@ -228,16 +229,16 @@ def _guess_data_path_manual():
 
 
 def guess_data_path():
-    """ Guess the DATAPATH. """
+    """Guess the DATAPATH."""
     errors = list()
     try:
         return check_data_path()
     except OSError as error:
         errors.append(error)
-        logger.warning(f"The {DATAPATH} environment variable is not valid; "
-                       f"attempting to guess it")
-    for guess_func in [_guess_data_path_conda,
-                       _guess_data_path_manual]:
+        logger.warning(
+            f"The {DATAPATH} environment variable is not valid; attempting to guess it"
+        )
+    for guess_func in [_guess_data_path_conda, _guess_data_path_manual]:
         try:
             return guess_func()
         except OSError as error:
@@ -246,7 +247,7 @@ def guess_data_path():
 
 
 def require_data_path():
-    """ Return an error message if the DATAPATH is not valid. """
+    """Return an error message if the DATAPATH is not valid."""
     try:
         data_path = guess_data_path()
     except OSError as error:
@@ -263,27 +264,28 @@ def require_data_path():
     return data_path
 
 
-def make_rnastructure_cmd(fasta_file: Path,
-                          ct_file: Path, *,
-                          pseudoknots: bool,
-                          fold_constraint: Path | None,
-                          dms_file: Path | None,
-                          shape_file: Path | None,
-                          deigan_intercept: float | None,
-                          deigan_slope: float | None,
-                          fold_temp_k: float | None,
-                          fold_isolated: bool,
-                          fold_md: int,
-                          fold_mfe: bool,
-                          fold_max: int,
-                          fold_percent: float,
-                          num_cpus: int = 1):
-    """ Make a command for 'Fold', 'Fold-smp', or 'ShapeKnots'. """
+def make_rnastructure_cmd(
+    fasta_file: Path,
+    ct_file: Path,
+    *,
+    pseudoknots: bool,
+    fold_constraint: Path | None,
+    dms_file: Path | None,
+    shape_file: Path | None,
+    deigan_intercept: float | None,
+    deigan_slope: float | None,
+    fold_temp_k: float | None,
+    fold_isolated: bool,
+    fold_md: int,
+    fold_mfe: bool,
+    fold_max: int,
+    fold_percent: float,
+    num_cpus: int = 1,
+):
+    """Make a command for 'Fold', 'Fold-smp', or 'ShapeKnots'."""
     if pseudoknots:
         if num_cpus > 1:
-            logger.warning(
-                f"ShapeKnots cannot use {num_cpus} threads; defaulting to 1"
-            )
+            logger.warning(f"ShapeKnots cannot use {num_cpus} threads; defaulting to 1")
         args = [RNASTRUCTURE_SHAPEKNOTS_CMD]
     else:
         if num_cpus > 1:
@@ -344,7 +346,7 @@ def make_rnastructure_cmd(fasta_file: Path,
         if fold_max > 0:
             # Maximum number of structures.
             args.extend(["--maximum", fold_max])
-        if fold_percent > 0.:
+        if fold_percent > 0.0:
             # Maximum % difference between free energies of structures.
             args.extend(["--percent", fold_percent])
     # Input and output files.
@@ -352,25 +354,28 @@ def make_rnastructure_cmd(fasta_file: Path,
     return args_to_cmd(args)
 
 
-def run_rnastructure(fasta_tmp: Path,
-                     ct_tmp: Path,
-                     ct_out: Path, *,
-                     pseudoknots: bool,
-                     fold_temp_k: float | None,
-                     dms_file: Path | None,
-                     shape_file: Path | None,
-                     deigan_slope: float | None,
-                     deigan_intercept: float | None,
-                     fold_constraint: Path | None,
-                     fold_isolated: bool,
-                     fold_md: int,
-                     fold_mfe: bool,
-                     fold_max: int,
-                     fold_percent: float,
-                     end5: int,
-                     num_cpus: int,
-                     fold_dry_run: bool = False):
-    """ Run Fold/ShapeKnots on pre-built paths, retitle, and renumber. """
+def run_rnastructure(
+    fasta_tmp: Path,
+    ct_tmp: Path,
+    ct_out: Path,
+    *,
+    pseudoknots: bool,
+    fold_temp_k: float | None,
+    dms_file: Path | None,
+    shape_file: Path | None,
+    deigan_slope: float | None,
+    deigan_intercept: float | None,
+    fold_constraint: Path | None,
+    fold_isolated: bool,
+    fold_md: int,
+    fold_mfe: bool,
+    fold_max: int,
+    fold_percent: float,
+    end5: int,
+    num_cpus: int,
+    fold_dry_run: bool = False,
+):
+    """Run Fold/ShapeKnots on pre-built paths, retitle, and renumber."""
     if not pseudoknots and num_cpus > 1:
         parallel_options = [True, False]
     else:
@@ -415,15 +420,15 @@ def run_rnastructure(fasta_tmp: Path,
 
 
 class RNAStructureConnectivityTableTitleLineFormatError(ValueError):
-    """ Error in the format of a CT title line from RNAStructure. """
+    """Error in the format of a CT title line from RNAStructure."""
 
 
 class ConnectivityTableAlreadyRetitledError(RuntimeError):
-    """ A CT file was already retitled. """
+    """A CT file was already retitled."""
 
 
 def parse_rnastructure_ct_title(line: str):
-    """ Parse a title in a CT file from RNAstructure, in this format:
+    """Parse a title in a CT file from RNAstructure, in this format:
 
     {length}  ENERGY = {energy}  {ref}
 
@@ -459,16 +464,18 @@ def parse_rnastructure_ct_title(line: str):
             else:
                 # The line violated the basic length-and-title format.
                 raise RNAStructureConnectivityTableTitleLineFormatError(line)
-            logger.warning("CT line contains no energy term (probably because "
-                           f"no base pairs were predicted): {repr(line)}")
-            energy = 0.
+            logger.warning(
+                "CT line contains no energy term (probably because "
+                f"no base pairs were predicted): {repr(line)}"
+            )
+            energy = 0.0
         else:
             raise ConnectivityTableAlreadyRetitledError(line)
     return int(length), float(energy), ref
 
 
 def format_retitled_ct_line(length: int, ref: str, uniqid: int, energy: float):
-    """ Format a new CT title line including unique identifiers:
+    """Format a new CT title line including unique identifiers:
 
     {length}    {ref} #{uniqid}: {energy}
 
@@ -496,7 +503,7 @@ def format_retitled_ct_line(length: int, ref: str, uniqid: int, energy: float):
 
 
 def retitle_ct(ct_input: Path, ct_output: Path, force: bool = False):
-    """ Retitle the structures in a CT file produced by RNAstructure.
+    """Retitle the structures in a CT file produced by RNAstructure.
 
     The default titles follow this format:
 
@@ -539,14 +546,14 @@ def retitle_ct(ct_input: Path, ct_output: Path, force: bool = False):
         text = "".join(lines)
         with open(ct_output, write_mode(force=True)) as f:
             f.write(text)
-        logger.routine(f"Retitled CT file {ct_input}"
-                       + (f" to {ct_output}"
-                          if ct_input != ct_output
-                          else ""))
+        logger.routine(
+            f"Retitled CT file {ct_input}"
+            + (f" to {ct_output}" if ct_input != ct_output else "")
+        )
 
 
 def parse_energy(line: str):
-    """ Parse the predicted free energy of folding from a line in format
+    """Parse the predicted free energy of folding from a line in format
 
     {length}    {ref} #{uniqid}: {energy}
 
@@ -567,6 +574,7 @@ def parse_energy(line: str):
     _, energy = line.split(": ")
     value, unit = energy.split()
     if unit != ENERGY_UNIT:
-        raise ValueError(f"Expected energy to have units of {ENERGY_UNIT}, "
-                         f"but got {repr(unit)}")
+        raise ValueError(
+            f"Expected energy to have units of {ENERGY_UNIT}, but got {repr(unit)}"
+        )
     return float(value)

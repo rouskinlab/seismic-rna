@@ -5,13 +5,7 @@ from functools import cache
 from itertools import product
 from typing import Iterable
 
-from .code import (MATCH,
-                   DELET,
-                   INSRT,
-                   SUB_A,
-                   SUB_C,
-                   SUB_G,
-                   SUB_T)
+from .code import MATCH, DELET, INSRT, SUB_A, SUB_C, SUB_G, SUB_T
 from ..error import IncompatibleOptionsError
 from ..seq import BASEA, BASEC, BASEN, BASEG, BASET, DNA
 
@@ -42,8 +36,7 @@ class HalfRelPattern(object):
         # is truthy, so short-circuit the OR and return the plain match.
         # If code matches ptrn_fancy, cls.ptrn_fancy.match(code.upper())
         # is truthy, so match becomes truthy and is returned.
-        match = (cls.ptrn_plain.match(code.lower())
-                 or cls.ptrn_fancy.match(code.upper()))
+        match = cls.ptrn_plain.match(code.lower()) or cls.ptrn_fancy.match(code.upper())
         if match:
             return match
         raise ValueError(f"Failed to match code: {repr(code)}")
@@ -103,8 +96,9 @@ class HalfRelPattern(object):
             # to the read base (it is at the same index in cls.mut_bytes
             # as the read base is in cls.read_bases). Update by taking
             # the bitwise OR so that all query bytes are accumulated.
-            queries[ref] |= (MATCH if read == ref
-                             else cls.mut_bits[cls.read_bases.index(read)])
+            queries[ref] |= (
+                MATCH if read == ref else cls.mut_bits[cls.read_bases.index(read)]
+            )
         return queries
 
     @classmethod
@@ -137,13 +131,16 @@ class HalfRelPattern(object):
         return cls(*list(mut_codes))
 
     @classmethod
-    def from_counts(cls, *,
-                    count_ref: bool = False,
-                    count_sub: bool = False,
-                    count_del: bool = False,
-                    count_ins: bool = False,
-                    count: Iterable[str] = (),
-                    no_count: Iterable[str] = ()):
+    def from_counts(
+        cls,
+        *,
+        count_ref: bool = False,
+        count_sub: bool = False,
+        count_del: bool = False,
+        count_ins: bool = False,
+        count: Iterable[str] = (),
+        no_count: Iterable[str] = (),
+    ):
         """
         Return a new SemiBitCaller by specifying which general types of
         relationships are to be counted.
@@ -174,7 +171,9 @@ class HalfRelPattern(object):
         no_count = set(map(cls.as_plain, no_count))
         intersect_codes = codes & no_count
         if intersect_codes:
-            raise IncompatibleOptionsError(f"Got the same mutations in count and no_count {intersect_codes}.")
+            raise IncompatibleOptionsError(
+                f"Got the same mutations in count and no_count {intersect_codes}."
+            )
 
         if count_ref:
             # Count all matches between the read and reference.
@@ -183,9 +182,11 @@ class HalfRelPattern(object):
             codes.update(cls.as_plain(2 * base) for base in DNA.four())
         if count_sub:
             # Count all substitutions in the read.
-            codes.update(cls.as_plain(f"{base1}{base2}") for base1, base2
-                         in product("".join(DNA.four()), repeat=2)
-                         if base1 != base2)
+            codes.update(
+                cls.as_plain(f"{base1}{base2}")
+                for base1, base2 in product("".join(DNA.four()), repeat=2)
+                if base1 != base2
+            )
         if count_del:
             # Count all deletions in the read.
             codes.update(cls.as_plain(f"{base}D") for base in cls.ref_bases)
@@ -199,30 +200,27 @@ class HalfRelPattern(object):
     @classmethod
     @cache
     def allc(cls):
-        """ Fits every relationship except for no coverage. """
-        return cls.from_counts(count_ref=True,
-                               count_sub=True,
-                               count_del=True,
-                               count_ins=True)
+        """Fits every relationship except for no coverage."""
+        return cls.from_counts(
+            count_ref=True, count_sub=True, count_del=True, count_ins=True
+        )
 
     @classmethod
     @cache
     def muts(cls):
-        """ Fits every mutation. """
-        return cls.from_counts(count_sub=True,
-                               count_del=True,
-                               count_ins=True)
+        """Fits every mutation."""
+        return cls.from_counts(count_sub=True, count_del=True, count_ins=True)
 
     @classmethod
     @cache
     def refs(cls):
-        """ Fits every match. """
+        """Fits every match."""
         return cls.from_counts(count_ref=True)
 
     @classmethod
     @cache
     def none(cls):
-        """ Fits nothing. """
+        """Fits nothing."""
         return cls()
 
     def __init__(self, *codes: str):
@@ -238,24 +236,31 @@ class HalfRelPattern(object):
 
     @property
     def patterns(self):
-        return {BASEA: self.a, BASEC: self.c, BASEN: self.n, BASEG: self.g, BASET: self.t}
+        return {
+            BASEA: self.a,
+            BASEC: self.c,
+            BASEN: self.n,
+            BASEG: self.g,
+            BASET: self.t,
+        }
 
     @property
     def codes(self):
-        """ Return the codes of the relationships counted. """
+        """Return the codes of the relationships counted."""
         return sorted(self.decompile(self.patterns))
 
     def fits(self, base: str, rel: int):
-        """ Test whether a relationship code fits the pattern. """
-        return ((pattern := self.patterns.get(str(base))) is not None
-                and (int(rel) | pattern) == pattern)
+        """Test whether a relationship code fits the pattern."""
+        return (pattern := self.patterns.get(str(base))) is not None and (
+            int(rel) | pattern
+        ) == pattern
 
     def to_report_format(self):
-        """ Return the types of counted relationships as a list. """
+        """Return the types of counted relationships as a list."""
         return self.codes
 
     def intersect(self, other: HalfRelPattern):
-        """ Intersect the HalfRelPattern with another. """
+        """Intersect the HalfRelPattern with another."""
         return self.__class__(*(set(self.codes) & set(other.codes)))
 
     def __str__(self):
@@ -274,45 +279,46 @@ class RelPattern(object):
     __slots__ = "yes", "nos"
 
     @classmethod
-    def from_counts(cls,
-                    count_del: bool = True,
-                    count_ins: bool = True,
-                    no_count: Iterable[str] = (),
-                    only_count: Iterable[str] = ()):
-        """ Return a new RelPattern by specifying which general types of
-        mutations are to be counted, with optional ones to not count. """
+    def from_counts(
+        cls,
+        count_del: bool = True,
+        count_ins: bool = True,
+        no_count: Iterable[str] = (),
+        only_count: Iterable[str] = (),
+    ):
+        """Return a new RelPattern by specifying which general types of
+        mutations are to be counted, with optional ones to not count."""
         no_count = list(no_count)
         only_count = list(only_count)
         if only_count:
-            yes = HalfRelPattern.from_counts(count=only_count,
-                                            no_count=no_count),
-            nos = HalfRelPattern.from_counts(count_ref=True,
-                                            no_count=no_count)
+            yes = (HalfRelPattern.from_counts(count=only_count, no_count=no_count),)
+            nos = HalfRelPattern.from_counts(count_ref=True, no_count=no_count)
         else:
-            yes = HalfRelPattern.from_counts(count_sub=True,
-                                              count_del=count_del,
-                                              count_ins=count_ins,
-                                              no_count=no_count)
-            nos = HalfRelPattern.from_counts(count_ref=True,
-                                              no_count=no_count)
+            yes = HalfRelPattern.from_counts(
+                count_sub=True,
+                count_del=count_del,
+                count_ins=count_ins,
+                no_count=no_count,
+            )
+            nos = HalfRelPattern.from_counts(count_ref=True, no_count=no_count)
         return cls(yes, nos)
 
     @classmethod
     @cache
     def allc(cls):
-        """ Fits every relationship except for no coverage. """
+        """Fits every relationship except for no coverage."""
         return cls(HalfRelPattern.allc(), HalfRelPattern.none())
 
     @classmethod
     @cache
     def muts(cls):
-        """ Fits every mutation. """
+        """Fits every mutation."""
         return cls(HalfRelPattern.muts(), HalfRelPattern.refs())
 
     @classmethod
     @cache
     def matches(cls):
-        """ Fits every match. """
+        """Fits every match."""
         return cls(HalfRelPattern.refs(), HalfRelPattern.muts())
 
     def __init__(self, yes: HalfRelPattern, nos: HalfRelPattern):
@@ -320,21 +326,22 @@ class RelPattern(object):
         self.nos = nos
 
     def fits(self, base: str, rel: int):
-        """ Check whether the base and relationship give a definitive
-        result and whether they fit the pattern. """
+        """Check whether the base and relationship give a definitive
+        result and whether they fit the pattern."""
         is_yes = self.yes.fits(base, rel)
         is_nos = self.nos.fits(base, rel)
         return is_yes != is_nos, is_yes
 
     def intersect(self, other: RelPattern | None):
-        """ Intersect the pattern with another. """
+        """Intersect the pattern with another."""
         if other is None:
             return self
-        return self.__class__(self.yes.intersect(other.yes),
-                              self.nos.intersect(other.nos))
+        return self.__class__(
+            self.yes.intersect(other.yes), self.nos.intersect(other.nos)
+        )
 
     def invert(self):
-        """ Swap the `yes` and `nos` patterns. """
+        """Swap the `yes` and `nos` patterns."""
         return self.__class__(self.nos, self.yes)
 
     def __str__(self):

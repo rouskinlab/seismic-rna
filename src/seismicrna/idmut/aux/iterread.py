@@ -5,9 +5,7 @@ from typing import Sequence
 
 import networkx as nx
 
-from .cigarop import (count_cigar_muts,
-                      find_cigar_op_pos_read,
-                      find_cigar_op_pos_ref)
+from .cigarop import count_cigar_muts, find_cigar_op_pos_read, find_cigar_op_pos_ref
 from .infer import infer_read
 from .iterrel import iter_relvecs_all
 from ..py.cigar import CIG_DELET, CIG_INSRT, parse_cigar
@@ -36,12 +34,15 @@ def _indel_depths(cigar: str):
     return tuple(depths[1:])
 
 
-def ref_to_alignments(refseq: DNA, *,
-                      insert3: bool,
-                      max_ins: int = 0,
-                      max_ins_len: int = 1,
-                      max_ins_bases: int | None = None):
-    """ For a given reference sequence, map every possible read to its
+def ref_to_alignments(
+    refseq: DNA,
+    *,
+    insert3: bool,
+    max_ins: int = 0,
+    max_ins_len: int = 1,
+    max_ins_bases: int | None = None,
+):
+    """For a given reference sequence, map every possible read to its
     CIGAR string(s) and (possibly ambiguous) relationships.
 
     Parameters
@@ -68,8 +69,9 @@ def ref_to_alignments(refseq: DNA, *,
         if max_ins_len < 1:
             raise ValueError(f"max_ins_len must be ≥ 1, but got {max_ins_len}")
         if max_ins_bases is not None and max_ins_bases < max_ins:
-            raise ValueError(f"max_ins_bases ({max_ins_bases}) "
-                             f"must be ≥ max_ins ({max_ins})")
+            raise ValueError(
+                f"max_ins_bases ({max_ins_bases}) must be ≥ max_ins ({max_ins})"
+            )
     # Iterate through all possible relationships.
     for end5, end3, muts in iter_relvecs_all(refseq, insert3, max_ins):
         # Check if there are insertions.
@@ -92,19 +94,16 @@ def ref_to_alignments(refseq: DNA, *,
                 # Skip insertion lengths whose sum exceeds the limit.
                 continue
             # Determine the read(s) corresponding to these relationships.
-            degen, qual, cigar = infer_read(refseq,
-                                            end5,
-                                            end3,
-                                            muts,
-                                            ins_len=ins_len)
+            degen, qual, cigar = infer_read(refseq, end5, end3, muts, ins_len=ins_len)
             if n_ins > 0:
                 # Remove quality codes of inserted bases because -- for
                 # the purpose of aggregating reads based on sequence,
                 # quality score, and position -- the "fake" quality
                 # scores of inserted bases should not be considered.
                 ins_pos = set(find_cigar_op_pos_read(cigar, CIG_INSRT))
-                qual_no_ins = "".join(q for i, q in enumerate(qual, start=1)
-                                      if i not in ins_pos)
+                qual_no_ins = "".join(
+                    q for i, q in enumerate(qual, start=1) if i not in ins_pos
+                )
             else:
                 qual_no_ins = qual
             # Count the mutations in the CIGAR string.
@@ -129,7 +128,7 @@ def ref_to_alignments(refseq: DNA, *,
         # CIGAR strings that can be transformed into each other through
         # a series of moving each indel one step.
         transforms = nx.Graph()
-        for (cigar, muts) in cigar_muts[min_muts]:
+        for cigar, muts in cigar_muts[min_muts]:
             dels = tuple(find_cigar_op_pos_ref(cigar, CIG_DELET, end5))
             inns = tuple(find_cigar_op_pos_read(cigar, CIG_INSRT))
             depths = _indel_depths(cigar)
@@ -147,10 +146,10 @@ def ref_to_alignments(refseq: DNA, *,
                 #     deletion has moved more than one position
                 #     (inns == i and _connected_indels(dels, d))
                 c, m, d, i, p = other_node
-                if (depths == p
-                        and ((dels == d and _connected_indels(inns, i))
-                             or
-                             (inns == i and _connected_indels(dels, d)))):
+                if depths == p and (
+                    (dels == d and _connected_indels(inns, i))
+                    or (inns == i and _connected_indels(dels, d))
+                ):
                     add_edges.append((node, other_node))
             if add_edges:
                 for node1, node2 in add_edges:
@@ -175,10 +174,10 @@ def ref_to_alignments(refseq: DNA, *,
 
 
 def iter_alignments(*args, **kwargs):
-    """ For a given reference sequence, find every read that could come
+    """For a given reference sequence, find every read that could come
     from the reference (with up to 2 bases inserted). For each read,
     yield the (possibly ambiguous) relationships and every possible
-    CIGAR string. """
+    CIGAR string."""
     quals, all_cigars, all_muts = ref_to_alignments(*args, **kwargs)
     for key in all_muts:
         read, _, end5, end3 = key

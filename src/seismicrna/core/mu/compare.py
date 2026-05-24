@@ -9,9 +9,11 @@ from ..arg import KEY_PEARSON, KEY_SPEARMAN, KEY_DETERM, KEY_MARCD
 from ..seq import get_shared_index, iter_windows
 
 
-def calc_arcsine_distance(mus1: float | np.ndarray | pd.Series | pd.DataFrame,
-                          mus2: float | np.ndarray | pd.Series | pd.DataFrame):
-    """ Calculate the arcsine distance between mus1 and mus2.
+def calc_arcsine_distance(
+    mus1: float | np.ndarray | pd.Series | pd.DataFrame,
+    mus2: float | np.ndarray | pd.Series | pd.DataFrame,
+):
+    """Calculate the arcsine distance between mus1 and mus2.
     Assume that mus1 and mus2 are on the same scale (e.g. two clusters
     from the same sample), so perform no scaling or normalization.
 
@@ -29,13 +31,15 @@ def calc_arcsine_distance(mus1: float | np.ndarray | pd.Series | pd.DataFrame,
     float | np.ndarray | pd.Series | pd.DataFrame
         Arcsine distance: ``2/π * |arcsin(√mus1) - arcsin(√mus2)|``
     """
-    return np.abs(np.arcsin(2. * mus1 - 1.) - np.arcsin(2. * mus2 - 1.)) / np.pi
+    return np.abs(np.arcsin(2.0 * mus1 - 1.0) - np.arcsin(2.0 * mus2 - 1.0)) / np.pi
 
 
 @auto_removes_nan
-def calc_sum_arcsine_distance(mus1: np.ndarray | pd.Series | pd.DataFrame,
-                              mus2: np.ndarray | pd.Series | pd.DataFrame):
-    """ Calculate the sum of arcsine distances between mus1 and mus2.
+def calc_sum_arcsine_distance(
+    mus1: np.ndarray | pd.Series | pd.DataFrame,
+    mus2: np.ndarray | pd.Series | pd.DataFrame,
+):
+    """Calculate the sum of arcsine distances between mus1 and mus2.
 
     Parameters
     ----------
@@ -55,9 +59,11 @@ def calc_sum_arcsine_distance(mus1: np.ndarray | pd.Series | pd.DataFrame,
 
 
 @auto_removes_nan
-def calc_mean_arcsine_distance(mus1: np.ndarray | pd.Series | pd.DataFrame,
-                               mus2: np.ndarray | pd.Series | pd.DataFrame):
-    """ Calculate the mean arcsine distance between mus1 and mus2.
+def calc_mean_arcsine_distance(
+    mus1: np.ndarray | pd.Series | pd.DataFrame,
+    mus2: np.ndarray | pd.Series | pd.DataFrame,
+):
+    """Calculate the mean arcsine distance between mus1 and mus2.
 
     Parameters
     ----------
@@ -77,9 +83,11 @@ def calc_mean_arcsine_distance(mus1: np.ndarray | pd.Series | pd.DataFrame,
 
 
 @auto_removes_nan
-def calc_pearson(mus1: np.ndarray | pd.Series | pd.DataFrame,
-                 mus2: np.ndarray | pd.Series | pd.DataFrame):
-    """ Calculate the Pearson correlation coefficient between two groups
+def calc_pearson(
+    mus1: np.ndarray | pd.Series | pd.DataFrame,
+    mus2: np.ndarray | pd.Series | pd.DataFrame,
+):
+    """Calculate the Pearson correlation coefficient between two groups
     of mutation rates, ignoring NaNs.
 
     Parameters
@@ -111,9 +119,11 @@ def calc_pearson(mus1: np.ndarray | pd.Series | pd.DataFrame,
     return cov / np.sqrt(var1 * var2)
 
 
-def calc_coeff_determ(mus1: np.ndarray | pd.Series | pd.DataFrame,
-                      mus2: np.ndarray | pd.Series | pd.DataFrame):
-    """ Calculate the coefficient of determination (a.k.a. R-squared)
+def calc_coeff_determ(
+    mus1: np.ndarray | pd.Series | pd.DataFrame,
+    mus2: np.ndarray | pd.Series | pd.DataFrame,
+):
+    """Calculate the coefficient of determination (a.k.a. R-squared)
     between two groups of mutation rates, ignoring NaNs.
 
     Parameters
@@ -135,9 +145,11 @@ def calc_coeff_determ(mus1: np.ndarray | pd.Series | pd.DataFrame,
 
 
 @auto_removes_nan
-def calc_spearman(mus1: np.ndarray | pd.Series | pd.DataFrame,
-                  mus2: np.ndarray | pd.Series | pd.DataFrame):
-    """ Calculate the Spearman rank correlation coefficient between two
+def calc_spearman(
+    mus1: np.ndarray | pd.Series | pd.DataFrame,
+    mus2: np.ndarray | pd.Series | pd.DataFrame,
+):
+    """Calculate the Spearman rank correlation coefficient between two
     groups of mutation rates, ignoring NaNs.
 
     Parameters
@@ -159,7 +171,7 @@ def calc_spearman(mus1: np.ndarray | pd.Series | pd.DataFrame,
 
 
 def get_comp_method(key: str):
-    """ Get a comparison method based on its key. """
+    """Get a comparison method based on its key."""
     lowerkey = key.lower()
     if lowerkey == KEY_PEARSON:
         return calc_pearson, "Pearson Correlation Coefficient"
@@ -173,7 +185,7 @@ def get_comp_method(key: str):
 
 
 def get_comp_func(key: str) -> Callable:
-    """ Get the function of a comparison method based on its key.
+    """Get the function of a comparison method based on its key.
 
     Parameters
     ----------
@@ -190,7 +202,7 @@ def get_comp_func(key: str) -> Callable:
 
 
 def get_comp_name(key: str) -> str:
-    """ Get the name of a comparison method based on its key.
+    """Get the name of a comparison method based on its key.
 
     Parameters
     ----------
@@ -206,12 +218,14 @@ def get_comp_name(key: str) -> str:
     return name
 
 
-def compare_windows(mus1: pd.Series,
-                    mus2: pd.Series,
-                    method: str | Callable,
-                    size: int,
-                    min_count: int = 2):
-    """ Compare two Series via sliding windows. """
+def compare_windows(
+    mus1: pd.Series,
+    mus2: pd.Series,
+    method: str | Callable,
+    size: int,
+    min_count: int = 2,
+):
+    """Compare two Series via sliding windows."""
     if isinstance(method, str):
         # If the comparison method is given a string, then fetch the
         # function itself.
@@ -219,9 +233,8 @@ def compare_windows(mus1: pd.Series,
     # Initialize an empty Series for the sliding comparison.
     values = pd.Series(np.nan, index=get_shared_index([mus1.index, mus2.index]))
     # Calculate the value of the comparison for each window.
-    for center, (win1, win2) in iter_windows(mus1,
-                                             mus2,
-                                             size=size,
-                                             min_count=min_count):
+    for center, (win1, win2) in iter_windows(
+        mus1, mus2, size=size, min_count=min_count
+    ):
         values.at[center] = method(win1, win2)
     return values

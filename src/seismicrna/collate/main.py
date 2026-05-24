@@ -6,26 +6,30 @@ from typing import Iterable
 
 from .collate import collate_graphs
 from ..core import path
-from ..core.arg import (CMD_COLLATE,
-                        arg_input_path,
-                        opt_name,
-                        opt_verbose_name,
-                        opt_collate_out_dir,
-                        opt_include_svg,
-                        opt_include_graph,
-                        opt_group,
-                        opt_portable,
-                        opt_force)
+from ..core.arg import (
+    CMD_COLLATE,
+    arg_input_path,
+    opt_name,
+    opt_verbose_name,
+    opt_collate_out_dir,
+    opt_include_svg,
+    opt_include_graph,
+    opt_group,
+    opt_portable,
+    opt_force,
+)
 from ..core.logs import logger
 from ..core.run import run_func
 from ..core.write import need_write
 
 
-def get_out_path(name: str,
-                 verbose_name: bool,
-                 input_files: list[Path],
-                 collate_out_dir: str | Path | None):
-    """ Determine the output path for the collated HTML file.
+def get_out_path(
+    name: str,
+    verbose_name: bool,
+    input_files: list[Path],
+    collate_out_dir: str | Path | None,
+):
+    """Determine the output path for the collated HTML file.
 
     Parameters
     ----------
@@ -55,7 +59,7 @@ def get_out_path(name: str,
                     path_segs = path.parse(input_file, path.DRAW_SEGS)
                 except path.PathValueError:
                     continue
-            assert path_segs.get("ext", None) in ('.html', '.svg')
+            assert path_segs.get("ext", None) in (".html", ".svg")
             if path_segs.get("step") == "fold":
                 graph = "structure-model"
             else:
@@ -72,7 +76,9 @@ def get_out_path(name: str,
         refs = sorted(list(refs))
         regs = sorted(list(regs))
 
-        info = f"{'-'.join(samples)}_{'-'.join(refs)}_{'-'.join(regs)}_{'-'.join(types)}"
+        info = (
+            f"{'-'.join(samples)}_{'-'.join(refs)}_{'-'.join(regs)}_{'-'.join(types)}"
+        )
 
     if not collate_out_dir:
         try:
@@ -83,37 +89,48 @@ def get_out_path(name: str,
             collate_out_dir = collate_out_dir.parent
     if verbose_name:
         out_segs = [path.CollateInfoSeg]
-        out_field_values = {path.COLLATE_NAME: name,
-                            path.COLLATE_INFO: info,
-                            path.EXT: path.HTML_EXT,
-                            path.TOP: collate_out_dir}
+        out_field_values = {
+            path.COLLATE_NAME: name,
+            path.COLLATE_INFO: info,
+            path.EXT: path.HTML_EXT,
+            path.TOP: collate_out_dir,
+        }
     else:
         out_segs = [path.CollateSeg]
-        out_field_values = {path.COLLATE_NAME: name,
-                            path.EXT: path.HTML_EXT,
-                            path.TOP: collate_out_dir}
+        out_field_values = {
+            path.COLLATE_NAME: name,
+            path.EXT: path.HTML_EXT,
+            path.TOP: collate_out_dir,
+        }
 
     return path.build(out_segs, out_field_values)
 
+
 @run_func(CMD_COLLATE)
-def run(input_path: Iterable[str | Path],
-        name: str,
-        verbose_name: bool,
-        include_svg: bool,
-        include_graph: bool, *,
-        group: str = 'sample',
-        portable: bool = False,
-        collate_out_dir: str | Path | None = None,
-        force: bool,
-        **kwargs) -> list[Path]:
-    """ Collate HTML graphs into one HTML file. """
+def run(
+    input_path: Iterable[str | Path],
+    name: str,
+    verbose_name: bool,
+    include_svg: bool,
+    include_graph: bool,
+    *,
+    group: str = "sample",
+    portable: bool = False,
+    collate_out_dir: str | Path | None = None,
+    force: bool,
+    **kwargs,
+) -> list[Path]:
+    """Collate HTML graphs into one HTML file."""
     # Collect all HTML graphs.
     input_files = list()
     if include_graph:
         for graph in path.find_files_chain(input_path, [path.HtmlSeg]):
             try:
                 graph_segs = path.parse(graph, path.GRAPH_SEGS)
-                if graph_segs.get("step", None) == "graph" and "collated" not in graph.name:
+                if (
+                    graph_segs.get("step", None) == "graph"
+                    and "collated" not in graph.name
+                ):
                     input_files.append(graph)
             except path.PathValueError:
                 continue
@@ -124,20 +141,18 @@ def run(input_path: Iterable[str | Path],
                 if svg_segs.get("step", None) == "fold":
                     input_files.append(svg)
             except path.PathValueError:
-                    continue
+                continue
 
     if len(input_files) == 0:
         logger.warning("No files found to collate.")
         return None
 
-    out_path = get_out_path(name, verbose_name, input_files, collate_out_dir=collate_out_dir)
+    out_path = get_out_path(
+        name, verbose_name, input_files, collate_out_dir=collate_out_dir
+    )
 
     if need_write(out_path, force=force):
-        collate_graphs(input_files,
-                       out_path,
-                       group,
-                       portable,
-                       **kwargs)
+        collate_graphs(input_files, out_path, group, portable, **kwargs)
 
     return out_path
 
@@ -151,11 +166,11 @@ params = [
     opt_include_graph,
     opt_group,
     opt_portable,
-    opt_force
+    opt_force,
 ]
 
 
 @command(CMD_COLLATE, params=params)
 def cli(*args, **kwargs):
-    """ Collate HTML graphs and SVG drawings into an HTML report file. """
+    """Collate HTML graphs and SVG drawings into an HTML report file."""
     return run(*args, **kwargs)

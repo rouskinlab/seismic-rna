@@ -18,49 +18,62 @@ NUM_SEGS = "segments"
 
 
 class BadSegmentEndsError(ValueError):
-    """ Segment 5' and 3' ends are not valid. """
+    """Segment 5' and 3' ends are not valid."""
 
 
-def count_reads_segments(seg_ends: np.ndarray,
-                         what: str = "seg_ends") -> tuple[int, int]:
+def count_reads_segments(
+    seg_ends: np.ndarray, what: str = "seg_ends"
+) -> tuple[int, int]:
     require_isinstance(what, seg_ends, np.ndarray)
-    require_equal(f"{what}.ndim", seg_ends.ndim, 2,
-                  error_type=BadSegmentEndsError)
+    require_equal(f"{what}.ndim", seg_ends.ndim, 2, error_type=BadSegmentEndsError)
     num_reads, num_segs = seg_ends.shape
     return num_reads, num_segs
 
 
-def match_reads_segments(seg_end5s: np.ndarray,
-                         seg_end3s: np.ndarray,
-                         seg_ends_mask: np.ndarray | None):
-    """ Number of segments for the given end coordinates. """
+def match_reads_segments(
+    seg_end5s: np.ndarray, seg_end3s: np.ndarray, seg_ends_mask: np.ndarray | None
+):
+    """Number of segments for the given end coordinates."""
     num_reads_5, num_segs_5 = count_reads_segments(seg_end5s, "seg_end5s")
     num_reads_3, num_segs_3 = count_reads_segments(seg_end3s, "seg_end3s")
-    require_equal("num_reads_5", num_reads_5, num_reads_3, "num_reads_3",
-                  error_type=BadSegmentEndsError)
-    require_equal("num_segs_5", num_segs_5, num_segs_3, "num_segs_3",
-                  error_type=BadSegmentEndsError)
+    require_equal(
+        "num_reads_5",
+        num_reads_5,
+        num_reads_3,
+        "num_reads_3",
+        error_type=BadSegmentEndsError,
+    )
+    require_equal(
+        "num_segs_5",
+        num_segs_5,
+        num_segs_3,
+        "num_segs_3",
+        error_type=BadSegmentEndsError,
+    )
     if seg_ends_mask is not None:
-        num_reads_mask, num_segs_mask = count_reads_segments(seg_ends_mask,
-                                                             "seg_ends_mask")
-        require_equal("num_reads_mask",
-                      num_reads_mask,
-                      num_reads_5,
-                      "num_reads_5",
-                      error_type=BadSegmentEndsError)
-        require_equal("num_segs_mask",
-                      num_segs_mask,
-                      num_segs_5,
-                      "num_segs_5",
-                      error_type=BadSegmentEndsError)
+        num_reads_mask, num_segs_mask = count_reads_segments(
+            seg_ends_mask, "seg_ends_mask"
+        )
+        require_equal(
+            "num_reads_mask",
+            num_reads_mask,
+            num_reads_5,
+            "num_reads_5",
+            error_type=BadSegmentEndsError,
+        )
+        require_equal(
+            "num_segs_mask",
+            num_segs_mask,
+            num_segs_5,
+            "num_segs_5",
+            error_type=BadSegmentEndsError,
+        )
     return num_reads_5, num_segs_5
 
 
 def find_read_end5s(seg_end5s: np.ndarray, seg_ends_mask: np.ndarray | None):
-    """ Find the 5' end of each read. """
-    num_reads, num_segs = match_reads_segments(seg_end5s,
-                                               seg_end5s,
-                                               seg_ends_mask)
+    """Find the 5' end of each read."""
+    num_reads, num_segs = match_reads_segments(seg_end5s, seg_end5s, seg_ends_mask)
     if num_segs == 0:
         # There are 0 segments, so default to 5' end = 1.
         return np.ones(num_reads, dtype=seg_end5s.dtype)
@@ -89,10 +102,8 @@ def find_read_end5s(seg_end5s: np.ndarray, seg_ends_mask: np.ndarray | None):
 
 
 def find_read_end3s(seg_end3s: np.ndarray, seg_ends_mask: np.ndarray | None):
-    """ Find the 3' end of each read. """
-    num_reads, num_segs = match_reads_segments(seg_end3s,
-                                               seg_end3s,
-                                               seg_ends_mask)
+    """Find the 3' end of each read."""
+    num_reads, num_segs = match_reads_segments(seg_end3s, seg_end3s, seg_ends_mask)
     if num_segs == 0:
         # There are 0 segments, so default to 3' end = 0.
         return np.zeros(num_reads, dtype=seg_end3s.dtype)
@@ -121,17 +132,19 @@ def find_read_end3s(seg_end3s: np.ndarray, seg_ends_mask: np.ndarray | None):
 
 
 def merge_read_ends(read_end5s: np.ndarray, read_end3s: np.ndarray):
-    """ Return the 5' and 3' ends as one 2D array. """
+    """Return the 5' and 3' ends as one 2D array."""
     ensure_same_length(read_end5s, read_end3s, "read_end5s", "read_end3s")
     return np.column_stack([read_end5s, read_end3s])
 
 
-def sanitize_segment_ends(seg_end5s: np.ndarray,
-                          seg_end3s: np.ndarray,
-                          min_pos: int,
-                          max_pos: int,
-                          check_values: bool = True):
-    """ Sanitize end coordinates.
+def sanitize_segment_ends(
+    seg_end5s: np.ndarray,
+    seg_end3s: np.ndarray,
+    min_pos: int,
+    max_pos: int,
+    check_values: bool = True,
+):
+    """Sanitize end coordinates.
 
     Parameters
     ----------
@@ -160,25 +173,33 @@ def sanitize_segment_ends(seg_end5s: np.ndarray,
     if check_values:
         for i in range(num_segs):
             # All coordinates must be ≥ 1.
-            ensure_order(seg_end5s[:, i],
-                         np.broadcast_to(min_pos, num_reads),
-                         f"segment {i} 5' coordinates",
-                         f"minimum position ({min_pos})",
-                         gt_eq=True)
-            ensure_order(seg_end3s[:, i],
-                         np.broadcast_to(min_pos - 1, num_reads),
-                         f"segment {i} 3' coordinates",
-                         f"minimum position - 1 ({min_pos - 1})",
-                         gt_eq=True)
+            ensure_order(
+                seg_end5s[:, i],
+                np.broadcast_to(min_pos, num_reads),
+                f"segment {i} 5' coordinates",
+                f"minimum position ({min_pos})",
+                gt_eq=True,
+            )
+            ensure_order(
+                seg_end3s[:, i],
+                np.broadcast_to(min_pos - 1, num_reads),
+                f"segment {i} 3' coordinates",
+                f"minimum position - 1 ({min_pos - 1})",
+                gt_eq=True,
+            )
             # All coordinates must be ≤ max position
-            ensure_order(seg_end5s[:, i],
-                         np.broadcast_to(max_pos + 1, num_reads),
-                         f"segment {i} 5' coordinates",
-                         f"maximum position + 1 ({max_pos + 1})")
-            ensure_order(seg_end3s[:, i],
-                         np.broadcast_to(max_pos, num_reads),
-                         f"segment {i} 3' coordinates",
-                         f"maximum position ({max_pos})")
+            ensure_order(
+                seg_end5s[:, i],
+                np.broadcast_to(max_pos + 1, num_reads),
+                f"segment {i} 5' coordinates",
+                f"maximum position + 1 ({max_pos + 1})",
+            )
+            ensure_order(
+                seg_end3s[:, i],
+                np.broadcast_to(max_pos, num_reads),
+                f"segment {i} 3' coordinates",
+                f"maximum position ({max_pos})",
+            )
     # Convert all ends into arrays of the most efficient data type.
     # Conversion must be done after checking the values against max_pos.
     # Otherwise, values greater than the data type can accomodate would
@@ -221,10 +242,10 @@ def _roll_unmasked(matrix: np.ndarray, mask: np.ndarray):
     return rolled_matrix
 
 
-def sort_segment_ends(seg_end5s: np.ndarray,
-                      seg_end3s: np.ndarray,
-                      seg_ends_mask: np.ndarray | None):
-    """ Sort the segment end coordinates and label the 3' end of each
+def sort_segment_ends(
+    seg_end5s: np.ndarray, seg_end3s: np.ndarray, seg_ends_mask: np.ndarray | None
+):
+    """Sort the segment end coordinates and label the 3' end of each
     contiguous set of segments.
 
     Parameters
@@ -263,8 +284,7 @@ def sort_segment_ends(seg_end5s: np.ndarray,
     is_seg_end5 = sort_order < num_segs
     # Label the 3' end of each contiguous set of segments, which occurs
     # when the cumulative numbers of 5' and 3' segment ends are equal.
-    is_contig_end3 = np.logical_not(np.cumsum(np.where(is_seg_end5, 1, -1),
-                                              axis=1))
+    is_contig_end3 = np.logical_not(np.cumsum(np.where(is_seg_end5, 1, -1), axis=1))
     if seg_ends_mask is not None:
         # Apply the mask that seg_ends_sorted has to is_contig_end3
         # and is_contig_end5.
@@ -275,37 +295,37 @@ def sort_segment_ends(seg_end5s: np.ndarray,
         is_contig_end5 = np.roll(is_contig_end3, 1, axis=1)
     # In every read, the number of 5' and 3' ends of contiguous segments
     # must be equal.
-    assert np.array_equal(np.count_nonzero(is_contig_end5, axis=1),
-                          np.count_nonzero(is_contig_end3, axis=1))
+    assert np.array_equal(
+        np.count_nonzero(is_contig_end5, axis=1),
+        np.count_nonzero(is_contig_end3, axis=1),
+    )
     return seg_ends_sorted, is_contig_end5, is_contig_end3
 
 
-def find_contiguous_reads(seg_end5s: np.ndarray,
-                          seg_end3s: np.ndarray,
-                          seg_ends_mask: np.ndarray | None):
-    """ Whether the segments of each read are contiguous. """
-    num_reads, num_segs = match_reads_segments(seg_end5s,
-                                               seg_end3s,
-                                               seg_ends_mask)
+def find_contiguous_reads(
+    seg_end5s: np.ndarray, seg_end3s: np.ndarray, seg_ends_mask: np.ndarray | None
+):
+    """Whether the segments of each read are contiguous."""
+    num_reads, num_segs = match_reads_segments(seg_end5s, seg_end3s, seg_ends_mask)
     if num_segs <= 1:
         # Reads with fewer than 2 segments cannot be discontiguous.
         return np.ones(num_reads, dtype=bool)
     # For contiguous reads, only the last coordinate (when sorted) will
     # be the end of a contiguous segment.
-    _, _, is_contig_end3 = sort_segment_ends(seg_end5s,
-                                             seg_end3s,
-                                             seg_ends_mask)
+    _, _, is_contig_end3 = sort_segment_ends(seg_end5s, seg_end3s, seg_ends_mask)
     return np.logical_not(np.count_nonzero(is_contig_end3[:, :-1], axis=1))
 
 
-def simulate_segment_ends(uniq_end5s: np.ndarray,
-                          uniq_end3s: np.ndarray,
-                          p_ends: np.ndarray,
-                          num_reads: int,
-                          read_length: int = 0,
-                          p_rev: float = 0.5,
-                          seed: int | None = None):
-    """ Simulate segment end coordinates from their probabilities.
+def simulate_segment_ends(
+    uniq_end5s: np.ndarray,
+    uniq_end3s: np.ndarray,
+    p_ends: np.ndarray,
+    num_reads: int,
+    read_length: int = 0,
+    p_rev: float = 0.5,
+    seed: int | None = None,
+):
+    """Simulate segment end coordinates from their probabilities.
 
     Parameters
     ----------
@@ -332,18 +352,21 @@ def simulate_segment_ends(uniq_end5s: np.ndarray,
     require_atleast("num_reads", num_reads, 0)
     if num_reads == 0:
         return np.array([], dtype=int), np.array([], dtype=int)
-    find_dims([(NUM_UNIQ,), (NUM_UNIQ,), (NUM_UNIQ,)],
-              [uniq_end5s, uniq_end3s, p_ends],
-              ["end5s", "end3s", "p_ends"],
-              nonzero=[NUM_UNIQ])
+    find_dims(
+        [(NUM_UNIQ,), (NUM_UNIQ,), (NUM_UNIQ,)],
+        [uniq_end5s, uniq_end3s, p_ends],
+        ["end5s", "end3s", "p_ends"],
+        nonzero=[NUM_UNIQ],
+    )
     # Drop pairs of 5'/3' ends where the 5' is greater than the 3'.
     valid_ends = np.less_equal(uniq_end5s, uniq_end3s)
     num_ends = np.count_nonzero(valid_ends)
     if num_ends == 0:
         raise ValueError("Got 0 valid pairs of 5'/3' ends (all have 5' end > 3' end)")
     elif num_ends < valid_ends.size:
-        logger.warning(f"Got {valid_ends.size - num_ends} pairs of 5'/3' ends "
-                       f"for which 5' > 3'")
+        logger.warning(
+            f"Got {valid_ends.size - num_ends} pairs of 5'/3' ends for which 5' > 3'"
+        )
         uniq_end5s = uniq_end5s[valid_ends]
         uniq_end3s = uniq_end3s[valid_ends]
         p_ends = p_ends[valid_ends]
@@ -352,8 +375,8 @@ def simulate_segment_ends(uniq_end5s: np.ndarray,
             p_ends = p_ends / total_p_ends
         else:
             # num_ends is not 0.
-            p_ends = np.full(num_ends, 1. / num_ends)
-    elif not np.isclose(p_ends.sum(), 1.):
+            p_ends = np.full(num_ends, 1.0 / num_ends)
+    elif not np.isclose(p_ends.sum(), 1.0):
         raise ValueError(f"p_ends must sum to 1, but got {p_ends.sum()}")
     rng = np.random.default_rng(seed)
     # Choose reads based on their probabilities.
@@ -363,12 +386,12 @@ def simulate_segment_ends(uniq_end5s: np.ndarray,
     require_atleast("read_length", read_length, 0)
     if read_length > 0:
         diff = read_length - 1
-        seg_end5s = np.stack([read_end5s,
-                              np.maximum(read_end3s - diff, read_end5s)],
-                             axis=1)
-        seg_end3s = np.stack([np.minimum(read_end5s + diff, read_end3s),
-                              read_end3s],
-                             axis=1)
+        seg_end5s = np.stack(
+            [read_end5s, np.maximum(read_end3s - diff, read_end5s)], axis=1
+        )
+        seg_end3s = np.stack(
+            [np.minimum(read_end5s + diff, read_end3s), read_end3s], axis=1
+        )
         # For reverse reads, swap mates 1 and 2.
         reverse = rng.random(num_reads) < p_rev
         indices = np.stack([reverse, ~reverse], axis=1, dtype=int)
@@ -381,41 +404,42 @@ def simulate_segment_ends(uniq_end5s: np.ndarray,
 
 
 class EndCoords(object):
-    """ Collection of 5' and 3' segment end coordinates. """
+    """Collection of 5' and 3' segment end coordinates."""
 
-    def __init__(self, *,
-                 region: Region,
-                 seg_end5s: np.ndarray,
-                 seg_end3s: np.ndarray,
-                 sanitize: bool = True,
-                 **kwargs):
+    def __init__(
+        self,
+        *,
+        region: Region,
+        seg_end5s: np.ndarray,
+        seg_end3s: np.ndarray,
+        sanitize: bool = True,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         # Validate and store the segment end coordinates.
-        self.seg_end5s, self.seg_end3s = sanitize_segment_ends(seg_end5s,
-                                                               seg_end3s,
-                                                               region.end5,
-                                                               region.end3,
-                                                               sanitize)
+        self.seg_end5s, self.seg_end3s = sanitize_segment_ends(
+            seg_end5s, seg_end3s, region.end5, region.end3, sanitize
+        )
 
     @cached_property
     def num_reads(self):
-        """ Number of reads. """
-        num_reads, _ = match_reads_segments(self.seg_end5s,
-                                            self.seg_end3s,
-                                            self.seg_ends_mask)
+        """Number of reads."""
+        num_reads, _ = match_reads_segments(
+            self.seg_end5s, self.seg_end3s, self.seg_ends_mask
+        )
         return num_reads
 
     @cached_property
     def num_segments(self):
-        """ Number of segments in each read. """
-        _, num_segs = match_reads_segments(self.seg_end5s,
-                                           self.seg_end3s,
-                                           self.seg_ends_mask)
+        """Number of segments in each read."""
+        _, num_segs = match_reads_segments(
+            self.seg_end5s, self.seg_end3s, self.seg_ends_mask
+        )
         return num_segs
 
     @cached_property
     def seg_ends_mask(self) -> np.ndarray | None:
-        """ Whether each pair of 5' and 3' ends is masked out. """
+        """Whether each pair of 5' and 3' ends is masked out."""
         # Store seg_ends_mask as a cached_property, not an instance
         # attribute, so that it never consumes space in the file system.
         seg_ends_mask = self.seg_end5s > self.seg_end3s
@@ -423,39 +447,37 @@ class EndCoords(object):
 
     @cached_property
     def read_end5s(self):
-        """ 5' end of each read. """
+        """5' end of each read."""
         return find_read_end5s(self.seg_end5s, self.seg_ends_mask)
 
     @cached_property
     def read_end3s(self):
-        """ 3' end of each read. """
+        """3' end of each read."""
         return find_read_end3s(self.seg_end3s, self.seg_ends_mask)
 
     @cached_property
     def read_lengths(self):
-        """ Length of each read. """
+        """Length of each read."""
         return self.read_end3s - self.read_end5s + 1
 
     @property
     def pos_dtype(self):
-        """ Data type for positions. """
+        """Data type for positions."""
         if self.seg_end5s.dtype is not self.seg_end3s.dtype:
             raise ValueError("Data types differ for 5' and 3' ends")
         return self.seg_end5s.dtype
 
     @cached_property
     def contiguous(self):
-        """ Whether the segments of each read are contiguous. """
-        return find_contiguous_reads(self.seg_end5s,
-                                     self.seg_end3s,
-                                     self.seg_ends_mask)
+        """Whether the segments of each read are contiguous."""
+        return find_contiguous_reads(self.seg_end5s, self.seg_end3s, self.seg_ends_mask)
 
     @cached_property
     def num_contiguous(self):
-        """ Number of contiguous reads. """
+        """Number of contiguous reads."""
         return np.count_nonzero(self.contiguous)
 
     @cached_property
     def num_discontiguous(self):
-        """ Number of discontiguous reads. """
+        """Number of discontiguous reads."""
         return self.num_reads - self.num_contiguous

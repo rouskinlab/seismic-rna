@@ -2,26 +2,26 @@ import unittest as ut
 
 import pandas as pd
 
-from seismicrna.core.rna.pair import (UNPAIRED,
-                                      pairs_to_dict,
-                                      pairs_to_table,
-                                      dict_to_pairs,
-                                      dict_to_table,
-                                      table_to_dict,
-                                      table_to_pairs,
-                                      find_enclosing_pairs)
+from seismicrna.core.rna.pair import (
+    UNPAIRED,
+    pairs_to_dict,
+    pairs_to_table,
+    dict_to_pairs,
+    dict_to_table,
+    table_to_dict,
+    table_to_pairs,
+    find_enclosing_pairs,
+)
 from seismicrna.core.seq import FIELD_END5, FIELD_END3, DNA, Region
 
 
 class TestConstants(ut.TestCase):
-
     def test_unpaired(self):
-        """ Partner given to unpaired bases in CT format. """
+        """Partner given to unpaired bases in CT format."""
         self.assertEqual(UNPAIRED, 0)
 
 
 class TestPairsToDict(ut.TestCase):
-
     def test_empty(self):
         pairs = iter([])
         expect = dict()
@@ -34,28 +34,30 @@ class TestPairsToDict(ut.TestCase):
 
     def test_invalid_position(self):
         pairs = iter([(2, 5), (0, 4), (10, 13)])
-        self.assertRaisesRegex(ValueError,
-                               "Position must be ≥ 1, but got 0",
-                               pairs_to_dict,
-                               pairs)
+        self.assertRaisesRegex(
+            ValueError, "Position must be ≥ 1, but got 0", pairs_to_dict, pairs
+        )
 
     def test_conflicting_pair_1(self):
         pairs = iter([(2, 5), (7, 4), (10, 7)])
-        self.assertRaisesRegex(ValueError,
-                               "Position 7 was given pairs with both 4 and 10",
-                               pairs_to_dict,
-                               pairs)
+        self.assertRaisesRegex(
+            ValueError,
+            "Position 7 was given pairs with both 4 and 10",
+            pairs_to_dict,
+            pairs,
+        )
 
     def test_conflicting_pair_2(self):
         pairs = iter([(7, 10), (2, 5), (7, 4)])
-        self.assertRaisesRegex(ValueError,
-                               "Position 7 was given pairs with both 10 and 4",
-                               pairs_to_dict,
-                               pairs)
+        self.assertRaisesRegex(
+            ValueError,
+            "Position 7 was given pairs with both 10 and 4",
+            pairs_to_dict,
+            pairs,
+        )
 
 
 class TestDictToPairs(ut.TestCase):
-
     def test_empty(self):
         pairs = dict()
         expect = list()
@@ -68,35 +70,42 @@ class TestDictToPairs(ut.TestCase):
 
     def test_missing_reverse_1(self):
         pairs = {2: 5, 4: 7, 7: 4, 10: 13, 13: 10}
-        self.assertRaisesRegex(ValueError,
-                               r"Pair \(2, 5\) is missing its reverse \(5, 2\)",
-                               lambda x: list(dict_to_pairs(x)),
-                               pairs)
+        self.assertRaisesRegex(
+            ValueError,
+            r"Pair \(2, 5\) is missing its reverse \(5, 2\)",
+            lambda x: list(dict_to_pairs(x)),
+            pairs,
+        )
 
     def test_missing_reverse_2(self):
         pairs = {4: 7, 5: 2, 7: 4, 10: 13, 13: 10}
-        self.assertRaisesRegex(ValueError,
-                               r"Pair \(5, 2\) is missing its reverse \(2, 5\)",
-                               lambda x: list(dict_to_pairs(x)),
-                               pairs)
+        self.assertRaisesRegex(
+            ValueError,
+            r"Pair \(5, 2\) is missing its reverse \(2, 5\)",
+            lambda x: list(dict_to_pairs(x)),
+            pairs,
+        )
 
     def test_invalid_position(self):
         pairs = {0: 5, 4: 7, 5: 2, 7: 4, 10: 13, 13: 10}
-        self.assertRaisesRegex(ValueError,
-                               "Position must be ≥ 1, but got 0",
-                               lambda x: list(dict_to_pairs(x)),
-                               pairs)
+        self.assertRaisesRegex(
+            ValueError,
+            "Position must be ≥ 1, but got 0",
+            lambda x: list(dict_to_pairs(x)),
+            pairs,
+        )
 
     def test_invalid_pair(self):
         pairs = {2: 5, 4: 4, 5: 2, 10: 13, 13: 10}
-        self.assertRaisesRegex(ValueError,
-                               "Position 4 is paired with itself",
-                               lambda x: list(dict_to_pairs(x)),
-                               pairs)
+        self.assertRaisesRegex(
+            ValueError,
+            "Position 4 is paired with itself",
+            lambda x: list(dict_to_pairs(x)),
+            pairs,
+        )
 
 
 class TestPairsToTable(ut.TestCase):
-
     def test_no_pairs(self):
         pairs = list()
         for n in range(5):
@@ -109,8 +118,7 @@ class TestPairsToTable(ut.TestCase):
     def test_normal(self):
         region = Region("myref", DNA.random(13))
         pairs = iter([(2, 5), (7, 4), (10, 13)])
-        expect = pd.Series([0, 5, 0, 7, 2, 0, 4, 0, 0, 13, 0, 0, 10],
-                           region.range)
+        expect = pd.Series([0, 5, 0, 7, 2, 0, 4, 0, 0, 13, 0, 0, 10], region.range)
         result = pairs_to_table(pairs, region)
         self.assertIsInstance(result, pd.Series)
         self.assertTrue(result.equals(expect))
@@ -118,38 +126,41 @@ class TestPairsToTable(ut.TestCase):
     def test_invalid_position_1(self):
         region = Region("myref", DNA.random(13))
         pairs = iter([(2, 5), (7, 4), (10, 14)])
-        self.assertRaisesRegex(ValueError,
-                               "Position 14 is not in",
-                               pairs_to_table,
-                               pairs, region)
+        self.assertRaisesRegex(
+            ValueError, "Position 14 is not in", pairs_to_table, pairs, region
+        )
 
     def test_invalid_position_2(self):
         region = Region("myref", DNA.random(13))
         pairs = iter([(2, 5), (7, 4), (14, 10)])
-        self.assertRaisesRegex(ValueError,
-                               "Position 14 is not in",
-                               pairs_to_table,
-                               pairs, region)
+        self.assertRaisesRegex(
+            ValueError, "Position 14 is not in", pairs_to_table, pairs, region
+        )
 
     def test_conflicting_pair_1(self):
         region = Region("myref", DNA.random(13))
         pairs = iter([(2, 5), (7, 4), (10, 7)])
-        self.assertRaisesRegex(ValueError,
-                               "Position 7 was given pairs with both 4 and 10",
-                               pairs_to_table,
-                               pairs, region)
+        self.assertRaisesRegex(
+            ValueError,
+            "Position 7 was given pairs with both 4 and 10",
+            pairs_to_table,
+            pairs,
+            region,
+        )
 
     def test_conflicting_pair_2(self):
         region = Region("myref", DNA.random(13))
         pairs = iter([(7, 10), (2, 5), (7, 4)])
-        self.assertRaisesRegex(ValueError,
-                               "Position 7 was given pairs with both 10 and 4",
-                               pairs_to_table,
-                               pairs, region)
+        self.assertRaisesRegex(
+            ValueError,
+            "Position 7 was given pairs with both 10 and 4",
+            pairs_to_table,
+            pairs,
+            region,
+        )
 
 
 class TestDictToTable(ut.TestCase):
-
     def test_empty(self):
         pairs = dict()
         for n in range(5):
@@ -162,15 +173,13 @@ class TestDictToTable(ut.TestCase):
     def test_normal(self):
         region = Region("myref", DNA.random(13))
         pairs = {2: 5, 4: 7, 5: 2, 7: 4, 10: 13, 13: 10}
-        expect = pd.Series([0, 5, 0, 7, 2, 0, 4, 0, 0, 13, 0, 0, 10],
-                           region.range)
+        expect = pd.Series([0, 5, 0, 7, 2, 0, 4, 0, 0, 13, 0, 0, 10], region.range)
         result = dict_to_table(pairs, region)
         self.assertIsInstance(result, pd.Series)
         self.assertTrue(result.equals(expect))
 
 
 class TestTableToDict(ut.TestCase):
-
     def test_empty(self):
         pairs = dict()
         for n in range(5):
@@ -186,7 +195,6 @@ class TestTableToDict(ut.TestCase):
 
 
 class TestTableToPairs(ut.TestCase):
-
     def test_empty(self):
         pairs = list()
         for n in range(5):
@@ -202,7 +210,6 @@ class TestTableToPairs(ut.TestCase):
 
 
 class TestFindEnclosingPairs(ut.TestCase):
-
     def test_no_pairs(self):
         for n in range(5):
             region = Region("myref", DNA.random(n))
@@ -217,22 +224,26 @@ class TestFindEnclosingPairs(ut.TestCase):
         region = Region("myref", DNA.random(14))
         pairs = [(2, 7), (4, 5), (10, 13)]
         table = pairs_to_table(pairs, region)
-        expect = pd.DataFrame([[0, 0],
-                               [2, 7],
-                               [2, 7],
-                               [4, 5],
-                               [4, 5],
-                               [2, 7],
-                               [2, 7],
-                               [0, 0],
-                               [0, 0],
-                               [10, 13],
-                               [10, 13],
-                               [10, 13],
-                               [10, 13],
-                               [0, 0]],
-                              region.range,
-                              [FIELD_END5, FIELD_END3])
+        expect = pd.DataFrame(
+            [
+                [0, 0],
+                [2, 7],
+                [2, 7],
+                [4, 5],
+                [4, 5],
+                [2, 7],
+                [2, 7],
+                [0, 0],
+                [0, 0],
+                [10, 13],
+                [10, 13],
+                [10, 13],
+                [10, 13],
+                [0, 0],
+            ],
+            region.range,
+            [FIELD_END5, FIELD_END3],
+        )
         result = find_enclosing_pairs(table)
         self.assertIsInstance(result, pd.DataFrame)
         self.assertTrue(result.equals(expect))
@@ -241,10 +252,12 @@ class TestFindEnclosingPairs(ut.TestCase):
         region = Region("myref", DNA.random(14))
         pairs = [(2, 5), (4, 7), (10, 13)]
         table = pairs_to_table(pairs, region)
-        self.assertRaisesRegex(ValueError,
-                               r"Pairs \(2, 5\) and \(4, 7\) are not nested",
-                               find_enclosing_pairs,
-                               table)
+        self.assertRaisesRegex(
+            ValueError,
+            r"Pairs \(2, 5\) and \(4, 7\) are not nested",
+            find_enclosing_pairs,
+            table,
+        )
 
 
 if __name__ == "__main__":

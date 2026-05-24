@@ -6,9 +6,8 @@ from seismicrna.core.rel.pattern import HalfRelPattern, RelPattern
 
 
 def powerset(items: list | set):
-    """ Set of all subsets of items, including empty and all items. """
-    return chain.from_iterable(combinations(items, n)
-                               for n in range(len(items) + 1))
+    """Set of all subsets of items, including empty and all items."""
+    return chain.from_iterable(combinations(items, n) for n in range(len(items) + 1))
 
 
 def iter_codes(all_letters: bool = False):
@@ -23,12 +22,10 @@ def iter_codes(all_letters: bool = False):
 
 
 class TestHalfRelPattern(ut.TestCase):
-
     def test_bases_muts(self):
         self.assertEqual(HalfRelPattern.ref_bases, "ACNGT")
         self.assertEqual(HalfRelPattern.read_bases, "ACGTDI")
-        self.assertEqual(HalfRelPattern.mut_bits,
-                         bytes([16, 32, 64, 128, 2, 12]))
+        self.assertEqual(HalfRelPattern.mut_bits, bytes([16, 32, 64, 128, 2, 12]))
 
     def test_re_patterns(self):
         self.assertEqual(HalfRelPattern.fmt_plain, "{}{}")
@@ -48,19 +45,25 @@ class TestHalfRelPattern(ut.TestCase):
         for a, b, plain, fancy in iter_codes(all_letters=True):
             with self.subTest(a=a, b=b):
                 if a in "acngtACNGT" and b in "acgtdiACGTDI":
-                    self.assertEqual(HalfRelPattern.as_match(plain).group(),
-                                     plain.lower())
-                    self.assertEqual(HalfRelPattern.as_match(fancy).group(),
-                                     fancy.upper())
+                    self.assertEqual(
+                        HalfRelPattern.as_match(plain).group(), plain.lower()
+                    )
+                    self.assertEqual(
+                        HalfRelPattern.as_match(fancy).group(), fancy.upper()
+                    )
                 else:
-                    self.assertRaisesRegex(ValueError,
-                                           "Failed to match code",
-                                           HalfRelPattern.as_match,
-                                           plain)
-                    self.assertRaisesRegex(ValueError,
-                                           "Failed to match code",
-                                           HalfRelPattern.as_match,
-                                           fancy)
+                    self.assertRaisesRegex(
+                        ValueError,
+                        "Failed to match code",
+                        HalfRelPattern.as_match,
+                        plain,
+                    )
+                    self.assertRaisesRegex(
+                        ValueError,
+                        "Failed to match code",
+                        HalfRelPattern.as_match,
+                        fancy,
+                    )
 
     def test_as_plain(self):
         for _, _, plain, fancy in iter_codes():
@@ -71,15 +74,31 @@ class TestHalfRelPattern(ut.TestCase):
                 self.assertEqual(HalfRelPattern.as_fancy(fancy), fancy.upper())
 
     def test_compile_example(self):
-        codes = ["A -> C", "A -> T", "C -> D", "G -> A",
-                 "G -> G", "G -> I", "T -> A", "T -> T"]
+        codes = [
+            "A -> C",
+            "A -> T",
+            "C -> D",
+            "G -> A",
+            "G -> G",
+            "G -> I",
+            "T -> A",
+            "T -> T",
+        ]
         expect = {"A": 160, "C": 2, "N": 0, "G": 29, "T": 17}
         self.assertDictEqual(HalfRelPattern.compile(codes), expect)
 
     def test_decompile_example(self):
         patterns = {"A": 160, "C": 2, "G": 29, "T": 17}
-        expect = ["A -> C", "A -> T", "C -> D", "G -> A",
-                  "G -> G", "G -> I", "T -> A", "T -> T"]
+        expect = [
+            "A -> C",
+            "A -> T",
+            "C -> D",
+            "G -> A",
+            "G -> G",
+            "G -> I",
+            "T -> A",
+            "T -> T",
+        ]
         self.assertListEqual(sorted(HalfRelPattern.decompile(patterns)), expect)
 
     def test_compile_decompile(self):
@@ -87,8 +106,9 @@ class TestHalfRelPattern(ut.TestCase):
             with self.subTest(fancy=fancy):
                 compiled = HalfRelPattern.compile([fancy])
                 self.assertDictEqual(compiled, HalfRelPattern.compile([plain]))
-                self.assertListEqual(list(HalfRelPattern.decompile(compiled)),
-                                     [fancy.upper()])
+                self.assertListEqual(
+                    list(HalfRelPattern.decompile(compiled)), [fancy.upper()]
+                )
 
     def test_from_report_format(self):
         for _, _, _, fancy in iter_codes():
@@ -106,77 +126,86 @@ class TestHalfRelPattern(ut.TestCase):
     def test_from_counts(self):
         pattern = HalfRelPattern.from_counts()
         self.assertIsInstance(pattern, HalfRelPattern)
-        self.assertDictEqual(pattern.patterns,
-                             {"A": 0, "C": 0, "N": 0, "G": 0, "T": 0})
+        self.assertDictEqual(pattern.patterns, {"A": 0, "C": 0, "N": 0, "G": 0, "T": 0})
         pattern = HalfRelPattern.from_counts(count_ref=True)
-        self.assertDictEqual(pattern.patterns,
-                             {"A": 1, "C": 1, "N": 0, "G": 1, "T": 1})
+        self.assertDictEqual(pattern.patterns, {"A": 1, "C": 1, "N": 0, "G": 1, "T": 1})
         pattern = HalfRelPattern.from_counts(count_sub=True)
-        self.assertDictEqual(pattern.patterns,
-                             {"A": 224, "C": 208, "N": 0, "G": 176, "T": 112})
+        self.assertDictEqual(
+            pattern.patterns, {"A": 224, "C": 208, "N": 0, "G": 176, "T": 112}
+        )
         pattern = HalfRelPattern.from_counts(count_del=True)
-        self.assertDictEqual(pattern.patterns,
-                             {"A": 2, "C": 2, "N": 2, "G": 2, "T": 2})
+        self.assertDictEqual(pattern.patterns, {"A": 2, "C": 2, "N": 2, "G": 2, "T": 2})
         pattern = HalfRelPattern.from_counts(count_ins=True)
-        self.assertDictEqual(pattern.patterns,
-                             {"A": 12, "C": 12, "N": 12, "G": 12, "T": 12})
-        pattern = HalfRelPattern.from_counts(count_ref=True,
-                                             no_count=["A -> G", "cc", "ta"])
-        self.assertDictEqual(pattern.patterns,
-                             {"A": 1, "C": 0, "N": 0, "G": 1, "T": 1})
-        pattern = HalfRelPattern.from_counts(count_sub=True,
-                                             no_count=["A -> G", "cc", "ta"])
-        self.assertDictEqual(pattern.patterns,
-                             {"A": 160, "C": 208, "N": 0, "G": 176, "T": 96})
-        pattern = HalfRelPattern.from_counts(count_ref=True,
-                                             count_sub=True,
-                                             count_del=True,
-                                             count_ins=True,
-                                             no_count=["ag", "G -> C"])
-        self.assertDictEqual(pattern.patterns,
-                             {"A": 175, "C": 223, "N": 14, "G": 159, "T": 127})
+        self.assertDictEqual(
+            pattern.patterns, {"A": 12, "C": 12, "N": 12, "G": 12, "T": 12}
+        )
+        pattern = HalfRelPattern.from_counts(
+            count_ref=True, no_count=["A -> G", "cc", "ta"]
+        )
+        self.assertDictEqual(pattern.patterns, {"A": 1, "C": 0, "N": 0, "G": 1, "T": 1})
+        pattern = HalfRelPattern.from_counts(
+            count_sub=True, no_count=["A -> G", "cc", "ta"]
+        )
+        self.assertDictEqual(
+            pattern.patterns, {"A": 160, "C": 208, "N": 0, "G": 176, "T": 96}
+        )
+        pattern = HalfRelPattern.from_counts(
+            count_ref=True,
+            count_sub=True,
+            count_del=True,
+            count_ins=True,
+            no_count=["ag", "G -> C"],
+        )
+        self.assertDictEqual(
+            pattern.patterns, {"A": 175, "C": 223, "N": 14, "G": 159, "T": 127}
+        )
 
     def test_allc(self):
         pattern = HalfRelPattern.allc()
         self.assertIsInstance(pattern, HalfRelPattern)
-        self.assertDictEqual(pattern.patterns,
-                             {"A": 239, "C": 223, "N": 14, "G": 191, "T": 127})
+        self.assertDictEqual(
+            pattern.patterns, {"A": 239, "C": 223, "N": 14, "G": 191, "T": 127}
+        )
 
     def test_muts(self):
         pattern = HalfRelPattern.muts()
         self.assertIsInstance(pattern, HalfRelPattern)
-        self.assertDictEqual(pattern.patterns,
-                             {"A": 238, "C": 222, "N": 14, "G": 190, "T": 126})
+        self.assertDictEqual(
+            pattern.patterns, {"A": 238, "C": 222, "N": 14, "G": 190, "T": 126}
+        )
 
     def test_refs(self):
         pattern = HalfRelPattern.refs()
         self.assertIsInstance(pattern, HalfRelPattern)
-        self.assertDictEqual(pattern.patterns,
-                             {"A": 1, "C": 1, "N": 0, "G": 1, "T": 1})
+        self.assertDictEqual(pattern.patterns, {"A": 1, "C": 1, "N": 0, "G": 1, "T": 1})
 
     def test_none(self):
         pattern = HalfRelPattern.none()
         self.assertIsInstance(pattern, HalfRelPattern)
-        self.assertDictEqual(pattern.patterns,
-                             {"A": 0, "C": 0, "N": 0, "G": 0, "T": 0})
+        self.assertDictEqual(pattern.patterns, {"A": 0, "C": 0, "N": 0, "G": 0, "T": 0})
 
     def test_fits_refs(self):
         pattern = HalfRelPattern.refs()
         for base in "ACNGT":
             for rel in range(256):
                 with self.subTest(base=base, rel=rel):
-                    self.assertEqual(pattern.fits(base, rel),
-                                     rel == 0 or rel == 1 and base != "N")
+                    self.assertEqual(
+                        pattern.fits(base, rel), rel == 0 or rel == 1 and base != "N"
+                    )
 
     def test_fits_subs(self):
         pattern = HalfRelPattern.from_counts(count_sub=True)
-        subs = {"A": [32, 64, 128],
-                "C": [16, 64, 128],
-                "G": [16, 32, 128],
-                "T": [16, 32, 64],
-                "N": []}
-        fits = {base: {sum(subset) for subset in powerset(base_subs)}
-                for base, base_subs in subs.items()}
+        subs = {
+            "A": [32, 64, 128],
+            "C": [16, 64, 128],
+            "G": [16, 32, 128],
+            "T": [16, 32, 64],
+            "N": [],
+        }
+        fits = {
+            base: {sum(subset) for subset in powerset(base_subs)}
+            for base, base_subs in subs.items()
+        }
         for base, base_fits in fits.items():
             for rel in range(256):
                 with self.subTest(base=base, rel=rel):
@@ -184,13 +213,17 @@ class TestHalfRelPattern(ut.TestCase):
 
     def test_fits_muts(self):
         pattern = HalfRelPattern.muts()
-        muts = {"A": [2, 4, 8, 32, 64, 128],
-                "C": [2, 4, 8, 16, 64, 128],
-                "G": [2, 4, 8, 16, 32, 128],
-                "T": [2, 4, 8, 16, 32, 64],
-                "N": [2, 4, 8]}
-        fits = {base: {sum(subset) for subset in powerset(base_muts)}
-                for base, base_muts in muts.items()}
+        muts = {
+            "A": [2, 4, 8, 32, 64, 128],
+            "C": [2, 4, 8, 16, 64, 128],
+            "G": [2, 4, 8, 16, 32, 128],
+            "T": [2, 4, 8, 16, 32, 64],
+            "N": [2, 4, 8],
+        }
+        fits = {
+            base: {sum(subset) for subset in powerset(base_muts)}
+            for base, base_muts in muts.items()
+        }
         for base, base_fits in fits.items():
             for rel in range(256):
                 with self.subTest(base=base, rel=rel):
@@ -198,13 +231,17 @@ class TestHalfRelPattern(ut.TestCase):
 
     def test_fits_allc(self):
         pattern = HalfRelPattern.allc()
-        allc = {"A": [1, 2, 4, 8, 32, 64, 128],
-                "C": [1, 2, 4, 8, 16, 64, 128],
-                "G": [1, 2, 4, 8, 16, 32, 128],
-                "T": [1, 2, 4, 8, 16, 32, 64],
-                "N": [2, 4, 8]}
-        fits = {base: {sum(subset) for subset in powerset(base_allc)}
-                for base, base_allc in allc.items()}
+        allc = {
+            "A": [1, 2, 4, 8, 32, 64, 128],
+            "C": [1, 2, 4, 8, 16, 64, 128],
+            "G": [1, 2, 4, 8, 16, 32, 128],
+            "T": [1, 2, 4, 8, 16, 32, 64],
+            "N": [2, 4, 8],
+        }
+        fits = {
+            base: {sum(subset) for subset in powerset(base_allc)}
+            for base, base_allc in allc.items()
+        }
         for base, base_fits in fits.items():
             for rel in range(256):
                 with self.subTest(base=base, rel=rel):
@@ -214,8 +251,7 @@ class TestHalfRelPattern(ut.TestCase):
         for _, _, plain, fancy in iter_codes():
             with self.subTest(fancy=fancy):
                 pattern = HalfRelPattern(fancy)
-                self.assertListEqual(pattern.to_report_format(),
-                                     [fancy.upper()])
+                self.assertListEqual(pattern.to_report_format(), [fancy.upper()])
 
     def test_intersect(self):
         p1 = HalfRelPattern("aa", "ac", "ca", "cc", "ga", "gt", "gi", "td")
@@ -238,29 +274,31 @@ class TestHalfRelPattern(ut.TestCase):
 
 
 class TestRelPattern(ut.TestCase):
-
     def test_from_counts(self):
         for _, _, _, fancy in iter_codes():
             for count_del in [False, True]:
                 for count_ins in [False, True]:
-                    with self.subTest(fancy=fancy,
-                                      count_del=count_del,
-                                      count_ins=count_ins):
-                        pattern = RelPattern.from_counts(count_del=count_del,
-                                                         count_ins=count_ins,
-                                                         no_count=[fancy])
+                    with self.subTest(
+                        fancy=fancy, count_del=count_del, count_ins=count_ins
+                    ):
+                        pattern = RelPattern.from_counts(
+                            count_del=count_del, count_ins=count_ins, no_count=[fancy]
+                        )
                         self.assertIsInstance(pattern, RelPattern)
                         self.assertEqual(
                             pattern.yes,
-                            HalfRelPattern.from_counts(count_sub=True,
-                                                       count_del=count_del,
-                                                       count_ins=count_ins,
-                                                       no_count=[fancy])
+                            HalfRelPattern.from_counts(
+                                count_sub=True,
+                                count_del=count_del,
+                                count_ins=count_ins,
+                                no_count=[fancy],
+                            ),
                         )
                         self.assertEqual(
                             pattern.nos,
-                            HalfRelPattern.from_counts(count_ref=True,
-                                                       no_count=[fancy])
+                            HalfRelPattern.from_counts(
+                                count_ref=True, no_count=[fancy]
+                            ),
                         )
 
     def test_allc(self):
@@ -298,11 +336,15 @@ class TestRelPattern(ut.TestCase):
         self.assertNotEqual(pattern2, pattern4)
 
     def test_fits(self):
-        for hrp1, hrp2 in product([HalfRelPattern.none(),
-                                   HalfRelPattern.refs(),
-                                   HalfRelPattern.muts(),
-                                   HalfRelPattern.allc()],
-                                  repeat=2):
+        for hrp1, hrp2 in product(
+            [
+                HalfRelPattern.none(),
+                HalfRelPattern.refs(),
+                HalfRelPattern.muts(),
+                HalfRelPattern.allc(),
+            ],
+            repeat=2,
+        ):
             pattern = RelPattern(hrp1, hrp2)
             for base in "ACNGT":
                 for rel in range(256):
@@ -311,15 +353,15 @@ class TestRelPattern(ut.TestCase):
                         if hrp1 is hrp2:
                             self.assertFalse(info)
                         else:
-                            self.assertEqual(info, (hrp1.fits(base, rel)
-                                                    != hrp2.fits(base, rel)))
+                            self.assertEqual(
+                                info, (hrp1.fits(base, rel) != hrp2.fits(base, rel))
+                            )
                         self.assertEqual(fits, hrp1.fits(base, rel))
 
     def test_intersect_none(self):
         hrp1 = HalfRelPattern("aa", "ac", "ca", "cc", "ga", "gt", "gi", "td")
         hrp2 = HalfRelPattern("ac", "at", "ca", "cc", "ga", "gg", "gi", "td")
-        self.assertEqual(RelPattern(hrp1, hrp2).intersect(None),
-                         RelPattern(hrp1, hrp2))
+        self.assertEqual(RelPattern(hrp1, hrp2).intersect(None), RelPattern(hrp1, hrp2))
 
     def test_intersect_other(self):
         hrp1 = HalfRelPattern("aa", "ac", "ca", "cc", "ga", "gt", "gi", "td")
@@ -330,14 +372,13 @@ class TestRelPattern(ut.TestCase):
         hrp34 = HalfRelPattern("cg", "ga", "td")
         self.assertEqual(
             RelPattern(hrp1, hrp3).intersect(RelPattern(hrp2, hrp4)),
-            RelPattern(hrp12, hrp34)
+            RelPattern(hrp12, hrp34),
         )
 
     def test_invert(self):
         hrp1 = HalfRelPattern("aa", "ac", "ca", "cc", "ga", "gt", "gi", "td")
         hrp2 = HalfRelPattern("ac", "at", "ca", "cc", "ga", "gg", "gi", "td")
-        self.assertEqual(RelPattern(hrp1, hrp2).invert(),
-                         RelPattern(hrp2, hrp1))
+        self.assertEqual(RelPattern(hrp1, hrp2).invert(), RelPattern(hrp2, hrp1))
 
 
 if __name__ == "__main__":

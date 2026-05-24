@@ -6,21 +6,23 @@ from .dataset import load_idmut_dataset
 from .io import IDmutFile
 from ..core.header import RelHeader
 from ..core.seq import DNA, Region
-from ..core.table import (Tabulator,
-                          BatchTabulator,
-                          CountTabulator,
-                          DatasetTabulator,
-                          PositionTable,
-                          PositionTableLoader,
-                          PositionTableWriter,
-                          ReadTable,
-                          ReadTableLoader,
-                          ReadTableWriter,
-                          RelTypeTable)
+from ..core.table import (
+    Tabulator,
+    BatchTabulator,
+    CountTabulator,
+    DatasetTabulator,
+    PositionTable,
+    PositionTableLoader,
+    PositionTableWriter,
+    ReadTable,
+    ReadTableLoader,
+    ReadTableWriter,
+    RelTypeTable,
+)
 
 
 class AverageTable(RelTypeTable, ABC):
-    """ Average over an ensemble of RNA structures. """
+    """Average over an ensemble of RNA structures."""
 
     @classmethod
     def get_header_type(cls):
@@ -28,20 +30,21 @@ class AverageTable(RelTypeTable, ABC):
 
 
 class IDmutTable(AverageTable, IDmutFile, ABC):
-
     @classmethod
     def get_load_function(cls):
         return load_idmut_dataset
 
 
 class IDmutPositionTable(IDmutTable, PositionTable, ABC):
-
-    def _iter_profiles(self, *,
-                       regions: Iterable[Region] | None,
-                       quantile: float,
-                       rel: str,
-                       k: int | None,
-                       clust: int | None):
+    def _iter_profiles(
+        self,
+        *,
+        regions: Iterable[Region] | None,
+        quantile: float,
+        rel: str,
+        k: int | None,
+        clust: int | None,
+    ):
         """
         Yield RNA profiles from this table (always empty for IDmut).
 
@@ -71,11 +74,11 @@ class IDmutReadTable(IDmutTable, ReadTable, ABC):
 
 
 class IDmutPositionTableLoader(PositionTableLoader, IDmutPositionTable):
-    """ Load IDmut data indexed by position. """
+    """Load IDmut data indexed by position."""
 
 
 class IDmutReadTableLoader(ReadTableLoader, IDmutReadTable):
-    """ Load IDmut data indexed by read. """
+    """Load IDmut data indexed by read."""
 
 
 class IDmutPositionTableWriter(PositionTableWriter, IDmutPositionTable):
@@ -87,16 +90,11 @@ class IDmutReadTableWriter(ReadTableWriter, IDmutReadTable):
 
 
 class FullTabulator(Tabulator, ABC):
-
     @classmethod
     def get_null_value(cls):
         return 0
 
-    def __init__(self, *,
-                 ref: str,
-                 refseq: DNA,
-                 count_ends: bool = False,
-                 **kwargs):
+    def __init__(self, *, ref: str, refseq: DNA, count_ends: bool = False, **kwargs):
         """
         Initialize a full-reference tabulator.
 
@@ -114,13 +112,10 @@ class FullTabulator(Tabulator, ABC):
         """
         # For a full tabulator, the full reference sequence must be used
         # as the region.
-        super().__init__(region=Region(ref, refseq),
-                         count_ends=count_ends,
-                         **kwargs)
+        super().__init__(region=Region(ref, refseq), count_ends=count_ends, **kwargs)
 
 
 class AverageTabulator(Tabulator, ABC):
-
     @cached_property
     def data_per_clust(self):
         # An ensemble average tabulator has no per-cluster data.
@@ -128,7 +123,6 @@ class AverageTabulator(Tabulator, ABC):
 
 
 class IDmutTabulator(FullTabulator, AverageTabulator, ABC):
-
     @classmethod
     def table_types(cls):
         return [IDmutPositionTableWriter, IDmutReadTableWriter]
@@ -143,7 +137,6 @@ class IDmutBatchTabulator(BatchTabulator, IDmutTabulator):
 
 
 class IDmutDatasetTabulator(DatasetTabulator, IDmutTabulator):
-
     @classmethod
     @cache
     def init_kws(cls):

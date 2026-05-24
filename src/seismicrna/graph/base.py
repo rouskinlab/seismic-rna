@@ -11,14 +11,16 @@ from plotly.subplots import make_subplots
 
 from ..cluster.data import ClusterDataset, ClusterTable, ClusterAbundanceTable
 from ..core import path
-from ..core.arg import (arg_input_path,
-                        opt_csv,
-                        opt_html,
-                        opt_svg,
-                        opt_pdf,
-                        opt_png,
-                        opt_force,
-                        opt_num_cpus)
+from ..core.arg import (
+    arg_input_path,
+    opt_csv,
+    opt_html,
+    opt_svg,
+    opt_pdf,
+    opt_png,
+    opt_force,
+    opt_num_cpus,
+)
 from ..core.dataset import MutsDataset
 from ..core.seq import DNA
 from ..core.table import Table
@@ -39,9 +41,7 @@ def get_action_name(source: MutsDataset | Table):
         return ACTION_IDMUT
     if isinstance(source, (FilterDataset, FilterTable)):
         return ACTION_FILTER
-    if isinstance(source, (ClusterDataset,
-                           ClusterTable,
-                           ClusterAbundanceTable)):
+    if isinstance(source, (ClusterDataset, ClusterTable, ClusterAbundanceTable)):
         return ACTION_CLUSTER
     raise TypeError(source)
 
@@ -51,7 +51,7 @@ def make_title_action_sample(action: str, sample: str):
 
 
 def make_path_subject(action: str, k: int | None, clust: int | None):
-    """ Build the path subject string that identifies a graph's data source.
+    """Build the path subject string that identifies a graph's data source.
 
     Parameters
     ----------
@@ -72,26 +72,29 @@ def make_path_subject(action: str, k: int | None, clust: int | None):
     """
     if action == ACTION_IDMUT or action == ACTION_FILTER:
         if k or clust:
-            raise ValueError(f"For {action} data, k and clust must both "
-                             f"be 0 or None, but got {k} and {clust}")
+            raise ValueError(
+                f"For {action} data, k and clust must both "
+                f"be 0 or None, but got {k} and {clust}"
+            )
         return action
     if action == ACTION_CLUSTER:
-        return "-".join(map(str, [action,
-                                  k if k is not None else "x",
-                                  clust if clust is not None else "x"]))
+        return "-".join(
+            map(
+                str,
+                [
+                    action,
+                    k if k is not None else "x",
+                    clust if clust is not None else "x",
+                ],
+            )
+        )
     raise ValueError(f"Invalid action: {repr(action)}")
 
 
 class Annotation(object):
-    """ Text annotation in a graph. """
+    """Text annotation in a graph."""
 
-    def __init__(self,
-                 row: int,
-                 col: int,
-                 x: float,
-                 y: float,
-                 text: str,
-                 **kwargs):
+    def __init__(self, row: int, col: int, x: float, y: float, text: str, **kwargs):
         """
         Parameters
         ----------
@@ -118,165 +121,165 @@ class Annotation(object):
 
 
 class BaseGraph(ABC):
-    """ Base class for all types of graphs. """
+    """Base class for all types of graphs."""
 
     @classmethod
     @abstractmethod
     def graph_kind(cls) -> str:
-        """ Kind of graph. """
+        """Kind of graph."""
 
     @classmethod
     @abstractmethod
     def what(cls) -> str:
-        """ What is being graphed. """
+        """What is being graphed."""
 
     @classmethod
     def get_path_segs(cls):
-        """ Path segments. """
-        return (path.SampSeg,
-                path.StepSeg,
-                path.RefSeg,
-                path.RegSeg,
-                path.GraphSeg)
+        """Path segments."""
+        return (path.SampSeg, path.StepSeg, path.RefSeg, path.RegSeg, path.GraphSeg)
 
     @property
     @abstractmethod
     def title_action_sample(self) -> str:
-        """ Action and sample for the title. """
+        """Action and sample for the title."""
 
     @property
     @abstractmethod
     def top(self) -> Path:
-        """ Path of the top-level output directory for all files. """
+        """Path of the top-level output directory for all files."""
 
     @property
     @abstractmethod
     def branches(self) -> dict[str, str]:
-        """ Branches of the workflow. """
+        """Branches of the workflow."""
 
     @property
     @abstractmethod
     def sample(self) -> str:
-        """ Name(s) of the sample(s) from which the data come. """
+        """Name(s) of the sample(s) from which the data come."""
 
     @property
     @abstractmethod
     def ref(self) -> str:
-        """ Name of the reference sequence from which the data come. """
+        """Name of the reference sequence from which the data come."""
 
     @property
     @abstractmethod
     def reg(self) -> str:
-        """ Name of the reference region from which the data come. """
+        """Name of the reference region from which the data come."""
 
     @property
     @abstractmethod
     def seq(self) -> DNA:
-        """ Sequence of the region from which the data come. """
+        """Sequence of the region from which the data come."""
 
     @cached_property
     @abstractmethod
     def details(self) -> list[str]:
-        """ Additional details about the graph. """
+        """Additional details about the graph."""
         return list()
 
     @property
     @abstractmethod
     def path_subject(self) -> str:
-        """ Subject of the graph. """
+        """Subject of the graph."""
 
     @cached_property
     @abstractmethod
     def predicate(self) -> list[str]:
-        """ Predicate of the graph. """
+        """Predicate of the graph."""
         return list()
 
     @cached_property
     def graph_filename(self):
-        """ Name of the graph's output file, without its extension. """
-        return "_".join(filter(None, [self.graph_kind(),
-                                      self.path_subject,
-                                      "_".join(self.predicate)]))
+        """Name of the graph's output file, without its extension."""
+        return "_".join(
+            filter(
+                None, [self.graph_kind(), self.path_subject, "_".join(self.predicate)]
+            )
+        )
 
     def get_path_fields(self):
-        """ Path fields. """
-        return {path.TOP: self.top,
-                path.SAMPLE: self.sample,
-                path.STEP: path.GRAPH_STEP,
-                path.BRANCHES: self.branches,
-                path.REF: self.ref,
-                path.REG: self.reg,
-                path.GRAPH: self.graph_filename}
+        """Path fields."""
+        return {
+            path.TOP: self.top,
+            path.SAMPLE: self.sample,
+            path.STEP: path.GRAPH_STEP,
+            path.BRANCHES: self.branches,
+            path.REF: self.ref,
+            path.REG: self.reg,
+            path.GRAPH: self.graph_filename,
+        }
 
     def get_path(self, ext: str):
-        """ Path to the output file of the graph. """
-        return path.buildpar(self.get_path_segs(),
-                             {**self.get_path_fields(), path.EXT: ext})
+        """Path to the output file of the graph."""
+        return path.buildpar(
+            self.get_path_segs(), {**self.get_path_fields(), path.EXT: ext}
+        )
 
     @cached_property
     @abstractmethod
     def data(self) -> pd.DataFrame:
-        """ Data of the graph. """
+        """Data of the graph."""
 
     @abstractmethod
     def get_traces(self) -> Iterable[tuple[tuple[int, int], go.Trace]]:
-        """ Data traces of the graph. """
+        """Data traces of the graph."""
 
     @property
     @abstractmethod
     def x_title(self) -> str:
-        """ Title of the x-axis. """
+        """Title of the x-axis."""
 
     @property
     @abstractmethod
     def y_title(self) -> str:
-        """ Title of the y-axis. """
+        """Title of the y-axis."""
 
     @property
     def annotations(self) -> list[Annotation]:
-        """ Text annotations for the figure. """
+        """Text annotations for the figure."""
         return list()
 
     @property
     def _subplots_params(self):
-        return dict(x_title=self.x_title,
-                    y_title=self.y_title)
+        return dict(x_title=self.x_title, y_title=self.y_title)
 
     def _figure_init(self):
-        """ Initialize the figure. """
+        """Initialize the figure."""
         return make_subplots(**self._subplots_params)
 
     def _figure_data(self, figure: go.Figure):
-        """ Add data to the figure. """
+        """Add data to the figure."""
         for (row, col), trace in self.get_traces():
             figure.add_trace(trace, row=row, col=col)
 
     def _figure_layout(self, figure: go.Figure):
-        """ Update the figure's layout. """
-        figure.update_layout(title=self.title,
-                             plot_bgcolor="#ffffff",
-                             paper_bgcolor="#ffffff",
-                             showlegend=True)
-        figure.update_xaxes(linewidth=1,
-                            linecolor="#000000",
-                            autorange=True)
-        figure.update_yaxes(linewidth=1,
-                            linecolor="#000000",
-                            autorange=True)
+        """Update the figure's layout."""
+        figure.update_layout(
+            title=self.title,
+            plot_bgcolor="#ffffff",
+            paper_bgcolor="#ffffff",
+            showlegend=True,
+        )
+        figure.update_xaxes(linewidth=1, linecolor="#000000", autorange=True)
+        figure.update_yaxes(linewidth=1, linecolor="#000000", autorange=True)
 
     def _figure_annot(self, figure: go.Figure):
-        """ Annotate the figure. """
+        """Annotate the figure."""
         for annotation in self.annotations:
-            figure.add_annotation(row=annotation.row,
-                                  col=annotation.col,
-                                  x=annotation.x,
-                                  y=annotation.y,
-                                  text=annotation.text,
-                                  **annotation.kwargs)
+            figure.add_annotation(
+                row=annotation.row,
+                col=annotation.col,
+                x=annotation.x,
+                y=annotation.y,
+                text=annotation.text,
+                **annotation.kwargs,
+            )
 
     @cached_property
     def figure(self):
-        """ Figure object. """
+        """Figure object."""
         figure = self._figure_init()
         self._figure_data(figure)
         self._figure_layout(figure)
@@ -284,46 +287,48 @@ class BaseGraph(ABC):
         return figure
 
     def write_csv(self, force: bool):
-        """ Write the graph's source data to a CSV file. """
+        """Write the graph's source data to a CSV file."""
         file = self.get_path(path.CSV_EXT)
         if need_write(file, force):
             self.data.to_csv(file)
         return file
 
     def write_html(self, force: bool):
-        """ Write the graph to an HTML file. """
+        """Write the graph to an HTML file."""
         file = self.get_path(path.HTML_EXT)
         if need_write(file, force):
             self.figure.write_html(file)
         return file
 
     def _write_image(self, ext: str, force: bool):
-        """ Write the graph to an image file. """
+        """Write the graph to an image file."""
         file = self.get_path(ext)
         if need_write(file, force):
             self.figure.write_image(file)
         return file
 
     def write_svg(self, force: bool):
-        """ Write the graph to an SVG file. """
+        """Write the graph to an SVG file."""
         return self._write_image(path.SVG_EXT, force)
 
     def write_pdf(self, force: bool):
-        """ Write the graph to a PDF file. """
+        """Write the graph to a PDF file."""
         return self._write_image(path.PDF_EXT, force)
 
     def write_png(self, force: bool):
-        """ Write the graph to a PNG file. """
+        """Write the graph to a PNG file."""
         return self._write_image(path.PNG_EXT, force)
 
-    def write(self,
-              csv: bool,
-              html: bool,
-              svg: bool,
-              pdf: bool,
-              png: bool,
-              force: bool = False):
-        """ Write the filtered files. """
+    def write(
+        self,
+        csv: bool,
+        html: bool,
+        svg: bool,
+        pdf: bool,
+        png: bool,
+        force: bool = False,
+    ):
+        """Write the filtered files."""
         files = list()
         if csv:
             files.append(self.write_csv(force))
@@ -340,97 +345,97 @@ class BaseGraph(ABC):
     @cached_property
     @abstractmethod
     def _title_main(self) -> list[str]:
-        """ Main part of the title, as a list. """
+        """Main part of the title, as a list."""
         return list()
 
     @cached_property
     def _title_details(self):
-        """ Details of the title, as a list. """
+        """Details of the title, as a list."""
         return [f"({'; '.join(self.details)})"] if self.details else []
 
     @cached_property
     def title(self):
-        """ Title of the graph. """
+        """Title of the graph."""
         return " ".join(self._title_main + self._title_details)
 
     def __str__(self):
-        return (f"{type(self).__name__} of sample {repr(self.sample)} "
-                f"reference {repr(self.ref)} region {repr(self.reg)}")
+        return (
+            f"{type(self).__name__} of sample {repr(self.sample)} "
+            f"reference {repr(self.ref)} region {repr(self.reg)}"
+        )
 
 
 class BaseWriter(ABC):
-    """ Write the proper type(s) of graph. """
+    """Write the proper type(s) of graph."""
 
     @abstractmethod
     def iter_graphs(self, *args, **kwargs) -> Generator[BaseGraph, None, None]:
-        """ Yield every graph. """
+        """Yield every graph."""
 
-    def write(self,
-              *args,
-              csv: bool,
-              html: bool,
-              svg: bool,
-              pdf: bool,
-              png: bool,
-              force: bool,
-              **kwargs):
-        """ Generate and write every type of graph. """
-        return list(chain(graph.write(csv=csv,
-                                      html=html,
-                                      svg=svg,
-                                      pdf=pdf,
-                                      png=png,
-                                      force=force)
-                          for graph in self.iter_graphs(*args, **kwargs)))
+    def write(
+        self,
+        *args,
+        csv: bool,
+        html: bool,
+        svg: bool,
+        pdf: bool,
+        png: bool,
+        force: bool,
+        **kwargs,
+    ):
+        """Generate and write every type of graph."""
+        return list(
+            chain(
+                graph.write(csv=csv, html=html, svg=svg, pdf=pdf, png=png, force=force)
+                for graph in self.iter_graphs(*args, **kwargs)
+            )
+        )
 
 
 class BaseRunner(ABC):
-
     @classmethod
     @abstractmethod
     def get_writer_type(cls) -> type[BaseWriter]:
-        """ Type of Writer. """
+        """Type of Writer."""
 
     @classmethod
     @abstractmethod
     def get_input_loader(cls) -> Callable[..., Generator]:
-        """ Function to load input files. """
+        """Function to load input files."""
 
     @classmethod
     def load_input_files(cls, input_path: Iterable[str | Path], **kwargs):
-        """ Find, filter, and load all input files. """
+        """Find, filter, and load all input files."""
         load_func = cls.get_input_loader()
         return list(load_func(input_path, **kwargs))
 
     @classmethod
     def universal_input_params(cls):
-        """ Universal parameters controlling the input data. """
+        """Universal parameters controlling the input data."""
         return [arg_input_path]
 
     @classmethod
     def universal_output_params(cls):
-        """ Universal parameters controlling the output graph. """
-        return [opt_csv,
-                opt_html,
-                opt_svg,
-                opt_pdf,
-                opt_png,
-                opt_force,
-                opt_num_cpus]
+        """Universal parameters controlling the output graph."""
+        return [opt_csv, opt_html, opt_svg, opt_pdf, opt_png, opt_force, opt_num_cpus]
 
     @classmethod
     def get_var_params(cls) -> list[Argument | Option]:
-        """ Parameters that can vary among different classes. """
+        """Parameters that can vary among different classes."""
         return list()
 
     @classmethod
     def params(cls) -> list[Argument | Option]:
-        """ Parameters for the command line. """
-        return list(chain(cls.universal_input_params(),
-                          cls.get_var_params(),
-                          cls.universal_output_params()))
+        """Parameters for the command line."""
+        return list(
+            chain(
+                cls.universal_input_params(),
+                cls.get_var_params(),
+                cls.universal_output_params(),
+            )
+        )
 
     @classmethod
     @abstractmethod
     def run(cls, *args, **kwargs) -> list[Path]:
-        """ Run graphing. """
+        """Run graphing."""

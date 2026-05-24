@@ -6,7 +6,16 @@ from pathlib import Path
 
 from seismicrna.core import path
 from seismicrna.core.logs import Level, logger, set_config
-from seismicrna.core.rel.code import DELET, INS_3, INS_5, SUB_A, SUB_C, SUB_G, SUB_N, SUB_T
+from seismicrna.core.rel.code import (
+    DELET,
+    INS_3,
+    INS_5,
+    SUB_A,
+    SUB_C,
+    SUB_G,
+    SUB_N,
+    SUB_T,
+)
 from seismicrna.core.report import NumReadsXamF, NumReadsRelF, RefF, SampleF
 from seismicrna.core.seq import DNA
 from seismicrna.importmm.write import _build_mut_codes, import_mm
@@ -19,12 +28,14 @@ _REF2 = "ref2"
 
 
 def _build_mm_bytes() -> bytes:
-    """ Build the two-transcript MM binary used in all write tests. """
+    """Build the two-transcript MM binary used in all write tests."""
 
-    def _transcript(ref_id: str,
-                    seq_packed: bytes,
-                    seq_len: int,
-                    reads: list[tuple[int, int, list[int]]]) -> bytes:
+    def _transcript(
+        ref_id: str,
+        seq_packed: bytes,
+        seq_len: int,
+        reads: list[tuple[int, int, list[int]]],
+    ) -> bytes:
         id_bytes = ref_id.encode() + b"\x00"
         buf = struct.pack("<H", len(id_bytes))
         buf += id_bytes
@@ -37,27 +48,24 @@ def _build_mm_bytes() -> bytes:
                 buf += struct.pack(f"<{len(muts)}L", *muts)
         return buf
 
-    buf = _transcript(_REF1, bytes.fromhex("0123"), 4, [
-        (0, 3, [1]),
-        (0, 3, [0, 3]),
-        (1, 2, []),
-    ])
-    buf += _transcript(_REF2, bytes.fromhex("3210"), 4, [
-        (0, 3, [2]),
-        (0, 3, []),
-    ])
+    buf = _transcript(
+        _REF1, bytes.fromhex("0123"), 4, [(0, 3, [1]), (0, 3, [0, 3]), (1, 2, [])]
+    )
+    buf += _transcript(_REF2, bytes.fromhex("3210"), 4, [(0, 3, [2]), (0, 3, [])])
     buf += b"[mmeof]"
     return buf
 
 
 def _report_path(out_dir: Path, ref: str) -> Path:
-    """ Return the expected path of an IDmutReport JSON file. """
+    """Return the expected path of an IDmutReport JSON file."""
     branches = path.add_branch(path.IDMUT_STEP, _BRANCH, {})
     return IDmutReport.build_path(
-        {path.TOP: out_dir,
-         path.SAMPLE: _SAMPLE,
-         path.BRANCHES: branches,
-         path.REF: ref}
+        {
+            path.TOP: out_dir,
+            path.SAMPLE: _SAMPLE,
+            path.BRANCHES: branches,
+            path.REF: ref,
+        }
     )
 
 
@@ -65,11 +73,12 @@ def _report_path(out_dir: Path, ref: str) -> Path:
 # Unit tests for _build_mut_codes
 # ---------------------------------------------------------------------------
 
+
 class TestBuildMutCodes(ut.TestCase):
-    """ Verify that per-position mutation codes are computed correctly. """
+    """Verify that per-position mutation codes are computed correctly."""
 
     def _codes(self, seq: str, insert3: bool) -> list[int]:
-        """ Return 1-indexed mutation codes for every position. """
+        """Return 1-indexed mutation codes for every position."""
         codes = _build_mut_codes(DNA(seq), insert3)
         return [int(codes[i]) for i in range(1, len(seq) + 1)]
 
@@ -99,8 +108,8 @@ class TestBuildMutCodes(ut.TestCase):
         # With insert3=False the INS_5 bit should be set, not INS_3.
         codes_true = self._codes("A", insert3=True)
         codes_false = self._codes("A", insert3=False)
-        self.assertNotEqual(codes_true[0] & INS_3, 0)   # insert3=True → INS_3 set
-        self.assertEqual(codes_false[0] & INS_3, 0)     # insert3=False → INS_3 clear
+        self.assertNotEqual(codes_true[0] & INS_3, 0)  # insert3=True → INS_3 set
+        self.assertEqual(codes_false[0] & INS_3, 0)  # insert3=False → INS_3 clear
         self.assertNotEqual(codes_false[0] & INS_5, 0)  # insert3=False → INS_5 set
 
     def test_acgt_all_positions(self):
@@ -115,8 +124,9 @@ class TestBuildMutCodes(ut.TestCase):
 # Integration tests for import_mm
 # ---------------------------------------------------------------------------
 
+
 class TestImportMM(ut.TestCase):
-    """ Integration tests: import a two-reference MM file and verify outputs. """
+    """Integration tests: import a two-reference MM file and verify outputs."""
 
     def setUp(self):
         set_config(verbosity=Level.FATAL, exit_on_error=True)
@@ -217,8 +227,9 @@ class TestImportMM(ut.TestCase):
     # --- min_reads filtering ---
 
     def test_min_reads_skips_ref2(self):
-        """ When min_reads exceeds ref2's read count, only ref1 is imported. """
+        """When min_reads exceeds ref2's read count, only ref1 is imported."""
         import shutil
+
         out2 = self._out_dir.parent / "out2"
         out2.mkdir()
         tmp2 = self._out_dir.parent / "tmp2"
@@ -230,7 +241,7 @@ class TestImportMM(ut.TestCase):
                 out_dir=out2,
                 tmp_dir=tmp2,
                 branch=_BRANCH,
-                min_reads=3,   # ref2 has only 2 reads → skipped
+                min_reads=3,  # ref2 has only 2 reads → skipped
                 batch_size=100,
                 insert3=True,
                 write_read_names=False,
@@ -249,6 +260,7 @@ class TestImportMM(ut.TestCase):
 # ---------------------------------------------------------------------------
 # rf-count integration test
 # ---------------------------------------------------------------------------
+
 
 class TestRFCountIntegration(ut.TestCase):
     """Verify importmm and idmut produce identical position/read-table counts."""
@@ -269,8 +281,10 @@ class TestRFCountIntegration(ut.TestCase):
         from seismicrna.sim.fastq import run as run_sim_fastq
 
         if shutil.which("rf-count") is None:
-            logger.warning("Skipped test of importing Mutation Map files from "
-                           "RNAFramework because RNAFramework is not installed")
+            logger.warning(
+                "Skipped test of importing Mutation Map files from "
+                "RNAFramework because RNAFramework is not installed"
+            )
             return  # rf-count not installed; trivially passes
 
         set_config(verbosity=Level.FATAL, exit_on_error=True)
@@ -290,14 +304,25 @@ class TestRFCountIntegration(ut.TestCase):
                 # 1. Simulate a 200-bp reference (longer than the 151-bp reads
                 #    so most reads align without excessive soft-clipping).
                 reflen = 200
-                run_sim_ref(refs=self._REF, ref=self._REF, reflen=reflen,
-                            sim_dir=sim_dir, seed=42)
+                run_sim_ref(
+                    refs=self._REF,
+                    ref=self._REF,
+                    reflen=reflen,
+                    sim_dir=sim_dir,
+                    seed=42,
+                )
                 fasta = sim_dir / "refs" / f"{self._REF}.fa"
 
                 # 2. Fold (single MFE structure; requires RNAstructure/ViennaRNA).
-                run_sim_fold(fasta, probe=PROBE_DMS, sim_dir=sim_dir,
-                             fold_mfe=True, fold_max=1,
-                             num_cpus=1, tmp_pfx=tmp_pfx)
+                run_sim_fold(
+                    fasta,
+                    probe=PROBE_DMS,
+                    sim_dir=sim_dir,
+                    fold_mfe=True,
+                    fold_max=1,
+                    num_cpus=1,
+                    tmp_pfx=tmp_pfx,
+                )
 
                 # 3. Sim params: substitutions only, no deletions, no low-quality
                 # bases. Setting each base's substitution fractions to sum to
@@ -306,18 +331,32 @@ class TestRFCountIntegration(ut.TestCase):
                 # fold writes to params/{ref}/full/simulated.ct ("full" is the region).
                 param_dir = sim_dir / "params" / self._REF / "full"
                 pmut = [
-                    ("am", 0.05), ("cm", 0.05), ("gm", 0.05), ("tm", 0.05),
+                    ("am", 0.05),
+                    ("cm", 0.05),
+                    ("gm", 0.05),
+                    ("tm", 0.05),
                     ("loq", 0.0),
                     # Substitution fractions sum to 1.0 → deletion rate = 0.
-                    ("ac", 1/3), ("ag", 1/3), ("at", 1/3),
-                    ("ca", 1/3), ("cg", 1/3), ("ct", 1/3),
-                    ("ga", 1/3), ("gc", 1/3), ("gt", 1/3),
-                    ("ta", 1/3), ("tc", 1/3), ("tg", 1/3),
+                    ("ac", 1 / 3),
+                    ("ag", 1 / 3),
+                    ("at", 1 / 3),
+                    ("ca", 1 / 3),
+                    ("cg", 1 / 3),
+                    ("ct", 1 / 3),
+                    ("ga", 1 / 3),
+                    ("gc", 1 / 3),
+                    ("gt", 1 / 3),
+                    ("ta", 1 / 3),
+                    ("tc", 1 / 3),
+                    ("tg", 1 / 3),
                 ]
-                run_sim_params(ct_file=[param_dir / "simulated.ct"],
-                               pmut_paired=pmut, pmut_unpaired=pmut,
-                               probe=PROBE_DMS,
-                               seed=42)
+                run_sim_params(
+                    ct_file=[param_dir / "simulated.ct"],
+                    pmut_paired=pmut,
+                    pmut_unpaired=pmut,
+                    probe=PROBE_DMS,
+                    seed=42,
+                )
 
                 # 4. Simulate 500 single-end reads with read_length=50.
                 # read_length < reflen (200) so every read fits entirely within
@@ -325,31 +364,51 @@ class TestRFCountIntegration(ut.TestCase):
                 # are clean reference-derived sequence.  Single-end avoids the
                 # factor-of-2 counting difference between rf-count (counts each
                 # BAM record) and idmut (counts each paired read as one unit).
-                fastqs = run_sim_fastq(input_path=(), param_dir=(param_dir,),
-                                       sample=self._SAMPLE, num_reads=500,
-                                       paired_end=False, read_length=50,
-                                       seed=42)
+                fastqs = run_sim_fastq(
+                    input_path=(),
+                    param_dir=(param_dir,),
+                    sample=self._SAMPLE,
+                    num_reads=500,
+                    paired_end=False,
+                    read_length=50,
+                    seed=42,
+                )
                 samples_dir = fastqs[0].parent.parent.parent
 
                 # 5. Align → sorted, indexed BAM.
                 # run_align returns output directories, not BAM file paths.
                 # Use dmfastqz for single-end demultiplexed reads.
-                align_dirs = run_align(fasta, dmfastqz=[samples_dir],
-                                       out_dir=out_dir,
-                                       min_mapq=0, min_reads=1,
-                                       num_cpus=1, force=True,
-                                       tmp_pfx=tmp_pfx)
+                align_dirs = run_align(
+                    fasta,
+                    dmfastqz=[samples_dir],
+                    out_dir=out_dir,
+                    min_mapq=0,
+                    min_reads=1,
+                    num_cpus=1,
+                    force=True,
+                    tmp_pfx=tmp_pfx,
+                )
                 bam = next(p for d in align_dirs for p in d.rglob("*.bam"))
 
                 # 6. rf-count → MM binary file.
                 # -q 0 / -mq 0: accept all base and mapping qualities so that
                 # neither threshold diverges from idmut's min_phred=0, min_mapq=0.
                 subprocess.run(
-                    ["rf-count", "-m", "-mm",
-                     "-f", str(fasta),
-                     "-o", str(rf_out),
-                     "-q", "0", "-mq", "0",
-                     "-ow", str(bam)],
+                    [
+                        "rf-count",
+                        "-m",
+                        "-mm",
+                        "-f",
+                        str(fasta),
+                        "-o",
+                        str(rf_out),
+                        "-q",
+                        "0",
+                        "-mq",
+                        "0",
+                        "-ow",
+                        str(bam),
+                    ],
                     check=True,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
@@ -379,15 +438,26 @@ class TestRFCountIntegration(ut.TestCase):
                 # clip_end5/3=0: rf-count does not clip read ends.
                 # min_phred=0:   sim reads have perfect quality, matching -q 0 above.
                 # ambindel=False: consistent with importmm sentinel value.
-                run_idmut(fasta, align_dirs,
-                           out_dir=out_dir,
-                           clip_end5=0, clip_end3=0,
-                           insert3=True, ambindel=False, overhangs=True,
-                           min_mapq=0, min_phred=0, min_reads=1,
-                           idmut_pos_table=True, idmut_read_table=True,
-                           idmut_cx=False,
-                           num_cpus=1, brotli_level=5,
-                           force=False, tmp_pfx=tmp_pfx)
+                run_idmut(
+                    fasta,
+                    align_dirs,
+                    out_dir=out_dir,
+                    clip_end5=0,
+                    clip_end3=0,
+                    insert3=True,
+                    ambindel=False,
+                    overhangs=True,
+                    min_mapq=0,
+                    min_phred=0,
+                    min_reads=1,
+                    idmut_pos_table=True,
+                    idmut_read_table=True,
+                    idmut_cx=False,
+                    num_cpus=1,
+                    brotli_level=5,
+                    force=False,
+                    tmp_pfx=tmp_pfx,
+                )
 
                 # 9. Compare Mutated counts element-by-element in both tables.
                 #
@@ -404,15 +474,19 @@ class TestRFCountIntegration(ut.TestCase):
                 rel_pos = next(out_dir.rglob("*-position-table.csv"))
                 mm_pos_tbl = pd.read_csv(mm_pos, index_col=[0, 1], header=0)
                 rel_pos_tbl = pd.read_csv(rel_pos, index_col=[0, 1], header=0)
-                self.assertEqual(mm_pos_tbl.index.tolist(),
-                                 rel_pos_tbl.index.tolist(),
-                                 msg="Position tables have different indexes")
+                self.assertEqual(
+                    mm_pos_tbl.index.tolist(),
+                    rel_pos_tbl.index.tolist(),
+                    msg="Position tables have different indexes",
+                )
                 mm_pos_muts = mm_pos_tbl["Mutated"].astype(int).tolist()
                 rel_pos_muts = rel_pos_tbl["Mutated"].astype(int).tolist()
                 self.assertEqual(len(mm_pos_muts), reflen)
-                self.assertListEqual(mm_pos_muts, rel_pos_muts,
-                                 msg="Position table Mutated counts differ "
-                                     "element-by-element")
+                self.assertListEqual(
+                    mm_pos_muts,
+                    rel_pos_muts,
+                    msg="Position table Mutated counts differ element-by-element",
+                )
 
                 # Read table: importmm contains only the mutated reads (those
                 # rf-count put in the MM file); idmut contains all reads.
@@ -425,12 +499,13 @@ class TestRFCountIntegration(ut.TestCase):
                 rel_read_tbl = pd.read_csv(rel_read, index_col=0, header=0)
                 mm_read_muts = sorted(mm_read_tbl["Mutated"].astype(int))
                 rel_read_muts = sorted(
-                    rel_read_tbl.loc[rel_read_tbl["Mutated"] > 0,
-                                     "Mutated"].astype(int)
+                    rel_read_tbl.loc[rel_read_tbl["Mutated"] > 0, "Mutated"].astype(int)
                 )
-                self.assertListEqual(mm_read_muts, rel_read_muts,
-                                 msg="Read table per-read Mutated counts "
-                                     "differ (sorted)")
+                self.assertListEqual(
+                    mm_read_muts,
+                    rel_read_muts,
+                    msg="Read table per-read Mutated counts differ (sorted)",
+                )
         finally:
             set_config()
 

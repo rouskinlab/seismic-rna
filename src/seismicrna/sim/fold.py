@@ -6,29 +6,31 @@ from click import command
 
 from .ref import get_fasta_path
 from ..core import path
-from ..core.arg import (FOLD_BACKEND_VIENNARNA,
-                        arg_fasta,
-                        opt_fold_backend,
-                        opt_pseudoknots,
-                        opt_sim_dir,
-                        opt_tmp_pfx,
-                        opt_profile_name,
-                        opt_probe,
-                        opt_fold_regions_file,
-                        opt_fold_coords,
-                        opt_fold_primers,
-                        opt_fold_constraint,
-                        opt_fold_temp,
-                        opt_fold_md,
-                        opt_fold_mfe,
-                        opt_fold_max,
-                        opt_fold_min,
-                        opt_fold_percent,
-                        opt_fold_edelta,
-                        opt_keep_tmp,
-                        opt_force,
-                        opt_num_cpus,
-                        optional_path)
+from ..core.arg import (
+    FOLD_BACKEND_VIENNARNA,
+    arg_fasta,
+    opt_fold_backend,
+    opt_pseudoknots,
+    opt_sim_dir,
+    opt_tmp_pfx,
+    opt_profile_name,
+    opt_probe,
+    opt_fold_regions_file,
+    opt_fold_coords,
+    opt_fold_primers,
+    opt_fold_constraint,
+    opt_fold_temp,
+    opt_fold_md,
+    opt_fold_mfe,
+    opt_fold_max,
+    opt_fold_min,
+    opt_fold_percent,
+    opt_fold_edelta,
+    opt_keep_tmp,
+    opt_force,
+    opt_num_cpus,
+    optional_path,
+)
 from ..core.rna import from_ct
 from ..core.logs import logger
 from ..core.run import run_func
@@ -44,32 +46,39 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 
 
 def get_ct_path(top: Path, region: Region, profile: str):
-    """ Get the path of a connectivity table (CT) file. """
-    return path.buildpar(path.CT_FILE_LAST_SEGS,
-                         {path.TOP: top.joinpath(path.SIM_PARAM_DIR),
-                          path.REF: region.ref,
-                          path.REG: region.name,
-                          path.PROFILE: profile,
-                          path.EXT: path.CT_EXT})
+    """Get the path of a connectivity table (CT) file."""
+    return path.buildpar(
+        path.CT_FILE_LAST_SEGS,
+        {
+            path.TOP: top.joinpath(path.SIM_PARAM_DIR),
+            path.REF: region.ref,
+            path.REG: region.name,
+            path.PROFILE: profile,
+            path.EXT: path.CT_EXT,
+        },
+    )
 
 
-def fold_region(region: Region, *,
-                sim_dir: Path,
-                tmp_dir: Path,
-                profile_name: str,
-                fold_backend: str,
-                pseudoknots: bool,
-                fold_constraint: Path | None,
-                fold_temp: float,
-                fold_md: int,
-                fold_mfe: bool,
-                fold_max: int,
-                fold_min: int,
-                fold_percent: float,
-                fold_edelta: float,
-                keep_tmp: bool,
-                force: bool,
-                num_cpus: int):
+def fold_region(
+    region: Region,
+    *,
+    sim_dir: Path,
+    tmp_dir: Path,
+    profile_name: str,
+    fold_backend: str,
+    pseudoknots: bool,
+    fold_constraint: Path | None,
+    fold_temp: float,
+    fold_md: int,
+    fold_mfe: bool,
+    fold_max: int,
+    fold_min: int,
+    fold_percent: float,
+    fold_edelta: float,
+    keep_tmp: bool,
+    force: bool,
+    num_cpus: int,
+):
     """
     Predict RNA secondary structures for one region using RNAstructure.
 
@@ -116,55 +125,61 @@ def fold_region(region: Region, *,
     if need_write(ct_sim, force):
         fasta_tmp = get_fasta_path(tmp_dir, region.ref)
         ct_tmp = get_ct_path(tmp_dir, region, profile_name)
-        vienna_tmp = (ct_tmp.with_suffix(path.VIENNA_EXT)
-                      if fold_backend == FOLD_BACKEND_VIENNARNA
-                      else None)
-        db_tmp = (ct_tmp.with_suffix(path.DB_EXT)
-                  if fold_backend == FOLD_BACKEND_VIENNARNA
-                  else None)
+        vienna_tmp = (
+            ct_tmp.with_suffix(path.VIENNA_EXT)
+            if fold_backend == FOLD_BACKEND_VIENNARNA
+            else None
+        )
+        db_tmp = (
+            ct_tmp.with_suffix(path.DB_EXT)
+            if fold_backend == FOLD_BACKEND_VIENNARNA
+            else None
+        )
         try:
-            write_fasta(fasta_tmp,
-                        [(region.ref, region.seq.tr())],
-                        force=force)
+            write_fasta(fasta_tmp, [(region.ref, region.seq.tr())], force=force)
             fold_temp_c = guess_temperature_to_celsius(fold_temp)
             if fold_backend == FOLD_BACKEND_VIENNARNA:
-                run_rnafold(fasta_tmp,
-                            ct_tmp,
-                            ct_sim,
-                            vienna_tmp,
-                            db_tmp,
-                            sp_data=None,
-                            sp_strategy=None,
-                            eddy_prior_paired_file=None,
-                            eddy_prior_unpaired_file=None,
-                            fold_constraint=fold_constraint,
-                            fold_commands=None,
-                            fold_temp_c=fold_temp_c,
-                            fold_isolated=False,
-                            fold_md=fold_md,
-                            fold_max=fold_max,
-                            fold_mfe=fold_mfe,
-                            fold_edelta=fold_edelta,
-                            end5=region.end5,
-                            num_cpus=num_cpus)
+                run_rnafold(
+                    fasta_tmp,
+                    ct_tmp,
+                    ct_sim,
+                    vienna_tmp,
+                    db_tmp,
+                    sp_data=None,
+                    sp_strategy=None,
+                    eddy_prior_paired_file=None,
+                    eddy_prior_unpaired_file=None,
+                    fold_constraint=fold_constraint,
+                    fold_commands=None,
+                    fold_temp_c=fold_temp_c,
+                    fold_isolated=False,
+                    fold_md=fold_md,
+                    fold_max=fold_max,
+                    fold_mfe=fold_mfe,
+                    fold_edelta=fold_edelta,
+                    end5=region.end5,
+                    num_cpus=num_cpus,
+                )
             else:
-                run_rnastructure(fasta_tmp,
-                                 ct_tmp,
-                                 ct_sim,
-                                 pseudoknots=pseudoknots,
-                                 fold_temp_k=celsius_to_kelvin(fold_temp_c),
-                                 dms_file=None,
-                                 shape_file=None,
-                                 deigan_slope=None,
-                                 deigan_intercept=None,
-                                 fold_constraint=fold_constraint,
-                                 fold_isolated=False,
-                                 fold_md=fold_md,
-                                 fold_mfe=fold_mfe,
-                                 fold_max=fold_max,
-                                 fold_percent=fold_percent,
-                                 end5=region.end5,
-                                 num_cpus=num_cpus)
+                run_rnastructure(
+                    fasta_tmp,
+                    ct_tmp,
+                    ct_sim,
+                    pseudoknots=pseudoknots,
+                    fold_temp_k=celsius_to_kelvin(fold_temp_c),
+                    dms_file=None,
+                    shape_file=None,
+                    deigan_slope=None,
+                    deigan_intercept=None,
+                    fold_constraint=fold_constraint,
+                    fold_isolated=False,
+                    fold_md=fold_md,
+                    fold_mfe=fold_mfe,
+                    fold_max=fold_max,
+                    fold_percent=fold_percent,
+                    end5=region.end5,
+                    num_cpus=num_cpus,
+                )
         finally:
             if not keep_tmp:
                 fasta_tmp.unlink(missing_ok=True)
@@ -185,27 +200,30 @@ def fold_region(region: Region, *,
 
 
 @run_func(COMMAND, with_tmp=True, pass_keep_tmp=True)
-def run(fasta: str | Path, *,
-        sim_dir: str | Path,
-        profile_name: str,
-        probe: str,
-        fold_backend: str,
-        pseudoknots: bool,
-        fold_coords: Iterable[tuple[str, int, int]],
-        fold_primers: Iterable[tuple[str, DNA, DNA]],
-        fold_regions_file: str | None,
-        fold_constraint: str | None,
-        fold_temp: float,
-        fold_md: int,
-        fold_mfe: bool,
-        fold_max: int,
-        fold_min: int,
-        fold_percent: float,
-        fold_edelta: float,
-        keep_tmp: bool,
-        tmp_dir: Path,
-        force: bool,
-        num_cpus: int):
+def run(
+    fasta: str | Path,
+    *,
+    sim_dir: str | Path,
+    profile_name: str,
+    probe: str,
+    fold_backend: str,
+    pseudoknots: bool,
+    fold_coords: Iterable[tuple[str, int, int]],
+    fold_primers: Iterable[tuple[str, DNA, DNA]],
+    fold_regions_file: str | None,
+    fold_constraint: str | None,
+    fold_temp: float,
+    fold_md: int,
+    fold_mfe: bool,
+    fold_max: int,
+    fold_min: int,
+    fold_percent: float,
+    fold_edelta: float,
+    keep_tmp: bool,
+    tmp_dir: Path,
+    force: bool,
+    num_cpus: int,
+):
     """
     Fold regions of a reference FASTA file and write CT files.
 
@@ -263,60 +281,66 @@ def run(fasta: str | Path, *,
         )
         fold_min = fold_max
     # List the regions.
-    regions = RefRegions(parse_fasta(Path(fasta), DNA),
-                         regs_file=(Path(fold_regions_file)
-                                    if fold_regions_file
-                                    else None),
-                         ends=fold_coords,
-                         primers=fold_primers)
-    return dispatch(fold_region,
-                    num_cpus=num_cpus,
-                    pass_num_cpus=True,
-                    as_list=True,
-                    ordered=False,
-                    raise_on_error=False,
-                    args=as_list_of_tuples(regions.regions),
-                    kwargs=dict(sim_dir=Path(sim_dir),
-                                tmp_dir=tmp_dir,
-                                profile_name=profile_name,
-                                fold_backend=fold_backend,
-                                pseudoknots=pseudoknots,
-                                fold_constraint=optional_path(fold_constraint),
-                                fold_temp=fold_temp,
-                                fold_md=fold_md,
-                                fold_mfe=fold_mfe,
-                                fold_max=fold_max,
-                                fold_min=fold_min,
-                                fold_percent=fold_percent,
-                                fold_edelta=fold_edelta,
-                                keep_tmp=keep_tmp,
-                                force=force))
+    regions = RefRegions(
+        parse_fasta(Path(fasta), DNA),
+        regs_file=(Path(fold_regions_file) if fold_regions_file else None),
+        ends=fold_coords,
+        primers=fold_primers,
+    )
+    return dispatch(
+        fold_region,
+        num_cpus=num_cpus,
+        pass_num_cpus=True,
+        as_list=True,
+        ordered=False,
+        raise_on_error=False,
+        args=as_list_of_tuples(regions.regions),
+        kwargs=dict(
+            sim_dir=Path(sim_dir),
+            tmp_dir=tmp_dir,
+            profile_name=profile_name,
+            fold_backend=fold_backend,
+            pseudoknots=pseudoknots,
+            fold_constraint=optional_path(fold_constraint),
+            fold_temp=fold_temp,
+            fold_md=fold_md,
+            fold_mfe=fold_mfe,
+            fold_max=fold_max,
+            fold_min=fold_min,
+            fold_percent=fold_percent,
+            fold_edelta=fold_edelta,
+            keep_tmp=keep_tmp,
+            force=force,
+        ),
+    )
 
 
-params = [arg_fasta,
-          opt_sim_dir,
-          opt_tmp_pfx,
-          opt_profile_name,
-          opt_probe,
-          opt_fold_backend,
-          opt_pseudoknots,
-          opt_fold_regions_file,
-          opt_fold_coords,
-          opt_fold_primers,
-          opt_fold_constraint,
-          opt_fold_temp,
-          opt_fold_md,
-          opt_fold_mfe,
-          opt_fold_max,
-          opt_fold_min,
-          opt_fold_percent,
-          opt_fold_edelta,
-          opt_keep_tmp,
-          opt_force,
-          opt_num_cpus]
+params = [
+    arg_fasta,
+    opt_sim_dir,
+    opt_tmp_pfx,
+    opt_profile_name,
+    opt_probe,
+    opt_fold_backend,
+    opt_pseudoknots,
+    opt_fold_regions_file,
+    opt_fold_coords,
+    opt_fold_primers,
+    opt_fold_constraint,
+    opt_fold_temp,
+    opt_fold_md,
+    opt_fold_mfe,
+    opt_fold_max,
+    opt_fold_min,
+    opt_fold_percent,
+    opt_fold_edelta,
+    opt_keep_tmp,
+    opt_force,
+    opt_num_cpus,
+]
 
 
 @command(COMMAND, params=params)
 def cli(*args, **kwargs):
-    """ Simulate secondary structure(s) a reference sequence. """
+    """Simulate secondary structure(s) a reference sequence."""
     run(*args, **kwargs)

@@ -2,66 +2,57 @@ import unittest as ut
 from typing import Iterable
 
 from seismicrna.idmut.aux.infer import infer_read
-from seismicrna.core.rel import (DELET,
-                                 INS_5,
-                                 INS_3,
-                                 ANY_N,
-                                 SUB_A,
-                                 SUB_C,
-                                 SUB_G,
-                                 SUB_T)
+from seismicrna.core.rel import DELET, INS_5, INS_3, ANY_N, SUB_A, SUB_C, SUB_G, SUB_T
 from seismicrna.core.seq import DNA
 
 
 class TestInferRead(ut.TestCase):
-
-    def assert_equal(self,
-                     refseq: DNA,
-                     relvecs: Iterable[tuple[int, int, dict[int, int]]],
-                     expects: Iterable[tuple[str, str, str]]):
-        """ Assert that the actual and expected outputs match. """
+    def assert_equal(
+        self,
+        refseq: DNA,
+        relvecs: Iterable[tuple[int, int, dict[int, int]]],
+        expects: Iterable[tuple[str, str, str]],
+    ):
+        """Assert that the actual and expected outputs match."""
         for relvec, expect in zip(relvecs, expects, strict=True):
             with self.subTest(relvec=relvec, expect=expect):
                 end5, end3, muts = relvec
                 read, qual, cigar = expect
-                self.assertEqual(infer_read(refseq, end5, end3, muts),
-                                 (DNA(read), qual, cigar))
+                self.assertEqual(
+                    infer_read(refseq, end5, end3, muts), (DNA(read), qual, cigar)
+                )
 
-    def assert_raise(self,
-                     ref: DNA,
-                     relvecs: Iterable[tuple[int, int, dict[int, int]]],
-                     error: type[Exception],
-                     regex: str):
+    def assert_raise(
+        self,
+        ref: DNA,
+        relvecs: Iterable[tuple[int, int, dict[int, int]]],
+        error: type[Exception],
+        regex: str,
+    ):
         for relvec in relvecs:
             with self.subTest(relvec=relvec):
                 self.assertRaisesRegex(error, regex, infer_read, ref, *relvec)
 
     def test_all_match(self):
-        """ Test when the read has four matching bases. """
+        """Test when the read has four matching bases."""
         ref = DNA("ACGT")
         relvecs = [(1, 4, {})]
         expects = [("ACGT", "IIII", "4=")]
         self.assert_equal(ref, relvecs, expects)
 
     def test_all_match_n(self):
-        """ Test when the read has four matching bases and an ambiguous
-        base. """
+        """Test when the read has four matching bases and an ambiguous
+        base."""
         ref = DNA("ACNGT")
         relvecs = [(1, 5, {3: ANY_N})]
         expects = [("ACNGT", "II!II", "2=1M2=")]
         self.assert_equal(ref, relvecs, expects)
 
     def test_nocov_valid(self):
-        """ Test when the read does not cover one or both ends of the
-        reference. """
+        """Test when the read does not cover one or both ends of the
+        reference."""
         ref = DNA("ACGT")
-        relvecs = [
-            (2, 4, {}),
-            (1, 3, {}),
-            (2, 3, {}),
-            (3, 4, {}),
-            (1, 2, {}),
-        ]
+        relvecs = [(2, 4, {}), (1, 3, {}), (2, 3, {}), (3, 4, {}), (1, 2, {})]
         expects = [
             ("CGT", "III", "3="),
             ("ACG", "III", "3="),
@@ -72,7 +63,7 @@ class TestInferRead(ut.TestCase):
         self.assert_equal(ref, relvecs, expects)
 
     def test_low_qual_valid(self):
-        """ Test when the read has a low-quality base. """
+        """Test when the read has a low-quality base."""
         ref = DNA("ACGT")
         relvecs = [
             (1, 4, {1: ANY_N - SUB_A}),
@@ -89,7 +80,7 @@ class TestInferRead(ut.TestCase):
         self.assert_equal(ref, relvecs, expects)
 
     def test_subst_valid(self):
-        """ Test when the read has a substitution. """
+        """Test when the read has a substitution."""
         ref = DNA("ACGT")
         relvecs = [
             (1, 4, {1: SUB_C}),
@@ -122,7 +113,7 @@ class TestInferRead(ut.TestCase):
         self.assert_equal(ref, relvecs, expects)
 
     def test_subst_invalid(self):
-        """ Test when the read has an invalid substitution. """
+        """Test when the read has an invalid substitution."""
         ref = DNA("ACGT")
         relvecs = [
             (1, 4, {1: SUB_A}),
@@ -130,13 +121,12 @@ class TestInferRead(ut.TestCase):
             (1, 4, {3: SUB_G}),
             (1, 4, {4: SUB_T}),
         ]
-        self.assert_raise(ref,
-                          relvecs,
-                          ValueError,
-                          "Cannot substitute [ACGT] to itself")
+        self.assert_raise(
+            ref, relvecs, ValueError, "Cannot substitute [ACGT] to itself"
+        )
 
     def test_delete_valid(self):
-        """ Test when the read has deletions. """
+        """Test when the read has deletions."""
         ref = DNA("ACGT")
         relvecs = [
             # 1 deletion
@@ -155,7 +145,7 @@ class TestInferRead(ut.TestCase):
         self.assert_equal(ref, relvecs, expects)
 
     def test_delete_invalid(self):
-        """ Test when the read has a deletion at either end. """
+        """Test when the read has a deletion at either end."""
         ref = DNA("ACGT")
         relvecs = [
             (1, 4, {1: DELET}),
@@ -169,13 +159,12 @@ class TestInferRead(ut.TestCase):
             (1, 2, {2: DELET}),
             (1, 1, {1: DELET}),
         ]
-        self.assert_raise(ref,
-                          relvecs,
-                          ValueError,
-                          "Deletion cannot be at position [0-9]+ in .+")
+        self.assert_raise(
+            ref, relvecs, ValueError, "Deletion cannot be at position [0-9]+ in .+"
+        )
 
     def test_insert5_valid(self):
-        """ Test when the read has insertions. """
+        """Test when the read has insertions."""
         ref = DNA("ACGT")
         relvecs = [
             # 1 insertion
@@ -216,7 +205,7 @@ class TestInferRead(ut.TestCase):
         self.assert_equal(ref, relvecs, expects)
 
     def test_insert3_valid(self):
-        """ Test when the read has insertions. """
+        """Test when the read has insertions."""
         ref = DNA("ACGT")
         relvecs = [
             # 1 insertion
@@ -257,7 +246,7 @@ class TestInferRead(ut.TestCase):
         self.assert_equal(ref, relvecs, expects)
 
     def test_insert5_end5_invalid(self):
-        """ Test when the read has an insertion at the 5' end. """
+        """Test when the read has an insertion at the 5' end."""
         ref = DNA("ACGT")
         relvecs = [
             (1, 4, {4: INS_5}),
@@ -267,13 +256,15 @@ class TestInferRead(ut.TestCase):
             (2, 3, {3: INS_5}),
             (2, 3, {2: INS_5, 3: INS_5}),
         ]
-        self.assert_raise(ref,
-                          relvecs,
-                          ValueError,
-                          "Position [0-9]+ in .+ cannot be 5' of an insertion")
+        self.assert_raise(
+            ref,
+            relvecs,
+            ValueError,
+            "Position [0-9]+ in .+ cannot be 5' of an insertion",
+        )
 
     def test_insert3_end3_invalid(self):
-        """ Test when the read has an insertion at the 3' end. """
+        """Test when the read has an insertion at the 3' end."""
         ref = DNA("ACGT")
         relvecs = [
             (1, 4, {1: INS_3}),
@@ -283,13 +274,15 @@ class TestInferRead(ut.TestCase):
             (2, 3, {2: INS_3}),
             (2, 3, {2: INS_3, 3: INS_3}),
         ]
-        self.assert_raise(ref,
-                          relvecs,
-                          ValueError,
-                          "Position [0-9]+ in .+ cannot be 3' of an insertion")
+        self.assert_raise(
+            ref,
+            relvecs,
+            ValueError,
+            "Position [0-9]+ in .+ cannot be 3' of an insertion",
+        )
 
     def test_insert_deletion_invalid(self):
-        """ Test when the read has an insertion next to a deletion. """
+        """Test when the read has an insertion next to a deletion."""
         ref = DNA("ACGT")
         relvecs = [
             (1, 4, {2: INS_3 + DELET}),
@@ -299,14 +292,11 @@ class TestInferRead(ut.TestCase):
             (1, 4, {2: DELET + INS_5}),
             (1, 4, {3: DELET + INS_5}),
         ]
-        self.assert_raise(ref,
-                          relvecs,
-                          ValueError,
-                          "Position .+ is del and ins")
+        self.assert_raise(ref, relvecs, ValueError, "Position .+ is del and ins")
 
     def test_insert5_non_match_valid(self):
-        """ Test when the read has insertions next to substitutions or
-        low-quality base calls. """
+        """Test when the read has insertions next to substitutions or
+        low-quality base calls."""
         ref = DNA("ACGT")
         relvecs = [
             # 1 insertion next to 1 substitution
@@ -339,8 +329,8 @@ class TestInferRead(ut.TestCase):
         self.assert_equal(ref, relvecs, expects)
 
     def test_insert3_non_match_valid(self):
-        """ Test when the read has insertions next to substitutions or
-        low-quality base calls. """
+        """Test when the read has insertions next to substitutions or
+        low-quality base calls."""
         ref = DNA("ACGT")
         relvecs = [
             # 1 insertion next to 1 substitution

@@ -5,8 +5,7 @@ from typing import Any, Generator, Iterable
 
 from .base import BaseGraph, BaseRunner, BaseWriter
 from .rel import RelGraph, RelRunner
-from ..cluster.data import (ClusterPositionTableLoader,
-                            ClusterAbundanceTableLoader)
+from ..cluster.data import ClusterPositionTableLoader, ClusterAbundanceTableLoader
 from ..core.arg import opt_use_ratio, opt_verify_times, opt_graph_quantile
 from ..core.table import Table, PositionTable
 from ..filter.table import FilterPositionTableLoader, FilterReadTableLoader
@@ -14,7 +13,7 @@ from ..idmut.table import IDmutPositionTableLoader, IDmutReadTableLoader
 
 
 class TableGraph(BaseGraph, ABC):
-    """ Graph based on one or more tables. """
+    """Graph based on one or more tables."""
 
     def __init__(self, *, use_ratio: bool, **kwargs):
         """
@@ -31,12 +30,11 @@ class TableGraph(BaseGraph, ABC):
 
     @property
     def data_kind(self):
-        """ Kind of data being used: either "ratio" or "count". """
+        """Kind of data being used: either "ratio" or "count"."""
         return "ratio" if self.use_ratio else "count"
 
 
 class RelTableGraph(TableGraph, RelGraph, ABC):
-
     def __init__(self, *, graph_quantile: float, **kwargs):
         """
         Parameters
@@ -51,40 +49,43 @@ class RelTableGraph(TableGraph, RelGraph, ABC):
 
     @cached_property
     def _fetch_kwargs(self) -> dict[str, Any]:
-        """ Keyword arguments for self._fetch_data. """
+        """Keyword arguments for self._fetch_data."""
         return dict(rel=self.rel_names)
 
     def _fetch_data(self, table: PositionTable, **kwargs):
-        """ Fetch data from the table. """
+        """Fetch data from the table."""
         kwargs = self._fetch_kwargs | kwargs
-        return (table.fetch_ratio(quantile=self.quantile, **kwargs)
-                if self.use_ratio
-                else table.fetch_count(**kwargs))
+        return (
+            table.fetch_ratio(quantile=self.quantile, **kwargs)
+            if self.use_ratio
+            else table.fetch_count(**kwargs)
+        )
 
     @cached_property
     def _title_main(self):
-        return [f"{self.what()} of {self.data_kind}s "
-                f"of {self.relationships} bases "
-                f"in {self.title_action_sample} "
-                f"over reference {repr(self.ref)} "
-                f"region {repr(self.reg)}"]
+        return [
+            f"{self.what()} of {self.data_kind}s "
+            f"of {self.relationships} bases "
+            f"in {self.title_action_sample} "
+            f"over reference {repr(self.ref)} "
+            f"region {repr(self.reg)}"
+        ]
 
     @cached_property
     def details(self):
-        return super().details + ([f"quantile = {round(self.quantile, 3)}"]
-                                  if self.use_ratio
-                                  else list())
+        return super().details + (
+            [f"quantile = {round(self.quantile, 3)}"] if self.use_ratio else list()
+        )
 
     @cached_property
     def predicate(self):
         fields = [self.codestring, self.data_kind]
         if self.use_ratio:
-            fields.append(f"q{round(self.quantile * 100.)}")
+            fields.append(f"q{round(self.quantile * 100.0)}")
         return super().predicate + ["-".join(fields)]
 
 
 class TableWriter(BaseWriter, ABC):
-
     def __init__(self, *tables: Table, **kwargs):
         """
         Parameters
@@ -99,38 +100,36 @@ class TableWriter(BaseWriter, ABC):
         self.tables = list(tables)
 
     @abstractmethod
-    def iter_graphs(self,
-                    *args,
-                    **kwargs) -> Generator[TableGraph, None, None]:
+    def iter_graphs(self, *args, **kwargs) -> Generator[TableGraph, None, None]:
         pass
 
 
 def load_pos_tables(input_paths: Iterable[str | Path], **kwargs):
-    """ Load position tables. """
+    """Load position tables."""
     paths = list(input_paths)
-    for table_type in [IDmutPositionTableLoader,
-                       FilterPositionTableLoader,
-                       ClusterPositionTableLoader]:
+    for table_type in [
+        IDmutPositionTableLoader,
+        FilterPositionTableLoader,
+        ClusterPositionTableLoader,
+    ]:
         yield from table_type.load_tables(paths, **kwargs)
 
 
 def load_read_tables(input_paths: Iterable[str | Path], **kwargs):
-    """ Load read tables. """
+    """Load read tables."""
     paths = list(input_paths)
-    for table_type in [IDmutReadTableLoader,
-                       FilterReadTableLoader]:
+    for table_type in [IDmutReadTableLoader, FilterReadTableLoader]:
         yield from table_type.load_tables(paths, **kwargs)
 
 
 def load_abundance_tables(input_paths: Iterable[str | Path], **kwargs):
-    """ Load read tables. """
+    """Load read tables."""
     paths = list(input_paths)
     for table_type in [ClusterAbundanceTableLoader]:
         yield from table_type.load_tables(paths, **kwargs)
 
 
 class TableRunner(BaseRunner, ABC):
-
     @classmethod
     @abstractmethod
     def get_writer_type(cls) -> type[TableWriter]:
@@ -142,28 +141,24 @@ class TableRunner(BaseRunner, ABC):
 
 
 class RelTableRunner(RelRunner, TableRunner, ABC):
-
     @classmethod
     def get_var_params(cls):
         return super().get_var_params() + [opt_graph_quantile]
 
 
 class PositionTableRunner(RelTableRunner, ABC):
-
     @classmethod
     def get_input_loader(cls):
         return load_pos_tables
 
 
 class ReadTableRunner(RelTableRunner, ABC):
-
     @classmethod
     def get_input_loader(cls):
         return load_read_tables
 
 
 class AbundanceTableRunner(TableRunner, ABC):
-
     @classmethod
     def get_input_loader(cls):
         return load_abundance_tables

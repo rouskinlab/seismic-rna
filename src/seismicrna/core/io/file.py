@@ -8,16 +8,16 @@ PICKLE_PROTOCOL = 5
 
 
 class FileIO(path.HasFilePath, ABC):
-    """ Object that can be saved to and loaded from a file path. """
+    """Object that can be saved to and loaded from a file path."""
 
     @classmethod
     @abstractmethod
     def load(cls, file: Path):
-        """ Load an object from a file. """
+        """Load an object from a file."""
 
     @abstractmethod
     def save(self, top: Path, **kwargs):
-        """ Save the object to a file. """
+        """Save the object to a file."""
 
     def __str__(self):
         return type(self).__name__

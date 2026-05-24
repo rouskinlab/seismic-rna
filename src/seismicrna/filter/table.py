@@ -15,62 +15,66 @@ from ..core.logs import logger
 from ..core.rel import RelPattern
 from ..core.rna import RNAProfile
 from ..core.seq import DNA, Region
-from ..core.table import (COVER_REL,
-                          MATCH_REL,
-                          MUTAT_REL,
-                          INFOR_REL,
-                          SUBMUTS,
-                          Tabulator,
-                          BatchTabulator,
-                          CountTabulator,
-                          DatasetTabulator,
-                          Table,
-                          PositionTable,
-                          ReadTable,
-                          PositionTableLoader,
-                          ReadTableLoader,
-                          PositionTableWriter,
-                          ReadTableWriter)
-from ..core.unbias import (calc_p_ends_observed,
-                           calc_p_noclose_given_clust,
-                           calc_p_noclose_given_ends_auto,
-                           calc_params)
-from ..idmut.table import (AverageTable,
-                            AverageTabulator)
+from ..core.table import (
+    COVER_REL,
+    MATCH_REL,
+    MUTAT_REL,
+    INFOR_REL,
+    SUBMUTS,
+    Tabulator,
+    BatchTabulator,
+    CountTabulator,
+    DatasetTabulator,
+    Table,
+    PositionTable,
+    ReadTable,
+    PositionTableLoader,
+    ReadTableLoader,
+    PositionTableWriter,
+    ReadTableWriter,
+)
+from ..core.unbias import (
+    calc_p_ends_observed,
+    calc_p_noclose_given_clust,
+    calc_p_noclose_given_ends_auto,
+    calc_params,
+)
+from ..idmut.table import AverageTable, AverageTabulator
 
 
 class PartialTable(Table, path.HasRegFilePath, ABC):
-    """ Table of filtered reads over a region of the sequence. """
+    """Table of filtered reads over a region of the sequence."""
 
 
 class PartialPositionTable(PartialTable, PositionTable, ABC):
-
-    def _iter_profiles(self, *,
-                       regions: Iterable[Region] | None,
-                       quantile: float,
-                       rel: str,
-                       k: int | None,
-                       clust: int | None):
-        """ Yield RNA mutational profiles from a table. """
+    def _iter_profiles(
+        self,
+        *,
+        regions: Iterable[Region] | None,
+        quantile: float,
+        rel: str,
+        k: int | None,
+        clust: int | None,
+    ):
+        """Yield RNA mutational profiles from a table."""
         if regions is not None:
             regions = list(regions)
         else:
             regions = [self.region]
         for hk, hc in self.header.clusts:
             if (k is None or k == hk) and (clust is None or clust == hc):
-                mus_name = path.fill_whitespace(format_clust_name(hk, hc),
-                                                fill="-")
+                mus_name = path.fill_whitespace(format_clust_name(hk, hc), fill="-")
                 for region in regions:
-                    yield RNAProfile(region=region,
-                                     sample=self.sample,
-                                     branches=self.branches,
-                                     mus_reg=self.reg,
-                                     mus_name=mus_name,
-                                     mus=self.fetch_ratio(quantile=quantile,
-                                                          rel=rel,
-                                                          k=hk,
-                                                          clust=hc,
-                                                          squeeze=True))
+                    yield RNAProfile(
+                        region=region,
+                        sample=self.sample,
+                        branches=self.branches,
+                        mus_reg=self.reg,
+                        mus_name=mus_name,
+                        mus=self.fetch_ratio(
+                            quantile=quantile, rel=rel, k=hk, clust=hc, squeeze=True
+                        ),
+                    )
 
 
 class PartialReadTable(PartialTable, ReadTable, ABC):
@@ -78,7 +82,6 @@ class PartialReadTable(PartialTable, ReadTable, ABC):
 
 
 class FilterTable(AverageTable, FilterFile, ABC):
-
     @classmethod
     def get_load_function(cls):
         return load_filter_dataset
@@ -109,21 +112,23 @@ class FilterReadTableLoader(ReadTableLoader, FilterReadTable):
 
 
 class PartialTabulator(Tabulator, ABC):
-
     @classmethod
     def get_null_value(cls):
         return np.nan
 
-    def __init__(self, *,
-                 refseq: DNA,
-                 region: Region,
-                 pattern: RelPattern,
-                 min_mut_gap: int,
-                 mut_collisions: str,
-                 quick_unbias: bool,
-                 quick_unbias_thresh: float,
-                 count_ends: bool = True,
-                 **kwargs):
+    def __init__(
+        self,
+        *,
+        refseq: DNA,
+        region: Region,
+        pattern: RelPattern,
+        min_mut_gap: int,
+        mut_collisions: str,
+        quick_unbias: bool,
+        quick_unbias_thresh: float,
+        count_ends: bool = True,
+        **kwargs,
+    ):
         """
         Parameters
         ----------
@@ -165,13 +170,12 @@ class PartialTabulator(Tabulator, ABC):
 
     @property
     def correct_bias(self):
-        """ Whether to correct for observer bias. """
-        return (self.min_mut_gap > 0 
-                and self.mut_collisions == MUT_COLLISIONS_DROP)
+        """Whether to correct for observer bias."""
+        return self.min_mut_gap > 0 and self.mut_collisions == MUT_COLLISIONS_DROP
 
     @cached_property
     def p_ends_given_clust_noclose(self):
-        """ Probability of each end coordinate. """
+        """Probability of each end coordinate."""
         if not self.correct_bias:
             return None
         # Ensure end_counts has 2 dimensions.
@@ -179,34 +183,37 @@ class PartialTabulator(Tabulator, ABC):
             end_counts = self.end_counts.values[:, np.newaxis]
         else:
             end_counts = self.end_counts.values
-        end5s = (self.end_counts.index.get_level_values(END5_COORD).values
-                 - self.region.end5)
-        end3s = (self.end_counts.index.get_level_values(END3_COORD).values
-                 - self.region.end5)
-        return calc_p_ends_observed(self.region.length,
-                                    end5s,
-                                    end3s,
-                                    end_counts)
+        end5s = (
+            self.end_counts.index.get_level_values(END5_COORD).values - self.region.end5
+        )
+        end3s = (
+            self.end_counts.index.get_level_values(END3_COORD).values - self.region.end5
+        )
+        return calc_p_ends_observed(self.region.length, end5s, end3s, end_counts)
 
     @cached_property
     def _adjusted(self):
         table_per_pos = super().data_per_pos
         if self.correct_bias:
             if self.region.length > np.sqrt(1_000_000_000):
-                logger.warning("Using bias correction on a region with "
-                               f"{self.region.length} positions requires "
-                               ">1 GB of memory. If this is impractical, you "
-                               "can (at the cost of lower accuracy) disable "
-                               "bias correction using --min-mut-gap 0.")
+                logger.warning(
+                    "Using bias correction on a region with "
+                    f"{self.region.length} positions requires "
+                    ">1 GB of memory. If this is impractical, you "
+                    "can (at the cost of lower accuracy) disable "
+                    "bias correction using --min-mut-gap 0."
+                )
             try:
-                return adjust_counts(table_per_pos,
-                                     self.p_ends_given_clust_noclose,
-                                     self.num_reads,
-                                     self.region,
-                                     self.min_mut_gap,
-                                     self.mut_collisions,
-                                     self.quick_unbias,
-                                     self.quick_unbias_thresh)
+                return adjust_counts(
+                    table_per_pos,
+                    self.p_ends_given_clust_noclose,
+                    self.num_reads,
+                    self.region,
+                    self.min_mut_gap,
+                    self.mut_collisions,
+                    self.quick_unbias,
+                    self.quick_unbias_thresh,
+                )
             except Exception as error:
                 logger.warning(error)
         return table_per_pos, self.num_reads
@@ -220,7 +227,6 @@ class PartialTabulator(Tabulator, ABC):
 
 
 class PartialDatasetTabulator(DatasetTabulator, PartialTabulator, ABC):
-
     @classmethod
     @cache
     def init_kws(cls):
@@ -228,7 +234,6 @@ class PartialDatasetTabulator(DatasetTabulator, PartialTabulator, ABC):
 
 
 class FilterTabulator(PartialTabulator, AverageTabulator, ABC):
-
     @classmethod
     def table_types(cls):
         return [FilterPositionTableWriter, FilterReadTableWriter]
@@ -246,29 +251,32 @@ class FilterDatasetTabulator(PartialDatasetTabulator, FilterTabulator):
     pass
 
 
-def _masked_pos_to_zero(p_mut: pd.Series | pd.DataFrame,
-                        region: Region):
-    """ 2D array where masked positions are filled with 0. """
+def _masked_pos_to_zero(p_mut: pd.Series | pd.DataFrame, region: Region):
+    """2D array where masked positions are filled with 0."""
     # Fill masked positions with 0.
-    p_mut = p_mut.reindex(index=region.range, fill_value=0.)
+    p_mut = p_mut.reindex(index=region.range, fill_value=0.0)
     # Convert to a 2D NumPy array.
     return p_mut.values.reshape((region.length, -1))
 
 
-def adjust_counts(table_per_pos: pd.DataFrame,
-                  p_ends_given_clust_noclose: np.ndarray,
-                  n_reads_clust: pd.Series | int,
-                  region: Region,
-                  min_mut_gap: int,
-                  mut_collisions: str,
-                  quick_unbias: bool,
-                  quick_unbias_thresh: float):
-    """ Adjust the given table of Filtered/Clustered counts per position
-    to correct for observer bias. """
+def adjust_counts(
+    table_per_pos: pd.DataFrame,
+    p_ends_given_clust_noclose: np.ndarray,
+    n_reads_clust: pd.Series | int,
+    region: Region,
+    min_mut_gap: int,
+    mut_collisions: str,
+    quick_unbias: bool,
+    quick_unbias_thresh: float,
+):
+    """Adjust the given table of Filtered/Clustered counts per position
+    to correct for observer bias."""
     if not isinstance(table_per_pos, pd.DataFrame):
         raise TypeError(table_per_pos)
-    action = (f"unbiasing counts (min_mut_gap={min_mut_gap}) "
-              f"of table with {table_per_pos.index.size} positions")
+    action = (
+        f"unbiasing counts (min_mut_gap={min_mut_gap}) "
+        f"of table with {table_per_pos.index.size} positions"
+    )
     if isinstance(n_reads_clust, pd.Series):
         k = n_reads_clust.size
         action += f", {k} clusters,"
@@ -289,14 +297,15 @@ def adjust_counts(table_per_pos: pd.DataFrame,
     with np.errstate(divide="ignore"):
         # Ignore division by zero, which is acceptable here because any
         # resulting NaN values are zeroed by nan_to_num.
-        p_mut_given_noclose = np.nan_to_num(_masked_pos_to_zero(
-            table_per_pos[MUTAT_REL] / table_per_pos[INFOR_REL],
-            region
-        ))
+        p_mut_given_noclose = np.nan_to_num(
+            _masked_pos_to_zero(
+                table_per_pos[MUTAT_REL] / table_per_pos[INFOR_REL], region
+            )
+        )
     if isinstance(n_reads_clust, int):
         # There is only one cluster, so the probability that each read
         # belongs to that cluster is 1.
-        p_clust_given_noclose = np.array([1.])
+        p_clust_given_noclose = np.array([1.0])
         # Calculate the parameters.
         p_mut, p_ends, p_clust = calc_params(
             p_mut_given_noclose,
@@ -305,29 +314,29 @@ def adjust_counts(table_per_pos: pd.DataFrame,
             min_mut_gap,
             mut_collisions,
             quick_unbias=quick_unbias,
-            quick_unbias_thresh=quick_unbias_thresh
+            quick_unbias_thresh=quick_unbias_thresh,
         )
         # Compute the probability that reads would have no two mutations
         # too close.
         p_noclose_given_clust = calc_p_noclose_given_clust(
-            p_ends,
-            calc_p_noclose_given_ends_auto(p_mut, min_mut_gap)
+            p_ends, calc_p_noclose_given_ends_auto(p_mut, min_mut_gap)
         )
         # Drop the cluster dimension from the parameters.
         if p_mut.shape != (region.length, 1):
-            raise ValueError(f"p_mut must have shape {(region.length, 1)}, "
-                             f"but got {p_mut.shape}")
+            raise ValueError(
+                f"p_mut must have shape {(region.length, 1)}, but got {p_mut.shape}"
+            )
         p_mut = p_mut.reshape((-1,))
         if p_clust.shape != (1,):
-            raise ValueError(
-                f"p_clust must have shape {1,}, but got {p_clust.shape}"
-            )
+            raise ValueError(f"p_clust must have shape {(1,)}, but got {p_clust.shape}")
         p_clust = float(p_clust[0])
-        if not np.isclose(p_clust, 1.):
+        if not np.isclose(p_clust, 1.0):
             raise ValueError(f"p_clust must equal 1., but got {p_clust}")
         if p_noclose_given_clust.shape != (1,):
-            raise ValueError(f"p_noclose_given_clust must have shape {1,}, "
-                             f"but got {p_noclose_given_clust.shape}")
+            raise ValueError(
+                f"p_noclose_given_clust must have shape {(1,)}, "
+                f"but got {p_noclose_given_clust.shape}"
+            )
         p_noclose = p_noclose_given_clust = float(p_noclose_given_clust[0])
         # Compute the number of reads.
         n_clust = n_reads_clust / p_noclose
@@ -347,21 +356,19 @@ def adjust_counts(table_per_pos: pd.DataFrame,
             # Calculate the fraction of reads with no two mutations too
             # close in each cluster.
             n_reads_noclose = float(n_reads_noclose_ks.at[k])
-            p_clust_given_noclose = (n_reads_clust.loc[k].values
-                                     / n_reads_noclose)
+            p_clust_given_noclose = n_reads_clust.loc[k].values / n_reads_noclose
             # Calculate the parameters for each cluster.
             p_mut[:, ki], p_ends, p_clust[ki] = calc_params(
                 p_mut_given_noclose[:, ki],
                 p_ends_given_clust_noclose[:, :, ki],
                 p_clust_given_noclose,
                 min_mut_gap,
-                mut_collisions
+                mut_collisions,
             )
             # Compute the probability that reads from each cluster would
             # have no two mutations too close.
             p_noclose_given_clust[ki] = calc_p_noclose_given_clust(
-                p_ends,
-                calc_p_noclose_given_ends_auto(p_mut[:, ki], min_mut_gap)
+                p_ends, calc_p_noclose_given_ends_auto(p_mut[:, ki], min_mut_gap)
             )
             # Compute the probability that reads from any cluster would
             # have no two mutations too close.
@@ -369,8 +376,10 @@ def adjust_counts(table_per_pos: pd.DataFrame,
             # Compute the number of reads in each cluster.
             n_clust.at[k] = (n_reads_noclose / p_noclose) * p_clust[ki]
     else:
-        raise TypeError("n_reads_clust must be an int or Series, "
-                        f"but got {type(n_reads_clust).__name__}")
+        raise TypeError(
+            "n_reads_clust must be an int or Series, "
+            f"but got {type(n_reads_clust).__name__}"
+        )
     # Remove masked positions from the mutation rates.
     p_mut = p_mut[unmask]
     # Create the table of adjusted counts.
@@ -403,7 +412,7 @@ def adjust_counts(table_per_pos: pd.DataFrame,
         scale = n_mut / table_per_pos.loc[unmask, MUTAT_REL].values
     # Replace NaN values with 1 so that missing values do not propagate
     # during multiplication.
-    scale = np.nan_to_num(scale, nan=1.)
+    scale = np.nan_to_num(scale, nan=1.0)
     # Scale every subtype of mutation by this factor.
     for mut in SUBMUTS:
         n_rels.loc[unmask, mut] = scale * table_per_pos.loc[unmask, mut].values

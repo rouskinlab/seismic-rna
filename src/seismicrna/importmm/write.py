@@ -17,16 +17,16 @@ from ..idmut.table import IDmutCountTabulator
 
 # All substitution codes except the one that would match the reference base.
 _SUB_FOR_BASE: dict[str, int] = {
-    'A': SUB_C | SUB_G | SUB_T,
-    'C': SUB_A | SUB_G | SUB_T,
-    'G': SUB_A | SUB_C | SUB_T,
-    'T': SUB_A | SUB_C | SUB_G,
-    'N': SUB_N
+    "A": SUB_C | SUB_G | SUB_T,
+    "C": SUB_A | SUB_G | SUB_T,
+    "G": SUB_A | SUB_C | SUB_T,
+    "T": SUB_A | SUB_C | SUB_G,
+    "N": SUB_N,
 }
 
 
 def _build_mut_codes(refseq: DNA, insert3: bool) -> np.ndarray:
-    """ Build a 1-indexed array mapping each reference position to the
+    """Build a 1-indexed array mapping each reference position to the
     mutation code to assign when that position is mutated in an MM read.
 
     The code combines DELET, one insertion side (INS_3 or INS_5 per
@@ -40,43 +40,49 @@ def _build_mut_codes(refseq: DNA, insert3: bool) -> np.ndarray:
     return codes
 
 
-def _iter_batch_reads(reads: list[tuple[int, int, list[int]]],
-                      batch_start: int,
-                      batch_size: int,
-                      mut_codes: np.ndarray):
-    """ Yield (name, ((end5s, end3s), poss)) for one batch of MM reads.
+def _iter_batch_reads(
+    reads: list[tuple[int, int, list[int]]],
+    batch_start: int,
+    batch_size: int,
+    mut_codes: np.ndarray,
+):
+    """Yield (name, ((end5s, end3s), poss)) for one batch of MM reads.
 
     Coordinates are converted from 0-based (MM) to 1-based (seismic-rna).
     """
     for i, (start, end, mut_positions) in enumerate(
-            reads[batch_start: batch_start + batch_size]):
+        reads[batch_start : batch_start + batch_size]
+    ):
         poss = {pos + 1: int(mut_codes[pos + 1]) for pos in mut_positions}
-        yield (f"read_{batch_start + i}",
-               (([start + 1], [end + 1]), poss))
+        yield (f"read_{batch_start + i}", (([start + 1], [end + 1]), poss))
 
 
-def _import_one_ref(ref_id: str,
-                    refseq: DNA,
-                    reads: list[tuple[int, int, list[int]]],
-                    *,
-                    sample: str,
-                    branches: dict[str, str],
-                    out_dir: Path,
-                    release_dir: Path,
-                    min_reads: int,
-                    batch_size: int,
-                    insert3: bool,
-                    write_read_names: bool,
-                    idmut_pos_table: bool,
-                    idmut_read_table: bool,
-                    brotli_level: int,
-                    force: bool) -> Path | None:
-    """ Convert one MM transcript block into IDmut batches and a report. """
+def _import_one_ref(
+    ref_id: str,
+    refseq: DNA,
+    reads: list[tuple[int, int, list[int]]],
+    *,
+    sample: str,
+    branches: dict[str, str],
+    out_dir: Path,
+    release_dir: Path,
+    min_reads: int,
+    batch_size: int,
+    insert3: bool,
+    write_read_names: bool,
+    idmut_pos_table: bool,
+    idmut_read_table: bool,
+    brotli_level: int,
+    force: bool,
+) -> Path | None:
+    """Convert one MM transcript block into IDmut batches and a report."""
     report_path = IDmutReport.build_path(
-        {path.TOP: out_dir,
-         path.SAMPLE: sample,
-         path.BRANCHES: branches,
-         path.REF: ref_id}
+        {
+            path.TOP: out_dir,
+            path.SAMPLE: sample,
+            path.BRANCHES: branches,
+            path.REF: ref_id,
+        }
     )
     if not need_write(report_path, force):
         return report_path.parent
@@ -93,10 +99,7 @@ def _import_one_ref(ref_id: str,
     began = datetime.now()
 
     # Write the reference sequence.
-    refseq_io = RefseqIO(branches=branches,
-                         sample=sample,
-                         ref=ref_id,
-                         refseq=refseq)
+    refseq_io = RefseqIO(branches=branches, sample=sample, ref=ref_id, refseq=refseq)
     _, refseq_checksum = refseq_io.save(release_dir, brotli_level)
 
     # Build per-position mutation codes.
@@ -189,20 +192,23 @@ def _import_one_ref(ref_id: str,
     return report_path.parent
 
 
-def import_mm(mm_path: Path, *,
-              sample: str,
-              out_dir: Path,
-              tmp_dir: Path,
-              branch: str,
-              min_reads: int,
-              batch_size: int,
-              insert3: bool,
-              write_read_names: bool,
-              idmut_pos_table: bool,
-              idmut_read_table: bool,
-              brotli_level: int,
-              force: bool) -> list[Path]:
-    """ Convert all transcript blocks in one MM file into idmut outputs.
+def import_mm(
+    mm_path: Path,
+    *,
+    sample: str,
+    out_dir: Path,
+    tmp_dir: Path,
+    branch: str,
+    min_reads: int,
+    batch_size: int,
+    insert3: bool,
+    write_read_names: bool,
+    idmut_pos_table: bool,
+    idmut_read_table: bool,
+    brotli_level: int,
+    force: bool,
+) -> list[Path]:
+    """Convert all transcript blocks in one MM file into idmut outputs.
 
     Returns a list of output directories (one per reference that was
     successfully imported).
@@ -212,7 +218,9 @@ def import_mm(mm_path: Path, *,
     results = []
     for ref_id, refseq, reads in iter_mm_file(mm_path):
         result = _import_one_ref(
-            ref_id, refseq, reads,
+            ref_id,
+            refseq,
+            reads,
             sample=sample,
             branches=branches,
             out_dir=out_dir,

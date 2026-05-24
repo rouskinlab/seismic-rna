@@ -8,7 +8,7 @@ from .validate import require_equal
 
 
 def calc_pool_size(num_tasks: int, num_cpus: int, force_serial: bool = False):
-    """ Calculate the size of a process pool.
+    """Calculate the size of a process pool.
 
     Parameters
     ----------
@@ -29,12 +29,10 @@ def calc_pool_size(num_tasks: int, num_cpus: int, force_serial: bool = False):
         - Number of CPUs for each task in the pool. Always ≥ 1.
     """
     if num_cpus < 1:
-        logger.warning(f"num_cpus must be ≥ 1, but got {num_cpus}; "
-                       f"defaulting to 1")
+        logger.warning(f"num_cpus must be ≥ 1, but got {num_cpus}; defaulting to 1")
         num_cpus = 1
     if num_tasks < 1:
-        logger.warning(f"num_tasks must be ≥ 1, but got {num_tasks}; "
-                       f"defaulting to 1")
+        logger.warning(f"num_tasks must be ≥ 1, but got {num_tasks}; defaulting to 1")
         num_tasks = 1
     # The number of tasks that can run concurrently is the smallest of
     # (a) the number of tasks and (b) the number of processors.
@@ -53,11 +51,10 @@ def calc_pool_size(num_tasks: int, num_cpus: int, force_serial: bool = False):
     return pool_size, num_cpus_per_task
 
 
-
 class Task(object):
-    """ Wrap a parallelizable task in a try-except block so that if it
+    """Wrap a parallelizable task in a try-except block so that if it
     fails, it just returns `None` rather than crashing the other tasks
-    being run in parallel. """
+    being run in parallel."""
 
     def __init__(self, func: Callable):
         self._func = func
@@ -68,8 +65,8 @@ class Task(object):
         return f"{getmodule(self._func).__name__}.{self._func.__name__}"
 
     def __call__(self, *args, **kwargs):
-        """ Call the task's function in a try-except block, return the
-        result if it succeeds, and return None otherwise. """
+        """Call the task's function in a try-except block, return the
+        result if it succeeds, and return None otherwise."""
         if get_config() != self._config:
             # Tasks running in parallel may not have the same logger as
             # the parent process (this seems to be system-dependent).
@@ -84,8 +81,7 @@ class Task(object):
         if verbosity >= Level.ACTION:
             description_items.extend(map(repr, args))
         if verbosity >= Level.ROUTINE:
-            description_items.extend(f"{k}={repr(v)}"
-                                     for k, v in kwargs.items())
+            description_items.extend(f"{k}={repr(v)}" for k, v in kwargs.items())
         description = f"{self.name}({', '.join(description_items)})"
         try:
             logger.task(f"Began {description}")
@@ -102,13 +98,16 @@ class Task(object):
                 logger.file_stream.close()
 
 
-def _dispatch(funcs: Callable | list[Callable], *,
-              num_cpus: int,
-              pass_num_cpus: bool,
-              ordered: bool,
-              raise_on_error: bool,
-              args: tuple | Iterable[tuple] = (),
-              kwargs: dict[str, Any] | None = None):
+def _dispatch(
+    funcs: Callable | list[Callable],
+    *,
+    num_cpus: int,
+    pass_num_cpus: bool,
+    ordered: bool,
+    raise_on_error: bool,
+    args: tuple | Iterable[tuple] = (),
+    kwargs: dict[str, Any] | None = None,
+):
     # Default to an empty dict if kwargs is not given.
     if kwargs is None:
         kwargs = dict()
@@ -144,12 +143,16 @@ def _dispatch(funcs: Callable | list[Callable], *,
         logger.task("No tasks were given to dispatch")
         return list()
     # Determine how to parallelize each task.
-    pool_size, num_cpus_per_task = calc_pool_size(num_tasks, num_cpus, force_serial=force_serial)
+    pool_size, num_cpus_per_task = calc_pool_size(
+        num_tasks, num_cpus, force_serial=force_serial
+    )
     if pass_num_cpus:
         # Add the number of processes as a keyword argument.
         kwargs = {**kwargs, "num_cpus": num_cpus_per_task}
-        logger.detail(f"Calculated size of process pool: {pool_size}, "
-                      f"each with {num_cpus_per_task} processor(s)")
+        logger.detail(
+            f"Calculated size of process pool: {pool_size}, "
+            f"each with {num_cpus_per_task} processor(s)"
+        )
     else:
         logger.detail(f"Calculated size of process pool: {pool_size}")
     # Run the tasks.
@@ -161,10 +164,12 @@ def _dispatch(funcs: Callable | list[Callable], *,
         with ProcessPoolExecutor(max_workers=pool_size) as pool:
             logger.task(f"Opened pool of {pool_size} processes")
             # Create and submit a Future for each task.
-            futures = [pool.submit(Task(func), *task_args, **kwargs)
-                       for func, task_args in zip(funcs, args, strict=True)]
+            futures = [
+                pool.submit(Task(func), *task_args, **kwargs)
+                for func, task_args in zip(funcs, args, strict=True)
+            ]
             logger.task(f"Waiting for {num_tasks} tasks to finish")
-            for future in (futures if ordered else as_completed(futures)):
+            for future in futures if ordered else as_completed(futures):
                 try:
                     yield future.result()
                 except Exception as error:
@@ -197,15 +202,18 @@ def _dispatch(funcs: Callable | list[Callable], *,
         logger.task(f"All {num_tasks} task(s) completed successfully")
 
 
-def dispatch(funcs: Callable | list[Callable], *,
-             num_cpus: int,
-             pass_num_cpus: bool,
-             as_list: bool,
-             ordered: bool,
-             raise_on_error: bool,
-             args: tuple | Iterable[tuple] = (),
-             kwargs: dict[str, Any] | None = None):
-    """ Run one or more tasks in series or in parallel, depending on the
+def dispatch(
+    funcs: Callable | list[Callable],
+    *,
+    num_cpus: int,
+    pass_num_cpus: bool,
+    as_list: bool,
+    ordered: bool,
+    raise_on_error: bool,
+    args: tuple | Iterable[tuple] = (),
+    kwargs: dict[str, Any] | None = None,
+):
+    """Run one or more tasks in series or in parallel, depending on the
     number of tasks and the maximum number of CPUs.
 
     Parameters
@@ -239,20 +247,21 @@ def dispatch(funcs: Callable | list[Callable], *,
     kwargs: dict[str, Any] | None
         Keyword arguments to pass to every function call.
     """
-    results = _dispatch(funcs,
-                        num_cpus=num_cpus,
-                        pass_num_cpus=pass_num_cpus,
-                        ordered=ordered,
-                        raise_on_error=raise_on_error,
-                        args=args,
-                        kwargs=kwargs)
+    results = _dispatch(
+        funcs,
+        num_cpus=num_cpus,
+        pass_num_cpus=pass_num_cpus,
+        ordered=ordered,
+        raise_on_error=raise_on_error,
+        args=args,
+        kwargs=kwargs,
+    )
     return list(results) if as_list else iter(results)
 
 
-
 def as_list_of_tuples(args: Iterable[Any]):
-    """ Given an iterable of arguments, return a list of 1-item tuples,
+    """Given an iterable of arguments, return a list of 1-item tuples,
     each containing one of the given arguments. This function is useful
     for creating a list of tuples to pass to the `args` parameter of
-    `dispatch`. """
+    `dispatch`."""
     return [(arg,) for arg in args]

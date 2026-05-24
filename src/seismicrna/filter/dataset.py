@@ -7,42 +7,48 @@ from .batch import FilterMutsBatch, apply_filters
 from ..core.arg import MUT_COLLISIONS_MERGE
 from .io import FilterBatchIO
 from .report import FilterReport, JoinFilterReport
-from ..core.dataset import (LoadedDataset,
-                            LoadFunction,
-                            MergedUnbiasDataset,
-                            MultistepDataset,
-                            UnbiasDataset)
-from ..core.join import (BATCH_NUM,
-                         READ_NUMS,
-                         SEG_END5S,
-                         SEG_END3S,
-                         MUTS,
-                         JoinMutsDataset)
+from ..core.dataset import (
+    LoadedDataset,
+    LoadFunction,
+    MergedUnbiasDataset,
+    MultistepDataset,
+    UnbiasDataset,
+)
+from ..core.join import (
+    BATCH_NUM,
+    READ_NUMS,
+    SEG_END5S,
+    SEG_END3S,
+    MUTS,
+    JoinMutsDataset,
+)
 from ..core.rel import RelPattern
-from ..core.report import (CountMutsF,
-                           CountRefsF,
-                           MinMutGapF,
-                           MutCollisionsF,
-                           PosKeptF,
-                           ProbeF,
-                           RefF,
-                           RegF,
-                           End5F,
-                           End3F,
-                           QuickUnbiasF,
-                           QuickUnbiasThreshF,
-                           JoinedClustersF)
+from ..core.report import (
+    CountMutsF,
+    CountRefsF,
+    MinMutGapF,
+    MutCollisionsF,
+    PosKeptF,
+    ProbeF,
+    RefF,
+    RegF,
+    End5F,
+    End3F,
+    QuickUnbiasF,
+    QuickUnbiasThreshF,
+    JoinedClustersF,
+)
 from ..core.seq import Region
 from ..idmut.batch import IDmutMutsBatch
 from ..idmut.dataset import AverageDataset, load_idmut_dataset
 
 
 class FilterDataset(AverageDataset, ABC):
-    """ Dataset of filtered data. """
+    """Dataset of filtered data."""
 
 
 class FilterReadDataset(FilterDataset, LoadedDataset, UnbiasDataset):
-    """ Load batches of filtered data. """
+    """Load batches of filtered data."""
 
     @classmethod
     def get_report_type(cls):
@@ -55,7 +61,7 @@ class FilterReadDataset(FilterDataset, LoadedDataset, UnbiasDataset):
     @property
     def min_mut_gap(self):
         return self.report.get_field(MinMutGapF)
-    
+
     @property
     def mut_collisions(self):
         return self.report.get_field(MutCollisionsF)
@@ -74,17 +80,18 @@ class FilterReadDataset(FilterDataset, LoadedDataset, UnbiasDataset):
 
     @property
     def pos_kept(self):
-        """ Positions kept after filtering. """
+        """Positions kept after filtering."""
         return self.report.get_field(PosKeptF)
 
     @cached_property
     def pattern(self):
-        return RelPattern(self.report.get_field(CountMutsF),
-                          self.report.get_field(CountRefsF))
+        return RelPattern(
+            self.report.get_field(CountMutsF), self.report.get_field(CountRefsF)
+        )
 
 
 class FilterMutsDataset(FilterDataset, MultistepDataset, UnbiasDataset):
-    """ Chain mutation data with filtered reads. """
+    """Chain mutation data with filtered reads."""
 
     FILTER_NAME = "filter"
 
@@ -103,7 +110,7 @@ class FilterMutsDataset(FilterDataset, MultistepDataset, UnbiasDataset):
     @property
     def min_mut_gap(self):
         return getattr(self.dataset2, "min_mut_gap")
-    
+
     @property
     def mut_collisions(self):
         return getattr(self.dataset2, "mut_collisions")
@@ -122,20 +129,20 @@ class FilterMutsDataset(FilterDataset, MultistepDataset, UnbiasDataset):
 
     @cached_property
     def region(self):
-        region = Region(ref=self.report.get_field(RefF),
-                        seq=self.refseq,
-                        name=self.report.get_field(RegF),
-                        end5=self.report.get_field(End5F),
-                        end3=self.report.get_field(End3F))
-        region.add_mask(self.FILTER_NAME,
-                        getattr(self.dataset2, "pos_kept"),
-                        complement=True)
+        region = Region(
+            ref=self.report.get_field(RefF),
+            seq=self.refseq,
+            name=self.report.get_field(RegF),
+            end5=self.report.get_field(End5F),
+            end3=self.report.get_field(End3F),
+        )
+        region.add_mask(
+            self.FILTER_NAME, getattr(self.dataset2, "pos_kept"), complement=True
+        )
         return region
 
-    def _integrate(self,
-                   batch1: IDmutMutsBatch | None,
-                   batch2: FilterBatchIO):
-        """ Combine an idmut batch with a filter batch into a FilterMutsBatch.
+    def _integrate(self, batch1: IDmutMutsBatch | None, batch2: FilterBatchIO):
+        """Combine an idmut batch with a filter batch into a FilterMutsBatch.
 
         Parameters
         ----------
@@ -153,33 +160,27 @@ class FilterMutsDataset(FilterDataset, MultistepDataset, UnbiasDataset):
         """
         if batch2.is_self_contained:
             if batch1 is not None:
-                raise ValueError(
-                    f"batch1 must be None when {batch2} is self-contained"
-                )
+                raise ValueError(f"batch1 must be None when {batch2} is self-contained")
             source = batch2.to_muts_batch()
             if self.masked_read_nums is not None:
                 read_nums = np.setdiff1d(
                     batch2.read_nums,
                     self.masked_read_nums.get(batch2.batch),
-                    assume_unique=True
+                    assume_unique=True,
                 )
-                source = apply_filters(source, read_nums, batch2.region,
-                                       sanitize=False)
+                source = apply_filters(source, read_nums, batch2.region, sanitize=False)
             return source
         if batch1 is None:
-            raise ValueError(
-                f"batch1 is required when {batch2} is not self-contained"
-            )
+            raise ValueError(f"batch1 is required when {batch2} is not self-contained")
         if self.masked_read_nums is not None:
-            read_nums = np.setdiff1d(batch2.read_nums,
-                                     self.masked_read_nums.get(batch2.batch),
-                                     assume_unique=True)
+            read_nums = np.setdiff1d(
+                batch2.read_nums,
+                self.masked_read_nums.get(batch2.batch),
+                assume_unique=True,
+            )
         else:
             read_nums = batch2.read_nums
-        filtered_batch = apply_filters(batch1,
-                                       read_nums,
-                                       self.region,
-                                       sanitize=False)
+        filtered_batch = apply_filters(batch1, read_nums, self.region, sanitize=False)
         if self.min_mut_gap > 0 and self.mut_collisions == MUT_COLLISIONS_MERGE:
             return FilterMutsBatch(
                 batch=filtered_batch.batch,
@@ -187,14 +188,12 @@ class FilterMutsDataset(FilterDataset, MultistepDataset, UnbiasDataset):
                 region=filtered_batch.region,
                 seg_end5s=filtered_batch.seg_end5s,
                 seg_end3s=filtered_batch.seg_end3s,
-                muts=filtered_batch.merge_close_muts(self.pattern,
-                                                     self.min_mut_gap),
+                muts=filtered_batch.merge_close_muts(self.pattern, self.min_mut_gap),
             )
         return filtered_batch
 
 
 class JoinFilterMutsDataset(FilterDataset, JoinMutsDataset, MergedUnbiasDataset):
-
     @classmethod
     def get_report_type(cls):
         return JoinFilterReport

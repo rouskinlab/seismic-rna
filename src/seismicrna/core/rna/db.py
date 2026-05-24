@@ -7,17 +7,15 @@ from ..seq import RNA, Region
 
 DB_NAME_MARK = ">"
 UNPAIRED_MARK = "."
-PAIRED_MARKS = {")": "(",
-                ">": "<",
-                "]": "[",
-                "}": "{"}
+PAIRED_MARKS = {")": "(", ">": "<", "]": "[", "}": "{"}
 
 
 def _parse_db_file_header(header_line: str):
     if not header_line.startswith(DB_NAME_MARK):
-        raise ValueError(f"Header line {repr(header_line)} does not start with "
-                         f"{repr(DB_NAME_MARK)}")
-    return header_line[len(DB_NAME_MARK):].rstrip("\n")
+        raise ValueError(
+            f"Header line {repr(header_line)} does not start with {repr(DB_NAME_MARK)}"
+        )
+    return header_line[len(DB_NAME_MARK) :].rstrip("\n")
 
 
 def _parse_db_file_next_record(db_file: TextIO, seq: RNA | None):
@@ -33,8 +31,8 @@ def _parse_db_file_next_record(db_file: TextIO, seq: RNA | None):
 
 
 def parse_db_file_as_strings(db_path: str | Path):
-    """ Return the sequence and dot-bracket strings from a dot-bracket
-    file. """
+    """Return the sequence and dot-bracket strings from a dot-bracket
+    file."""
     seq = None
     db_strings = dict()
     with open(db_path) as file:
@@ -50,7 +48,7 @@ def parse_db_file_as_strings(db_path: str | Path):
 
 
 def parse_db_string(db_string: str, seq5: int = 1):
-    """ Parse a dot-bracket string into a list of base pairs. """
+    """Parse a dot-bracket string into a list of base pairs."""
     stacks: dict[str, list[int]] = defaultdict(list)
     pairs = list()
     opening_marks = "".join(PAIRED_MARKS.values())
@@ -66,19 +64,15 @@ def parse_db_string(db_string: str, seq5: int = 1):
                         f"Position {pos} has an unmatched {repr(mark)}"
                     ) from None
             else:
-                raise ValueError(
-                    f"Position {pos} has an invalid mark: {repr(mark)}"
-                )
+                raise ValueError(f"Position {pos} has an invalid mark: {repr(mark)}")
     for mark, positions in stacks.items():
         if positions:
-            raise ValueError(
-                f"Position {positions[0]} has an unmatched {repr(mark)}"
-            )
+            raise ValueError(f"Position {positions[0]} has an unmatched {repr(mark)}")
     return sorted(pairs)
 
 
 def parse_db_file_as_pairs(db_path: str | Path, seq5: int = 1):
-    """ Yield the title, region, and base pairs for each structure in a
+    """Yield the title, region, and base pairs for each structure in a
     dot-bracket (DB) file.
 
     Parameters
@@ -111,10 +105,8 @@ def parse_db_file_as_pairs(db_path: str | Path, seq5: int = 1):
             yield title, region, pairs
 
 
-def format_db_string(pairs: Iterable[tuple[int, int]],
-                     length: int,
-                     seq5: int = 1):
-    """ Create a dot-bracket string from a list of base pairs. """
+def format_db_string(pairs: Iterable[tuple[int, int]], length: int, seq5: int = 1):
+    """Create a dot-bracket string from a list of base pairs."""
     db = [UNPAIRED_MARK] * length
     for pos5, pos3 in sorted(pairs):
         i = pos5 - seq5
@@ -122,13 +114,15 @@ def format_db_string(pairs: Iterable[tuple[int, int]],
         if i < 0:
             raise ValueError(f"5' partner must be ≥ {seq5}, but got {pos5}")
         if i >= j:
-            raise ValueError("5' partner must be less than 3' partner, "
-                             f"but got {pos5} ≥ {pos3}")
+            raise ValueError(
+                f"5' partner must be less than 3' partner, but got {pos5} ≥ {pos3}"
+            )
         if j >= length:
-            raise ValueError(f"3' partner must be ≤ {length + seq5 - 1}, "
-                             f"but got {pos3}")
+            raise ValueError(
+                f"3' partner must be ≤ {length + seq5 - 1}, but got {pos3}"
+            )
         # Determine which mark to use (it must not be used already).
-        used_marks = set(db[i: j])
+        used_marks = set(db[i:j])
         for cmark, omark in PAIRED_MARKS.items():
             if omark not in used_marks and cmark not in used_marks:
                 if db[i] != UNPAIRED_MARK:
@@ -139,6 +133,8 @@ def format_db_string(pairs: Iterable[tuple[int, int]],
                 db[j] = cmark
                 break
         else:
-            raise ValueError(f"Cannot write base-pair {pos5, pos3} because all "
-                             f"marks are already used in {''.join(db[i: j])}")
+            raise ValueError(
+                f"Cannot write base-pair {pos5, pos3} because all "
+                f"marks are already used in {''.join(db[i:j])}"
+            )
     return "".join(db)

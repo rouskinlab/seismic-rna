@@ -6,9 +6,11 @@ import pandas as pd
 from plotly import graph_objects as go
 
 from .table import TableWriter, PositionTableRunner
-from .onetable import (OneTableRelClusterGroupGraph,
-                       OneTableRelClusterGroupRunner,
-                       OneTableRelClusterGroupWriter)
+from .onetable import (
+    OneTableRelClusterGroupGraph,
+    OneTableRelClusterGroupRunner,
+    OneTableRelClusterGroupWriter,
+)
 from .rel import OneRelGraph
 from .roll import RollingGraph, RollingRunner
 from .trace import iter_line_traces
@@ -16,28 +18,22 @@ from ..core.header import format_clust_name
 from ..core.seq import iter_windows
 
 
-class RollingStatGraph(OneTableRelClusterGroupGraph,
-                       OneRelGraph,
-                       RollingGraph,
-                       ABC):
-
+class RollingStatGraph(OneTableRelClusterGroupGraph, OneRelGraph, RollingGraph, ABC):
     @classmethod
     @abstractmethod
     def stat_func(cls) -> Callable[[pd.Series], pd.Series]:
-        """ Function to compute a statistic on the data. """
+        """Function to compute a statistic on the data."""
 
     @cached_property
     def data(self):
         stat_func = self.stat_func()
-        data = self._fetch_data(self.table,
-                                k=self.k,
-                                clust=self.clust)
+        data = self._fetch_data(self.table, k=self.k, clust=self.clust)
         stat = pd.DataFrame(index=data.index, dtype=float)
         for cluster, cluster_data in data.items():
             cluster_stat = pd.Series(index=stat.index, dtype=float)
-            for center, (window,) in iter_windows(cluster_data,
-                                                  size=self._size,
-                                                  min_count=self._min_count):
+            for center, (window,) in iter_windows(
+                cluster_data, size=self._size, min_count=self._min_count
+            ):
                 cluster_stat.at[center] = stat_func(window)
             if isinstance(cluster, tuple):
                 _, k, clust = cluster
@@ -48,8 +44,7 @@ class RollingStatGraph(OneTableRelClusterGroupGraph,
         return stat
 
     def get_traces(self):
-        for row, trace in enumerate(iter_line_traces(self.data),
-                                    start=1):
+        for row, trace in enumerate(iter_line_traces(self.data), start=1):
             yield (row, 1), trace
 
     def _figure_layout(self, fig: go.Figure):
@@ -58,14 +53,13 @@ class RollingStatGraph(OneTableRelClusterGroupGraph,
 
 
 class RollingStatWriter(OneTableRelClusterGroupWriter, TableWriter, ABC):
-
     @classmethod
     @abstractmethod
     def get_graph_type(cls) -> type[RollingGraph]:
-        """ Type of graph. """
+        """Type of graph."""
 
     def get_graph(self, rels_group: str, **kwargs):
-        """ Instantiate a RollingStatGraph for the given relationship.
+        """Instantiate a RollingStatGraph for the given relationship.
 
         Parameters
         ----------
@@ -83,8 +77,7 @@ class RollingStatWriter(OneTableRelClusterGroupWriter, TableWriter, ABC):
         return graph_type(table=self.table, rel=rels_group, **kwargs)
 
 
-class RollingStatRunner(OneTableRelClusterGroupRunner,
-                        RollingRunner,
-                        PositionTableRunner,
-                        ABC):
+class RollingStatRunner(
+    OneTableRelClusterGroupRunner, RollingRunner, PositionTableRunner, ABC
+):
     pass

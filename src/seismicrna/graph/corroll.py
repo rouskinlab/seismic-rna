@@ -8,9 +8,11 @@ from .rel import OneRelGraph
 from .roll import RollingGraph, RollingRunner
 from .table import PositionTableRunner
 from .trace import iter_seq_line_traces
-from .twotable import (TwoTableMergedClusterGroupGraph,
-                       TwoTableRelClusterGroupWriter,
-                       TwoTableRelClusterGroupRunner)
+from .twotable import (
+    TwoTableMergedClusterGroupGraph,
+    TwoTableRelClusterGroupWriter,
+    TwoTableRelClusterGroupRunner,
+)
 from ..core.arg import opt_metric
 from ..core.mu import compare_windows, get_comp_name
 from ..core.run import log_command
@@ -18,10 +20,9 @@ from ..core.run import log_command
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 
-class RollingCorrelationGraph(TwoTableMergedClusterGroupGraph,
-                              OneRelGraph,
-                              RollingGraph):
-
+class RollingCorrelationGraph(
+    TwoTableMergedClusterGroupGraph, OneRelGraph, RollingGraph
+):
     @classmethod
     def graph_kind(cls):
         return COMMAND
@@ -61,10 +62,12 @@ class RollingCorrelationGraph(TwoTableMergedClusterGroupGraph,
 
     @cached_property
     def _merge_data(self):
-        return partial(compare_windows,
-                       method=self._metric,
-                       size=self._size,
-                       min_count=self._min_count)
+        return partial(
+            compare_windows,
+            method=self._metric,
+            size=self._size,
+            min_count=self._min_count,
+        )
 
     def _figure_layout(self, fig: go.Figure):
         super()._figure_layout(fig)
@@ -72,16 +75,14 @@ class RollingCorrelationGraph(TwoTableMergedClusterGroupGraph,
 
 
 class RollingCorrelationWriter(TwoTableRelClusterGroupWriter):
-
     @classmethod
     def get_graph_type(cls):
         return RollingCorrelationGraph
 
 
-class RollingCorrelationRunner(TwoTableRelClusterGroupRunner,
-                               RollingRunner,
-                               PositionTableRunner):
-
+class RollingCorrelationRunner(
+    TwoTableRelClusterGroupRunner, RollingRunner, PositionTableRunner
+):
     @classmethod
     def get_var_params(cls):
         return super().get_var_params() + [opt_metric]
@@ -98,5 +99,5 @@ class RollingCorrelationRunner(TwoTableRelClusterGroupRunner,
 
 @command(COMMAND, params=RollingCorrelationRunner.params())
 def cli(*args, **kwargs):
-    """ Rolling correlation/comparison of two profiles. """
+    """Rolling correlation/comparison of two profiles."""
     return RollingCorrelationRunner.run(*args, **kwargs)

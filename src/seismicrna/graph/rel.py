@@ -7,26 +7,26 @@ from ..core.table import get_rel_name
 
 
 class RelGraph(BaseGraph, ABC):
-    """ Graph of one or more types of relationships. """
+    """Graph of one or more types of relationships."""
 
     @property
     @abstractmethod
     def codestring(self) -> str:
-        """ String of the relationship code(s). """
+        """String of the relationship code(s)."""
 
     @property
     @abstractmethod
     def rel_names(self):
-        """ Names of the relationships to graph. """
+        """Names of the relationships to graph."""
 
     @cached_property
     def relationships(self) -> str:
-        """ Relationships being graphed as a slash-separated string. """
+        """Relationships being graphed as a slash-separated string."""
         return "/".join(self.rel_names)
 
 
 class OneRelGraph(RelGraph, ABC):
-    """ Graph of exactly one type of relationship. """
+    """Graph of exactly one type of relationship."""
 
     def __init__(self, *, rel: str, **kwargs):
         """
@@ -53,8 +53,10 @@ class OneRelGraph(RelGraph, ABC):
         """
         super().__init__(**kwargs)
         if len(rel) != 1:
-            raise ValueError(f"{type(self).__name__} expected exactly one "
-                             f"relationship code, but got {repr(rel)}")
+            raise ValueError(
+                f"{type(self).__name__} expected exactly one "
+                f"relationship code, but got {repr(rel)}"
+            )
         self._rel = rel
 
     @property
@@ -63,7 +65,7 @@ class OneRelGraph(RelGraph, ABC):
 
     @cached_property
     def rel_name(self):
-        """ Name of the relationship to graph. """
+        """Name of the relationship to graph."""
         return get_rel_name(self.codestring)
 
     @cached_property
@@ -72,7 +74,7 @@ class OneRelGraph(RelGraph, ABC):
 
 
 class MultiRelsGraph(RelGraph, ABC):
-    """ Graph of one or more relationships. """
+    """Graph of one or more relationships."""
 
     def __init__(self, *, rels: str, **kwargs):
         """
@@ -101,8 +103,10 @@ class MultiRelsGraph(RelGraph, ABC):
         """
         super().__init__(**kwargs)
         if len(rels) == 0:
-            raise ValueError(f"{type(self).__name__} expected one or more "
-                             f"relationship codes, but got {repr(rels)}")
+            raise ValueError(
+                f"{type(self).__name__} expected one or more "
+                f"relationship codes, but got {repr(rels)}"
+            )
         self._rels = rels
 
     @property
@@ -115,7 +119,6 @@ class MultiRelsGraph(RelGraph, ABC):
 
 
 class RelRunner(BaseRunner, ABC):
-
     @classmethod
     def get_var_params(cls):
         return super().get_var_params() + [opt_rels]

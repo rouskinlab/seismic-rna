@@ -4,60 +4,69 @@ from typing import Iterable
 from click import command
 
 from .write import import_mm
-from ..core.arg import (CMD_IMPORTMM,
-                        arg_input_path,
-                        opt_out_dir,
-                        opt_tmp_pfx,
-                        opt_branch,
-                        opt_importmm_sample,
-                        opt_min_reads,
-                        opt_batch_size,
-                        opt_insert3,
-                        opt_brotli_level,
-                        opt_write_read_names,
-                        opt_idmut_pos_table,
-                        opt_idmut_read_table,
-                        opt_force,
-                        opt_num_cpus)
+from ..core.arg import (
+    CMD_IMPORTMM,
+    arg_input_path,
+    opt_out_dir,
+    opt_tmp_pfx,
+    opt_branch,
+    opt_importmm_sample,
+    opt_min_reads,
+    opt_batch_size,
+    opt_insert3,
+    opt_brotli_level,
+    opt_write_read_names,
+    opt_idmut_pos_table,
+    opt_idmut_read_table,
+    opt_force,
+    opt_num_cpus,
+)
 from ..core.run import run_func
 from ..core.task import as_list_of_tuples, dispatch
 
 
 @run_func(CMD_IMPORTMM, with_tmp=True, pass_keep_tmp=False)
-def run(input_path: Iterable[str | Path], *,
-        sample: str,
-        out_dir: str | Path,
-        tmp_dir: Path,
-        branch: str,
-        min_reads: int,
-        batch_size: int,
-        insert3: bool,
-        write_read_names: bool,
-        idmut_pos_table: bool,
-        idmut_read_table: bool,
-        brotli_level: int,
-        num_cpus: int,
-        force: bool):
-    """ Import RNA Framework Mutation Map (MM) files as IDmut outputs. """
-    return dispatch(import_mm,
-                    num_cpus=num_cpus,
-                    pass_num_cpus=False,
-                    as_list=True,
-                    ordered=False,
-                    raise_on_error=False,
-                    args=as_list_of_tuples(list(input_path)),
-                    kwargs=dict(sample=sample,
-                                out_dir=Path(out_dir),
-                                tmp_dir=tmp_dir,
-                                branch=branch,
-                                min_reads=min_reads,
-                                batch_size=batch_size,
-                                insert3=insert3,
-                                write_read_names=write_read_names,
-                                idmut_pos_table=idmut_pos_table,
-                                idmut_read_table=idmut_read_table,
-                                brotli_level=brotli_level,
-                                force=force))
+def run(
+    input_path: Iterable[str | Path],
+    *,
+    sample: str,
+    out_dir: str | Path,
+    tmp_dir: Path,
+    branch: str,
+    min_reads: int,
+    batch_size: int,
+    insert3: bool,
+    write_read_names: bool,
+    idmut_pos_table: bool,
+    idmut_read_table: bool,
+    brotli_level: int,
+    num_cpus: int,
+    force: bool,
+):
+    """Import RNA Framework Mutation Map (MM) files as IDmut outputs."""
+    return dispatch(
+        import_mm,
+        num_cpus=num_cpus,
+        pass_num_cpus=False,
+        as_list=True,
+        ordered=False,
+        raise_on_error=False,
+        args=as_list_of_tuples(list(input_path)),
+        kwargs=dict(
+            sample=sample,
+            out_dir=Path(out_dir),
+            tmp_dir=tmp_dir,
+            branch=branch,
+            min_reads=min_reads,
+            batch_size=batch_size,
+            insert3=insert3,
+            write_read_names=write_read_names,
+            idmut_pos_table=idmut_pos_table,
+            idmut_read_table=idmut_read_table,
+            brotli_level=brotli_level,
+            force=force,
+        ),
+    )
 
 
 params = [
@@ -87,5 +96,5 @@ params = [
 
 @command(CMD_IMPORTMM, params=params)
 def cli(**kwargs):
-    """ Import RNA Framework Mutation Map (MM) files as IDmut outputs. """
+    """Import RNA Framework Mutation Map (MM) files as IDmut outputs."""
     return run(**kwargs)

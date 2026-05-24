@@ -7,7 +7,6 @@ from ..core.lists import List, PositionList
 
 
 class FilterList(List, FilterFile, ABC):
-
     def __init__(self, *, reg: str, **kwargs):
         """
         Parameters
@@ -22,7 +21,6 @@ class FilterList(List, FilterFile, ABC):
 
 
 class FilterPositionList(PositionList, FilterList):
-
     @classmethod
     def get_table_type(cls):
         return FilterPositionTableLoader

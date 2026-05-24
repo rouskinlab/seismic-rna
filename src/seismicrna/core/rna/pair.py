@@ -10,13 +10,13 @@ UNPAIRED = 0
 
 
 def pairs_to_dict(pairs: Iterable[tuple[int, int]]):
-    """ Return a dictionary that maps each position to the base to which
-    it pairs and contains no key for unpaired positions. """
+    """Return a dictionary that maps each position to the base to which
+    it pairs and contains no key for unpaired positions."""
     # Initialize the series of pairs to 0 for every position.
     pair_dict: dict[int, int] = dict()
 
     def add_pair(a: int, b: int):
-        """ Add a base pair at position `a` to position `b`. """
+        """Add a base pair at position `a` to position `b`."""
         if a < 1:
             raise ValueError(f"Position must be ≥ 1, but got {a}")
         # Find the current pairing partner at this position.
@@ -27,8 +27,7 @@ def pairs_to_dict(pairs: Iterable[tuple[int, int]]):
             logger.warning(f"Pair {a, b} was given multiple times")
         else:
             # A previous partner conflicts with the current partner.
-            raise ValueError(f"Position {a} was given pairs with both "
-                             f"{b2} and {b}")
+            raise ValueError(f"Position {a} was given pairs with both {b2} and {b}")
 
     # Add all base pairs (in both directions) to the table.
     for pos1, pos2 in pairs:
@@ -40,7 +39,7 @@ def pairs_to_dict(pairs: Iterable[tuple[int, int]]):
 
 
 def dict_to_pairs(pair_dict: dict[int, int]):
-    """ Tuples of the 5' and 3' position in each pair. """
+    """Tuples of the 5' and 3' position in each pair."""
     for a, b in pair_dict.items():
         if a < 1:
             raise ValueError(f"Position must be ≥ 1, but got {a}")
@@ -54,13 +53,13 @@ def dict_to_pairs(pair_dict: dict[int, int]):
 
 
 def pairs_to_table(pairs: Iterable[tuple[int, int]], region: Region):
-    """ Series of every position in the region and the base to which it
-    pairs, or 0 if it does not pair. """
+    """Series of every position in the region and the base to which it
+    pairs, or 0 if it does not pair."""
     table = pd.Series(UNPAIRED, index=region.range)
     seq = str(region.seq)
 
     def add_pair(a: int, b: int):
-        """ Add a base pair at position `a` to position `b`. """
+        """Add a base pair at position `a` to position `b`."""
         if not region.end5 <= a <= region.end3:
             raise ValueError(f"Position {a} is not in {region}")
         # Find the current pairing partner at this position.
@@ -72,8 +71,7 @@ def pairs_to_table(pairs: Iterable[tuple[int, int]], region: Region):
             logger.warning(f"Pair {a, b} was given multiple times")
         else:
             # A previous partner conflicts with the current partner.
-            raise ValueError(f"Position {a} was given pairs with both "
-                             f"{b2} and {b}")
+            raise ValueError(f"Position {a} was given pairs with both {b2} and {b}")
 
     # Add all base pairs (in both directions) to the table.
     for pos1, pos2 in pairs:
@@ -85,26 +83,26 @@ def pairs_to_table(pairs: Iterable[tuple[int, int]], region: Region):
 
 
 def dict_to_table(pair_dict: dict[int, int], region: Region):
-    """ Series of every position in the region and the base to which it
-    pairs, or 0 if it does not pair. """
+    """Series of every position in the region and the base to which it
+    pairs, or 0 if it does not pair."""
     return pairs_to_table(dict_to_pairs(pair_dict), region)
 
 
 def table_to_pairs(table: pd.Series):
-    """ Tuples of the 5' and 3' position in each pair. """
+    """Tuples of the 5' and 3' position in each pair."""
     pairs = table[table != UNPAIRED]
-    return dict_to_pairs(dict(zip(pairs.index.get_level_values(POS_NAME),
-                                  pairs,
-                                  strict=True)))
+    return dict_to_pairs(
+        dict(zip(pairs.index.get_level_values(POS_NAME), pairs, strict=True))
+    )
 
 
 def table_to_dict(table: pd.Series):
-    """ Dictionary of the 5' and 3' position in each pair. """
+    """Dictionary of the 5' and 3' position in each pair."""
     return pairs_to_dict(table_to_pairs(table))
 
 
 def renumber_pairs(pairs: Iterable[tuple[int, int]], offset: int):
-    """ Renumber pairs by offsetting each number.
+    """Renumber pairs by offsetting each number.
 
     Parameters
     ----------
@@ -128,7 +126,7 @@ def renumber_pairs(pairs: Iterable[tuple[int, int]], offset: int):
 
 
 def find_enclosing_pairs(table: pd.Series):
-    """ Find the base pair that encloses each position. """
+    """Find the base pair that encloses each position."""
     enclosing = pd.DataFrame(UNPAIRED, table.index, [FIELD_END5, FIELD_END3])
     stack = list()
     for (position, _), partner in table.items():
@@ -144,8 +142,9 @@ def find_enclosing_pairs(table: pd.Series):
                 # Remove the last pair.
                 pair = stack.pop()
                 if pair != (partner, position):
-                    raise ValueError(f"Pairs {partner, position} and {pair} "
-                                     f"are not nested")
+                    raise ValueError(
+                        f"Pairs {partner, position} and {pair} are not nested"
+                    )
                 enclosing.loc[position] = pair
         elif stack:
             enclosing.loc[position] = stack[-1]
@@ -155,7 +154,7 @@ def find_enclosing_pairs(table: pd.Series):
 
 
 def map_nested(pairs: Iterable[tuple[int, int]]):
-    """ Map each pair to the pair in which it is nested. """
+    """Map each pair to the pair in which it is nested."""
     pair_dict = pairs_to_dict(pairs)
     if not pair_dict:
         return {}
@@ -164,19 +163,23 @@ def map_nested(pairs: Iterable[tuple[int, int]]):
     root_pos = set()
 
     def find_nested(pair: tuple[int, int]):
-        """ Find the pair in which one pair is nested. """
+        """Find the pair in which one pair is nested."""
         p5, p3 = pair
         if p5 >= p3:
             raise ValueError(f"Invalid pair: {p5, p3}")
         # Find the nearest pair on the 5' side.
-        while (((c5 := pair_dict.get(p5 := p5 - 1)) is None or c5 < p5)
-               and p5 not in root_pos
-               and p5 >= min_pos):
+        while (
+            ((c5 := pair_dict.get(p5 := p5 - 1)) is None or c5 < p5)
+            and p5 not in root_pos
+            and p5 >= min_pos
+        ):
             pass
         # Find the nearest pair on the 3' side.
-        while (((c3 := pair_dict.get(p3 := p3 + 1)) is None or c3 > p3)
-               and p3 not in root_pos
-               and p3 <= max_pos):
+        while (
+            ((c3 := pair_dict.get(p3 := p3 + 1)) is None or c3 > p3)
+            and p3 not in root_pos
+            and p3 <= max_pos
+        ):
             pass
         if p5 < min_pos and p3 > max_pos:
             # No other pair contains this pair.
@@ -194,8 +197,8 @@ def map_nested(pairs: Iterable[tuple[int, int]]):
 
 
 def _find_root_pairs_nested(pair_dict: dict[int, int]):
-    """ Return all pairs that are not contained in any other pair, while
-    assuming that all pairs are nested (i.e. no pseudoknots). """
+    """Return all pairs that are not contained in any other pair, while
+    assuming that all pairs are nested (i.e. no pseudoknots)."""
     if pair_dict:
         max_pos = max(pair_dict)
         pos = min(pair_dict)
@@ -211,6 +214,6 @@ def _find_root_pairs_nested(pair_dict: dict[int, int]):
 
 
 def find_root_pairs(pairs: Iterable[tuple[int, int]]):
-    """ Return all pairs that are not contained by any other pair. """
+    """Return all pairs that are not contained by any other pair."""
     pair_dict = pairs_to_dict(pairs)
     return list(_find_root_pairs_nested(pair_dict))

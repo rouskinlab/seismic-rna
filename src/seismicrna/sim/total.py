@@ -6,32 +6,36 @@ from typing import Iterable
 import numpy as np
 from click import command
 
-from . import (fastq as fastq_mod,
-               fold as fold_mod,
-               params as params_mod,
-               ref as ref_mod,
-               idmut as idmut_mod)
+from . import (
+    fastq as fastq_mod,
+    fold as fold_mod,
+    params as params_mod,
+    ref as ref_mod,
+    idmut as idmut_mod,
+)
 from .muts import load_pmut
 from ..core import path
-from ..core.arg import (PROBE_NONE,
-                        arg_fasta,
-                        arg_input_path,
-                        opt_branch,
-                        opt_batch_size,
-                        opt_brotli_level,
-                        opt_ct_file,
-                        opt_mask_a,
-                        opt_mask_c,
-                        opt_mask_g,
-                        opt_mask_polya,
-                        opt_mask_u,
-                        opt_max_fraction_ident,
-                        opt_max_pearson_sim,
-                        opt_max_tries,
-                        opt_min_marcd_sim,
-                        opt_param_dir,
-                        opt_write_read_names,
-                        merge_params)
+from ..core.arg import (
+    PROBE_NONE,
+    arg_fasta,
+    arg_input_path,
+    opt_branch,
+    opt_batch_size,
+    opt_brotli_level,
+    opt_ct_file,
+    opt_mask_a,
+    opt_mask_c,
+    opt_mask_g,
+    opt_mask_polya,
+    opt_mask_u,
+    opt_max_fraction_ident,
+    opt_max_pearson_sim,
+    opt_max_tries,
+    opt_min_marcd_sim,
+    opt_param_dir,
+    opt_write_read_names,
+    merge_params,
+)
 from ..core.logs import logger
 from ..core.mu.compare import calc_mean_arcsine_distance, calc_pearson
 from ..core.rel import RelPattern
@@ -44,18 +48,20 @@ from ..idmut.sim import calc_pmut_pattern
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 
-def _clusters_distinct(ct_file: Path,
-                        fasta: str | Path,
-                        region_coords: Iterable[tuple[str, int, int]],
-                        region_primers: Iterable[tuple[str, DNA, DNA]],
-                        mask_a: bool,
-                        mask_c: bool,
-                        mask_g: bool,
-                        mask_u: bool,
-                        mask_polya: int,
-                        max_fraction_ident: float,
-                        max_pearson: float,
-                        min_marcd: float) -> bool:
+def _clusters_distinct(
+    ct_file: Path,
+    fasta: str | Path,
+    region_coords: Iterable[tuple[str, int, int]],
+    region_primers: Iterable[tuple[str, DNA, DNA]],
+    mask_a: bool,
+    mask_c: bool,
+    mask_g: bool,
+    mask_u: bool,
+    mask_polya: int,
+    max_fraction_ident: float,
+    max_pearson: float,
+    min_marcd: float,
+) -> bool:
     """Return True if all cluster pairs satisfy the similarity thresholds."""
     try:
         region = next(from_ct(ct_file)).region
@@ -64,11 +70,18 @@ def _clusters_distinct(ct_file: Path,
     # Mask positions from the coordinates and primers.
     region_coords = list(region_coords)
     region_primers = list(region_primers)
-    select_regs = (list(RefRegions(parse_fasta(Path(fasta), DNA),
-                                   ends=region_coords,
-                                   primers=region_primers,
-                                   exclude_primers=True).regions)
-                   if (region_coords or region_primers) else [])
+    select_regs = (
+        list(
+            RefRegions(
+                parse_fasta(Path(fasta), DNA),
+                ends=region_coords,
+                primers=region_primers,
+                exclude_primers=True,
+            ).regions
+        )
+        if (region_coords or region_primers)
+        else []
+    )
     for reg in select_regs:
         if reg.ref == region.ref:
             region.mask_list(range(region.end5, reg.end5 + 1))
@@ -85,9 +98,9 @@ def _clusters_distinct(ct_file: Path,
     region.mask_polya(mask_polya)
     # Compute per-cluster mutation rates over unmasked positions.
     pmut_path = ct_file.with_suffix(path.PARAM_MUTS_EXT)
-    mus = calc_pmut_pattern(load_pmut(pmut_path),
-                            RelPattern.from_counts(count_del=True,
-                                                   count_ins=True))
+    mus = calc_pmut_pattern(
+        load_pmut(pmut_path), RelPattern.from_counts(count_del=True, count_ins=True)
+    )
     mus = mus.loc[region.unmasked_int]
     if not mus.empty:
         # Pairwise checks.
@@ -98,83 +111,88 @@ def _clusters_distinct(ct_file: Path,
                 return False
             if float(calc_pearson(mu1, mu2)) >= max_pearson:
                 return False
-            if min_marcd > 0. and float(calc_mean_arcsine_distance(mu1, mu2)) < min_marcd:
+            if (
+                min_marcd > 0.0
+                and float(calc_mean_arcsine_distance(mu1, mu2)) < min_marcd
+            ):
                 return False
     return True
 
 
 @run_func(COMMAND, default=None)
-def run(*,
-        sim_dir: str | Path,
-        tmp_pfx: str | Path,
-        sample: str,
-        refs: str,
-        ref: str,
-        reflen: int,
-        profile_name: str,
-        fold_backend: str,
-        pseudoknots: bool,
-        fold_coords: Iterable[tuple[str, int, int]],
-        fold_primers: Iterable[tuple[str, DNA, DNA]],
-        fold_regions_file: str | None,
-        fold_constraint: str | None,
-        fold_temp: float,
-        fold_md: int,
-        fold_mfe: bool,
-        fold_max: int,
-        fold_min: int,
-        fold_percent: float,
-        fold_edelta: float,
-        pmut_paired: Iterable[tuple[str, float]],
-        pmut_unpaired: Iterable[tuple[str, float]],
-        vmut_paired: Iterable[tuple[str, float]],
-        vmut_unpaired: Iterable[tuple[str, float]],
-        center_fmean: float,
-        center_fvar: float,
-        length_fmean: float,
-        length_fvar: float,
-        clust_conc: float,
-        region_coords: Iterable[tuple[str, int, int]],
-        region_primers: Iterable[tuple[str, DNA, DNA]],
-        mask_a: bool | None,
-        mask_c: bool | None,
-        mask_g: bool | None,
-        mask_u: bool | None,
-        mask_polya: int,
-        max_fraction_ident: float,
-        max_pearson_sim: float,
-        min_marcd_sim: float,
-        max_tries: int,
-        paired_end: bool,
-        read_length: int,
-        reverse_fraction: float,
-        probe: str,
-        min_mut_gap: int,
-        min_mut_gap_weights: str | None,
-        mut_collisions: str,
-        injected_mut_probs: str | None,
-        fq_gzip: bool,
-        num_reads: int,
-        keep_tmp: bool,
-        force: bool,
-        num_cpus: int,
-        seed: int | None):
-    """ Simulate FASTQ files from scratch. """
+def run(
+    *,
+    sim_dir: str | Path,
+    tmp_pfx: str | Path,
+    sample: str,
+    refs: str,
+    ref: str,
+    reflen: int,
+    profile_name: str,
+    fold_backend: str,
+    pseudoknots: bool,
+    fold_coords: Iterable[tuple[str, int, int]],
+    fold_primers: Iterable[tuple[str, DNA, DNA]],
+    fold_regions_file: str | None,
+    fold_constraint: str | None,
+    fold_temp: float,
+    fold_md: int,
+    fold_mfe: bool,
+    fold_max: int,
+    fold_min: int,
+    fold_percent: float,
+    fold_edelta: float,
+    pmut_paired: Iterable[tuple[str, float]],
+    pmut_unpaired: Iterable[tuple[str, float]],
+    vmut_paired: Iterable[tuple[str, float]],
+    vmut_unpaired: Iterable[tuple[str, float]],
+    center_fmean: float,
+    center_fvar: float,
+    length_fmean: float,
+    length_fvar: float,
+    clust_conc: float,
+    region_coords: Iterable[tuple[str, int, int]],
+    region_primers: Iterable[tuple[str, DNA, DNA]],
+    mask_a: bool | None,
+    mask_c: bool | None,
+    mask_g: bool | None,
+    mask_u: bool | None,
+    mask_polya: int,
+    max_fraction_ident: float,
+    max_pearson_sim: float,
+    min_marcd_sim: float,
+    max_tries: int,
+    paired_end: bool,
+    read_length: int,
+    reverse_fraction: float,
+    probe: str,
+    min_mut_gap: int,
+    min_mut_gap_weights: str | None,
+    mut_collisions: str,
+    injected_mut_probs: str | None,
+    fq_gzip: bool,
+    num_reads: int,
+    keep_tmp: bool,
+    force: bool,
+    num_cpus: int,
+    seed: int | None,
+):
+    """Simulate FASTQ files from scratch."""
     mask_a, mask_c, mask_g, mask_u = set_mask_acgu(
         probe, mask_a, mask_c, mask_g, mask_u
     )
     for attempt in range(1, max(max_tries, 1) + 1):
-        logger.routine(
-            f"Began simulation attempt {attempt} of up to {max_tries}"
-        )
+        logger.routine(f"Began simulation attempt {attempt} of up to {max_tries}")
         # Simulate the reference sequence.
-        fasta = str(ref_mod.run(
-            sim_dir=sim_dir,
-            refs=refs,
-            ref=ref,
-            reflen=reflen,
-            force=force,
-            seed=seed)
+        fasta = str(
+            ref_mod.run(
+                sim_dir=sim_dir,
+                refs=refs,
+                ref=ref,
+                reflen=reflen,
+                force=force,
+                seed=seed,
+            )
         )
         # Simulate the structures.
         ct_files = fold_mod.run(
@@ -198,7 +216,7 @@ def run(*,
             fold_edelta=fold_edelta,
             keep_tmp=keep_tmp,
             force=force,
-            num_cpus=num_cpus
+            num_cpus=num_cpus,
         )
         # Check whether folding succeeded.
         if len(ct_files) == 0:
@@ -230,26 +248,34 @@ def run(*,
             clust_conc=clust_conc,
             force=force,
             num_cpus=num_cpus,
-            seed=seed
+            seed=seed,
         )
         # Check if the clusters are sufficiently distinct, unless probe
         # is none, in which case there should be no distinct clusters.
         ct_file = ct_files[0]
         if probe != PROBE_NONE and not _clusters_distinct(
-            ct_file, fasta,
-            region_coords, region_primers,
-            mask_a, mask_c, mask_g, mask_u,
+            ct_file,
+            fasta,
+            region_coords,
+            region_primers,
+            mask_a,
+            mask_c,
+            mask_g,
+            mask_u,
             mask_polya,
-            max_fraction_ident, max_pearson_sim,
-            min_marcd_sim
+            max_fraction_ident,
+            max_pearson_sim,
+            min_marcd_sim,
         ):
             # If so, delete the simulated files and start over.
             Path(fasta).unlink(missing_ok=True)
             ct_file.unlink(missing_ok=True)
-            for suffix in [path.PARAM_MUTS_EXT,
-                            path.PARAM_ENDS_EXT,
-                            path.PARAM_CLUSTS_EXT]:
-                ct_file.with_suffix(suffix).unlink(missing_ok=True)  
+            for suffix in [
+                path.PARAM_MUTS_EXT,
+                path.PARAM_ENDS_EXT,
+                path.PARAM_CLUSTS_EXT,
+            ]:
+                ct_file.with_suffix(suffix).unlink(missing_ok=True)
             logger.warning(
                 f"Clusters were too similar on attempt {attempt} of up to {max_tries}"
             )
@@ -278,36 +304,41 @@ def run(*,
         num_reads=num_reads,
         force=force,
         num_cpus=num_cpus,
-        seed=seed
+        seed=seed,
     )
 
 
 params = merge_params(
-    [opt_max_tries,
-    opt_mask_a,
-    opt_mask_c,
-    opt_mask_g,
-    opt_mask_u,
-    opt_mask_polya,
-    opt_max_fraction_ident,
-    opt_max_pearson_sim,
-    opt_min_marcd_sim],
+    [
+        opt_max_tries,
+        opt_mask_a,
+        opt_mask_c,
+        opt_mask_g,
+        opt_mask_u,
+        opt_mask_polya,
+        opt_max_fraction_ident,
+        opt_max_pearson_sim,
+        opt_min_marcd_sim,
+    ],
     fastq_mod.params,
     fold_mod.params,
     params_mod.params,
     ref_mod.params,
     idmut_mod.params,
-    exclude=[arg_fasta,
-            arg_input_path,
-            opt_branch,
-            opt_batch_size,
-            opt_brotli_level,
-            opt_ct_file,
-            opt_param_dir,
-            opt_write_read_names])
+    exclude=[
+        arg_fasta,
+        arg_input_path,
+        opt_branch,
+        opt_batch_size,
+        opt_brotli_level,
+        opt_ct_file,
+        opt_param_dir,
+        opt_write_read_names,
+    ],
+)
 
 
 @command(COMMAND, params=params)
 def cli(*args, **kwargs):
-    """ Simulate FASTQ files from scratch. """
+    """Simulate FASTQ files from scratch."""
     return run(*args, **kwargs)

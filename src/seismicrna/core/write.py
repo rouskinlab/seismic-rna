@@ -4,7 +4,7 @@ from .logs import logger
 
 
 def need_write(query: str | Path, force: bool = False, warn: bool = True):
-    """ Determine whether a file/directory must be written.
+    """Determine whether a file/directory must be written.
 
     Parameters
     ----------
@@ -30,7 +30,7 @@ def need_write(query: str | Path, force: bool = False, warn: bool = True):
 
 
 def write_mode(force: bool = False, binary: bool = False):
-    """ Get the mode in which to open a file for writing.
+    """Get the mode in which to open a file for writing.
 
     Parameters
     ----------

@@ -11,43 +11,43 @@ UINT_NBYTES = 1, 2, 4, 8
 
 
 def get_dtype(code: str, size: int):
-    """ NumPy type with the given code and size. """
+    """NumPy type with the given code and size."""
     return np.dtype(f"{ENDIAN_TYP}{code}{size}")
 
 
 @cache
 def get_uint_dtype(nbytes: int):
-    """ NumPy uint data type with the given number of bytes. """
+    """NumPy uint data type with the given number of bytes."""
     if nbytes not in UINT_NBYTES:
         raise ValueError(f"Invalid number of bytes for unsigned int: {nbytes}")
     return get_dtype(UINT_CODE, nbytes)
 
 
 def get_uint_type(nbytes: int):
-    """ NumPy uint type with the given number of bytes. """
+    """NumPy uint type with the given number of bytes."""
     return get_uint_dtype(nbytes).type
 
 
 @cache
 def get_uint_size(uint_type: type):
-    """ Size of a NumPy uint type in bytes. """
+    """Size of a NumPy uint type in bytes."""
     return uint_type(0).itemsize
 
 
 @cache
 def get_max_value(nbytes: int):
-    """ Get the maximum value of an unsigned integer of N bytes. """
+    """Get the maximum value of an unsigned integer of N bytes."""
     return 2 ** (BITS_PER_BYTE * nbytes) - 1
 
 
 def get_max_uint(uint_type: type):
-    """ Maximum value of a NumPy unsigned integer type. """
+    """Maximum value of a NumPy unsigned integer type."""
     return get_max_value(get_uint_size(uint_type))
 
 
 @cache
 def fit_uint_size(value: int):
-    """ Smallest number of bytes that will fit the value. """
+    """Smallest number of bytes that will fit the value."""
     if not isinstance(value, (int, np.integer)) or value < 0:
         raise ValueError(f"Expected an integer ≥ 0, but got {repr(value)}")
     for nbytes in UINT_NBYTES:
@@ -57,11 +57,11 @@ def fit_uint_size(value: int):
 
 
 def fit_uint_type(value: int):
-    """ Smallest unsigned int type that will fit the value. """
+    """Smallest unsigned int type that will fit the value."""
     return get_uint_type(fit_uint_size(value))
 
 
 @cache
 def get_byte_dtype(nchars: int):
-    """ NumPy byte type with the given number of characters. """
+    """NumPy byte type with the given number of characters."""
     return get_dtype(BYTE_CODE, nchars)

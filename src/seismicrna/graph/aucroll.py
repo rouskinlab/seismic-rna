@@ -6,9 +6,7 @@ from click import command
 from plotly import graph_objects as go
 
 from .table import TableWriter, PositionTableRunner
-from .onestruct import (StructOneTableGraph,
-                        StructOneTableRunner,
-                        StructOneTableWriter)
+from .onestruct import StructOneTableGraph, StructOneTableRunner, StructOneTableWriter
 from .roc import PROFILE_NAME, rename_columns
 from .roll import RollingGraph, RollingRunner
 from .trace import iter_rolling_auc_traces
@@ -18,7 +16,6 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 
 
 class RollingAUCGraph(StructOneTableGraph, RollingGraph):
-
     @classmethod
     def graph_kind(cls):
         return COMMAND
@@ -42,7 +39,7 @@ class RollingAUCGraph(StructOneTableGraph, RollingGraph):
             data[key] = state.calc_auc_rolling(
                 size=self._size,
                 min_data=self._min_count,
-                terminal_pairs=self._terminal_pairs
+                terminal_pairs=self._terminal_pairs,
             )
         if not data:
             raise ValueError(f"Got no data for {self}")
@@ -51,13 +48,12 @@ class RollingAUCGraph(StructOneTableGraph, RollingGraph):
 
     @cached_property
     def profile_names(self):
-        """ Names of the profiles as they appear in the data. """
+        """Names of the profiles as they appear in the data."""
         return self.data.columns.unique(PROFILE_NAME)
 
     def get_traces(self):
         for row, profile in enumerate(self.profile_names, start=1):
-            for trace in iter_rolling_auc_traces(self.data.loc[:, profile],
-                                                 profile):
+            for trace in iter_rolling_auc_traces(self.data.loc[:, profile], profile):
                 yield (row, 1), trace
 
     def _figure_layout(self, fig: go.Figure):
@@ -66,13 +62,11 @@ class RollingAUCGraph(StructOneTableGraph, RollingGraph):
 
 
 class RollingAUCWriter(StructOneTableWriter, TableWriter):
-
     def get_graph(self, rels_group: str, **kwargs):
         return RollingAUCGraph(table=self.table, rel=rels_group, **kwargs)
 
 
 class RollingAUCRunner(RollingRunner, StructOneTableRunner, PositionTableRunner):
-
     @classmethod
     def get_writer_type(cls):
         return RollingAUCWriter
@@ -85,5 +79,5 @@ class RollingAUCRunner(RollingRunner, StructOneTableRunner, PositionTableRunner)
 
 @command(COMMAND, params=RollingAUCRunner.params())
 def cli(*args, **kwargs):
-    """ Rolling AUC-ROC comparing a profile to a structure. """
+    """Rolling AUC-ROC comparing a profile to a structure."""
     return RollingAUCRunner.run(*args, **kwargs)

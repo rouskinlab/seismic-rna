@@ -13,15 +13,21 @@ CIG_INTRN = "N"  # soft clipping
 
 # Regular expression pattern that matches a single CIGAR operation
 # (length ≥ 1 and operation code, defined above)
-CIG_PATTERN = re.compile("".join([r"(\d+)([",
-                                  CIG_ALIGN,
-                                  CIG_MATCH,
-                                  CIG_SUBST,
-                                  CIG_DELET,
-                                  CIG_INSRT,
-                                  CIG_SCLIP,
-                                  CIG_INTRN,
-                                  "])"]))
+CIG_PATTERN = re.compile(
+    "".join(
+        [
+            r"(\d+)([",
+            CIG_ALIGN,
+            CIG_MATCH,
+            CIG_SUBST,
+            CIG_DELET,
+            CIG_INSRT,
+            CIG_SCLIP,
+            CIG_INTRN,
+            "])",
+        ]
+    )
+)
 
 
 def parse_cigar(cigar_string: str):
@@ -88,7 +94,7 @@ def parse_cigar(cigar_string: str):
 
 
 def op_consumes_ref(op: str):
-    """ Whether the CIGAR operation consumes the reference. """
+    """Whether the CIGAR operation consumes the reference."""
     if op == CIG_ALIGN or op == CIG_MATCH or op == CIG_SUBST or op == CIG_DELET:
         return True
     if op == CIG_INSRT or op == CIG_SCLIP:
@@ -97,13 +103,15 @@ def op_consumes_ref(op: str):
 
 
 def op_consumes_read(op: str):
-    """ Whether the CIGAR operation consumes the read. """
+    """Whether the CIGAR operation consumes the read."""
     if op == CIG_DELET:
         return False
-    if (op == CIG_ALIGN
-            or op == CIG_MATCH
-            or op == CIG_SUBST
-            or op == CIG_INSRT
-            or op == CIG_SCLIP):
+    if (
+        op == CIG_ALIGN
+        or op == CIG_MATCH
+        or op == CIG_SUBST
+        or op == CIG_INSRT
+        or op == CIG_SCLIP
+    ):
         return True
     raise IDmutError("Unsupported CIGAR operation")

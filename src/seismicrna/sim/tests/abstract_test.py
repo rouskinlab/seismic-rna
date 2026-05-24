@@ -12,70 +12,79 @@ from seismicrna.core.error import NoDataError
 from seismicrna.core.header import format_clust_name
 from seismicrna.core.logs import Level, set_config
 from seismicrna.core.rna import RNAStructure, to_ct
-from seismicrna.core.seq.region import (BASE_NAME,
-                                        POS_NAME,
-                                        Region)
+from seismicrna.core.seq.region import BASE_NAME, POS_NAME, Region
 from seismicrna.core.seq.xna import DNA
-from seismicrna.core.table import (COVER_REL,
-                                   INFOR_REL,
-                                   MUTAT_REL,
-                                   SUBST_REL,
-                                   SUB_A_REL,
-                                   SUB_C_REL,
-                                   SUB_G_REL,
-                                   SUB_T_REL,
-                                   DELET_REL,
-                                   INSRT_REL)
-from seismicrna.export.web import (META_SYMBOL,
-                                   REF_SEQ,
-                                   REG_END5,
-                                   REG_END3,
-                                   REG_POS,
-                                   STRUCTURE,
-                                   COVER_COUNT,
-                                   INFOR_COUNT,
-                                   SUBST_COUNT,
-                                   SUB_A_COUNT,
-                                   SUB_C_COUNT,
-                                   SUB_G_COUNT,
-                                   SUB_T_COUNT,
-                                   DELET_COUNT,
-                                   INSRT_COUNT)
-from seismicrna.sim.abstract import (_calc_ratios,
-                                     _calc_ratio_stats,
-                                     _accumulate_ratios,
-                                     _format_param_tokens,
-                                     abstract_seismicgraph_file,
-                                     abstract_table,
-                                     new_parameter_dict)
-from seismicrna.core.arg import (opt_pmut_paired,
-                                 opt_pmut_unpaired,
-                                 opt_vmut_paired,
-                                 opt_vmut_unpaired)
-from seismicrna.sim.muts import (_make_pmut_means_kwargs,
-                                 _make_vmut_kwargs,
-                                 make_pmut_means_paired,
-                                 make_pmut_means_unpaired,
-                                 make_vmut_paired,
-                                 make_vmut_unpaired)
+from seismicrna.core.table import (
+    COVER_REL,
+    INFOR_REL,
+    MUTAT_REL,
+    SUBST_REL,
+    SUB_A_REL,
+    SUB_C_REL,
+    SUB_G_REL,
+    SUB_T_REL,
+    DELET_REL,
+    INSRT_REL,
+)
+from seismicrna.export.web import (
+    META_SYMBOL,
+    REF_SEQ,
+    REG_END5,
+    REG_END3,
+    REG_POS,
+    STRUCTURE,
+    COVER_COUNT,
+    INFOR_COUNT,
+    SUBST_COUNT,
+    SUB_A_COUNT,
+    SUB_C_COUNT,
+    SUB_G_COUNT,
+    SUB_T_COUNT,
+    DELET_COUNT,
+    INSRT_COUNT,
+)
+from seismicrna.sim.abstract import (
+    _calc_ratios,
+    _calc_ratio_stats,
+    _accumulate_ratios,
+    _format_param_tokens,
+    abstract_seismicgraph_file,
+    abstract_table,
+    new_parameter_dict,
+)
+from seismicrna.core.arg import (
+    opt_pmut_paired,
+    opt_pmut_unpaired,
+    opt_vmut_paired,
+    opt_vmut_unpaired,
+)
+from seismicrna.sim.muts import (
+    _make_pmut_means_kwargs,
+    _make_vmut_kwargs,
+    make_pmut_means_paired,
+    make_pmut_means_unpaired,
+    make_vmut_paired,
+    make_vmut_unpaired,
+)
 
 
-REL_COLUMNS = [COVER_REL,
-               INFOR_REL,
-               MUTAT_REL,
-               SUBST_REL,
-               SUB_A_REL,
-               SUB_C_REL,
-               SUB_G_REL,
-               SUB_T_REL,
-               DELET_REL,
-               INSRT_REL]
+REL_COLUMNS = [
+    COVER_REL,
+    INFOR_REL,
+    MUTAT_REL,
+    SUBST_REL,
+    SUB_A_REL,
+    SUB_C_REL,
+    SUB_G_REL,
+    SUB_T_REL,
+    DELET_REL,
+    INSRT_REL,
+]
 
 
-def _build_counts_df(refseq: DNA,
-                     per_position: dict[int, dict[str, int]],
-                     cov: int = 10,
-                     info: int = 8) -> pd.DataFrame:
+def _build_counts_df(
+    refseq: DNA, per_position: dict[int, dict[str, int]], cov: int = 10, info: int = 8
+) -> pd.DataFrame:
     """Build a counts DataFrame indexed by (Position, Base).
 
     Every position starts with cov=cov, info=info and zero in every
@@ -85,8 +94,7 @@ def _build_counts_df(refseq: DNA,
     length = len(refseq)
     positions = list(range(1, length + 1))
     index = pd.MultiIndex.from_tuples(
-        [(pos, refseq[pos - 1]) for pos in positions],
-        names=[POS_NAME, BASE_NAME],
+        [(pos, refseq[pos - 1]) for pos in positions], names=[POS_NAME, BASE_NAME]
     )
     data = {col: np.zeros(length, dtype=int) for col in REL_COLUMNS}
     data[COVER_REL][:] = cov
@@ -98,28 +106,26 @@ def _build_counts_df(refseq: DNA,
     return df
 
 
-def _write_ct(ct_path: Path,
-              ref: str,
-              refseq: DNA,
-              reg_name: str,
-              db_string: str,
-              profile_name: str) -> Path:
+def _write_ct(
+    ct_path: Path,
+    ref: str,
+    refseq: DNA,
+    reg_name: str,
+    db_string: str,
+    profile_name: str,
+) -> Path:
     """Write a single-structure CT file to ``ct_path``."""
-    struct = RNAStructure.from_db_string(db_string=db_string,
-                                         seq=refseq,
-                                         ref=ref,
-                                         reg=reg_name,
-                                         title=profile_name)
+    struct = RNAStructure.from_db_string(
+        db_string=db_string, seq=refseq, ref=ref, reg=reg_name, title=profile_name
+    )
     ct_path.parent.mkdir(parents=True, exist_ok=True)
     to_ct([struct], ct_path, force=True)
     return ct_path
 
 
-def _fold_ct_path(top: Path,
-                  sample: str,
-                  ref: str,
-                  reg: str,
-                  profile_name: str) -> Path:
+def _fold_ct_path(
+    top: Path, sample: str, ref: str, reg: str, profile_name: str
+) -> Path:
     """Build the canonical fold output CT path for a profile."""
     return top / sample / "fold" / ref / reg / f"{profile_name}.ct"
 
@@ -141,14 +147,17 @@ class FakeFilterPositionTable:
     Only the attributes that ``abstract_table`` reads are implemented.
     """
 
-    def __init__(self, *,
-                 top: Path,
-                 sample: str,
-                 ref: str,
-                 refseq: DNA,
-                 reg: str,
-                 clusts: list[tuple[int, int]],
-                 counts_per_clust: dict[tuple[int, int], pd.DataFrame]):
+    def __init__(
+        self,
+        *,
+        top: Path,
+        sample: str,
+        ref: str,
+        refseq: DNA,
+        reg: str,
+        clusts: list[tuple[int, int]],
+        counts_per_clust: dict[tuple[int, int], pd.DataFrame],
+    ):
         self.top = top
         self.sample = sample
         self.ref = ref
@@ -164,9 +173,7 @@ class FakeFilterPositionTable:
         return self._counts[(k, clust)].copy()
 
 
-def _write_seismicgraph_json(json_path: Path,
-                             sample: str,
-                             entries: list[dict]) -> Path:
+def _write_seismicgraph_json(json_path: Path, sample: str, entries: list[dict]) -> Path:
     """Serialise a SEISMICgraph JSON file.
 
     Each ``entries`` item is a dict shaped like::
@@ -215,11 +222,14 @@ def _write_seismicgraph_json(json_path: Path,
     return json_path
 
 
-def _profile_data(length: int, *,
-                  cov: int = 10,
-                  info: int = 8,
-                  per_position: dict[int, dict[str, int]] | None = None,
-                  structure: str = "") -> dict:
+def _profile_data(
+    length: int,
+    *,
+    cov: int = 10,
+    info: int = 8,
+    per_position: dict[int, dict[str, int]] | None = None,
+    structure: str = "",
+) -> dict:
     """Build a per-profile count dict for SEISMICgraph JSON."""
     profile: dict = {
         COVER_COUNT: [cov] * length,
@@ -279,11 +289,13 @@ class TestCalcRatios(AbstractTestBase):
         is_paired = self._is_paired_mask([1, 3, 5, 7])
         paired, unpaired = _calc_ratios(counts, is_paired)
         # Every paired position has info=5, cov=10 → loq = 1 - 0.5 = 0.5
-        np.testing.assert_array_almost_equal(paired["loq"],
-                                             np.array([0.5, 0.5, 0.5, 0.5]))
+        np.testing.assert_array_almost_equal(
+            paired["loq"], np.array([0.5, 0.5, 0.5, 0.5])
+        )
         # Every unpaired position has info=8, cov=10 → loq = 1 - 0.8 = 0.2
-        np.testing.assert_array_almost_equal(unpaired["loq"],
-                                             np.array([0.2, 0.2, 0.2, 0.2]))
+        np.testing.assert_array_almost_equal(
+            unpaired["loq"], np.array([0.2, 0.2, 0.2, 0.2])
+        )
 
     def test_per_base_substitution_ratios(self):
         # A positions are at 1 and 5 in "ACGTACGT".
@@ -298,12 +310,9 @@ class TestCalcRatios(AbstractTestBase):
         paired, _ = _calc_ratios(counts, is_paired)
         # Expected per-A ratios: paired['ac'], paired['ag'], paired['at']
         # For positions 1 and 5 (both paired):
-        np.testing.assert_array_almost_equal(paired["ac"],
-                                             np.array([2 / 4, 0 / 4]))
-        np.testing.assert_array_almost_equal(paired["ag"],
-                                             np.array([1 / 4, 2 / 4]))
-        np.testing.assert_array_almost_equal(paired["at"],
-                                             np.array([1 / 4, 2 / 4]))
+        np.testing.assert_array_almost_equal(paired["ac"], np.array([2 / 4, 0 / 4]))
+        np.testing.assert_array_almost_equal(paired["ag"], np.array([1 / 4, 2 / 4]))
+        np.testing.assert_array_almost_equal(paired["at"], np.array([1 / 4, 2 / 4]))
 
     def test_per_base_mutation_rate_xm(self):
         # C positions are at 2 and 6 in "ACGTACGT".
@@ -315,24 +324,18 @@ class TestCalcRatios(AbstractTestBase):
         is_paired = self._is_paired_mask([2, 6])
         paired, unpaired = _calc_ratios(counts, is_paired)
         # cm = MUTAT / INFOR for C positions in the paired mask.
-        np.testing.assert_array_almost_equal(paired["cm"],
-                                             np.array([2 / 8, 4 / 8]))
+        np.testing.assert_array_almost_equal(paired["cm"], np.array([2 / 8, 4 / 8]))
         # Unpaired had no C positions → empty array.
         self.assertEqual(unpaired["cm"].size, 0)
 
     def test_unpaired_collects_only_unpaired_positions(self):
         # G positions are at 3 and 7.  Make 3 paired and 7 unpaired.
-        per_position = {
-            3: {MUTAT_REL: 1},
-            7: {MUTAT_REL: 5},
-        }
+        per_position = {3: {MUTAT_REL: 1}, 7: {MUTAT_REL: 5}}
         counts = _build_counts_df(self.REFSEQ, per_position=per_position)
         is_paired = self._is_paired_mask([3])
         paired, unpaired = _calc_ratios(counts, is_paired)
-        np.testing.assert_array_almost_equal(paired["gm"],
-                                             np.array([1 / 8]))
-        np.testing.assert_array_almost_equal(unpaired["gm"],
-                                             np.array([5 / 8]))
+        np.testing.assert_array_almost_equal(paired["gm"], np.array([1 / 8]))
+        np.testing.assert_array_almost_equal(unpaired["gm"], np.array([5 / 8]))
 
 
 # ---------------------------------------------------------------------------
@@ -341,7 +344,6 @@ class TestCalcRatios(AbstractTestBase):
 
 
 class TestCalcRatioStats(AbstractTestBase):
-
     MARGIN = 1.0e-6
 
     def _full_ratios(self, **overrides) -> dict:
@@ -396,7 +398,6 @@ class TestCalcRatioStats(AbstractTestBase):
 
 
 class TestAccumulateRatios(AbstractTestBase):
-
     def _pair_with_am(self, values: np.ndarray) -> tuple[dict, dict]:
         paired = new_parameter_dict()
         unpaired = new_parameter_dict()
@@ -408,10 +409,8 @@ class TestAccumulateRatios(AbstractTestBase):
         p1 = self._pair_with_am(np.array([0.1, 0.2]))
         p2 = self._pair_with_am(np.array([0.3]))
         paired, unpaired = _accumulate_ratios(iter([p1, p2]))
-        np.testing.assert_array_almost_equal(paired["am"],
-                                             np.array([0.1, 0.2, 0.3]))
-        np.testing.assert_array_almost_equal(unpaired["am"],
-                                             np.array([0.2, 0.4, 0.6]))
+        np.testing.assert_array_almost_equal(paired["am"], np.array([0.1, 0.2, 0.3]))
+        np.testing.assert_array_almost_equal(unpaired["am"], np.array([0.2, 0.4, 0.6]))
 
     def test_accumulates_from_empty(self):
         paired, unpaired = _accumulate_ratios(iter([]))
@@ -438,7 +437,6 @@ class TestAccumulateRatios(AbstractTestBase):
 
 
 class TestAbstractSeismicgraphFile(AbstractTestBase):
-
     REF = "ref"
     REFSEQ = DNA("ACGTACGT")
     REG = "ACGTACGT"  # default hyphenless name when end5=1, end3=8 → 'full'
@@ -451,18 +449,19 @@ class TestAbstractSeismicgraphFile(AbstractTestBase):
     def tearDown(self):
         self._tmp.cleanup()
 
-    def _profile_full_mutated_at(self, positions: list[int],
-                                 sub_col: str = SUB_C_COUNT,
-                                 *,
-                                 structure: str | None = None) -> dict:
+    def _profile_full_mutated_at(
+        self,
+        positions: list[int],
+        sub_col: str = SUB_C_COUNT,
+        *,
+        structure: str | None = None,
+    ) -> dict:
         """Profile where each ``positions`` entry contributes one C-sub."""
         length = len(self.REFSEQ)
         if structure is None:
             structure = "." * length
         per_position = {p: {sub_col: 1, SUBST_COUNT: 1} for p in positions}
-        return _profile_data(length,
-                             per_position=per_position,
-                             structure=structure)
+        return _profile_data(length, per_position=per_position, structure=structure)
 
     def test_single_profile_single_region(self):
         # Put a substitution at A positions 1 (paired) and 5 (unpaired).
@@ -472,17 +471,21 @@ class TestAbstractSeismicgraphFile(AbstractTestBase):
         json_path = _write_seismicgraph_json(
             self.tmpdir / "data.json",
             sample="s",
-            entries=[{
-                "ref": self.REF,
-                "refseq": self.REFSEQ,
-                "regions": [{
-                    "name": "reg1",
-                    "end5": 1,
-                    "end3": len(self.REFSEQ),
-                    "positions": list(range(1, len(self.REFSEQ) + 1)),
-                    "profiles": {"reg1__average": profile},
-                }],
-            }],
+            entries=[
+                {
+                    "ref": self.REF,
+                    "refseq": self.REFSEQ,
+                    "regions": [
+                        {
+                            "name": "reg1",
+                            "end5": 1,
+                            "end3": len(self.REFSEQ),
+                            "positions": list(range(1, len(self.REFSEQ) + 1)),
+                            "profiles": {"reg1__average": profile},
+                        }
+                    ],
+                }
+            ],
         )
         paired, unpaired = abstract_seismicgraph_file(json_path)
         # Position 1 is A and paired; MUTAT=1, INFOR=8 → am paired = 1/8.
@@ -499,20 +502,24 @@ class TestAbstractSeismicgraphFile(AbstractTestBase):
         json_path = _write_seismicgraph_json(
             self.tmpdir / "data.json",
             sample="s",
-            entries=[{
-                "ref": self.REF,
-                "refseq": self.REFSEQ,
-                "regions": [{
-                    "name": "reg1",
-                    "end5": 1,
-                    "end3": len(self.REFSEQ),
-                    "positions": list(range(1, len(self.REFSEQ) + 1)),
-                    "profiles": {
-                        "reg1__cluster-2-1": prof_a,
-                        "reg1__cluster-2-2": prof_b,
-                    },
-                }],
-            }],
+            entries=[
+                {
+                    "ref": self.REF,
+                    "refseq": self.REFSEQ,
+                    "regions": [
+                        {
+                            "name": "reg1",
+                            "end5": 1,
+                            "end3": len(self.REFSEQ),
+                            "positions": list(range(1, len(self.REFSEQ) + 1)),
+                            "profiles": {
+                                "reg1__cluster-2-1": prof_a,
+                                "reg1__cluster-2-2": prof_b,
+                            },
+                        }
+                    ],
+                }
+            ],
         )
         paired, unpaired = abstract_seismicgraph_file(json_path)
         # Profile A: position 1 (A, paired) substituted → paired am has 1/8.
@@ -534,34 +541,36 @@ class TestAbstractSeismicgraphFile(AbstractTestBase):
         # Region 2 spans positions 1-4 only: substitution at position 2 (C).
         refseq_short_len = 4
         per_position = {2: {SUB_A_COUNT: 1, SUBST_COUNT: 1}}
-        prof2 = _profile_data(refseq_short_len,
-                              per_position=per_position,
-                              structure="." * refseq_short_len)
+        prof2 = _profile_data(
+            refseq_short_len,
+            per_position=per_position,
+            structure="." * refseq_short_len,
+        )
         json_path = _write_seismicgraph_json(
             self.tmpdir / "data.json",
             sample="s",
-            entries=[{
-                "ref": self.REF,
-                "refseq": self.REFSEQ,
-                "regions": [
-                    {
-                        "name": "reg_full",
-                        "end5": 1,
-                        "end3": len(self.REFSEQ),
-                        "positions": list(range(1,
-                                                len(self.REFSEQ) + 1)),
-                        "profiles": {"reg_full__average": prof1},
-                    },
-                    {
-                        "name": "reg_short",
-                        "end5": 1,
-                        "end3": refseq_short_len,
-                        "positions": list(range(1,
-                                                refseq_short_len + 1)),
-                        "profiles": {"reg_short__average": prof2},
-                    },
-                ],
-            }],
+            entries=[
+                {
+                    "ref": self.REF,
+                    "refseq": self.REFSEQ,
+                    "regions": [
+                        {
+                            "name": "reg_full",
+                            "end5": 1,
+                            "end3": len(self.REFSEQ),
+                            "positions": list(range(1, len(self.REFSEQ) + 1)),
+                            "profiles": {"reg_full__average": prof1},
+                        },
+                        {
+                            "name": "reg_short",
+                            "end5": 1,
+                            "end3": refseq_short_len,
+                            "positions": list(range(1, refseq_short_len + 1)),
+                            "profiles": {"reg_short__average": prof2},
+                        },
+                    ],
+                }
+            ],
         )
         paired, unpaired = abstract_seismicgraph_file(json_path)
         # reg_full unpaired A positions: 1 and 5 (2 entries); reg_short
@@ -575,33 +584,36 @@ class TestAbstractSeismicgraphFile(AbstractTestBase):
         # for paired-detection (mutation rate higher when paired).
         structure = "((....))"  # 1,2,7,8 paired
         # Substitute every paired position only.
-        prof = self._profile_full_mutated_at([1, 2, 7, 8],
-                                             structure=structure)
+        prof = self._profile_full_mutated_at([1, 2, 7, 8], structure=structure)
         json_path = _write_seismicgraph_json(
             self.tmpdir / "data.json",
             sample="s",
-            entries=[{
-                "ref": self.REF,
-                "refseq": self.REFSEQ,
-                "regions": [{
-                    "name": "reg1",
-                    "end5": 1,
-                    "end3": len(self.REFSEQ),
-                    "positions": list(range(1, len(self.REFSEQ) + 1)),
-                    "profiles": {"reg1__average": prof},
-                }],
-            }],
+            entries=[
+                {
+                    "ref": self.REF,
+                    "refseq": self.REFSEQ,
+                    "regions": [
+                        {
+                            "name": "reg1",
+                            "end5": 1,
+                            "end3": len(self.REFSEQ),
+                            "positions": list(range(1, len(self.REFSEQ) + 1)),
+                            "profiles": {"reg1__average": prof},
+                        }
+                    ],
+                }
+            ],
         )
         paired_skip, unpaired_skip = abstract_seismicgraph_file(
             json_path, min_aucroc=0.99
         )
         # All accumulators should be empty since the only profile is skipped.
         for key, values in paired_skip.items():
-            self.assertEqual(values.size, 0,
-                             msg=f"paired[{key!r}] not empty: {values}")
+            self.assertEqual(values.size, 0, msg=f"paired[{key!r}] not empty: {values}")
         for key, values in unpaired_skip.items():
-            self.assertEqual(values.size, 0,
-                             msg=f"unpaired[{key!r}] not empty: {values}")
+            self.assertEqual(
+                values.size, 0, msg=f"unpaired[{key!r}] not empty: {values}"
+            )
 
     def test_metadata_keys_ignored(self):
         # Extra '#'-prefixed keys at every level must not be treated as data.
@@ -618,9 +630,7 @@ class TestAbstractSeismicgraphFile(AbstractTestBase):
                 "reg1": {
                     f"{META_SYMBOL}{REG_END5}": 1,
                     f"{META_SYMBOL}{REG_END3}": len(self.REFSEQ),
-                    f"{META_SYMBOL}{REG_POS}": list(
-                        range(1, len(self.REFSEQ) + 1)
-                    ),
+                    f"{META_SYMBOL}{REG_POS}": list(range(1, len(self.REFSEQ) + 1)),
                     f"{META_SYMBOL}note": "ignore-me",
                     "reg1__average": prof,
                 },
@@ -640,7 +650,6 @@ class TestAbstractSeismicgraphFile(AbstractTestBase):
 
 
 class TestAbstractTable(AbstractTestBase):
-
     REF = "ref"
     REFSEQ = DNA("ACGTACGT")
     REG = "myreg"
@@ -655,46 +664,50 @@ class TestAbstractTable(AbstractTestBase):
     def tearDown(self):
         self._tmp.cleanup()
 
-    def _make_table(self,
-                    clusts: list[tuple[int, int]],
-                    counts_per_clust: dict[tuple[int, int], pd.DataFrame]
-                    ) -> FakeFilterPositionTable:
-        return FakeFilterPositionTable(top=self.tmpdir,
-                                       sample=self.SAMPLE,
-                                       ref=self.REF,
-                                       refseq=self.REFSEQ,
-                                       reg=self.REG,
-                                       clusts=clusts,
-                                       counts_per_clust=counts_per_clust)
+    def _make_table(
+        self,
+        clusts: list[tuple[int, int]],
+        counts_per_clust: dict[tuple[int, int], pd.DataFrame],
+    ) -> FakeFilterPositionTable:
+        return FakeFilterPositionTable(
+            top=self.tmpdir,
+            sample=self.SAMPLE,
+            ref=self.REF,
+            refseq=self.REFSEQ,
+            reg=self.REG,
+            clusts=clusts,
+            counts_per_clust=counts_per_clust,
+        )
 
-    def _seed_counts(self, mutated_paired: int = 1,
-                     mutated_unpaired: int = 1) -> pd.DataFrame:
+    def _seed_counts(
+        self, mutated_paired: int = 1, mutated_unpaired: int = 1
+    ) -> pd.DataFrame:
         # Position 1 is A & paired; position 5 is A & unpaired.
         per_position = {
-            1: {MUTAT_REL: mutated_paired, SUB_C_REL: mutated_paired,
-                SUBST_REL: mutated_paired},
-            5: {MUTAT_REL: mutated_unpaired, SUB_G_REL: mutated_unpaired,
-                SUBST_REL: mutated_unpaired},
+            1: {
+                MUTAT_REL: mutated_paired,
+                SUB_C_REL: mutated_paired,
+                SUBST_REL: mutated_paired,
+            },
+            5: {
+                MUTAT_REL: mutated_unpaired,
+                SUB_G_REL: mutated_unpaired,
+                SUBST_REL: mutated_unpaired,
+            },
         }
         return _build_counts_df(self.REFSEQ, per_position=per_position)
 
     def _write_ct(self, profile_name: str):
-        ct_path = _fold_ct_path(self.tmpdir,
-                                self.SAMPLE,
-                                self.REF,
-                                self.REG,
-                                profile_name)
-        return _write_ct(ct_path,
-                         self.REF,
-                         self.REFSEQ,
-                         self.REG,
-                         self.DB_STRING,
-                         profile_name)
+        ct_path = _fold_ct_path(
+            self.tmpdir, self.SAMPLE, self.REF, self.REG, profile_name
+        )
+        return _write_ct(
+            ct_path, self.REF, self.REFSEQ, self.REG, self.DB_STRING, profile_name
+        )
 
     def test_non_clustered_auto_detect(self):
         counts = self._seed_counts()
-        table = self._make_table(clusts=[(0, 0)],
-                                 counts_per_clust={(0, 0): counts})
+        table = self._make_table(clusts=[(0, 0)], counts_per_clust={(0, 0): counts})
         self._write_ct(_profile_name(self.REG, 0, 0))  # "myreg__average"
         result = abstract_table(table, struct_file=None)
         self.assertIsNotNone(result)
@@ -709,8 +722,7 @@ class TestAbstractTable(AbstractTestBase):
 
     def test_non_clustered_with_explicit_struct_file(self):
         counts = self._seed_counts(mutated_paired=2, mutated_unpaired=3)
-        table = self._make_table(clusts=[(0, 0)],
-                                 counts_per_clust={(0, 0): counts})
+        table = self._make_table(clusts=[(0, 0)], counts_per_clust={(0, 0): counts})
         ct_path = self._write_ct(_profile_name(self.REG, 0, 0))
         result = abstract_table(table, struct_file=[ct_path])
         self.assertIsNotNone(result)
@@ -731,8 +743,7 @@ class TestAbstractTable(AbstractTestBase):
         def fetch_clustered(*, k, clust):
             df = original_fetch(k=k, clust=clust)
             df.columns = pd.MultiIndex.from_tuples(
-                [(k, clust, col) for col in df.columns],
-                names=["k", "clust", "rel"],
+                [(k, clust, col) for col in df.columns], names=["k", "clust", "rel"]
             )
             return df
 
@@ -751,47 +762,48 @@ class TestAbstractTable(AbstractTestBase):
 
     def test_struct_file_ref_mismatch_raises(self):
         counts = self._seed_counts()
-        table = self._make_table(clusts=[(0, 0)],
-                                 counts_per_clust={(0, 0): counts})
+        table = self._make_table(clusts=[(0, 0)], counts_per_clust={(0, 0): counts})
         # Write a CT file under a different ref/reg directory tree.
-        other_ct = _fold_ct_path(self.tmpdir,
-                                 self.SAMPLE,
-                                 "other_ref",
-                                 self.REG,
-                                 _profile_name(self.REG, 0, 0))
-        _write_ct(other_ct,
-                  "other_ref",
-                  self.REFSEQ,
-                  self.REG,
-                  self.DB_STRING,
-                  _profile_name(self.REG, 0, 0))
+        other_ct = _fold_ct_path(
+            self.tmpdir,
+            self.SAMPLE,
+            "other_ref",
+            self.REG,
+            _profile_name(self.REG, 0, 0),
+        )
+        _write_ct(
+            other_ct,
+            "other_ref",
+            self.REFSEQ,
+            self.REG,
+            self.DB_STRING,
+            _profile_name(self.REG, 0, 0),
+        )
         with self.assertRaises(ValueError) as cm:
             abstract_table(table, struct_file=[other_ct])
         self.assertIn("reference", str(cm.exception))
 
     def test_struct_file_reg_mismatch_raises(self):
         counts = self._seed_counts()
-        table = self._make_table(clusts=[(0, 0)],
-                                 counts_per_clust={(0, 0): counts})
-        other_ct = _fold_ct_path(self.tmpdir,
-                                 self.SAMPLE,
-                                 self.REF,
-                                 "other_reg",
-                                 "other_reg__average")
-        _write_ct(other_ct,
-                  self.REF,
-                  self.REFSEQ,
-                  "other_reg",
-                  self.DB_STRING,
-                  "other_reg__average")
+        table = self._make_table(clusts=[(0, 0)], counts_per_clust={(0, 0): counts})
+        other_ct = _fold_ct_path(
+            self.tmpdir, self.SAMPLE, self.REF, "other_reg", "other_reg__average"
+        )
+        _write_ct(
+            other_ct,
+            self.REF,
+            self.REFSEQ,
+            "other_reg",
+            self.DB_STRING,
+            "other_reg__average",
+        )
         with self.assertRaises(ValueError) as cm:
             abstract_table(table, struct_file=[other_ct])
         self.assertIn("region", str(cm.exception))
 
     def test_no_ct_files_raises_no_data_error(self):
         counts = self._seed_counts()
-        table = self._make_table(clusts=[(0, 0)],
-                                 counts_per_clust={(0, 0): counts})
+        table = self._make_table(clusts=[(0, 0)], counts_per_clust={(0, 0): counts})
         # No CT file written.
         with self.assertRaises(NoDataError):
             abstract_table(table, struct_file=None)
@@ -808,8 +820,7 @@ class TestAbstractTable(AbstractTestBase):
         def fetch_clustered(*, k, clust):
             df = original_fetch(k=k, clust=clust)
             df.columns = pd.MultiIndex.from_tuples(
-                [(k, clust, col) for col in df.columns],
-                names=["k", "clust", "rel"],
+                [(k, clust, col) for col in df.columns], names=["k", "clust", "rel"]
             )
             return df
 
@@ -832,8 +843,7 @@ class TestAbstractTable(AbstractTestBase):
             8: {MUTAT_REL: 1, SUB_C_REL: 1, SUBST_REL: 1},
         }
         counts = _build_counts_df(self.REFSEQ, per_position=per_position)
-        table = self._make_table(clusts=[(0, 0)],
-                                 counts_per_clust={(0, 0): counts})
+        table = self._make_table(clusts=[(0, 0)], counts_per_clust={(0, 0): counts})
         self._write_ct(_profile_name(self.REG, 0, 0))
         # AUC for paired ~ 1.0 here (mutations on paired), so set threshold
         # very high to force skipping.
@@ -848,7 +858,6 @@ class TestAbstractTable(AbstractTestBase):
 
 
 class TestEndToEndComposition(AbstractTestBase):
-
     REF = "ref"
     REFSEQ = DNA("ACGTACGT")
     DB_STRING = "((....))"  # paired: 1,2,7,8; unpaired: 3,4,5,6
@@ -860,13 +869,20 @@ class TestEndToEndComposition(AbstractTestBase):
     def tearDown(self):
         self._tmp.cleanup()
 
-    def _make_table(self, sample: str, reg: str,
-                    mutated_paired: int, mutated_unpaired: int):
+    def _make_table(
+        self, sample: str, reg: str, mutated_paired: int, mutated_unpaired: int
+    ):
         per_position = {
-            1: {MUTAT_REL: mutated_paired, SUB_C_REL: mutated_paired,
-                SUBST_REL: mutated_paired},
-            5: {MUTAT_REL: mutated_unpaired, SUB_G_REL: mutated_unpaired,
-                SUBST_REL: mutated_unpaired},
+            1: {
+                MUTAT_REL: mutated_paired,
+                SUB_C_REL: mutated_paired,
+                SUBST_REL: mutated_paired,
+            },
+            5: {
+                MUTAT_REL: mutated_unpaired,
+                SUB_G_REL: mutated_unpaired,
+                SUBST_REL: mutated_unpaired,
+            },
         }
         counts = _build_counts_df(self.REFSEQ, per_position=per_position)
         table = FakeFilterPositionTable(
@@ -879,36 +895,45 @@ class TestEndToEndComposition(AbstractTestBase):
             counts_per_clust={(0, 0): counts},
         )
         profile = _profile_name(reg, 0, 0)
-        _write_ct(_fold_ct_path(self.tmpdir, sample, self.REF, reg, profile),
-                  self.REF, self.REFSEQ, reg, self.DB_STRING, profile)
+        _write_ct(
+            _fold_ct_path(self.tmpdir, sample, self.REF, reg, profile),
+            self.REF,
+            self.REFSEQ,
+            reg,
+            self.DB_STRING,
+            profile,
+        )
         return table
 
-    def _write_json(self, name: str, reg: str,
-                    mutated_paired: int, mutated_unpaired: int):
+    def _write_json(
+        self, name: str, reg: str, mutated_paired: int, mutated_unpaired: int
+    ):
         # Place mutations at positions 1 (paired A) and 5 (unpaired A).
         per_position = {
-            1: {SUB_C_COUNT: mutated_paired,
-                SUBST_COUNT: mutated_paired},
-            5: {SUB_G_COUNT: mutated_unpaired,
-                SUBST_COUNT: mutated_unpaired},
+            1: {SUB_C_COUNT: mutated_paired, SUBST_COUNT: mutated_paired},
+            5: {SUB_G_COUNT: mutated_unpaired, SUBST_COUNT: mutated_unpaired},
         }
-        profile = _profile_data(len(self.REFSEQ),
-                                per_position=per_position,
-                                structure=self.DB_STRING)
+        profile = _profile_data(
+            len(self.REFSEQ), per_position=per_position, structure=self.DB_STRING
+        )
         return _write_seismicgraph_json(
             self.tmpdir / f"{name}.json",
             sample="s",
-            entries=[{
-                "ref": self.REF,
-                "refseq": self.REFSEQ,
-                "regions": [{
-                    "name": reg,
-                    "end5": 1,
-                    "end3": len(self.REFSEQ),
-                    "positions": list(range(1, len(self.REFSEQ) + 1)),
-                    "profiles": {f"{reg}__average": profile},
-                }],
-            }],
+            entries=[
+                {
+                    "ref": self.REF,
+                    "refseq": self.REFSEQ,
+                    "regions": [
+                        {
+                            "name": reg,
+                            "end5": 1,
+                            "end3": len(self.REFSEQ),
+                            "positions": list(range(1, len(self.REFSEQ) + 1)),
+                            "profiles": {f"{reg}__average": profile},
+                        }
+                    ],
+                }
+            ],
         )
 
     def _final_stats(self, table_results, json_results):
@@ -917,9 +942,14 @@ class TestEndToEndComposition(AbstractTestBase):
         )
         paired_means, paired_fvar = _calc_ratio_stats(paired)
         unpaired_means, unpaired_fvar = _calc_ratio_stats(unpaired)
-        return (paired, unpaired,
-                paired_means, paired_fvar,
-                unpaired_means, unpaired_fvar)
+        return (
+            paired,
+            unpaired,
+            paired_means,
+            paired_fvar,
+            unpaired_means,
+            unpaired_fvar,
+        )
 
     def test_one_table_one_json(self):
         table = self._make_table("s1", "r1", 1, 2)
@@ -949,24 +979,23 @@ class TestEndToEndComposition(AbstractTestBase):
         self.assertEqual(set(p_fvar), {"a", "c", "g", "t"})
 
     def test_multiple_tables_and_jsons(self):
-        tables = [self._make_table("s1", "r1", 1, 2),
-                  self._make_table("s2", "r2", 5, 6)]
-        jsons = [self._write_json("e1", "r1", 3, 4),
-                 self._write_json("e2", "r2", 7, 8)]
+        tables = [
+            self._make_table("s1", "r1", 1, 2),
+            self._make_table("s2", "r2", 5, 6),
+        ]
+        jsons = [self._write_json("e1", "r1", 3, 4), self._write_json("e2", "r2", 7, 8)]
         table_results = [abstract_table(t, struct_file=None) for t in tables]
         json_results = [abstract_seismicgraph_file(j) for j in jsons]
-        paired, unpaired, p_means, p_fvar, u_means, u_fvar = (
-            self._final_stats(table_results, json_results)
+        paired, unpaired, p_means, p_fvar, u_means, u_fvar = self._final_stats(
+            table_results, json_results
         )
         # paired am: 1/8, 3/8, 5/8, 7/8
         np.testing.assert_array_almost_equal(
-            np.sort(paired["am"]),
-            np.sort(np.array([1 / 8, 3 / 8, 5 / 8, 7 / 8])),
+            np.sort(paired["am"]), np.sort(np.array([1 / 8, 3 / 8, 5 / 8, 7 / 8]))
         )
         # unpaired am: 2/8, 4/8, 6/8, 8/8
         np.testing.assert_array_almost_equal(
-            np.sort(unpaired["am"]),
-            np.sort(np.array([2 / 8, 4 / 8, 6 / 8, 8 / 8])),
+            np.sort(unpaired["am"]), np.sort(np.array([2 / 8, 4 / 8, 6 / 8, 8 / 8]))
         )
         # Verify the per-base variance derived from the combined sources.
         combined = paired["am"]
@@ -1020,13 +1049,13 @@ class TestFormatParamTokens(AbstractTestBase):
         return {"a": 0.001, "c": 0.001, "g": 0.001, "t": 0.001}
 
     def test_nd_token_not_emitted(self):
-        tokens = _format_param_tokens(self._full_means(),
-                                      self._full_fvar(),
-                                      self._full_means(),
-                                      self._full_fvar())
+        tokens = _format_param_tokens(
+            self._full_means(), self._full_fvar(), self._full_means(), self._full_fvar()
+        )
         joined = " ".join(tokens)
-        self.assertNotIn(" nd ", joined,
-                         msg=f"'nd' leaked into params output: {joined}")
+        self.assertNotIn(
+            " nd ", joined, msg=f"'nd' leaked into params output: {joined}"
+        )
 
     def test_emitted_tokens_round_trip_to_make_pmut_means(self):
         # Build pmut-paired/unpaired tuple lists from the (filtered) means
@@ -1035,10 +1064,9 @@ class TestFormatParamTokens(AbstractTestBase):
         # them without raising.
         paired_means = self._full_means()
         unpaired_means = self._full_means()
-        tokens = _format_param_tokens(paired_means,
-                                      self._full_fvar(),
-                                      unpaired_means,
-                                      self._full_fvar())
+        tokens = _format_param_tokens(
+            paired_means, self._full_fvar(), unpaired_means, self._full_fvar()
+        )
         flag_to_bucket = {
             opt_pmut_paired.opts[-1]: [],
             opt_pmut_unpaired.opts[-1]: [],
@@ -1052,30 +1080,26 @@ class TestFormatParamTokens(AbstractTestBase):
             flag_to_bucket[flag].append((key, float(value)))
         # These should not raise.
         make_pmut_means_paired(
-            "SHAPE",
-            **_make_pmut_means_kwargs(flag_to_bucket[opt_pmut_paired.opts[-1]]),
+            "SHAPE", **_make_pmut_means_kwargs(flag_to_bucket[opt_pmut_paired.opts[-1]])
         )
         make_pmut_means_unpaired(
             "SHAPE",
             **_make_pmut_means_kwargs(flag_to_bucket[opt_pmut_unpaired.opts[-1]]),
         )
         make_vmut_paired(
-            "SHAPE",
-            **_make_vmut_kwargs(flag_to_bucket[opt_vmut_paired.opts[-1]]),
+            "SHAPE", **_make_vmut_kwargs(flag_to_bucket[opt_vmut_paired.opts[-1]])
         )
         make_vmut_unpaired(
-            "SHAPE",
-            **_make_vmut_kwargs(flag_to_bucket[opt_vmut_unpaired.opts[-1]]),
+            "SHAPE", **_make_vmut_kwargs(flag_to_bucket[opt_vmut_unpaired.opts[-1]])
         )
 
     def test_all_other_keys_still_emitted(self):
         # Every means key except "nd" must appear, on both paired and
         # unpaired sides.
         means = self._full_means()
-        tokens = _format_param_tokens(means,
-                                      self._full_fvar(),
-                                      means,
-                                      self._full_fvar())
+        tokens = _format_param_tokens(
+            means, self._full_fvar(), means, self._full_fvar()
+        )
         joined = " ".join(tokens)
         pmut_p = opt_pmut_paired.opts[-1]
         pmut_u = opt_pmut_unpaired.opts[-1]

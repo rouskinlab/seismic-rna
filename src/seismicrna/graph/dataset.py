@@ -4,10 +4,12 @@ from itertools import chain
 from pathlib import Path
 from typing import Iterable
 
-from .base import (BaseWriter,
-                   get_action_name,
-                   make_path_subject,
-                   make_title_action_sample)
+from .base import (
+    BaseWriter,
+    get_action_name,
+    make_path_subject,
+    make_title_action_sample,
+)
 from .cgroup import ClusterGroupRunner, cgroup_table
 from .onesource import OneSourceClusterGroupGraph
 from .rel import OneRelGraph, RelRunner
@@ -19,7 +21,7 @@ from ..table import load_all_datasets
 
 
 class DatasetGraph(OneRelGraph, OneSourceClusterGroupGraph, ABC):
-    """ Graph based on one Dataset. """
+    """Graph based on one Dataset."""
 
     def __init__(self, *, dataset: MutsDataset, num_cpus: int, **kwargs):
         """
@@ -74,11 +76,13 @@ class DatasetGraph(OneRelGraph, OneSourceClusterGroupGraph, ABC):
 
     @cached_property
     def _title_main(self):
-        return [f"{self.what()} "
-                f"{self.relationships} bases "
-                f"in {self.title_action_sample} "
-                f"over reference {repr(self.ref)} "
-                f"region {repr(self.reg)}"]
+        return [
+            f"{self.what()} "
+            f"{self.relationships} bases "
+            f"in {self.title_action_sample} "
+            f"over reference {repr(self.ref)} "
+            f"region {repr(self.reg)}"
+        ]
 
     @property
     def details(self):
@@ -90,12 +94,11 @@ class DatasetGraph(OneRelGraph, OneSourceClusterGroupGraph, ABC):
 
     @cached_property
     def pattern(self):
-        """ Relationship pattern for the graph. """
+        """Relationship pattern for the graph."""
         return get_subpattern(self.rel_name, self.dataset.pattern)
 
 
 class DatasetWriter(BaseWriter, ABC):
-
     def __init__(self, *, dataset: MutsDataset, **kwargs):
         """
         Parameters
@@ -110,10 +113,10 @@ class DatasetWriter(BaseWriter, ABC):
 
     @abstractmethod
     def get_graph(self, *args, **kwargs) -> DatasetGraph:
-        """ Return a graph instance. """
+        """Return a graph instance."""
 
     def iter_graphs(self, *, rels: list[str], cgroup: str, **kwargs):
-        """ Yield graph instances for every relationship and cluster group.
+        """Yield graph instances for every relationship and cluster group.
 
         Parameters
         ----------
@@ -135,7 +138,6 @@ class DatasetWriter(BaseWriter, ABC):
 
 
 class DatasetRunner(RelRunner, ClusterGroupRunner, ABC):
-
     @classmethod
     @abstractmethod
     def get_writer_type(cls) -> type[DatasetWriter]:
@@ -150,12 +152,15 @@ class DatasetRunner(RelRunner, ClusterGroupRunner, ABC):
         return load_all_datasets
 
     @classmethod
-    def run(cls,
-            input_path: Iterable[str | Path], *,
-            verify_times: bool,
-            num_cpus: int,
-            **kwargs):
-        """ Load all datasets and write graphs for each.
+    def run(
+        cls,
+        input_path: Iterable[str | Path],
+        *,
+        verify_times: bool,
+        num_cpus: int,
+        **kwargs,
+    ):
+        """Load all datasets and write graphs for each.
 
         Parameters
         ----------
@@ -176,14 +181,20 @@ class DatasetRunner(RelRunner, ClusterGroupRunner, ABC):
         """
         # Generate a table writer for each table.
         writer_type = cls.get_writer_type()
-        writers = [writer_type(dataset=dataset)
-                   for dataset
-                   in cls.load_input_files(input_path,
-                                           verify_times=verify_times)]
-        return list(chain(*dispatch([writer.write for writer in writers],
-                                    num_cpus=num_cpus,
-                                    pass_num_cpus=True,
-                                    as_list=False,
-                                    ordered=False,
-                                    raise_on_error=False,
-                                    kwargs=kwargs)))
+        writers = [
+            writer_type(dataset=dataset)
+            for dataset in cls.load_input_files(input_path, verify_times=verify_times)
+        ]
+        return list(
+            chain(
+                *dispatch(
+                    [writer.write for writer in writers],
+                    num_cpus=num_cpus,
+                    pass_num_cpus=True,
+                    as_list=False,
+                    ordered=False,
+                    raise_on_error=False,
+                    kwargs=kwargs,
+                )
+            )
+        )

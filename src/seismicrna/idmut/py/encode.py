@@ -2,20 +2,17 @@ from ...core.rel import MATCH, SUB_A, SUB_C, SUB_G, SUB_T, ANY_N
 from ...core.seq import BASEA, BASEC, BASEG, BASET
 
 # Encode bases as substitutions and vice versa.
-SUBS_ENCODINGS = {BASEA: SUB_A,
-                  BASEC: SUB_C,
-                  BASEG: SUB_G,
-                  BASET: SUB_T}
+SUBS_ENCODINGS = {BASEA: SUB_A, BASEC: SUB_C, BASEG: SUB_G, BASET: SUB_T}
 SUBS_DECODINGS = {code: base for base, code in SUBS_ENCODINGS.items()}
 
 
 def is_acgt(base: str):
-    """ Check whether a character is a standard DNA base. """
+    """Check whether a character is a standard DNA base."""
     return base == BASEA or base == BASEC or base == BASEG or base == BASET
 
 
 def encode_rel(ref_base: str, read_base: str, read_qual: str, min_qual: str):
-    """ Encode the relationship between a base in the read and a base in
+    """Encode the relationship between a base in the read and a base in
     the reference sequence.
 
     Parameters

@@ -8,7 +8,7 @@ NUM_FIELDS = 6
 
 
 def _parse_int(text: str, name: str, zero_ok: bool = False) -> int:
-    """ Try to parse the text into an integer/positive integer. """
+    """Try to parse the text into an integer/positive integer."""
     try:
         value = int(text)
     except ValueError:
@@ -20,7 +20,7 @@ def _parse_int(text: str, name: str, zero_ok: bool = False) -> int:
 
 
 def _parse_ct_header_line(line: str):
-    """ Get the title and sequence length from a CT header line. """
+    """Get the title and sequence length from a CT header line."""
     content = line.strip()
     if not content:
         raise ValueError("Got all-whitespace CT header line")
@@ -30,37 +30,42 @@ def _parse_ct_header_line(line: str):
     length = _parse_int(length_str, "sequence length")
     # Determine the title, which is the part of the line following
     # the sequence length.
-    title = content[len(length_str):].lstrip()
+    title = content[len(length_str) :].lstrip()
     return title, length
 
 
 def _parse_ct_body_line(line: str, first: bool, last: bool):
-    """ Get the position and pairing data from a CT body line. """
+    """Get the position and pairing data from a CT body line."""
     content = line.strip()
     if not content:
         raise ValueError("Got all-whitespace CT body line")
     # Parse each whitespace-delimited field of the CT file.
     fields = content.split()
     if len(fields) != NUM_FIELDS:
-        raise ValueError(f"CT body line needs {NUM_FIELDS} fields,"
-                         f"but got {len(fields)}: '{content}'")
+        raise ValueError(
+            f"CT body line needs {NUM_FIELDS} fields,but got {len(fields)}: '{content}'"
+        )
     curr_idx = _parse_int(fields[0], "current index")
     prev_idx = _parse_int(fields[2], "previous index", zero_ok=first)
     if first:
         if prev_idx != 0:
-            raise ValueError(f"Expected previous index of first line "
-                             f"to be 0, but got {prev_idx}")
+            raise ValueError(
+                f"Expected previous index of first line to be 0, but got {prev_idx}"
+            )
     elif prev_idx != curr_idx - 1:
-        raise ValueError(f"Previous index ({prev_idx}) does not precede "
-                         f"current index ({curr_idx})")
+        raise ValueError(
+            f"Previous index ({prev_idx}) does not precede current index ({curr_idx})"
+        )
     next_idx = _parse_int(fields[3], "next index", zero_ok=last)
     if last:
         if next_idx != 0:
-            raise ValueError("Expected next index of last line to be 0, "
-                             f"but got {next_idx}")
+            raise ValueError(
+                f"Expected next index of last line to be 0, but got {next_idx}"
+            )
     elif next_idx != curr_idx + 1:
-        raise ValueError(f"Next index ({next_idx}) does not succeed "
-                         f"current index ({curr_idx})")
+        raise ValueError(
+            f"Next index ({next_idx}) does not succeed current index ({curr_idx})"
+        )
     partner = _parse_int(fields[4], "partner index", zero_ok=True)
     position = _parse_int(fields[5], "natural position")
     base = fields[1]
@@ -68,7 +73,7 @@ def _parse_ct_body_line(line: str, first: bool, last: bool):
 
 
 def _parse_ct_structure(ct_file: TextIO, length: int):
-    """ Return the sequence and pairs for the current structure. """
+    """Return the sequence and pairs for the current structure."""
     # Initialize the bases, pairs, and position numbers.
     bases: list[str] = list()
     pairs: dict[int, int] = dict()
@@ -82,9 +87,7 @@ def _parse_ct_structure(ct_file: TextIO, length: int):
         is_first = index == 1
         is_last = index == length
         # Parse the current line in the CT file.
-        ct_index, base, partner, pos = _parse_ct_body_line(line,
-                                                           is_first,
-                                                           is_last)
+        ct_index, base, partner, pos = _parse_ct_body_line(line, is_first, is_last)
         if ct_index != index:
             raise ValueError(f"Index ({ct_index}) and line # ({index}) differ")
         # Validate the natural position.
@@ -108,18 +111,23 @@ def _parse_ct_structure(ct_file: TextIO, length: int):
             # If the current base is unpaired, then it should not
             # appear as the partner of any other base.
             if (partner0 := reverse_pairs.get(index)) is not None:
-                raise ValueError(f"Base {index} is not paired, but base "
-                                 f"{partner0} claims to pair with it")
+                raise ValueError(
+                    f"Base {index} is not paired, but base "
+                    f"{partner0} claims to pair with it"
+                )
             # Mark this base as unpaired and skip to the next.
             unpaired.add(index)
             continue
         # Validate the pairing partner.
         if partner > length:
-            raise ValueError(f"Index of partner ({partner}) exceeds length "
-                             f"of sequence ({length})")
+            raise ValueError(
+                f"Index of partner ({partner}) exceeds length of sequence ({length})"
+            )
         if partner in unpaired:
-            raise ValueError(f"Base {index} claims to pair with {partner}, "
-                             f"but base {partner} claims to be unpaired")
+            raise ValueError(
+                f"Base {index} claims to pair with {partner}, "
+                f"but base {partner} claims to be unpaired"
+            )
         # Handle the pair depending on whether the current base
         # comes before or after its partner.
         if index < partner:
@@ -128,20 +136,25 @@ def _parse_ct_structure(ct_file: TextIO, length: int):
             # Check if another base has already claimed to pair with
             # the partner of the current base.
             if (other := reverse_pairs.get(partner)) is not None:
-                raise ValueError(f"Bases {other} and {index} both claim to "
-                                 f"pair with base {partner}")
+                raise ValueError(
+                    f"Bases {other} and {index} both claim to pair with base {partner}"
+                )
             reverse_pairs[partner] = index
         elif index > partner:
             # This pair should have appeared already. Confirm that
             # it does, and do not add it again.
             if (check := pairs.get(partner)) != index:
-                raise ValueError(f"Base {index} claims to pair with "
-                                 f"{partner}, but base {partner} claims "
-                                 f"to pair with {check}")
+                raise ValueError(
+                    f"Base {index} claims to pair with "
+                    f"{partner}, but base {partner} claims "
+                    f"to pair with {check}"
+                )
             if (check := reverse_pairs.get(index)) != partner:
-                raise ValueError(f"Base {index} claims to pair with "
-                                 f"{partner}, but base {check} claims "
-                                 f"to pair with {index}")
+                raise ValueError(
+                    f"Base {index} claims to pair with "
+                    f"{partner}, but base {check} claims "
+                    f"to pair with {index}"
+                )
         else:
             # Index and partner are equal.
             raise ValueError(f"Base {index} claims to pair with itself")
@@ -151,18 +164,21 @@ def _parse_ct_structure(ct_file: TextIO, length: int):
     # Confirm that all paired bases appear in both maps of pairs.
     expect_paired = set(indexes) - unpaired
     if (is_paired := set(pairs).union(set(reverse_pairs))) != expect_paired:
-        raise ValueError(f"Paired bases {is_paired} do not match bases "
-                         f"expected to be paired {expect_paired}")
+        raise ValueError(
+            f"Paired bases {is_paired} do not match bases "
+            f"expected to be paired {expect_paired}"
+        )
     # Assemble the list of bases into an RNA sequence.
     seq = RNA.from_any_seq("".join(bases))
     # Map all the indexes to their corresponding positions.
-    pairs_list = [(index1 + pos_offset, index2 + pos_offset)
-                  for index1, index2 in pairs.items()]
+    pairs_list = [
+        (index1 + pos_offset, index2 + pos_offset) for index1, index2 in pairs.items()
+    ]
     return seq, pairs_list, (pos_offset if pos_offset is not None else 0)
 
 
 def parse_ct_file(ct_path: str | Path):
-    """ Yield the title, region, and base pairs for each structure in a
+    """Yield the title, region, and base pairs for each structure in a
     connectivity table (CT) file.
 
     Parameters

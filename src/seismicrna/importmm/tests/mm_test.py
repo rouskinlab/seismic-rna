@@ -31,12 +31,14 @@ _REF2_SEQ = DNA("TGCA")
 
 
 def _build_mm_bytes() -> bytes:
-    """ Build a two-transcript MM binary for use in tests. """
+    """Build a two-transcript MM binary for use in tests."""
 
-    def _transcript(ref_id: str,
-                    seq_packed: bytes,
-                    seq_len: int,
-                    reads: list[tuple[int, int, list[int]]]) -> bytes:
+    def _transcript(
+        ref_id: str,
+        seq_packed: bytes,
+        seq_len: int,
+        reads: list[tuple[int, int, list[int]]],
+    ) -> bytes:
         id_bytes = ref_id.encode() + b"\x00"
         buf = struct.pack("<H", len(id_bytes))
         buf += id_bytes
@@ -49,15 +51,10 @@ def _build_mm_bytes() -> bytes:
                 buf += struct.pack(f"<{len(muts)}L", *muts)
         return buf
 
-    buf = _transcript(_REF1, bytes.fromhex("0123"), 4, [
-        (0, 3, [1]),
-        (0, 3, [0, 3]),
-        (1, 2, []),
-    ])
-    buf += _transcript(_REF2, bytes.fromhex("3210"), 4, [
-        (0, 3, [2]),
-        (0, 3, []),
-    ])
+    buf = _transcript(
+        _REF1, bytes.fromhex("0123"), 4, [(0, 3, [1]), (0, 3, [0, 3]), (1, 2, [])]
+    )
+    buf += _transcript(_REF2, bytes.fromhex("3210"), 4, [(0, 3, [2]), (0, 3, [])])
     buf += b"[mmeof]"
     return buf
 
@@ -66,8 +63,8 @@ def _build_mm_bytes() -> bytes:
 # Tests
 # ---------------------------------------------------------------------------
 
-class TestIterMMFile(ut.TestCase):
 
+class TestIterMMFile(ut.TestCase):
     def setUp(self):
         self._tmpdir = tempfile.TemporaryDirectory()
         self._mm_path = Path(self._tmpdir.name) / "test.mm"

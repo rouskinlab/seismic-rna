@@ -38,7 +38,7 @@ templates_path = ["_templates"]
 autosummary_generate = True
 
 # Exclude from autosummary
-exclude_patterns = ['_build', '_templates']
+exclude_patterns = ["_build", "_templates"]
 
 # Fontpath for blockdiag (truetype font)
 blockdiag_fontpath = "/usr/share/fonts/truetype/ipafont/ipagp.ttf"

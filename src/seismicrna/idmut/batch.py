@@ -7,27 +7,28 @@ import pandas as pd
 
 from ..core.arg import MUT_COLLISIONS_DROP, MUT_COLLISIONS_MERGE
 from ..core.array import calc_inverse, check_naturals, get_length
-from ..core.batch import (ReadBatch,
-                          MutsBatch,
-                          RegionMutsBatch,
-                          simulate_muts,
-                          simulate_segment_ends)
+from ..core.batch import (
+    ReadBatch,
+    MutsBatch,
+    RegionMutsBatch,
+    simulate_muts,
+    simulate_segment_ends,
+)
 from ..core.random import get_random_integer_generator
 from ..core.rel import RelPattern
 from ..core.seq import Region, index_to_pos, index_to_seq
 
 
 def format_read_name(batch_num: int, read_num: int):
-    """ Format a read name. """
+    """Format a read name."""
     return f"batch-{batch_num}_read-{read_num}"
 
 
 class FullReadBatch(ReadBatch, ABC):
-
     @classmethod
     @abstractmethod
     def simulate(cls, *args, **kwargs) -> Self:
-        """ Simulate a batch. """
+        """Simulate a batch."""
 
     @cached_property
     def read_nums(self):
@@ -43,15 +44,16 @@ class FullReadBatch(ReadBatch, ABC):
 
 
 class ReadNamesBatch(FullReadBatch):
-
     @classmethod
-    def simulate(cls,
-                 branches: dict[str, str],
-                 batch: int,
-                 num_reads: int,
-                 formatter: Callable[[int, int], str] = format_read_name,
-                 **kwargs):
-        """ Simulate a batch.
+    def simulate(
+        cls,
+        branches: dict[str, str],
+        batch: int,
+        num_reads: int,
+        formatter: Callable[[int, int], str] = format_read_name,
+        **kwargs,
+    ):
+        """Simulate a batch.
 
         Parameters
         ----------
@@ -65,10 +67,12 @@ class ReadNamesBatch(FullReadBatch):
             Function to generate the name of each read: must accept the
             batch number and the read number and return a string.
         """
-        return cls(branches=branches,
-                   batch=batch,
-                   names=[formatter(batch, read) for read in range(num_reads)],
-                   **kwargs)
+        return cls(
+            branches=branches,
+            batch=batch,
+            names=[formatter(batch, read) for read in range(num_reads)],
+            **kwargs,
+        )
 
     def __init__(self, *, names: list[str] | np.ndarray, **kwargs):
         super().__init__(**kwargs)
@@ -80,7 +84,6 @@ class ReadNamesBatch(FullReadBatch):
 
 
 class IDmutMutsBatch(FullReadBatch, MutsBatch, ABC):
-
     @property
     def read_weights(self):
         read_weights = None
@@ -92,24 +95,25 @@ class IDmutMutsBatch(FullReadBatch, MutsBatch, ABC):
 
 
 class IDmutRegionMutsBatch(IDmutMutsBatch, RegionMutsBatch):
-
     @classmethod
-    def simulate(cls,
-                 ref: str,
-                 pmut: pd.DataFrame,
-                 uniq_end5s: np.ndarray,
-                 uniq_end3s: np.ndarray,
-                 pends: np.ndarray,
-                 paired: bool,
-                 read_length: int,
-                 p_rev: float,
-                 min_mut_gap: int,
-                 injected_mut_probs: dict[int, float],
-                 mut_collisions: str,
-                 num_reads: int,
-                 seed: int | None,
-                 **kwargs):
-        """ Simulate a batch.
+    def simulate(
+        cls,
+        ref: str,
+        pmut: pd.DataFrame,
+        uniq_end5s: np.ndarray,
+        uniq_end3s: np.ndarray,
+        pends: np.ndarray,
+        paired: bool,
+        read_length: int,
+        p_rev: float,
+        min_mut_gap: int,
+        injected_mut_probs: dict[int, float],
+        mut_collisions: str,
+        num_reads: int,
+        seed: int | None,
+        **kwargs,
+    ):
+        """Simulate a batch.
 
         Parameters
         ----------
@@ -147,43 +151,48 @@ class IDmutRegionMutsBatch(IDmutMutsBatch, RegionMutsBatch):
         check_naturals(index_to_pos(pmut.index), "positions")
         region = Region(ref, index_to_seq(pmut.index))
         # Simulate a batch, ignoring min_mut_gap.
-        seg_end5s, seg_end3s = simulate_segment_ends(uniq_end5s,
-                                                     uniq_end3s,
-                                                     pends,
-                                                     num_reads,
-                                                     (read_length if paired
-                                                      else 0),
-                                                     p_rev,
-                                                     seed=next(seeds))
-        simulated_all = cls(region=region,
-                            seg_end5s=seg_end5s,
-                            seg_end3s=seg_end3s,
-                            muts=simulate_muts(pmut,
-                                               seg_end5s,
-                                               seg_end3s,
-                                               seed=next(seeds)),
-                            **kwargs)
+        seg_end5s, seg_end3s = simulate_segment_ends(
+            uniq_end5s,
+            uniq_end3s,
+            pends,
+            num_reads,
+            (read_length if paired else 0),
+            p_rev,
+            seed=next(seeds),
+        )
+        simulated_all = cls(
+            region=region,
+            seg_end5s=seg_end5s,
+            seg_end3s=seg_end3s,
+            muts=simulate_muts(pmut, seg_end5s, seg_end3s, seed=next(seeds)),
+            **kwargs,
+        )
         if min_mut_gap <= 0:
             # No additional changes needed.
             return simulated_all
         if mut_collisions == MUT_COLLISIONS_DROP:
             # Remove reads with two mutations too close.
-            reads_noclose = simulated_all.reads_noclose_muts(RelPattern.muts(),
-                                                             min_mut_gap)
-            reads_exclude = np.setdiff1d(simulated_all.read_nums,
-                                         reads_noclose,
-                                         assume_unique=True)
+            reads_noclose = simulated_all.reads_noclose_muts(
+                RelPattern.muts(), min_mut_gap
+            )
+            reads_exclude = np.setdiff1d(
+                simulated_all.read_nums, reads_noclose, assume_unique=True
+            )
             renumber = calc_inverse(reads_noclose, what="reads_noclose")
             return cls(
                 region=region,
                 seg_end5s=seg_end5s[reads_noclose],
                 seg_end3s=seg_end3s[reads_noclose],
-                muts={pos: {rel: renumber[np.setdiff1d(reads,
-                                                       reads_exclude,
-                                                       assume_unique=True)]
-                            for rel, reads in rels.items()}
-                      for pos, rels in simulated_all.muts.items()},
-                **kwargs
+                muts={
+                    pos: {
+                        rel: renumber[
+                            np.setdiff1d(reads, reads_exclude, assume_unique=True)
+                        ]
+                        for rel, reads in rels.items()
+                    }
+                    for pos, rels in simulated_all.muts.items()
+                },
+                **kwargs,
             )
         if mut_collisions == MUT_COLLISIONS_MERGE:
             # First merge to keep only true modifications.
@@ -191,9 +200,8 @@ class IDmutRegionMutsBatch(IDmutMutsBatch, RegionMutsBatch):
                 region=region,
                 seg_end5s=seg_end5s,
                 seg_end3s=seg_end3s,
-                muts=simulated_all.merge_close_muts(RelPattern.muts(),
-                                                    min_mut_gap),
-                **kwargs
+                muts=simulated_all.merge_close_muts(RelPattern.muts(), min_mut_gap),
+                **kwargs,
             )
             if not injected_mut_probs:
                 return merged
@@ -202,9 +210,9 @@ class IDmutRegionMutsBatch(IDmutMutsBatch, RegionMutsBatch):
                 region=region,
                 seg_end5s=seg_end5s,
                 seg_end3s=seg_end3s,
-                muts=merged.inject_close_muts(RelPattern.muts(),
-                                              injected_mut_probs,
-                                              seed=next(seeds)),
-                **kwargs
+                muts=merged.inject_close_muts(
+                    RelPattern.muts(), injected_mut_probs, seed=next(seeds)
+                ),
+                **kwargs,
             )
         raise ValueError(f"Invalid mut_collisions: {repr(mut_collisions)}")

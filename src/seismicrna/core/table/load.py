@@ -8,25 +8,22 @@ import pandas as pd
 from .. import path
 from ..header import parse_header
 from ..logs import logger
-from ..table import (Table,
-                     PositionTable,
-                     ReadTable,
-                     RelTypeTable)
+from ..table import Table, PositionTable, ReadTable, RelTypeTable
 
 
 class TableLoader(Table, ABC):
-    """ Load a table from a file. """
+    """Load a table from a file."""
 
     @classmethod
     def find_tables(cls, paths: Iterable[str | Path]):
-        """ Yield files of the tables within the given paths. """
+        """Yield files of the tables within the given paths."""
         for file in path.find_files_chain(paths, cls.get_path_seg_types()):
             if file.name.startswith(cls.get_step()):
                 yield file
 
     @classmethod
     def load_tables(cls, paths: Iterable[str | Path], **kwargs):
-        """ Yield tables within the given paths. """
+        """Yield tables within the given paths."""
         for file in cls.find_tables(paths):
             try:
                 yield cls(file, **kwargs)
@@ -35,10 +32,12 @@ class TableLoader(Table, ABC):
 
     def __init__(self, table_file: str | Path, **kwargs):
         load_function = self.get_load_function()
-        report_file = path.cast_path(table_file,
-                                     self.get_path_seg_types(),
-                                     load_function.report_path_seg_types,
-                                     load_function.report_path_auto_fields)
+        report_file = path.cast_path(
+            table_file,
+            self.get_path_seg_types(),
+            load_function.report_path_seg_types,
+            load_function.report_path_auto_fields,
+        )
         self._dataset = load_function(report_file, **kwargs)
 
     @property
@@ -47,13 +46,13 @@ class TableLoader(Table, ABC):
 
 
 class RelTypeTableLoader(TableLoader, RelTypeTable, ABC):
-    """ Load a table of relationship types. """
+    """Load a table of relationship types."""
 
     @cached_property
     def data(self) -> pd.DataFrame:
-        data = pd.read_csv(self.path,
-                           index_col=self.get_index_cols(),
-                           header=self.get_header_rows())
+        data = pd.read_csv(
+            self.path, index_col=self.get_index_cols(), header=self.get_header_rows()
+        )
         # Any numeric data in the header will be read as strings and
         # must be cast to integers using parse_header.
         header = parse_header(data.columns)
@@ -64,8 +63,8 @@ class RelTypeTableLoader(TableLoader, RelTypeTable, ABC):
 
 
 class PositionTableLoader(RelTypeTableLoader, PositionTable, ABC):
-    """ Load data indexed by position. """
+    """Load data indexed by position."""
 
 
 class ReadTableLoader(RelTypeTableLoader, ReadTable, ABC):
-    """ Load data indexed by read. """
+    """Load data indexed by read."""

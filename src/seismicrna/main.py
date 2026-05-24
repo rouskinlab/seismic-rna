@@ -2,61 +2,47 @@ from pathlib import Path
 
 from click import group, version_option
 
-from . import (wf,
-               demult,
-               align,
-               importmm,
-               idmut,
-               pool,
-               filter as filter_mod,
-               cluster,
-               join,
-               ensembles,
-               table,
-               lists,
-               fold,
-               graph,
-               collate,
-               export,
-               draw,
-               migrate,
-               test,
-               sim,
-               cleanfa,
-               renumct,
-               __version__)
+from . import (
+    wf,
+    demult,
+    align,
+    importmm,
+    idmut,
+    pool,
+    filter as filter_mod,
+    cluster,
+    join,
+    ensembles,
+    table,
+    lists,
+    fold,
+    graph,
+    collate,
+    export,
+    draw,
+    migrate,
+    test,
+    sim,
+    cleanfa,
+    renumct,
+    __version__,
+)
 from .align import split
 from .core import path, rna
-from .core.arg import (opt_exit_on_error,
-                       opt_log,
-                       opt_log_color,
-                       opt_quiet,
-                       opt_verbose)
+from .core.arg import opt_exit_on_error, opt_log, opt_log_color, opt_quiet, opt_verbose
 from .core.logs import logger, set_config
-from .urls import (cli_docs,
-                   cli_github,
-                   cli_pypi,
-                   cli_conda,
-                   cli_biorxiv)
+from .urls import cli_docs, cli_github, cli_pypi, cli_conda, cli_biorxiv
 
-params = [
-    opt_verbose,
-    opt_quiet,
-    opt_log,
-    opt_log_color,
-    opt_exit_on_error,
-]
+params = [opt_verbose, opt_quiet, opt_log, opt_log_color, opt_exit_on_error]
 
 
 # Group for main commands
 @group(params=params, context_settings={"show_default": True})
 @version_option(__version__)
-def cli(verbose: int,
-        quiet: int,
-        log: str | Path,
-        log_color: bool,
-        exit_on_error: bool):
-    """ Command line interface of SEISMIC-RNA. """
+def cli(
+    verbose: int, quiet: int, log: str | Path, log_color: bool, exit_on_error: bool
+):
+    """Command line interface of SEISMIC-RNA."""
     if log:
         log_file_path = path.sanitize(log)
         log_file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -68,29 +54,31 @@ def cli(verbose: int,
 
 # Add all commands to the main CLI command group.
 
-for module in [wf,
-               demult,
-               split,
-               align,
-               importmm,
-               idmut,
-               pool,
-               filter_mod,
-               cluster,
-               join,
-               ensembles,
-               table,
-               lists,
-               fold,
-               graph,
-               collate,
-               export,
-               draw,
-               migrate,
-               test,
-               sim,
-               cleanfa,
-               renumct]:
+for module in [
+    wf,
+    demult,
+    split,
+    align,
+    importmm,
+    idmut,
+    pool,
+    filter_mod,
+    cluster,
+    join,
+    ensembles,
+    table,
+    lists,
+    fold,
+    graph,
+    collate,
+    export,
+    draw,
+    migrate,
+    test,
+    sim,
+    cleanfa,
+    renumct,
+]:
     cli.add_command(module.cli)
 
 cli.add_command(rna.convert.cli_ct2db)

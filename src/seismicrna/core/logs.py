@@ -10,7 +10,8 @@ from typing import Callable, Optional, TextIO
 
 
 class Level(IntEnum):
-    """ Level of a logging message. """
+    """Level of a logging message."""
+
     FATAL = -3
     ERROR = -2
     WARNING = -1
@@ -29,7 +30,8 @@ EXC_INFO_VERBOSITY = Level.TASK
 
 
 class Message(object):
-    """ Message with a logging level. """
+    """Message with a logging level."""
+
     __slots__ = ["level", "content"]
 
     def __init__(self, level: Level, content: object):
@@ -50,7 +52,8 @@ class Message(object):
 
 
 class Filterer(object):
-    """ Filter messages before logging. """
+    """Filter messages before logging."""
+
     __slots__ = ["verbosity"]
 
     def __init__(self, verbosity: int):
@@ -61,7 +64,8 @@ class Filterer(object):
 
 
 class Formatter(object):
-    """ Format messages before logging. """
+    """Format messages before logging."""
+
     __slots__ = ["formatter"]
 
     def __init__(self, formatter: Callable[[Message], str]):
@@ -72,7 +76,8 @@ class Formatter(object):
 
 
 class Stream(ABC):
-    """ Log to a stream, such as to the console or to a file. """
+    """Log to a stream, such as to the console or to a file."""
+
     __slots__ = ["filterer", "formatter"]
 
     def __init__(self, filterer: Filterer, formatter: Formatter):
@@ -82,17 +87,17 @@ class Stream(ABC):
     @property
     @abstractmethod
     def stream(self) -> TextIO:
-        """ Text stream to which messages will be logged after filtering
-        and formatting. """
+        """Text stream to which messages will be logged after filtering
+        and formatting."""
 
     def log(self, message: Message):
-        """ Log a message to the stream. """
+        """Log a message to the stream."""
         if self.filterer(message):
             self.stream.write(self.formatter(message))
 
 
 class ConsoleStream(Stream):
-    """ Log to the console's stderr stream. """
+    """Log to the console's stderr stream."""
 
     @property
     def stream(self):
@@ -100,7 +105,8 @@ class ConsoleStream(Stream):
 
 
 class FileStream(Stream):
-    """ Log to a file. """
+    """Log to a file."""
+
     __slots__ = ["file_path", "_file"]
 
     def __init__(self, file_path: str | Path, *args, **kwargs):
@@ -117,19 +123,20 @@ class FileStream(Stream):
         return self._file
 
     def close(self):
-        """ Close the file stream. """
+        """Close the file stream."""
         if self._file is not None:
             self._file.close()
             self._file = None
 
 
 def format_console_plain(message: Message):
-    """ Format a message to log on the console without color. """
+    """Format a message to log on the console without color."""
     return f"{message.level.name: <8}{message}\n"
 
 
 class AnsiCode(object):
-    """ Format text with ANSI codes. """
+    """Format text with ANSI codes."""
+
     # Control codes.
     START = "\033["  # Indicate the start of an ANSI format code.
     END = "m"  # Indicate the end of an ANSI format code.
@@ -140,7 +147,7 @@ class AnsiCode(object):
     @classmethod
     @cache
     def format_color(cls, color: int):
-        """ Make a format string for one 256-color code. """
+        """Make a format string for one 256-color code."""
         if not 0 <= color < 256:
             raise ValueError(f"Invalid ANSI 256-color code: {color}")
         # 38 means set the foreground color (i.e. of the text itself).
@@ -151,13 +158,13 @@ class AnsiCode(object):
     @classmethod
     @cache
     def format(cls, code: int):
-        """ Make a format string for one ANSI code. """
+        """Make a format string for one ANSI code."""
         return f"{cls.START}{code}{cls.END}"
 
     @classmethod
     @cache
     def reset(cls):
-        """ Convenience function to end formatting. """
+        """Convenience function to end formatting."""
         return cls.format(cls.RESET)
 
 
@@ -167,8 +174,7 @@ class AnsiCode(object):
 #       echo -ne "\033[38;5;${i}m  ${i} "
 #   done
 LEVEL_COLORS = {
-    Level.FATAL: "".join([AnsiCode.format_color(198),
-                          AnsiCode.format(AnsiCode.BOLD)]),
+    Level.FATAL: "".join([AnsiCode.format_color(198), AnsiCode.format(AnsiCode.BOLD)]),
     Level.ERROR: AnsiCode.format_color(160),
     Level.WARNING: AnsiCode.format_color(214),
     Level.STATUS: AnsiCode.format_color(28),
@@ -180,7 +186,7 @@ LEVEL_COLORS = {
 
 
 def format_console_color(message: Message):
-    """ Format a message to log on the console with color. """
+    """Format a message to log on the console with color."""
     # Get the ANSI format codes based on the message's logging level.
     fmt = LEVEL_COLORS.get(message.level, AnsiCode.reset())
     # Wrap the formatted text with ANSI format codes.
@@ -188,25 +194,28 @@ def format_console_color(message: Message):
 
 
 def format_logfile(message: Message):
-    """ Format a message to write into the log file. """
+    """Format a message to write into the log file."""
     timestamp = datetime.now().strftime("on %Y-%m-%d at %H:%M:%S.%f")
     return f"LOGMSG> {message.level.name} {timestamp}\n{message}\n\n"
 
 
 class Logger(object):
-    """ Log messages to the console and to files. """
+    """Log messages to the console and to files."""
+
     __slots__ = ["console_stream", "file_stream", "exit_on_error"]
 
-    def __init__(self,
-                 console_stream: ConsoleStream | None = None,
-                 file_stream: FileStream | None = None,
-                 exit_on_error: bool = DEFAULT_EXIT_ON_ERROR):
+    def __init__(
+        self,
+        console_stream: ConsoleStream | None = None,
+        file_stream: FileStream | None = None,
+        exit_on_error: bool = DEFAULT_EXIT_ON_ERROR,
+    ):
         self.console_stream = console_stream
         self.file_stream = file_stream
         self.exit_on_error = exit_on_error
 
     def _log(self, level: Level, content: object):
-        """ Create and log a message to the stream(s). """
+        """Create and log a message to the stream(s)."""
         message = Message(level, content)
         if level <= Level.ERROR and self.exit_on_error:
             if isinstance(content, BaseException):
@@ -245,15 +254,13 @@ class Logger(object):
 logger = Logger()
 
 
-LoggerConfig = namedtuple("LoggerConfig",
-                          ["verbosity",
-                           "log_file_path",
-                           "log_color",
-                           "exit_on_error"])
+LoggerConfig = namedtuple(
+    "LoggerConfig", ["verbosity", "log_file_path", "log_color", "exit_on_error"]
+)
 
 
 def erase_config():
-    """ Erase the existing logger configuration. """
+    """Erase the existing logger configuration."""
     logger.console_stream = None
     if logger.file_stream is not None:
         logger.file_stream.close()
@@ -261,11 +268,13 @@ def erase_config():
     logger.exit_on_error = DEFAULT_EXIT_ON_ERROR
 
 
-def set_config(verbosity: int = 0,
-               log_file_path: str | Path | None = None,
-               log_color: bool = True,
-               exit_on_error: bool = DEFAULT_EXIT_ON_ERROR):
-    """ Configure the main logger with handlers and verbosity.
+def set_config(
+    verbosity: int = 0,
+    log_file_path: str | Path | None = None,
+    log_color: bool = True,
+    exit_on_error: bool = DEFAULT_EXIT_ON_ERROR,
+):
+    """Configure the main logger with handlers and verbosity.
 
     Parameters
     ----------
@@ -281,23 +290,22 @@ def set_config(verbosity: int = 0,
     # Erase any existing configuration.
     erase_config()
     # Set up logger.
-    logger.console_stream = ConsoleStream(Filterer(verbosity),
-                                          Formatter(format_console_color
-                                                    if log_color
-                                                    else format_console_plain))
+    logger.console_stream = ConsoleStream(
+        Filterer(verbosity),
+        Formatter(format_console_color if log_color else format_console_plain),
+    )
     if log_file_path is not None:
-        logger.file_stream = FileStream(log_file_path,
-                                        Filterer(FILE_VERBOSITY),
-                                        Formatter(format_logfile))
+        logger.file_stream = FileStream(
+            log_file_path, Filterer(FILE_VERBOSITY), Formatter(format_logfile)
+        )
     logger.exit_on_error = exit_on_error
 
 
 def get_config():
-    """ Get the configuration parameters of a logger. """
+    """Get the configuration parameters of a logger."""
     if logger.console_stream is not None:
         verbosity = logger.console_stream.filterer.verbosity
-        log_color = (logger.console_stream.formatter.formatter
-                     is format_console_color)
+        log_color = logger.console_stream.formatter.formatter is format_console_color
     else:
         verbosity = DEFAULT_VERBOSITY
         log_color = DEFAULT_COLOR
@@ -305,19 +313,21 @@ def get_config():
         log_file_path = logger.file_stream.file_path
     else:
         log_file_path = None
-    return LoggerConfig(verbosity=verbosity,
-                        log_file_path=log_file_path,
-                        log_color=log_color,
-                        exit_on_error=logger.exit_on_error)
+    return LoggerConfig(
+        verbosity=verbosity,
+        log_file_path=log_file_path,
+        log_color=log_color,
+        exit_on_error=logger.exit_on_error,
+    )
 
 
 def exc_info():
-    """ Whether to log exception information. """
+    """Whether to log exception information."""
     return get_config().verbosity >= EXC_INFO_VERBOSITY
 
 
 def log_exceptions(default: Optional[Callable]):
-    """ If any exception occurs, catch it and return the default. """
+    """If any exception occurs, catch it and return the default."""
 
     def decorator(func: Callable):
 
@@ -335,8 +345,8 @@ def log_exceptions(default: Optional[Callable]):
 
 
 def restore_config(func: Callable):
-    """ After the function exits, restore the logging configuration that
-    was in place before the function ran. """
+    """After the function exits, restore the logging configuration that
+    was in place before the function ran."""
 
     @wraps(func)
     def wrapper(*args, **kwargs):

@@ -6,9 +6,7 @@ import pandas as pd
 from click import command
 
 from .table import PositionTableRunner, TableWriter
-from .onestruct import (StructOneTableGraph,
-                        StructOneTableRunner,
-                        StructOneTableWriter)
+from .onestruct import StructOneTableGraph, StructOneTableRunner, StructOneTableWriter
 from .trace import iter_roc_traces
 from ..core.run import log_command
 
@@ -26,7 +24,7 @@ FPR = "False positive rate"
 
 
 def rename_columns(df: pd.DataFrame):
-    """ Rename the levels of the columns. """
+    """Rename the levels of the columns."""
     # The DataFrame's columns must be a MultiIndex with two levels named
     # "Profile" and "Structure".
     if df.size > 0:
@@ -41,13 +39,13 @@ def rename_columns(df: pd.DataFrame):
 
 
 def _consolidate_pr(pr: dict):
-    """ Consolidate a true or false positive rate (PR) forming half the
-    ROC from a dict into a DataFrame. """
+    """Consolidate a true or false positive rate (PR) forming half the
+    ROC from a dict into a DataFrame."""
     return rename_columns(pd.DataFrame.from_dict(pr))
 
 
 class ROCGraph(StructOneTableGraph):
-    """ Graph of a receiver operating characteristic (ROC) curve. """
+    """Graph of a receiver operating characteristic (ROC) curve."""
 
     @classmethod
     def graph_kind(cls):
@@ -67,8 +65,8 @@ class ROCGraph(StructOneTableGraph):
 
     @cached_property
     def _roc(self):
-        """ ROC curve as two DataFrames of false positive rates (FPR)
-        and true positive rates (TPR). """
+        """ROC curve as two DataFrames of false positive rates (FPR)
+        and true positive rates (TPR)."""
         # Gather the FPR and TPR data from each RNA state.
         fpr = dict()
         tpr = dict()
@@ -76,9 +74,7 @@ class ROCGraph(StructOneTableGraph):
             key = state.mus_name, state.title
             if key in fpr or key in tpr:
                 raise ValueError(f"Duplicate RNA state: {key}")
-            fpr[key], tpr[key] = state.calc_roc(
-                terminal_pairs=self._terminal_pairs
-            )
+            fpr[key], tpr[key] = state.calc_roc(terminal_pairs=self._terminal_pairs)
         if not fpr or not tpr:
             raise ValueError(f"Got no data for {self}")
         # Consolidate the FPR and TPR data into two DataFrames.
@@ -86,13 +82,13 @@ class ROCGraph(StructOneTableGraph):
 
     @property
     def fpr(self):
-        """ False positive rate (FPR) of each RNA state. """
+        """False positive rate (FPR) of each RNA state."""
         fpr, _ = self._roc
         return fpr
 
     @property
     def tpr(self):
-        """ True positive rate (TPR) of each RNA state. """
+        """True positive rate (TPR) of each RNA state."""
         _, tpr = self._roc
         return tpr
 
@@ -101,42 +97,51 @@ class ROCGraph(StructOneTableGraph):
         # Join the FPR and TPR data horizontally.
         data = pd.concat([self.fpr, self.tpr], axis=1, join="inner")
         # Add the axis name as the first level of the columns.
-        axes = np.hstack([np.repeat([FPR], self.fpr.columns.size),
-                          np.repeat([TPR], self.tpr.columns.size)])
+        axes = np.hstack(
+            [
+                np.repeat([FPR], self.fpr.columns.size),
+                np.repeat([TPR], self.tpr.columns.size),
+            ]
+        )
         names = [AXIS_NAME] + list(data.columns.names)
         data.columns = pd.MultiIndex.from_arrays(
-            [(axes if name == AXIS_NAME
-              else data.columns.get_level_values(name).values)
-             for name in names],
-            names=names
+            [
+                (
+                    axes
+                    if name == AXIS_NAME
+                    else data.columns.get_level_values(name).values
+                )
+                for name in names
+            ],
+            names=names,
         )
         return data
 
     @cached_property
     def profile_names(self):
-        """ Names of the profiles as they appear in the data. """
+        """Names of the profiles as they appear in the data."""
         profile_names = self.fpr.columns.unique(PROFILE_NAME)
         if not profile_names.equals(self.tpr.columns.unique(PROFILE_NAME)):
-            raise ValueError(f"Profile names differ: {profile_names} "
-                             f"≠ {self.tpr.columns.unique(PROFILE_NAME)}")
+            raise ValueError(
+                f"Profile names differ: {profile_names} "
+                f"≠ {self.tpr.columns.unique(PROFILE_NAME)}"
+            )
         return profile_names
 
     def get_traces(self):
         for row, profile in enumerate(self.profile_names, start=1):
-            for trace in iter_roc_traces(self.fpr.loc[:, profile],
-                                         self.tpr.loc[:, profile],
-                                         profile):
+            for trace in iter_roc_traces(
+                self.fpr.loc[:, profile], self.tpr.loc[:, profile], profile
+            ):
                 yield (row, 1), trace
 
 
 class ROCWriter(StructOneTableWriter, TableWriter):
-
     def get_graph(self, rels_group: str, **kwargs):
         return ROCGraph(table=self.table, rel=rels_group, **kwargs)
 
 
 class ROCRunner(StructOneTableRunner, PositionTableRunner):
-
     @classmethod
     def get_writer_type(cls):
         return ROCWriter
@@ -149,5 +154,5 @@ class ROCRunner(StructOneTableRunner, PositionTableRunner):
 
 @command(COMMAND, params=ROCRunner.params())
 def cli(*args, **kwargs):
-    """ ROC curve comparing a profile to a structure. """
+    """ROC curve comparing a profile to a structure."""
     return ROCRunner.run(*args, **kwargs)

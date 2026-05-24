@@ -4,63 +4,67 @@ from abc import ABC
 
 from ..core import path
 from ..core.io import RegFileIO
-from ..core.report import (RegReport,
-                           ProfileF,
-                           FoldDryRunF,
-                           FoldBackendF,
-                           FoldEnergyMethodF,
-                           DeiganSlopeF,
-                           DeiganInterceptF,
-                           FoldQuantileF,
-                           FoldIsolatedF,
-                           FoldTempF,
-                           FoldMaxDistF,
-                           FoldMinFreeEnergyF,
-                           FoldMaxStructsF,
-                           FoldPercent,
-                           FoldEnergyDeltaF,
-                           PseudoknotsF,
-                           CommandsChecksumF,
-                           ConstraintChecksumF,
-                           EddyPriorPairedFileChecksumF,
-                           EddyPriorUnpairedFileChecksumF)
+from ..core.report import (
+    RegReport,
+    ProfileF,
+    FoldDryRunF,
+    FoldBackendF,
+    FoldEnergyMethodF,
+    DeiganSlopeF,
+    DeiganInterceptF,
+    FoldQuantileF,
+    FoldIsolatedF,
+    FoldTempF,
+    FoldMaxDistF,
+    FoldMinFreeEnergyF,
+    FoldMaxStructsF,
+    FoldPercent,
+    FoldEnergyDeltaF,
+    PseudoknotsF,
+    CommandsChecksumF,
+    ConstraintChecksumF,
+    EddyPriorPairedFileChecksumF,
+    EddyPriorUnpairedFileChecksumF,
+)
 
 
 class FoldIO(RegFileIO, ABC):
-
     @classmethod
     def get_step(cls):
         return path.FOLD_STEP
 
 
 class FoldReport(RegReport, FoldIO, ABC):
-
     @classmethod
     def get_file_seg_type(cls):
         return path.FoldRepSeg
 
     @classmethod
     def get_param_report_fields(cls):
-        return [ProfileF,
-                FoldDryRunF,
-                FoldBackendF,
-                FoldEnergyMethodF,
-                DeiganSlopeF,
-                DeiganInterceptF,
-                FoldQuantileF,
-                FoldIsolatedF,
-                FoldTempF,
-                FoldMaxDistF,
-                FoldMinFreeEnergyF,
-                FoldMaxStructsF,
-                FoldPercent,
-                FoldEnergyDeltaF,
-                PseudoknotsF,
-                *super().get_param_report_fields()]
+        return [
+            ProfileF,
+            FoldDryRunF,
+            FoldBackendF,
+            FoldEnergyMethodF,
+            DeiganSlopeF,
+            DeiganInterceptF,
+            FoldQuantileF,
+            FoldIsolatedF,
+            FoldTempF,
+            FoldMaxDistF,
+            FoldMinFreeEnergyF,
+            FoldMaxStructsF,
+            FoldPercent,
+            FoldEnergyDeltaF,
+            PseudoknotsF,
+            *super().get_param_report_fields(),
+        ]
 
     @classmethod
     def get_checksum_report_fields(cls):
-        return [CommandsChecksumF,
-                ConstraintChecksumF,
-                EddyPriorPairedFileChecksumF,
-                EddyPriorUnpairedFileChecksumF]
+        return [
+            CommandsChecksumF,
+            ConstraintChecksumF,
+            EddyPriorPairedFileChecksumF,
+            EddyPriorUnpairedFileChecksumF,
+        ]

@@ -2,32 +2,36 @@ import numpy as np
 
 from ..core.arg import MUT_COLLISIONS_DROP, MUT_COLLISIONS_MERGE
 from ..core.array import find_dims
-from ..core.unbias import (UNIQUE_READS,
-                           POSITIONS,
-                           CLUSTERS,
-                           calc_p_noclose_given_clust,
-                           calc_p_noclose_given_ends_auto,
-                           calc_p_ends_given_clust_noclose,
-                           calc_p_clust_given_noclose)
+from ..core.unbias import (
+    UNIQUE_READS,
+    POSITIONS,
+    CLUSTERS,
+    calc_p_noclose_given_clust,
+    calc_p_noclose_given_ends_auto,
+    calc_p_ends_given_clust_noclose,
+    calc_p_clust_given_noclose,
+)
 
 
 def _zero_masked(p_mut: np.ndarray, unmasked: np.ndarray):
-    """ Set mutation rates of masked positions to zero. """
+    """Set mutation rates of masked positions to zero."""
     p_mut_unmasked = np.zeros_like(p_mut)
     p_mut_unmasked[unmasked] = p_mut[unmasked]
     return p_mut_unmasked
 
 
-def _calc_logp_joint(p_mut: np.ndarray,
-                     p_ends: np.ndarray,
-                     p_clust: np.ndarray,
-                     end5s: np.ndarray,
-                     end3s: np.ndarray,
-                     unmasked: np.ndarray,
-                     muts_per_pos: list[np.ndarray],
-                     min_mut_gap: int,
-                     mut_collisions: str):
-    """ Compute the log joint probability of each unique read and cluster.
+def _calc_logp_joint(
+    p_mut: np.ndarray,
+    p_ends: np.ndarray,
+    p_clust: np.ndarray,
+    end5s: np.ndarray,
+    end3s: np.ndarray,
+    unmasked: np.ndarray,
+    muts_per_pos: list[np.ndarray],
+    min_mut_gap: int,
+    mut_collisions: str,
+):
+    """Compute the log joint probability of each unique read and cluster.
 
     For each unique read i and cluster k, the joint probability is:
     P(read i, cluster k) = P(cluster k) * P(end coords) * P(mutations | ends, cluster k)
@@ -64,28 +68,29 @@ def _calc_logp_joint(p_mut: np.ndarray,
         2D (unique reads x clusters) array of log joint probabilities.
     """
     # Validate the dimensions.
-    find_dims([(POSITIONS, CLUSTERS),
-               (POSITIONS, POSITIONS),
-               (CLUSTERS,),
-               (UNIQUE_READS,),
-               (UNIQUE_READS,)],
-              [p_mut, p_ends, p_clust, end5s, end3s],
-              ["p_mut", "p_ends", "p_clust", "end5s", "end3s"],
-              nonzero=True)
+    find_dims(
+        [
+            (POSITIONS, CLUSTERS),
+            (POSITIONS, POSITIONS),
+            (CLUSTERS,),
+            (UNIQUE_READS,),
+            (UNIQUE_READS,),
+        ],
+        [p_mut, p_ends, p_clust, end5s, end3s],
+        ["p_mut", "p_ends", "p_clust", "end5s", "end3s"],
+        nonzero=True,
+    )
     # Ensure the mutation rates of masked positions are 0.
     p_mut = _zero_masked(p_mut, unmasked)
     if mut_collisions == MUT_COLLISIONS_DROP:
         # Correct for reads with mutations too close dropping out.
-        p_noclose_given_ends = calc_p_noclose_given_ends_auto(p_mut,
-                                                              min_mut_gap)
+        p_noclose_given_ends = calc_p_noclose_given_ends_auto(p_mut, min_mut_gap)
         # Adjust the cluster probabilities.
         p_clust = calc_p_clust_given_noclose(
             p_clust, calc_p_noclose_given_clust(p_ends, p_noclose_given_ends)
         )
         # Adjust the end coordinate probabilities.
-        p_ends = calc_p_ends_given_clust_noclose(
-            p_ends, p_noclose_given_ends
-        )
+        p_ends = calc_p_ends_given_clust_noclose(p_ends, p_noclose_given_ends)
     elif mut_collisions == MUT_COLLISIONS_MERGE:
         p_noclose_given_ends = None
         # Make p_ends 3D (positions x positions x clusters) to match the
@@ -98,7 +103,7 @@ def _calc_logp_joint(p_mut: np.ndarray,
         # Suppress warnings about taking the log of zero, which is a
         # valid mutation rate.
         logp_mut = np.log(p_mut)
-    logp_not = np.log(1. - p_mut)
+    logp_not = np.log(1.0 - p_mut)
     # For each cluster, calculate the probability that a read up to and
     # including each position would have no mutations.
     logp_nomut_incl = np.cumsum(logp_not, axis=0)
@@ -112,9 +117,11 @@ def _calc_logp_joint(p_mut: np.ndarray,
     # read would have the same end coordinates, come from each cluster,
     # and have no mutations.
     # 2D (unique reads x clusters)
-    logp_joint = (np.log(p_clust)[np.newaxis, :]
-                  + np.log(p_ends[end5s, end3s])
-                  + logp_nomut_given_clust)
+    logp_joint = (
+        np.log(p_clust)[np.newaxis, :]
+        + np.log(p_ends[end5s, end3s])
+        + logp_nomut_given_clust
+    )
     if p_noclose_given_ends is not None:
         # Normalize logp_joint by the fraction of all reads that have
         # no two mutations too close.
@@ -146,8 +153,7 @@ def _calc_logp_joint(p_mut: np.ndarray,
             nomut_window_end5s = np.maximum(end5s[mut_reads], j - min_mut_gap)
             # Calculate the log probability that none of those positions
             # are mutated: sum logp_not from nomut_window_end5 to (j-1).
-            logp_nomut_window = (logp_nomut_excl[j]
-                                 - logp_nomut_excl[nomut_window_end5s])
+            logp_nomut_window = logp_nomut_excl[j] - logp_nomut_excl[nomut_window_end5s]
             # Adjust logp_joint by dividing by that probability.
             adjustment = adjustment - logp_nomut_window
         logp_joint[mut_reads] += adjustment
@@ -155,7 +161,7 @@ def _calc_logp_joint(p_mut: np.ndarray,
 
 
 def _calc_logp_marginal(logp_joint: np.ndarray):
-    """ Compute the log marginal probability of each unique read.
+    """Compute the log marginal probability of each unique read.
 
     Marginalizes over clusters by summing the joint probabilities
     (in probability space) via log-sum-exp.
@@ -176,7 +182,7 @@ def _calc_logp_marginal(logp_joint: np.ndarray):
 
 
 def calc_marginal(*args, **kwargs):
-    """ Compute the log marginal probability of each unique read.
+    """Compute the log marginal probability of each unique read.
 
     A convenience wrapper that chains `_calc_logp_joint` and
     `_calc_logp_marginal`.  Accepts the same arguments as
@@ -191,7 +197,7 @@ def calc_marginal(*args, **kwargs):
 
 
 def calc_marginal_resps(*args, **kwargs):
-    """ Compute log marginal probabilities and cluster responsibilities.
+    """Compute log marginal probabilities and cluster responsibilities.
 
     A convenience wrapper that chains `_calc_logp_joint`,
     `_calc_logp_marginal`, and the responsibility calculation.

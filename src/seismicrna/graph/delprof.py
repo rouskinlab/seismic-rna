@@ -8,19 +8,18 @@ from .color import ColorMapGraph, SeqColorMap
 from .rel import OneRelGraph
 from .table import PositionTableRunner
 from .trace import iter_seq_base_bar_traces
-from .twotable import (TwoTableMergedClusterGroupGraph,
-                       TwoTableRelClusterGroupWriter,
-                       TwoTableRelClusterGroupRunner)
+from .twotable import (
+    TwoTableMergedClusterGroupGraph,
+    TwoTableRelClusterGroupWriter,
+    TwoTableRelClusterGroupRunner,
+)
 from ..core.run import log_command
 from ..core.seq import POS_NAME
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 
-class DeltaProfileGraph(TwoTableMergedClusterGroupGraph,
-                        OneRelGraph,
-                        ColorMapGraph):
-
+class DeltaProfileGraph(TwoTableMergedClusterGroupGraph, OneRelGraph, ColorMapGraph):
     @classmethod
     def graph_kind(cls):
         return COMMAND
@@ -51,7 +50,7 @@ class DeltaProfileGraph(TwoTableMergedClusterGroupGraph,
 
     @property
     def _merge_data(self):
-        """ Compute the difference between the profiles. """
+        """Compute the difference between the profiles."""
         return np.subtract
 
     def _figure_layout(self, fig: go.Figure):
@@ -60,14 +59,12 @@ class DeltaProfileGraph(TwoTableMergedClusterGroupGraph,
 
 
 class DeltaProfileWriter(TwoTableRelClusterGroupWriter):
-
     @classmethod
     def get_graph_type(cls):
         return DeltaProfileGraph
 
 
 class DeltaProfileRunner(TwoTableRelClusterGroupRunner, PositionTableRunner):
-
     @classmethod
     def get_writer_type(cls):
         return DeltaProfileWriter
@@ -80,5 +77,5 @@ class DeltaProfileRunner(TwoTableRelClusterGroupRunner, PositionTableRunner):
 
 @command(COMMAND, params=DeltaProfileRunner.params())
 def cli(*args, **kwargs):
-    """ Bar graph of differences between two profiles per position. """
+    """Bar graph of differences between two profiles per position."""
     return DeltaProfileRunner.run(*args, **kwargs)

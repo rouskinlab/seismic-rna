@@ -24,7 +24,6 @@ def get_batch_count_all_func(batches: list[RegionMutsBatch]):
 
 
 class TestAccumulateBatches(ut.TestCase):
-
     def test_idmut_1_batch(self):
         """
         . = Match, ! = Mutation, ? = Ambiguous, _ = Not Covered
@@ -41,27 +40,23 @@ class TestAccumulateBatches(ut.TestCase):
             4 ?.._
         """
         region = Region("myref", DNA("ACGT"))
-        patterns = {"Matches": RelPattern.muts().invert(),
-                    "Mutations": RelPattern.muts()}
+        patterns = {
+            "Matches": RelPattern.muts().invert(),
+            "Mutations": RelPattern.muts(),
+        }
         batches = [
-            IDmutRegionMutsBatch(region=region,
-                                  batch=0,
-                                  muts={1: {128: np.array([2, 3]),
-                                            129: np.array([4])},
-                                        2: {16: np.array([0, 1, 2, 3])},
-                                        3: {32: np.array([2]),
-                                            33: np.array([0])},
-                                        4: {64: np.array([0])}},
-                                  seg_end5s=np.array([[2],
-                                                      [1],
-                                                      [1],
-                                                      [1],
-                                                      [1]]),
-                                  seg_end3s=np.array([[4],
-                                                      [4],
-                                                      [3],
-                                                      [3],
-                                                      [3]]))
+            IDmutRegionMutsBatch(
+                region=region,
+                batch=0,
+                muts={
+                    1: {128: np.array([2, 3]), 129: np.array([4])},
+                    2: {16: np.array([0, 1, 2, 3])},
+                    3: {32: np.array([2]), 33: np.array([0])},
+                    4: {64: np.array([0])},
+                },
+                seg_end5s=np.array([[2], [1], [1], [1], [1]]),
+                seg_end3s=np.array([[4], [4], [3], [3], [3]]),
+            )
         ]
         n, ends, fpp, fpr = accumulate_batches(
             get_batch_count_all_func(batches),
@@ -71,32 +66,34 @@ class TestAccumulateBatches(ut.TestCase):
             patterns,
         )
         self.assertEqual(n, 5)
-        self.assertTrue(fpp.equals(pd.DataFrame(
-            [[1, 2],
-             [1, 4],
-             [3, 1],
-             [1, 1]],
-            region.range,
-            list(patterns)
-        )))
-        self.assertTrue(fpr.equals(pd.DataFrame(
-            [[0, 2],
-             [3, 1],
-             [0, 3],
-             [1, 2],
-             [2, 0]],
-            pd.MultiIndex.from_arrays([[0, 0, 0, 0, 0],
-                                       [0, 1, 2, 3, 4]],
-                                      names=RB_INDEX_NAMES),
-            list(patterns)
-        )))
-        self.assertTrue(ends.equals(pd.Series(
-            [3, 1, 1],
-            pd.MultiIndex.from_tuples([(1, 3),
-                                       (1, 4),
-                                       (2, 4)],
-                                      names=[END5_COORD, END3_COORD])
-        )))
+        self.assertTrue(
+            fpp.equals(
+                pd.DataFrame(
+                    [[1, 2], [1, 4], [3, 1], [1, 1]], region.range, list(patterns)
+                )
+            )
+        )
+        self.assertTrue(
+            fpr.equals(
+                pd.DataFrame(
+                    [[0, 2], [3, 1], [0, 3], [1, 2], [2, 0]],
+                    pd.MultiIndex.from_arrays(
+                        [[0, 0, 0, 0, 0], [0, 1, 2, 3, 4]], names=RB_INDEX_NAMES
+                    ),
+                    list(patterns),
+                )
+            )
+        )
+        self.assertTrue(
+            ends.equals(
+                pd.Series(
+                    [3, 1, 1],
+                    pd.MultiIndex.from_tuples(
+                        [(1, 3), (1, 4), (2, 4)], names=[END5_COORD, END3_COORD]
+                    ),
+                )
+            )
+        )
 
     def test_idmut_2_batches(self):
         """
@@ -115,33 +112,35 @@ class TestAccumulateBatches(ut.TestCase):
             1 ?.._
         """
         region = Region("myref", DNA("ACGT"))
-        patterns = {"Matches": RelPattern.muts().invert(),
-                    "Mutations": RelPattern.muts()}
+        patterns = {
+            "Matches": RelPattern.muts().invert(),
+            "Mutations": RelPattern.muts(),
+        }
         batches = [
-            IDmutRegionMutsBatch(region=region,
-                                  batch=0,
-                                  muts={1: {128: np.array([2])},
-                                        2: {16: np.array([0, 1, 2])},
-                                        3: {32: np.array([2]),
-                                            33: np.array([0])},
-                                        4: {64: np.array([0])}},
-                                  seg_end5s=np.array([[2],
-                                                      [1],
-                                                      [1]]),
-                                  seg_end3s=np.array([[4],
-                                                      [4],
-                                                      [3]])),
-            IDmutRegionMutsBatch(region=region,
-                                  batch=1,
-                                  muts={1: {128: np.array([0]),
-                                            129: np.array([1])},
-                                        2: {16: np.array([0])},
-                                        3: {},
-                                        4: {}},
-                                  seg_end5s=np.array([[1],
-                                                      [1]]),
-                                  seg_end3s=np.array([[3],
-                                                      [3]]))
+            IDmutRegionMutsBatch(
+                region=region,
+                batch=0,
+                muts={
+                    1: {128: np.array([2])},
+                    2: {16: np.array([0, 1, 2])},
+                    3: {32: np.array([2]), 33: np.array([0])},
+                    4: {64: np.array([0])},
+                },
+                seg_end5s=np.array([[2], [1], [1]]),
+                seg_end3s=np.array([[4], [4], [3]]),
+            ),
+            IDmutRegionMutsBatch(
+                region=region,
+                batch=1,
+                muts={
+                    1: {128: np.array([0]), 129: np.array([1])},
+                    2: {16: np.array([0])},
+                    3: {},
+                    4: {},
+                },
+                seg_end5s=np.array([[1], [1]]),
+                seg_end3s=np.array([[3], [3]]),
+            ),
         ]
         n, ends, fpp, fpr = accumulate_batches(
             get_batch_count_all_func(batches),
@@ -151,32 +150,34 @@ class TestAccumulateBatches(ut.TestCase):
             patterns,
         )
         self.assertEqual(n, 5)
-        self.assertTrue(fpp.equals(pd.DataFrame(
-            [[1, 2],
-             [1, 4],
-             [3, 1],
-             [1, 1]],
-            region.range,
-            list(patterns)
-        )))
-        self.assertTrue(fpr.equals(pd.DataFrame(
-            [[0, 2],
-             [3, 1],
-             [0, 3],
-             [1, 2],
-             [2, 0]],
-            pd.MultiIndex.from_arrays([[0, 0, 0, 1, 1],
-                                       [0, 1, 2, 0, 1]],
-                                      names=RB_INDEX_NAMES),
-            list(patterns)
-        )))
-        self.assertTrue(ends.equals(pd.Series(
-            [3, 1, 1],
-            pd.MultiIndex.from_tuples([(1, 3),
-                                       (1, 4),
-                                       (2, 4)],
-                                      names=[END5_COORD, END3_COORD])
-        )))
+        self.assertTrue(
+            fpp.equals(
+                pd.DataFrame(
+                    [[1, 2], [1, 4], [3, 1], [1, 1]], region.range, list(patterns)
+                )
+            )
+        )
+        self.assertTrue(
+            fpr.equals(
+                pd.DataFrame(
+                    [[0, 2], [3, 1], [0, 3], [1, 2], [2, 0]],
+                    pd.MultiIndex.from_arrays(
+                        [[0, 0, 0, 1, 1], [0, 1, 2, 0, 1]], names=RB_INDEX_NAMES
+                    ),
+                    list(patterns),
+                )
+            )
+        )
+        self.assertTrue(
+            ends.equals(
+                pd.Series(
+                    [3, 1, 1],
+                    pd.MultiIndex.from_tuples(
+                        [(1, 3), (1, 4), (2, 4)], names=[END5_COORD, END3_COORD]
+                    ),
+                )
+            )
+        )
 
     def test_mask_2_batches(self):
         """
@@ -196,35 +197,37 @@ class TestAccumulateBatches(ut.TestCase):
         """
         region = Region("myref", DNA("NNACNGNT"))
         region.add_mask("mask", [3, 4, 6, 8], complement=True)
-        patterns = {"Matches": RelPattern.muts().invert(),
-                    "Mutations": RelPattern.muts()}
+        patterns = {
+            "Matches": RelPattern.muts().invert(),
+            "Mutations": RelPattern.muts(),
+        }
         batches = [
-            FilterMutsBatch(region=region,
-                          batch=0,
-                          muts={3: {128: np.array([7])},
-                                4: {16: np.array([2, 4, 7])},
-                                6: {32: np.array([7]),
-                                    33: np.array([2])},
-                                8: {64: np.array([2])}},
-                          seg_end5s=np.array([[4],
-                                              [3],
-                                              [2]]),
-                          seg_end3s=np.array([[8],
-                                              [8],
-                                              [7]]),
-                          read_nums=np.array([2, 4, 7])),
-            FilterMutsBatch(region=region,
-                          batch=1,
-                          muts={3: {128: np.array([0]),
-                                    129: np.array([6])},
-                                4: {16: np.array([0])},
-                                6: {},
-                                8: {}},
-                          seg_end5s=np.array([[2],
-                                              [3]]),
-                          seg_end3s=np.array([[7],
-                                              [6]]),
-                          read_nums=np.array([0, 6]))
+            FilterMutsBatch(
+                region=region,
+                batch=0,
+                muts={
+                    3: {128: np.array([7])},
+                    4: {16: np.array([2, 4, 7])},
+                    6: {32: np.array([7]), 33: np.array([2])},
+                    8: {64: np.array([2])},
+                },
+                seg_end5s=np.array([[4], [3], [2]]),
+                seg_end3s=np.array([[8], [8], [7]]),
+                read_nums=np.array([2, 4, 7]),
+            ),
+            FilterMutsBatch(
+                region=region,
+                batch=1,
+                muts={
+                    3: {128: np.array([0]), 129: np.array([6])},
+                    4: {16: np.array([0])},
+                    6: {},
+                    8: {},
+                },
+                seg_end5s=np.array([[2], [3]]),
+                seg_end3s=np.array([[7], [6]]),
+                read_nums=np.array([0, 6]),
+            ),
         ]
         n, ends, fpp, fpr = accumulate_batches(
             get_batch_count_all_func(batches),
@@ -234,33 +237,34 @@ class TestAccumulateBatches(ut.TestCase):
             patterns,
         )
         self.assertEqual(n, 5)
-        self.assertTrue(fpp.equals(pd.DataFrame(
-            [[1, 2],
-             [1, 4],
-             [3, 1],
-             [1, 1]],
-            region.unmasked,
-            list(patterns)
-        )))
-        self.assertTrue(fpr.equals(pd.DataFrame(
-            [[0, 2],
-             [3, 1],
-             [0, 3],
-             [1, 2],
-             [2, 0]],
-            pd.MultiIndex.from_arrays([[0, 0, 0, 1, 1],
-                                       [2, 4, 7, 0, 6]],
-                                      names=RB_INDEX_NAMES),
-            list(patterns)
-        )))
-        self.assertTrue(ends.equals(pd.Series(
-            [2, 1, 1, 1],
-            pd.MultiIndex.from_tuples([(2, 7),
-                                       (3, 6),
-                                       (3, 8),
-                                       (4, 8)],
-                                      names=[END5_COORD, END3_COORD])
-        )))
+        self.assertTrue(
+            fpp.equals(
+                pd.DataFrame(
+                    [[1, 2], [1, 4], [3, 1], [1, 1]], region.unmasked, list(patterns)
+                )
+            )
+        )
+        self.assertTrue(
+            fpr.equals(
+                pd.DataFrame(
+                    [[0, 2], [3, 1], [0, 3], [1, 2], [2, 0]],
+                    pd.MultiIndex.from_arrays(
+                        [[0, 0, 0, 1, 1], [2, 4, 7, 0, 6]], names=RB_INDEX_NAMES
+                    ),
+                    list(patterns),
+                )
+            )
+        )
+        self.assertTrue(
+            ends.equals(
+                pd.Series(
+                    [2, 1, 1, 1],
+                    pd.MultiIndex.from_tuples(
+                        [(2, 7), (3, 6), (3, 8), (4, 8)], names=[END5_COORD, END3_COORD]
+                    ),
+                )
+            )
+        )
 
     def test_cluster_2_batches(self):
         """
@@ -280,46 +284,47 @@ class TestAccumulateBatches(ut.TestCase):
         """
         region = Region("myref", DNA("NNACNGNT"))
         region.add_mask("mask", [3, 4, 6, 8], complement=True)
-        patterns = {"Matches": RelPattern.muts().invert(),
-                    "Mutations": RelPattern.muts()}
+        patterns = {
+            "Matches": RelPattern.muts().invert(),
+            "Mutations": RelPattern.muts(),
+        }
         ks = [1, 2]
         rcheader = RelClustHeader(rels=list(patterns), ks=ks)
         rheader = rcheader.get_rel_header()
         cheader = rcheader.get_clust_header()
         batches = [
-            ClusterMutsBatch(region=region,
-                             batch=0,
-                             muts={3: {128: np.array([7])},
-                                   4: {16: np.array([2, 4, 7])},
-                                   6: {32: np.array([7]),
-                                       33: np.array([2])},
-                                   8: {64: np.array([2])}},
-                             seg_end5s=np.array([[4],
-                                                 [3],
-                                                 [2]]),
-                             seg_end3s=np.array([[8],
-                                                 [8],
-                                                 [7]]),
-                             resps=pd.DataFrame([[1.0, 0.1, 0.9],
-                                                 [1.0, 0.3, 0.7],
-                                                 [1.0, 0.5, 0.5]],
-                                                [2, 4, 7],
-                                                cheader.index)),
-            ClusterMutsBatch(region=region,
-                             batch=1,
-                             muts={3: {128: np.array([0]),
-                                       129: np.array([6])},
-                                   4: {16: np.array([0])},
-                                   6: {},
-                                   8: {}},
-                             seg_end5s=np.array([[2],
-                                                 [3]]),
-                             seg_end3s=np.array([[7],
-                                                 [6]]),
-                             resps=pd.DataFrame([[1.0, 0.6, 0.4],
-                                                 [1.0, 0.8, 0.2]],
-                                                [0, 6],
-                                                cheader.index))
+            ClusterMutsBatch(
+                region=region,
+                batch=0,
+                muts={
+                    3: {128: np.array([7])},
+                    4: {16: np.array([2, 4, 7])},
+                    6: {32: np.array([7]), 33: np.array([2])},
+                    8: {64: np.array([2])},
+                },
+                seg_end5s=np.array([[4], [3], [2]]),
+                seg_end3s=np.array([[8], [8], [7]]),
+                resps=pd.DataFrame(
+                    [[1.0, 0.1, 0.9], [1.0, 0.3, 0.7], [1.0, 0.5, 0.5]],
+                    [2, 4, 7],
+                    cheader.index,
+                ),
+            ),
+            ClusterMutsBatch(
+                region=region,
+                batch=1,
+                muts={
+                    3: {128: np.array([0]), 129: np.array([6])},
+                    4: {16: np.array([0])},
+                    6: {},
+                    8: {},
+                },
+                seg_end5s=np.array([[2], [3]]),
+                seg_end3s=np.array([[7], [6]]),
+                resps=pd.DataFrame(
+                    [[1.0, 0.6, 0.4], [1.0, 0.8, 0.2]], [0, 6], cheader.index
+                ),
+            ),
         ]
         n, ends, fpp, fpr = accumulate_batches(
             get_batch_count_all_func(batches),
@@ -335,38 +340,43 @@ class TestAccumulateBatches(ut.TestCase):
         self.assertIsInstance(fpp, pd.DataFrame)
         self.assertTrue(fpp.index.equals(region.unmasked))
         self.assertTrue(fpp.columns.equals(rcheader.index))
-        self.assertTrue(np.allclose(fpp.values,
-                                    [[1.0, 0.3, 0.7, 2.0, 1.1, 0.9],
-                                     [1.0, 0.8, 0.2, 4.0, 1.5, 2.5],
-                                     [3.0, 1.7, 1.3, 1.0, 0.5, 0.5],
-                                     [1.0, 0.3, 0.7, 1.0, 0.1, 0.9]]))
-        read_nums = pd.MultiIndex.from_arrays([[0, 0, 0, 1, 1],
-                                               [2, 4, 7, 0, 6]],
-                                              names=RB_INDEX_NAMES)
+        self.assertTrue(
+            np.allclose(
+                fpp.values,
+                [
+                    [1.0, 0.3, 0.7, 2.0, 1.1, 0.9],
+                    [1.0, 0.8, 0.2, 4.0, 1.5, 2.5],
+                    [3.0, 1.7, 1.3, 1.0, 0.5, 0.5],
+                    [1.0, 0.3, 0.7, 1.0, 0.1, 0.9],
+                ],
+            )
+        )
+        read_nums = pd.MultiIndex.from_arrays(
+            [[0, 0, 0, 1, 1], [2, 4, 7, 0, 6]], names=RB_INDEX_NAMES
+        )
         self.assertIsInstance(fpr, pd.DataFrame)
-        self.assertTrue(fpr.equals(pd.DataFrame(
-            [[0, 2],
-             [3, 1],
-             [0, 3],
-             [1, 2],
-             [2, 0]],
-            read_nums,
-            rheader.index
-        )))
+        self.assertTrue(
+            fpr.equals(
+                pd.DataFrame(
+                    [[0, 2], [3, 1], [0, 3], [1, 2], [2, 0]], read_nums, rheader.index
+                )
+            )
+        )
         self.assertIsInstance(ends, pd.DataFrame)
-        self.assertTrue(ends.index.equals(
-            pd.MultiIndex.from_tuples([(2, 7),
-                                       (3, 6),
-                                       (3, 8),
-                                       (4, 8)],
-                                      names=[END5_COORD, END3_COORD])
-        ))
+        self.assertTrue(
+            ends.index.equals(
+                pd.MultiIndex.from_tuples(
+                    [(2, 7), (3, 6), (3, 8), (4, 8)], names=[END5_COORD, END3_COORD]
+                )
+            )
+        )
         self.assertTrue(ends.columns.equals(cheader.index))
-        self.assertTrue(np.allclose(ends.values,
-                                    [[2.0, 1.1, 0.9],
-                                     [1.0, 0.8, 0.2],
-                                     [1.0, 0.3, 0.7],
-                                     [1.0, 0.1, 0.9]]))
+        self.assertTrue(
+            np.allclose(
+                ends.values,
+                [[2.0, 1.1, 0.9], [1.0, 0.8, 0.2], [1.0, 0.3, 0.7], [1.0, 0.1, 0.9]],
+            )
+        )
 
 
 if __name__ == "__main__":

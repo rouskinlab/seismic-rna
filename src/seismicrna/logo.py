@@ -8,10 +8,11 @@ import numpy as np
 
 from pathlib import Path
 
-matplotlib.use('Agg')
+matplotlib.use("Agg")
+
 
 def compute_arc_points(center, radius, theta1, theta2, n=100):
-    """ Compute x/y coordinates along an arc.
+    """Compute x/y coordinates along an arc.
 
     Parameters
     ----------
@@ -35,10 +36,11 @@ def compute_arc_points(center, radius, theta1, theta2, n=100):
     y = center[1] + radius * np.sin(angles_rad)
     return np.column_stack((x, y))
 
-def draw_seismic_logo(report: bool = False,
-                      out_svg: str | Path | None = None,
-                      dpi: int = 300):
-    """ Draw the SEISMIC-RNA logo as an SVG.
+
+def draw_seismic_logo(
+    report: bool = False, out_svg: str | Path | None = None, dpi: int = 300
+):
+    """Draw the SEISMIC-RNA logo as an SVG.
 
     Parameters
     ----------
@@ -66,33 +68,77 @@ def draw_seismic_logo(report: bool = False,
 
     # Precalculate centers with translation and 45° rotation
     cos45 = sin45 = math.sqrt(2) / 2
+
     def transform_point(x, y):
         xt, yt = x - 25, y
         return (xt * cos45 - yt * sin45, xt * sin45 + yt * cos45)
 
-    center_large_left  = transform_point(50, 0)
+    center_large_left = transform_point(50, 0)
     center_large_right = transform_point(0, 0)
-    center_outer_left  = transform_point(100, 0)
+    center_outer_left = transform_point(100, 0)
     center_outer_right = transform_point(-50, 0)
 
     def adjust_angles(theta1, theta2):
         return theta1 + 45, theta2 + 45
 
     arcs_info = [
-        (center_large_left,  R, *adjust_angles(-arc_fudge_deg, 180 + arc_fudge_deg), large_linewidth, grey),
-        (center_large_right, R, *adjust_angles(180 - arc_fudge_deg, 360 + arc_fudge_deg), large_linewidth, blue),
-        (center_large_left,  r, *adjust_angles(-arc_fudge_deg, 180 + arc_fudge_deg), small_linewidth, grey),
-        (center_large_right, r, *adjust_angles(180 - arc_fudge_deg, 360 + arc_fudge_deg), small_linewidth, blue),
-        (center_outer_left,  r, *adjust_angles(180 - arc_fudge_deg, 360 + arc_fudge_deg), small_linewidth, blue),
-        (center_outer_right, r, *adjust_angles(-arc_fudge_deg, 180 + arc_fudge_deg), small_linewidth, grey),
+        (
+            center_large_left,
+            R,
+            *adjust_angles(-arc_fudge_deg, 180 + arc_fudge_deg),
+            large_linewidth,
+            grey,
+        ),
+        (
+            center_large_right,
+            R,
+            *adjust_angles(180 - arc_fudge_deg, 360 + arc_fudge_deg),
+            large_linewidth,
+            blue,
+        ),
+        (
+            center_large_left,
+            r,
+            *adjust_angles(-arc_fudge_deg, 180 + arc_fudge_deg),
+            small_linewidth,
+            grey,
+        ),
+        (
+            center_large_right,
+            r,
+            *adjust_angles(180 - arc_fudge_deg, 360 + arc_fudge_deg),
+            small_linewidth,
+            blue,
+        ),
+        (
+            center_outer_left,
+            r,
+            *adjust_angles(180 - arc_fudge_deg, 360 + arc_fudge_deg),
+            small_linewidth,
+            blue,
+        ),
+        (
+            center_outer_right,
+            r,
+            *adjust_angles(-arc_fudge_deg, 180 + arc_fudge_deg),
+            small_linewidth,
+            grey,
+        ),
     ]
 
     points_list = []
     for center, radius, theta1, theta2, lw, color in arcs_info:
         arc_patch = patches.Arc(
-            center, 2 * radius, 2 * radius,
-            angle=0, theta1=theta1, theta2=theta2,
-            linewidth=lw, edgecolor=color, facecolor="none", zorder=2
+            center,
+            2 * radius,
+            2 * radius,
+            angle=0,
+            theta1=theta1,
+            theta2=theta2,
+            linewidth=lw,
+            edgecolor=color,
+            facecolor="none",
+            zorder=2,
         )
         ax.add_patch(arc_patch)
         pts = compute_arc_points(center, radius, theta1, theta2, n=200)
@@ -115,24 +161,37 @@ def draw_seismic_logo(report: bool = False,
     bottom_right = (box_left + box_side + 0.2, box_bottom)
 
     box_patch = patches.FancyBboxPatch(
-        (box_left, box_bottom), box_side, box_side,
+        (box_left, box_bottom),
+        box_side,
+        box_side,
         boxstyle=patches.BoxStyle("Round", pad=0.2, rounding_size=25),
-        linewidth=0, edgecolor="none", facecolor=box_color, zorder=0
+        linewidth=0,
+        edgecolor="none",
+        facecolor=box_color,
+        zorder=0,
     )
     clip_path = box_patch.get_path().transformed(box_patch.get_transform())
     if report:
         bottom_right_triangle = patches.Polygon(
-        [bottom_right, top_right, bottom_left],
-        closed=True, facecolor=grey, edgecolor=None, zorder=1,
-        antialiased=True)
+            [bottom_right, top_right, bottom_left],
+            closed=True,
+            facecolor=grey,
+            edgecolor=None,
+            zorder=1,
+            antialiased=True,
+        )
         bottom_right_triangle.set_clip_path(clip_path, ax.transData)
         ax.add_patch(bottom_right_triangle)
         pad = 0
     else:
         upper_left_triangle = patches.Polygon(
-        [top_left, top_right, bottom_left],
-        closed=True, facecolor=blue, edgecolor=None, zorder=1,
-        antialiased=True)
+            [top_left, top_right, bottom_left],
+            closed=True,
+            facecolor=blue,
+            edgecolor=None,
+            zorder=1,
+            antialiased=True,
+        )
         upper_left_triangle.set_clip_path(clip_path, ax.transData)
         ax.add_patch(upper_left_triangle)
         ax.add_patch(box_patch)
@@ -140,16 +199,20 @@ def draw_seismic_logo(report: bool = False,
 
     ax.set_xlim(box_left - pad, box_left + box_side + pad)
     ax.set_ylim(box_bottom - pad, box_bottom + box_side + pad)
-    ax.set_aspect('equal')
-    plt.axis('off')
+    ax.set_aspect("equal")
+    plt.axis("off")
 
     svg_buffer = io.StringIO()
     if not out_svg:
-        fig.savefig(svg_buffer, format='svg', transparent=True, bbox_inches='tight', dpi=dpi)
+        fig.savefig(
+            svg_buffer, format="svg", transparent=True, bbox_inches="tight", dpi=dpi
+        )
         plt.close(fig)
         svg_string = svg_buffer.getvalue()
         svg_buffer.close()
 
         return svg_string
     else:
-        fig.savefig(out_svg, format='svg', transparent=True, bbox_inches='tight', dpi=dpi)
+        fig.savefig(
+            out_svg, format="svg", transparent=True, bbox_inches="tight", dpi=dpi
+        )

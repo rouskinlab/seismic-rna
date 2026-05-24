@@ -3,22 +3,23 @@ import unittest as ut
 import numpy as np
 from scipy.stats import beta, dirichlet
 
-from seismicrna.core.stats import (calc_beta_mv,
-                                   calc_beta_params,
-                                   calc_dirichlet_params,
-                                   calc_dirichlet_mv,
-                                   kumaraswamy_pdf)
+from seismicrna.core.stats import (
+    calc_beta_mv,
+    calc_beta_params,
+    calc_dirichlet_params,
+    calc_dirichlet_mv,
+    kumaraswamy_pdf,
+)
 
 
 def rand_dirichlet_alpha(n: int):
-    """ Simulate `n` alpha parameters for a Dirichlet distribution. """
+    """Simulate `n` alpha parameters for a Dirichlet distribution."""
     rng = np.random.default_rng(seed=0)
     # Alpha parameters can be any positive real number.
     return -np.log(rng.random(n))
 
 
 class TestCalcDirichletMV(ut.TestCase):
-
     def test_scipy_dirichlet(self):
         for n in range(2, 6):
             with self.subTest(n=n):
@@ -29,7 +30,6 @@ class TestCalcDirichletMV(ut.TestCase):
 
 
 class TestCalcDirichletParams(ut.TestCase):
-
     def test_invert(self):
         for n in range(2, 6):
             with self.subTest(n=n):
@@ -39,7 +39,6 @@ class TestCalcDirichletParams(ut.TestCase):
 
 
 class TestCalcBetaMV(ut.TestCase):
-
     def test_scipy_beta(self):
         a, b = rand_dirichlet_alpha(2)
         mean, var = calc_beta_mv(a, b)
@@ -48,7 +47,6 @@ class TestCalcBetaMV(ut.TestCase):
 
 
 class TestCalcBetaParams(ut.TestCase):
-
     def test_invert(self):
         a_true, b_true = rand_dirichlet_alpha(2)
         a, b = calc_beta_params(*calc_beta_mv(a_true, b_true))
@@ -57,15 +55,12 @@ class TestCalcBetaParams(ut.TestCase):
 
 
 class TestKumaraswamyPDF(ut.TestCase):
-
     def test_auc(self):
         x = np.linspace(0, 1, 10001)
-        for a in [0.01, 0.1, 1.0, 10.]:
-            for b in [0.01, 0.1, 1.0, 10.]:
+        for a in [0.01, 0.1, 1.0, 10.0]:
+            for b in [0.01, 0.1, 1.0, 10.0]:
                 with np.errstate(divide="ignore"):
-                    expect = ((a * b)
-                              * (x ** (a - 1))
-                              * ((1 - x ** a) ** (b - 1)))
+                    expect = (a * b) * (x ** (a - 1)) * ((1 - x**a) ** (b - 1))
                     result = kumaraswamy_pdf(x, a, b)
                 self.assertTrue(np.allclose(expect, result, equal_nan=True))
 

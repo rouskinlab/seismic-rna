@@ -10,7 +10,6 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 
 
 class ReadHistogramGraph(HistogramGraph):
-
     @classmethod
     def graph_kind(cls):
         return COMMAND
@@ -25,14 +24,12 @@ class ReadHistogramGraph(HistogramGraph):
 
 
 class ReadHistogramWriter(HistogramWriter, TableWriter):
-
     @classmethod
     def get_graph_type(cls):
         return ReadHistogramGraph
 
 
 class ReadHistogramRunner(HistogramRunner, ReadTableRunner):
-
     @classmethod
     def get_writer_type(cls):
         return ReadHistogramWriter
@@ -45,5 +42,5 @@ class ReadHistogramRunner(HistogramRunner, ReadTableRunner):
 
 @command(COMMAND, params=ReadHistogramRunner.params())
 def cli(*args, **kwargs):
-    """ Histogram of relationship(s) per read. """
+    """Histogram of relationship(s) per read."""
     return ReadHistogramRunner.run(*args, **kwargs)

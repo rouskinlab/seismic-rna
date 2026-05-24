@@ -17,21 +17,23 @@ from ..filter.dataset import FilterMutsDataset
 from ..filter.report import FilterReport
 from ..idmut.dataset import load_idmut_dataset
 from ..idmut.report import IDmutReport
-from ..core.table import (COVER_REL,
-                          INFOR_REL,
-                          SUBST_REL,
-                          SUB_A_REL,
-                          SUB_C_REL,
-                          SUB_G_REL,
-                          SUB_T_REL,
-                          DELET_REL,
-                          INSRT_REL,
-                          Table,
-                          PositionTable,
-                          ReadTable,
-                          AbundanceTable)
+from ..core.table import (
+    COVER_REL,
+    INFOR_REL,
+    SUBST_REL,
+    SUB_A_REL,
+    SUB_C_REL,
+    SUB_G_REL,
+    SUB_T_REL,
+    DELET_REL,
+    INSRT_REL,
+    Table,
+    PositionTable,
+    ReadTable,
+    AbundanceTable,
+)
 
-META_SYMBOL = '#'
+META_SYMBOL = "#"
 SAMPLE = "sample"
 REF_SEQ = "sequence"
 REF_NUM_ALIGN = "num_aligned"
@@ -47,15 +49,17 @@ SUB_G_COUNT = "sub_G"
 SUB_T_COUNT = "sub_T"
 DELET_COUNT = "del"
 INSRT_COUNT = "ins"
-POS_DATA = {COVER_COUNT: COVER_REL,
-            INFOR_COUNT: INFOR_REL,
-            SUBST_COUNT: SUBST_REL,
-            SUB_A_COUNT: SUB_A_REL,
-            SUB_C_COUNT: SUB_C_REL,
-            SUB_G_COUNT: SUB_G_REL,
-            SUB_T_COUNT: SUB_T_REL,
-            DELET_COUNT: DELET_REL,
-            INSRT_COUNT: INSRT_REL}
+POS_DATA = {
+    COVER_COUNT: COVER_REL,
+    INFOR_COUNT: INFOR_REL,
+    SUBST_COUNT: SUBST_REL,
+    SUB_A_COUNT: SUB_A_REL,
+    SUB_C_COUNT: SUB_C_REL,
+    SUB_G_COUNT: SUB_G_REL,
+    SUB_T_COUNT: SUB_T_REL,
+    DELET_COUNT: DELET_REL,
+    INSRT_COUNT: INSRT_REL,
+}
 SUBST_RATE = "sub_rate"
 SUBST_HIST = "sub_hist"
 CLUST_PROP = "proportion"
@@ -65,24 +69,19 @@ PRECISION = 6
 
 
 def format_metadata(metadata: dict[str, Any]):
-    """ Prefix each key with the metadata symbol. """
+    """Prefix each key with the metadata symbol."""
     return {f"{META_SYMBOL}{key}": value for key, value in metadata.items()}
 
 
-def get_sample_metadata(sample: str,
-                        samples_metadata: dict[str, dict]):
+def get_sample_metadata(sample: str, samples_metadata: dict[str, dict]):
     sample_metadata = {SAMPLE: sample}
-    return format_metadata(combine_metadata(sample_metadata,
-                                            samples_metadata,
-                                            sample,
-                                            "sample"))
+    return format_metadata(
+        combine_metadata(sample_metadata, samples_metadata, sample, "sample")
+    )
 
 
-def get_ref_metadata(top: Path,
-                     sample: str,
-                     ref: str,
-                     refs_metadata: dict[str, dict]):
-    """ Build metadata dict for a reference sequence.
+def get_ref_metadata(top: Path, sample: str, ref: str, refs_metadata: dict[str, dict]):
+    """Build metadata dict for a reference sequence.
 
     Parameters
     ----------
@@ -101,26 +100,19 @@ def get_ref_metadata(top: Path,
         Metadata including the reference sequence and number of aligned
         reads, merged with any additional parsed metadata.
     """
-    dataset = load_idmut_dataset(IDmutReport.build_path(
-        {path.TOP: top,
-         path.SAMPLE: sample,
-         path.BRANCHES: dict(),
-         path.REF: ref}
-    ))
-    ref_metadata = {REF_SEQ: str(dataset.refseq),
-                    REF_NUM_ALIGN: dataset.num_reads}
-    return format_metadata(combine_metadata(ref_metadata,
-                                            refs_metadata,
-                                            ref,
-                                            "reference"))
+    dataset = load_idmut_dataset(
+        IDmutReport.build_path(
+            {path.TOP: top, path.SAMPLE: sample, path.BRANCHES: dict(), path.REF: ref}
+        )
+    )
+    ref_metadata = {REF_SEQ: str(dataset.refseq), REF_NUM_ALIGN: dataset.num_reads}
+    return format_metadata(
+        combine_metadata(ref_metadata, refs_metadata, ref, "reference")
+    )
 
 
-def get_reg_metadata(top: Path,
-                     sample: str,
-                     ref: str,
-                     reg: str,
-                     all_pos: bool):
-    """ Build metadata dict for a region.
+def get_reg_metadata(top: Path, sample: str, ref: str, reg: str, all_pos: bool):
+    """Build metadata dict for a region.
 
     Parameters
     ----------
@@ -141,36 +133,43 @@ def get_reg_metadata(top: Path,
     dict[str, Any]
         Metadata including 5'/3' end coordinates and included positions.
     """
-    dataset = FilterMutsDataset(FilterReport.build_path(
-        {path.TOP: top,
-         path.SAMPLE: sample,
-         path.BRANCHES: dict(),
-         path.REF: ref,
-         path.REG: reg}
-    ))
-    positions = (dataset.region.range_int if all_pos
-                 else dataset.region.unmasked_int)
-    reg_metadata = {REG_END5: dataset.region.end5,
-                    REG_END3: dataset.region.end3,
-                    REG_POS: positions.tolist()}
+    dataset = FilterMutsDataset(
+        FilterReport.build_path(
+            {
+                path.TOP: top,
+                path.SAMPLE: sample,
+                path.BRANCHES: dict(),
+                path.REF: ref,
+                path.REG: reg,
+            }
+        )
+    )
+    positions = dataset.region.range_int if all_pos else dataset.region.unmasked_int
+    reg_metadata = {
+        REG_END5: dataset.region.end5,
+        REG_END3: dataset.region.end3,
+        REG_POS: positions.tolist(),
+    }
     return format_metadata(reg_metadata)
 
 
 def conform_series(series: pd.Series | pd.DataFrame):
     if isinstance(series, pd.DataFrame):
         if series.columns.size != 1:
-            raise TypeError("If series is a DataFrame, then it must have "
-                            f"exactly 1 column, but got {series.columns}")
+            raise TypeError(
+                "If series is a DataFrame, then it must have "
+                f"exactly 1 column, but got {series.columns}"
+            )
         series = series[series.columns[0]]
     if not isinstance(series, pd.Series):
         raise TypeError(f"Expected Series, but got {type(series.__name__)}")
     return series
 
 
-def get_db_structs(table: PositionTable,
-                   k: int | None = None,
-                   clust: int | None = None):
-    """ Parse dot-bracket structures and free energies for a table.
+def get_db_structs(
+    table: PositionTable, k: int | None = None, clust: int | None = None
+):
+    """Parse dot-bracket structures and free energies for a table.
 
     Parameters
     ----------
@@ -206,13 +205,14 @@ def get_db_structs(table: PositionTable,
                 structs[profile.mus_name] = struct
                 energies[profile.mus_name] = energy
         else:
-            logger.warning(f"No structure model available for {profile}: "
-                           f"{db_file} does not exist")
+            logger.warning(
+                f"No structure model available for {profile}: {db_file} does not exist"
+            )
     return structs, energies
 
 
 def iter_pos_table_struct(table: PositionTable, k: int, clust: int):
-    """ Yield structure and free-energy key-value pairs for one cluster.
+    """Yield structure and free-energy key-value pairs for one cluster.
 
     Parameters
     ----------
@@ -232,8 +232,9 @@ def iter_pos_table_struct(table: PositionTable, k: int, clust: int):
     structs, energies = get_db_structs(table, k, clust)
     keys = list(structs)
     if keys != list(energies):
-        raise ValueError(f"Names of structures {keys} and energies "
-                         f"{list(energies)} do not match")
+        raise ValueError(
+            f"Names of structures {keys} and energies {list(energies)} do not match"
+        )
     if keys:
         if len(keys) != 1:
             raise ValueError(f"Expected exactly one structure, but got {keys}")
@@ -242,11 +243,8 @@ def iter_pos_table_struct(table: PositionTable, k: int, clust: int):
         yield FREE_ENERGY, energies[key]
 
 
-def iter_pos_table_series(table: PositionTable,
-                          k: int,
-                          clust: int,
-                          all_pos: bool):
-    """ Yield per-position count and rate key-value pairs for one cluster.
+def iter_pos_table_series(table: PositionTable, k: int, clust: int, all_pos: bool):
+    """Yield per-position count and rate key-value pairs for one cluster.
 
     Parameters
     ----------
@@ -267,23 +265,30 @@ def iter_pos_table_series(table: PositionTable,
     """
     exclude_masked = not all_pos
     for key, rel in POS_DATA.items():
-        yield key, conform_series(
-            table.fetch_count(rel=rel,
-                              k=k,
-                              clust=clust,
-                              exclude_masked=exclude_masked)
-        ).to_list()
-    yield SUBST_RATE, conform_series(
-        table.fetch_ratio(rel=SUBST_REL,
-                          k=k,
-                          clust=clust,
-                          exclude_masked=exclude_masked,
-                          precision=PRECISION)
-    ).to_list()
+        yield (
+            key,
+            conform_series(
+                table.fetch_count(
+                    rel=rel, k=k, clust=clust, exclude_masked=exclude_masked
+                )
+            ).to_list(),
+        )
+    yield (
+        SUBST_RATE,
+        conform_series(
+            table.fetch_ratio(
+                rel=SUBST_REL,
+                k=k,
+                clust=clust,
+                exclude_masked=exclude_masked,
+                precision=PRECISION,
+            )
+        ).to_list(),
+    )
 
 
 def iter_pos_table_data(table: PositionTable, k: int, clust: int, all_pos: bool):
-    """ Yield all position-table data (series + structure) for one cluster.
+    """Yield all position-table data (series + structure) for one cluster.
 
     Parameters
     ----------
@@ -307,7 +312,7 @@ def iter_pos_table_data(table: PositionTable, k: int, clust: int, all_pos: bool)
 
 
 def iter_read_table_data(table: ReadTable, k: int, clust: int):
-    """ Yield read-table data (substitution histogram) for one cluster.
+    """Yield read-table data (substitution histogram) for one cluster.
 
     Parameters
     ----------
@@ -325,16 +330,14 @@ def iter_read_table_data(table: ReadTable, k: int, clust: int):
         read counts indexed by number of substitutions.
     """
     read_counts = np.asarray(
-        conform_series(table.fetch_count(rel=SUBST_REL,
-                                         k=k,
-                                         clust=clust)).values,
-        dtype=int
+        conform_series(table.fetch_count(rel=SUBST_REL, k=k, clust=clust)).values,
+        dtype=int,
     )
     yield SUBST_HIST, np.bincount(read_counts, minlength=1).tolist()
 
 
 def iter_clust_table_data(table: AbundanceTable, k: int, clust: int):
-    """ Yield cluster abundance data (proportion) for one cluster.
+    """Yield cluster abundance data (proportion) for one cluster.
 
     Parameters
     ----------
@@ -351,17 +354,14 @@ def iter_clust_table_data(table: AbundanceTable, k: int, clust: int):
         ``(CLUST_PROP, proportion)`` where proportion is the fraction of
         reads assigned to this cluster.
     """
-    clust_count = table.data[table.header.select(k=k,
-                                                 clust=clust)].squeeze()
+    clust_count = table.data[table.header.select(k=k, clust=clust)].squeeze()
     k_count = table.data[table.header.select(k=k)].sum().squeeze()
-    proportion = (round(clust_count / k_count, PRECISION)
-                  if k_count > 0
-                  else np.nan)
+    proportion = round(clust_count / k_count, PRECISION) if k_count > 0 else np.nan
     yield CLUST_PROP, proportion
 
 
 def iter_table_data(table: Table, k: int, clust: int, all_pos: bool):
-    """ Yield all export data for a table of any type and one cluster.
+    """Yield all export data for a table of any type and one cluster.
 
     Parameters
     ----------
@@ -398,13 +398,16 @@ def get_table_data(table: Table, all_pos: bool):
     return data
 
 
-def get_sample_data(top: Path,
-                    sample: str,
-                    tables: list[Table], *,
-                    samples_metadata: dict[str, dict],
-                    refs_metadata: dict[str, dict],
-                    all_pos: bool):
-    """ Assemble the full nested data dict for one sample.
+def get_sample_data(
+    top: Path,
+    sample: str,
+    tables: list[Table],
+    *,
+    samples_metadata: dict[str, dict],
+    refs_metadata: dict[str, dict],
+    all_pos: bool,
+):
+    """Assemble the full nested data dict for one sample.
 
     Parameters
     ----------
@@ -430,8 +433,7 @@ def get_sample_data(top: Path,
         clust: {counts, rates, ...}}}}``.
     """
     # Cache results from the metadata functions to improve speed.
-    ref_metadata = cache(partial(get_ref_metadata,
-                                 refs_metadata=refs_metadata))
+    ref_metadata = cache(partial(get_ref_metadata, refs_metadata=refs_metadata))
     reg_metadata = cache(get_reg_metadata)
     # Add the metadata for the sample.
     data = get_sample_metadata(sample, samples_metadata)
@@ -457,7 +459,7 @@ def get_sample_data(top: Path,
 
 
 def export_sample(top_sample: tuple[Path, str], *args, force: bool, **kwargs):
-    """ Export data for one sample to a JSON file.
+    """Export data for one sample to a JSON file.
 
     Parameters
     ----------
@@ -476,10 +478,10 @@ def export_sample(top_sample: tuple[Path, str], *args, force: bool, **kwargs):
         Path of the written JSON file.
     """
     top, sample = top_sample
-    sample_file = path.buildpar([path.WebAppFileSeg],
-                                {path.TOP: top,
-                                 path.SAMPLE: sample,
-                                 path.EXT: path.JSON_EXT})
+    sample_file = path.buildpar(
+        [path.WebAppFileSeg],
+        {path.TOP: top, path.SAMPLE: sample, path.EXT: path.JSON_EXT},
+    )
     if need_write(sample_file, force):
         # Calculate the sample data before opening the file so that the
         # file will not be written if get_sample_data() fails.

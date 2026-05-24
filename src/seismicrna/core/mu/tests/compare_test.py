@@ -5,20 +5,21 @@ import numpy as np
 import pandas as pd
 from scipy.stats import pearsonr, spearmanr
 
-from seismicrna.core.mu import (calc_arcsine_distance,
-                                calc_sum_arcsine_distance,
-                                calc_mean_arcsine_distance,
-                                calc_coeff_determ,
-                                calc_pearson,
-                                calc_spearman,
-                                compare_windows,
-                                get_comp_func,
-                                get_comp_name)
+from seismicrna.core.mu import (
+    calc_arcsine_distance,
+    calc_sum_arcsine_distance,
+    calc_mean_arcsine_distance,
+    calc_coeff_determ,
+    calc_pearson,
+    calc_spearman,
+    compare_windows,
+    get_comp_func,
+    get_comp_name,
+)
 from seismicrna.core.seq import DNA, seq_pos_to_index
 
 
 class TestCalcArcsineDistance(ut.TestCase):
-
     def test_array0d(self):
         mus1 = np.array(0.1)
         mus2 = np.array(0.6)
@@ -107,14 +108,15 @@ class TestCalcArcsineDistance(ut.TestCase):
 
 
 class TestCalcSumAbsDiffLogOdds(ut.TestCase):
-
     def test_array0d(self):
         rng = np.random.default_rng(seed=0)
-        self.assertRaisesRegex(ValueError,
-                               "A 0-D array has no positional axis",
-                               calc_sum_arcsine_distance,
-                               rng.random(()),
-                               rng.random(()))
+        self.assertRaisesRegex(
+            ValueError,
+            "A 0-D array has no positional axis",
+            calc_sum_arcsine_distance,
+            rng.random(()),
+            rng.random(()),
+        )
 
     def test_array1d(self):
         mus1 = np.array([0.4, 0.6, 0.3])
@@ -126,14 +128,15 @@ class TestCalcSumAbsDiffLogOdds(ut.TestCase):
 
 
 class TestCalcMeanAbsFoldChangeOdds(ut.TestCase):
-
     def test_array0d(self):
         rng = np.random.default_rng(seed=0)
-        self.assertRaisesRegex(ValueError,
-                               "A 0-D array has no positional axis",
-                               calc_mean_arcsine_distance,
-                               rng.random(()),
-                               rng.random(()))
+        self.assertRaisesRegex(
+            ValueError,
+            "A 0-D array has no positional axis",
+            calc_mean_arcsine_distance,
+            rng.random(()),
+            rng.random(()),
+        )
 
     def test_array1d(self):
         mus1 = np.array([0.4, 0.6, 0.3])
@@ -145,19 +148,20 @@ class TestCalcMeanAbsFoldChangeOdds(ut.TestCase):
 
 
 class TestCalcPearson(ut.TestCase):
-
     @classmethod
     def calc_true(cls, x, y):
-        """ Calculate the "true" coefficient using a trusted method. """
+        """Calculate the "true" coefficient using a trusted method."""
         return pearsonr(x, y).statistic
 
     def test_array0d(self):
         rng = np.random.default_rng(seed=0)
-        self.assertRaisesRegex(ValueError,
-                               "A 0-D array has no positional axis",
-                               calc_pearson,
-                               rng.random(()),
-                               rng.random(()))
+        self.assertRaisesRegex(
+            ValueError,
+            "A 0-D array has no positional axis",
+            calc_pearson,
+            rng.random(()),
+            rng.random(()),
+        )
 
     def test_array1d(self):
         rng = np.random.default_rng(seed=0)
@@ -170,9 +174,9 @@ class TestCalcPearson(ut.TestCase):
                 self.assertTrue(np.isclose(r, self.calc_true(x, y)))
             else:
                 with warnings.catch_warnings():
-                    warnings.filterwarnings("ignore",
-                                            "Mean of empty slice",
-                                            RuntimeWarning)
+                    warnings.filterwarnings(
+                        "ignore", "Mean of empty slice", RuntimeWarning
+                    )
                     with np.errstate(invalid="ignore"):
                         r = calc_pearson(x, y)
                         self.assertIsInstance(r, float)
@@ -189,8 +193,7 @@ class TestCalcPearson(ut.TestCase):
                 self.assertEqual(r.shape, (ncol,))
                 # Compare the correlation for each column.
                 for ic, rc in enumerate(r):
-                    self.assertTrue(np.isclose(rc, self.calc_true(x[:, ic],
-                                                                  y[:, ic])))
+                    self.assertTrue(np.isclose(rc, self.calc_true(x[:, ic], y[:, ic])))
 
     def test_series(self):
         rng = np.random.default_rng(seed=0)
@@ -212,25 +215,26 @@ class TestCalcPearson(ut.TestCase):
                 self.assertEqual(r.shape, (ncol,))
                 # Compare the correlation for each column.
                 for ic, rc in enumerate(r):
-                    self.assertTrue(np.isclose(
-                        rc, self.calc_true(x.iloc[:, ic], y.iloc[:, ic])
-                    ))
+                    self.assertTrue(
+                        np.isclose(rc, self.calc_true(x.iloc[:, ic], y.iloc[:, ic]))
+                    )
 
 
 class TestCalcCoeffDeterm(ut.TestCase):
-
     @classmethod
     def calc_true(cls, x, y):
-        """ Calculate the "true" coefficient using a trusted method. """
+        """Calculate the "true" coefficient using a trusted method."""
         return pearsonr(x, y).statistic ** 2
 
     def test_array0d(self):
         rng = np.random.default_rng(seed=0)
-        self.assertRaisesRegex(ValueError,
-                               "A 0-D array has no positional axis",
-                               calc_coeff_determ,
-                               rng.random(()),
-                               rng.random(()))
+        self.assertRaisesRegex(
+            ValueError,
+            "A 0-D array has no positional axis",
+            calc_coeff_determ,
+            rng.random(()),
+            rng.random(()),
+        )
 
     def test_array1d(self):
         rng = np.random.default_rng(seed=0)
@@ -243,9 +247,9 @@ class TestCalcCoeffDeterm(ut.TestCase):
                 self.assertTrue(np.isclose(r2, self.calc_true(x, y)))
             else:
                 with warnings.catch_warnings():
-                    warnings.filterwarnings("ignore",
-                                            "Mean of empty slice",
-                                            RuntimeWarning)
+                    warnings.filterwarnings(
+                        "ignore", "Mean of empty slice", RuntimeWarning
+                    )
                     with np.errstate(invalid="ignore"):
                         r2 = calc_coeff_determ(x, y)
                         self.assertIsInstance(r2, float)
@@ -262,25 +266,26 @@ class TestCalcCoeffDeterm(ut.TestCase):
                 self.assertEqual(r2.shape, (ncol,))
                 # Compare the correlation for each column.
                 for ic, r2c in enumerate(r2):
-                    self.assertTrue(np.isclose(
-                        r2c, self.calc_true(x.iloc[:, ic], y.iloc[:, ic])
-                    ))
+                    self.assertTrue(
+                        np.isclose(r2c, self.calc_true(x.iloc[:, ic], y.iloc[:, ic]))
+                    )
 
 
 class TestCalcSpearman(ut.TestCase):
-
     @classmethod
     def calc_true(cls, x, y):
-        """ Calculate the "true" coefficient using a trusted method. """
+        """Calculate the "true" coefficient using a trusted method."""
         return spearmanr(x, y, nan_policy="omit").statistic
 
     def test_array0d(self):
         rng = np.random.default_rng(seed=0)
-        self.assertRaisesRegex(ValueError,
-                               "A 0-D array has no positional axis",
-                               calc_spearman,
-                               rng.random(()),
-                               rng.random(()))
+        self.assertRaisesRegex(
+            ValueError,
+            "A 0-D array has no positional axis",
+            calc_spearman,
+            rng.random(()),
+            rng.random(()),
+        )
 
     def test_array1d(self):
         rng = np.random.default_rng(seed=0)
@@ -293,9 +298,9 @@ class TestCalcSpearman(ut.TestCase):
                 self.assertTrue(np.isclose(rho, self.calc_true(x, y)))
             else:
                 with warnings.catch_warnings():
-                    warnings.filterwarnings("ignore",
-                                            "Mean of empty slice",
-                                            RuntimeWarning)
+                    warnings.filterwarnings(
+                        "ignore", "Mean of empty slice", RuntimeWarning
+                    )
                     with np.errstate(invalid="ignore"):
                         rho = calc_spearman(x, y)
                         self.assertIsInstance(rho, float)
@@ -317,9 +322,9 @@ class TestCalcSpearman(ut.TestCase):
                         self.assertTrue(np.isclose(rho, self.calc_true(x, y)))
                 else:
                     with warnings.catch_warnings():
-                        warnings.filterwarnings("ignore",
-                                                "Mean of empty slice",
-                                                RuntimeWarning)
+                        warnings.filterwarnings(
+                            "ignore", "Mean of empty slice", RuntimeWarning
+                        )
                         with np.errstate(invalid="ignore"):
                             rho = calc_spearman(x, y)
                             self.assertIsInstance(rho, float)
@@ -336,8 +341,9 @@ class TestCalcSpearman(ut.TestCase):
                 self.assertEqual(rho.shape, (ncol,))
                 # Compare the correlation for each column.
                 for ic, rhoc in enumerate(rho):
-                    self.assertTrue(np.isclose(rhoc, self.calc_true(x[:, ic],
-                                                                    y[:, ic])))
+                    self.assertTrue(
+                        np.isclose(rhoc, self.calc_true(x[:, ic], y[:, ic]))
+                    )
 
     def test_series(self):
         rng = np.random.default_rng(seed=0)
@@ -359,39 +365,32 @@ class TestCalcSpearman(ut.TestCase):
                 self.assertEqual(rho.shape, (ncol,))
                 # Compare the correlation for each column.
                 for ic, rhoc in enumerate(rho):
-                    self.assertTrue(np.isclose(
-                        rhoc, self.calc_true(x.iloc[:, ic], y.iloc[:, ic])
-                    ))
+                    self.assertTrue(
+                        np.isclose(rhoc, self.calc_true(x.iloc[:, ic], y.iloc[:, ic]))
+                    )
 
 
 class TestGetComp(ut.TestCase):
-
     def test_comps(self):
         for key in ["MARCD", "marcd"]:
             self.assertIs(get_comp_func(key), calc_mean_arcsine_distance)
-            self.assertEqual(get_comp_name(key),
-                             "Mean Arcsine Distance")
+            self.assertEqual(get_comp_name(key), "Mean Arcsine Distance")
         for key in ["PCC", "pcc"]:
             self.assertIs(get_comp_func(key), calc_pearson)
-            self.assertEqual(get_comp_name(key),
-                             "Pearson Correlation Coefficient")
+            self.assertEqual(get_comp_name(key), "Pearson Correlation Coefficient")
         for key in ["SCC", "scc"]:
             self.assertIs(get_comp_func(key), calc_spearman)
-            self.assertEqual(get_comp_name(key),
-                             "Spearman Correlation Coefficient")
+            self.assertEqual(get_comp_name(key), "Spearman Correlation Coefficient")
         for key in ["R2", "r2"]:
             self.assertIs(get_comp_func(key), calc_coeff_determ)
-            self.assertEqual(get_comp_name(key),
-                             "Coefficient of Determination")
+            self.assertEqual(get_comp_name(key), "Coefficient of Determination")
         for get_comp in [get_comp_func, get_comp_name]:
-            self.assertRaisesRegex(ValueError,
-                                   "Invalid method of comparison: 'other'",
-                                   get_comp,
-                                   "other")
+            self.assertRaisesRegex(
+                ValueError, "Invalid method of comparison: 'other'", get_comp, "other"
+            )
 
 
 class TestCompareWindows(ut.TestCase):
-
     def test_contiguous(self):
         for seqlen in [0, 10, 20]:
             rng = np.random.default_rng(seed=0)
@@ -408,13 +407,13 @@ class TestCompareWindows(ut.TestCase):
                         self.assertIsInstance(result, pd.Series)
                         self.assertTrue(result.index.equals(index))
                         expect = np.hstack(
-                            [np.full(nan5, np.nan),
-                             np.full(nval, 0. if method == "MARCD" else 1.),
-                             np.full(nan3, np.nan)]
+                            [
+                                np.full(nan5, np.nan),
+                                np.full(nval, 0.0 if method == "MARCD" else 1.0),
+                                np.full(nan3, np.nan),
+                            ]
                         )
-                        self.assertTrue(np.allclose(result,
-                                                    expect,
-                                                    equal_nan=True))
+                        self.assertTrue(np.allclose(result, expect, equal_nan=True))
 
 
 if __name__ == "__main__":

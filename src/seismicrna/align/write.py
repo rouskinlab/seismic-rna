@@ -6,46 +6,48 @@ from typing import Iterable
 
 from .fqunit import FastqUnit, DuplicateSampleReferenceError
 from .report import AlignRefReport, AlignSampleReport
-from .xamops import (FASTP_PHRED_OUT,
-                     run_bowtie2_build,
-                     get_bowtie2_index_paths,
-                     run_export,
-                     run_flags,
-                     run_realign,
-                     run_xamgen)
+from .xamops import (
+    FASTP_PHRED_OUT,
+    run_bowtie2_build,
+    get_bowtie2_index_paths,
+    run_export,
+    run_flags,
+    run_realign,
+    run_xamgen,
+)
 from ..core import path
 from ..core.io import calc_sha512_path
 from ..core.logs import logger
-from ..core.ngs import (FLAG_PAIRED,
-                        FLAG_PROPER,
-                        FLAG_FIRST,
-                        FLAG_SECOND,
-                        FLAG_REVERSE,
-                        count_single_paired,
-                        count_total_reads,
-                        run_flagstat,
-                        run_ref_header,
-                        run_index_xam,
-                        run_idxstats,
-                        xam_paired)
+from ..core.ngs import (
+    FLAG_PAIRED,
+    FLAG_PROPER,
+    FLAG_FIRST,
+    FLAG_SECOND,
+    FLAG_REVERSE,
+    count_single_paired,
+    count_total_reads,
+    run_flagstat,
+    run_ref_header,
+    run_index_xam,
+    run_idxstats,
+    xam_paired,
+)
 from ..core.seq import DNA, get_fasta_seq, parse_fasta, write_fasta
 from ..core.task import dispatch
 
 
 def format_ref_reverse(ref: str, rev_label: str):
-    """ Name the reverse strand of a reference. """
+    """Name the reverse strand of a reference."""
     if not rev_label:
-        raise ValueError("rev_label must have a value, "
-                         f"but got {repr(rev_label)}")
+        raise ValueError(f"rev_label must have a value, but got {repr(rev_label)}")
     return f"{ref}{rev_label}"
 
 
-def write_tmp_ref_files(tmp_dir: Path,
-                        refset_path: Path,
-                        refs: set[str],
-                        num_cpus: int = 1):
-    """ Write temporary FASTA files, each containing one reference that
-    corresponds to a FASTQ file from demultiplexing. """
+def write_tmp_ref_files(
+    tmp_dir: Path, refset_path: Path, refs: set[str], num_cpus: int = 1
+):
+    """Write temporary FASTA files, each containing one reference that
+    corresponds to a FASTQ file from demultiplexing."""
     ref_paths: dict[str, tuple[Path, Path]] = dict()
     if refs:
         logger.routine("Began writing temporary FASTA files")
@@ -57,10 +59,12 @@ def write_tmp_ref_files(tmp_dir: Path,
                 # only if at least one demultiplexed FASTQ file uses it.
                 ref_path = path.buildpar(
                     path.FASTA_STAGE_SEGS,
-                    {path.TOP: tmp_dir,
-                     path.STAGE: path.STAGE_ALIGN_INDEX_DEMULT,
-                     path.REF: ref,
-                     path.EXT: refset_path.suffix}
+                    {
+                        path.TOP: tmp_dir,
+                        path.STAGE: path.STAGE_ALIGN_INDEX_DEMULT,
+                        path.REF: ref,
+                        path.EXT: refset_path.suffix,
+                    },
                 )
                 try:
                     # Write the temporary FASTA file.
@@ -83,19 +87,24 @@ def write_tmp_ref_files(tmp_dir: Path,
     if missing:
         # If any references in refs do not have sequences, then log an
         # error but continue with the references that have sequences.
-        logger.error("".join([f"Missing sequences in {refset_path}: ",
-                              ", ".join(missing)]))
+        logger.error(
+            "".join([f"Missing sequences in {refset_path}: ", ", ".join(missing)])
+        )
     return ref_paths
 
 
 def calc_flags_sep_strands(f1r2_fwd: bool, paired: bool, bt2_mixed: bool):
-    """ Calculate flags for separating strands. """
+    """Calculate flags for separating strands."""
     if paired:
-        flags_req_fwd = [FLAG_FIRST | FLAG_PAIRED | FLAG_PROPER,
-                         FLAG_SECOND | FLAG_PAIRED | FLAG_PROPER]
+        flags_req_fwd = [
+            FLAG_FIRST | FLAG_PAIRED | FLAG_PROPER,
+            FLAG_SECOND | FLAG_PAIRED | FLAG_PROPER,
+        ]
         flags_exc_fwd = [FLAG_SECOND, FLAG_FIRST]
-        flags_req_rev = [FLAG_FIRST | FLAG_PAIRED | FLAG_PROPER,
-                         FLAG_SECOND | FLAG_PAIRED | FLAG_PROPER]
+        flags_req_rev = [
+            FLAG_FIRST | FLAG_PAIRED | FLAG_PROPER,
+            FLAG_SECOND | FLAG_PAIRED | FLAG_PROPER,
+        ]
         flags_exc_rev = [FLAG_SECOND, FLAG_FIRST]
         if bt2_mixed:
             # When using mixed mode, some paired-end reads may not have
@@ -114,10 +123,12 @@ def calc_flags_sep_strands(f1r2_fwd: bool, paired: bool, bt2_mixed: bool):
             # results of the two alignments into one BAM file.
             # That is doable, but much more complicated and only worth
             # implementing if there is a clear need for this feature.
-            logger.warning("When mixed mode (--bt2-mixed) is combined with "
-                           "strand separation (--sep-strands), any paired-end "
-                           "read that failed to align properly with its mate "
-                           "will be dropped, not aligned to the reverse strand")
+            logger.warning(
+                "When mixed mode (--bt2-mixed) is combined with "
+                "strand separation (--sep-strands), any paired-end "
+                "read that failed to align properly with its mate "
+                "will be dropped, not aligned to the reverse strand"
+            )
     else:
         flags_req_fwd = [0]
         flags_exc_fwd = [FLAG_PAIRED]
@@ -147,36 +158,38 @@ def calc_flags_sep_strands(f1r2_fwd: bool, paired: bool, bt2_mixed: bool):
     return flags
 
 
-def separate_strands(xam_file: Path,
-                     fasta: Path, *,
-                     paired: bool | None,
-                     bt2_mixed: bool,
-                     rev_label: str,
-                     f1r2_fwd: bool,
-                     min_mapq: int,
-                     keep_tmp: bool,
-                     num_cpus: int = 1,
-                     **kwargs):
-    """ Separate a XAM file into two XAM files of reads that aligned to
-    the forward and reverse strands, respectively. """
-    logger.routine(
-        f"Began separating forward and reverse strands in {xam_file}"
-    )
+def separate_strands(
+    xam_file: Path,
+    fasta: Path,
+    *,
+    paired: bool | None,
+    bt2_mixed: bool,
+    rev_label: str,
+    f1r2_fwd: bool,
+    min_mapq: int,
+    keep_tmp: bool,
+    num_cpus: int = 1,
+    **kwargs,
+):
+    """Separate a XAM file into two XAM files of reads that aligned to
+    the forward and reverse strands, respectively."""
+    logger.routine(f"Began separating forward and reverse strands in {xam_file}")
     if paired is None:
         paired = xam_paired(run_flagstat(xam_file, num_cpus=num_cpus))
     out_dir = xam_file.parent
     ref = path.parse(xam_file, path.XAM_SEGS)[path.REF]
     ref_rev = format_ref_reverse(ref, rev_label)
     # Calculate the flags.
-    ((flags_req_fwd, flags_exc_fwd),
-     (flags_req_rev, flags_exc_rev)) = calc_flags_sep_strands(f1r2_fwd,
-                                                              paired,
-                                                              bt2_mixed)
+    ((flags_req_fwd, flags_exc_fwd), (flags_req_rev, flags_exc_rev)) = (
+        calc_flags_sep_strands(f1r2_fwd, paired, bt2_mixed)
+    )
     # Make a temporary directory for all splitting strand operations.
     tmp_dir = out_dir.joinpath(ref)
     tmp_dir.mkdir(parents=False, exist_ok=False)
-    logger.detail(f"Created temporary directory {tmp_dir} for aligning "
-                  f"reverse-strand reads in {xam_file} to {repr(ref_rev)}")
+    logger.detail(
+        f"Created temporary directory {tmp_dir} for aligning "
+        f"reverse-strand reads in {xam_file} to {repr(ref_rev)}"
+    )
     try:
         # Write the reverse-strand reference sequence to a FASTA file.
         index_dir = tmp_dir.joinpath("index")
@@ -192,34 +205,37 @@ def separate_strands(xam_file: Path,
         bam_rev = out_dir.joinpath(ref_rev).with_suffix(path.BAM_EXT)
         realign_dir = tmp_dir.joinpath("realign")
         realign_dir.mkdir()
-        run_realign(xam_file,
-                    bam_rev,
-                    tmp_pfx=realign_dir.joinpath(ref_rev),
-                    index_pfx=index_rev,
-                    paired=paired,
-                    flags_req=flags_req_rev,
-                    flags_exc=flags_exc_rev,
-                    min_mapq=min_mapq,
-                    bt2_mixed=bt2_mixed,
-                    num_cpus=num_cpus,
-                    **kwargs)
+        run_realign(
+            xam_file,
+            bam_rev,
+            tmp_pfx=realign_dir.joinpath(ref_rev),
+            index_pfx=index_rev,
+            paired=paired,
+            flags_req=flags_req_rev,
+            flags_exc=flags_exc_rev,
+            min_mapq=min_mapq,
+            bt2_mixed=bt2_mixed,
+            num_cpus=num_cpus,
+            **kwargs,
+        )
         if not keep_tmp:
             rmtree(index_dir)
         # Extract the reads that had aligned to the forward strand.
         bam_fwd = realign_dir.joinpath(ref).with_suffix(path.BAM_EXT)
-        run_flags(xam_file,
-                  bam_fwd,
-                  tmp_pfx=realign_dir.joinpath(ref),
-                  flags_req=flags_req_fwd,
-                  flags_exc=flags_exc_fwd,
-                  num_cpus=num_cpus)
+        run_flags(
+            xam_file,
+            bam_fwd,
+            tmp_pfx=realign_dir.joinpath(ref),
+            flags_req=flags_req_fwd,
+            flags_exc=flags_exc_fwd,
+            num_cpus=num_cpus,
+        )
         # Renaming overwrites the original BAM file of both strands.
         bam_fwd.rename(xam_file)
-        logger.detail(f"Overwrote {xam_file} with only the forward-stand reads "
-                      f"from {bam_fwd}")
-        logger.routine(
-            f"Ended separating forward and reverse strands in {xam_file}"
+        logger.detail(
+            f"Overwrote {xam_file} with only the forward-stand reads from {bam_fwd}"
         )
+        logger.routine(f"Ended separating forward and reverse strands in {xam_file}")
         return bam_rev
     finally:
         # Make sure to delete tmp_dir if keep_tmp is False because if it
@@ -230,43 +246,43 @@ def separate_strands(xam_file: Path,
             logger.action(f"Deleted temporary directory {tmp_dir}")
 
 
-def extract_reference(ref: str,
-                      header: str, *,
-                      branches: dict[str, str],
-                      xam_whole: Path,
-                      fasta: Path,
-                      sample: str,
-                      top: Path,
-                      min_reads: int,
-                      sep_strands: bool,
-                      num_cpus: int = 1,
-                      **kwargs):
-    """ Extract one reference from a XAM file. """
+def extract_reference(
+    ref: str,
+    header: str,
+    *,
+    branches: dict[str, str],
+    xam_whole: Path,
+    fasta: Path,
+    sample: str,
+    top: Path,
+    min_reads: int,
+    sep_strands: bool,
+    num_cpus: int = 1,
+    **kwargs,
+):
+    """Extract one reference from a XAM file."""
     logger.routine(f"Began extracting reference {repr(ref)} from {xam_whole}")
     if min_reads < 0:
         min_reads = 0
         logger.warning(f"min_reads must be ≥ 0, but got {min_reads}: set to 0")
     # Export the reads that align to the given reference.
-    xam_ref = path.build(path.XAM_SEGS,
-                         {path.TOP: top,
-                          path.SAMPLE: sample,
-                          path.STEP: path.ALIGN_STEP,
-                          path.BRANCHES: branches,
-                          path.REF: ref,
-                          path.EXT: path.BAM_EXT})
-    run_export(xam_whole,
-               xam_ref,
-               ref=ref,
-               header=header,
-               num_cpus=num_cpus)
+    xam_ref = path.build(
+        path.XAM_SEGS,
+        {
+            path.TOP: top,
+            path.SAMPLE: sample,
+            path.STEP: path.ALIGN_STEP,
+            path.BRANCHES: branches,
+            path.REF: ref,
+            path.EXT: path.BAM_EXT,
+        },
+    )
+    run_export(xam_whole, xam_ref, ref=ref, header=header, num_cpus=num_cpus)
     xam_files = [xam_ref]
     if sep_strands:
         try:
             # Split the XAM file into forward and reverse strands.
-            xam_rev = separate_strands(xam_ref,
-                                       fasta,
-                                       num_cpus=num_cpus,
-                                       **kwargs)
+            xam_rev = separate_strands(xam_ref, fasta, num_cpus=num_cpus, **kwargs)
             xam_files.append(xam_rev)
         except Exception:
             # Delete the XAM file containing both strands because its
@@ -275,8 +291,10 @@ def extract_reference(ref: str,
             # and could be given to a future step that expects only
             # forward-strand reads, causing unintended behavior.
             xam_ref.unlink()
-            logger.warning(f"Deleted {xam_ref} because separating it into "
-                           "forward and reverse strands failed")
+            logger.warning(
+                f"Deleted {xam_ref} because separating it into "
+                "forward and reverse strands failed"
+            )
             raise
     # Count the reads in each XAM file; delete files with too few.
     nums_reads = dict()
@@ -304,94 +322,103 @@ def extract_reference(ref: str,
     return nums_reads
 
 
-def split_references(xam_whole: Path, *,
-                     fasta: Path,
-                     paired: bool | None,
-                     phred_arg: str,
-                     top: Path,
-                     keep_tmp: bool,
-                     branches: dict[str, str],
-                     bt2_local: bool,
-                     bt2_discordant: bool,
-                     bt2_mixed: bool,
-                     bt2_dovetail: bool,
-                     bt2_contain: bool,
-                     bt2_score_min_e2e: str,
-                     bt2_score_min_loc: str,
-                     bt2_i: int,
-                     bt2_x: int,
-                     bt2_gbar: int,
-                     bt2_l: int,
-                     bt2_s: str,
-                     bt2_d: int,
-                     bt2_r: int,
-                     bt2_dpad: int,
-                     bt2_orient: str,
-                     seed: int | None,
-                     min_mapq: int,
-                     min_reads: int,
-                     sep_strands: bool,
-                     f1r2_fwd: bool,
-                     rev_label: str,
-                     num_cpus: int = 1):
-    """ Split a XAM file into one file per reference. """
+def split_references(
+    xam_whole: Path,
+    *,
+    fasta: Path,
+    paired: bool | None,
+    phred_arg: str,
+    top: Path,
+    keep_tmp: bool,
+    branches: dict[str, str],
+    bt2_local: bool,
+    bt2_discordant: bool,
+    bt2_mixed: bool,
+    bt2_dovetail: bool,
+    bt2_contain: bool,
+    bt2_score_min_e2e: str,
+    bt2_score_min_loc: str,
+    bt2_i: int,
+    bt2_x: int,
+    bt2_gbar: int,
+    bt2_l: int,
+    bt2_s: str,
+    bt2_d: int,
+    bt2_r: int,
+    bt2_dpad: int,
+    bt2_orient: str,
+    seed: int | None,
+    min_mapq: int,
+    min_reads: int,
+    sep_strands: bool,
+    f1r2_fwd: bool,
+    rev_label: str,
+    num_cpus: int = 1,
+):
+    """Split a XAM file into one file per reference."""
     logger.routine(f"Began splitting {xam_whole} by reference")
     sample = path.parse(xam_whole, path.XAM_SEGS)[path.SAMPLE]
     # Guess how many reads mapped to each reference by the index stats.
     refs_counts = run_idxstats(xam_whole)
     # Guess which references received enough reads.
-    guess_refs = {ref for ref, count in refs_counts.items()
-                  if count >= min_reads}
+    guess_refs = {ref for ref, count in refs_counts.items() if count >= min_reads}
     logger.detail(
         f"Guessed that there are ≥ {min_reads} read(s) in each of the "
         f"{len(guess_refs)} reference(s) {sorted(guess_refs)}"
     )
     # Cache the header for each reference that received enough reads.
-    ref_headers = {ref: header
-                   for ref, header in run_ref_header(xam_whole,
-                                                     num_cpus=num_cpus)
-                   if ref in guess_refs}
-    logger.detail(f"Cached SAM headers for the {len(guess_refs)} reference(s) "
-                  f"that were guessed to have ≥ {min_reads} read(s)")
+    ref_headers = {
+        ref: header
+        for ref, header in run_ref_header(xam_whole, num_cpus=num_cpus)
+        if ref in guess_refs
+    }
+    logger.detail(
+        f"Cached SAM headers for the {len(guess_refs)} reference(s) "
+        f"that were guessed to have ≥ {min_reads} read(s)"
+    )
     # Split the whole XAM file into one XAM file for each reference that
     # was guessed to have received enough reads.
-    nums_reads = dispatch(extract_reference,
-                          num_cpus=num_cpus,
-                          pass_num_cpus=True,
-                          as_list=False,
-                          ordered=False,
-                          raise_on_error=False,
-                          args=list(ref_headers.items()),
-                          kwargs=dict(xam_whole=xam_whole,
-                                      fasta=fasta,
-                                      sample=sample,
-                                      paired=paired,
-                                      phred_arg=phred_arg,
-                                      top=top,
-                                      keep_tmp=keep_tmp,
-                                      branches=branches,
-                                      bt2_local=bt2_local,
-                                      bt2_discordant=bt2_discordant,
-                                      bt2_mixed=bt2_mixed,
-                                      bt2_dovetail=bt2_dovetail,
-                                      bt2_contain=bt2_contain,
-                                      bt2_score_min_e2e=bt2_score_min_e2e,
-                                      bt2_score_min_loc=bt2_score_min_loc,
-                                      bt2_i=bt2_i,
-                                      bt2_x=bt2_x,
-                                      bt2_gbar=bt2_gbar,
-                                      bt2_l=bt2_l,
-                                      bt2_s=bt2_s,
-                                      bt2_d=bt2_d,
-                                      bt2_r=bt2_r,
-                                      bt2_dpad=bt2_dpad,
-                                      bt2_orient=bt2_orient,
-                                      seed=seed,
-                                      min_mapq=min_mapq,
-                                      sep_strands=sep_strands,
-                                      f1r2_fwd=f1r2_fwd,
-                                      rev_label=rev_label,
-                                      min_reads=min_reads))
+    nums_reads = dispatch(
+        extract_reference,
+        num_cpus=num_cpus,
+        pass_num_cpus=True,
+        as_list=False,
+        ordered=False,
+        raise_on_error=False,
+        args=list(ref_headers.items()),
+        kwargs=dict(
+            xam_whole=xam_whole,
+            fasta=fasta,
+            sample=sample,
+            paired=paired,
+            phred_arg=phred_arg,
+            top=top,
+            keep_tmp=keep_tmp,
+            branches=branches,
+            bt2_local=bt2_local,
+            bt2_discordant=bt2_discordant,
+            bt2_mixed=bt2_mixed,
+            bt2_dovetail=bt2_dovetail,
+            bt2_contain=bt2_contain,
+            bt2_score_min_e2e=bt2_score_min_e2e,
+            bt2_score_min_loc=bt2_score_min_loc,
+            bt2_i=bt2_i,
+            bt2_x=bt2_x,
+            bt2_gbar=bt2_gbar,
+            bt2_l=bt2_l,
+            bt2_s=bt2_s,
+            bt2_d=bt2_d,
+            bt2_r=bt2_r,
+            bt2_dpad=bt2_dpad,
+            bt2_orient=bt2_orient,
+            seed=seed,
+            min_mapq=min_mapq,
+            sep_strands=sep_strands,
+            f1r2_fwd=f1r2_fwd,
+            rev_label=rev_label,
+            min_reads=min_reads,
+        ),
+    )
     # Collect the number of reads for each reference into one dict.
     refs_counts = dict()
     for num_reads in nums_reads:
@@ -399,13 +426,17 @@ def split_references(xam_whole: Path, *,
             logger.detail(f"Reference {repr(ref)} got {count} read(s)")
             if ref in refs_counts:
                 logger.error(f"Reference {repr(ref)} is duplicated")
-                xam_ref = path.build(path.XAM_SEGS,
-                                     {path.TOP: top,
-                                      path.SAMPLE: sample,
-                                      path.STEP: path.ALIGN_STEP,
-                                      path.BRANCHES: branches,
-                                      path.REF: ref,
-                                      path.EXT: path.BAM_EXT})
+                xam_ref = path.build(
+                    path.XAM_SEGS,
+                    {
+                        path.TOP: top,
+                        path.SAMPLE: sample,
+                        path.STEP: path.ALIGN_STEP,
+                        path.BRANCHES: branches,
+                        path.REF: ref,
+                        path.EXT: path.BAM_EXT,
+                    },
+                )
                 try:
                     xam_ref.unlink()
                     logger.action(f"Deleted {xam_ref}")
@@ -426,54 +457,57 @@ def split_references(xam_whole: Path, *,
     return refs_counts
 
 
-def fq_pipeline(fq_inp: FastqUnit,
-                fasta: Path,
-                bowtie2_index: Path, *,
-                out_dir: Path,
-                tmp_dir: Path,
-                keep_tmp: bool,
-                branches: dict[str, str],
-                fastp: bool,
-                fastp_5: bool,
-                fastp_3: bool,
-                fastp_w: int,
-                fastp_m: int,
-                fastp_poly_g: str,
-                fastp_poly_g_min_len: int,
-                fastp_poly_x: bool,
-                fastp_poly_x_min_len: int,
-                fastp_adapter_trimming: bool,
-                fastp_adapter_1: str,
-                fastp_adapter_2: str,
-                fastp_adapter_fasta: Path | None,
-                fastp_detect_adapter_for_pe: bool,
-                fastp_min_length: int,
-                bt2_local: bool,
-                bt2_discordant: bool,
-                bt2_mixed: bool,
-                bt2_dovetail: bool,
-                bt2_contain: bool,
-                bt2_score_min_e2e: str,
-                bt2_score_min_loc: str,
-                bt2_i: int,
-                bt2_x: int,
-                bt2_gbar: int,
-                bt2_l: int,
-                bt2_s: str,
-                bt2_d: int,
-                bt2_r: int,
-                bt2_dpad: int,
-                bt2_orient: str,
-                bt2_un: bool,
-                seed: int | None,
-                min_mapq: int,
-                min_reads: int,
-                sep_strands: bool,
-                f1r2_fwd: bool,
-                rev_label: str,
-                num_cpus: int = 1) -> Path:
-    """ Run all stages of the alignment pipeline for one FASTQ file or
-    one pair of mated FASTQ files. """
+def fq_pipeline(
+    fq_inp: FastqUnit,
+    fasta: Path,
+    bowtie2_index: Path,
+    *,
+    out_dir: Path,
+    tmp_dir: Path,
+    keep_tmp: bool,
+    branches: dict[str, str],
+    fastp: bool,
+    fastp_5: bool,
+    fastp_3: bool,
+    fastp_w: int,
+    fastp_m: int,
+    fastp_poly_g: str,
+    fastp_poly_g_min_len: int,
+    fastp_poly_x: bool,
+    fastp_poly_x_min_len: int,
+    fastp_adapter_trimming: bool,
+    fastp_adapter_1: str,
+    fastp_adapter_2: str,
+    fastp_adapter_fasta: Path | None,
+    fastp_detect_adapter_for_pe: bool,
+    fastp_min_length: int,
+    bt2_local: bool,
+    bt2_discordant: bool,
+    bt2_mixed: bool,
+    bt2_dovetail: bool,
+    bt2_contain: bool,
+    bt2_score_min_e2e: str,
+    bt2_score_min_loc: str,
+    bt2_i: int,
+    bt2_x: int,
+    bt2_gbar: int,
+    bt2_l: int,
+    bt2_s: str,
+    bt2_d: int,
+    bt2_r: int,
+    bt2_dpad: int,
+    bt2_orient: str,
+    bt2_un: bool,
+    seed: int | None,
+    min_mapq: int,
+    min_reads: int,
+    sep_strands: bool,
+    f1r2_fwd: bool,
+    rev_label: str,
+    num_cpus: int = 1,
+) -> Path:
+    """Run all stages of the alignment pipeline for one FASTQ file or
+    one pair of mated FASTQ files."""
     began = datetime.now()
     logger.routine(f"Began processing {fq_inp} through the alignment pipeline")
     # Get attributes of the sample and references.
@@ -481,21 +515,29 @@ def fq_pipeline(fq_inp: FastqUnit,
     refset = path.parse(fasta, [path.FastaSeg])[path.REF]
     # Create the output directory: this is necessary for FASTQ files of
     # unaligned reads to have a place to be written.
-    align_dir = path.builddir(path.STEP_DIR_SEGS,
-                              {path.TOP: out_dir,
-                               path.SAMPLE: sample,
-                               path.STEP: path.ALIGN_STEP,
-                               path.BRANCHES: branches})
+    align_dir = path.builddir(
+        path.STEP_DIR_SEGS,
+        {
+            path.TOP: out_dir,
+            path.SAMPLE: sample,
+            path.STEP: path.ALIGN_STEP,
+            path.BRANCHES: branches,
+        },
+    )
     # Optionally trim the reads with Fastp, and then align them to the
     # reference sequence with Bowtie2.
-    xam_whole = path.buildpar(path.XAM_STAGE_SEGS,
-                              {path.TOP: tmp_dir,
-                               path.SAMPLE: sample,
-                               path.STEP: path.ALIGN_STEP,
-                               path.BRANCHES: branches,
-                               path.STAGE: path.STAGE_ALIGN_MAP,
-                               path.REF: refset,
-                               path.EXT: path.BAM_EXT})
+    xam_whole = path.buildpar(
+        path.XAM_STAGE_SEGS,
+        {
+            path.TOP: tmp_dir,
+            path.SAMPLE: sample,
+            path.STEP: path.ALIGN_STEP,
+            path.BRANCHES: branches,
+            path.STAGE: path.STAGE_ALIGN_MAP,
+            path.REF: refset,
+            path.EXT: path.BAM_EXT,
+        },
+    )
     if bt2_un:
         fq_unal = path.build(
             [path.SampSeg, path.StepSeg, path.DmFastqSeg],
@@ -504,11 +546,13 @@ def fq_pipeline(fq_inp: FastqUnit,
                 path.SAMPLE: sample,
                 path.STEP: path.ALIGN_STEP,
                 path.BRANCHES: branches,
-                path.REF: (f"{fq_inp.ref}__unaligned"
-                           if fq_inp.ref is not None
-                           else "unaligned"),
-                path.EXT: path.FQ_EXTS[0]
-            }
+                path.REF: (
+                    f"{fq_inp.ref}__unaligned"
+                    if fq_inp.ref is not None
+                    else "unaligned"
+                ),
+                path.EXT: path.FQ_EXTS[0],
+            },
         )
     else:
         fq_unal = None
@@ -551,14 +595,16 @@ def fq_pipeline(fq_inp: FastqUnit,
         seed=seed,
         min_mapq=min_mapq,
         fq_unal=fq_unal,
-        num_cpus=num_cpus
+        num_cpus=num_cpus,
     )
     # The number of reads after trimming is defined as the number fed to
     # Bowtie 2, regardless of whether the reads were actually trimmed.
     reads_trim = reads_align.pop("reads", None)
     if reads_trim is None:
-        raise RuntimeError("Failed to parse number of reads input to Bowtie2 "
-                           f"(perhaps Bowtie2 failed): got {reads_align}")
+        raise RuntimeError(
+            "Failed to parse number of reads input to Bowtie2 "
+            f"(perhaps Bowtie2 failed): got {reads_align}"
+        )
     logger.detail(f"Determined Bowtie 2 received {reads_trim} reads")
     if fastp:
         # If the reads were trimmed, then the initial number must be
@@ -578,8 +624,10 @@ def fq_pipeline(fq_inp: FastqUnit,
     if fq_inp.paired:
         if singles:
             raise RuntimeError(f"{xam_whole} has {singles} single-end reads")
-        reads_filter = {"paired-end, both mates mapped": paired_two,
-                        "paired-end, one mate unmapped": paired_one}
+        reads_filter = {
+            "paired-end, both mates mapped": paired_two,
+            "paired-end, one mate unmapped": paired_one,
+        }
     else:
         if n_paired := paired_two + paired_one:
             raise RuntimeError(f"{xam_whole} has {n_paired} paired-end reads")
@@ -588,37 +636,38 @@ def fq_pipeline(fq_inp: FastqUnit,
         f"Determined {xam_whole} contained {reads_filter} reads after filtering"
     )
     # Split the whole XAM file into one XAM file for each reference.
-    reads_refs = split_references(xam_whole,
-                                  fasta=fasta,
-                                  paired=fq_inp.paired,
-                                  phred_arg=(FASTP_PHRED_OUT if fastp
-                                             else fq_inp.phred_arg),
-                                  top=out_dir,
-                                  keep_tmp=keep_tmp,
-                                  branches=branches,
-                                  bt2_local=bt2_local,
-                                  bt2_discordant=bt2_discordant,
-                                  bt2_mixed=bt2_mixed,
-                                  bt2_dovetail=bt2_dovetail,
-                                  bt2_contain=bt2_contain,
-                                  bt2_score_min_e2e=bt2_score_min_e2e,
-                                  bt2_score_min_loc=bt2_score_min_loc,
-                                  bt2_i=bt2_i,
-                                  bt2_x=bt2_x,
-                                  bt2_gbar=bt2_gbar,
-                                  bt2_l=bt2_l,
-                                  bt2_s=bt2_s,
-                                  bt2_d=bt2_d,
-                                  bt2_r=bt2_r,
-                                  bt2_dpad=bt2_dpad,
-                                  bt2_orient=bt2_orient,
-                                  seed=seed,
-                                  min_mapq=min_mapq,
-                                  sep_strands=sep_strands,
-                                  f1r2_fwd=f1r2_fwd,
-                                  rev_label=rev_label,
-                                  min_reads=min_reads,
-                                  num_cpus=num_cpus)
+    reads_refs = split_references(
+        xam_whole,
+        fasta=fasta,
+        paired=fq_inp.paired,
+        phred_arg=(FASTP_PHRED_OUT if fastp else fq_inp.phred_arg),
+        top=out_dir,
+        keep_tmp=keep_tmp,
+        branches=branches,
+        bt2_local=bt2_local,
+        bt2_discordant=bt2_discordant,
+        bt2_mixed=bt2_mixed,
+        bt2_dovetail=bt2_dovetail,
+        bt2_contain=bt2_contain,
+        bt2_score_min_e2e=bt2_score_min_e2e,
+        bt2_score_min_loc=bt2_score_min_loc,
+        bt2_i=bt2_i,
+        bt2_x=bt2_x,
+        bt2_gbar=bt2_gbar,
+        bt2_l=bt2_l,
+        bt2_s=bt2_s,
+        bt2_d=bt2_d,
+        bt2_r=bt2_r,
+        bt2_dpad=bt2_dpad,
+        bt2_orient=bt2_orient,
+        seed=seed,
+        min_mapq=min_mapq,
+        sep_strands=sep_strands,
+        f1r2_fwd=f1r2_fwd,
+        rev_label=rev_label,
+        min_reads=min_reads,
+        num_cpus=num_cpus,
+    )
     if not keep_tmp:
         # Delete the BAM file of all references.
         xam_whole.unlink(missing_ok=True)
@@ -663,8 +712,7 @@ def fq_pipeline(fq_inp: FastqUnit,
         bt2_mixed=bt2_mixed,
         bt2_dovetail=bt2_dovetail,
         bt2_contain=bt2_contain,
-        bt2_score_min=(bt2_score_min_loc if bt2_local
-                       else bt2_score_min_e2e),
+        bt2_score_min=(bt2_score_min_loc if bt2_local else bt2_score_min_e2e),
         bt2_i=bt2_i,
         bt2_x=bt2_x,
         bt2_gbar=bt2_gbar,
@@ -686,20 +734,23 @@ def fq_pipeline(fq_inp: FastqUnit,
         reads_filter=reads_filter,
         reads_refs=reads_refs,
         began=began,
-        ended=ended
+        ended=ended,
     )
     report_saved = report.save(out_dir, force=True)
     logger.routine(f"Ended processing {fq_inp} through the alignment pipeline")
     return report_saved.parent
 
 
-def fqs_pipeline(fq_units: list[FastqUnit],
-                 main_fasta: Path, *,
-                 num_cpus: int,
-                 tmp_dir: Path,
-                 **kwargs) -> list[Path]:
-    """ Run all stages of alignment for one or more FASTQ files or pairs
-    of mated FASTQ files. """
+def fqs_pipeline(
+    fq_units: list[FastqUnit],
+    main_fasta: Path,
+    *,
+    num_cpus: int,
+    tmp_dir: Path,
+    **kwargs,
+) -> list[Path]:
+    """Run all stages of alignment for one or more FASTQ files or pairs
+    of mated FASTQ files."""
     logger.routine("Began running the alignment pipeline")
     # Validate the maximum number of processes.
     if num_cpus < 1:
@@ -713,10 +764,7 @@ def fqs_pipeline(fq_units: list[FastqUnit],
         )
     # Write a temporary FASTA file and Bowtie2 index for each
     # demultiplexed FASTQ.
-    tmp_fasta_paths = write_tmp_ref_files(tmp_dir,
-                                          main_fasta,
-                                          tmp_refs,
-                                          num_cpus)
+    tmp_fasta_paths = write_tmp_ref_files(tmp_dir, main_fasta, tmp_refs, num_cpus)
     # Check if the main FASTA file already has a Bowtie2 index.
     main_index = main_fasta.with_suffix("")
     if all(index.is_file() for index in get_bowtie2_index_paths(main_index)):
@@ -729,8 +777,9 @@ def fqs_pipeline(fq_units: list[FastqUnit],
     # One alignment task will be created for each FASTQ unit.
     for fq_unit in fq_units:
         if fq_unit.ref is not None:
-            logger.detail(f"{fq_unit} contains reads from 1 reference, "
-                          f"{repr(fq_unit.ref)}")
+            logger.detail(
+                f"{fq_unit} contains reads from 1 reference, {repr(fq_unit.ref)}"
+            )
             # If the FASTQ came from demultiplexing (so contains
             # reads from only one reference), then align to the
             # temporary FASTA file containing only that reference.
@@ -739,8 +788,10 @@ def fqs_pipeline(fq_units: list[FastqUnit],
             except KeyError:
                 # If the FASTA with that reference does not exist,
                 # then log an error and skip this FASTQ.
-                logger.error(f"Skipped {fq_unit} because {main_fasta} "
-                             f"does not contain reference {repr(fq_unit.ref)}")
+                logger.error(
+                    f"Skipped {fq_unit} because {main_fasta} "
+                    f"does not contain reference {repr(fq_unit.ref)}"
+                )
                 continue
             # Add these arguments to the lists of arguments that will be
             # passed to fq_pipeline.
@@ -756,22 +807,22 @@ def fqs_pipeline(fq_units: list[FastqUnit],
                 refset = path.parse(main_fasta, [path.FastaSeg])[path.REF]
                 # Determine the path of the temporary Bowtie 2 index
                 # of the main FASTA file.
-                main_index = path.buildpar(path.FASTA_INDEX_DIR_STAGE_SEGS,
-                                           {path.TOP: tmp_dir,
-                                            path.STAGE: path.STAGE_ALIGN_INDEX,
-                                            path.REF: refset})
+                main_index = path.buildpar(
+                    path.FASTA_INDEX_DIR_STAGE_SEGS,
+                    {
+                        path.TOP: tmp_dir,
+                        path.STAGE: path.STAGE_ALIGN_INDEX,
+                        path.REF: refset,
+                    },
+                )
                 # Build the Bowtie2 index.
                 try:
-                    run_bowtie2_build(main_fasta,
-                                      main_index,
-                                      num_cpus=num_cpus)
+                    run_bowtie2_build(main_fasta, main_index, num_cpus=num_cpus)
                     # Create a symbolic link to the reference file in
                     # the same directory as the new index.
                     fasta_link = main_index.with_suffix(main_fasta.suffix)
                     fasta_link.symlink_to(main_fasta)
-                    logger.detail(
-                        f"Symbolically linked {fasta_link} to {main_fasta}"
-                    )
+                    logger.detail(f"Symbolically linked {fasta_link} to {main_fasta}")
                     # Add the FASTA link and the Bowtie 2 index to the
                     # set of files to delete after alignment finishes.
                     # Being deleted is the only purpose of fasta_link.
@@ -789,21 +840,23 @@ def fqs_pipeline(fq_units: list[FastqUnit],
             # added to tmp_fasta_paths.
             iter_args.append((fq_unit, main_fasta, main_index))
     # Generate alignment map (XAM) files.
-    xam_dirs = dispatch(fq_pipeline,
-                        num_cpus=num_cpus,
-                        pass_num_cpus=True,
-                        as_list=True,
-                        ordered=False,
-                        raise_on_error=False,
-                        args=iter_args,
-                        kwargs=dict(tmp_dir=tmp_dir, **kwargs))
+    xam_dirs = dispatch(
+        fq_pipeline,
+        num_cpus=num_cpus,
+        pass_num_cpus=True,
+        as_list=True,
+        ordered=False,
+        raise_on_error=False,
+        args=iter_args,
+        kwargs=dict(tmp_dir=tmp_dir, **kwargs),
+    )
     logger.routine("Ended running the alignment pipeline")
     # Return the final alignment map (XAM) directories.
     return xam_dirs
 
 
 def list_alignments(fq_units: list[FastqUnit], refs: set[str]):
-    """ List every expected alignment of a sample to a reference. """
+    """List every expected alignment of a sample to a reference."""
     logger.routine("Began listing alignments")
     # Map each combination of a sample and reference to a FASTQ unit.
     alignments: dict[tuple[str, str], FastqUnit] = dict()
@@ -822,9 +875,7 @@ def list_alignments(fq_units: list[FastqUnit], refs: set[str]):
         # Add each sample-reference pair to the expected alignments.
         sample = fq_unit.sample
         for ref in fq_refs:
-            logger.detail(
-                f"Adding reference {repr(ref)} for sample {repr(sample)}"
-            )
+            logger.detail(f"Adding reference {repr(ref)} for sample {repr(sample)}")
             sample_ref = sample, ref
             if sample_ref in alignments:
                 raise DuplicateSampleReferenceError(sample_ref)
@@ -833,24 +884,30 @@ def list_alignments(fq_units: list[FastqUnit], refs: set[str]):
     return alignments
 
 
-def check_fqs_xams(alignments: dict[tuple[str, str], FastqUnit],
-                   out_dir: Path,
-                   branches: dict[str, str]):
-    """ Return every FASTQ unit on which alignment must be run and every
-    expected XAM file that already exists. """
+def check_fqs_xams(
+    alignments: dict[tuple[str, str], FastqUnit],
+    out_dir: Path,
+    branches: dict[str, str],
+):
+    """Return every FASTQ unit on which alignment must be run and every
+    expected XAM file that already exists."""
     fqs_missing: dict[tuple[str, str], FastqUnit] = dict()
     xams_extant: list[Path] = list()
     for (sample, ref), fq_unit in alignments.items():
         # Determine the path of the XAM file expected to result from the
         # alignment of the sample to the reference.
         for ext in path.XAM_EXTS:
-            xam_expect = path.build(path.XAM_SEGS,
-                                    {path.TOP: out_dir,
-                                     path.STEP: path.ALIGN_STEP,
-                                     path.BRANCHES: branches,
-                                     path.SAMPLE: sample,
-                                     path.REF: ref,
-                                     path.EXT: ext})
+            xam_expect = path.build(
+                path.XAM_SEGS,
+                {
+                    path.TOP: out_dir,
+                    path.STEP: path.ALIGN_STEP,
+                    path.BRANCHES: branches,
+                    path.SAMPLE: sample,
+                    path.REF: ref,
+                    path.EXT: ext,
+                },
+            )
             if xam_expect.is_file():
                 # If the XAM file already exists, then add it to the
                 # dict of XAM files that have already been aligned.
@@ -864,21 +921,23 @@ def check_fqs_xams(alignments: dict[tuple[str, str], FastqUnit],
 
 
 def merge_nondemult_fqs(fq_units: Iterable[FastqUnit]):
-    """ For every FASTQ that is not demultiplexed, merge all the keys
+    """For every FASTQ that is not demultiplexed, merge all the keys
     that map to the FASTQ into one key: (sample, None). Merging ensures
     that every non-demultiplexed FASTQ is aligned only once to the whole
     set of references, not once for every reference in the set. This
-    function is essentially the inverse of `figure_alignments`. """
+    function is essentially the inverse of `figure_alignments`."""
     merged: dict[tuple[str, str | None], FastqUnit] = dict()
     for fq_unit in fq_units:
         merged[fq_unit.sample, fq_unit.ref] = fq_unit
     return list(merged.values())
 
 
-def list_fqs_xams(alignments: dict[tuple[str, str], FastqUnit],
-                  out_dir: Path,
-                  branches: dict[str, str]):
-    """ List every FASTQ to align and every extant XAM file. """
+def list_fqs_xams(
+    alignments: dict[tuple[str, str], FastqUnit],
+    out_dir: Path,
+    branches: dict[str, str],
+):
+    """List every FASTQ to align and every extant XAM file."""
     # Determine which alignments need to be or have already been run.
     fqs_missing, xams_extant = check_fqs_xams(alignments, out_dir, branches)
     # Merge entries for each non-demultiplexed FASTQ.
@@ -886,14 +945,17 @@ def list_fqs_xams(alignments: dict[tuple[str, str], FastqUnit],
     return fqs_merged, set(xams_extant)
 
 
-def align_samples(fq_units: list[FastqUnit],
-                  fasta: Path, *,
-                  out_dir: Path,
-                  branch: str,
-                  force: bool,
-                  **kwargs) -> list[Path]:
-    """ Run the alignment pipeline and return a tuple of all XAM files
-    from the pipeline. """
+def align_samples(
+    fq_units: list[FastqUnit],
+    fasta: Path,
+    *,
+    out_dir: Path,
+    branch: str,
+    force: bool,
+    **kwargs,
+) -> list[Path]:
+    """Run the alignment pipeline and return a tuple of all XAM files
+    from the pipeline."""
     if not fq_units:
         logger.detail("No FASTQ files or pairs of files were given to align")
         return list()
@@ -914,14 +976,15 @@ def align_samples(fq_units: list[FastqUnit],
         fqs_to_align, xams_extant = list_fqs_xams(alignments, out_dir, branches)
     if fqs_to_align:
         # Align all FASTQs that need to be aligned.
-        xam_dirs_new = set(fqs_pipeline(fqs_to_align,
-                                        fasta,
-                                        out_dir=out_dir,
-                                        branches=branches,
-                                        **kwargs))
+        xam_dirs_new = set(
+            fqs_pipeline(
+                fqs_to_align, fasta, out_dir=out_dir, branches=branches, **kwargs
+            )
+        )
     else:
-        logger.warning("All given FASTQ files have already been aligned: "
-                       "use --force to overwrite")
+        logger.warning(
+            "All given FASTQ files have already been aligned: use --force to overwrite"
+        )
         xam_dirs_new = set()
     # Merge the existing and new XAM paths into a tuple of strings.
     return list({xam.parent for xam in xams_extant} | xam_dirs_new)

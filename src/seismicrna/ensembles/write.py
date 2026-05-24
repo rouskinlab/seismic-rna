@@ -11,19 +11,18 @@ from plotly.subplots import make_subplots
 
 from .. import filter as filter_mod, cluster as cluster_mod
 from ..core import path
-from ..core.arg import (GAP_MODE_OMIT,
-                        GAP_MODE_INSERT,
-                        GAP_MODE_EXPAND)
+from ..core.arg import GAP_MODE_OMIT, GAP_MODE_INSERT, GAP_MODE_EXPAND
 from ..core.array import triangular
-from ..core.batch import (POSITION_A,
-                          POSITION_B,
-                          accumulate_confusion_matrices,
-                          calc_confusion_pvals,
-                          calc_confusion_phi,
-                          calc_bh_adjusted_pvals)
+from ..core.batch import (
+    POSITION_A,
+    POSITION_B,
+    accumulate_confusion_matrices,
+    calc_confusion_pvals,
+    calc_confusion_phi,
+    calc_bh_adjusted_pvals,
+)
 from ..core.dataset import MutsDataset
-from ..core.error import (IncompatibleValuesError,
-                          OutOfBoundsError)
+from ..core.error import IncompatibleValuesError, OutOfBoundsError
 from ..core.logs import logger
 from ..core.seq import DNA, unite
 from ..core.task import as_list_of_tuples, dispatch
@@ -43,8 +42,7 @@ PAIRS_MODULES_HTML = "pairs_and_modules.html"
 CONFUSION_MATRIX_CSV = "confusion-matrix.csv"
 
 
-def _get_batch_read_lengths(batch_num: int,
-                            dataset: MutsDataset):
+def _get_batch_read_lengths(batch_num: int, dataset: MutsDataset):
     batch = dataset.get_batch(batch_num)
     return batch.read_lengths
 
@@ -70,38 +68,40 @@ def _calc_midpoints_distances(end5s: np.ndarray, end3s: np.ndarray):
     return midpoints, distances
 
 
-def _calc_tiles(total_end5: int,
-                total_end3: int,
-                tile_length: int,
-                tile_min_overlap: float):
+def _calc_tiles(
+    total_end5: int, total_end3: int, tile_length: int, tile_min_overlap: float
+):
     if not isinstance(total_end5, int):
         raise TypeError(total_end5)
     if not isinstance(total_end3, int):
         raise TypeError(total_end3)
     if not 1 <= total_end5 <= total_end3:
-        raise IncompatibleValuesError("Must have 1 ≤ total_end5 ≤ total_end3, "
-                                      f"but got total_end5={total_end5} "
-                                      f"and total_end3={total_end3}")
+        raise IncompatibleValuesError(
+            "Must have 1 ≤ total_end5 ≤ total_end3, "
+            f"but got total_end5={total_end5} "
+            f"and total_end3={total_end3}"
+        )
     total_length = total_end3 - total_end5 + 1
     assert total_length >= 1
     if not isinstance(tile_length, int):
         raise TypeError(tile_length)
     if tile_length < 1:
-        raise OutOfBoundsError(
-            f"tile_length must be ≥ 1, but got {tile_length}"
-        )
+        raise OutOfBoundsError(f"tile_length must be ≥ 1, but got {tile_length}")
     if tile_length > total_length:
-        logger.warning(f"tile_length ({tile_length}) is greater than "
-                       f"total length of region ({total_length}): "
-                       f"using tile_length of {total_length}")
+        logger.warning(
+            f"tile_length ({tile_length}) is greater than "
+            f"total length of region ({total_length}): "
+            f"using tile_length of {total_length}"
+        )
         return [(total_end5, total_end3)]
     assert 1 <= tile_length <= total_length <= total_end3
     if not isinstance(tile_min_overlap, float):
         raise TypeError(tile_min_overlap)
-    if not 0. < tile_min_overlap < 1.:
-        raise OutOfBoundsError("tile_min_overlap must be > 0 and < 1, "
-                               f"but got {tile_min_overlap}")
-    max_step_size = int(tile_length * (1. - tile_min_overlap))
+    if not 0.0 < tile_min_overlap < 1.0:
+        raise OutOfBoundsError(
+            f"tile_min_overlap must be > 0 and < 1, but got {tile_min_overlap}"
+        )
+    max_step_size = int(tile_length * (1.0 - tile_min_overlap))
     assert 0 <= max_step_size < tile_length
     if max_step_size == 0:
         raise IncompatibleValuesError(
@@ -110,21 +110,17 @@ def _calc_tiles(total_end5: int,
         )
     num_regions = 1 + ceil((total_length - tile_length) / max_step_size)
     region_end5s = np.asarray(
-        np.round(np.linspace(total_end5,
-                             total_end3 - tile_length + 1,
-                             num_regions)),
-        dtype=int
+        np.round(np.linspace(total_end5, total_end3 - tile_length + 1, num_regions)),
+        dtype=int,
     )
     region_end3s = region_end5s + (tile_length - 1)
     return _ends_arrays_to_tuples(region_end5s, region_end3s)
 
 
-def _calc_tile_coords(dataset,
-                       total_region,
-                       tile_length: int,
-                       tile_min_overlap: float,
-                       num_cpus: int):
-    """ Calculate the tiled coordinates for one IDmut dataset. """
+def _calc_tile_coords(
+    dataset, total_region, tile_length: int, tile_min_overlap: float, num_cpus: int
+):
+    """Calculate the tiled coordinates for one IDmut dataset."""
     ref = dataset.ref
     logger.routine(f"Began calculating tiles for reference {repr(ref)}")
     if tile_length > 0:
@@ -141,31 +137,27 @@ def _calc_tile_coords(dataset,
             ordered=False,
             raise_on_error=True,
             args=as_list_of_tuples(dataset.batch_nums),
-            kwargs=dict(dataset=dataset)
+            kwargs=dict(dataset=dataset),
         )
         if sum(a.size for a in batches_read_lengths) == 0:
             raise ValueError(f"{dataset} has 0 reads")
         read_lengths = np.concatenate(batches_read_lengths, axis=0)
         median_read_length = np.median(read_lengths)
         if median_read_length < 1:
-            raise ValueError("The median read length must be ≥ 1, "
-                             f"but got {median_read_length}")
+            raise ValueError(
+                f"The median read length must be ≥ 1, but got {median_read_length}"
+            )
         logger.detail(f"The median read length is {median_read_length}")
         ref_tile_length = round(2 * median_read_length)
-        logger.routine(
-            f"Ended calculating optimal tile length: {ref_tile_length}"
-        )
-    tiles = _calc_tiles(total_region.end5,
-                        total_region.end3,
-                        ref_tile_length,
-                        tile_min_overlap)
+        logger.routine(f"Ended calculating optimal tile length: {ref_tile_length}")
+    tiles = _calc_tiles(
+        total_region.end5, total_region.end3, ref_tile_length, tile_min_overlap
+    )
     logger.routine(f"Ended calculating tiles for reference {repr(ref)}")
     return [(ref, end5, end3) for end5, end3 in tiles]
 
 
-def _find_correlated_pairs(dataset: FilterMutsDataset,
-                           pair_fdr: float,
-                           num_cpus: int):
+def _find_correlated_pairs(dataset: FilterMutsDataset, pair_fdr: float, num_cpus: int):
     # Calculate the confusion matrix for the region.
     n, a, b, ab = accumulate_confusion_matrices(
         dataset.get_batch,
@@ -174,7 +166,7 @@ def _find_correlated_pairs(dataset: FilterMutsDataset,
         dataset.region.unmasked,
         None,
         min_gap=dataset.min_mut_gap,
-        num_cpus=num_cpus
+        num_cpus=num_cpus,
     )
     # Determine which pairs of positions correlate significantly at a
     # false discovery rate of pair_fdr.
@@ -185,26 +177,30 @@ def _find_correlated_pairs(dataset: FilterMutsDataset,
     csv_file = dataset.report_file.with_name(CONFUSION_MATRIX_CSV)
     phi = calc_confusion_phi(n, a, b, ab)
     confusion_matrix = pd.DataFrame.from_dict(
-        {"Neither Mutated": n - (a + b - ab),
-         "Only A Mutated": a - ab,
-         "Only B Mutated": b - ab,
-         "Both Mutated": ab,
-         "Phi Correlation": phi,
-         "Raw P-Value": pvals,
-         "Adjusted P-Value": pvals_bh_adjusted,
-         f"Significant at FDR={pair_fdr}": is_significant},
+        {
+            "Neither Mutated": n - (a + b - ab),
+            "Only A Mutated": a - ab,
+            "Only B Mutated": b - ab,
+            "Both Mutated": ab,
+            "Phi Correlation": phi,
+            "Raw P-Value": pvals,
+            "Adjusted P-Value": pvals_bh_adjusted,
+            f"Significant at FDR={pair_fdr}": is_significant,
+        }
     )
     confusion_matrix.to_csv(csv_file)
     # Return the significantly correlated pairs.
     pairs = n.index
     pairs_significant = pairs[is_significant].to_list()
-    logger.detail(f"{dataset} has {len(pairs_significant)} pairs with "
-                  f"significant correlations out of {len(pairs)} total pairs")
+    logger.detail(
+        f"{dataset} has {len(pairs_significant)} pairs with "
+        f"significant correlations out of {len(pairs)} total pairs"
+    )
     return pairs_significant
 
 
 def _aggregate_pairs(pairs: list[tuple[int, int]]) -> list[tuple[int, int]]:
-    """ Aggregate pairs that overlap. """
+    """Aggregate pairs that overlap."""
     if not pairs:
         return list()
     assert len(pairs[0]) == 2
@@ -226,8 +222,7 @@ def _aggregate_pairs(pairs: list[tuple[int, int]]) -> list[tuple[int, int]]:
 
 def _select_pairs(pairs: list[tuple[int, int]], end5: int, end3: int):
     assert 1 <= end5 <= end3
-    return [(pos5, pos3) for pos5, pos3 in pairs
-            if end5 <= pos5 and pos3 <= end3]
+    return [(pos5, pos3) for pos5, pos3 in pairs if end5 <= pos5 and pos3 <= end3]
 
 
 def _calc_span_per_pos(pairs: list[tuple[int, int]], end5: int, end3: int):
@@ -235,19 +230,18 @@ def _calc_span_per_pos(pairs: list[tuple[int, int]], end5: int, end3: int):
     spans_per_pos = pd.Series(0, index=range(end5, end3 + 1))
     for pos5, pos3 in pairs:
         assert end5 <= pos5 <= pos3 <= end3
-        spans_per_pos.loc[pos5: pos3] += 1
+        spans_per_pos.loc[pos5:pos3] += 1
     return spans_per_pos
 
 
-def _calc_null_span_per_pos_keep_dists(pairs: list[tuple[int, int]],
-                                       end5: int,
-                                       end3: int):
+def _calc_null_span_per_pos_keep_dists(
+    pairs: list[tuple[int, int]], end5: int, end3: int
+):
     assert 1 <= end5 <= end3
-    null_spans_per_pos = pd.Series(0., index=range(end5, end3 + 1))
+    null_spans_per_pos = pd.Series(0.0, index=range(end5, end3 + 1))
     num_pos = null_spans_per_pos.size
     assert num_pos >= 1
-    ramp = np.minimum(np.arange(1, num_pos + 1),
-                      np.arange(num_pos, 0, -1))
+    ramp = np.minimum(np.arange(1, num_pos + 1), np.arange(num_pos, 0, -1))
     fraction_overlap_cache = dict()
     for pos5, pos3 in pairs:
         assert end5 <= pos5 <= pos3 <= end3
@@ -264,10 +258,9 @@ def _calc_null_span_per_pos_keep_dists(pairs: list[tuple[int, int]],
     return null_spans_per_pos
 
 
-def _calc_null_span_per_pos_rand_dists(pairs: list[tuple[int, int]],
-                                       end5: int,
-                                       end3: int,
-                                       min_mut_gap: int):
+def _calc_null_span_per_pos_rand_dists(
+    pairs: list[tuple[int, int]], end5: int, end3: int, min_mut_gap: int
+):
     assert 1 <= end5 <= end3
     assert min_mut_gap >= 0
     positions = np.arange(end5, end3 + 1)
@@ -280,35 +273,36 @@ def _calc_null_span_per_pos_rand_dists(pairs: list[tuple[int, int]],
     # expected count under this null model and must not inflate num_pairs.
     num_valid_pairs = sum(1 for p5, p3 in pairs if p3 - p5 > min_mut_gap)
     if num_intervals == 0 or num_valid_pairs == 0:
-        return pd.Series(0., index=positions)
+        return pd.Series(0.0, index=positions)
     # For each position, count all possible intervals (a, b) such that
     # end5 ≤ a ≤ k ≤ b ≤ end3.
     counts = (positions - (end5 - 1)) * ((end3 + 1) - positions)
     # Remove intervals for which b - a ≤ min_mut_gap.
-    ramp = np.minimum(np.arange(1, num_pos + 1),
-                      np.arange(num_pos, 0, -1))
+    ramp = np.minimum(np.arange(1, num_pos + 1), np.arange(num_pos, 0, -1))
     for length in range(1, min(min_mut_gap + 1, num_pos) + 1):
         # Number of possible locations of the interval.
         num_loc = num_pos - length + 1
         counts -= np.minimum(ramp, min(length, num_loc))
     assert np.all(counts >= 0)
     # Calculate the expected number of pairs that overlap each position.
-    return pd.Series((num_valid_pairs / num_intervals) * counts,
-                     index=positions)
+    return pd.Series((num_valid_pairs / num_intervals) * counts, index=positions)
 
 
-def _calc_modules_from_pairs(pairs: list[tuple[int, int]],
-                             pair_fdr: float,
-                             min_mut_gap: int,
-                             min_pairs: int = 1,
-                             threshold_multiplier: float = 1.0,
-                             preserve_null_pair_dists: bool = False,
-                             max_iter: int = 10000):
+def _calc_modules_from_pairs(
+    pairs: list[tuple[int, int]],
+    pair_fdr: float,
+    min_mut_gap: int,
+    min_pairs: int = 1,
+    threshold_multiplier: float = 1.0,
+    preserve_null_pair_dists: bool = False,
+    max_iter: int = 10000,
+):
     logger.routine("Began calculating modules")
     require_atleast("min_mut_gap", min_mut_gap, 0, classes=int)
     require_atleast("min_pairs", min_pairs, 1, classes=int)
-    require_atleast("threshold_multiplier", threshold_multiplier, 0.0,
-                    classes=(float, int))
+    require_atleast(
+        "threshold_multiplier", threshold_multiplier, 0.0, classes=(float, int)
+    )
     finished = set()
     # First, naively aggregate all pairs that overlap.
     modules = _aggregate_pairs(pairs)
@@ -331,16 +325,11 @@ def _calc_modules_from_pairs(pairs: list[tuple[int, int]],
             # Calculate how many pairs expected to span each position
             if preserve_null_pair_dists:
                 null_spans_per_pos = _calc_null_span_per_pos_keep_dists(
-                    module_pairs,
-                    end5,
-                    end3,
+                    module_pairs, end5, end3
                 )
             else:
                 null_spans_per_pos = _calc_null_span_per_pos_rand_dists(
-                    module_pairs,
-                    end5,
-                    end3,
-                    min_mut_gap,
+                    module_pairs, end5, end3, min_mut_gap
                 )
             threshold = pair_fdr * null_spans_per_pos * threshold_multiplier
             sufficient_spans_per_pos = spans_per_pos > threshold
@@ -372,67 +361,70 @@ def _calc_modules_from_pairs(pairs: list[tuple[int, int]],
     return modules
 
 
-def _graph_pairs_and_modules(pairs: list[tuple[int, int]],
-                             modules: list[tuple[int, int]],
-                             end5: int,
-                             end3: int,
-                             html_file: str | Path):
+def _graph_pairs_and_modules(
+    pairs: list[tuple[int, int]],
+    modules: list[tuple[int, int]],
+    end5: int,
+    end3: int,
+    html_file: str | Path,
+):
     # Create a subplot with two rows: top for pair_fraction,
     # bottom for correlated pairs
     fig = make_subplots(rows=1, cols=1)
     # Graph the modules as triangles.
     end5s, end3s = _tuples_to_ends_arrays(modules)
-    modules_midpoints, modules_distances = _calc_midpoints_distances(end5s,
-                                                                     end3s)
-    for (a, b), x, y in zip(modules,
-                            modules_midpoints,
-                            modules_distances,
-                            strict=True):
-        fig.add_trace(go.Scatter(x=[a, b, x, a],
-                                 y=[0, 0, y, 0],
-                                 mode="none",
-                                 fill="toself",
-                                 fillcolor="rgba(230,159,0,0.5)",
-                                 showlegend=False,
-                                 name=None,
-                                 hoverinfo="text",
-                                 text=f"Module {a, b}",
-                                 hovertemplate="%{text}<extra></extra>"))
+    modules_midpoints, modules_distances = _calc_midpoints_distances(end5s, end3s)
+    for (a, b), x, y in zip(modules, modules_midpoints, modules_distances, strict=True):
+        fig.add_trace(
+            go.Scatter(
+                x=[a, b, x, a],
+                y=[0, 0, y, 0],
+                mode="none",
+                fill="toself",
+                fillcolor="rgba(230,159,0,0.5)",
+                showlegend=False,
+                name=None,
+                hoverinfo="text",
+                text=f"Module {a, b}",
+                hovertemplate="%{text}<extra></extra>",
+            )
+        )
     # Plot the correlated pairs as points.
     pos5s, pos3s = _tuples_to_ends_arrays(pairs)
-    pairs_midpoints, pairs_distances = _calc_midpoints_distances(pos5s,
-                                                                 pos3s)
-    fig.add_trace(go.Scatter(x=pairs_midpoints,
-                             y=pairs_distances,
-                             mode="markers",
-                             showlegend=False,
-                             marker=dict(color="#D55E00"),
-                             name=None,
-                             hoverinfo="text",
-                             text=[f"Pair {pair}" for pair in pairs],
-                             hovertemplate="%{text}<extra></extra>"))
+    pairs_midpoints, pairs_distances = _calc_midpoints_distances(pos5s, pos3s)
+    fig.add_trace(
+        go.Scatter(
+            x=pairs_midpoints,
+            y=pairs_distances,
+            mode="markers",
+            showlegend=False,
+            marker=dict(color="#D55E00"),
+            name=None,
+            hoverinfo="text",
+            text=[f"Pair {pair}" for pair in pairs],
+            hovertemplate="%{text}<extra></extra>",
+        )
+    )
     # Finish the layout.
     assert end5 <= end3
     x_range = [end5 - 0.5, end3 + 0.5]
-    fig.update_xaxes(title_text="Midpoint Position",
-                     showgrid=True,
-                     range=x_range)
+    fig.update_xaxes(title_text="Midpoint Position", showgrid=True, range=x_range)
     if modules_distances.size > 0 or pairs_distances.size > 0:
-        y_range = [0.0, 1.05 * np.max(np.concatenate([modules_distances,
-                                                      pairs_distances]))]
+        y_range = [
+            0.0,
+            1.05 * np.max(np.concatenate([modules_distances, pairs_distances])),
+        ]
     else:
         y_range = [0.0, 1.0]
-    fig.update_yaxes(title_text="Length of Span",
-                     showgrid=True,
-                     range=y_range)
+    fig.update_yaxes(title_text="Length of Span", showgrid=True, range=y_range)
     # Save the figure.
     fig.write_html(html_file)
 
 
-def _insert_modules_into_gaps(modules: list[tuple[int, int]],
-                              global_end5: int,
-                              global_end3: int):
-    """ Turn every gap between modules into a new module. """
+def _insert_modules_into_gaps(
+    modules: list[tuple[int, int]], global_end5: int, global_end3: int
+):
+    """Turn every gap between modules into a new module."""
     assert 1 <= global_end5 <= global_end3
     new_modules = list()
     prev_pos3 = global_end5 - 1
@@ -454,10 +446,10 @@ def _insert_modules_into_gaps(modules: list[tuple[int, int]],
     return new_modules
 
 
-def _expand_modules_into_gaps(modules: list[tuple[int, int]],
-                              global_end5: int,
-                              global_end3: int):
-    """ Expand every module to fill gaps on either side. """
+def _expand_modules_into_gaps(
+    modules: list[tuple[int, int]], global_end5: int, global_end3: int
+):
+    """Expand every module to fill gaps on either side."""
     assert 1 <= global_end5 <= global_end3
     if not modules:
         return list()
@@ -480,35 +472,42 @@ def _expand_modules_into_gaps(modules: list[tuple[int, int]],
     return _ends_arrays_to_tuples(end5s, end3s)
 
 
-def _filter_modules_length(modules: list[tuple[int, int]],
-                           min_length: int | float = 1,
-                           max_length: int | float = np.inf):
-    """ Remove modules that are too short or too long. """
-    return [(end5, end3) for end5, end3 in modules
-            if min_length <= (end3 - end5 + 1) <= max_length]
+def _filter_modules_length(
+    modules: list[tuple[int, int]],
+    min_length: int | float = 1,
+    max_length: int | float = np.inf,
+):
+    """Remove modules that are too short or too long."""
+    return [
+        (end5, end3)
+        for end5, end3 in modules
+        if min_length <= (end3 - end5 + 1) <= max_length
+    ]
 
 
-def _write_pairs_to_csv(pairs: list[tuple[int, int]],
-                        csv_file: str | Path):
-    """ Write the pairs to a CSV file. """
+def _write_pairs_to_csv(pairs: list[tuple[int, int]], csv_file: str | Path):
+    """Write the pairs to a CSV file."""
     pos5s, pos3s = _tuples_to_ends_arrays(pairs)
-    df = pd.DataFrame.from_dict({POSITION_A: pos5s, POSITION_B: pos3s},
-                                orient="columns")
+    df = pd.DataFrame.from_dict(
+        {POSITION_A: pos5s, POSITION_B: pos3s}, orient="columns"
+    )
     df.to_csv(csv_file, index=False)
 
 
-def _calc_cluster_modules(filter_dirs: list[Path],
-                          report_dir: Path,
-                          num_cpus: int,
-                          pair_fdr: float,
-                          probe: str,
-                          min_mut_gap: int | None,
-                          min_pairs: int,
-                          threshold_multiplier: float,
-                          min_length: int,
-                          max_length: int,
-                          gap_mode: str):
-    """ Calculate the cluster regions for all tiles of one reference. """
+def _calc_cluster_modules(
+    filter_dirs: list[Path],
+    report_dir: Path,
+    num_cpus: int,
+    pair_fdr: float,
+    probe: str,
+    min_mut_gap: int | None,
+    min_pairs: int,
+    threshold_multiplier: float,
+    min_length: int,
+    max_length: int,
+    gap_mode: str,
+):
+    """Calculate the cluster regions for all tiles of one reference."""
     # Each dataset corresponds to one tile.
     datasets = list(load_filter_dataset.iterate(filter_dirs))
     if not datasets:
@@ -520,31 +519,50 @@ def _calc_cluster_modules(filter_dirs: list[Path],
     branches = datasets[0].branches
     for dataset in datasets[1:]:
         if dataset.ref != ref:
-            raise ValueError(f"Expected all tile datasets to have reference "
-                             f"{repr(ref)}, but got {repr(dataset.ref)}")
+            raise ValueError(
+                f"Expected all tile datasets to have reference "
+                f"{repr(ref)}, but got {repr(dataset.ref)}"
+            )
         if dataset.refseq != refseq:
-            raise ValueError(f"Expected all tile datasets to have the same "
-                             f"reference sequence as {repr(ref)}, but got a "
-                             f"different sequence for {repr(dataset.ref)}")
+            raise ValueError(
+                f"Expected all tile datasets to have the same "
+                f"reference sequence as {repr(ref)}, but got a "
+                f"different sequence for {repr(dataset.ref)}"
+            )
         if dataset.branches != branches:
-            raise ValueError(f"Expected all tile datasets to have branches "
-                             f"{branches}, but got {dataset.branches}")
+            raise ValueError(
+                f"Expected all tile datasets to have branches "
+                f"{branches}, but got {dataset.branches}"
+            )
     # The region is the union of all tiles' regions.
     region = unite([dataset.region for dataset in datasets], refseq=refseq)
     # Find pairs of bases that correlate significantly in any region.
     # Use sorted(set()) to ensure pairs are unique and sorted.
-    pairs = sorted(set(chain(*dispatch(_find_correlated_pairs,
-                                       num_cpus=num_cpus,
-                                       pass_num_cpus=True,
-                                       as_list=False,
-                                       ordered=False,
-                                       raise_on_error=True,
-                                       args=as_list_of_tuples(datasets),
-                                       kwargs=dict(pair_fdr=pair_fdr)))))
+    pairs = sorted(
+        set(
+            chain(
+                *dispatch(
+                    _find_correlated_pairs,
+                    num_cpus=num_cpus,
+                    pass_num_cpus=True,
+                    as_list=False,
+                    ordered=False,
+                    raise_on_error=True,
+                    args=as_list_of_tuples(datasets),
+                    kwargs=dict(pair_fdr=pair_fdr),
+                )
+            )
+        )
+    )
     # Find modules of correlated pairs.
     min_mut_gap, _ = set_mut_gap_params(probe, min_mut_gap)
-    modules = _calc_modules_from_pairs(pairs, pair_fdr, min_mut_gap, min_pairs,
-                                       threshold_multiplier=threshold_multiplier)
+    modules = _calc_modules_from_pairs(
+        pairs,
+        pair_fdr,
+        min_mut_gap,
+        min_pairs,
+        threshold_multiplier=threshold_multiplier,
+    )
     n_modules_before_filter = len(modules)
     # Determine what to do with gaps between regions.
     if gap_mode == GAP_MODE_INSERT:
@@ -560,8 +578,10 @@ def _calc_cluster_modules(filter_dirs: list[Path],
         raise ValueError(gap_mode)
     logger.routine(f"Ended adjusting modules: {modules}")
     if n_modules_before_filter > 0 and not modules:
-        logger.warning(f"All {n_modules_before_filter} module(s) were removed "
-                       f"by length filter (min={min_length}, max={max_length})")
+        logger.warning(
+            f"All {n_modules_before_filter} module(s) were removed "
+            f"by length filter (min={min_length}, max={max_length})"
+        )
     # Write the pairs and modules to CSV files.
     report_dir.mkdir(parents=True, exist_ok=True)
     _write_pairs_to_csv(pairs, report_dir.joinpath(PAIRS_CSV))
@@ -569,100 +589,97 @@ def _calc_cluster_modules(filter_dirs: list[Path],
     # Graph the correlated pairs and modules.
     html_file = report_dir.joinpath(PAIRS_MODULES_HTML)
     try:
-        _graph_pairs_and_modules(pairs,
-                                 modules,
-                                 region.end5,
-                                 region.end3,
-                                 html_file)
+        _graph_pairs_and_modules(pairs, modules, region.end5, region.end3, html_file)
     except Exception as error:
         logger.error(error)
     return [(ref, end5, end3) for end5, end3 in modules], len(pairs)
 
 
-def ensembles(idmut_report_file: Path, *,
-            # General options
-            branch: str,
-               tmp_pfx: str | Path,
-               keep_tmp: bool,
-               brotli_level: int,
-               force: bool,
-               num_cpus: int,
-               # Ensembles options
-               tile_length: int,
-               tile_min_overlap: float,
-               erase_tiles: bool,
-               pair_fdr: float,
-               min_pairs: int,
-               threshold_multiplier: float,
-               min_cluster_length: int,
-               max_cluster_length: int,
-               gap_mode: str,
-               # Filter options
-               region_coords: Iterable[tuple[str, int, int]],
-               region_primers: Iterable[tuple[str, DNA, DNA]],
-               primer_gap: int,
-               regions_file: str | None,
-               count_del: bool,
-               count_ins: bool,
-               no_mut: Iterable[str],
-               only_mut: Iterable[str],
-               probe: str,
-               mask_a: bool | None,
-               mask_c: bool | None,
-               mask_g: bool | None,
-               mask_u: bool | None,
-               mask_polya: int,
-               mask_pos: Iterable[tuple[str, int]],
-               mask_pos_file: Iterable[str | Path],
-               drop_read: Iterable[str],
-               drop_read_file: Iterable[str | Path],
-               drop_discontig: bool,
-               min_ncov_read: int,
-               min_fcov_read: float,
-               min_finfo_read: float,
-               max_fmut_read: float,
-               min_mut_gap: int | None,
-               mut_collisions: str,
-               min_ninfo_pos: int,
-               max_fmut_pos: float,
-               quick_unbias: bool,
-               quick_unbias_thresh: float,
-               max_filter_iter: int,
-               filter_pos_table: bool,
-               filter_read_table: bool,
-               # Cluster options
-               min_clusters: int,
-               max_clusters: int,
-               min_em_runs: int,
-               max_em_runs: int,
-               jackpot: bool,
-               jackpot_conf_level: float,
-               max_jackpot_quotient: float,
-               max_jackpot_sims: int,
-               jackpot_max_data: int,
-               min_em_iter: int,
-               max_em_iter: int,
-               em_thresh: float,
-               min_marcd_run: float,
-               max_pearson_run: float,
-               max_arcd_vs_ens_avg: float,
-               max_gini_run: float,
-               max_loglike_vs_best: float,
-               min_pearson_vs_best: float,
-               max_marcd_vs_best: float,
-               try_all_ks: bool,
-               write_all_ks: bool,
-               cluster_pos_table: bool,
-               cluster_abundance_table: bool,
-               verify_times: bool,
-            seed: int | None):
-    """ Run one IDmut report through the full ensembles pipeline. """
+def ensembles(
+    idmut_report_file: Path,
+    *,
+    # General options
+    branch: str,
+    tmp_pfx: str | Path,
+    keep_tmp: bool,
+    brotli_level: int,
+    force: bool,
+    num_cpus: int,
+    # Ensembles options
+    tile_length: int,
+    tile_min_overlap: float,
+    erase_tiles: bool,
+    pair_fdr: float,
+    min_pairs: int,
+    threshold_multiplier: float,
+    min_cluster_length: int,
+    max_cluster_length: int,
+    gap_mode: str,
+    # Filter options
+    region_coords: Iterable[tuple[str, int, int]],
+    region_primers: Iterable[tuple[str, DNA, DNA]],
+    primer_gap: int,
+    regions_file: str | None,
+    count_del: bool,
+    count_ins: bool,
+    no_mut: Iterable[str],
+    only_mut: Iterable[str],
+    probe: str,
+    mask_a: bool | None,
+    mask_c: bool | None,
+    mask_g: bool | None,
+    mask_u: bool | None,
+    mask_polya: int,
+    mask_pos: Iterable[tuple[str, int]],
+    mask_pos_file: Iterable[str | Path],
+    drop_read: Iterable[str],
+    drop_read_file: Iterable[str | Path],
+    drop_discontig: bool,
+    min_ncov_read: int,
+    min_fcov_read: float,
+    min_finfo_read: float,
+    max_fmut_read: float,
+    min_mut_gap: int | None,
+    mut_collisions: str,
+    min_ninfo_pos: int,
+    max_fmut_pos: float,
+    quick_unbias: bool,
+    quick_unbias_thresh: float,
+    max_filter_iter: int,
+    filter_pos_table: bool,
+    filter_read_table: bool,
+    # Cluster options
+    min_clusters: int,
+    max_clusters: int,
+    min_em_runs: int,
+    max_em_runs: int,
+    jackpot: bool,
+    jackpot_conf_level: float,
+    max_jackpot_quotient: float,
+    max_jackpot_sims: int,
+    jackpot_max_data: int,
+    min_em_iter: int,
+    max_em_iter: int,
+    em_thresh: float,
+    min_marcd_run: float,
+    max_pearson_run: float,
+    max_arcd_vs_ens_avg: float,
+    max_gini_run: float,
+    max_loglike_vs_best: float,
+    min_pearson_vs_best: float,
+    max_marcd_vs_best: float,
+    try_all_ks: bool,
+    write_all_ks: bool,
+    cluster_pos_table: bool,
+    cluster_abundance_table: bool,
+    verify_times: bool,
+    seed: int | None,
+):
+    """Run one IDmut report through the full ensembles pipeline."""
     # Load region info cheaply (reads JSON only, no batch I/O).
-    datasets, total_regions = load_regions([idmut_report_file],
-                                           region_coords,
-                                           region_primers,
-                                           primer_gap,
-                                           regions_file)
+    datasets, total_regions = load_regions(
+        [idmut_report_file], region_coords, region_primers, primer_gap, regions_file
+    )
     refs = total_regions.refs
     assert len(refs) == 1
     ref = refs[0]
@@ -673,23 +690,24 @@ def ensembles(idmut_report_file: Path, *,
     assert len(datasets[ref]) == 1
     idmut_dataset = datasets[ref][0]
     # Check if the EnsemblesReport already exists.
-    report_branches = path.add_branch(path.ENSEMBLES_STEP, branch,
-                                      idmut_dataset.branches)
-    report_file = EnsemblesReport.build_path({
-        path.TOP:      idmut_dataset.top,
-        path.SAMPLE:   idmut_dataset.sample,
-        path.BRANCHES: report_branches,
-        path.REF:      idmut_dataset.ref,
-        path.REG:      total_region.name,
-    })
+    report_branches = path.add_branch(
+        path.ENSEMBLES_STEP, branch, idmut_dataset.branches
+    )
+    report_file = EnsemblesReport.build_path(
+        {
+            path.TOP: idmut_dataset.top,
+            path.SAMPLE: idmut_dataset.sample,
+            path.BRANCHES: report_branches,
+            path.REF: idmut_dataset.ref,
+            path.REG: total_region.name,
+        }
+    )
     if need_write(report_file, force):
         began = datetime.now()
         # Compute tile coordinates (potentially expensive when tile_length <= 0).
-        tile_coords = _calc_tile_coords(idmut_dataset,
-                                          total_region,
-                                          tile_length,
-                                          tile_min_overlap,
-                                          num_cpus)
+        tile_coords = _calc_tile_coords(
+            idmut_dataset, total_region, tile_length, tile_min_overlap, num_cpus
+        )
         tiled_dirs = filter_mod.run(
             input_path=[idmut_report_file],
             branch=branch,
@@ -729,7 +747,7 @@ def ensembles(idmut_report_file: Path, *,
             filter_read_table=False,
             brotli_level=brotli_level,
             num_cpus=num_cpus,
-            force=force
+            force=force,
         )
         # Find regions spanned by correlated base pairs.
         report_dir = report_file.parent
@@ -744,7 +762,7 @@ def ensembles(idmut_report_file: Path, *,
             min_length=min_cluster_length,
             max_length=max_cluster_length,
             gap_mode=gap_mode,
-            num_cpus=num_cpus
+            num_cpus=num_cpus,
         )
         if module_coords:
             # Generate the regions spanned by correlated base pairs.
@@ -787,7 +805,7 @@ def ensembles(idmut_report_file: Path, *,
                 filter_read_table=filter_read_table,
                 brotli_level=brotli_level,
                 num_cpus=num_cpus,
-                force=force
+                force=force,
             )
             # Cluster the regions spanned by correlated base pairs.
             cluster_dirs = cluster_mod.run(
@@ -859,15 +877,17 @@ def ensembles(idmut_report_file: Path, *,
             began=began,
             ended=datetime.now(),
         ).save(idmut_dataset.top, force=force)
-        # Erase the tiles at the 
+        # Erase the tiles at the
         if erase_tiles:
             # Delete the filter reports and batches of the tiles.
             logger.routine("Began deleting tiled reports and batches")
-            for file in path.find_files_chain(tiled_dirs,
-                                            FilterReport.get_path_seg_types()):
+            for file in path.find_files_chain(
+                tiled_dirs, FilterReport.get_path_seg_types()
+            ):
                 file.unlink(missing_ok=True)
-            for file in path.find_files_chain(tiled_dirs,
-                                            FilterBatchIO.get_path_seg_types()):
+            for file in path.find_files_chain(
+                tiled_dirs, FilterBatchIO.get_path_seg_types()
+            ):
                 file.unlink(missing_ok=True)
             logger.routine("Ended deleting tiled reports and batches")
     return report_file.parent

@@ -5,7 +5,7 @@ __version__ = "0.25.0dev"
 
 
 def parse_version(version: str = __version__):
-    """ Major and minor versions, patch, and pre-release tag. """
+    """Major and minor versions, patch, and pre-release tag."""
     match = re.match(r"^([0-9]+)[.]([0-9]+)[.]([0-9]+)([a-z]*[0-9]*)$", version)
     if not match:
         raise ValueError(f"Malformatted version: {repr(version)}")
@@ -17,8 +17,7 @@ def parse_version(version: str = __version__):
 MAJOR, MINOR, PATCH, PRTAG = parse_version()
 
 
-def format_version(major: int = MAJOR,
-                   minor: int = MINOR,
-                   patch: int = PATCH,
-                   prtag: str = PRTAG):
+def format_version(
+    major: int = MAJOR, minor: int = MINOR, patch: int = PATCH, prtag: str = PRTAG
+):
     return f"{major}.{minor}.{patch}{prtag}"

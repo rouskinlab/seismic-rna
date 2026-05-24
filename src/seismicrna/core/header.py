@@ -7,12 +7,14 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
-from .validate import (require_equal,
-                       require_array_equal,
-                       require_index_equals,
-                       require_atleast,
-                       require_atmost,
-                       require_isinstance)
+from .validate import (
+    require_equal,
+    require_array_equal,
+    require_index_equals,
+    require_atleast,
+    require_atmost,
+    require_isinstance,
+)
 
 # Index level names
 REL_NAME = "Relationship"
@@ -34,7 +36,7 @@ NO_CLUSTS = [NO_CLUST]
 
 
 def validate_k_clust(k: int, clust: int):
-    """ Validate a pair of k and cluster numbers.
+    """Validate a pair of k and cluster numbers.
 
     Parameters
     ----------
@@ -62,7 +64,7 @@ def validate_k_clust(k: int, clust: int):
 
 
 def validate_ks(ks: Iterable):
-    """ Validate and sort numbers of clusters.
+    """Validate and sort numbers of clusters.
 
     Parameters
     ----------
@@ -89,7 +91,7 @@ def validate_ks(ks: Iterable):
 
 
 def deduplicate_rels(rels: Iterable):
-    """ Remove duplicate relationships while preserving their order.
+    """Remove duplicate relationships while preserving their order.
 
     Parameters
     ----------
@@ -111,7 +113,7 @@ def deduplicate_rels(rels: Iterable):
 
 
 def format_clust_name(k: int, clust: int):
-    """ Format a pair of k and cluster numbers into a name.
+    """Format a pair of k and cluster numbers into a name.
 
     Parameters
     ----------
@@ -129,9 +131,10 @@ def format_clust_name(k: int, clust: int):
     return f"{CLUSTER_PREFIX} {k}-{clust}" if k > 0 else AVERAGE_PREFIX
 
 
-def format_clust_names(clusts: Iterable[tuple[int, int]],
-                       allow_duplicates: bool = False):
-    """ Format pairs of k and clust into a list of names.
+def format_clust_names(
+    clusts: Iterable[tuple[int, int]], allow_duplicates: bool = False
+):
+    """Format pairs of k and clust into a list of names.
 
     Parameters
     ----------
@@ -158,7 +161,7 @@ def format_clust_names(clusts: Iterable[tuple[int, int]],
 
 
 def list_clusts(k: int):
-    """ List all cluster numbers for one k.
+    """List all cluster numbers for one k.
 
     Parameters
     ----------
@@ -175,7 +178,7 @@ def list_clusts(k: int):
 
 
 def list_k_clusts(k: int):
-    """ List k and cluster numbers as 2-tuples for one k.
+    """List k and cluster numbers as 2-tuples for one k.
 
     Parameters
     ----------
@@ -192,7 +195,7 @@ def list_k_clusts(k: int):
 
 
 def list_ks_clusts(ks: Iterable[int]):
-    """ List k and cluster numbers as 2-tuples.
+    """List k and cluster numbers as 2-tuples.
 
     Parameters
     ----------
@@ -208,86 +211,86 @@ def list_ks_clusts(ks: Iterable[int]):
 
 
 class Header(ABC):
-    """ Header for a table. """
+    """Header for a table."""
 
     @classmethod
     @abstractmethod
     def get_is_clustered(cls) -> bool:
-        """ Whether the header has clusters. """
+        """Whether the header has clusters."""
 
     @classmethod
     @abstractmethod
     def get_levels(cls):
-        """ Levels of the index. """
+        """Levels of the index."""
         return dict()
 
     @classmethod
     def get_num_levels(cls):
-        """ Number of levels. """
+        """Number of levels."""
         return len(cls.get_levels())
 
     @classmethod
     def get_level_keys(cls):
-        """ Level keys of the index. """
+        """Level keys of the index."""
         return list(cls.get_levels().keys())
 
     @classmethod
     def get_level_names(cls):
-        """ Level names of the index. """
+        """Level names of the index."""
         return list(cls.get_levels().values())
 
     @property
     @abstractmethod
     def ks(self) -> list[int]:
-        """ Numbers of clusters. """
+        """Numbers of clusters."""
 
     @cached_property
     @abstractmethod
     def clusts(self) -> list[tuple[int, int]]:
-        """ Tracks of data: clusters for clustered data, otherwise one
-        track of the average. """
+        """Tracks of data: clusters for clustered data, otherwise one
+        track of the average."""
 
     @cached_property
     def names(self):
-        """ Formatted name of each track. """
+        """Formatted name of each track."""
         return format_clust_names(self.clusts, not self.get_is_clustered())
 
     @cached_property
     def signature(self):
-        """ Signature of the header, which will generate an identical
-        header if passed as keyword arguments to `make_header`. """
+        """Signature of the header, which will generate an identical
+        header if passed as keyword arguments to `make_header`."""
         return dict()
 
     @cached_property
     @abstractmethod
     def index(self) -> pd.Index:
-        """ Index of the header. """
+        """Index of the header."""
 
     @abstractmethod
     def iter_clust_indexes(self):
-        """ For each cluster, yield an Index/MultiIndex of every column
-        that is part of the cluster. """
+        """For each cluster, yield an Index/MultiIndex of every column
+        that is part of the cluster."""
 
     @property
     def size(self):
-        """ Number of items in the Header. """
+        """Number of items in the Header."""
         return self.index.size
 
     def select(self, **kwargs) -> pd.Index:
-        """ Select and return items from the header as an Index. """
+        """Select and return items from the header as an Index."""
         index = self.index
         selected = np.ones(index.size, dtype=bool)
         # Handle combinations of k and clust in a list of tuples.
         if value := kwargs.pop(K_CLUST_KEY, None):
             require_isinstance(K_CLUST_KEY, value, list)
-            k_name = self.get_levels().get('k')
-            clust_name = self.get_levels().get('clust')
+            k_name = self.get_levels().get("k")
+            clust_name = self.get_levels().get("clust")
             combo_selected = np.zeros(index.size, dtype=bool)
             for k, clust in value:
                 # Find rows that match each specified combination.
                 k_match = index.get_level_values(k_name) == k
                 clust_match = index.get_level_values(clust_name) == clust
-                combo_selected |= (k_match & clust_match)
+                combo_selected |= k_match & clust_match
             if np.all(selected):
                 selected &= combo_selected
             else:
@@ -299,19 +302,18 @@ class Header(ABC):
                 equal_values = np.isin(level_values, np.atleast_1d(value))
                 if not np.any(equal_values):
                     expect = np.unique(level_values).tolist()
-                    raise ValueError(f"{key} must be in {repr(expect)}, "
-                                     f"but got {repr(value)}")
+                    raise ValueError(
+                        f"{key} must be in {repr(expect)}, but got {repr(value)}"
+                    )
                 selected &= equal_values
         # Check if any extra keyword arguments were given; allow extra
         # arguments only if their values are falsy (e.g. None, 0).
         if extras := {k: v for k, v in kwargs.items() if v}:
-            raise TypeError(
-                f"Extra keyword arguments for {type(self)}: {extras}"
-            )
+            raise TypeError(f"Extra keyword arguments for {type(self)}: {extras}")
         return index[selected]
 
     def modified(self, **kwargs):
-        """ Return a new header with a possibly modified signature.
+        """Return a new header with a possibly modified signature.
 
         Parameters
         ----------
@@ -330,11 +332,11 @@ class Header(ABC):
         return make_header(**(self.signature | kwargs))
 
     def get_clust_header(self):
-        """ Corresponding ClustHeader. """
+        """Corresponding ClustHeader."""
         return self.modified(rels=None)
 
     def get_rel_header(self):
-        """ Corresponding RelHeader. """
+        """Corresponding RelHeader."""
         return self.modified(ks=None)
 
     def __eq__(self, other):
@@ -359,7 +361,7 @@ class Header(ABC):
 
 
 class RelHeader(Header):
-    """ Header of relationships. """
+    """Header of relationships."""
 
     @classmethod
     def get_is_clustered(cls):
@@ -381,7 +383,7 @@ class RelHeader(Header):
 
     @property
     def rels(self):
-        """ Relationships. """
+        """Relationships."""
         return self._rels
 
     @property
@@ -405,7 +407,7 @@ class RelHeader(Header):
 
 
 class ClustHeader(Header):
-    """ Header of clusters. """
+    """Header of clusters."""
 
     @classmethod
     def get_is_clustered(cls):
@@ -441,20 +443,18 @@ class ClustHeader(Header):
 
 
 class RelClustHeader(ClustHeader, RelHeader):
-    """ Header of relationships and clusters. """
+    """Header of relationships and clusters."""
 
     @cached_property
     def index(self):
-        return pd.MultiIndex.from_tuples([(rel, k, clust)
-                                          for rel in self.rels
-                                          for k, clust in self.clusts],
-                                         names=self.get_level_names())
+        return pd.MultiIndex.from_tuples(
+            [(rel, k, clust) for rel in self.rels for k, clust in self.clusts],
+            names=self.get_level_names(),
+        )
 
 
-def make_header(*,
-                rels: Iterable[str] | None = None,
-                ks: Iterable[int] | None = None):
-    """ Make a new Header of an appropriate type.
+def make_header(*, rels: Iterable[str] | None = None, ks: Iterable[int] | None = None):
+    """Make a new Header of an appropriate type.
 
     Parameters
     ----------
@@ -478,7 +478,7 @@ def make_header(*,
 
 
 def parse_header(index: pd.Index | pd.MultiIndex):
-    """ Parse an Index into a Header of an appropriate type.
+    """Parse an Index into a Header of an appropriate type.
 
     Parameters
     ----------
@@ -493,34 +493,35 @@ def parse_header(index: pd.Index | pd.MultiIndex):
     if isinstance(index, pd.MultiIndex):
         names = index.names
         if REL_NAME in names:
-            rels = list(map(str,
-                            deduplicate_rels(index.get_level_values(REL_NAME))))
+            rels = list(map(str, deduplicate_rels(index.get_level_values(REL_NAME))))
         else:
             rels = None
         if NUM_CLUSTS_NAME in names:
-            ks = list(map(int,
-                          np.unique(index.get_level_values(NUM_CLUSTS_NAME))))
+            ks = list(map(int, np.unique(index.get_level_values(NUM_CLUSTS_NAME))))
         else:
             ks = None
     elif index.name is None or index.name == REL_NAME:
         rels = deduplicate_rels(index.values)
         ks = None
     else:
-        raise ValueError(f"index must be named {repr(REL_NAME)}, "
-                         f"but got {repr(index.name)}")
+        raise ValueError(
+            f"index must be named {repr(REL_NAME)}, but got {repr(index.name)}"
+        )
     header = make_header(rels=rels, ks=ks)
     # Verify that the index of the new header matches the given index.
     if isinstance(index, pd.MultiIndex):
-        require_equal("index names",
-                      sorted(index.names),
-                      sorted(header.get_level_names()))
+        require_equal(
+            "index names", sorted(index.names), sorted(header.get_level_names())
+        )
         for name in header.get_level_names():
             require_array_equal(
                 f"values of index level {repr(name)}",
-                np.asarray(index.get_level_values(name).values,
-                           dtype=str if name == REL_NAME else int),
+                np.asarray(
+                    index.get_level_values(name).values,
+                    dtype=str if name == REL_NAME else int,
+                ),
                 header.index.get_level_values(name).values,
-                "values of header index"
+                "values of header index",
             )
     else:
         require_index_equals("index", index, header.index, "header index")

@@ -5,30 +5,32 @@ import pandas as pd
 from numba import jit
 
 from .types import UINT_NBYTES, fit_uint_type, get_uint_type
-from .validate import (require_isinstance,
-                       require_atleast,
-                       require_equal,
-                       require_array_equal)
+from .validate import (
+    require_isinstance,
+    require_atleast,
+    require_equal,
+    require_array_equal,
+)
 
 MISSING = -1
 
 
 def _unpack_tuple(items: Any):
-    """ If items is a length-1 tuple, then return its single item;
-    otherwise, return the items unchanged. """
+    """If items is a length-1 tuple, then return its single item;
+    otherwise, return the items unchanged."""
     if isinstance(items, tuple) and len(items) == 1:
         return items[0]
     return items
 
 
 def list_naturals(n: int):
-    """ List natural numbers up to and including `n`. """
+    """List natural numbers up to and including `n`."""
     return np.arange(1, n + 1)
 
 
 def check_naturals(values: np.ndarray, what: str = "values"):
-    """ Raise ValueError if the values are not monotonically increasing
-    natural numbers. """
+    """Raise ValueError if the values are not monotonically increasing
+    natural numbers."""
     length = get_length(values, what)
     require_array_equal(what, values, np.arange(1, length + 1))
     return np.asarray(values, dtype=int)
@@ -37,13 +39,13 @@ def check_naturals(values: np.ndarray, what: str = "values"):
 def get_length(array: np.ndarray, what: str = "array") -> int:
     require_isinstance(what, array, np.ndarray)
     require_equal(f"{what}.ndim", array.ndim, 1)
-    length, = array.shape
+    (length,) = array.shape
     return length
 
 
 @jit()
 def _fill_inverse_fwd(inverse: np.ndarray, default: int):
-    """ Fill missing indexes in `inverse` in forward order. """
+    """Fill missing indexes in `inverse` in forward order."""
     fill = default
     for i in range(inverse.size):
         inv = inverse[i]
@@ -55,7 +57,7 @@ def _fill_inverse_fwd(inverse: np.ndarray, default: int):
 
 @jit()
 def _fill_inverse_rev(inverse: np.ndarray, default: int):
-    """ Fill missing indexes in `inverse` in reverse order. """
+    """Fill missing indexes in `inverse` in reverse order."""
     fill = default
     for i in range(inverse.size - 1, -1, -1):
         inv = inverse[i]
@@ -65,14 +67,16 @@ def _fill_inverse_rev(inverse: np.ndarray, default: int):
             fill = inv
 
 
-def calc_inverse(target: np.ndarray,
-                 require: int = -1,
-                 fill: bool = False,
-                 fill_rev: bool = False,
-                 fill_default: int | None = None,
-                 verify: bool = True,
-                 what: str = "array"):
-    """ Calculate the inverse of `target`, such that if element i of
+def calc_inverse(
+    target: np.ndarray,
+    require: int = -1,
+    fill: bool = False,
+    fill_rev: bool = False,
+    fill_default: int | None = None,
+    verify: bool = True,
+    what: str = "array",
+):
+    """Calculate the inverse of `target`, such that if element i of
     `target` has value x, then element x of the inverse has value i.
 
     >>> list(calc_inverse(np.array([3, 2, 7, 5, 1])))
@@ -121,14 +125,10 @@ def calc_inverse(target: np.ndarray,
         if uniq.size > 0:
             # Verify that all values in target are non-negative.
             if get_length(uniq, what) > 0 > uniq[0]:
-                raise ValueError(
-                    f"{what} has negative values: {uniq[uniq < 0]}"
-                )
+                raise ValueError(f"{what} has negative values: {uniq[uniq < 0]}")
             # Verify that all values in target are unique.
             if counts.max() > 1:
-                raise ValueError(
-                    f"{what} has repeated values: {uniq[counts > 1]}"
-                )
+                raise ValueError(f"{what} has repeated values: {uniq[counts > 1]}")
     # Create a 1-dimensional array whose length is one greater than the
     # maximum value of target, so that the array has every index in the
     # range [0, max(target)]; initialize all elements to be missing.
@@ -140,23 +140,23 @@ def calc_inverse(target: np.ndarray,
     if fill:
         # Fill missing values in inverse.
         if fill_rev:
-            _fill_inverse_rev(inverse,
-                              (fill_default
-                               if fill_default is not None
-                               else length))
+            _fill_inverse_rev(
+                inverse, (fill_default if fill_default is not None else length)
+            )
         else:
-            _fill_inverse_fwd(inverse,
-                              (fill_default
-                               if fill_default is not None
-                               else -1))
+            _fill_inverse_fwd(
+                inverse, (fill_default if fill_default is not None else -1)
+            )
     return inverse
 
 
-def locate_elements(collection: np.ndarray,
-                    *elements: np.ndarray,
-                    what: str = "collection",
-                    verify: bool = True):
-    """ Find the index at which each element of `elements` occurs in
+def locate_elements(
+    collection: np.ndarray,
+    *elements: np.ndarray,
+    what: str = "collection",
+    verify: bool = True,
+):
+    """Find the index at which each element of `elements` occurs in
     `collection`.
 
     >>> list(locate_elements(np.array([4, 1, 2, 7, 5, 3]), np.array([5, 2, 5])))
@@ -191,9 +191,9 @@ def locate_elements(collection: np.ndarray,
 
 
 def intersect1d_unique_sorted(x: np.ndarray, y: np.ndarray):
-    """ Calculate np.intersect1d(x, y) assuming x and y are both unique
+    """Calculate np.intersect1d(x, y) assuming x and y are both unique
     and sorted, which enables a speedup over np.intersect1d (even with
-    assume_unique=True). """
+    assume_unique=True)."""
     # Calculating the intersection takes about O(y*ln(x)), so it runs
     # faster if x is larger than y.
     if x.size < y.size:
@@ -210,22 +210,23 @@ def intersect1d_unique_sorted(x: np.ndarray, y: np.ndarray):
     return y[x[i] == y]
 
 
-def ensure_same_length(arr1: np.ndarray,
-                       arr2: np.ndarray,
-                       what1: str = "array1",
-                       what2: str = "array2"):
+def ensure_same_length(
+    arr1: np.ndarray, arr2: np.ndarray, what1: str = "array1", what2: str = "array2"
+):
     len1 = get_length(arr1, what1)
     len2 = get_length(arr2, what2)
     require_equal(f"len({what1})", len1, len2, f"len({what2})")
     return len1
 
 
-def ensure_order(array1: np.ndarray,
-                 array2: np.ndarray,
-                 what1: str = "array1",
-                 what2: str = "array2",
-                 gt_eq: bool = False):
-    """ Ensure that `array1` is ≤ or ≥ `array2`, element-wise.
+def ensure_order(
+    array1: np.ndarray,
+    array2: np.ndarray,
+    what1: str = "array1",
+    what2: str = "array2",
+    gt_eq: bool = False,
+):
+    """Ensure that `array1` is ≤ or ≥ `array2`, element-wise.
 
     Parameters
     ----------
@@ -255,18 +256,19 @@ def ensure_order(array1: np.ndarray,
     if np.any(is_err := ineq_func(array1, array2)):
         index = pd.Index(np.arange(length)[is_err])
         errors = pd.DataFrame.from_dict(
-            {what1: pd.Series(array1[is_err], index=index),
-             what2: pd.Series(array2[is_err], index=index)}
+            {
+                what1: pd.Series(array1[is_err], index=index),
+                what2: pd.Series(array2[is_err], index=index),
+            }
         )
         raise ValueError(f"Got {what1} {ineq_sign} {what2}:\n{errors}")
     return length
 
 
-def sanitize_values(values: Iterable[int],
-                    lower_limit: int,
-                    upper_limit: int,
-                    whats: str = "values"):
-    """ Validate and sort values, and return them as an array. """
+def sanitize_values(
+    values: Iterable[int], lower_limit: int, upper_limit: int, whats: str = "values"
+):
+    """Validate and sort values, and return them as an array."""
     # Convert the values to an array and ensure it is one-dimensional.
     if not isinstance(values, (np.ndarray, list)):
         values = list(values)
@@ -283,20 +285,24 @@ def sanitize_values(values: Iterable[int],
     min_value = array[0]
     max_value = array[-1]
     if min_value < lower_limit:
-        raise ValueError(f"All {whats} must be ≥ {lower_limit}, but got "
-                         f"{array[array < lower_limit]}")
+        raise ValueError(
+            f"All {whats} must be ≥ {lower_limit}, but got {array[array < lower_limit]}"
+        )
     if max_value > upper_limit:
-        raise ValueError(f"All {whats} must be ≤ {upper_limit}, but got "
-                         f"{array[array > upper_limit]}")
+        raise ValueError(
+            f"All {whats} must be ≤ {upper_limit}, but got {array[array > upper_limit]}"
+        )
     # Return the array as the smallest data type that will fit the data.
     return np.asarray(array, dtype=fit_uint_type(max_value))
 
 
-def find_dims(dims: Sequence[Sequence[str | None]],
-              arrays: Sequence[np.ndarray],
-              names: Sequence[str] | None = None,
-              nonzero: Iterable[str] | bool = False):
-    """ Check the dimensions of the arrays.
+def find_dims(
+    dims: Sequence[Sequence[str | None]],
+    arrays: Sequence[np.ndarray],
+    names: Sequence[str] | None = None,
+    nonzero: Iterable[str] | bool = False,
+):
+    """Check the dimensions of the arrays.
 
     Parameters
     ----------
@@ -350,11 +356,13 @@ def find_dims(dims: Sequence[Sequence[str | None]],
         # Verify the array has a valid number of dimensions.
         if array.ndim != n_named:
             if not extras:
-                raise ValueError(f"{name} must have {n_named} dimensions, "
-                                 f"but got {array.ndim}")
+                raise ValueError(
+                    f"{name} must have {n_named} dimensions, but got {array.ndim}"
+                )
             if array.ndim < n_named:
-                raise ValueError(f"{name} must have ≥ {n_named} dimensions, "
-                                 f"but got {array.ndim}")
+                raise ValueError(
+                    f"{name} must have ≥ {n_named} dimensions, but got {array.ndim}"
+                )
         # Check each named dimension of the array.
         for i in range(n_named):
             dimi = dim[i]
@@ -366,8 +374,10 @@ def find_dims(dims: Sequence[Sequence[str | None]],
             if other_size is not None:
                 # A dimension of this name was already encountered.
                 if size != other_size:
-                    raise ValueError("Got multiple sizes for dimension "
-                                     f"{repr(dim[i])}: {other_size} ≠ {size}")
+                    raise ValueError(
+                        "Got multiple sizes for dimension "
+                        f"{repr(dim[i])}: {other_size} ≠ {size}"
+                    )
             else:
                 # This is the first time this dimension was encountered.
                 # Validate the size.
@@ -387,7 +397,7 @@ def find_dims(dims: Sequence[Sequence[str | None]],
 # Use @jit() because triangular is called by other jitted functions.
 @jit()
 def triangular(n: int):
-    """ The `n` th triangular number (`n` ≥ 0): number of items in an
+    """The `n` th triangular number (`n` ≥ 0): number of items in an
     equilateral triangle with `n` items on each side.
 
     Parameters

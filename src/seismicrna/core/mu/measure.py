@@ -9,7 +9,7 @@ from .nan import auto_remove_nan
 
 @jit()
 def _calc_sum_abs_diff(x: np.ndarray):
-    """ Sum the absolute difference along axis 0. """
+    """Sum the absolute difference along axis 0."""
     n = x.shape[0]
     sum_abs_diff = np.zeros(x.shape[1:])
     for i in range(n):
@@ -21,7 +21,7 @@ def _calc_sum_abs_diff(x: np.ndarray):
 @auto_remove_nan
 @auto_reframe
 def calc_gini(mus: np.ndarray | pd.Series | pd.DataFrame):
-    """ Calculate the Gini coefficient of mutation rates, ignoring NaNs.
+    """Calculate the Gini coefficient of mutation rates, ignoring NaNs.
 
     Parameters
     ----------
@@ -44,9 +44,10 @@ def calc_gini(mus: np.ndarray | pd.Series | pd.DataFrame):
 
 @auto_remove_nan
 @auto_reframe
-def calc_signal_noise(mus: np.ndarray | pd.Series | pd.DataFrame,
-                      is_signal: np.ndarray | pd.Series):
-    """ Calculate the signal-to-noise ratio of mutation rates.
+def calc_signal_noise(
+    mus: np.ndarray | pd.Series | pd.DataFrame, is_signal: np.ndarray | pd.Series
+):
+    """Calculate the signal-to-noise ratio of mutation rates.
 
     Parameters
     ----------

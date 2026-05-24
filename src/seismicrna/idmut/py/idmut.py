@@ -1,16 +1,14 @@
-from .ambindel import (IndelPod,
-                       DeletionPod,
-                       InsertionPod,
-                       find_ambindels,
-                       get_ins_rel)
-from .cigar import (CIG_ALIGN,
-                    CIG_MATCH,
-                    CIG_SUBST,
-                    CIG_DELET,
-                    CIG_INSRT,
-                    CIG_SCLIP,
-                    CIG_INTRN,
-                    parse_cigar)
+from .ambindel import IndelPod, DeletionPod, InsertionPod, find_ambindels, get_ins_rel
+from .cigar import (
+    CIG_ALIGN,
+    CIG_MATCH,
+    CIG_SUBST,
+    CIG_DELET,
+    CIG_INSRT,
+    CIG_SCLIP,
+    CIG_INTRN,
+    parse_cigar,
+)
 from .encode import encode_rel
 from .error import IDmutError
 from ...core.ngs import MAX_FLAG, SAM_DELIM
@@ -18,7 +16,7 @@ from ...core.rel import MATCH, DELET, NOCOV, IRREC
 
 
 class SamFlag(object):
-    """ Represents the set of 12 boolean flags for a SAM record. """
+    """Represents the set of 12 boolean flags for a SAM record."""
 
     # Define __slots__ to improve speed and memory performance.
     __slots__ = ["flag", "paired", "proper", "rev", "read1", "read2"]
@@ -48,7 +46,7 @@ class SamFlag(object):
 
 
 class SamRead(object):
-    """ One read in a SAM file. """
+    """One read in a SAM file."""
 
     # Define __slots__ to improve speed and memory performance.
     __slots__ = ["name", "flag", "ref", "pos", "mapq", "cigar", "seq", "quals"]
@@ -108,19 +106,16 @@ class SamRead(object):
         except IndexError:
             raise IDmutError("Failed to parse read quality") from None
         if len(self.seq) != len(self.quals):
-            raise IDmutError(
-                "Read sequence and quality strings differ in length"
-            )
+            raise IDmutError("Read sequence and quality strings differ in length")
 
     def __str__(self):
         attrs = {attr: getattr(self, attr) for attr in self.__slots__[1:]}
         return f"Read {repr(self.name)} {attrs}"
 
 
-def _add_indel(pods: list[IndelPod],
-               pod_type: type[IndelPod],
-               opposite: int,
-               lateral3: int):
+def _add_indel(
+    pods: list[IndelPod], pod_type: type[IndelPod], opposite: int, lateral3: int
+):
     """
     Add a new indel to the appropriate pod, creating one if needed.
 
@@ -150,13 +145,15 @@ def _add_indel(pods: list[IndelPod],
     return indel_type(opposite, lateral3, pod)
 
 
-def _calc_rels_read(read: SamRead,
-                    ref_seq: str,
-                    min_qual: str,
-                    insert3: bool,
-                    ambindel: bool,
-                    clip_end5: int,
-                    clip_end3: int):
+def _calc_rels_read(
+    read: SamRead,
+    ref_seq: str,
+    min_qual: str,
+    insert3: bool,
+    ambindel: bool,
+    clip_end5: int,
+    clip_end3: int,
+):
     """
     Find the relationships between a read and a reference.
 
@@ -210,9 +207,7 @@ def _calc_rels_read(read: SamRead,
     ref_bases = 0
     read_bases = 0
     for cigar_op, op_length in parse_cigar(read.cigar):
-        if (cigar_op == CIG_ALIGN
-                or cigar_op == CIG_MATCH
-                or cigar_op == CIG_SUBST):
+        if cigar_op == CIG_ALIGN or cigar_op == CIG_MATCH or cigar_op == CIG_SUBST:
             # These operations consume the reference and read.
             ref_bases += op_length
             read_bases += op_length
@@ -234,30 +229,29 @@ def _calc_rels_read(read: SamRead,
         raise IDmutError("CIGAR operations extended out of the reference")
     # The number of read bases consumed must equal the read length.
     if read_bases != len(read.seq):
-        raise IDmutError("CIGAR operations consumed a number of read bases "
-                          "different from the read length")
+        raise IDmutError(
+            "CIGAR operations consumed a number of read bases "
+            "different from the read length"
+        )
 
     # Read the CIGAR string one operation at a time.
     for cigar_op, op_length in parse_cigar(read.cigar):
         assert ref_pos - init_ref_pos <= ref_bases
         assert read_pos <= len(read.seq)
         # Act based on the CIGAR operation and its length.
-        if (cigar_op == CIG_ALIGN
-                or cigar_op == CIG_MATCH
-                or cigar_op == CIG_SUBST):
+        if cigar_op == CIG_ALIGN or cigar_op == CIG_MATCH or cigar_op == CIG_SUBST:
             # There are only matches or substitutions over the entire
             # CIGAR operation.
-            assert ref_pos + op_length <= ref_length, ("CIGAR operations "
-                                                       "extended out of the "
-                                                       "reference")
-            assert read_pos + op_length <= len(read.seq), ("CIGAR operations "
-                                                           "extended out of "
-                                                           "the read")
+            assert ref_pos + op_length <= ref_length, (
+                "CIGAR operations extended out of the reference"
+            )
+            assert read_pos + op_length <= len(read.seq), (
+                "CIGAR operations extended out of the read"
+            )
             for _ in range(op_length):
-                rel = encode_rel(ref_seq[ref_pos],
-                                    read.seq[read_pos],
-                                    read.quals[read_pos],
-                                    min_qual)
+                rel = encode_rel(
+                    ref_seq[ref_pos], read.seq[read_pos], read.quals[read_pos], min_qual
+                )
                 ref_pos += 1  # 1-indexed now until this iteration ends
                 read_pos += 1  # 1-indexed now until this iteration ends
                 if rel != MATCH:
@@ -267,9 +261,9 @@ def _calc_rels_read(read: SamRead,
             # CIGAR operation is deleted from the read. Make a Deletion
             # object for each base in the reference sequence that has
             # been deleted from the read.
-            assert ref_pos + op_length <= ref_length, ("CIGAR operations "
-                                                       "extended out of the "
-                                                       "reference")
+            assert ref_pos + op_length <= ref_length, (
+                "CIGAR operations extended out of the reference"
+            )
             read_pos += 1  # 1-indexed now until explicitly reset
             for _ in range(op_length):
                 if ref_pos == init_ref_pos:
@@ -286,9 +280,9 @@ def _calc_rels_read(read: SamRead,
             # The portion of the reference sequence corresponding to the
             # CIGAR operation is spliced out of the read. Treat each side of
             # the splice junction as its own segment.
-            assert ref_pos + op_length <= ref_length, ("CIGAR operations "
-                                                       "extended out of the "
-                                                       "reference")
+            assert ref_pos + op_length <= ref_length, (
+                "CIGAR operations extended out of the reference"
+            )
             if ref_pos == init_ref_pos:
                 raise IDmutError("An intron was the first relationship")
             # The start of an intron delimits the end of segment.
@@ -317,9 +311,9 @@ def _calc_rels_read(read: SamRead,
             # previous and subsequent CIGAR operations, and ref_pos is
             # the position immediately 3' of the previous operation,
             # ref_pos is naturally the coordinate 3' of the insertion.
-            assert read_pos + op_length <= len(read.seq), ("CIGAR operations "
-                                                           "extended out of "
-                                                           "the read")
+            assert read_pos + op_length <= len(read.seq), (
+                "CIGAR operations extended out of the read"
+            )
             if ref_pos == init_ref_pos:
                 raise IDmutError("An insertion was the first relationship")
             assert read_pos > 0
@@ -340,9 +334,9 @@ def _calc_rels_read(read: SamRead,
             # they are not mutations, so they do not require any
             # processing or boundary checking.
             next_read_pos = read_pos + op_length
-            assert next_read_pos <= len(read.seq), ("CIGAR operations "
-                                                    "extended out of "
-                                                    "the read")
+            assert next_read_pos <= len(read.seq), (
+                "CIGAR operations extended out of the read"
+            )
             if read_pos == 0:
                 # This is the soft clip from the 5' end of the read.
                 assert ref_pos == init_ref_pos
@@ -351,8 +345,7 @@ def _calc_rels_read(read: SamRead,
                 assert read_end5 <= len(read.seq) + 1
             else:
                 # This is the soft clip from the 3' end of the read.
-                if (ref_pos - init_ref_pos < ref_bases
-                        or next_read_pos < read_length):
+                if ref_pos - init_ref_pos < ref_bases or next_read_pos < read_length:
                     raise IDmutError("A soft clip occurred in the middle")
                 assert read_end3 == read_length == read_pos + op_length
                 read_end3 = read_pos
@@ -363,8 +356,7 @@ def _calc_rels_read(read: SamRead,
             assert False, "Unsupported CIGAR operation"
     # The second pass through the CIGAR string should have resulted in
     # the same counts as did the first pass.
-    assert ref_pos - init_ref_pos == ref_bases, ("ref_pos - init_ref_pos "
-                                                 "≠ ref_bases")
+    assert ref_pos - init_ref_pos == ref_bases, "ref_pos - init_ref_pos ≠ ref_bases"
     assert read_pos == read_bases, "read_pos ≠ read_bases"
 
     # Add insertions to rels.
@@ -381,17 +373,19 @@ def _calc_rels_read(read: SamRead,
 
     # Find and label all relationships that are ambiguous due to indels.
     if ambindel:
-        find_ambindels(rels=rels,
-                       pods=pods,
-                       insert3=insert3,
-                       ref_seq=ref_seq,
-                       read_seq=read.seq,
-                       read_qual=read.quals,
-                       min_qual=min_qual,
-                       ref_end5=read.pos,
-                       ref_end3=ref_pos,
-                       read_end5=read_end5,
-                       read_end3=read_end3)
+        find_ambindels(
+            rels=rels,
+            pods=pods,
+            insert3=insert3,
+            ref_seq=ref_seq,
+            read_seq=read.seq,
+            read_qual=read.quals,
+            min_qual=min_qual,
+            ref_end5=read.pos,
+            ref_end3=ref_pos,
+            read_end5=read_end5,
+            read_end3=read_end3,
+        )
 
     # Clip bases from the 5' and 3' ends of the read.
     if clip_end5 < 0:
@@ -404,23 +398,21 @@ def _calc_rels_read(read: SamRead,
     seg_ends5.insert(0, ref_end5)
     seg_ends3.append(ref_end3)
 
-    assert len(seg_ends5) == len(seg_ends3), ("The number of 5' segment ends "
-                                              "must match the number of "
-                                              "3' segment ends")
+    assert len(seg_ends5) == len(seg_ends3), (
+        "The number of 5' segment ends must match the number of 3' segment ends"
+    )
 
     # Convert rels to a non-default dict and select only the positions
     # contained within a segment.
-    rels = {pos: rel for pos, rel in rels.items()
-            if any(end5 <= pos <= end3 for end5, end3 in zip(seg_ends5,
-                                                             seg_ends3))}
+    rels = {
+        pos: rel
+        for pos, rel in rels.items()
+        if any(end5 <= pos <= end3 for end5, end3 in zip(seg_ends5, seg_ends3))
+    }
     return seg_ends5, seg_ends3, rels
 
 
-def _validate_read(read: SamRead,
-                   ref: str,
-                   min_mapq: int,
-                   paired: bool,
-                   proper: bool):
+def _validate_read(read: SamRead, ref: str, min_mapq: int, paired: bool, proper: bool):
     """
     Validate a SAM read against expected attributes.
 
@@ -449,17 +441,21 @@ def _validate_read(read: SamRead,
     if read.flag.paired != paired:
         expect = "paired" if paired else "single"
         marked = "paired" if read.flag.paired else "single"
-        raise IDmutError(f"Lines indicate read should be {expect}-end, "
-                          f"but it is marked as {marked}-end")
+        raise IDmutError(
+            f"Lines indicate read should be {expect}-end, "
+            f"but it is marked as {marked}-end"
+        )
     if read.flag.proper != proper:
         expect = "properly" if proper else "improperly"
         marked = "properly" if read.flag.proper else "improperly"
-        raise IDmutError(f"Lines indicate read should be {expect} paired, "
-                          f"but it is marked as {marked} paired")
+        raise IDmutError(
+            f"Lines indicate read should be {expect} paired, "
+            f"but it is marked as {marked} paired"
+        )
 
 
 def _validate_pair(read1: SamRead, read2: SamRead):
-    """ Ensure that reads 1 and 2 are compatible mates. """
+    """Ensure that reads 1 and 2 are compatible mates."""
     if read1.name != read2.name:
         raise IDmutError("Mates 1 and 2 have different names")
     if not read1.flag.read1 or read1.flag.read2:
@@ -470,38 +466,38 @@ def _validate_pair(read1: SamRead, read2: SamRead):
         raise IDmutError("Mates 1 and 2 aligned in the same orientation")
 
 
-def trim_segs_start(seg5s: list[int],
-                    seg3s: list[int],
-                    min_start: int) -> tuple[list[int], list[int]]:
+def trim_segs_start(
+    seg5s: list[int], seg3s: list[int], min_start: int
+) -> tuple[list[int], list[int]]:
     """
     For each segment (start, end), the segment's start is replaced by
     max(start, min_start).
     """
-    trimmed = [(max(start, min_start), end)
-               for start, end in zip(seg5s, seg3s)]
+    trimmed = [(max(start, min_start), end) for start, end in zip(seg5s, seg3s)]
     new_seg5s, new_seg3s = zip(*trimmed)
     return list(new_seg5s), list(new_seg3s)
 
 
-def trim_segs_end(seg5s: list[int],
-                  seg3s: list[int],
-                  max_end: int) -> tuple[list[int], list[int]]:
+def trim_segs_end(
+    seg5s: list[int], seg3s: list[int], max_end: int
+) -> tuple[list[int], list[int]]:
     """
     For each segment (start, end), the segment's end is replaced by
     min(start, max_end).
     """
-    trimmed = [(start, min(end, max_end))
-               for start, end in zip(seg5s, seg3s)]
+    trimmed = [(start, min(end, max_end)) for start, end in zip(seg5s, seg3s)]
     new_seg5s, new_seg3s = zip(*trimmed)
     return list(new_seg5s), list(new_seg3s)
 
 
-def _merge_rels(end5sf: list[int],
-                end3sf: list[int],
-                relsf: dict[int, int],
-                end5sr: list[int],
-                end3sr: list[int],
-                relsr: dict[int, int]):
+def _merge_rels(
+    end5sf: list[int],
+    end3sf: list[int],
+    relsf: dict[int, int],
+    end5sr: list[int],
+    end3sr: list[int],
+    relsr: dict[int, int],
+):
     """
     Merge relationship dictionaries from forward and reverse mates.
 
@@ -532,12 +528,24 @@ def _merge_rels(end5sf: list[int],
     """
     merged_rels = dict()
     for pos in relsf | relsr:
-        relf = relsf.get(pos, MATCH if any(end5f <= pos <= end3f
-                                           for end5f, end3f
-                                           in zip(end5sf, end3sf, strict=True)) else NOCOV)
-        relr = relsr.get(pos, MATCH if any(end5r <= pos <= end3r
-                                           for end5r, end3r
-                                           in zip(end5sr, end3sr, strict=True)) else NOCOV)
+        relf = relsf.get(
+            pos,
+            MATCH
+            if any(
+                end5f <= pos <= end3f
+                for end5f, end3f in zip(end5sf, end3sf, strict=True)
+            )
+            else NOCOV,
+        )
+        relr = relsr.get(
+            pos,
+            MATCH
+            if any(
+                end5r <= pos <= end3r
+                for end5r, end3r in zip(end5sr, end3sr, strict=True)
+            )
+            else NOCOV,
+        )
         rel = relf & relr
         if rel != MATCH:
             if rel == NOCOV:
@@ -546,13 +554,15 @@ def _merge_rels(end5sf: list[int],
     return merged_rels
 
 
-def merge_mates(end5sf: list[int],
-                end3sf: list[int],
-                relsf: dict[int, int],
-                end5sr: list[int],
-                end3sr: list[int],
-                relsr: dict[int, int],
-                overhangs: bool):
+def merge_mates(
+    end5sf: list[int],
+    end3sf: list[int],
+    relsf: dict[int, int],
+    end5sr: list[int],
+    end3sr: list[int],
+    relsr: dict[int, int],
+    overhangs: bool,
+):
     """
     Merge segment coordinates and relationships from a paired-end read.
 
@@ -602,18 +612,20 @@ def merge_mates(end5sf: list[int],
     return ([*end5sf, *end5sr], [*end3sf, *end3sr]), rels
 
 
-def id_muts_lines(line1: str,
-                    line2: str,
-                    ref: str,
-                    refseq: str,
-                    min_mapq: int,
-                    min_qual: int,
-                    insert3: bool,
-                    ambindel: bool,
-                    overhangs: bool,
-                    clip_end5: int = 0,
-                    clip_end3: int = 0):
-    """ Identify mutations in one SAM record (single or paired-end).
+def id_muts_lines(
+    line1: str,
+    line2: str,
+    ref: str,
+    refseq: str,
+    min_mapq: int,
+    min_qual: int,
+    insert3: bool,
+    ambindel: bool,
+    overhangs: bool,
+    clip_end5: int = 0,
+    clip_end3: int = 0,
+):
+    """Identify mutations in one SAM record (single or paired-end).
 
     Parameters
     ----------
@@ -655,13 +667,9 @@ def id_muts_lines(line1: str,
     # Generate the relationships for read 1.
     read1 = SamRead(line1)
     _validate_read(read1, ref, min_mapq, paired, proper)
-    end5s1, end3s1, rels1 = _calc_rels_read(read1,
-                                            refseq,
-                                            chr(min_qual),
-                                            insert3,
-                                            ambindel,
-                                            clip_end5,
-                                            clip_end3)
+    end5s1, end3s1, rels1 = _calc_rels_read(
+        read1, refseq, chr(min_qual), insert3, ambindel, clip_end5, clip_end3
+    )
     if paired:
         # The read is paired-end.
         if proper:
@@ -670,13 +678,9 @@ def id_muts_lines(line1: str,
             read2 = SamRead(line2)
             _validate_read(read2, ref, min_mapq, paired, proper)
             _validate_pair(read1, read2)
-            end5s2, end3s2, rels2 = _calc_rels_read(read2,
-                                                    refseq,
-                                                    chr(min_qual),
-                                                    insert3,
-                                                    ambindel,
-                                                    clip_end5,
-                                                    clip_end3)
+            end5s2, end3s2, rels2 = _calc_rels_read(
+                read2, refseq, chr(min_qual), insert3, ambindel, clip_end5, clip_end3
+            )
             # Determine which read (1 or 2) faces forward and reverse.
             if read2.flag.rev:
                 end5sf, end3sf, relsf = end5s1, end3s1, rels1
@@ -687,7 +691,7 @@ def id_muts_lines(line1: str,
 
             # Merge the relationships and end coordinates.
             ends, rels = merge_mates(
-                end5sf, end3sf, relsf, end5sr, end3sr, relsr, overhangs,
+                end5sf, end3sf, relsf, end5sr, end3sr, relsr, overhangs
             )
         else:
             # The read is improperly paired (paired-end but comprises

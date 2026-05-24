@@ -6,9 +6,11 @@ import numpy as np
 import pandas as pd
 
 
-def reframe(values: Number | np.ndarray | pd.Series | pd.DataFrame,
-            axes: Iterable[int | np.ndarray | pd.Index] | None = None):
-    """ Place the values in an array object with the given axes.
+def reframe(
+    values: Number | np.ndarray | pd.Series | pd.DataFrame,
+    axes: Iterable[int | np.ndarray | pd.Index] | None = None,
+):
+    """Place the values in an array object with the given axes.
 
     Parameters
     ----------
@@ -64,8 +66,10 @@ def reframe(values: Number | np.ndarray | pd.Series | pd.DataFrame,
                 indexes.extend(map(pd.RangeIndex, lengths))
             indexes.append(axis)
         else:
-            raise TypeError("Expected each axis to be int, ndarray, or Index, "
-                            f"but got {type(axis).__name__}")
+            raise TypeError(
+                "Expected each axis to be int, ndarray, or Index, "
+                f"but got {type(axis).__name__}"
+            )
     # Determine the shape of the output array and broadcast the values.
     shape = tuple(idx.size for idx in indexes) if indexes else tuple(lengths)
     broadcast = np.broadcast_to(values, shape)
@@ -79,14 +83,15 @@ def reframe(values: Number | np.ndarray | pd.Series | pd.DataFrame,
     if num_indexes == 2:
         # Exactly two indexes were specified, so return a DataFrame.
         return pd.DataFrame(broadcast, index=indexes[0], columns=indexes[1])
-    raise ValueError("A Pandas object must have 1 or 2 axes, "
-                     f"but got {num_indexes}")
+    raise ValueError(f"A Pandas object must have 1 or 2 axes, but got {num_indexes}")
 
 
-def reframe_like(values: Number | np.ndarray | pd.Series | pd.DataFrame,
-                 target: np.ndarray | pd.Series | pd.DataFrame,
-                 drop: int = 0):
-    """ Place the values in an array object with the same type and axes
+def reframe_like(
+    values: Number | np.ndarray | pd.Series | pd.DataFrame,
+    target: np.ndarray | pd.Series | pd.DataFrame,
+    drop: int = 0,
+):
+    """Place the values in an array object with the same type and axes
     as target.
 
     Parameters
@@ -109,12 +114,14 @@ def reframe_like(values: Number | np.ndarray | pd.Series | pd.DataFrame,
     if isinstance(target, np.ndarray):
         axes = target.shape
     elif isinstance(target, pd.Series):
-        axes = target.index,
+        axes = (target.index,)
     elif isinstance(target, pd.DataFrame):
         axes = target.index, target.columns
     else:
-        raise TypeError("Expected target to be ndarray, Series, or Dataframe, "
-                        f"but got {type(target).__name__}")
+        raise TypeError(
+            "Expected target to be ndarray, Series, or Dataframe, "
+            f"but got {type(target).__name__}"
+        )
     # Optionally, drop axes, starting from axis 0.
     if drop < 0:
         raise ValueError(f"Cannot drop a negative number ({drop}) of axes")
@@ -125,7 +132,7 @@ def reframe_like(values: Number | np.ndarray | pd.Series | pd.DataFrame,
 
 
 def auto_reframe(func: Callable):
-    """ Decorate a function with one positional argument of data so that
+    """Decorate a function with one positional argument of data so that
     it converts the input data to a NumPy array, runs, and then reframes
     the return value using the original argument as the target.
 

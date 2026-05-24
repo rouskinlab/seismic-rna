@@ -6,25 +6,24 @@ from seismicrna.cluster.em import _calc_bic, _calc_log_like
 
 
 class TestCalcBic(ut.TestCase):
-
     def test_formula(self):
         # BIC = n_params * log(n_data) - 2 * log_like
-        result = _calc_bic(n_params=3, n_data=100, log_like=-50.)
-        expected = 3 * np.log(100) - 2 * (-50.)
+        result = _calc_bic(n_params=3, n_data=100, log_like=-50.0)
+        expected = 3 * np.log(100) - 2 * (-50.0)
         self.assertAlmostEqual(result, expected)
 
     def test_zero_params(self):
-        result = _calc_bic(n_params=0, n_data=100, log_like=-10.)
-        self.assertAlmostEqual(result, -2 * (-10.))
+        result = _calc_bic(n_params=0, n_data=100, log_like=-10.0)
+        self.assertAlmostEqual(result, -2 * (-10.0))
 
     def test_large_n_data(self):
-        result = _calc_bic(n_params=5, n_data=10000, log_like=-200.)
-        expected = 5 * np.log(10000) - 2 * (-200.)
+        result = _calc_bic(n_params=5, n_data=10000, log_like=-200.0)
+        expected = 5 * np.log(10000) - 2 * (-200.0)
         self.assertAlmostEqual(result, expected)
 
     def test_zero_log_like(self):
         # log_like = 0 is allowed (boundary)
-        result = _calc_bic(n_params=2, n_data=50, log_like=0.)
+        result = _calc_bic(n_params=2, n_data=50, log_like=0.0)
         expected = 2 * np.log(50)
         self.assertAlmostEqual(result, expected)
 
@@ -34,24 +33,23 @@ class TestCalcBic(ut.TestCase):
 
     def test_negative_n_params_raises(self):
         with self.assertRaises(ValueError):
-            _calc_bic(n_params=-1, n_data=50, log_like=-10.)
+            _calc_bic(n_params=-1, n_data=50, log_like=-10.0)
 
     def test_negative_n_data_raises(self):
         with self.assertRaises(ValueError):
-            _calc_bic(n_params=2, n_data=-1, log_like=-10.)
+            _calc_bic(n_params=2, n_data=-1, log_like=-10.0)
 
     def test_zero_n_data_returns_nan(self):
         # n_data=0 → n_params * log(0) = -inf; verify it doesn't raise
-        result = _calc_bic(n_params=2, n_data=0, log_like=0.)
+        result = _calc_bic(n_params=2, n_data=0, log_like=0.0)
         self.assertTrue(np.isneginf(result))
 
     def test_returns_float(self):
-        result = _calc_bic(n_params=1, n_data=10, log_like=-5.)
+        result = _calc_bic(n_params=1, n_data=10, log_like=-5.0)
         self.assertIsInstance(result, float)
 
 
 class TestCalcLogLike(ut.TestCase):
-
     def test_single_read(self):
         logp = np.array([-2.0])
         counts = np.array([1])

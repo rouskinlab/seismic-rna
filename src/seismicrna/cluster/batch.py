@@ -6,7 +6,6 @@ from ..filter.batch import PartialRegionMutsBatch, PartialReadBatch
 
 
 class ClusterReadBatch(PartialReadBatch):
-
     def __init__(self, *, resps: pd.DataFrame, **kwargs):
         self.resps = resps
         super().__init__(**kwargs)
@@ -21,7 +20,6 @@ class ClusterReadBatch(PartialReadBatch):
 
 
 class ClusterMutsBatch(ClusterReadBatch, PartialRegionMutsBatch):
-
     @property
     def read_weights(self):
         weights = self.resps.copy()

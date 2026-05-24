@@ -4,8 +4,18 @@ import unittest as ut
 from click.testing import CliRunner
 
 from seismicrna.core.logs import Level, get_config, set_config
-from seismicrna.sim import (abstract, clusts, ends, fastq, fold,
-                            muts, params, ref, idmut, total)
+from seismicrna.sim import (
+    abstract,
+    clusts,
+    ends,
+    fastq,
+    fold,
+    muts,
+    params,
+    ref,
+    idmut,
+    total,
+)
 
 
 class TestSimCLIParams(ut.TestCase):
@@ -26,21 +36,41 @@ class TestSimCLIParams(ut.TestCase):
             if cli_param.name in self._consumed_by_decorator:
                 continue
             self.assertIn(
-                cli_param.name, sig_param_names,
+                cli_param.name,
+                sig_param_names,
                 f"[{module.COMMAND}] CLI param '{cli_param.name}' is in "
-                f"params but missing from run()"
+                f"params but missing from run()",
             )
 
-    def test_abstract(self):  self._assert_params_match_run(abstract)
-    def test_clusts(self):    self._assert_params_match_run(clusts)
-    def test_ends(self):      self._assert_params_match_run(ends)
-    def test_fastq(self):     self._assert_params_match_run(fastq)
-    def test_fold(self):      self._assert_params_match_run(fold)
-    def test_muts(self):      self._assert_params_match_run(muts)
-    def test_params(self):    self._assert_params_match_run(params)
-    def test_ref(self):       self._assert_params_match_run(ref)
-    def test_idmut(self):    self._assert_params_match_run(idmut)
-    def test_total(self):     self._assert_params_match_run(total)
+    def test_abstract(self):
+        self._assert_params_match_run(abstract)
+
+    def test_clusts(self):
+        self._assert_params_match_run(clusts)
+
+    def test_ends(self):
+        self._assert_params_match_run(ends)
+
+    def test_fastq(self):
+        self._assert_params_match_run(fastq)
+
+    def test_fold(self):
+        self._assert_params_match_run(fold)
+
+    def test_muts(self):
+        self._assert_params_match_run(muts)
+
+    def test_params(self):
+        self._assert_params_match_run(params)
+
+    def test_ref(self):
+        self._assert_params_match_run(ref)
+
+    def test_idmut(self):
+        self._assert_params_match_run(idmut)
+
+    def test_total(self):
+        self._assert_params_match_run(total)
 
 
 class TestSimCLIInvocation(ut.TestCase):
@@ -57,8 +87,7 @@ class TestSimCLIInvocation(ut.TestCase):
 
     def setUp(self):
         self._config = get_config()
-        set_config(verbosity=Level.ERROR, log_file_path=None,
-                   exit_on_error=True)
+        set_config(verbosity=Level.ERROR, log_file_path=None, exit_on_error=True)
 
     def tearDown(self):
         set_config(**self._config._asdict())
@@ -76,27 +105,63 @@ class TestSimCLIInvocation(ut.TestCase):
         self.assertEqual(result.exit_code, 0, msg=result.output)
 
     # --help tests (all commands)
-    def test_abstract_help(self):  self._invoke_help(abstract)
-    def test_clusts_help(self):    self._invoke_help(clusts)
-    def test_ends_help(self):      self._invoke_help(ends)
-    def test_fastq_help(self):     self._invoke_help(fastq)
-    def test_fold_help(self):      self._invoke_help(fold)
-    def test_muts_help(self):      self._invoke_help(muts)
-    def test_params_help(self):    self._invoke_help(params)
-    def test_ref_help(self):       self._invoke_help(ref)
-    def test_idmut_help(self):    self._invoke_help(idmut)
-    def test_total_help(self):     self._invoke_help(total)
+    def test_abstract_help(self):
+        self._invoke_help(abstract)
+
+    def test_clusts_help(self):
+        self._invoke_help(clusts)
+
+    def test_ends_help(self):
+        self._invoke_help(ends)
+
+    def test_fastq_help(self):
+        self._invoke_help(fastq)
+
+    def test_fold_help(self):
+        self._invoke_help(fold)
+
+    def test_muts_help(self):
+        self._invoke_help(muts)
+
+    def test_params_help(self):
+        self._invoke_help(params)
+
+    def test_ref_help(self):
+        self._invoke_help(ref)
+
+    def test_idmut_help(self):
+        self._invoke_help(idmut)
+
+    def test_total_help(self):
+        self._invoke_help(total)
 
     # Empty-invocation tests (all commands except fold)
-    def test_abstract_empty(self): self._invoke_empty(abstract)
-    def test_clusts_empty(self):   self._invoke_empty(clusts)
-    def test_ends_empty(self):     self._invoke_empty(ends)
-    def test_fastq_empty(self):    self._invoke_empty(fastq)
-    def test_muts_empty(self):     self._invoke_empty(muts)
-    def test_params_empty(self):   self._invoke_empty(params)
-    def test_ref_empty(self):      self._invoke_empty(ref)
-    def test_idmut_empty(self):   self._invoke_empty(idmut)
-    def test_total_empty(self):    self._invoke_empty(total)
+    def test_abstract_empty(self):
+        self._invoke_empty(abstract)
+
+    def test_clusts_empty(self):
+        self._invoke_empty(clusts)
+
+    def test_ends_empty(self):
+        self._invoke_empty(ends)
+
+    def test_fastq_empty(self):
+        self._invoke_empty(fastq)
+
+    def test_muts_empty(self):
+        self._invoke_empty(muts)
+
+    def test_params_empty(self):
+        self._invoke_empty(params)
+
+    def test_ref_empty(self):
+        self._invoke_empty(ref)
+
+    def test_idmut_empty(self):
+        self._invoke_empty(idmut)
+
+    def test_total_empty(self):
+        self._invoke_empty(total)
 
 
 if __name__ == "__main__":

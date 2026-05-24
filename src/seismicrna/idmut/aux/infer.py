@@ -4,29 +4,33 @@ from .cigarop import CigarOp
 from ..py.cigar import CIG_ALIGN, CIG_MATCH, CIG_SUBST, CIG_DELET, CIG_INSRT
 from ..py.encode import SUBS_DECODINGS
 from ...core.ngs import LO_QUAL, HI_QUAL
-from ...core.rel import (MATCH,
-                         DELET,
-                         INS_5,
-                         INS_3,
-                         INSRT,
-                         SUB_A,
-                         SUB_C,
-                         SUB_G,
-                         SUB_T,
-                         ANY_N,
-                         IRREC,
-                         NOCOV)
+from ...core.rel import (
+    MATCH,
+    DELET,
+    INS_5,
+    INS_3,
+    INSRT,
+    SUB_A,
+    SUB_C,
+    SUB_G,
+    SUB_T,
+    ANY_N,
+    IRREC,
+    NOCOV,
+)
 from ...core.seq import BASEN, DNA
 
 
-def infer_read(refseq: DNA,
-               end5: int,
-               end3: int,
-               muts: dict[int, int],
-               hi_qual: str = HI_QUAL,
-               lo_qual: str = LO_QUAL,
-               ins_len: int | Sequence[int] = 1):
-    """ Infer the sequence and quality string of a read from a reference
+def infer_read(
+    refseq: DNA,
+    end5: int,
+    end3: int,
+    muts: dict[int, int],
+    hi_qual: str = HI_QUAL,
+    lo_qual: str = LO_QUAL,
+    ins_len: int | Sequence[int] = 1,
+):
+    """Infer the sequence and quality string of a read from a reference
     sequence and relationships.
 
     Parameters
@@ -62,19 +66,25 @@ def infer_read(refseq: DNA,
         raise ValueError(f"end3 must be ≤ {len(refseq)}, but got {end3}")
     if muts:
         if min(muts) < end5:
-            raise ValueError(f"All positions must be ≥ {end5}, "
-                             f"but got {[pos for pos in muts if pos < end5]}")
+            raise ValueError(
+                f"All positions must be ≥ {end5}, "
+                f"but got {[pos for pos in muts if pos < end5]}"
+            )
         if max(muts) > end3:
-            raise ValueError(f"All positions must be ≤ {end3}, "
-                             f"but got {[pos for pos in muts if pos > end3]}")
+            raise ValueError(
+                f"All positions must be ≤ {end3}, "
+                f"but got {[pos for pos in muts if pos > end3]}"
+            )
     # Validate the quality codes.
     if len(hi_qual) != 1:
         raise ValueError(f"hi_qual must be 1 character, but got {len(hi_qual)}")
     if len(lo_qual) != 1:
         raise ValueError(f"lo_qual must be 1 character, but got {len(hi_qual)}")
     if hi_qual < lo_qual:
-        raise ValueError(f"The high-quality score ({hi_qual}) is less than "
-                         f"than the low-quality score ({lo_qual})")
+        raise ValueError(
+            f"The high-quality score ({hi_qual}) is less than "
+            f"than the low-quality score ({lo_qual})"
+        )
     # Build the read sequence, quality scores, and CIGAR string one base
     # at a time.
     read: list[str] = list()
@@ -84,7 +94,7 @@ def infer_read(refseq: DNA,
     need_to_add_ins3 = False
 
     def add_to_cigar(op: str):
-        """ Add one base of the relationships to the CIGAR string. """
+        """Add one base of the relationships to the CIGAR string."""
         if cigars and cigars[-1].op == op:
             # The current operation matches that of the last CigarOp:
             # just increment its length.
@@ -109,8 +119,9 @@ def infer_read(refseq: DNA,
                 if pos <= end5:
                     # Insertions cannot occur before the beginning of
                     # the read.
-                    raise ValueError(f"Position {pos} in {end5}-{end3} cannot "
-                                     f"be 3' of an insertion")
+                    raise ValueError(
+                        f"Position {pos} in {end5}-{end3} cannot be 3' of an insertion"
+                    )
                 # The current position is 5' of an insertion, so the
                 # inserted base must be added before the base at the
                 # current position is added. Insert a number of bases
@@ -131,8 +142,9 @@ def infer_read(refseq: DNA,
                 need_to_add_ins3 = False
             if rel & INS_5:
                 if pos >= end3:
-                    raise ValueError(f"Position {pos} in {end5}-{end3} cannot "
-                                     f"be 5' of an insertion")
+                    raise ValueError(
+                        f"Position {pos} in {end5}-{end3} cannot be 5' of an insertion"
+                    )
                 # The current position is 5' of an insertion, so the
                 # inserted base must be added after the base at the
                 # current position is added. Defer the responsibility of

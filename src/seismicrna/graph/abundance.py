@@ -16,7 +16,7 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 
 
 class ClusterAbundanceGraph(OneTableGraph):
-    """ Abundance of each cluster. """
+    """Abundance of each cluster."""
 
     @classmethod
     def graph_kind(cls):
@@ -40,10 +40,12 @@ class ClusterAbundanceGraph(OneTableGraph):
 
     @cached_property
     def _title_main(self):
-        return [f"{self.what()} {self.data_kind}s "
-                f"in {self.title_action_sample} "
-                f"over reference {repr(self.ref)} "
-                f"region {repr(self.reg)}"]
+        return [
+            f"{self.what()} {self.data_kind}s "
+            f"in {self.title_action_sample} "
+            f"over reference {repr(self.ref)} "
+            f"region {repr(self.reg)}"
+        ]
 
     @property
     def x_title(self):
@@ -86,7 +88,6 @@ class ClusterAbundanceGraph(OneTableGraph):
 
 
 class ClusterAbundanceWriter(OneTableWriter):
-
     def get_graph(self, **kwargs):
         return ClusterAbundanceGraph(table=self.table, **kwargs)
 
@@ -95,11 +96,10 @@ class ClusterAbundanceWriter(OneTableWriter):
 
 
 class ClusterAbundanceRunner(OneTableRunner, AbundanceTableRunner):
-
     @classmethod
     def get_writer_type(cls):
         return ClusterAbundanceWriter
-    
+
     @classmethod
     @log_command(COMMAND)
     def run(cls, *args, **kwargs):
@@ -108,5 +108,5 @@ class ClusterAbundanceRunner(OneTableRunner, AbundanceTableRunner):
 
 @command(COMMAND, params=ClusterAbundanceRunner.params())
 def cli(*args, **kwargs):
-    """ Abundance of each cluster. """
+    """Abundance of each cluster."""
     return ClusterAbundanceRunner.run(*args, **kwargs)

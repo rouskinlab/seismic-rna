@@ -10,7 +10,6 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 
 
 class RollingGiniGraph(RollingStatGraph):
-
     @classmethod
     def stat_func(cls):
         return calc_gini
@@ -29,14 +28,12 @@ class RollingGiniGraph(RollingStatGraph):
 
 
 class RollingGiniWriter(RollingStatWriter):
-
     @classmethod
     def get_graph_type(cls):
         return RollingGiniGraph
 
 
 class RollingGiniRunner(RollingStatRunner):
-
     @classmethod
     def get_writer_type(cls):
         return RollingGiniWriter
@@ -49,5 +46,5 @@ class RollingGiniRunner(RollingStatRunner):
 
 @command(COMMAND, params=RollingGiniRunner.params())
 def cli(*args, **kwargs):
-    """ Rolling Gini coefficient. """
+    """Rolling Gini coefficient."""
     return RollingGiniRunner.run(*args, **kwargs)

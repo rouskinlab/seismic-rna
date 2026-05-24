@@ -7,12 +7,12 @@ from ..core.header import K_CLUST_KEY
 
 
 class OneSourceGraph(BaseGraph, ABC):
-    """ Graph of data from one source of data (Dataset or Table). """
+    """Graph of data from one source of data (Dataset or Table)."""
 
     @cached_property
     @abstractmethod
     def action(self) -> str:
-        """ Action that generated the data. """
+        """Action that generated the data."""
 
     @property
     def col_tracks(self):
@@ -24,11 +24,7 @@ class OneSourceGraph(BaseGraph, ABC):
 
 
 class OneSourceClusterGroupGraph(OneSourceGraph, ClusterGroupGraph, ABC):
-
-    def __init__(self, *,
-                 k: int | None,
-                 clust: int | None,
-                 **kwargs):
+    def __init__(self, *, k: int | None, clust: int | None, **kwargs):
         """
         Parameters
         ----------

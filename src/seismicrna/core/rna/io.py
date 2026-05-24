@@ -11,20 +11,13 @@ from ..seq import Region
 from ..write import need_write, write_mode
 
 
-def _from_file(file: str | Path,
-               parser: Callable,
-               *args,
-               branch: str = "",
-               **kwargs):
+def _from_file(file: str | Path, parser: Callable, *args, branch: str = "", **kwargs):
     for title, region, pairs in parser(file, *args, **kwargs):
-        yield RNAStructure(title=title,
-                           region=region,
-                           pairs=pairs,
-                           branch=branch)
+        yield RNAStructure(title=title, region=region, pairs=pairs, branch=branch)
 
 
 def from_ct(ct_path: str | Path, branch: str = ""):
-    """ Yield an instance of an RNAStructure for each structure in a
+    """Yield an instance of an RNAStructure for each structure in a
     connectivity table (CT) file.
 
     Parameters
@@ -43,7 +36,7 @@ def from_ct(ct_path: str | Path, branch: str = ""):
 
 
 def from_db(db_path: str | Path, branch: str = "", seq5: int = 1):
-    """ Yield an instance of an RNAStructure for each structure in a
+    """Yield an instance of an RNAStructure for each structure in a
     dot-bracket (DB) file.
 
     Parameters
@@ -64,7 +57,7 @@ def from_db(db_path: str | Path, branch: str = "", seq5: int = 1):
 
 
 def find_ct_region(ct_path: Path) -> Region:
-    """ Region shared among all structures in a CT file. """
+    """Region shared among all structures in a CT file."""
     structures = iter(from_ct(ct_path))
     try:
         structure = next(structures)
@@ -77,10 +70,8 @@ def find_ct_region(ct_path: Path) -> Region:
     return region
 
 
-def to_ct(structures: Iterable[RNAStructure],
-          ct_path: Path,
-          force: bool = False):
-    """ Write a connectivity table (CT) file of RNA structures.
+def to_ct(structures: Iterable[RNAStructure], ct_path: Path, force: bool = False):
+    """Write a connectivity table (CT) file of RNA structures.
 
     Parameters
     ----------
@@ -102,10 +93,8 @@ def to_ct(structures: Iterable[RNAStructure],
         logger.action(f"Wrote {ct_path}")
 
 
-def to_db(structures: Iterable[RNAStructure],
-          db_path: Path,
-          force: bool = False):
-    """ Write a dot-bracket (DB) file of RNA structures.
+def to_db(structures: Iterable[RNAStructure], db_path: Path, force: bool = False):
+    """Write a dot-bracket (DB) file of RNA structures.
 
     Parameters
     ----------
@@ -118,8 +107,9 @@ def to_db(structures: Iterable[RNAStructure],
     """
     if need_write(db_path, force):
         # Generate the output text for every structure.
-        text = "".join(structure.get_db_text(i == 0)
-                       for i, structure in enumerate(structures))
+        text = "".join(
+            structure.get_db_text(i == 0) for i, structure in enumerate(structures)
+        )
         # Make the output directory, if it does not already exist.
         db_path.parent.mkdir(parents=True, exist_ok=True)
         # Write the structures to the file.
@@ -129,7 +119,7 @@ def to_db(structures: Iterable[RNAStructure],
 
 
 def renumber_ct(ct_in: Path, ct_out: Path, seq5: int, force: bool = False):
-    """ Renumber the last column of a connectivity table (CT) file.
+    """Renumber the last column of a connectivity table (CT) file.
 
     Parameters
     ----------
@@ -142,28 +132,25 @@ def renumber_ct(ct_in: Path, ct_out: Path, seq5: int, force: bool = False):
     force: bool = False
         Overwrite the output CT file if it already exists.
     """
-    to_ct(map(partial(RNAStructure.renumber_from, seq5=seq5),
-              from_ct(ct_in)),
-          ct_out,
-          force)
+    to_ct(
+        map(partial(RNAStructure.renumber_from, seq5=seq5), from_ct(ct_in)),
+        ct_out,
+        force,
+    )
 
 
-def ct_to_db(ct_path: Path,
-             db_path: Path | None = None,
-             force: bool = False):
-    """ Write a dot-bracket (DB) file of structures in a connectivity
-    table (CT) file. """
+def ct_to_db(ct_path: Path, db_path: Path | None = None, force: bool = False):
+    """Write a dot-bracket (DB) file of structures in a connectivity
+    table (CT) file."""
     if db_path is None:
         db_path = ct_path.with_suffix(DB_EXT)
     to_db(from_ct(ct_path), db_path, force)
     return db_path
 
 
-def db_to_ct(db_path: Path,
-             ct_path: Path | None = None,
-             force: bool = False):
-    """ Write a connectivity table (CT) file of structures in a
-    dot-bracket (DB) file. """
+def db_to_ct(db_path: Path, ct_path: Path | None = None, force: bool = False):
+    """Write a connectivity table (CT) file of structures in a
+    dot-bracket (DB) file."""
     if ct_path is None:
         ct_path = db_path.with_suffix(CT_EXT)
     to_ct(from_db(db_path), ct_path, force)

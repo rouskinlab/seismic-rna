@@ -20,22 +20,23 @@ from seismicrna.core.seq.region import FULL_NAME
 from seismicrna.core.seq.xna import DNA
 from seismicrna.ensembles.main import run as run_ensembles
 from seismicrna.ensembles.report import EnsemblesReport
-from seismicrna.ensembles.write import (_calc_tiles,
-                                        _aggregate_pairs,
-                                        _select_pairs,
-                                        _calc_span_per_pos,
-                                        _calc_null_span_per_pos_keep_dists,
-                                        _calc_null_span_per_pos_rand_dists,
-                                        _calc_modules_from_pairs,
-                                        _insert_modules_into_gaps,
-                                        _expand_modules_into_gaps,
-                                        _filter_modules_length)
+from seismicrna.ensembles.write import (
+    _calc_tiles,
+    _aggregate_pairs,
+    _select_pairs,
+    _calc_span_per_pos,
+    _calc_null_span_per_pos_keep_dists,
+    _calc_null_span_per_pos_rand_dists,
+    _calc_modules_from_pairs,
+    _insert_modules_into_gaps,
+    _expand_modules_into_gaps,
+    _filter_modules_length,
+)
 from seismicrna.sim.params import run as sim_params
 from seismicrna.sim.idmut import run as sim_idmut
 
 
 class TestCalcTiles(ut.TestCase):
-
     def setUp(self):
         self._config = get_config()
         set_config(verbosity=Level.ERROR)
@@ -70,7 +71,6 @@ class TestCalcTiles(ut.TestCase):
 
 
 class TestAggregatePairs(ut.TestCase):
-
     def test_zero(self):
         result = _aggregate_pairs([])
         expect = []
@@ -113,7 +113,6 @@ class TestAggregatePairs(ut.TestCase):
 
 
 class TestSelectPairs(ut.TestCase):
-
     def test_select_pairs(self):
         pairs = [(1, 11), (5, 15), (9, 19)]
         result = _select_pairs(pairs, 1, 19)
@@ -123,42 +122,30 @@ class TestSelectPairs(ut.TestCase):
 
 
 class TestCalcSpanPerPos(ut.TestCase):
-
     def test_calc_span_per_pos(self):
         pairs = [(5, 10), (9, 9), (3, 11)]
         result = _calc_span_per_pos(pairs, 3, 11)
-        expect = pd.Series({3: 1,
-                            4: 1,
-                            5: 2,
-                            6: 2,
-                            7: 2,
-                            8: 2,
-                            9: 3,
-                            10: 2,
-                            11: 1})
+        expect = pd.Series({3: 1, 4: 1, 5: 2, 6: 2, 7: 2, 8: 2, 9: 3, 10: 2, 11: 1})
         self.assertIsInstance(result, pd.Series)
         self.assertTrue(result.equals(expect))
         self.assertTrue(result.index.equals(expect.index))
 
 
 class TestCalcNullSpanPerPosKeepDists(ut.TestCase):
-
-    def _run_test(self,
-                  pairs: list[tuple[int, int]],
-                  end5: int,
-                  end3: int,
-                  expect: pd.Series):
+    def _run_test(
+        self, pairs: list[tuple[int, int]], end5: int, end3: int, expect: pd.Series
+    ):
         result = _calc_null_span_per_pos_keep_dists(pairs, end5, end3)
         self.assertIsInstance(result, pd.Series)
         self.assertTrue(np.allclose(result, expect))
         self.assertTrue(result.index.equals(expect.index))
 
     def test_no_pairs(self):
-        expect = pd.Series({4: 0., 5: 0., 6: 0., 7: 0.})
+        expect = pd.Series({4: 0.0, 5: 0.0, 6: 0.0, 7: 0.0})
         self._run_test([], 4, 7, expect)
 
     def test_ref_1_read_1(self):
-        expect = pd.Series({5: 1.})
+        expect = pd.Series({5: 1.0})
         self._run_test([(5, 5)], 5, 5, expect)
 
     def test_ref_4_read_1(self):
@@ -170,11 +157,11 @@ class TestCalcNullSpanPerPosKeepDists(ut.TestCase):
         self._run_test([(6, 7)], 4, 7, expect)
 
     def test_ref_4_read_3(self):
-        expect = pd.Series({4: 0.5, 5: 1., 6: 1., 7: 0.5})
+        expect = pd.Series({4: 0.5, 5: 1.0, 6: 1.0, 7: 0.5})
         self._run_test([(4, 6)], 4, 7, expect)
 
     def test_ref_4_read_4(self):
-        expect = pd.Series({4: 1., 5: 1., 6: 1., 7: 1.})
+        expect = pd.Series({4: 1.0, 5: 1.0, 6: 1.0, 7: 1.0})
         self._run_test([(4, 7)], 4, 7, expect)
 
     def test_ref_5_read_1(self):
@@ -186,32 +173,30 @@ class TestCalcNullSpanPerPosKeepDists(ut.TestCase):
         self._run_test([(5, 6)], 4, 8, expect)
 
     def test_ref_5_read_3(self):
-        expect = pd.Series({4: 1 / 3, 5: 2 / 3, 6: 1., 7: 2 / 3, 8: 1 / 3})
+        expect = pd.Series({4: 1 / 3, 5: 2 / 3, 6: 1.0, 7: 2 / 3, 8: 1 / 3})
         self._run_test([(5, 7)], 4, 8, expect)
 
     def test_ref_5_read_4(self):
-        expect = pd.Series({4: 0.5, 5: 1., 6: 1., 7: 1., 8: 0.5})
+        expect = pd.Series({4: 0.5, 5: 1.0, 6: 1.0, 7: 1.0, 8: 0.5})
         self._run_test([(4, 7)], 4, 8, expect)
 
     def test_ref_5_read_5(self):
-        expect = pd.Series({4: 1., 5: 1., 6: 1., 7: 1., 8: 1.})
+        expect = pd.Series({4: 1.0, 5: 1.0, 6: 1.0, 7: 1.0, 8: 1.0})
         self._run_test([(4, 8)], 4, 8, expect)
 
     def test_multiple_reads(self):
         pairs = [(6, 7), (5, 5), (4, 8)]
-        expect = reduce(add,
-                        [_calc_null_span_per_pos_keep_dists([pair], 4, 8)
-                         for pair in pairs])
+        expect = reduce(
+            add, [_calc_null_span_per_pos_keep_dists([pair], 4, 8) for pair in pairs]
+        )
         self._run_test(pairs, 4, 8, expect)
 
 
 class TestCalcNullSpanPerPosRandDists(ut.TestCase):
-
     @staticmethod
-    def _calc_expect(pairs: list[tuple[int, int]],
-                     end5: int,
-                     end3: int,
-                     min_mut_gap: int):
+    def _calc_expect(
+        pairs: list[tuple[int, int]], end5: int, end3: int, min_mut_gap: int
+    ):
         positions = np.arange(end5, end3 + 1)
         counts = pd.Series(0, index=positions)
         num_intervals = 0
@@ -219,12 +204,12 @@ class TestCalcNullSpanPerPosRandDists(ut.TestCase):
             for b in positions:
                 gap = b - a - 1
                 if gap >= min_mut_gap:
-                    counts.loc[a: b] += 1
+                    counts.loc[a:b] += 1
                     num_intervals += 1
         if num_intervals > 0:
             factor = len(pairs) / num_intervals
         else:
-            factor = 0.
+            factor = 0.0
         return factor * counts
 
     def _compare(self, result: pd.Series, expect: pd.Series):
@@ -232,19 +217,11 @@ class TestCalcNullSpanPerPosRandDists(ut.TestCase):
         self.assertTrue(np.allclose(result, expect))
         self.assertTrue(result.index.equals(expect.index))
 
-    def _run_test(self,
-                  pairs: list[tuple[int, int]],
-                  end5: int,
-                  end3: int,
-                  min_mut_gap: int):
-        result = _calc_null_span_per_pos_rand_dists(pairs,
-                                                    end5,
-                                                    end3,
-                                                    min_mut_gap)
-        expect = self._calc_expect(pairs,
-                                   end5,
-                                   end3,
-                                   min_mut_gap)
+    def _run_test(
+        self, pairs: list[tuple[int, int]], end5: int, end3: int, min_mut_gap: int
+    ):
+        result = _calc_null_span_per_pos_rand_dists(pairs, end5, end3, min_mut_gap)
+        expect = self._calc_expect(pairs, end5, end3, min_mut_gap)
         self._compare(result, expect)
 
     def test_no_pairs(self):
@@ -254,95 +231,69 @@ class TestCalcNullSpanPerPosRandDists(ut.TestCase):
         for end5 in range(1, 4):
             for end3 in range(end5, 7):
                 for min_mut_gap in range(5):
-                    self._run_test([(end5, end3)],
-                                   end5,
-                                   end3,
-                                   min_mut_gap)
+                    self._run_test([(end5, end3)], end5, end3, min_mut_gap)
 
     def test_2_pairs(self):
         end5, end3 = 2, 7
         min_mut_gap = 0
-        expect = (2 / 15) * pd.Series([5, 9, 11, 11, 9, 5],
-                                      index=range(end5, end3 + 1))
-        result = _calc_null_span_per_pos_rand_dists([(end5, end3),
-                                                     (end5, end3)],
-                                                    end5, end3, min_mut_gap)
+        expect = (2 / 15) * pd.Series([5, 9, 11, 11, 9, 5], index=range(end5, end3 + 1))
+        result = _calc_null_span_per_pos_rand_dists(
+            [(end5, end3), (end5, end3)], end5, end3, min_mut_gap
+        )
         self._compare(result, expect)
         min_mut_gap = 1
-        expect = (2 / 10) * pd.Series([4, 7, 9, 9, 7, 4],
-                                      index=range(end5, end3 + 1))
-        result = _calc_null_span_per_pos_rand_dists([(end5, end3),
-                                                     (end5, end3)],
-                                                    end5, end3, min_mut_gap)
+        expect = (2 / 10) * pd.Series([4, 7, 9, 9, 7, 4], index=range(end5, end3 + 1))
+        result = _calc_null_span_per_pos_rand_dists(
+            [(end5, end3), (end5, end3)], end5, end3, min_mut_gap
+        )
         self._compare(result, expect)
         min_mut_gap = 2
-        expect = (2 / 6) * pd.Series([3, 5, 6, 6, 5, 3],
-                                     index=range(end5, end3 + 1))
-        result = _calc_null_span_per_pos_rand_dists([(end5, end3),
-                                                     (end5, end3)],
-                                                    end5, end3, min_mut_gap)
+        expect = (2 / 6) * pd.Series([3, 5, 6, 6, 5, 3], index=range(end5, end3 + 1))
+        result = _calc_null_span_per_pos_rand_dists(
+            [(end5, end3), (end5, end3)], end5, end3, min_mut_gap
+        )
         self._compare(result, expect)
         min_mut_gap = 3
-        expect = (2 / 3) * pd.Series([2, 3, 3, 3, 3, 2],
-                                     index=range(end5, end3 + 1))
-        result = _calc_null_span_per_pos_rand_dists([(end5, end3),
-                                                     (end5, end3)],
-                                                    end5, end3, min_mut_gap)
+        expect = (2 / 3) * pd.Series([2, 3, 3, 3, 3, 2], index=range(end5, end3 + 1))
+        result = _calc_null_span_per_pos_rand_dists(
+            [(end5, end3), (end5, end3)], end5, end3, min_mut_gap
+        )
         self._compare(result, expect)
         min_mut_gap = 4
         expect = pd.Series(2, index=range(end5, end3 + 1))
-        result = _calc_null_span_per_pos_rand_dists([(end5, end3),
-                                                     (end5, end3)],
-                                                    end5, end3, min_mut_gap)
+        result = _calc_null_span_per_pos_rand_dists(
+            [(end5, end3), (end5, end3)], end5, end3, min_mut_gap
+        )
         self._compare(result, expect)
         min_mut_gap = 5
         expect = pd.Series(0, index=range(end5, end3 + 1))
-        result = _calc_null_span_per_pos_rand_dists([(end5, end3),
-                                                     (end5, end3)],
-                                                    end5, end3, min_mut_gap)
+        result = _calc_null_span_per_pos_rand_dists(
+            [(end5, end3), (end5, end3)], end5, end3, min_mut_gap
+        )
         self._compare(result, expect)
 
 
 class TestCalcModulesFromPairs(ut.TestCase):
-
     def test_1_module(self):
-        pairs = [(11, 21),
-                 (11, 31),
-                 (11, 71),
-                 (21, 31),
-                 (51, 61),
-                 (51, 71),
-                 (61, 71)]
+        pairs = [(11, 21), (11, 31), (11, 71), (21, 31), (51, 61), (51, 71), (61, 71)]
         result = _calc_modules_from_pairs(pairs, 0.05, 4)
         expect = [(11, 71)]
         self.assertListEqual(result, expect)
 
     def test_2_modules(self):
-        pairs = [(11, 21),
-                 (11, 31),
-                 (21, 31),
-                 (51, 61),
-                 (51, 71),
-                 (61, 71)]
+        pairs = [(11, 21), (11, 31), (21, 31), (51, 61), (51, 71), (61, 71)]
         result = _calc_modules_from_pairs(pairs, 0.05, 4)
         expect = [(11, 31), (51, 71)]
         self.assertListEqual(result, expect)
 
     def test_split_modules(self):
-        pairs = [(11, 21),
-                 (11, 31),
-                 (11, 71),
-                 (21, 31),
-                 (51, 61),
-                 (51, 71),
-                 (61, 71)]
+        pairs = [(11, 21), (11, 31), (11, 71), (21, 31), (51, 61), (51, 71), (61, 71)]
         result = _calc_modules_from_pairs(pairs, 0.35, 4)
         expect = [(11, 31), (51, 71)]
         self.assertListEqual(result, expect)
 
 
 class TestFilterModulesLength(ut.TestCase):
-
     def test_filter_default_length(self):
         modules = [(5, 20), (25, 30)]
         result = _filter_modules_length(modules)
@@ -381,7 +332,6 @@ class TestFilterModulesLength(ut.TestCase):
 
 
 class TestInsertRegionsIntoGaps(ut.TestCase):
-
     def test_zero(self):
         result = _insert_modules_into_gaps([], 3, 9)
         expect = [(3, 9)]
@@ -420,7 +370,6 @@ class TestInsertRegionsIntoGaps(ut.TestCase):
 
 
 class TestExpandRegionsIntoGaps(ut.TestCase):
-
     def test_zero(self):
         result = _expand_modules_into_gaps([], 3, 9)
         expect = []
@@ -460,14 +409,24 @@ class TestEnsembles(ut.TestCase):
 
     # Folding modules of the reference sequence (each 60 nt).
     MODULES = [
-        ("TGACGAACAACGTGTTTGTGAACCATATAGGTAAACGCTGAATGCGTTCGCGCGGAGGGT",
-         ["..(((((((...)))))))..(((......((.(((((.....))))).))......)))",
-          "...(((...(((((((((((.(((.....)))...))).))))))))))).((.....))"]),
-        ("TTTGCAGGAAGATGGTCAACTCTACACCTAGTTTTTACCAGTCCACAAGAGTTTGAACTG",
-         [".(((..(((...((((.((..(((....)))..)).)))).))).))).(((....)))."]),
-        ("GTGCCTTAACCTGAGTACGCCCATATCATGGGAGACATTACAACTCAAATTCTAGGTGTG",
-         ["..((((.....(((((...(((((...)))))..........)))))......))))...",
-          "((((.(((...)))))))...((((((.((((..................))))))))))"]),
+        (
+            "TGACGAACAACGTGTTTGTGAACCATATAGGTAAACGCTGAATGCGTTCGCGCGGAGGGT",
+            [
+                "..(((((((...)))))))..(((......((.(((((.....))))).))......)))",
+                "...(((...(((((((((((.(((.....)))...))).))))))))))).((.....))",
+            ],
+        ),
+        (
+            "TTTGCAGGAAGATGGTCAACTCTACACCTAGTTTTTACCAGTCCACAAGAGTTTGAACTG",
+            [".(((..(((...((((.((..(((....)))..)).)))).))).))).(((....)))."],
+        ),
+        (
+            "GTGCCTTAACCTGAGTACGCCCATATCATGGGAGACATTACAACTCAAATTCTAGGTGTG",
+            [
+                "..((((.....(((((...(((((...)))))..........)))))......))))...",
+                "((((.(((...)))))))...((((((.((((..................))))))))))",
+            ],
+        ),
     ]
 
     def __init__(self, *args, **kwargs):
@@ -483,9 +442,7 @@ class TestEnsembles(ut.TestCase):
 
     def setUp(self):
         self._config = get_config()
-        set_config(verbosity=Level.ERROR,
-                   log_file_path=None,
-                   exit_on_error=True)
+        set_config(verbosity=Level.ERROR, log_file_path=None, exit_on_error=True)
         self._tmpdir = tempfile.TemporaryDirectory()
 
     def tearDown(self):
@@ -514,47 +471,56 @@ class TestEnsembles(ut.TestCase):
                     f.write(f">structure{i}\n{struct}\n")
         ct_file = db_to_ct(db_file)
         # Simulate data.
-        sim_params(ct_file=[ct_file],
-                   # Make pmut_unpaired for A and C large (17%) so that
-                   # most reads get at least two mutations despite being
-                   # short and are thus useful for clustering.
-                   pmut_unpaired=[("am", 1 / 6), ("cm", 1 / 6)],
-                   # Make all reads the same length.
-                   length_fmean=(read_length / len(refseq)),
-                   length_fvar=0.,
-                   # Make clust_conc very large so that the proportion
-                   # of each cluster is approximately equal, which makes
-                   # clustering easier.
-                   clust_conc=1000.,
-                   seed=seed)
-        idmut_dirs = sim_idmut(param_dir=[param_dir],
-                                 sample=self.SAMPLE,
-                                 profile_name=self.PROFILE,
-                                 num_reads=200000,
-                                 paired_end=False,
-                                 brotli_level=0,
-                                 seed=seed)
+        sim_params(
+            ct_file=[ct_file],
+            # Make pmut_unpaired for A and C large (17%) so that
+            # most reads get at least two mutations despite being
+            # short and are thus useful for clustering.
+            pmut_unpaired=[("am", 1 / 6), ("cm", 1 / 6)],
+            # Make all reads the same length.
+            length_fmean=(read_length / len(refseq)),
+            length_fvar=0.0,
+            # Make clust_conc very large so that the proportion
+            # of each cluster is approximately equal, which makes
+            # clustering easier.
+            clust_conc=1000.0,
+            seed=seed,
+        )
+        idmut_dirs = sim_idmut(
+            param_dir=[param_dir],
+            sample=self.SAMPLE,
+            profile_name=self.PROFILE,
+            num_reads=200000,
+            paired_end=False,
+            brotli_level=0,
+            seed=seed,
+        )
         return idmut_dirs
 
-    def run_ensembles(self,
-                      idmut_dirs: list[Path],
-                      expect_regions: dict[tuple[int, int], int],
-                      **kwargs):
-        ensembles_dirs = run_ensembles(idmut_dirs,
-                                       # Optimize for speed.
-                                       min_em_runs=1,
-                                       max_em_runs=1,
-                                       jackpot=False,
-                                       brotli_level=0,
-                                       filter_pos_table=False,
-                                       filter_read_table=False,
-                                       cluster_pos_table=False,
-                                       cluster_abundance_table=False,
-                                       **kwargs)
+    def run_ensembles(
+        self,
+        idmut_dirs: list[Path],
+        expect_regions: dict[tuple[int, int], int],
+        **kwargs,
+    ):
+        ensembles_dirs = run_ensembles(
+            idmut_dirs,
+            # Optimize for speed.
+            min_em_runs=1,
+            max_em_runs=1,
+            jackpot=False,
+            brotli_level=0,
+            filter_pos_table=False,
+            filter_read_table=False,
+            cluster_pos_table=False,
+            cluster_abundance_table=False,
+            **kwargs,
+        )
         cluster_dirs = {}
         for ensembles_dir in ensembles_dirs:
             for report_file in path.find_files_chain(
-                    [ensembles_dir], EnsemblesReport.get_path_seg_types()):
+                [ensembles_dir], EnsemblesReport.get_path_seg_types()
+            ):
                 report = EnsemblesReport.load(report_file)
                 for cluster_dir_str in report.get_field(ClusterDirsF):
                     d = Path(cluster_dir_str)
@@ -570,54 +536,50 @@ class TestEnsembles(ut.TestCase):
                     self.assertListEqual(dataset.ks, [expect_k])
                     break
             else:
-                raise ValueError(f"Expected region {exp5, exp3} does not "
-                                 "overlap at least 50% of any region "
-                                 f"among {sorted(cluster_dirs)}")
+                raise ValueError(
+                    f"Expected region {exp5, exp3} does not "
+                    "overlap at least 50% of any region "
+                    f"among {sorted(cluster_dirs)}"
+                )
 
     def test_modules012_read180(self):
         idmut_dirs = self.sim_data([0, 1, 2], 180, seed=0)
-        self.run_ensembles(idmut_dirs,
-                           {(1, 60): 2,
-                            (121, 180): 2},
-                            seed=0)
+        self.run_ensembles(idmut_dirs, {(1, 60): 2, (121, 180): 2}, seed=0)
 
     def test_modules012_read120(self):
         idmut_dirs = self.sim_data([0, 1, 2], 120, seed=0)
-        self.run_ensembles(idmut_dirs,
-                           {(1, 60): 2,
-                            (121, 180): 2},
-                            seed=0)
+        self.run_ensembles(idmut_dirs, {(1, 60): 2, (121, 180): 2}, seed=0)
 
     def test_modules012_read60(self):
         idmut_dirs = self.sim_data([0, 1, 2], 60, seed=0)
-        self.run_ensembles(idmut_dirs,
-                           {(1, 60): 2,
-                            (121, 180): 2},
-                            seed=0)
+        self.run_ensembles(idmut_dirs, {(1, 60): 2, (121, 180): 2}, seed=0)
 
     def test_modules02_read60(self):
         idmut_dirs = self.sim_data([0, 2], 60, seed=0)
-        self.run_ensembles(idmut_dirs,
-                           {(1, 60): 2,
-                            (61, 120): 2},
-                            seed=0)
+        self.run_ensembles(idmut_dirs, {(1, 60): 2, (61, 120): 2}, seed=0)
 
     def test_modules012_read180_cli(self):
         idmut_dirs = self.sim_data([0, 1, 2], 180, seed=0)
         runner = CliRunner()
-        args = (["-qq",
-                 "--exit-on-error",
-                 "ensembles"]
-                + [str(d) for d in idmut_dirs]
-                + ["--min-em-runs", "1",
-                   "--max-em-runs", "1",
-                   "--no-jackpot",
-                   "--brotli-level", "0",
-                   "--no-filter-pos-table",
-                   "--no-filter-read-table",
-                   "--no-cluster-pos-table",
-                   "--no-cluster-abundance-table",
-                   "--seed", "0"])
+        args = (
+            ["-qq", "--exit-on-error", "ensembles"]
+            + [str(d) for d in idmut_dirs]
+            + [
+                "--min-em-runs",
+                "1",
+                "--max-em-runs",
+                "1",
+                "--no-jackpot",
+                "--brotli-level",
+                "0",
+                "--no-filter-pos-table",
+                "--no-filter-read-table",
+                "--no-cluster-pos-table",
+                "--no-cluster-abundance-table",
+                "--seed",
+                "0",
+            ]
+        )
         result = runner.invoke(seismic_cli, args, catch_exceptions=False)
         self.assertEqual(result.exit_code, 0, msg=result.output)
         set_config(verbosity=Level.ERROR, log_file_path=None, exit_on_error=True)

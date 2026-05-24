@@ -5,23 +5,24 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from seismicrna.cluster.emk import (assign_clusterings,
-                                     calc_mean_arcsine_distance_clusters,
-                                     calc_mean_pearson_clusters,
-                                     get_common_k,
-                                     sort_runs)
+from seismicrna.cluster.emk import (
+    assign_clusterings,
+    calc_mean_arcsine_distance_clusters,
+    calc_mean_pearson_clusters,
+    get_common_k,
+    sort_runs,
+)
 from seismicrna.core.array import calc_inverse
 from seismicrna.core.error import NoDataError, InconsistentValueError
 
 
 def _mock_run(k: int, log_like: float):
-    """ Minimal stand-in for EMRun with just the attributes used by
-    get_common_k / sort_runs. """
+    """Minimal stand-in for EMRun with just the attributes used by
+    get_common_k / sort_runs."""
     return SimpleNamespace(k=k, log_like=log_like)
 
 
 class TestAssignClusterings(ut.TestCase):
-
     def compare_result(self, x: np.ndarray, y: np.ndarray, expect: np.ndarray):
         rows, cols = assign_clusterings(x, y)
         self.assertTupleEqual(rows.shape, cols.shape)
@@ -67,20 +68,19 @@ class TestAssignClusterings(ut.TestCase):
 
 
 class TestGetCommonK(ut.TestCase):
-
     def test_empty_raises(self):
         with self.assertRaises(NoDataError):
             get_common_k([])
 
     def test_single_run(self):
-        self.assertEqual(get_common_k([_mock_run(3, -10.)]), 3)
+        self.assertEqual(get_common_k([_mock_run(3, -10.0)]), 3)
 
     def test_multiple_runs_same_k(self):
-        runs = [_mock_run(2, -5.), _mock_run(2, -7.), _mock_run(2, -6.)]
+        runs = [_mock_run(2, -5.0), _mock_run(2, -7.0), _mock_run(2, -6.0)]
         self.assertEqual(get_common_k(runs), 2)
 
     def test_mixed_ks_raises(self):
-        runs = [_mock_run(1, -5.), _mock_run(2, -6.)]
+        runs = [_mock_run(1, -5.0), _mock_run(2, -6.0)]
         with self.assertRaises(InconsistentValueError):
             get_common_k(runs)
 
@@ -92,51 +92,47 @@ class TestGetCommonK(ut.TestCase):
 
 
 class TestSortRuns(ut.TestCase):
-
     def test_empty_list(self):
         self.assertEqual(sort_runs([]), [])
 
     def test_single_run(self):
-        run = _mock_run(1, -5.)
+        run = _mock_run(1, -5.0)
         result = sort_runs([run])
         self.assertEqual(result, [run])
 
     def test_already_sorted(self):
-        runs = [_mock_run(2, -3.), _mock_run(2, -5.), _mock_run(2, -10.)]
+        runs = [_mock_run(2, -3.0), _mock_run(2, -5.0), _mock_run(2, -10.0)]
         result = sort_runs(runs)
         log_likes = [r.log_like for r in result]
         self.assertEqual(log_likes, sorted(log_likes, reverse=True))
 
     def test_reverse_order(self):
-        runs = [_mock_run(1, -10.), _mock_run(1, -5.), _mock_run(1, -3.)]
+        runs = [_mock_run(1, -10.0), _mock_run(1, -5.0), _mock_run(1, -3.0)]
         result = sort_runs(runs)
         log_likes = [r.log_like for r in result]
-        self.assertEqual(log_likes, [-3., -5., -10.])
+        self.assertEqual(log_likes, [-3.0, -5.0, -10.0])
 
     def test_mixed_ks_raises(self):
-        runs = [_mock_run(1, -3.), _mock_run(2, -5.)]
+        runs = [_mock_run(1, -3.0), _mock_run(2, -5.0)]
         with self.assertRaises(InconsistentValueError):
             sort_runs(runs)
 
     def test_best_run_first(self):
         runs = [_mock_run(3, float(-i)) for i in [7, 2, 9, 4]]
         result = sort_runs(runs)
-        self.assertEqual(result[0].log_like, -2.)
+        self.assertEqual(result[0].log_like, -2.0)
 
 
 class TestCalcMeanArcsineDistanceClusters(ut.TestCase):
-
     def test_identical_clusters_distance_zero(self):
-        mus = np.array([[0.1, 0.4],
-                        [0.2, 0.5],
-                        [0.3, 0.6]])
+        mus = np.array([[0.1, 0.4], [0.2, 0.5], [0.3, 0.6]])
         result = calc_mean_arcsine_distance_clusters(mus, mus.copy())
-        self.assertAlmostEqual(result, 0., places=10)
+        self.assertAlmostEqual(result, 0.0, places=10)
 
     def test_single_cluster(self):
         mus = np.array([[0.1], [0.3], [0.5]])
         result = calc_mean_arcsine_distance_clusters(mus, mus.copy())
-        self.assertAlmostEqual(result, 0., places=10)
+        self.assertAlmostEqual(result, 0.0, places=10)
 
     def test_symmetry(self):
         rng = np.random.default_rng(42)
@@ -147,33 +143,29 @@ class TestCalcMeanArcsineDistanceClusters(ut.TestCase):
         self.assertAlmostEqual(d12, d21, places=10)
 
     def test_permuted_columns_same_result(self):
-        mus1 = np.array([[0.1, 0.8],
-                         [0.2, 0.7]])
+        mus1 = np.array([[0.1, 0.8], [0.2, 0.7]])
         mus2_permuted = mus1[:, [1, 0]]  # swap cluster columns
         result = calc_mean_arcsine_distance_clusters(mus1, mus2_permuted)
-        self.assertAlmostEqual(result, 0., places=10)
+        self.assertAlmostEqual(result, 0.0, places=10)
 
     def test_nonnegative(self):
         rng = np.random.default_rng(7)
         mus1 = rng.uniform(0.01, 0.99, (6, 3))
         mus2 = rng.uniform(0.01, 0.99, (6, 3))
         result = calc_mean_arcsine_distance_clusters(mus1, mus2)
-        self.assertGreaterEqual(result, 0.)
+        self.assertGreaterEqual(result, 0.0)
 
 
 class TestCalcMeanPearsonClusters(ut.TestCase):
-
     def test_identical_clusters_correlation_one(self):
-        mus = np.array([[0.1, 0.4],
-                        [0.2, 0.5],
-                        [0.3, 0.6]])
+        mus = np.array([[0.1, 0.4], [0.2, 0.5], [0.3, 0.6]])
         result = calc_mean_pearson_clusters(mus, mus.copy())
-        self.assertAlmostEqual(result, 1., places=10)
+        self.assertAlmostEqual(result, 1.0, places=10)
 
     def test_single_cluster(self):
         mus = np.array([[0.1], [0.3], [0.5]])
         result = calc_mean_pearson_clusters(mus, mus.copy())
-        self.assertAlmostEqual(result, 1., places=10)
+        self.assertAlmostEqual(result, 1.0, places=10)
 
     def test_linearly_related_clusters_one(self):
         # Pearson is invariant to positive linear transforms
@@ -181,15 +173,13 @@ class TestCalcMeanPearsonClusters(ut.TestCase):
         # Compress towards centre so all values remain in (0, 1)
         mus2 = 0.5 + 0.5 * (mus1 - 0.5)
         result = calc_mean_pearson_clusters(mus1, mus2)
-        self.assertAlmostEqual(result, 1., places=10)
+        self.assertAlmostEqual(result, 1.0, places=10)
 
     def test_permuted_columns_same_result(self):
-        mus1 = np.array([[0.1, 0.8],
-                         [0.2, 0.7],
-                         [0.3, 0.6]])
+        mus1 = np.array([[0.1, 0.8], [0.2, 0.7], [0.3, 0.6]])
         mus2_permuted = mus1[:, [1, 0]]
         result = calc_mean_pearson_clusters(mus1, mus2_permuted)
-        self.assertAlmostEqual(result, 1., places=10)
+        self.assertAlmostEqual(result, 1.0, places=10)
 
     def test_returns_float(self):
         mus = np.array([[0.1, 0.4], [0.2, 0.5], [0.3, 0.6]])

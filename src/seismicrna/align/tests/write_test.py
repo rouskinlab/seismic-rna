@@ -2,42 +2,46 @@ import tempfile
 import unittest as ut
 from pathlib import Path
 
-from seismicrna.align.write import (calc_flags_sep_strands,
-                                    fq_pipeline,
-                                    FastqUnit)
+from seismicrna.align.write import calc_flags_sep_strands, fq_pipeline, FastqUnit
 from seismicrna.align.xamops import run_bowtie2_build
 from seismicrna.core.logs import Level, get_config, set_config, restore_config
-from seismicrna.core.ngs import (FLAG_PAIRED,
-                                 FLAG_PROPER,
-                                 FLAG_FIRST,
-                                 FLAG_SECOND,
-                                 FLAG_REVERSE)
+from seismicrna.core.ngs import (
+    FLAG_PAIRED,
+    FLAG_PROPER,
+    FLAG_FIRST,
+    FLAG_SECOND,
+    FLAG_REVERSE,
+)
 
 from seismicrna.sim.total import run as run_sim_total
 
 
 class TestCalcFlags(ut.TestCase):
-
     @restore_config
     def test_f1r2_paired(self):
         set_config(verbosity=Level.ERROR)
         for bt2_mixed in [False, True]:
-            expect = (([FLAG_FIRST | FLAG_PAIRED | FLAG_PROPER,
-                        FLAG_SECOND | FLAG_REVERSE | FLAG_PAIRED | FLAG_PROPER],
-                       [FLAG_SECOND | FLAG_REVERSE,
-                        FLAG_FIRST]),
-                      ([FLAG_FIRST | FLAG_REVERSE | FLAG_PAIRED | FLAG_PROPER,
-                        FLAG_SECOND | FLAG_PAIRED | FLAG_PROPER],
-                       [FLAG_SECOND,
-                        FLAG_FIRST | FLAG_REVERSE]))
+            expect = (
+                (
+                    [
+                        FLAG_FIRST | FLAG_PAIRED | FLAG_PROPER,
+                        FLAG_SECOND | FLAG_REVERSE | FLAG_PAIRED | FLAG_PROPER,
+                    ],
+                    [FLAG_SECOND | FLAG_REVERSE, FLAG_FIRST],
+                ),
+                (
+                    [
+                        FLAG_FIRST | FLAG_REVERSE | FLAG_PAIRED | FLAG_PROPER,
+                        FLAG_SECOND | FLAG_PAIRED | FLAG_PROPER,
+                    ],
+                    [FLAG_SECOND, FLAG_FIRST | FLAG_REVERSE],
+                ),
+            )
             result = calc_flags_sep_strands(True, True, bt2_mixed)
             self.assertEqual(result, expect)
 
     def test_f1r2_single(self):
-        expect = (([0],
-                   [FLAG_REVERSE | FLAG_PAIRED]),
-                  ([FLAG_REVERSE],
-                   [FLAG_PAIRED]))
+        expect = (([0], [FLAG_REVERSE | FLAG_PAIRED]), ([FLAG_REVERSE], [FLAG_PAIRED]))
         for mixed in [False, True]:
             result = calc_flags_sep_strands(True, False, mixed)
             self.assertEqual(result, expect)
@@ -46,35 +50,37 @@ class TestCalcFlags(ut.TestCase):
     def test_f2r1_paired(self):
         set_config(verbosity=Level.ERROR)
         for bt2_mixed in [False, True]:
-            expect = (([FLAG_FIRST | FLAG_REVERSE | FLAG_PAIRED | FLAG_PROPER,
-                        FLAG_SECOND | FLAG_PAIRED | FLAG_PROPER],
-                       [FLAG_SECOND,
-                        FLAG_FIRST | FLAG_REVERSE]),
-                      ([FLAG_FIRST | FLAG_PAIRED | FLAG_PROPER,
-                        FLAG_SECOND | FLAG_REVERSE | FLAG_PAIRED | FLAG_PROPER],
-                       [FLAG_SECOND | FLAG_REVERSE,
-                        FLAG_FIRST]))
+            expect = (
+                (
+                    [
+                        FLAG_FIRST | FLAG_REVERSE | FLAG_PAIRED | FLAG_PROPER,
+                        FLAG_SECOND | FLAG_PAIRED | FLAG_PROPER,
+                    ],
+                    [FLAG_SECOND, FLAG_FIRST | FLAG_REVERSE],
+                ),
+                (
+                    [
+                        FLAG_FIRST | FLAG_PAIRED | FLAG_PROPER,
+                        FLAG_SECOND | FLAG_REVERSE | FLAG_PAIRED | FLAG_PROPER,
+                    ],
+                    [FLAG_SECOND | FLAG_REVERSE, FLAG_FIRST],
+                ),
+            )
             result = calc_flags_sep_strands(False, True, bt2_mixed)
             self.assertEqual(result, expect)
 
     def test_f2r1_single(self):
-        expect = (([FLAG_REVERSE],
-                   [FLAG_PAIRED]),
-                  ([0],
-                   [FLAG_REVERSE | FLAG_PAIRED]))
+        expect = (([FLAG_REVERSE], [FLAG_PAIRED]), ([0], [FLAG_REVERSE | FLAG_PAIRED]))
         for mixed in [False, True]:
             result = calc_flags_sep_strands(False, False, mixed)
             self.assertEqual(result, expect)
 
 
 class TestFqPipeline(ut.TestCase):
-
     def setUp(self):
         self.maxDiff = 10000
         self._config = get_config()
-        set_config(verbosity=Level.ERROR,
-                   log_file_path=None,
-                   exit_on_error=True)
+        set_config(verbosity=Level.ERROR, log_file_path=None, exit_on_error=True)
 
     def tearDown(self):
         set_config(*self._config)
@@ -83,11 +89,11 @@ class TestFqPipeline(ut.TestCase):
         for sep_strands in [False, True]:
             with tempfile.TemporaryDirectory() as tmpdir:
                 tmpdir = Path(tmpdir)
-                sim_dir = tmpdir / 'sim'
+                sim_dir = tmpdir / "sim"
                 sim_dir.mkdir()
-                ref_name = 'testref'
-                sample_name = 'sample1'
-                profile_name = 'simulated'
+                ref_name = "testref"
+                sample_name = "sample1"
+                profile_name = "simulated"
                 # Run the total simulation pipeline
                 fastqs = run_sim_total(
                     sim_dir=sim_dir,
@@ -108,10 +114,8 @@ class TestFqPipeline(ut.TestCase):
                     fold_percent=10.0,
                     pmut_paired=[],
                     pmut_unpaired=[],
-                    vmut_paired=[("a", 0.01), ("c", 0.01),
-                                 ("g", 0.01), ("t", 0.01)],
-                    vmut_unpaired=[("a", 0.01), ("c", 0.01),
-                                   ("g", 0.01), ("t", 0.01)],
+                    vmut_paired=[("a", 0.01), ("c", 0.01), ("g", 0.01), ("t", 0.01)],
+                    vmut_unpaired=[("a", 0.01), ("c", 0.01), ("g", 0.01), ("t", 0.01)],
                     center_fmean=0.5,
                     center_fvar=0.0,
                     length_fmean=1.0,
@@ -122,13 +126,13 @@ class TestFqPipeline(ut.TestCase):
                     reverse_fraction=0.0,
                     probe="SHAPE",
                     min_mut_gap=None,
-                    mut_collisions='auto',
+                    mut_collisions="auto",
                     fq_gzip=False,
                     num_reads=1024,
                     keep_tmp=False,
                     force=True,
                     num_cpus=1,
-                    seed=1
+                    seed=1,
                 )
                 self.assertEqual(len(fastqs), 1)
                 fastq_path = Path(fastqs[0])
@@ -138,9 +142,7 @@ class TestFqPipeline(ut.TestCase):
                 out_dir.mkdir()
                 tmp_dir.mkdir()
                 # Create FastqUnit
-                fq_unit = FastqUnit(fastqz=fastq_path,
-                                    phred_enc=33,
-                                    one_ref=True)
+                fq_unit = FastqUnit(fastqz=fastq_path, phred_enc=33, one_ref=True)
                 # Build the Bowtie2 index.
                 fasta = sim_dir / "refs" / f"{ref_name}.fa"
                 bowtie2_index = fasta.with_suffix("")
@@ -159,13 +161,13 @@ class TestFqPipeline(ut.TestCase):
                     fastp_3=False,
                     fastp_w=4,
                     fastp_m=20,
-                    fastp_poly_g='',
+                    fastp_poly_g="",
                     fastp_poly_g_min_len=10,
                     fastp_poly_x=False,
                     fastp_poly_x_min_len=10,
                     fastp_adapter_trimming=False,
-                    fastp_adapter_1='',
-                    fastp_adapter_2='',
+                    fastp_adapter_1="",
+                    fastp_adapter_2="",
                     fastp_adapter_fasta=None,
                     fastp_detect_adapter_for_pe=False,
                     fastp_min_length=15,
@@ -192,7 +194,7 @@ class TestFqPipeline(ut.TestCase):
                     sep_strands=sep_strands,
                     f1r2_fwd=False,
                     rev_label="-minus",
-                    num_cpus=1
+                    num_cpus=1,
                 )
                 self.assertIsNotNone(result)
 

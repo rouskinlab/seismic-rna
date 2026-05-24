@@ -3,133 +3,133 @@ from __future__ import annotations
 from abc import ABC
 
 from ..core import path
-from ..core.report import (Report,
-                           RefF,
-                           RefFastaChecksumF,
-                           FastqChecksumsF,
-                           XamChecksumF,
-                           IsDemultF,
-                           IsPairedEndF,
-                           PhredEncF,
-                           UseFastpF,
-                           Fastp5F,
-                           Fastp3F,
-                           FastpWF,
-                           FastpMF,
-                           FastpPolyGF,
-                           FastpPolyGMinLenF,
-                           FastpPolyXF,
-                           FastpPolyXMinLenF,
-                           FastpAdapterTrimmingF,
-                           FastpAdapter1F,
-                           FastpAdapter2F,
-                           FastpAdapterFastaF,
-                           FastpDetectAdapterForPEF,
-                           FastpMinLengthF,
-                           Bowtie2Local,
-                           Bowtie2Discord,
-                           Bowtie2Mixed,
-                           Bowtie2Dovetail,
-                           Bowtie2Contain,
-                           Bowtie2Un,
-                           Bowtie2ScoreMin,
-                           Bowtie2MinLengthF,
-                           Bowtie2MaxLengthF,
-                           Bowtie2GBarF,
-                           Bowtie2SeedLength,
-                           Bowtie2SeedInterval,
-                           Bowtie2ExtTries,
-                           Bowtie2Reseed,
-                           Bowtie2Dpad,
-                           Bowtie2Orient,
-                           SepStrandsF,
-                           F1R2FwdF,
-                           RevLabelF,
-                           MinMapQualF,
-                           MinReadsF,
-                           AlignReadsInitF,
-                           ReadsTrimF,
-                           ReadsAlignF,
-                           ReadsDedupF,
-                           ReadsRefsF,
-                           SeedF)
+from ..core.report import (
+    Report,
+    RefF,
+    RefFastaChecksumF,
+    FastqChecksumsF,
+    XamChecksumF,
+    IsDemultF,
+    IsPairedEndF,
+    PhredEncF,
+    UseFastpF,
+    Fastp5F,
+    Fastp3F,
+    FastpWF,
+    FastpMF,
+    FastpPolyGF,
+    FastpPolyGMinLenF,
+    FastpPolyXF,
+    FastpPolyXMinLenF,
+    FastpAdapterTrimmingF,
+    FastpAdapter1F,
+    FastpAdapter2F,
+    FastpAdapterFastaF,
+    FastpDetectAdapterForPEF,
+    FastpMinLengthF,
+    Bowtie2Local,
+    Bowtie2Discord,
+    Bowtie2Mixed,
+    Bowtie2Dovetail,
+    Bowtie2Contain,
+    Bowtie2Un,
+    Bowtie2ScoreMin,
+    Bowtie2MinLengthF,
+    Bowtie2MaxLengthF,
+    Bowtie2GBarF,
+    Bowtie2SeedLength,
+    Bowtie2SeedInterval,
+    Bowtie2ExtTries,
+    Bowtie2Reseed,
+    Bowtie2Dpad,
+    Bowtie2Orient,
+    SepStrandsF,
+    F1R2FwdF,
+    RevLabelF,
+    MinMapQualF,
+    MinReadsF,
+    AlignReadsInitF,
+    ReadsTrimF,
+    ReadsAlignF,
+    ReadsDedupF,
+    ReadsRefsF,
+    SeedF,
+)
 
 
 class BaseAlignReport(Report, ABC):
-
     @classmethod
     def get_step(cls):
         return path.ALIGN_STEP
 
     @classmethod
     def get_param_report_fields(cls):
-        return [SeedF,
-                IsDemultF,
-                IsPairedEndF,
-                PhredEncF,
-                UseFastpF,
-                Fastp5F,
-                Fastp3F,
-                FastpWF,
-                FastpMF,
-                FastpPolyGF,
-                FastpPolyGMinLenF,
-                FastpPolyXF,
-                FastpPolyXMinLenF,
-                FastpAdapterTrimmingF,
-                FastpAdapter1F,
-                FastpAdapter2F,
-                FastpAdapterFastaF,
-                FastpDetectAdapterForPEF,
-                FastpMinLengthF,
-                Bowtie2Local,
-                Bowtie2Discord,
-                Bowtie2Mixed,
-                Bowtie2Dovetail,
-                Bowtie2Contain,
-                Bowtie2ScoreMin,
-                Bowtie2MinLengthF,
-                Bowtie2MaxLengthF,
-                Bowtie2GBarF,
-                Bowtie2SeedLength,
-                Bowtie2SeedInterval,
-                Bowtie2ExtTries,
-                Bowtie2Reseed,
-                Bowtie2Dpad,
-                Bowtie2Orient,
-                Bowtie2Un,
-                MinMapQualF,
-                SepStrandsF,
-                F1R2FwdF,
-                RevLabelF,
-                MinReadsF,
-                *super().get_param_report_fields()]
+        return [
+            SeedF,
+            IsDemultF,
+            IsPairedEndF,
+            PhredEncF,
+            UseFastpF,
+            Fastp5F,
+            Fastp3F,
+            FastpWF,
+            FastpMF,
+            FastpPolyGF,
+            FastpPolyGMinLenF,
+            FastpPolyXF,
+            FastpPolyXMinLenF,
+            FastpAdapterTrimmingF,
+            FastpAdapter1F,
+            FastpAdapter2F,
+            FastpAdapterFastaF,
+            FastpDetectAdapterForPEF,
+            FastpMinLengthF,
+            Bowtie2Local,
+            Bowtie2Discord,
+            Bowtie2Mixed,
+            Bowtie2Dovetail,
+            Bowtie2Contain,
+            Bowtie2ScoreMin,
+            Bowtie2MinLengthF,
+            Bowtie2MaxLengthF,
+            Bowtie2GBarF,
+            Bowtie2SeedLength,
+            Bowtie2SeedInterval,
+            Bowtie2ExtTries,
+            Bowtie2Reseed,
+            Bowtie2Dpad,
+            Bowtie2Orient,
+            Bowtie2Un,
+            MinMapQualF,
+            SepStrandsF,
+            F1R2FwdF,
+            RevLabelF,
+            MinReadsF,
+            *super().get_param_report_fields(),
+        ]
 
     @classmethod
     def get_result_report_fields(cls):
-        return [AlignReadsInitF,
-                ReadsTrimF,
-                ReadsAlignF,
-                ReadsDedupF,
-                ReadsRefsF,
-                *super().get_result_report_fields()]
+        return [
+            AlignReadsInitF,
+            ReadsTrimF,
+            ReadsAlignF,
+            ReadsDedupF,
+            ReadsRefsF,
+            *super().get_result_report_fields(),
+        ]
 
     @classmethod
     def get_checksum_report_fields(cls):
-        return [RefFastaChecksumF,
-                FastqChecksumsF]
+        return [RefFastaChecksumF, FastqChecksumsF]
 
 
 class AlignSampleReport(BaseAlignReport):
-
     @classmethod
     def get_file_seg_type(cls):
         return path.AlignSampleRepSeg
 
-    def __init__(self, *,
-                 ref: str | None = None,
-                 demultiplexed: bool,
-                 **kwargs):
+    def __init__(self, *, ref: str | None = None, demultiplexed: bool, **kwargs):
         """
         Initialize a sample-level alignment report.
 
@@ -151,20 +151,15 @@ class AlignSampleReport(BaseAlignReport):
 
 
 class AlignRefReport(BaseAlignReport):
-
     @classmethod
     def get_file_seg_type(cls):
         return path.AlignRefRepSeg
 
     @classmethod
     def get_ident_report_fields(cls):
-        return [*super().get_ident_report_fields(),
-                RefF]
+        return [*super().get_ident_report_fields(), RefF]
 
-    def __init__(self, *,
-                 ref: str,
-                 demultiplexed: bool,
-                 **kwargs):
+    def __init__(self, *, ref: str, demultiplexed: bool, **kwargs):
         """
         Initialize a reference-level (demultiplexed) alignment report.
 
@@ -186,7 +181,6 @@ class AlignRefReport(BaseAlignReport):
 
 
 class SplitReport(Report, ABC):
-
     @classmethod
     def get_file_seg_type(cls):
         return path.SplitRepSeg
@@ -197,35 +191,35 @@ class SplitReport(Report, ABC):
 
     @classmethod
     def get_param_report_fields(cls):
-        return [Bowtie2Local,
-                Bowtie2Discord,
-                Bowtie2Mixed,
-                Bowtie2Dovetail,
-                Bowtie2Contain,
-                Bowtie2ScoreMin,
-                Bowtie2MinLengthF,
-                Bowtie2MaxLengthF,
-                Bowtie2GBarF,
-                Bowtie2SeedLength,
-                Bowtie2SeedInterval,
-                Bowtie2ExtTries,
-                Bowtie2Reseed,
-                Bowtie2Dpad,
-                Bowtie2Orient,
-                Bowtie2Un,
-                MinMapQualF,
-                SepStrandsF,
-                F1R2FwdF,
-                RevLabelF,
-                MinReadsF,
-                *super().get_param_report_fields()]
+        return [
+            Bowtie2Local,
+            Bowtie2Discord,
+            Bowtie2Mixed,
+            Bowtie2Dovetail,
+            Bowtie2Contain,
+            Bowtie2ScoreMin,
+            Bowtie2MinLengthF,
+            Bowtie2MaxLengthF,
+            Bowtie2GBarF,
+            Bowtie2SeedLength,
+            Bowtie2SeedInterval,
+            Bowtie2ExtTries,
+            Bowtie2Reseed,
+            Bowtie2Dpad,
+            Bowtie2Orient,
+            Bowtie2Un,
+            MinMapQualF,
+            SepStrandsF,
+            F1R2FwdF,
+            RevLabelF,
+            MinReadsF,
+            *super().get_param_report_fields(),
+        ]
 
     @classmethod
     def get_result_report_fields(cls):
-        return [ReadsRefsF,
-                *super().get_result_report_fields()]
+        return [ReadsRefsF, *super().get_result_report_fields()]
 
     @classmethod
     def get_checksum_report_fields(cls):
-        return [RefFastaChecksumF,
-                XamChecksumF]
+        return [RefFastaChecksumF, XamChecksumF]

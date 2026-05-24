@@ -17,15 +17,15 @@ PICKLE_PROTOCOL = 5
 
 
 class BrickleIO(FileIO, ABC):
-    """ Brotli-compressed file of a pickled object (brickle). """
+    """Brotli-compressed file of a pickled object (brickle)."""
 
     @classmethod
     def load(cls, file: Path, **kwargs):
-        """ Load from a compressed pickle file. """
+        """Load from a compressed pickle file."""
         return load_brickle(file, data_type=cls, **kwargs)
 
     def save(self, top: Path, *args, **kwargs):
-        """ Save to a pickle file compressed with Brotli. """
+        """Save to a pickle file compressed with Brotli."""
         save_path = self.get_path(top)
         checksum = save_brickle(self, save_path, *args, **kwargs)
         return save_path, checksum
@@ -36,8 +36,11 @@ class BrickleIO(FileIO, ABC):
         # will return the value that is cached, while the former will
         # return the cached_property object that caches the value.
         cls = type(self)
-        return {name: value for name, value in self.__dict__.items()
-                if not isinstance(getattr(cls, name, None), cached_property)}
+        return {
+            name: value
+            for name, value in self.__dict__.items()
+            if not isinstance(getattr(cls, name, None), cached_property)
+        }
 
     def __setstate__(self, state: dict[str, Any]):
         # All BrickleIO objects have a __dict__ rather than __slots__.
@@ -47,42 +50,31 @@ class BrickleIO(FileIO, ABC):
 
 
 class SampleBrickleIO(SampleFileIO, BrickleIO, ABC):
-
-    def __init__(self,
-                 *args,
-                 sample: str,
-                 branches: dict[str, str],
-                 **kwargs):
+    def __init__(self, *args, sample: str, branches: dict[str, str], **kwargs):
         super().__init__(*args, **kwargs)
         self.sample = sample
         self.branches = branches
 
 
 class RefBrickleIO(SampleBrickleIO, RefFileIO, ABC):
-
-    def __init__(self,
-                 *args,
-                 ref: str,
-                 **kwargs):
+    def __init__(self, *args, ref: str, **kwargs):
         super().__init__(*args, **kwargs)
         self.ref = ref
 
 
 class RegBrickleIO(RefBrickleIO, RegFileIO, ABC):
-
-    def __init__(self,
-                 *args,
-                 reg: str,
-                 **kwargs):
+    def __init__(self, *args, reg: str, **kwargs):
         super().__init__(*args, **kwargs)
         self.reg = reg
 
 
-def save_brickle(item: BrickleIO,
-                 file: str | Path,
-                 brotli_level: int = DEFAULT_BROTLI_LEVEL,
-                 force: bool = False):
-    """ Pickle an object, compress with Brotli, and save to a file.
+def save_brickle(
+    item: BrickleIO,
+    file: str | Path,
+    brotli_level: int = DEFAULT_BROTLI_LEVEL,
+    force: bool = False,
+):
+    """Pickle an object, compress with Brotli, and save to a file.
 
     Parameters
     ----------
@@ -107,8 +99,9 @@ def save_brickle(item: BrickleIO,
     state = item.__getstate__()
     logger.detail(f"State attributes of {item}: {list(state)}")
     logger.detail(f"Began compressing {item} with Brotli level {brotli_level}")
-    data = brotli.compress(pickle.dumps(state, protocol=PICKLE_PROTOCOL),
-                           quality=brotli_level)
+    data = brotli.compress(
+        pickle.dumps(state, protocol=PICKLE_PROTOCOL), quality=brotli_level
+    )
     logger.detail(f"Ended compressing {item} with Brotli level {brotli_level}")
     with open(file, write_mode(force, binary=True)) as f:
         f.write(data)
@@ -119,10 +112,8 @@ def save_brickle(item: BrickleIO,
     return checksum
 
 
-def load_brickle(file: str | Path,
-                 data_type: type[BrickleIO],
-                 checksum: str):
-    """ Unpickle and return an object from a Brotli-compressed file.
+def load_brickle(file: str | Path, data_type: type[BrickleIO], checksum: str):
+    """Unpickle and return an object from a Brotli-compressed file.
 
     Parameters
     ----------
@@ -160,8 +151,7 @@ def load_brickle(file: str | Path,
         item = object.__new__(data_type)
         item.__setstate__(state)
     else:
-        raise TypeError(f"Expected to unpickle {data_type}, "
-                        f"but got {type(state)}")
+        raise TypeError(f"Expected to unpickle {data_type}, but got {type(state)}")
     logger.detail(f"State attributes of {item}: {list(state)}")
     logger.routine(f"Ended loading {data_type} from {file}")
     return item

@@ -2,43 +2,45 @@ import unittest as ut
 
 import numpy as np
 
-from seismicrna.core.array import (calc_inverse,
-                                   ensure_same_length,
-                                   find_dims,
-                                   get_length,
-                                   locate_elements,
-                                   intersect1d_unique_sorted,
-                                   triangular)
-
+from seismicrna.core.array import (
+    calc_inverse,
+    ensure_same_length,
+    find_dims,
+    get_length,
+    locate_elements,
+    intersect1d_unique_sorted,
+    triangular,
+)
 
 
 class TestGetLength(ut.TestCase):
-
     def test_1d(self):
-        """ A 1D array has a length. """
+        """A 1D array has a length."""
         rng = np.random.default_rng(seed=0)
         for length in range(10):
             array = rng.random(length)
             self.assertEqual(get_length(array), length)
 
     def test_other_dims(self):
-        """ Non-1D arrays are not valid. """
+        """Non-1D arrays are not valid."""
         rng = np.random.default_rng(seed=0)
         for d in range(4):
             if d == 1:
                 continue
             for length in range(10):
                 array = rng.random((length,) * d)
-                self.assertRaisesRegex(ValueError,
-                                       f"Must have x.ndim = 1, but got {d}",
-                                       get_length,
-                                       array, "x")
+                self.assertRaisesRegex(
+                    ValueError,
+                    f"Must have x.ndim = 1, but got {d}",
+                    get_length,
+                    array,
+                    "x",
+                )
 
 
 class TestEnsureSameLength(ut.TestCase):
-
     def test_same_length(self):
-        """ The length is returned when the arrays share the length. """
+        """The length is returned when the arrays share the length."""
         rng = np.random.default_rng(seed=0)
         for length in range(10):
             x = rng.random(length)
@@ -46,7 +48,7 @@ class TestEnsureSameLength(ut.TestCase):
             self.assertEqual(ensure_same_length(x, y), length)
 
     def test_diff_lengths(self):
-        """ Unequal lengths are not permitted. """
+        """Unequal lengths are not permitted."""
         rng = np.random.default_rng(seed=0)
         for length1 in range(5):
             x = rng.random(length1)
@@ -56,15 +58,18 @@ class TestEnsureSameLength(ut.TestCase):
                 y = rng.random(length2)
                 self.assertRaisesRegex(
                     ValueError,
-                    ("Must have len[(]array1[)] = len[(]array2[)], "
-                     f"but got len[(]array1[)]={length1} "
-                     f"and len[(]array2[)]={length2}"),
+                    (
+                        "Must have len[(]array1[)] = len[(]array2[)], "
+                        f"but got len[(]array1[)]={length1} "
+                        f"and len[(]array2[)]={length2}"
+                    ),
                     ensure_same_length,
-                    x, y
+                    x,
+                    y,
                 )
 
     def test_other_dims(self):
-        """ Non-1D arrays are not valid. """
+        """Non-1D arrays are not valid."""
         rng = np.random.default_rng(seed=0)
         for length in range(5):
             for d1 in range(4):
@@ -77,14 +82,12 @@ class TestEnsureSameLength(ut.TestCase):
                     else:
                         continue
                     y = rng.random((length,) * d2)
-                    self.assertRaisesRegex(ValueError,
-                                           message,
-                                           ensure_same_length,
-                                           x, y, "x", "y")
+                    self.assertRaisesRegex(
+                        ValueError, message, ensure_same_length, x, y, "x", "y"
+                    )
 
 
 class TestCalcInverse(ut.TestCase):
-
     def test_empty(self):
         target = np.array([])
         expect = np.array([])
@@ -94,78 +97,75 @@ class TestCalcInverse(ut.TestCase):
         target = np.array([])
         for maximum in range(5):
             expect = np.full(maximum + 1, -1)
-            self.assertTrue(np.array_equal(
-                calc_inverse(target, require=maximum),
-                expect
-            ))
+            self.assertTrue(
+                np.array_equal(calc_inverse(target, require=maximum), expect)
+            )
 
     def test_calc_inverse(self):
-        """ Invert an array with a known inverse. """
+        """Invert an array with a known inverse."""
         target = np.array([4, 7, 3, 8, 1])
         expect = np.array([-1, 4, -1, 2, 0, -1, -1, 1, 3])
         self.assertTrue(np.array_equal(calc_inverse(target), expect))
 
     def test_calc_inverse_max(self):
-        """ Invert an array with a known inverse. """
+        """Invert an array with a known inverse."""
         target = np.array([4, 7, 3, 8, 1])
         expect = np.array([-1, 4, -1, 2, 0, -1, -1, 1, 3, -1])
-        self.assertTrue(np.array_equal(calc_inverse(target, require=9),
-                                       expect))
+        self.assertTrue(np.array_equal(calc_inverse(target, require=9), expect))
 
     def test_calc_inverse_fill_fwd(self):
-        """ Invert an array with a known inverse; fill forward. """
+        """Invert an array with a known inverse; fill forward."""
         target = np.array([4, 7, 3, 8, 1])
         expect = np.array([-1, 4, 4, 2, 0, 0, 0, 1, 3])
-        self.assertTrue(np.array_equal(calc_inverse(target, fill=True),
-                                       expect))
+        self.assertTrue(np.array_equal(calc_inverse(target, fill=True), expect))
 
     def test_calc_inverse_fill_fwd_max(self):
         target = np.array([4, 7, 3, 8, 1])
         expect = np.array([-1, 4, 4, 2, 0, 0, 0, 1, 3, 3])
-        self.assertTrue(np.array_equal(
-            calc_inverse(target, require=9, fill=True),
-            expect
-        ))
+        self.assertTrue(
+            np.array_equal(calc_inverse(target, require=9, fill=True), expect)
+        )
 
     def test_calc_inverse_fill_fwd_max_default(self):
         target = np.array([4, 7, 3, 8, 1])
         expect = np.array([23, 4, 4, 2, 0, 0, 0, 1, 3, 3])
-        self.assertTrue(np.array_equal(
-            calc_inverse(target, require=9, fill=True, fill_default=23),
-            expect
-        ))
+        self.assertTrue(
+            np.array_equal(
+                calc_inverse(target, require=9, fill=True, fill_default=23), expect
+            )
+        )
 
     def test_calc_inverse_fill_rev(self):
-        """ Invert an array with a known inverse; fill reverse. """
+        """Invert an array with a known inverse; fill reverse."""
         target = np.array([4, 7, 3, 8, 1])
         expect = np.array([4, 4, 2, 2, 0, 1, 1, 1, 3])
-        self.assertTrue(np.array_equal(
-            calc_inverse(target, fill=True, fill_rev=True),
-            expect
-        ))
+        self.assertTrue(
+            np.array_equal(calc_inverse(target, fill=True, fill_rev=True), expect)
+        )
 
     def test_calc_inverse_fill_rev_max(self):
         target = np.array([4, 7, 3, 8, 1])
         expect = np.array([4, 4, 2, 2, 0, 1, 1, 1, 3, 5])
-        self.assertTrue(np.array_equal(
-            calc_inverse(target, require=9, fill=True, fill_rev=True),
-            expect
-        ))
+        self.assertTrue(
+            np.array_equal(
+                calc_inverse(target, require=9, fill=True, fill_rev=True), expect
+            )
+        )
 
     def test_calc_inverse_fill_rev_max_default(self):
         target = np.array([4, 7, 3, 8, 1])
         expect = np.array([4, 4, 2, 2, 0, 1, 1, 1, 3, 23])
-        self.assertTrue(np.array_equal(
-            calc_inverse(target,
-                         require=9,
-                         fill=True,
-                         fill_rev=True,
-                         fill_default=23),
-            expect
-        ))
+        self.assertTrue(
+            np.array_equal(
+                calc_inverse(
+                    target, require=9, fill=True, fill_rev=True, fill_default=23
+                ),
+                expect,
+            )
+        )
 
     def test_is_inverse(self):
-        """ Verify every position in the inverse of a random array. """
+        """Verify every position in the inverse of a random array."""
         rng = np.random.default_rng(seed=0)
         target = rng.choice(16, 8, replace=False)
         for maximum in [-1, 0, 1, 20]:
@@ -177,26 +177,29 @@ class TestCalcInverse(ut.TestCase):
                     self.assertEqual(i, target[inv])
 
     def test_negative(self):
-        """ Negative values in the target are not permitted. """
+        """Negative values in the target are not permitted."""
         target = np.array([4, 7, -3, 8, 1])
-        self.assertRaisesRegex(ValueError,
-                               "test_negative has negative values",
-                               calc_inverse,
-                               target,
-                               what="test_negative")
+        self.assertRaisesRegex(
+            ValueError,
+            "test_negative has negative values",
+            calc_inverse,
+            target,
+            what="test_negative",
+        )
 
     def test_repeated(self):
-        """ Repeated values in the target are not permitted. """
+        """Repeated values in the target are not permitted."""
         target = np.array([4, 7, 3, 8, 7, 1])
-        self.assertRaisesRegex(ValueError,
-                               "test_repeated has repeated values",
-                               calc_inverse,
-                               target,
-                               what="test_repeated")
+        self.assertRaisesRegex(
+            ValueError,
+            "test_repeated has repeated values",
+            calc_inverse,
+            target,
+            what="test_repeated",
+        )
 
 
 class TestLocateElements(ut.TestCase):
-
     def test_locate_0(self):
         collection = np.array([4, 1, 2, 7, 5, 3])
         self.assertEqual(locate_elements(collection), ())
@@ -205,29 +208,33 @@ class TestLocateElements(ut.TestCase):
         collection = np.array([4, 1, 2, 7, 5, 3])
         elements = np.array([5, 2, 5])
         expect = np.array([4, 2, 4])
-        self.assertTrue(np.array_equal(locate_elements(collection, elements),
-                                       expect))
+        self.assertTrue(np.array_equal(locate_elements(collection, elements), expect))
 
     def test_locate_2(self):
         collection = np.array([4, 1, 2, 7, 5, 3])
         elements = np.array([3, 7, 4]), np.array([1, 5])
         expect = (np.array([5, 3, 0]), np.array([1, 4]))
         result = locate_elements(collection, *elements)
-        self.assertTrue(all(np.array_equal(res, exp)
-                            for res, exp in zip(result, expect, strict=True)))
+        self.assertTrue(
+            all(
+                np.array_equal(res, exp)
+                for res, exp in zip(result, expect, strict=True)
+            )
+        )
 
     def test_locate_invalid(self):
         collection = np.array([4, 1, 2, 7, 5, 3])
         elements = np.array([5, 2, 6])
-        self.assertRaisesRegex(ValueError,
-                               r"Elements \[6\] are not in collection",
-                               locate_elements,
-                               collection,
-                               elements)
+        self.assertRaisesRegex(
+            ValueError,
+            r"Elements \[6\] are not in collection",
+            locate_elements,
+            collection,
+            elements,
+        )
 
 
 class TestIntersect1dUniqueSorted(ut.TestCase):
-
     def test_both_empty(self):
         x = np.array([], dtype=int)
         y = np.array([], dtype=int)
@@ -296,12 +303,12 @@ class TestIntersect1dUniqueSorted(ut.TestCase):
         for _ in range(1000):
             x = np.unique(rng.integers(100, size=100))
             y = np.unique(rng.integers(100, size=100))
-            self.assertTrue(np.array_equal(intersect1d_unique_sorted(x, y),
-                                           np.intersect1d(x, y)))
+            self.assertTrue(
+                np.array_equal(intersect1d_unique_sorted(x, y), np.intersect1d(x, y))
+            )
 
 
 class TestFindDims(ut.TestCase):
-
     def test_empty(self):
         arrays = []
         dims = []
@@ -340,11 +347,13 @@ class TestFindDims(ut.TestCase):
                 if x == y:
                     self.assertEqual(find_dims(dims, arrays), {"x": x})
                 else:
-                    self.assertRaisesRegex(ValueError,
-                                           "Got multiple sizes for dimension",
-                                           find_dims,
-                                           dims,
-                                           arrays)
+                    self.assertRaisesRegex(
+                        ValueError,
+                        "Got multiple sizes for dimension",
+                        find_dims,
+                        dims,
+                        arrays,
+                    )
 
     def test_1d_2d_congruent(self):
         for x in range(5):
@@ -361,11 +370,13 @@ class TestFindDims(ut.TestCase):
                 if x == y:
                     self.assertEqual(find_dims(dims, arrays), {"x": x, "y": y})
                 else:
-                    self.assertRaisesRegex(ValueError,
-                                           "Got multiple sizes for dimension",
-                                           find_dims,
-                                           dims,
-                                           arrays)
+                    self.assertRaisesRegex(
+                        ValueError,
+                        "Got multiple sizes for dimension",
+                        find_dims,
+                        dims,
+                        arrays,
+                    )
 
     def test_2d_2d_congruent(self):
         for x in range(5):
@@ -382,11 +393,13 @@ class TestFindDims(ut.TestCase):
                 if x == y:
                     self.assertEqual(find_dims(dims, arrays), {"x": x, "y": y})
                 else:
-                    self.assertRaisesRegex(ValueError,
-                                           "Got multiple sizes for dimension",
-                                           find_dims,
-                                           dims,
-                                           arrays)
+                    self.assertRaisesRegex(
+                        ValueError,
+                        "Got multiple sizes for dimension",
+                        find_dims,
+                        dims,
+                        arrays,
+                    )
 
     def test_0d_none(self):
         arrays = [np.zeros(())]
@@ -396,11 +409,13 @@ class TestFindDims(ut.TestCase):
     def test_0d_1dim(self):
         arrays = [np.zeros(())]
         dims = [("x",)]
-        self.assertRaisesRegex(ValueError,
-                               "array0 must have 1 dimensions, but got 0",
-                               find_dims,
-                               dims,
-                               arrays)
+        self.assertRaisesRegex(
+            ValueError,
+            "array0 must have 1 dimensions, but got 0",
+            find_dims,
+            dims,
+            arrays,
+        )
 
     def test_1d_0dim_none(self):
         for x in range(5):
@@ -418,21 +433,25 @@ class TestFindDims(ut.TestCase):
         for x in range(5):
             arrays = [np.zeros(x)]
             dims = [("x", "y")]
-            self.assertRaisesRegex(ValueError,
-                                   "array0 must have 2 dimensions, but got 1",
-                                   find_dims,
-                                   dims,
-                                   arrays)
+            self.assertRaisesRegex(
+                ValueError,
+                "array0 must have 2 dimensions, but got 1",
+                find_dims,
+                dims,
+                arrays,
+            )
 
     def test_1d_2dim_none(self):
         for x in range(5):
             arrays = [np.zeros(x)]
             dims = [("x", "y", None)]
-            self.assertRaisesRegex(ValueError,
-                                   "array0 must have ≥ 2 dimensions, but got 1",
-                                   find_dims,
-                                   dims,
-                                   arrays)
+            self.assertRaisesRegex(
+                ValueError,
+                "array0 must have ≥ 2 dimensions, but got 1",
+                find_dims,
+                dims,
+                arrays,
+            )
 
     def test_2d_1dim_none(self):
         for x in range(5):
@@ -448,11 +467,13 @@ class TestFindDims(ut.TestCase):
                 dims = [(None, "y")]
                 self.assertRaisesRegex(
                     TypeError,
-                    (r"dim\[0\] must be an instance of <class 'str'>, "
-                     "but got None of type <class 'NoneType'>"),
+                    (
+                        r"dim\[0\] must be an instance of <class 'str'>, "
+                        "but got None of type <class 'NoneType'>"
+                    ),
                     find_dims,
                     dims,
-                    arrays
+                    arrays,
                 )
 
     def test_0d_nonzero(self):
@@ -463,12 +484,14 @@ class TestFindDims(ut.TestCase):
     def test_0d_nonzero_extra(self):
         arrays = [np.zeros(())]
         dims = [(None,)]
-        self.assertRaisesRegex(ValueError,
-                               "Unknown dimensions for nonzero: {'x'}",
-                               find_dims,
-                               dims,
-                               arrays,
-                               nonzero="x")
+        self.assertRaisesRegex(
+            ValueError,
+            "Unknown dimensions for nonzero: {'x'}",
+            find_dims,
+            dims,
+            arrays,
+            nonzero="x",
+        )
 
     def test_1d_nonzero(self):
         for x in range(5):
@@ -477,12 +500,14 @@ class TestFindDims(ut.TestCase):
             if x:
                 self.assertEqual(find_dims(dims, arrays, nonzero="x"), {"x": x})
             else:
-                self.assertRaisesRegex(ValueError,
-                                       r"Must have size\(x\) ≥ 1, but got 0",
-                                       find_dims,
-                                       dims,
-                                       arrays,
-                                       nonzero="x")
+                self.assertRaisesRegex(
+                    ValueError,
+                    r"Must have size\(x\) ≥ 1, but got 0",
+                    find_dims,
+                    dims,
+                    arrays,
+                    nonzero="x",
+                )
 
     def test_2d_nonzero(self):
         for x in range(5):
@@ -490,8 +515,9 @@ class TestFindDims(ut.TestCase):
                 arrays = [np.zeros((x, y))]
                 dims = [("x", "y")]
                 if x:
-                    self.assertEqual(find_dims(dims, arrays, nonzero="x"),
-                                     {"x": x, "y": y})
+                    self.assertEqual(
+                        find_dims(dims, arrays, nonzero="x"), {"x": x, "y": y}
+                    )
                 else:
                     self.assertRaisesRegex(
                         ValueError,
@@ -499,11 +525,12 @@ class TestFindDims(ut.TestCase):
                         find_dims,
                         dims,
                         arrays,
-                        nonzero="x"
+                        nonzero="x",
                     )
                 if y:
-                    self.assertEqual(find_dims(dims, arrays, nonzero="y"),
-                                     {"x": x, "y": y})
+                    self.assertEqual(
+                        find_dims(dims, arrays, nonzero="y"), {"x": x, "y": y}
+                    )
                 else:
                     self.assertRaisesRegex(
                         ValueError,
@@ -511,7 +538,7 @@ class TestFindDims(ut.TestCase):
                         find_dims,
                         dims,
                         arrays,
-                        nonzero="y"
+                        nonzero="y",
                     )
                 self.assertRaisesRegex(
                     ValueError,
@@ -519,12 +546,11 @@ class TestFindDims(ut.TestCase):
                     find_dims,
                     dims,
                     arrays,
-                    nonzero="z"
+                    nonzero="z",
                 )
 
 
 class TestTriangular(ut.TestCase):
-
     def test_whole_numbers(self):
         for n in range(10):
             self.assertEqual(triangular(n), sum(range(1, n + 1)))

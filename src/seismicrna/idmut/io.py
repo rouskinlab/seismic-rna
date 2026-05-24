@@ -8,10 +8,7 @@ import numpy as np
 from .batch import ReadNamesBatch, IDmutMutsBatch, IDmutRegionMutsBatch
 from ..core import path
 from ..core.array import calc_inverse
-from ..core.io import (MutsBatchIO,
-                       ReadBatchIO,
-                       RefBrickleIO,
-                       RefFileIO)
+from ..core.io import MutsBatchIO, ReadBatchIO, RefBrickleIO, RefFileIO
 from ..core.logs import logger
 from ..core.seq import DNA, Region
 from ..core.types import fit_uint_type
@@ -19,7 +16,6 @@ from ..core.validate import require_isinstance
 
 
 class IDmutFile(path.HasRefFilePath, ABC):
-
     @classmethod
     def get_step(cls):
         return path.IDMUT_STEP
@@ -30,7 +26,6 @@ class IDmutIO(IDmutFile, RefFileIO, ABC):
 
 
 class RefseqIO(RefBrickleIO, IDmutIO):
-
     @classmethod
     def get_file_seg_type(cls):
         return path.RefseqFileSeg
@@ -58,7 +53,6 @@ class RefseqIO(RefBrickleIO, IDmutIO):
 
 
 class ReadNamesBatchIO(ReadNamesBatch, ReadBatchIO, RefBrickleIO, IDmutIO):
-
     @classmethod
     def get_file_seg_type(cls):
         return path.ReadNamesBatSeg
@@ -76,26 +70,26 @@ class ReadNamesBatchIO(ReadNamesBatch, ReadBatchIO, RefBrickleIO, IDmutIO):
 
 
 class IDmutBatchIO(IDmutMutsBatch, MutsBatchIO, RefBrickleIO, IDmutIO):
-
     @classmethod
     def get_file_seg_type(cls):
         return path.IDmutBatSeg
 
     @classmethod
-    def from_region_batch(cls,
-                          batch: IDmutRegionMutsBatch, *,
-                          sample: str,
-                          branches: dict[str, str]):
-        """ Create an instance from an IDmutRegionMutsBatch. """
+    def from_region_batch(
+        cls, batch: IDmutRegionMutsBatch, *, sample: str, branches: dict[str, str]
+    ):
+        """Create an instance from an IDmutRegionMutsBatch."""
         require_isinstance("batch", batch, IDmutRegionMutsBatch)
-        return cls(batch=batch.batch,
-                   region=batch.region,
-                   seg_end5s=batch.seg_end5s,
-                   seg_end3s=batch.seg_end3s,
-                   muts=batch.muts,
-                   sample=sample,
-                   branches=branches,
-                   sanitize=False)
+        return cls(
+            batch=batch.batch,
+            region=batch.region,
+            seg_end5s=batch.seg_end5s,
+            seg_end3s=batch.seg_end3s,
+            muts=batch.muts,
+            sample=sample,
+            branches=branches,
+            sanitize=False,
+        )
 
     @classmethod
     def simulate(cls, *args, sample: str, branches: dict[str, str], **kwargs):
@@ -104,31 +98,34 @@ class IDmutBatchIO(IDmutMutsBatch, MutsBatchIO, RefBrickleIO, IDmutIO):
         return cls.from_region_batch(
             IDmutRegionMutsBatch.simulate(*args, **kwargs),
             sample=sample,
-            branches=branches
+            branches=branches,
         )
 
     def to_region_batch(self, region: Region):
-        """ Create an IDmutRegionMutsBatch from this instance. """
+        """Create an IDmutRegionMutsBatch from this instance."""
         require_isinstance("region", region, Region)
-        return IDmutRegionMutsBatch(batch=self.batch,
-                                     seg_end5s=self.seg_end5s,
-                                     seg_end3s=self.seg_end3s,
-                                     muts=self.muts,
-                                     region=region,
-                                     sanitize=False)
+        return IDmutRegionMutsBatch(
+            batch=self.batch,
+            seg_end5s=self.seg_end5s,
+            seg_end3s=self.seg_end3s,
+            muts=self.muts,
+            region=region,
+            sanitize=False,
+        )
 
 
-def from_reads(reads: Iterable[tuple[str,
-                                     tuple[tuple[list[int], list[int]],
-                                           dict[int, int]]]], *,
-               sample: str,
-               branches: dict[str, str],
-               ref: str,
-               refseq: DNA,
-               batch: int,
-               write_read_names: bool,
-               drop_empty_reads: bool = True):
-    """ Gather reads into a batch of relationships. """
+def from_reads(
+    reads: Iterable[tuple[str, tuple[tuple[list[int], list[int]], dict[int, int]]]],
+    *,
+    sample: str,
+    branches: dict[str, str],
+    ref: str,
+    refseq: DNA,
+    batch: int,
+    write_read_names: bool,
+    drop_empty_reads: bool = True,
+):
+    """Gather reads into a batch of relationships."""
     logger.routine(f"Began gathering reads into batch {batch}")
     max_segs = -1
     diff_segs = False
@@ -142,8 +139,9 @@ def from_reads(reads: Iterable[tuple[str,
         # Find the number of segments in this read.
         num_segs = len(end5s)
         if len(end3s) != num_segs:
-            raise ValueError(f"Read {repr(name)} has {num_segs} 5' ends "
-                             f"and {len(end3s)} 3' ends")
+            raise ValueError(
+                f"Read {repr(name)} has {num_segs} 5' ends and {len(end3s)} 3' ends"
+            )
         # It is unlikely that a read has a different number of segments
         # than other reads, so for efficiency, check for equality first.
         if num_segs != max_segs:
@@ -154,13 +152,17 @@ def from_reads(reads: Iterable[tuple[str,
                 # so consider this read to have a different number of
                 # segments from other reads only if max_segs >= 0.
                 if max_segs >= 0:
-                    logger.detail(f"Read {repr(name)} has {num_segs} segments, "
-                                  f"more than {max_segs} in previous reads")
+                    logger.detail(
+                        f"Read {repr(name)} has {num_segs} segments, "
+                        f"more than {max_segs} in previous reads"
+                    )
                     diff_segs = True
                 max_segs = num_segs
             else:
-                logger.detail(f"Read {repr(name)} has {num_segs} segments, "
-                              f"fewer than {max_segs} in previous reads")
+                logger.detail(
+                    f"Read {repr(name)} has {num_segs} segments, "
+                    f"fewer than {max_segs} in previous reads"
+                )
                 diff_segs = True
         names.append(name)
         seg_end5s.append(end5s)
@@ -214,27 +216,25 @@ def from_reads(reads: Iterable[tuple[str,
                     # This algorithm works the same as locate_elements()
                     # in core.array; it is reimplemented here to avoid
                     # needing to calculate keep_read_inverse repeatedly.
-                    keep_curr_read_nums = np.intersect1d(curr_read_nums,
-                                                         keep_read_nums,
-                                                         assume_unique=True)
+                    keep_curr_read_nums = np.intersect1d(
+                        curr_read_nums, keep_read_nums, assume_unique=True
+                    )
                     rels[rel] = keep_read_inverse[keep_curr_read_nums]
-            logger.detail(
-                f"Dropped {num_reads - keep_read_nums.size} empty reads"
-            )
+            logger.detail(f"Dropped {num_reads - keep_read_nums.size} empty reads")
     # Assemble and return the batches.
-    idmut_batch = IDmutBatchIO(sample=sample,
-                                 branches=branches,
-                                 batch=batch,
-                                 region=Region(ref, refseq),
-                                 seg_end5s=seg_end5s,
-                                 seg_end3s=seg_end3s,
-                                 muts=muts)
+    idmut_batch = IDmutBatchIO(
+        sample=sample,
+        branches=branches,
+        batch=batch,
+        region=Region(ref, refseq),
+        seg_end5s=seg_end5s,
+        seg_end3s=seg_end3s,
+        muts=muts,
+    )
     if write_read_names:
-        name_batch = ReadNamesBatchIO(sample=sample,
-                                      branches=branches,
-                                      ref=ref,
-                                      batch=batch,
-                                      names=names)
+        name_batch = ReadNamesBatchIO(
+            sample=sample, branches=branches, ref=ref, batch=batch, names=names
+        )
     else:
         name_batch = None
     logger.routine(f"Ended gathering reads into batch {batch}")

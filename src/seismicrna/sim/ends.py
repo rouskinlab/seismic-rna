@@ -7,13 +7,15 @@ import pandas as pd
 from click import command
 
 from ..core import path
-from ..core.arg import (opt_ct_file,
-                        opt_center_fmean,
-                        opt_center_fvar,
-                        opt_length_fmean,
-                        opt_length_fvar,
-                        opt_force,
-                        opt_num_cpus)
+from ..core.arg import (
+    opt_ct_file,
+    opt_center_fmean,
+    opt_center_fvar,
+    opt_length_fmean,
+    opt_length_fvar,
+    opt_force,
+    opt_num_cpus,
+)
 from ..core.batch import END5_COORD, END3_COORD
 from ..core.rna import find_ct_region
 from ..core.run import run_func
@@ -28,7 +30,7 @@ PROPORTION = "Proportion"
 
 
 def _calc_p_bins(nbins: int, mean: float, fvar: float):
-    """ Calculate the probability of each bin.
+    """Calculate the probability of each bin.
 
     Parameters
     ----------
@@ -45,44 +47,50 @@ def _calc_p_bins(nbins: int, mean: float, fvar: float):
         return np.ones(1)
     # Calculate the mean as a fraction of the degrees of freedom.
     dof = nbins - 1
-    require_between("mean", mean, 0., dof, maximum_name="nbins - 1")
+    require_between("mean", mean, 0.0, dof, maximum_name="nbins - 1")
     fmean = mean / dof
     require_fraction("fvar", fvar)
-    if fvar < 1.:
+    if fvar < 1.0:
         # Calculate the variance.
-        var = fvar * fmean * (1. - fmean)
-        if var > 0.:
+        var = fvar * fmean * (1.0 - fmean)
+        if var > 0.0:
             # If the variance is > 0, then use a beta distribution
             # (which is continuous) and then integrate over each window
             # between consecutive integers to calculate the probability
             # of each bin.
             from scipy.stats import beta
-            pbins = np.diff(beta.cdf(np.linspace(0., 1., nbins + 1),
-                                     *calc_beta_params(fmean, var)))
+
+            pbins = np.diff(
+                beta.cdf(
+                    np.linspace(0.0, 1.0, nbins + 1), *calc_beta_params(fmean, var)
+                )
+            )
         else:
             # If the variance is 0, all reads must have the same length:
             # namely, mean read length (rounded to the nearest integer).
             # Find the bin in which the mean read length will occur.
             pbins = np.zeros(nbins)
             mean_bin = min(int(fmean * nbins), nbins - 1)
-            pbins[mean_bin] = 1.
+            pbins[mean_bin] = 1.0
     else:
         # The variance is maximal, so only the lowest and highest bins
         # can have non-zero probability.
         pbins = np.zeros(nbins)
-        pbins[0] = 1. - fmean
+        pbins[0] = 1.0 - fmean
         pbins[-1] = fmean
     return pbins
 
 
-def sim_pends(end5: int,
-              end3: int,
-              center_fmean: float,
-              center_fvar: float,
-              length_fmean: float,
-              length_fvar: float,
-              keep_empty_reads: bool = True):
-    """ Simulate segment end coordinate probabilities.
+def sim_pends(
+    end5: int,
+    end3: int,
+    center_fmean: float,
+    center_fvar: float,
+    length_fmean: float,
+    length_fvar: float,
+    keep_empty_reads: bool = True,
+):
+    """Simulate segment end coordinate probabilities.
 
     Parameters
     ----------
@@ -118,16 +126,13 @@ def sim_pends(end5: int,
     # Central position of the region (can be a half-integer).
     region_center = (end5 + end3) / 2
     # Maximum possible mean read length given the mean read center.
-    max_mean_read_length = region_length - 2 * abs(mean_read_center
-                                                   - region_center)
+    max_mean_read_length = region_length - 2 * abs(mean_read_center - region_center)
     # Mean length among all reads.
     require_fraction("length_fmean", length_fmean)
     mean_read_length = length_fmean * max_mean_read_length
     # Calculate the probability of each read length.
     require_fraction("length_fvar", length_fvar)
-    p_read_length = _calc_p_bins(region_length + 1,
-                                 mean_read_length,
-                                 length_fvar)
+    p_read_length = _calc_p_bins(region_length + 1, mean_read_length, length_fvar)
     # For each read length, calculate the probability of each pair of
     # 5' and 3' ends.
     require_fraction("center_fvar", center_fvar)
@@ -141,9 +146,10 @@ def sim_pends(end5: int,
             # Mean 5' end of reads with this length.
             end5_mean = mean_read_center - (read_length - 1) / 2
             # Calculate the probability of each 5'/3' end position.
-            p_bins = _calc_p_bins(n_position_options,
-                                  end5_mean - end5,
-                                  center_fvar) * p_read_length[read_length]
+            p_bins = (
+                _calc_p_bins(n_position_options, end5_mean - end5, center_fvar)
+                * p_read_length[read_length]
+            )
             # Use the positions with non-zero probabilities.
             select = np.flatnonzero(p_bins)
             pends.append(p_bins[select])
@@ -160,12 +166,15 @@ def sim_pends(end5: int,
     return end5s, end3s, pends
 
 
-def sim_pends_ct(ct_file: Path, *,
-                 center_fmean: float,
-                 center_fvar: float,
-                 length_fmean: float,
-                 length_fvar: float,
-                 force: bool):
+def sim_pends_ct(
+    ct_file: Path,
+    *,
+    center_fmean: float,
+    center_fvar: float,
+    length_fmean: float,
+    length_fvar: float,
+    force: bool,
+):
     """
     Simulate read-end coordinate probabilities for a CT file region.
 
@@ -198,30 +207,34 @@ def sim_pends_ct(ct_file: Path, *,
     pends_file = ct_file.with_suffix(path.PARAM_ENDS_EXT)
     if need_write(pends_file, force):
         region = find_ct_region(ct_file)
-        uniq_end5s, uniq_end3s, pends = sim_pends(region.end5,
-                                                  region.end3,
-                                                  center_fmean,
-                                                  center_fvar,
-                                                  length_fmean,
-                                                  length_fvar,
-                                                  keep_empty_reads=False)
+        uniq_end5s, uniq_end3s, pends = sim_pends(
+            region.end5,
+            region.end3,
+            center_fmean,
+            center_fvar,
+            length_fmean,
+            length_fvar,
+            keep_empty_reads=False,
+        )
         uniq_ends = {END5_COORD: uniq_end5s, END3_COORD: uniq_end3s}
-        pends = pd.Series(pends,
-                          pd.MultiIndex.from_arrays(list(uniq_ends.values()),
-                                                    names=list(uniq_ends)),
-                          name=PROPORTION)
+        pends = pd.Series(
+            pends,
+            pd.MultiIndex.from_arrays(list(uniq_ends.values()), names=list(uniq_ends)),
+            name=PROPORTION,
+        )
         pends.to_csv(pends_file)
     return pends_file
 
 
 def load_pends(pends_file: Path):
-    """ Load end coordinate proportions from a file. """
+    """Load end coordinate proportions from a file."""
     data = pd.read_csv(pends_file, index_col=list(range(2)))[PROPORTION]
     index = data.index
     num_segments, odd = divmod(index.nlevels, 2)
     if odd:
-        raise ValueError("Number of end coordinates must be even, "
-                         f"but got {index.nlevels}")
+        raise ValueError(
+            f"Number of end coordinates must be even, but got {index.nlevels}"
+        )
     uniq_end5s = index.get_level_values(END5_COORD).values
     uniq_end3s = index.get_level_values(END3_COORD).values
     pends = data.values
@@ -229,27 +242,33 @@ def load_pends(pends_file: Path):
 
 
 @run_func(COMMAND)
-def run(*,
-        ct_file: Iterable[str | Path],
-        center_fmean: float,
-        center_fvar: float,
-        length_fmean: float,
-        length_fvar: float,
-        force: bool,
-        num_cpus: int):
-    """ Simulate the rate of each kind of mutation at each position. """
-    return dispatch(sim_pends_ct,
-                    num_cpus=num_cpus,
-                    pass_num_cpus=False,
-                    as_list=True,
-                    ordered=False,
-                    raise_on_error=False,
-                    args=as_list_of_tuples(map(Path, ct_file)),
-                    kwargs=dict(center_fmean=center_fmean,
-                                center_fvar=center_fvar,
-                                length_fmean=length_fmean,
-                                length_fvar=length_fvar,
-                                force=force))
+def run(
+    *,
+    ct_file: Iterable[str | Path],
+    center_fmean: float,
+    center_fvar: float,
+    length_fmean: float,
+    length_fvar: float,
+    force: bool,
+    num_cpus: int,
+):
+    """Simulate the rate of each kind of mutation at each position."""
+    return dispatch(
+        sim_pends_ct,
+        num_cpus=num_cpus,
+        pass_num_cpus=False,
+        as_list=True,
+        ordered=False,
+        raise_on_error=False,
+        args=as_list_of_tuples(map(Path, ct_file)),
+        kwargs=dict(
+            center_fmean=center_fmean,
+            center_fvar=center_fvar,
+            length_fmean=length_fmean,
+            length_fvar=length_fvar,
+            force=force,
+        ),
+    )
 
 
 params = [
@@ -259,11 +278,11 @@ params = [
     opt_length_fmean,
     opt_length_fvar,
     opt_force,
-    opt_num_cpus
+    opt_num_cpus,
 ]
 
 
 @command(COMMAND, params=params)
 def cli(*args, **kwargs):
-    """ Simulate the proportions of 5' and 3' end coordinates. """
+    """Simulate the proportions of 5' and 3' end coordinates."""
     run(*args, **kwargs)

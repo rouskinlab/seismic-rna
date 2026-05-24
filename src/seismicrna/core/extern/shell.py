@@ -28,50 +28,54 @@ SEQKIT_CMD = "seqkit"
 
 
 class ShellCommandFailedError(RuntimeError):
-    """ A command failed that was run through the shell. """
+    """A command failed that was run through the shell."""
 
 
 def args_to_cmd(args: list[Any]):
-    """ Join a list of arguments into a command with shlex. """
+    """Join a list of arguments into a command with shlex."""
     return shlex.join(map(str, args))
 
 
 def cmds_to_pipe(cmds: list[str]):
-    """ Join commands into a pipeline. """
+    """Join commands into a pipeline."""
     return " | ".join(cmds)
 
 
 def cmds_to_series(cmds: list[str]):
-    """ Run commands in series. """
+    """Run commands in series."""
     return " ; ".join(cmds)
 
+
 def cmds_to_redirect_in(cmds: list[str]):
-     """ Run commands with a leftward redirect. """
-     return " < ".join(cmds)
+    """Run commands with a leftward redirect."""
+    return " < ".join(cmds)
+
 
 def cmds_to_redirect_out(cmds: list[str]):
-    """ Run commands with a rightward redirect. """
+    """Run commands with a rightward redirect."""
     return " > ".join(cmds)
 
+
 def cmds_to_subshell(cmds: list[str]):
-    """ Run commands in a subshell. """
+    """Run commands in a subshell."""
     return f"( {cmds_to_series(cmds)} )"
 
 
 def run_cmd(cmd: str, text: bool | None = True, shell: bool = True):
-    """ Run a command via subprocess.run(), with logging. """
+    """Run a command via subprocess.run(), with logging."""
     # Log the command with which the process was run.
     logger.action(f"Began running shell command:\n{cmd}")
     # Run the process and capture the output.
-    process = run(cmd,
-                  shell=shell,
-                  capture_output=text is not None,
-                  text=text)
+    process = run(cmd, shell=shell, capture_output=text is not None, text=text)
     failed = process.returncode != 0
     result = f"FAILED (code {process.returncode})" if failed else "SUCCEEDED"
-    message = "\n".join([f"Shell command {result}:\n{cmd}\n",
-                         f"STDOUT:\n{process.stdout}\n",
-                         f"STDERR:\n{process.stderr}\n"])
+    message = "\n".join(
+        [
+            f"Shell command {result}:\n{cmd}\n",
+            f"STDOUT:\n{process.stdout}\n",
+            f"STDERR:\n{process.stderr}\n",
+        ]
+    )
     if failed:
         raise ShellCommandFailedError(message)
     logger.detail(message)
@@ -80,27 +84,31 @@ def run_cmd(cmd: str, text: bool | None = True, shell: bool = True):
 
 
 def iopaths(has_ipath: bool = True, has_opath: bool = True):
-    """ Given a function that takes an input path, output path, both, or
+    """Given a function that takes an input path, output path, both, or
     neither, and potentially other positional/keyword arguments, return
     another function that takes input and output paths as its first two
-    arguments and calls the original function with the right paths. """
+    arguments and calls the original function with the right paths."""
 
     def decorator(func: Callable[[Any, Any, Any], str]):
 
         if has_ipath:
             if has_opath:
+
                 def with_iopaths(ipath, opath, *args, **kwargs):
                     return func(ipath, opath, *args, **kwargs)
 
             else:
+
                 def with_iopaths(ipath, __, *args, **kwargs):
                     return func(ipath, *args, **kwargs)
         else:
             if has_opath:
+
                 def with_iopaths(_, opath, *args, **kwargs):
                     return func(opath, *args, **kwargs)
 
             else:
+
                 def with_iopaths(_, __, *args, **kwargs):
                     return func(*args, **kwargs)
 
@@ -110,14 +118,16 @@ def iopaths(has_ipath: bool = True, has_opath: bool = True):
 
 
 class ShellCommand(object):
-    """ Command that can be run in the shell. """
+    """Command that can be run in the shell."""
 
-    def __init__(self,
-                 action: str,
-                 mkcmd: Callable[[Any, Any, Any], str],
-                 parse: Callable[[CompletedProcess], Any] | None = None,
-                 ipath: bool = True,
-                 opath: bool = True):
+    def __init__(
+        self,
+        action: str,
+        mkcmd: Callable[[Any, Any, Any], str],
+        parse: Callable[[CompletedProcess], Any] | None = None,
+        ipath: bool = True,
+        opath: bool = True,
+    ):
         self._make_command = iopaths(ipath, opath)(mkcmd)
         self._parse_output = parse
         self._action = action
@@ -130,10 +140,13 @@ class ShellCommand(object):
             action = f"{action} to {opath}"
         return action
 
-    def __call__(self,
-                 ipath: Path | Any | None = None,
-                 opath: Path | Any | None = None, /,
-                 **kwargs):
+    def __call__(
+        self,
+        ipath: Path | Any | None = None,
+        opath: Path | Any | None = None,
+        /,
+        **kwargs,
+    ):
         if opath:
             # Make the parent directory of the output file, if it does
             # not already exist.

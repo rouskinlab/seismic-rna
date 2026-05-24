@@ -18,13 +18,13 @@ def _read_exact(fh, n: int) -> bytes:
 
 
 def _parse_sequence(packed: bytes, length: int) -> DNA:
-    """ Decode 4-bit packed sequence (2 nucleotides per byte, hex nibbles). """
+    """Decode 4-bit packed sequence (2 nucleotides per byte, hex nibbles)."""
     hex_str = packed.hex().translate(_HEX_TO_NUC)[:length]
     return DNA(hex_str)
 
 
 def _read_transcript(fh) -> tuple[str, DNA, list[tuple[int, int, list[int]]]]:
-    """ Read one transcript block from an open MM file handle.
+    """Read one transcript block from an open MM file handle.
 
     Returns (ref_id, refseq, reads) where each read is
     (start, end, mut_positions) with 0-based coordinates.
@@ -56,9 +56,9 @@ def _read_transcript(fh) -> tuple[str, DNA, list[tuple[int, int, list[int]]]]:
 
 
 def iter_mm_file(
-        mm_path: Path
+    mm_path: Path,
 ) -> Iterator[tuple[str, DNA, list[tuple[int, int, list[int]]]]]:
-    """ Iterate over transcript blocks in an MM file.
+    """Iterate over transcript blocks in an MM file.
 
     Yields (ref_id, refseq, reads) for each transcript, where reads is a
     list of (start, end, mut_positions) tuples (all positions 0-based).

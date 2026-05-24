@@ -13,8 +13,7 @@ from .io import FilterBatchIO
 from .report import FilterReport
 from .table import FilterBatchTabulator
 from ..core import path
-from ..core.arg import (MUT_COLLISIONS_DROP,
-                        MUT_COLLISIONS_MERGE)
+from ..core.arg import MUT_COLLISIONS_DROP, MUT_COLLISIONS_MERGE
 from ..core.batch import RegionMutsBatch
 from ..core.dataset import MissingBatchTypeError
 from ..core.error import IncompatibleValuesError
@@ -22,25 +21,25 @@ from ..core.lists import PositionList
 from ..core.logs import logger
 from ..core.rel import RelPattern
 from ..core.report import filter_iter_no_convergence
-from ..core.seq import (BASEA,
-                        BASEC,
-                        BASEG,
-                        BASET,
-                        BASEN,
-                        FIELD_REF,
-                        POS_NAME,
-                        Region,
-                        index_to_pos)
+from ..core.seq import (
+    BASEA,
+    BASEC,
+    BASEG,
+    BASET,
+    BASEN,
+    FIELD_REF,
+    POS_NAME,
+    Region,
+    index_to_pos,
+)
 from ..core.table import MUTAT_REL, INFOR_REL
 from ..core.tmp import release_to_out, with_tmp_dir
 from ..core.write import need_write
-from ..idmut.dataset import (IDmutMutsDataset,
-                              PoolMutsDataset,
-                              load_read_names_dataset)
+from ..idmut.dataset import IDmutMutsDataset, PoolMutsDataset, load_read_names_dataset
 
 
 class Filterer(object):
-    """ Filter batches of relationships. """
+    """Filter batches of relationships."""
 
     PATTERN_KEY = "pattern"
     DROP_READ_INIT = "read-init"
@@ -56,38 +55,41 @@ class Filterer(object):
     MASK_POS_FMUT = "pos-fmut"
     CHECKSUM_KEY = FilterReport.get_batch_type().btype()
 
-    def __init__(self,
-                 dataset: IDmutMutsDataset | PoolMutsDataset,
-                 region: Region,
-                 pattern: RelPattern, *,
-                 max_filter_iter: int,
-                 mask_polya: int,
-                 mask_a: bool,
-                 mask_c: bool,
-                 mask_g: bool,
-                 mask_u: bool,
-                 mask_pos: list[tuple[str, int]],
-                 mask_pos_file: list[Path],
-                 drop_read: list[str],
-                 drop_read_file: list[Path],
-                 drop_discontig: bool,
-                 min_ncov_read: int,
-                 min_fcov_read: float,
-                 min_finfo_read: float,
-                 max_fmut_read: float,
-                 min_mut_gap: int,
-                 mut_collisions: str,
-                 probe: str,
-                 min_ninfo_pos: int,
-                 max_fmut_pos: float,
-                 quick_unbias: bool,
-                 quick_unbias_thresh: float,
-                 count_read: bool,
-                 brotli_level: int,
-                 top: Path,
-                 branch: str,
-                 self_contained: bool,
-                 num_cpus: int = 1):
+    def __init__(
+        self,
+        dataset: IDmutMutsDataset | PoolMutsDataset,
+        region: Region,
+        pattern: RelPattern,
+        *,
+        max_filter_iter: int,
+        mask_polya: int,
+        mask_a: bool,
+        mask_c: bool,
+        mask_g: bool,
+        mask_u: bool,
+        mask_pos: list[tuple[str, int]],
+        mask_pos_file: list[Path],
+        drop_read: list[str],
+        drop_read_file: list[Path],
+        drop_discontig: bool,
+        min_ncov_read: int,
+        min_fcov_read: float,
+        min_finfo_read: float,
+        max_fmut_read: float,
+        min_mut_gap: int,
+        mut_collisions: str,
+        probe: str,
+        min_ninfo_pos: int,
+        max_fmut_pos: float,
+        quick_unbias: bool,
+        quick_unbias_thresh: float,
+        count_read: bool,
+        brotli_level: int,
+        top: Path,
+        branch: str,
+        self_contained: bool,
+        num_cpus: int = 1,
+    ):
         """
         Parameters
         ----------
@@ -159,21 +161,25 @@ class Filterer(object):
         # Set the general parameters.
         self._began = datetime.now()
         self.dataset = dataset
-        self.region = Region(dataset.ref,
-                             dataset.refseq,
-                             end5=region.end5,
-                             end3=region.end3,
-                             name=region.name)
+        self.region = Region(
+            dataset.ref,
+            dataset.refseq,
+            end5=region.end5,
+            end3=region.end3,
+            name=region.name,
+        )
         self.pattern = pattern
         self.max_iter = max_filter_iter
         self._iter = 0
         self._converged = False
         # Set the parameters for excluding positions from the region.
         if not 0 < mask_polya <= 5:
-            logger.warning("It is not recommended to keep sequences of 5 or "
-                           "more consecutive As because of an artifact during "
-                           "RT that causes low reactivity. See Kladwang et al. "
-                           "(https://doi.org/10.1021/acs.biochem.0c00020).")
+            logger.warning(
+                "It is not recommended to keep sequences of 5 or "
+                "more consecutive As because of an artifact during "
+                "RT that causes low reactivity. See Kladwang et al. "
+                "(https://doi.org/10.1021/acs.biochem.0c00020)."
+            )
         self.mask_polya = mask_polya
         self.mask_a = mask_a
         self.mask_c = mask_c
@@ -183,12 +189,14 @@ class Filterer(object):
         self.drop_read = self._get_drop_read(drop_read, drop_read_file)
         # Set the parameters for filtering reads.
         if min_mut_gap > 0 and not drop_discontig:
-            raise ValueError("The observer bias correction does not work with "
-                             "discontiguous reads. If you need discontiguous "
-                             "reads, disable bias correction with the option "
-                             "--min-mut-gap=0 (but be warned that disabling "
-                             "bias correction can produce misleading results, "
-                             "especially with clustering).")
+            raise ValueError(
+                "The observer bias correction does not work with "
+                "discontiguous reads. If you need discontiguous "
+                "reads, disable bias correction with the option "
+                "--min-mut-gap=0 (but be warned that disabling "
+                "bias correction can produce misleading results, "
+                "especially with clustering)."
+            )
         self.drop_discontig = drop_discontig
         self.min_ncov_read = min_ncov_read
         self.min_fcov_read = min_fcov_read
@@ -213,9 +221,7 @@ class Filterer(object):
         # After the first iteration, self.dataset will become the new,
         # filtered dataset, which will also have a branch for the filter
         # step, so calculate the branches using the original dataset.
-        self.branches = path.add_branch(path.FILTER_STEP,
-                                        branch,
-                                        dataset.branches)
+        self.branches = path.add_branch(path.FILTER_STEP, branch, dataset.branches)
         # Parallelization
         self.num_cpus = num_cpus
 
@@ -262,120 +268,124 @@ class Filterer(object):
     # This property can change: do not cache it.
     @property
     def n_reads_kept(self):
-        """ Number of reads kept. """
+        """Number of reads kept."""
         return self._n_reads[self.DROP_READ_KEPT]
 
     # This property can change: do not cache it.
     @property
     def pos_a(self):
-        """ Positions masked for having base A. """
+        """Positions masked for having base A."""
         return self.region.get_mask(BASEA, missing_ok=True)
 
     # This property can change: do not cache it.
     @property
     def pos_c(self):
-        """ Positions masked for having base C. """
+        """Positions masked for having base C."""
         return self.region.get_mask(BASEC, missing_ok=True)
 
     # This property can change: do not cache it.
     @property
     def pos_g(self):
-        """ Positions masked for having base G. """
+        """Positions masked for having base G."""
         return self.region.get_mask(BASEG, missing_ok=True)
 
     # This property can change: do not cache it.
     @property
     def pos_u(self):
-        """ Positions masked for having base T or U. """
+        """Positions masked for having base T or U."""
         return self.region.get_mask(BASET, missing_ok=True)
 
     # This property can change: do not cache it.
     @property
     def pos_n(self):
-        """ Positions masked for having base N. """
+        """Positions masked for having base N."""
         return self.region.get_mask(BASEN, missing_ok=True)
 
     # This property can change: do not cache it.
     @property
     def pos_polya(self):
-        """ Positions masked for lying in a poly(A) sequence. """
+        """Positions masked for lying in a poly(A) sequence."""
         return self.region.get_mask(self.region.MASK_POLYA)
 
     # This property can change: do not cache it.
     @property
     def pos_list(self):
-        """ Positions masked arbitrarily from a list. """
+        """Positions masked arbitrarily from a list."""
         return self.region.get_mask(self.region.MASK_LIST)
 
     # This property can change: do not cache it.
     @property
     def pos_min_ninfo(self):
-        """ Positions masked for having too few informative reads. """
+        """Positions masked for having too few informative reads."""
         return self.region.get_mask(self.MASK_POS_NINFO)
 
     # This property can change: do not cache it.
     @property
     def pos_max_fmut(self):
-        """ Positions masked for having too many mutations. """
+        """Positions masked for having too many mutations."""
         return self.region.get_mask(self.MASK_POS_FMUT)
 
     # This property can change: do not cache it.
     @property
     def pos_kept(self):
-        """ Positions kept. """
+        """Positions kept."""
         return self.region.unmasked_int
 
     # This property can change: do not cache it.
     @property
     def _force_write(self):
-        """ Whether to force-write each file. """
+        """Whether to force-write each file."""
         return self._iter > 1
 
     # This property can change: do not cache it.
     @property
     def read_names_dataset(self):
-        """ Dataset of the read names. """
+        """Dataset of the read names."""
         return load_read_names_dataset(self.dataset.report_file)
 
-    def _get_mask_pos(self,
-                      mask_pos: Iterable[tuple[str, int]],
-                      mask_pos_file: Iterable[str | Path]):
-        """ List all positions to mask. """
+    def _get_mask_pos(
+        self, mask_pos: Iterable[tuple[str, int]], mask_pos_file: Iterable[str | Path]
+    ):
+        """List all positions to mask."""
         # Collect the positions to mask from the list.
         dataset_ref = self.dataset.ref
-        mask_pos = np.array([pos for ref, pos in mask_pos
-                             if ref == dataset_ref],
-                            dtype=int)
-        logger.detail(f"Got {mask_pos.size} positions listed individually "
-                      f"to pre-exclude for reference {repr(dataset_ref)}")
+        mask_pos = np.array(
+            [pos for ref, pos in mask_pos if ref == dataset_ref], dtype=int
+        )
+        logger.detail(
+            f"Got {mask_pos.size} positions listed individually "
+            f"to pre-exclude for reference {repr(dataset_ref)}"
+        )
         # List positions to exclude from file(s).
-        for file in path.find_files_chain(mask_pos_file,
-                                          [path.PositionListSeg]):
+        for file in path.find_files_chain(mask_pos_file, [path.PositionListSeg]):
             file_data = PositionList.load_data(file)
             ref_rows = file_data[FIELD_REF] == dataset_ref
             file_pos = file_data.loc[ref_rows, POS_NAME].values
-            logger.detail(f"Got {file_pos.size} positions in {file} "
-                          f"to pre-exclude for reference {repr(dataset_ref)}")
+            logger.detail(
+                f"Got {file_pos.size} positions in {file} "
+                f"to pre-exclude for reference {repr(dataset_ref)}"
+            )
             if file_pos.size > 0:
                 mask_pos = np.concatenate([mask_pos, file_pos])
         # Drop redundant positions and sort the remaining ones.
         mask_pos = np.unique(np.asarray(mask_pos, dtype=int))
         # Keep only the positions in the region.
-        mask_pos = mask_pos[np.logical_and(mask_pos >= self.region.end5,
-                                           mask_pos <= self.region.end3)]
-        logger.detail(f"Got {mask_pos.size} positions to pre-exclude "
-                      f"for reference {repr(dataset_ref)}")
+        mask_pos = mask_pos[
+            np.logical_and(mask_pos >= self.region.end5, mask_pos <= self.region.end3)
+        ]
+        logger.detail(
+            f"Got {mask_pos.size} positions to pre-exclude "
+            f"for reference {repr(dataset_ref)}"
+        )
         return mask_pos
 
     @staticmethod
-    def _get_drop_read(drop_read: Iterable[str],
-                       drop_read_file: Iterable[str | Path]):
-        """ List all reads to drop. """
+    def _get_drop_read(drop_read: Iterable[str], drop_read_file: Iterable[str | Path]):
+        """List all reads to drop."""
         # Ensure that the given read names are all strings.
         drop_read = set(map(str, drop_read))
         # List reads to exclude from file(s).
-        for file in path.find_files_chain(drop_read_file,
-                                          [path.ReadListSeg]):
+        for file in path.find_files_chain(drop_read_file, [path.ReadListSeg]):
             with open(file) as f:
                 # Ensure every read name is unique.
                 drop_read.update(map(str.rstrip, f))
@@ -384,7 +394,7 @@ class Filterer(object):
         return drop_read
 
     def _drop_predefined_reads(self, batch: RegionMutsBatch):
-        """ Drop reads from a predefined list. """
+        """Drop reads from a predefined list."""
         if self.drop_read.size == 0:
             # Pre-exclude no reads.
             logger.detail(f"{self} skipped pre-excluding reads in {batch}")
@@ -398,111 +408,129 @@ class Filterer(object):
                 "only if IDmut was run using the option --write-read-names"
             ) from None
         if names_batch.num_reads != batch.num_reads:
-            raise ValueError(f"Expected {batch.num_reads} read names,"
-                             f"but got {names_batch.num_reads}")
+            raise ValueError(
+                f"Expected {batch.num_reads} read names,but got {names_batch.num_reads}"
+            )
         # Find the numbers of the reads to keep.
-        reads = batch.read_nums[np.isin(names_batch.names,
-                                        self.drop_read,
-                                        assume_unique=True,
-                                        invert=True)]
+        reads = batch.read_nums[
+            np.isin(names_batch.names, self.drop_read, assume_unique=True, invert=True)
+        ]
         logger.detail(f"{self} kept {reads.size} reads after pre-excluding")
         # Return a new batch of only those reads.
         return apply_filters(batch, reads)
 
     def _drop_min_ncov_read(self, batch: RegionMutsBatch):
-        """ Drop reads with too few covered positions. """
+        """Drop reads with too few covered positions."""
         if self.min_ncov_read < 1:
-            raise ValueError(f"min_ncov_read must be ≥ 1, but got "
-                             f"{self.min_ncov_read}")
+            raise ValueError(f"min_ncov_read must be ≥ 1, but got {self.min_ncov_read}")
         # Find the reads with sufficiently many covered positions.
-        reads = batch.read_nums[batch.cover_per_read.values.sum(axis=1)
-                                >= self.min_ncov_read]
-        logger.detail(f"{self} kept {reads.size} reads with coverage "
-                      f"≥ {self.min_ncov_read} in {batch}")
+        reads = batch.read_nums[
+            batch.cover_per_read.values.sum(axis=1) >= self.min_ncov_read
+        ]
+        logger.detail(
+            f"{self} kept {reads.size} reads with coverage "
+            f"≥ {self.min_ncov_read} in {batch}"
+        )
         # Return a new batch of only those reads.
         return apply_filters(batch, reads)
 
     def _drop_min_fcov_read(self, batch: RegionMutsBatch):
-        """ Drop reads covering too small a fraction of the region. """
-        if not 0. <= self.min_fcov_read <= 1.:
-            raise ValueError(f"min_fcov_read must be in [0, 1], but got "
-                             f"{self.min_fcov_read}")
-        if self.min_fcov_read == 0.:
-            logger.detail(f"{self} skipped filtering reads with insufficient "
-                          f"coverage fractions in {batch}")
+        """Drop reads covering too small a fraction of the region."""
+        if not 0.0 <= self.min_fcov_read <= 1.0:
+            raise ValueError(
+                f"min_fcov_read must be in [0, 1], but got {self.min_fcov_read}"
+            )
+        if self.min_fcov_read == 0.0:
+            logger.detail(
+                f"{self} skipped filtering reads with insufficient "
+                f"coverage fractions in {batch}"
+            )
             return batch
         ncov = batch.cover_per_read.values.sum(axis=1)
         n_pos = self.region.size
         fcov = ncov / n_pos if n_pos > 0 else np.zeros(ncov.size)
         reads = batch.read_nums[fcov >= self.min_fcov_read]
-        logger.detail(f"{self} kept {reads.size} reads with coverage "
-                      f"fractions ≥ {self.min_fcov_read} in {batch}")
+        logger.detail(
+            f"{self} kept {reads.size} reads with coverage "
+            f"fractions ≥ {self.min_fcov_read} in {batch}"
+        )
         return apply_filters(batch, reads)
 
     def _drop_discontig(self, batch: RegionMutsBatch):
-        """ Drop reads with discontiguous mates. """
+        """Drop reads with discontiguous mates."""
         if not self.drop_discontig:
             # Keep discontiguous reads.
-            logger.detail(f"{self} skipped filtering reads with "
-                          f"discontiguous mates in {batch}")
+            logger.detail(
+                f"{self} skipped filtering reads with discontiguous mates in {batch}"
+            )
             return batch
         # Find the reads with contiguous mates.
         reads = batch.read_nums[batch.contiguous]
-        logger.detail(f"{self} kept {reads.size} reads with "
-                      f"contiguous mates in {batch}")
+        logger.detail(
+            f"{self} kept {reads.size} reads with contiguous mates in {batch}"
+        )
         # Return a new batch of only those reads.
         return apply_filters(batch, reads)
 
     def _drop_min_finfo_read(self, batch: RegionMutsBatch):
-        """ Drop reads with too few informative positions. """
-        if not 0. <= self.min_finfo_read <= 1.:
-            raise ValueError(f"min_finfo_read must be ≥ 0, ≤ 1, but got "
-                             f"{self.min_finfo_read}")
-        if self.min_finfo_read == 0.:
+        """Drop reads with too few informative positions."""
+        if not 0.0 <= self.min_finfo_read <= 1.0:
+            raise ValueError(
+                f"min_finfo_read must be ≥ 0, ≤ 1, but got {self.min_finfo_read}"
+            )
+        if self.min_finfo_read == 0.0:
             # All reads have sufficiently many informative positions.
-            logger.detail(f"{self} skipped filtering reads with insufficient "
-                          f"informative fractions in {batch}")
+            logger.detail(
+                f"{self} skipped filtering reads with insufficient "
+                f"informative fractions in {batch}"
+            )
             return batch
         # Find the reads with sufficiently many informative positions.
         info, muts = batch.count_per_read(self.pattern)
         finfo_read = info.values / batch.cover_per_read.values.sum(axis=1)
         reads = info.index.values[finfo_read >= self.min_finfo_read]
-        logger.detail(f"{self} kept {reads.size} reads with informative "
-                      f"fractions ≥ {self.min_finfo_read} in {batch}")
+        logger.detail(
+            f"{self} kept {reads.size} reads with informative "
+            f"fractions ≥ {self.min_finfo_read} in {batch}"
+        )
         # Return a new batch of only those reads.
         return apply_filters(batch, reads)
 
     def _drop_max_fmut_read(self, batch: RegionMutsBatch):
-        """ Drop reads with too many mutations. """
-        if not 0. <= self.max_fmut_read <= 1.:
-            raise ValueError(f"max_fmut_read must be ≥ 0, ≤ 1, but got "
-                             f"{self.max_fmut_read}")
-        if self.max_fmut_read == 1.:
+        """Drop reads with too many mutations."""
+        if not 0.0 <= self.max_fmut_read <= 1.0:
+            raise ValueError(
+                f"max_fmut_read must be ≥ 0, ≤ 1, but got {self.max_fmut_read}"
+            )
+        if self.max_fmut_read == 1.0:
             # All reads have sufficiently few mutations.
-            logger.detail(f"{self} skipped filtering reads with excessive "
-                          f"mutation fractions in {batch}")
+            logger.detail(
+                f"{self} skipped filtering reads with excessive "
+                f"mutation fractions in {batch}"
+            )
             return batch
         # Find the reads with sufficiently few mutations.
         info, muts = batch.count_per_read(self.pattern)
         with np.errstate(invalid="ignore"):
             fmut_read = muts.values / info.values
         reads = info.index.values[fmut_read <= self.max_fmut_read]
-        logger.detail(f"{self} kept {reads.size} reads with mutated "
-                      f"fractions ≤ {self.max_fmut_read} in {batch}")
+        logger.detail(
+            f"{self} kept {reads.size} reads with mutated "
+            f"fractions ≤ {self.max_fmut_read} in {batch}"
+        )
         # Return a new batch of only those reads.
         return apply_filters(batch, reads)
 
     def _filter_min_mut_gap(self, batch: RegionMutsBatch):
-        """ Filter out mutations that are too close by either dropping
-        reads or merging mutations. """
+        """Filter out mutations that are too close by either dropping
+        reads or merging mutations."""
         if not self.min_mut_gap >= 0:
-            raise ValueError(
-                f"min_mut_gap must be ≥ 0, but got {self.min_mut_gap}"
-            )
+            raise ValueError(f"min_mut_gap must be ≥ 0, but got {self.min_mut_gap}")
         if self.min_mut_gap == 0:
             # No read can have a pair of mutations that are too close.
-            logger.detail(f"{self} skipped filtering pairs of mutations too "
-                          f"close in {batch}")
+            logger.detail(
+                f"{self} skipped filtering pairs of mutations too close in {batch}"
+            )
             return batch
         if self.mut_collisions == MUT_COLLISIONS_DROP:
             # Drop reads with pairs of mutations that are too close.
@@ -515,8 +543,7 @@ class Filterer(object):
         if self.mut_collisions == MUT_COLLISIONS_MERGE:
             # Merge nearby mutations into a single mutation.
             logger.detail(
-                f"{self} merged mutations closer than {self.min_mut_gap} nt "
-                f"in {batch}"
+                f"{self} merged mutations closer than {self.min_mut_gap} nt in {batch}"
             )
             return FilterMutsBatch(
                 batch=batch.batch,
@@ -529,7 +556,7 @@ class Filterer(object):
         raise ValueError(f"Invalid mut_collisions: {repr(self.mut_collisions)}")
 
     def _mask_predefined_positions(self):
-        """ Mask predefined positions. """
+        """Mask predefined positions."""
         self.region.mask_n()
         if self.mask_a:
             self.region.mask_a()
@@ -543,25 +570,29 @@ class Filterer(object):
         self.region.mask_list(self.mask_pos)
 
     def _get_batch_num_path(self, batch_num: int):
-        return FilterBatchIO.build_path({path.TOP: self.top,
-                                       path.SAMPLE: self.dataset.sample,
-                                       path.BRANCHES: self.branches,
-                                       path.REF: self.dataset.ref,
-                                       path.REG: self.region.name,
-                                       path.BATCH: batch_num})
+        return FilterBatchIO.build_path(
+            {
+                path.TOP: self.top,
+                path.SAMPLE: self.dataset.sample,
+                path.BRANCHES: self.branches,
+                path.REF: self.dataset.ref,
+                path.REG: self.region.name,
+                path.BATCH: batch_num,
+            }
+        )
 
     def _get_n_reads_path(self, batch_num: int):
-        """ Get the path to the file of the number of reads dropped
-        for a batch. """
+        """Get the path to the file of the number of reads dropped
+        for a batch."""
         return self._get_batch_num_path(batch_num).with_suffix(path.JSON_EXT)
 
     def _get_checksum_path(self, batch_num: int):
-        """ Get the path to the file of the checksum for a batch. """
+        """Get the path to the file of the checksum for a batch."""
         return self._get_batch_num_path(batch_num).with_suffix(path.TXT_EXT)
 
     def _filter_batch_reads(self, batch_num: int, **kwargs):
-        """ Drop the reads in the batch that do not pass the filters
-        and return a new batch without those reads. """
+        """Drop the reads in the batch that do not pass the filters
+        and return a new batch without those reads."""
         n_reads = dict()
         # Load the batch.
         batch = self.dataset.get_batch(batch_num)
@@ -572,44 +603,50 @@ class Filterer(object):
             batch = apply_filters(batch, region=self.region)
             # Drop reads from a predefined list.
             batch = self._drop_predefined_reads(batch)
-            n_reads[self.DROP_READ_LIST] = (n - (n := batch.num_reads))
+            n_reads[self.DROP_READ_LIST] = n - (n := batch.num_reads)
         # Drop reads with too few covered positions.
         batch = self._drop_min_ncov_read(batch)
-        n_reads[self.DROP_READ_NCOV] = (n - (n := batch.num_reads))
+        n_reads[self.DROP_READ_NCOV] = n - (n := batch.num_reads)
         # Drop reads covering too small a fraction of the region.
         batch = self._drop_min_fcov_read(batch)
-        n_reads[self.DROP_READ_FCOV] = (n - (n := batch.num_reads))
+        n_reads[self.DROP_READ_FCOV] = n - (n := batch.num_reads)
         # Drop reads with discontiguous mates.
         batch = self._drop_discontig(batch)
-        n_reads[self.DROP_READ_DISCONTIG] = (n - (n := batch.num_reads))
+        n_reads[self.DROP_READ_DISCONTIG] = n - (n := batch.num_reads)
         # Drop reads with too few informative positions.
         batch = self._drop_min_finfo_read(batch)
-        n_reads[self.DROP_READ_FINFO] = (n - (n := batch.num_reads))
+        n_reads[self.DROP_READ_FINFO] = n - (n := batch.num_reads)
         # Drop reads with too many mutations.
         batch = self._drop_max_fmut_read(batch)
-        n_reads[self.DROP_READ_FMUT] = (n - (n := batch.num_reads))
+        n_reads[self.DROP_READ_FMUT] = n - (n := batch.num_reads)
         # Filter out mutations that are too close together.
         batch = self._filter_min_mut_gap(batch)
-        n_reads[self.DROP_READ_GAP] = (n - (n := batch.num_reads))
+        n_reads[self.DROP_READ_GAP] = n - (n := batch.num_reads)
         # Record the number of reads remaining after filtering.
         n_reads[self.DROP_READ_KEPT] = n
         # Save the batch.
-        sc_kwargs = (dict(region=batch.region,
-                          seg_end5s=batch.seg_end5s,
-                          seg_end3s=batch.seg_end3s,
-                          muts=batch.muts)
-                     if self.self_contained
-                     else {})
-        batch_file = FilterBatchIO(sample=self.dataset.sample,
-                                   branches=self.branches,
-                                   ref=self.dataset.ref,
-                                   reg=self.region.name,
-                                   batch=batch.batch,
-                                   read_nums=batch.read_nums,
-                                   **sc_kwargs)
-        _, checksum = batch_file.save(self.top,
-                                      brotli_level=self.brotli_level,
-                                      force=self._force_write)
+        sc_kwargs = (
+            dict(
+                region=batch.region,
+                seg_end5s=batch.seg_end5s,
+                seg_end3s=batch.seg_end3s,
+                muts=batch.muts,
+            )
+            if self.self_contained
+            else {}
+        )
+        batch_file = FilterBatchIO(
+            sample=self.dataset.sample,
+            branches=self.branches,
+            ref=self.dataset.ref,
+            reg=self.region.name,
+            batch=batch.batch,
+            read_nums=batch.read_nums,
+            **sc_kwargs,
+        )
+        _, checksum = batch_file.save(
+            self.top, brotli_level=self.brotli_level, force=self._force_write
+        )
         # Save the checksum.
         checksum_file = self._get_checksum_path(batch_num)
         with open(checksum_file, "x") as f:
@@ -623,26 +660,25 @@ class Filterer(object):
         return batch.count_all(**kwargs)
 
     def _filter_positions(self, info: pd.Series, muts: pd.Series):
-        """ Mask the positions that do not pass the filters. """
+        """Mask the positions that do not pass the filters."""
         # Mask the positions with insufficient informative reads.
         if not 1 <= self.min_ninfo_pos:
-            raise ValueError("min_ninfo_pos must be ≥ 1, "
-                             f"but got {self.min_ninfo_pos}")
+            raise ValueError(f"min_ninfo_pos must be ≥ 1, but got {self.min_ninfo_pos}")
         self.region.add_mask(
-            self.MASK_POS_NINFO,
-            index_to_pos(info.index[info < self.min_ninfo_pos])
+            self.MASK_POS_NINFO, index_to_pos(info.index[info < self.min_ninfo_pos])
         )
         # Mask the positions with excessive mutation fractions.
-        if not 0. <= self.max_fmut_pos <= 1.:
-            raise ValueError("max_fmut_pos must be ≥ 0 and ≤ 1, "
-                             f"but got {self.max_fmut_pos}")
+        if not 0.0 <= self.max_fmut_pos <= 1.0:
+            raise ValueError(
+                f"max_fmut_pos must be ≥ 0 and ≤ 1, but got {self.max_fmut_pos}"
+            )
         self.region.add_mask(
             self.MASK_POS_FMUT,
-            index_to_pos(info.index[(muts / info) > self.max_fmut_pos])
+            index_to_pos(info.index[(muts / info) > self.max_fmut_pos]),
         )
 
     def _filter_iteration(self):
-        """ Run an iteration of filtering. """
+        """Run an iteration of filtering."""
         # Drop reads that fail to pass the filters.
         tabulator = FilterBatchTabulator(
             get_batch_count_all=self._filter_batch_reads,
@@ -684,10 +720,12 @@ class Filterer(object):
                             f"{repr(category)} on iteration {self._iter}"
                         )
             n_reads_file.unlink()
-        logger.detail(f"{self} on iteration {self._iter} counted "
-                      + "\n".join(f"{category}: {n_reads}"
-                                  for category, n_reads
-                                  in self._n_reads.items()))
+        logger.detail(
+            f"{self} on iteration {self._iter} counted "
+            + "\n".join(
+                f"{category}: {n_reads}" for category, n_reads in self._n_reads.items()
+            )
+        )
         if self.n_reads_kept == 0:
             logger.warning(f"No reads remained for {self}")
         # Filter out positions based on the new reads.
@@ -722,8 +760,9 @@ class Filterer(object):
             report_saved = report.save(self.top, force=self._force_write)
             if self._converged or self._iter >= self.max_iter > 0:
                 if not self._converged:
-                    logger.warning(f"{self} did not converge "
-                                   f"within {self.max_iter} iteration(s)")
+                    logger.warning(
+                        f"{self} did not converge within {self.max_iter} iteration(s)"
+                    )
                 return tabulator, report_saved
             # The first iteration uses the dataset from the IDmut step.
             # Each subsequent iteration uses the nascent Filter dataset
@@ -796,9 +835,9 @@ class Filterer(object):
             n_reads_kept=self.n_reads_kept,
             quick_unbias=self.quick_unbias,
             quick_unbias_thresh=self.quick_unbias_thresh,
-            n_filter_iter=(self._iter
-                           if self._converged
-                           else filter_iter_no_convergence),
+            n_filter_iter=(
+                self._iter if self._converged else filter_iter_no_convergence
+            ),
             began=self._began,
             ended=datetime.now(),
         )
@@ -808,39 +847,48 @@ class Filterer(object):
 
 
 @with_tmp_dir(pass_keep_tmp=False)
-def filter_region(dataset: IDmutMutsDataset | PoolMutsDataset,
-                region: Region, *,
-                branch: str,
-                tmp_dir: Path,
-                count_del: bool,
-                count_ins: bool,
-                no_mut: Iterable[str],
-                only_mut: Iterable[str],
-                filter_pos_table: bool,
-                filter_read_table: bool,
-                self_contained: bool,
-                force: bool,
-                num_cpus: int,
-                **kwargs):
-    """ Filter reads, positions, and relationships in a dataset. """
+def filter_region(
+    dataset: IDmutMutsDataset | PoolMutsDataset,
+    region: Region,
+    *,
+    branch: str,
+    tmp_dir: Path,
+    count_del: bool,
+    count_ins: bool,
+    no_mut: Iterable[str],
+    only_mut: Iterable[str],
+    filter_pos_table: bool,
+    filter_read_table: bool,
+    self_contained: bool,
+    force: bool,
+    num_cpus: int,
+    **kwargs,
+):
+    """Filter reads, positions, and relationships in a dataset."""
     # Check if the report file already exists.
     branches = path.add_branch(path.FILTER_STEP, branch, dataset.branches)
-    report_file = FilterReport.build_path({path.TOP: dataset.top,
-                                         path.SAMPLE: dataset.sample,
-                                         path.BRANCHES: branches,
-                                         path.REF: dataset.ref,
-                                         path.REG: region.name})
+    report_file = FilterReport.build_path(
+        {
+            path.TOP: dataset.top,
+            path.SAMPLE: dataset.sample,
+            path.BRANCHES: branches,
+            path.REF: dataset.ref,
+            path.REG: region.name,
+        }
+    )
     if need_write(report_file, force):
         pattern = RelPattern.from_counts(count_del, count_ins, no_mut, only_mut)
-        filterer = Filterer(dataset,
-                            region,
-                            pattern,
-                            top=tmp_dir,
-                            branch=branch,
-                            count_read=filter_read_table,
-                            self_contained=self_contained,
-                            num_cpus=num_cpus,
-                            **kwargs)
+        filterer = Filterer(
+            dataset,
+            region,
+            pattern,
+            top=tmp_dir,
+            branch=branch,
+            count_read=filter_read_table,
+            self_contained=self_contained,
+            num_cpus=num_cpus,
+            **kwargs,
+        )
         tabulator, report_saved = filterer.run_filtering()
         tabulator.write_tables(pos=filter_pos_table, read=filter_read_table)
         release_to_out(dataset.top, tmp_dir, report_saved.parent)

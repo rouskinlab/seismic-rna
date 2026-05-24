@@ -7,7 +7,7 @@ from ..validate import require_isinstance, require_equal
 
 
 def _sort_paired(profile: pd.Series, *structs: pd.Series | None):
-    """ Ensure the structure and mutation data have the same indexes,
+    """Ensure the structure and mutation data have the same indexes,
     filter out positions without mutation data, and sort the structure
     data in ascending order by mutation rate.
 
@@ -30,9 +30,7 @@ def _sort_paired(profile: pd.Series, *structs: pd.Series | None):
     # Use only positions with non-missing mutation data.
     profile_not_nan = profile.loc[np.logical_not(np.isnan(profile.values))]
     # Sort the positions in ascending order of the mutation data.
-    sorted_indexes = profile_not_nan.sort_values().index.get_level_values(
-        POS_NAME
-    )
+    sorted_indexes = profile_not_nan.sort_values().index.get_level_values(POS_NAME)
     sorted_structs = list()
     for struct in structs:
         if struct is not None:
@@ -42,9 +40,10 @@ def _sort_paired(profile: pd.Series, *structs: pd.Series | None):
     return tuple(sorted_structs)
 
 
-def _compute_fpr_tpr(sorted_paired: pd.Series,
-                     sorted_unpaired: pd.Series | None = None):
-    """ Compute the receiver operating characteristic (ROC) curve to
+def _compute_fpr_tpr(
+    sorted_paired: pd.Series, sorted_unpaired: pd.Series | None = None
+):
+    """Compute the receiver operating characteristic (ROC) curve to
     indicate how well chemical reactivities agree with a structure.
 
     Parameters
@@ -88,22 +87,24 @@ def _compute_fpr_tpr(sorted_paired: pd.Series,
     # paired nor unpaired.
     assert n_paired + n_unpaired <= n_total
     # Get the false positive rate: (paired and reactive) / paired.
-    fpr = (1. - paired_cumsum / n_paired
-           if n_paired > 0
-           else np.full(n_total + 1, np.nan))
+    fpr = (
+        1.0 - paired_cumsum / n_paired if n_paired > 0 else np.full(n_total + 1, np.nan)
+    )
     # Get the true positive rate: (unpaired and reactive) / unpaired.
-    tpr = (1. - unpaired_cumsum / n_unpaired
-           if n_unpaired > 0
-           else np.full(n_total + 1, np.nan))
+    tpr = (
+        1.0 - unpaired_cumsum / n_unpaired
+        if n_unpaired > 0
+        else np.full(n_total + 1, np.nan)
+    )
     # Traditionally, false positive rate is plotted on the x-axis and
     # true positive rate on the y-axis of an ROC curve.
     return fpr, tpr
 
 
-def compute_roc_curve(profile: pd.Series,
-                      is_paired: pd.Series,
-                      is_unpaired: pd.Series | None = None):
-    """ Compute the receiver operating characteristic (ROC) curve to
+def compute_roc_curve(
+    profile: pd.Series, is_paired: pd.Series, is_unpaired: pd.Series | None = None
+):
+    """Compute the receiver operating characteristic (ROC) curve to
     indicate how well mutation data agree with a structure.
 
     Parameters
@@ -127,7 +128,7 @@ def compute_roc_curve(profile: pd.Series,
 
 
 def compute_auc(fpr: np.ndarray, tpr: np.ndarray):
-    """ Compute the area under the curve (AUC) of the receiver operating
+    """Compute the area under the curve (AUC) of the receiver operating
     characteristic (ROC).
 
     Parameters
@@ -145,17 +146,14 @@ def compute_auc(fpr: np.ndarray, tpr: np.ndarray):
     require_isinstance("fpr", fpr, np.ndarray)
     require_isinstance("tpr", tpr, np.ndarray)
     n = get_length(fpr)
-    require_equal("get_length(fpr)",
-                  n,
-                  get_length(tpr),
-                  "get_length(tpr)")
+    require_equal("get_length(fpr)", n, get_length(tpr), "get_length(tpr)")
     return float(-np.vdot(np.diff(fpr), tpr[1:])) if n > 1 else np.nan
 
 
-def compute_auc_roc(profile: pd.Series, 
-                    is_paired: pd.Series,
-                    is_unpaired: pd.Series | None = None):
-    """ Compute the receiver operating characteristic (ROC) and the area
+def compute_auc_roc(
+    profile: pd.Series, is_paired: pd.Series, is_unpaired: pd.Series | None = None
+):
+    """Compute the receiver operating characteristic (ROC) and the area
     under the curve (AUC) to indicate how well mutation data agree with
     a structure.
 
@@ -179,11 +177,10 @@ def compute_auc_roc(profile: pd.Series,
     return compute_auc(*compute_roc_curve(profile, is_paired, is_unpaired))
 
 
-def compute_rolling_auc(profile: pd.Series,
-                        *structs: pd.Series,
-                        size: int,
-                        min_data: int = 2):
-    """ Compute the area under the curve (AUC) of the receiver operating
+def compute_rolling_auc(
+    profile: pd.Series, *structs: pd.Series, size: int, min_data: int = 2
+):
+    """Compute the area under the curve (AUC) of the receiver operating
     characteristic (ROC) at each position using a sliding window.
 
     Parameters
@@ -208,10 +205,8 @@ def compute_rolling_auc(profile: pd.Series,
     # Initialize an empty series to hold the AUC-ROC values.
     aucrocs = pd.Series(np.nan, index=profile.index)
     # Compute the AUC-ROC for each sliding window.
-    for center, window in iter_windows(profile,
-                                       *structs,
-                                       size=size,
-                                       min_count=min_data,
-                                       include_nan=False):
+    for center, window in iter_windows(
+        profile, *structs, size=size, min_count=min_data, include_nan=False
+    ):
         aucrocs.at[center] = compute_auc_roc(*window)
     return aucrocs

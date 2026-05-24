@@ -9,7 +9,7 @@ from seismicrna.core.mu import reframe, reframe_like, auto_reframe
 
 
 def broadcastable(vshape: tuple[int, ...], tshape: tuple[int, ...]):
-    """ Check whether values in the shape of `vshape` can be broadcast
+    """Check whether values in the shape of `vshape` can be broadcast
     to the target shape of `tshape`.
 
     Parameters
@@ -43,7 +43,7 @@ def broadcastable(vshape: tuple[int, ...], tshape: tuple[int, ...]):
 
 
 def broadcast_regex(vshape: tuple[int, ...], tshape: tuple[int, ...]):
-    """ Get the error regex that would result from trying to broadcast
+    """Get the error regex that would result from trying to broadcast
     values in the shape of `vshape` to the target shape of `tshape`.
 
     Parameters
@@ -71,9 +71,8 @@ def broadcast_regex(vshape: tuple[int, ...], tshape: tuple[int, ...]):
 
 
 class TestReframe(ut.TestCase):
-
     def test_float_none(self):
-        for value in np.linspace(0., 1., 3):
+        for value in np.linspace(0.0, 1.0, 3):
             frame = reframe(value)
             self.assertIsInstance(frame, np.ndarray)
             self.assertEqual(frame.ndim, 0)
@@ -82,7 +81,7 @@ class TestReframe(ut.TestCase):
     def test_float_ints(self):
         for ndim in range(4):
             for shape in product(range(4), repeat=ndim):
-                for value in np.linspace(0., 1., 3):
+                for value in np.linspace(0.0, 1.0, 3):
                     frame = reframe(value, shape)
                     self.assertIsInstance(frame, np.ndarray)
                     self.assertEqual(frame.shape, shape)
@@ -93,7 +92,7 @@ class TestReframe(ut.TestCase):
         for length in range(5):
             index = rng.integers(10, size=length)
             self.assertEqual(index.shape, (length,))
-            for value in np.linspace(0., 1., 3):
+            for value in np.linspace(0.0, 1.0, 3):
                 frame = reframe(value, (index,))
                 self.assertIsInstance(frame, pd.Series)
                 self.assertEqual(frame.shape, (length,))
@@ -106,7 +105,7 @@ class TestReframe(ut.TestCase):
         for nrow in range(5):
             rows = rng.integers(10, size=nrow)
             for ncol in range(3):
-                for value in np.linspace(0., 1., 3):
+                for value in np.linspace(0.0, 1.0, 3):
                     frame = reframe(value, (rows, ncol))
                     self.assertIsInstance(frame, pd.DataFrame)
                     self.assertEqual(frame.shape, (nrow, ncol))
@@ -121,7 +120,7 @@ class TestReframe(ut.TestCase):
         for nrow in range(5):
             for ncol in range(3):
                 cols = rng.integers(10, size=ncol)
-                for value in np.linspace(0., 1., 3):
+                for value in np.linspace(0.0, 1.0, 3):
                     frame = reframe(value, (nrow, cols))
                     self.assertIsInstance(frame, pd.DataFrame)
                     self.assertEqual(frame.shape, (nrow, ncol))
@@ -137,7 +136,7 @@ class TestReframe(ut.TestCase):
             rows = rng.integers(10, size=nrow)
             for ncol in range(3):
                 cols = rng.integers(10, size=ncol)
-                for value in np.linspace(0., 1., 3):
+                for value in np.linspace(0.0, 1.0, 3):
                     frame = reframe(value, (rows, cols))
                     self.assertIsInstance(frame, pd.DataFrame)
                     self.assertEqual(frame.shape, (nrow, ncol))
@@ -154,13 +153,14 @@ class TestReframe(ut.TestCase):
             for ncol in range(3):
                 cols = rng.integers(10, size=ncol)
                 for nlev in range(2):
-                    for value in np.linspace(0., 1., 3):
-                        self.assertRaisesRegex(ValueError,
-                                               "A Pandas object must have 1 "
-                                               "or 2 axes, but got 3",
-                                               reframe,
-                                               value,
-                                               (rows, cols, nlev))
+                    for value in np.linspace(0.0, 1.0, 3):
+                        self.assertRaisesRegex(
+                            ValueError,
+                            "A Pandas object must have 1 or 2 axes, but got 3",
+                            reframe,
+                            value,
+                            (rows, cols, nlev),
+                        )
 
     def test_float_index_index_index(self):
         rng = np.random.default_rng(seed=0)
@@ -171,13 +171,14 @@ class TestReframe(ut.TestCase):
                 for nlev in range(2):
                     levs = rng.integers(10, size=nlev)
                     self.assertEqual(levs.shape, (nlev,))
-                    for value in np.linspace(0., 1., 3):
-                        self.assertRaisesRegex(ValueError,
-                                               "A Pandas object must have 1 "
-                                               "or 2 axes, but got 3",
-                                               reframe,
-                                               value,
-                                               (rows, cols, levs))
+                    for value in np.linspace(0.0, 1.0, 3):
+                        self.assertRaisesRegex(
+                            ValueError,
+                            "A Pandas object must have 1 or 2 axes, but got 3",
+                            reframe,
+                            value,
+                            (rows, cols, levs),
+                        )
 
     def test_array_none(self):
         rng = np.random.default_rng(seed=0)
@@ -203,12 +204,13 @@ class TestReframe(ut.TestCase):
                             self.assertEqual(frame.shape, fshape)
                             self.assertTrue(np.allclose(frame, value))
                         else:
-                            self.assertRaisesRegex(ValueError,
-                                                   broadcast_regex(vshape,
-                                                                   tshape),
-                                                   reframe,
-                                                   value,
-                                                   tshape)
+                            self.assertRaisesRegex(
+                                ValueError,
+                                broadcast_regex(vshape, tshape),
+                                reframe,
+                                value,
+                                tshape,
+                            )
 
     def test_array_index(self):
         rng = np.random.default_rng(seed=0)
@@ -226,18 +228,21 @@ class TestReframe(ut.TestCase):
                             self.assertIsInstance(frame.index, pd.Index)
                             self.assertTrue(np.all(frame.index == index))
                         else:
-                            self.assertRaisesRegex(ValueError,
-                                                   "Data must be 1-dimensional",
-                                                   reframe,
-                                                   value,
-                                                   (index,))
+                            self.assertRaisesRegex(
+                                ValueError,
+                                "Data must be 1-dimensional",
+                                reframe,
+                                value,
+                                (index,),
+                            )
                     else:
-                        self.assertRaisesRegex(ValueError,
-                                               broadcast_regex(shape,
-                                                               (length,)),
-                                               reframe,
-                                               value,
-                                               (index,))
+                        self.assertRaisesRegex(
+                            ValueError,
+                            broadcast_regex(shape, (length,)),
+                            reframe,
+                            value,
+                            (index,),
+                        )
 
     def test_array_index_index(self):
         rng = np.random.default_rng(seed=0)
@@ -257,40 +262,37 @@ class TestReframe(ut.TestCase):
                                 self.assertEqual(frame.shape, tshape)
                                 self.assertTrue(np.allclose(frame, value))
                                 if isinstance(axes[0], int):
-                                    self.assertIsInstance(frame.index,
-                                                          pd.RangeIndex)
-                                    self.assertTrue(np.all(frame.index
-                                                           == np.arange(nrow)))
+                                    self.assertIsInstance(frame.index, pd.RangeIndex)
+                                    self.assertTrue(
+                                        np.all(frame.index == np.arange(nrow))
+                                    )
                                 else:
-                                    self.assertIsInstance(frame.index,
-                                                          pd.Index)
-                                    self.assertTrue(np.all(frame.index
-                                                           == rows))
+                                    self.assertIsInstance(frame.index, pd.Index)
+                                    self.assertTrue(np.all(frame.index == rows))
                                 if isinstance(axes[1], int):
-                                    self.assertIsInstance(frame.columns,
-                                                          pd.RangeIndex)
-                                    self.assertTrue(np.all(frame.columns
-                                                           == np.arange(ncol)))
+                                    self.assertIsInstance(frame.columns, pd.RangeIndex)
+                                    self.assertTrue(
+                                        np.all(frame.columns == np.arange(ncol))
+                                    )
                                 else:
-                                    self.assertIsInstance(frame.columns,
-                                                          pd.Index)
-                                    self.assertTrue(np.all(frame.columns
-                                                           == cols))
+                                    self.assertIsInstance(frame.columns, pd.Index)
+                                    self.assertTrue(np.all(frame.columns == cols))
                             else:
-                                self.assertRaisesRegex(ValueError,
-                                                       broadcast_regex(vshape,
-                                                                       tshape),
-                                                       reframe,
-                                                       value,
-                                                       axes)
+                                self.assertRaisesRegex(
+                                    ValueError,
+                                    broadcast_regex(vshape, tshape),
+                                    reframe,
+                                    value,
+                                    axes,
+                                )
 
     def test_series(self):
         rng = np.random.default_rng(seed=0)
         for vlength in range(5):
-            vshape = vlength,
+            vshape = (vlength,)
             value = pd.Series(rng.random(vlength))
             for tlength in range(5):
-                tshape = tlength,
+                tshape = (tlength,)
                 index = rng.integers(10, size=tlength)
                 axes_sets = [(index,), tshape, None]
                 for axes in axes_sets:
@@ -311,12 +313,13 @@ class TestReframe(ut.TestCase):
                             self.assertIsInstance(frame.index, pd.Index)
                             self.assertTrue(np.all(frame.index == index))
                     else:
-                        self.assertRaisesRegex(ValueError,
-                                               broadcast_regex(vshape,
-                                                               tshape),
-                                               reframe,
-                                               value,
-                                               axes)
+                        self.assertRaisesRegex(
+                            ValueError,
+                            broadcast_regex(vshape, tshape),
+                            reframe,
+                            value,
+                            axes,
+                        )
 
     def test_dataframe(self):
         rng = np.random.default_rng(seed=0)
@@ -327,11 +330,13 @@ class TestReframe(ut.TestCase):
                 for ncol in range(3):
                     tshape = nrow, ncol
                     cols = rng.integers(10, size=ncol)
-                    axes_sets = [(rows, cols),
-                                 (rows, ncol),
-                                 (nrow, cols),
-                                 (nrow, ncol),
-                                 None]
+                    axes_sets = [
+                        (rows, cols),
+                        (rows, ncol),
+                        (nrow, cols),
+                        (nrow, ncol),
+                        None,
+                    ]
                     for axes in axes_sets:
                         if axes is None or broadcastable(vshape, tshape):
                             frame = reframe(value, axes)
@@ -348,46 +353,43 @@ class TestReframe(ut.TestCase):
                                 self.assertEqual(frame.shape, tshape)
                                 self.assertTrue(np.allclose(frame, value))
                                 if isinstance(axes[0], int):
-                                    self.assertIsInstance(frame.index,
-                                                          pd.RangeIndex)
-                                    self.assertTrue(np.all(frame.index
-                                                           == np.arange(nrow)))
+                                    self.assertIsInstance(frame.index, pd.RangeIndex)
+                                    self.assertTrue(
+                                        np.all(frame.index == np.arange(nrow))
+                                    )
                                 else:
-                                    self.assertIsInstance(frame.index,
-                                                          pd.Index)
-                                    self.assertTrue(np.all(frame.index
-                                                           == rows))
+                                    self.assertIsInstance(frame.index, pd.Index)
+                                    self.assertTrue(np.all(frame.index == rows))
                                 if isinstance(axes[1], int):
-                                    self.assertIsInstance(frame.columns,
-                                                          pd.RangeIndex)
-                                    self.assertTrue(np.all(frame.columns
-                                                           == np.arange(ncol)))
+                                    self.assertIsInstance(frame.columns, pd.RangeIndex)
+                                    self.assertTrue(
+                                        np.all(frame.columns == np.arange(ncol))
+                                    )
                                 else:
-                                    self.assertIsInstance(frame.columns,
-                                                          pd.Index)
-                                    self.assertTrue(np.all(frame.columns
-                                                           == cols))
+                                    self.assertIsInstance(frame.columns, pd.Index)
+                                    self.assertTrue(np.all(frame.columns == cols))
                         else:
-                            self.assertRaisesRegex(ValueError,
-                                                   broadcast_regex(vshape,
-                                                                   tshape),
-                                                   reframe,
-                                                   value,
-                                                   axes)
+                            self.assertRaisesRegex(
+                                ValueError,
+                                broadcast_regex(vshape, tshape),
+                                reframe,
+                                value,
+                                axes,
+                            )
 
 
 class TestReframeLike(ut.TestCase):
-
     def test_float_float(self):
         rng = np.random.default_rng(seed=0)
         values = rng.random()
         target = rng.random()
-        self.assertRaisesRegex(TypeError,
-                               "Expected target to be ndarray, Series, "
-                               "or Dataframe, but got float",
-                               reframe_like,
-                               values,
-                               target)
+        self.assertRaisesRegex(
+            TypeError,
+            "Expected target to be ndarray, Series, or Dataframe, but got float",
+            reframe_like,
+            values,
+            target,
+        )
 
     def test_float_array(self):
         rng = np.random.default_rng(seed=0)
@@ -404,8 +406,7 @@ class TestReframeLike(ut.TestCase):
         rng = np.random.default_rng(seed=0)
         for length in range(5):
             values = rng.random()
-            target = pd.Series(rng.random(length),
-                               index=rng.integers(10, size=length))
+            target = pd.Series(rng.random(length), index=rng.integers(10, size=length))
             result = reframe_like(values, target)
             self.assertIsInstance(result, pd.Series)
             self.assertEqual(result.shape, (length,))
@@ -414,11 +415,13 @@ class TestReframeLike(ut.TestCase):
 
     def test_float_dataframe(self):
         rng = np.random.default_rng(seed=0)
-        for (nrow, ncol) in product(range(5), repeat=2):
+        for nrow, ncol in product(range(5), repeat=2):
             values = rng.random()
-            target = pd.DataFrame(rng.random((nrow, ncol)),
-                                  index=rng.integers(10, size=nrow),
-                                  columns=rng.integers(10, size=ncol))
+            target = pd.DataFrame(
+                rng.random((nrow, ncol)),
+                index=rng.integers(10, size=nrow),
+                columns=rng.integers(10, size=ncol),
+            )
             result = reframe_like(values, target)
             self.assertIsInstance(result, pd.DataFrame)
             self.assertEqual(result.shape, (nrow, ncol))
@@ -441,8 +444,7 @@ class TestReframeLike(ut.TestCase):
         rng = np.random.default_rng(seed=0)
         for length in range(5):
             values = rng.random(length)
-            target = pd.Series(rng.random(length),
-                               index=rng.integers(10, size=length))
+            target = pd.Series(rng.random(length), index=rng.integers(10, size=length))
             result = reframe_like(values, target)
             self.assertIsInstance(result, pd.Series)
             self.assertEqual(result.shape, (length,))
@@ -451,11 +453,13 @@ class TestReframeLike(ut.TestCase):
 
     def test_array_dataframe(self):
         rng = np.random.default_rng(seed=0)
-        for (nrow, ncol) in product(range(5), repeat=2):
+        for nrow, ncol in product(range(5), repeat=2):
             values = rng.random((nrow, ncol))
-            target = pd.DataFrame(rng.random((nrow, ncol)),
-                                  index=rng.integers(10, size=nrow),
-                                  columns=rng.integers(10, size=ncol))
+            target = pd.DataFrame(
+                rng.random((nrow, ncol)),
+                index=rng.integers(10, size=nrow),
+                columns=rng.integers(10, size=ncol),
+            )
             result = reframe_like(values, target)
             self.assertIsInstance(result, pd.DataFrame)
             self.assertEqual(result.shape, (nrow, ncol))
@@ -466,8 +470,7 @@ class TestReframeLike(ut.TestCase):
     def test_series_array(self):
         rng = np.random.default_rng(seed=0)
         for length in range(5):
-            values = pd.Series(rng.random(length),
-                               index=rng.integers(10, size=length))
+            values = pd.Series(rng.random(length), index=rng.integers(10, size=length))
             target = rng.random(length)
             result = reframe_like(values, target)
             self.assertIsInstance(result, np.ndarray)
@@ -477,10 +480,8 @@ class TestReframeLike(ut.TestCase):
     def test_series_series(self):
         rng = np.random.default_rng(seed=0)
         for length in range(5):
-            values = pd.Series(rng.random(length),
-                               index=rng.integers(10, size=length))
-            target = pd.Series(rng.random(length),
-                               index=rng.integers(10, size=length))
+            values = pd.Series(rng.random(length), index=rng.integers(10, size=length))
+            target = pd.Series(rng.random(length), index=rng.integers(10, size=length))
             result = reframe_like(values, target)
             self.assertIsInstance(result, pd.Series)
             self.assertEqual(result.shape, (length,))
@@ -489,10 +490,12 @@ class TestReframeLike(ut.TestCase):
 
     def test_dataframe_array(self):
         rng = np.random.default_rng(seed=0)
-        for (nrow, ncol) in product(range(5), repeat=2):
-            values = pd.DataFrame(rng.random((nrow, ncol)),
-                                  index=rng.integers(10, size=nrow),
-                                  columns=rng.integers(10, size=ncol))
+        for nrow, ncol in product(range(5), repeat=2):
+            values = pd.DataFrame(
+                rng.random((nrow, ncol)),
+                index=rng.integers(10, size=nrow),
+                columns=rng.integers(10, size=ncol),
+            )
             target = rng.random((nrow, ncol))
             result = reframe_like(values, target)
             self.assertIsInstance(result, np.ndarray)
@@ -501,13 +504,17 @@ class TestReframeLike(ut.TestCase):
 
     def test_dataframe_dataframe(self):
         rng = np.random.default_rng(seed=0)
-        for (nrow, ncol) in product(range(5), repeat=2):
-            values = pd.DataFrame(rng.random((nrow, ncol)),
-                                  index=rng.integers(10, size=nrow),
-                                  columns=rng.integers(10, size=ncol))
-            target = pd.DataFrame(rng.random((nrow, ncol)),
-                                  index=rng.integers(10, size=nrow),
-                                  columns=rng.integers(10, size=ncol))
+        for nrow, ncol in product(range(5), repeat=2):
+            values = pd.DataFrame(
+                rng.random((nrow, ncol)),
+                index=rng.integers(10, size=nrow),
+                columns=rng.integers(10, size=ncol),
+            )
+            target = pd.DataFrame(
+                rng.random((nrow, ncol)),
+                index=rng.integers(10, size=nrow),
+                columns=rng.integers(10, size=ncol),
+            )
             result = reframe_like(values, target)
             self.assertIsInstance(result, pd.DataFrame)
             self.assertEqual(result.shape, (nrow, ncol))
@@ -529,20 +536,20 @@ class TestReframeLike(ut.TestCase):
                         self.assertEqual(result.shape, dropped)
                         self.assertTrue(np.allclose(result, values))
                     else:
-                        self.assertRaisesRegex(ValueError,
-                                               f"Cannot drop {drop} axes "
-                                               f"from a {ndim}-D array",
-                                               reframe_like,
-                                               values,
-                                               target,
-                                               drop)
+                        self.assertRaisesRegex(
+                            ValueError,
+                            f"Cannot drop {drop} axes from a {ndim}-D array",
+                            reframe_like,
+                            values,
+                            target,
+                            drop,
+                        )
 
     def test_drop_series(self):
         rng = np.random.default_rng(seed=0)
         for length in range(5):
-            shape = length,
-            target = pd.Series(rng.random(length),
-                               index=rng.integers(10, size=length))
+            shape = (length,)
+            target = pd.Series(rng.random(length), index=rng.integers(10, size=length))
             for drop in range(4):
                 dropped = shape[drop:]
                 values = rng.random(dropped)
@@ -556,21 +563,24 @@ class TestReframeLike(ut.TestCase):
                     self.assertEqual(result.shape, dropped)
                     self.assertTrue(np.allclose(result, values))
                 else:
-                    self.assertRaisesRegex(ValueError,
-                                           f"Cannot drop {drop} axes "
-                                           "from a 1-D array",
-                                           reframe_like,
-                                           values,
-                                           target,
-                                           drop)
+                    self.assertRaisesRegex(
+                        ValueError,
+                        f"Cannot drop {drop} axes from a 1-D array",
+                        reframe_like,
+                        values,
+                        target,
+                        drop,
+                    )
 
     def test_drop_dataframe(self):
         rng = np.random.default_rng(seed=0)
         for shape in product(range(5), repeat=2):
             nrow, ncol = shape
-            target = pd.DataFrame(rng.random(shape),
-                                  index=rng.integers(10, size=nrow),
-                                  columns=rng.integers(10, size=ncol))
+            target = pd.DataFrame(
+                rng.random(shape),
+                index=rng.integers(10, size=nrow),
+                columns=rng.integers(10, size=ncol),
+            )
             for drop in range(4):
                 dropped = shape[drop:]
                 values = rng.random(dropped)
@@ -588,17 +598,17 @@ class TestReframeLike(ut.TestCase):
                     self.assertEqual(result.shape, dropped)
                     self.assertTrue(np.allclose(result, values))
                 else:
-                    self.assertRaisesRegex(ValueError,
-                                           f"Cannot drop {drop} axes "
-                                           "from a 2-D array",
-                                           reframe_like,
-                                           values,
-                                           target,
-                                           drop)
+                    self.assertRaisesRegex(
+                        ValueError,
+                        f"Cannot drop {drop} axes from a 2-D array",
+                        reframe_like,
+                        values,
+                        target,
+                        drop,
+                    )
 
 
 class TestAutoReframe(ut.TestCase):
-
     @staticmethod
     def _sim_data(dmin: int, dmax: int):
         rng = np.random.default_rng(seed=0)

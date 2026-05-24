@@ -9,11 +9,13 @@ from subprocess import CompletedProcess
 from typing import Iterable
 
 from ..core import path
-from ..core.extern import (GUNZIP_CMD,
-                           WORD_COUNT_CMD,
-                           ShellCommand,
-                           args_to_cmd,
-                           cmds_to_pipe)
+from ..core.extern import (
+    GUNZIP_CMD,
+    WORD_COUNT_CMD,
+    ShellCommand,
+    args_to_cmd,
+    cmds_to_pipe,
+)
 from ..core.io import calc_sha512_path
 from ..core.logs import logger
 from ..core.ngs import DuplicateSampleReferenceError
@@ -23,7 +25,7 @@ PHRED_ENCS = {33, 64}
 
 
 def fastq_gz(fastq_file: Path):
-    """ Return whether a FASTQ file is compressed with gzip. """
+    """Return whether a FASTQ file is compressed with gzip."""
     ext = "".join(fastq_file.suffixes)
     if ext not in path.FastqExt.options:
         raise ValueError(f"Invalid FASTQ extension: {ext}")
@@ -31,95 +33,107 @@ def fastq_gz(fastq_file: Path):
 
 
 def get_args_count_fastq_reads(fastq_file: Path):
-    """ Count the reads in a FASTQ file. """
+    """Count the reads in a FASTQ file."""
     if fastq_gz(fastq_file):
-        return cmds_to_pipe([
-            args_to_cmd([GUNZIP_CMD, "--stdout", fastq_file]),
-            args_to_cmd([WORD_COUNT_CMD, "-l"])
-        ])
+        return cmds_to_pipe(
+            [
+                args_to_cmd([GUNZIP_CMD, "--stdout", fastq_file]),
+                args_to_cmd([WORD_COUNT_CMD, "-l"]),
+            ]
+        )
     return args_to_cmd([WORD_COUNT_CMD, "-l", fastq_file])
 
 
 def parse_stdout_count_fastq_reads(process: CompletedProcess):
-    """ Parse the output of word count to find the number of reads. """
+    """Parse the output of word count to find the number of reads."""
     n_lines = int(process.stdout.strip().split()[0])
     n_reads, n_extra = divmod(n_lines, FQ_LINES_PER_READ)
     if n_extra:
-        raise ValueError(f"Got {n_lines} lines, but expected a multiple of "
-                         f"{FQ_LINES_PER_READ}")
+        raise ValueError(
+            f"Got {n_lines} lines, but expected a multiple of {FQ_LINES_PER_READ}"
+        )
     return n_reads
 
 
 def count_fastq_reads(fastq_file: Path):
-    """ Count the reads in a FASTQ file. """
-    step = ShellCommand("counting reads in",
-                        get_args_count_fastq_reads,
-                        parse_stdout_count_fastq_reads,
-                        opath=False)
+    """Count the reads in a FASTQ file."""
+    step = ShellCommand(
+        "counting reads in",
+        get_args_count_fastq_reads,
+        parse_stdout_count_fastq_reads,
+        opath=False,
+    )
     return step(fastq_file)
 
 
 def format_phred_arg(phred_enc: int):
-    """ Format a Phred score argument for Bowtie2. """
+    """Format a Phred score argument for Bowtie2."""
     if phred_enc not in PHRED_ENCS:
-        logger.warning(f"Expected phred_enc to be one of {PHRED_ENCS}, "
-                       f"but got {phred_enc}, which may cause problems")
+        logger.warning(
+            f"Expected phred_enc to be one of {PHRED_ENCS}, "
+            f"but got {phred_enc}, which may cause problems"
+        )
     return f"--phred{phred_enc}"
 
-def safe_slice(s: str, start: int, end: int, pad_char: str = ' ') -> str:
-        """
-        Slice a string with out-of-bounds safety, padding as needed.
 
-        Uses NumPy for ultra-fast slicing and padding.
-        Ensures output length is exactly `end - start`, even if the slice
-        goes out of bounds.
+def safe_slice(s: str, start: int, end: int, pad_char: str = " ") -> str:
+    """
+    Slice a string with out-of-bounds safety, padding as needed.
 
-        Parameters
-        ----------
-        s: str
-            Input string to slice.
-        start: int
-            Start index of the slice (0-indexed).
-        end: int
-            End index of the slice (exclusive, 0-indexed).
-        pad_char: str
-            Character used to pad the result when the slice extends
-            beyond the bounds of `s`; defaults to a space.
+    Uses NumPy for ultra-fast slicing and padding.
+    Ensures output length is exactly `end - start`, even if the slice
+    goes out of bounds.
 
-        Returns
-        -------
-        str
-            Sliced (and possibly padded) string of length `end - start`,
-            or an empty string if `end <= start`.
-        """
-        length = end - start
+    Parameters
+    ----------
+    s: str
+        Input string to slice.
+    start: int
+        Start index of the slice (0-indexed).
+    end: int
+        End index of the slice (exclusive, 0-indexed).
+    pad_char: str
+        Character used to pad the result when the slice extends
+        beyond the bounds of `s`; defaults to a space.
 
-        if length <= 0:
-            return ''  # Return empty string if range is invalid
+    Returns
+    -------
+    str
+        Sliced (and possibly padded) string of length `end - start`,
+        or an empty string if `end <= start`.
+    """
+    length = end - start
 
-        s_len = len(s)
-        result = np.full(length, ord(pad_char), dtype=np.uint8)  # Preallocate and fill with padding
+    if length <= 0:
+        return ""  # Return empty string if range is invalid
 
-        # Compute valid slice indices
-        slice_start = max(start, 0)
-        slice_end = min(end, s_len)
+    s_len = len(s)
+    result = np.full(
+        length, ord(pad_char), dtype=np.uint8
+    )  # Preallocate and fill with padding
 
-        if slice_start < slice_end:  # Only copy if valid range
-            result[(slice_start - start):(slice_end - start)] = np.frombuffer(s.encode(), dtype=np.uint8)[slice_start:slice_end]
+    # Compute valid slice indices
+    slice_start = max(start, 0)
+    slice_end = min(end, s_len)
 
-        return result.tobytes().decode()
+    if slice_start < slice_end:  # Only copy if valid range
+        result[(slice_start - start) : (slice_end - start)] = np.frombuffer(
+            s.encode(), dtype=np.uint8
+        )[slice_start:slice_end]
+
+    return result.tobytes().decode()
 
 
 class MissingFastqMate(FileNotFoundError):
-    """ Missing a file in a pair of paired-end FASTQ files. """
+    """Missing a file in a pair of paired-end FASTQ files."""
 
 
 class MissingFastqMate1(MissingFastqMate):
-    """ Missing mate 1 in a pair of paired-end FASTQ files. """
+    """Missing mate 1 in a pair of paired-end FASTQ files."""
 
 
 class MissingFastqMate2(MissingFastqMate):
-    """ Missing mate 2 in a pair of paired-end FASTQ files. """
+    """Missing mate 2 in a pair of paired-end FASTQ files."""
 
 
 class FastqUnit(object):
@@ -137,7 +151,7 @@ class FastqUnit(object):
       from one reference sequence in one sample
     """
 
-    MAX_PHRED_ENC = 2 ** 7 - 1
+    MAX_PHRED_ENC = 2**7 - 1
 
     KEY_SINGLE = "fastqz"
     KEY_INTER = "fastqy"
@@ -148,18 +162,23 @@ class FastqUnit(object):
     KEY_MATE1 = "fastq1"
     KEY_MATE2 = "fastq2"
 
-    BOWTIE2_FLAGS = {KEY_SINGLE: "-U",
-                     KEY_INTER: "--interleaved",
-                     KEY_MATE1: "-1",
-                     KEY_MATE2: "-2"}
+    BOWTIE2_FLAGS = {
+        KEY_SINGLE: "-U",
+        KEY_INTER: "--interleaved",
+        KEY_MATE1: "-1",
+        KEY_MATE2: "-2",
+    }
 
-    def __init__(self, *,
-                 fastqz: Path | None = None,
-                 fastqy: Path | None = None,
-                 fastq1: Path | None = None,
-                 fastq2: Path | None = None,
-                 phred_enc: int,
-                 one_ref: bool):
+    def __init__(
+        self,
+        *,
+        fastqz: Path | None = None,
+        fastqy: Path | None = None,
+        fastq1: Path | None = None,
+        fastq2: Path | None = None,
+        phred_enc: int,
+        one_ref: bool,
+    ):
         """
         Initialize a FastqUnit from one or two FASTQ file paths.
 
@@ -194,8 +213,10 @@ class FastqUnit(object):
         elif fastq1:
             if not fastq2:
                 raise TypeError("Got fastq1 but not fastq2")
-            self.paths: dict[str, Path] = {self.KEY_MATE1: fastq1,
-                                           self.KEY_MATE2: fastq2}
+            self.paths: dict[str, Path] = {
+                self.KEY_MATE1: fastq1,
+                self.KEY_MATE2: fastq2,
+            }
             self.paired = True
             self.interleaved = False
         elif fastq2:
@@ -221,7 +242,7 @@ class FastqUnit(object):
 
     @cached_property
     def parent(self):
-        """ Return the parent directory of the FASTQ file(s). """
+        """Return the parent directory of the FASTQ file(s)."""
         parents = [inp.parent for inp in self.paths.values()]
         if not parents:
             raise TypeError("Not parent directory")
@@ -232,20 +253,24 @@ class FastqUnit(object):
     @cached_property
     def seg_types(self) -> dict[str, tuple[path.PathSegment, ...]]:
         if self.one_ref:
-            seg_types = {self.KEY_SINGLE: path.DMFASTQ_SEGS,
-                         self.KEY_INTER: path.DMFASTQ_SEGS,
-                         self.KEY_MATE1: path.DMFASTQ1_SEGS,
-                         self.KEY_MATE2: path.DMFASTQ2_SEGS}
+            seg_types = {
+                self.KEY_SINGLE: path.DMFASTQ_SEGS,
+                self.KEY_INTER: path.DMFASTQ_SEGS,
+                self.KEY_MATE1: path.DMFASTQ1_SEGS,
+                self.KEY_MATE2: path.DMFASTQ2_SEGS,
+            }
         else:
-            seg_types = {self.KEY_SINGLE: path.FASTQ_SEGS,
-                         self.KEY_INTER: path.FASTQ_SEGS,
-                         self.KEY_MATE1: path.FASTQ1_SEGS,
-                         self.KEY_MATE2: path.FASTQ2_SEGS}
+            seg_types = {
+                self.KEY_SINGLE: path.FASTQ_SEGS,
+                self.KEY_INTER: path.FASTQ_SEGS,
+                self.KEY_MATE1: path.FASTQ1_SEGS,
+                self.KEY_MATE2: path.FASTQ2_SEGS,
+            }
         return {key: seg_types[key] for key in self.paths}
 
     @cached_property
     def n_reads(self) -> int:
-        """ Number of reads in the FASTQ file(s). """
+        """Number of reads in the FASTQ file(s)."""
         n_reads = list({count_fastq_reads(fq) for fq in self.paths.values()})
         if len(n_reads) != 1:
             raise ValueError(
@@ -254,11 +279,11 @@ class FastqUnit(object):
         return n_reads[0]
 
     def exists(self):
-        """ Check if all FASTQ paths in the FastqUnit exist """
+        """Check if all FASTQ paths in the FastqUnit exist"""
         return all(path.exists() for path in self.paths.values())
 
     def get_sample_ref_exts(self):
-        """ Return the sample and reference of the FASTQ file(s). """
+        """Return the sample and reference of the FASTQ file(s)."""
         samples: set[str] = set()
         refs: set[str | None] = set()
         exts: dict[str, str] = dict()
@@ -268,11 +293,11 @@ class FastqUnit(object):
             refs.add(fq_fields.get(path.REF))
             exts[key] = fq_fields[path.EXT]
         if len(samples) > 1:
-            raise ValueError(f"Sample names of {self} disagree: "
-                             + " ≠ ".join(samples))
+            raise ValueError(f"Sample names of {self} disagree: " + " ≠ ".join(samples))
         if len(refs) > 1:
-            raise ValueError(f"Ref names of {self} disagree: "
-                             + " ≠ ".join(map(str, refs)))
+            raise ValueError(
+                f"Ref names of {self} disagree: " + " ≠ ".join(map(str, refs))
+            )
         return list(samples)[0], list(refs)[0], exts
 
     def fields(self, key: str):
@@ -337,17 +362,23 @@ class FastqUnit(object):
                     full_record = (rec1, rec2) if self.paired else (rec1,)
                     if slices:
                         if self.paired:
-                            segs = [(safe_slice(rec1[1], s[0], s[1]),
-                                    safe_slice(rec2[1], s[0], s[1]))
-                                    for s in slices]
+                            segs = [
+                                (
+                                    safe_slice(rec1[1], s[0], s[1]),
+                                    safe_slice(rec2[1], s[0], s[1]),
+                                )
+                                for s in slices
+                            ]
                         else:
                             segs = ([safe_slice(rec1[1], s[0], s[1]) for s in slices],)
                         yield (segs, full_record)
                     else:
                         if self.paired:
                             max_len = max(len(rec1[1]), len(rec2[1]))
-                            segs = (safe_slice(rec1[1], 1, max_len),
-                                    safe_slice(rec2[1], 1, max_len))
+                            segs = (
+                                safe_slice(rec1[1], 1, max_len),
+                                safe_slice(rec2[1], 1, max_len),
+                            )
                         else:
                             segs = (rec1[1],)
                         yield (segs, full_record)
@@ -356,20 +387,28 @@ class FastqUnit(object):
             handles = [get_open_func(p)(p, "rt") for p in paths]
             try:
                 while True:
-                    recs = [[h.readline().rstrip("\n") for _ in range(4)] for h in handles]
+                    recs = [
+                        [h.readline().rstrip("\n") for _ in range(4)] for h in handles
+                    ]
                     if all(not rec[0] for rec in recs):
                         break
                     read_name = recs[0][0].split(" ")[0]
                     if not all(rec[0].split(" ")[0] == read_name for rec in recs):
-                        raise ValueError("FASTQs are not properly paired. Read names do not match: " +
-                                        str(tuple(rec[0] for rec in recs)))
+                        raise ValueError(
+                            "FASTQs are not properly paired. Read names do not match: "
+                            + str(tuple(rec[0] for rec in recs))
+                        )
                     full_record = tuple(tuple(rec) for rec in recs)
                     if slices:
                         if self.paired:
-                            segs = tuple(tuple(safe_slice(rec[1], s[0], s[1]) for rec in recs)
-                                        for s in slices)
+                            segs = tuple(
+                                tuple(safe_slice(rec[1], s[0], s[1]) for rec in recs)
+                                for s in slices
+                            )
                         else:
-                            seg_records = [safe_slice(recs[0][1], s[0], s[1]) for s in slices]
+                            seg_records = [
+                                safe_slice(recs[0][1], s[0], s[1]) for s in slices
+                            ]
                             segs = (seg_records,)
                         yield (segs, full_record)
                     else:
@@ -385,31 +424,30 @@ class FastqUnit(object):
 
     @property
     def bowtie2_inputs(self):
-        """ Return input file arguments for Bowtie2. """
-        return tuple(chain(*[(self.BOWTIE2_FLAGS[key], fq)
-                             for key, fq in self.paths.items()]))
+        """Return input file arguments for Bowtie2."""
+        return tuple(
+            chain(*[(self.BOWTIE2_FLAGS[key], fq) for key, fq in self.paths.items()])
+        )
 
     def to_new(self, *new_segments: path.PathSegment, **new_fields):
-        """ Return a new FASTQ unit with updated path fields. """
+        """Return a new FASTQ unit with updated path fields."""
         new_paths = dict()
         for key, self_path in self.paths.items():
             combined_segments = new_segments + self.seg_types[key]
             combined_fields = self.fields(key) | new_fields
             new_paths[key] = path.build(combined_segments, combined_fields)
-        return self.__class__(**new_paths,
-                              phred_enc=self.phred_enc,
-                              one_ref=self.one_ref)
+        return self.__class__(
+            **new_paths, phred_enc=self.phred_enc, one_ref=self.one_ref
+        )
 
     @cached_property
     def checksums(self):
         return {name: calc_sha512_path(path) for name, path in self.paths.items()}
 
     @classmethod
-    def _from_files(cls, /, *,
-                    phred_enc: int,
-                    one_ref: bool,
-                    fqs: Iterable[str | Path],
-                    key: str):
+    def _from_files(
+        cls, /, *, phred_enc: int, one_ref: bool, fqs: Iterable[str | Path], key: str
+    ):
         """
         Yield a FastqUnit for each single or interleaved FASTQ file.
 
@@ -450,10 +488,7 @@ class FastqUnit(object):
                 yield fq_unit
 
     @classmethod
-    def _from_mates(cls, /, *,
-                    phred_enc: int,
-                    one_ref: bool,
-                    fqs: list[Path]):
+    def _from_mates(cls, /, *, phred_enc: int, one_ref: bool, fqs: list[Path]):
         """
         Yield a FastqUnit for each pair of mate-1/mate-2 FASTQ files.
 
@@ -504,8 +539,10 @@ class FastqUnit(object):
             raise MissingFastqMate2(missing2)
         # Yield a FASTQ unit for each pair of mated files.
         for sample_ref in set1s & set2s:
-            fq_args = {cls.KEY_MATE1: sample_ref_1s[sample_ref],
-                       cls.KEY_MATE2: sample_ref_2s[sample_ref]}
+            fq_args = {
+                cls.KEY_MATE1: sample_ref_1s[sample_ref],
+                cls.KEY_MATE2: sample_ref_2s[sample_ref],
+            }
             try:
                 fq_unit = cls(phred_enc=phred_enc, one_ref=one_ref, **fq_args)
             except Exception as error:
@@ -545,39 +582,45 @@ class FastqUnit(object):
         # List all FASTQ files.
         logger.routine(f"Began generating {cls.__name__} instances")
         # single-end
-        yield from cls._from_files(phred_enc=phred_enc,
-                                   one_ref=False,
-                                   fqs=fastq_args.get(cls.KEY_SINGLE, ()),
-                                   key=cls.KEY_SINGLE)
+        yield from cls._from_files(
+            phred_enc=phred_enc,
+            one_ref=False,
+            fqs=fastq_args.get(cls.KEY_SINGLE, ()),
+            key=cls.KEY_SINGLE,
+        )
         # interleaved paired-end
-        yield from cls._from_files(phred_enc=phred_enc,
-                                   one_ref=False,
-                                   fqs=fastq_args.get(cls.KEY_INTER, ()),
-                                   key=cls.KEY_INTER)
+        yield from cls._from_files(
+            phred_enc=phred_enc,
+            one_ref=False,
+            fqs=fastq_args.get(cls.KEY_INTER, ()),
+            key=cls.KEY_INTER,
+        )
         # mated paired-end
-        yield from cls._from_mates(phred_enc=phred_enc,
-                                   one_ref=False,
-                                   fqs=fastq_args.get(cls.KEY_MATED, ()))
+        yield from cls._from_mates(
+            phred_enc=phred_enc, one_ref=False, fqs=fastq_args.get(cls.KEY_MATED, ())
+        )
         # demultiplexed single-end
-        yield from cls._from_files(phred_enc=phred_enc,
-                                   one_ref=True,
-                                   fqs=fastq_args.get(cls.KEY_DSINGLE, ()),
-                                   key=cls.KEY_SINGLE)
+        yield from cls._from_files(
+            phred_enc=phred_enc,
+            one_ref=True,
+            fqs=fastq_args.get(cls.KEY_DSINGLE, ()),
+            key=cls.KEY_SINGLE,
+        )
         # demultiplexed interleaved paired-end
-        yield from cls._from_files(phred_enc=phred_enc,
-                                   one_ref=True,
-                                   fqs=fastq_args.get(cls.KEY_DINTER, ()),
-                                   key=cls.KEY_INTER)
+        yield from cls._from_files(
+            phred_enc=phred_enc,
+            one_ref=True,
+            fqs=fastq_args.get(cls.KEY_DINTER, ()),
+            key=cls.KEY_INTER,
+        )
         # demultiplexed mated paired-end
-        yield from cls._from_mates(phred_enc=phred_enc,
-                                   one_ref=True,
-                                   fqs=fastq_args.get(cls.KEY_DMATED, ()))
+        yield from cls._from_mates(
+            phred_enc=phred_enc, one_ref=True, fqs=fastq_args.get(cls.KEY_DMATED, ())
+        )
         logger.routine(f"Ended generating {cls.__name__} instances")
 
     def __str__(self):
-        return " ".join(
-            [self.kind, " and ".join(map(str, self.paths.values()))]
-        )
+        return " ".join([self.kind, " and ".join(map(str, self.paths.values()))])
 
     def __repr__(self):
         return str(self)

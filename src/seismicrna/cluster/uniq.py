@@ -15,51 +15,55 @@ from ..filter.dataset import FilterMutsDataset
 
 
 class UniqReads(EndCoords):
-    """ Collection of bit vectors of unique reads. """
+    """Collection of bit vectors of unique reads."""
 
     @classmethod
     def from_dataset(cls, dataset: FilterMutsDataset, branch: str, **kwargs):
-        """ Get unique reads from a dataset. """
-        ((seg_end5s, seg_end3s),
-         muts_per_pos,
-         batch_to_uniq,
-         count_per_uniq) = get_uniq_reads(dataset.region.unmasked_int,
-                                          dataset.pattern,
-                                          dataset.iter_batches(),
-                                          **kwargs)
-        return cls(dataset.sample,
-                   path.add_branch(path.CLUSTER_STEP, branch, dataset.branches),
-                   dataset.region,
-                   dataset.min_mut_gap,
-                   dataset.mut_collisions,
-                   dataset.quick_unbias,
-                   dataset.quick_unbias_thresh,
-                   muts_per_pos,
-                   batch_to_uniq,
-                   count_per_uniq,
-                   seg_end5s=seg_end5s,
-                   seg_end3s=seg_end3s)
+        """Get unique reads from a dataset."""
+        ((seg_end5s, seg_end3s), muts_per_pos, batch_to_uniq, count_per_uniq) = (
+            get_uniq_reads(
+                dataset.region.unmasked_int,
+                dataset.pattern,
+                dataset.iter_batches(),
+                **kwargs,
+            )
+        )
+        return cls(
+            dataset.sample,
+            path.add_branch(path.CLUSTER_STEP, branch, dataset.branches),
+            dataset.region,
+            dataset.min_mut_gap,
+            dataset.mut_collisions,
+            dataset.quick_unbias,
+            dataset.quick_unbias_thresh,
+            muts_per_pos,
+            batch_to_uniq,
+            count_per_uniq,
+            seg_end5s=seg_end5s,
+            seg_end3s=seg_end3s,
+        )
 
     @classmethod
     def from_dataset_contig(cls, dataset: FilterMutsDataset, branch: str):
-        """ Get unique reads from a dataset of contiguous reads. """
-        return cls.from_dataset(dataset,
-                                branch,
-                                only_read_ends=True,
-                                require_contiguous=True)
+        """Get unique reads from a dataset of contiguous reads."""
+        return cls.from_dataset(
+            dataset, branch, only_read_ends=True, require_contiguous=True
+        )
 
-    def __init__(self,
-                 sample: str,
-                 branches: dict[str, str],
-                 region: Region,
-                 min_mut_gap: int,
-                 mut_collisions: str,
-                 quick_unbias: bool,
-                 quick_unbias_thresh: float,
-                 muts_per_pos: list[np.ndarray],
-                 batch_to_uniq: list[pd.Series],
-                 counts_per_uniq: np.ndarray,
-                 **kwargs):
+    def __init__(
+        self,
+        sample: str,
+        branches: dict[str, str],
+        region: Region,
+        min_mut_gap: int,
+        mut_collisions: str,
+        quick_unbias: bool,
+        quick_unbias_thresh: float,
+        muts_per_pos: list[np.ndarray],
+        batch_to_uniq: list[pd.Series],
+        counts_per_uniq: np.ndarray,
+        **kwargs,
+    ):
         """
         Parameters
         ----------
@@ -98,68 +102,68 @@ class UniqReads(EndCoords):
         self.mut_collisions = mut_collisions
         self.quick_unbias = quick_unbias
         self.quick_unbias_thresh = quick_unbias_thresh
-        if len(muts_per_pos) != (npos := get_length(self.region.unmasked_int,
-                                                    "pos_nums")):
-            raise ValueError(f"Expected {npos} positions, "
-                             f"but got {len(muts_per_pos)}")
+        if len(muts_per_pos) != (
+            npos := get_length(self.region.unmasked_int, "pos_nums")
+        ):
+            raise ValueError(f"Expected {npos} positions, but got {len(muts_per_pos)}")
         self.muts_per_pos = muts_per_pos
         self.batch_to_uniq = batch_to_uniq
         self.counts_per_uniq = counts_per_uniq
 
     @property
     def ref(self):
-        """ Reference name. """
+        """Reference name."""
         return self.region.ref
 
     @cached_property
     def seg_end5s_zero(self):
-        """ 5' end of every segment (0-indexed in the region). """
+        """5' end of every segment (0-indexed in the region)."""
         return self.seg_end5s - self.region.end5
 
     @cached_property
     def seg_end3s_zero(self):
-        """ 3' end of every segment (0-indexed in the region). """
+        """3' end of every segment (0-indexed in the region)."""
         return self.seg_end3s - self.region.end5
 
     @cached_property
     def read_end5s_zero(self):
-        """ 5' end coordinates (0-indexed in the region). """
+        """5' end coordinates (0-indexed in the region)."""
         return self.read_end5s - self.region.end5
 
     @cached_property
     def read_end3s_zero(self):
-        """ 3' end coordinates (0-indexed in the region). """
+        """3' end coordinates (0-indexed in the region)."""
         return self.read_end3s - self.region.end5
 
     @cached_property
     def num_batches(self):
-        """ Number of batches. """
+        """Number of batches."""
         return len(self.batch_to_uniq)
 
     @cached_property
     def num_uniq(self):
-        """ Number of unique reads. """
+        """Number of unique reads."""
         return get_length(self.counts_per_uniq, "counts")
 
     @cached_property
     def num_nonuniq(self) -> int:
-        """ Number of total reads (including non-unique reads). """
+        """Number of total reads (including non-unique reads)."""
         return self.counts_per_uniq.sum()
 
     def get_mut_matrix(self):
-        """ Full boolean matrix of the mutations. """
+        """Full boolean matrix of the mutations."""
         # Initialize an all-False matrix with one row for each unique
         # read and one column for each position.
         muts = np.zeros((self.num_uniq, self.region.length), dtype=bool)
         # For each position (j), set the mutated elements to True.
-        for j, indexes in zip(self.region.unmasked_zero,
-                              self.muts_per_pos,
-                              strict=True):
+        for j, indexes in zip(
+            self.region.unmasked_zero, self.muts_per_pos, strict=True
+        ):
             muts[indexes, j] = True
         return muts
 
     def get_cov_matrix(self):
-        """ Full boolean matrix of the covered positions. """
+        """Full boolean matrix of the covered positions."""
         # Initialize an all-False matrix with one row for each unique
         # read and one column for each position.
         covs = np.zeros((self.num_uniq, self.region.length), dtype=bool)
@@ -168,23 +172,24 @@ class UniqReads(EndCoords):
             end5s = self.seg_end5s_zero[:, segment]
             end3s = self.seg_end3s_zero[:, segment] + 1
             for read, (end5, end3) in enumerate(zip(end5s, end3s)):
-                covs[read, end5: end3] = True
+                covs[read, end5:end3] = True
         return covs
 
     @cached_property
     def uniq_names(self):
-        """ Unique read names as byte strings. """
+        """Unique read names as byte strings."""
         # Get the full boolean matrices of the coverage and mutations of
         # the unique reads, cast the data from boolean to 8-bit integer
         # type, and merge them into one matrix via subtraction.
-        chars = (self.get_mut_matrix().astype(np.int8, copy=False)
-                 - 2 * (~self.get_cov_matrix()).astype(np.int8, copy=False))
+        chars = self.get_mut_matrix().astype(np.int8, copy=False) - 2 * (
+            ~self.get_cov_matrix()
+        ).astype(np.int8, copy=False)
         if chars.size > 0:
             # Add ord('0') to transform every 0 into b'0' and every 1
             # into # b'1', and convert each row (bit vector) into a
             # bytes object of b'0' and b'1' characters.
             names = np.char.decode(
-                np.apply_along_axis(np.ndarray.tobytes, 1, chars + ord('0'))
+                np.apply_along_axis(np.ndarray.tobytes, 1, chars + ord("0"))
             )
         else:
             # If there are no unique bit vectors, then apply_along_axis
@@ -194,50 +199,53 @@ class UniqReads(EndCoords):
 
     @property
     def num_obs(self):
-        """ Number of times each read was observed. """
+        """Number of times each read was observed."""
         return pd.Series(self.counts_per_uniq, self.uniq_names)
 
     @cached_property
     def log_obs(self):
-        """ Log number of times each read was observed. """
+        """Log number of times each read was observed."""
         return np.log(self.num_obs)
 
     def __eq__(self, other):
         if not isinstance(other, UniqReads):
             return NotImplemented
-        return (self.sample == other.sample
-                and self.branches == other.branches
-                and self.region == other.region
-                and self.min_mut_gap == other.min_mut_gap
-                and self.mut_collisions == other.mut_collisions
-                and self.quick_unbias == other.quick_unbias
-                and self.quick_unbias_thresh == other.quick_unbias_thresh
-                and self.num_batches == other.num_batches
-                and np.array_equal(self.seg_end5s, other.seg_end5s)
-                and np.array_equal(self.seg_end3s, other.seg_end3s)
-                and all(np.array_equal(m1, m2)
-                        for m1, m2 in zip(self.muts_per_pos,
-                                          other.muts_per_pos,
-                                          strict=True))
-                and all(b1.equals(b2)
-                        for b1, b2 in zip(self.batch_to_uniq,
-                                          other.batch_to_uniq,
-                                          strict=True))
-                and np.array_equal(self.counts_per_uniq,
-                                   other.counts_per_uniq))
+        return (
+            self.sample == other.sample
+            and self.branches == other.branches
+            and self.region == other.region
+            and self.min_mut_gap == other.min_mut_gap
+            and self.mut_collisions == other.mut_collisions
+            and self.quick_unbias == other.quick_unbias
+            and self.quick_unbias_thresh == other.quick_unbias_thresh
+            and self.num_batches == other.num_batches
+            and np.array_equal(self.seg_end5s, other.seg_end5s)
+            and np.array_equal(self.seg_end3s, other.seg_end3s)
+            and all(
+                np.array_equal(m1, m2)
+                for m1, m2 in zip(self.muts_per_pos, other.muts_per_pos, strict=True)
+            )
+            and all(
+                b1.equals(b2)
+                for b1, b2 in zip(self.batch_to_uniq, other.batch_to_uniq, strict=True)
+            )
+            and np.array_equal(self.counts_per_uniq, other.counts_per_uniq)
+        )
 
     def __str__(self):
-        return "".join([type(self).__name__,
-                        f"(sample={repr(self.sample)};{self.region})"])
+        return "".join(
+            [type(self).__name__, f"(sample={repr(self.sample)};{self.region})"]
+        )
 
     def __repr__(self):
         return str(self)
 
 
-def _uniq_reads_to_ends_muts(uniq_reads: Iterable[tuple[tuple, tuple]],
-                             pos_nums: Iterable[int]):
-    """ Map each position to the numbers of the unique reads that are
-    mutated at the position. """
+def _uniq_reads_to_ends_muts(
+    uniq_reads: Iterable[tuple[tuple, tuple]], pos_nums: Iterable[int]
+):
+    """Map each position to the numbers of the unique reads that are
+    mutated at the position."""
     end5s = list()
     end3s = list()
     muts = defaultdict(list)
@@ -252,34 +260,40 @@ def _uniq_reads_to_ends_muts(uniq_reads: Iterable[tuple[tuple, tuple]],
     return (end5s, end3s), muts
 
 
-def _batch_to_uniq_read_num(read_nums_per_batch: list[np.ndarray],
-                            uniq_read_nums: Iterable[list]):
-    """ Map each read's number in its own batch to its unique number in
-    the pool of all batches. """
+def _batch_to_uniq_read_num(
+    read_nums_per_batch: list[np.ndarray], uniq_read_nums: Iterable[list]
+):
+    """Map each read's number in its own batch to its unique number in
+    the pool of all batches."""
     # For each batch, initialize a map from the read numbers of the batch.
-    batch_to_uniq = [pd.Series(-1, index=read_nums)
-                     for read_nums in read_nums_per_batch]
+    batch_to_uniq = [
+        pd.Series(-1, index=read_nums) for read_nums in read_nums_per_batch
+    ]
     # Fill in the map for each unique read.
     for uniq_read_num, batch_read_nums in enumerate(uniq_read_nums):
         for batch_num, read_num in batch_read_nums:
             batch_to_uniq[batch_num][read_num] = uniq_read_num
     for batch, read_nums in enumerate(batch_to_uniq):
         if read_nums.size > 0 > read_nums.min():
-            raise ValueError(f"Got unmapped read numbers in batch {batch}: "
-                             f"{read_nums.index[read_nums < 0]}")
+            raise ValueError(
+                f"Got unmapped read numbers in batch {batch}: "
+                f"{read_nums.index[read_nums < 0]}"
+            )
     return batch_to_uniq
 
 
 def _count_uniq_reads(uniq_read_nums: Iterable[list]):
-    """ Count the occurrences of each unique read across all batches. """
+    """Count the occurrences of each unique read across all batches."""
     return np.fromiter(map(len, uniq_read_nums), dtype=int)
 
 
-def get_uniq_reads(pos_nums: Iterable[int],
-                   pattern: RelPattern,
-                   batches: Iterable[RegionMutsBatch],
-                   **kwargs):
-    """ Collect unique reads from batches and build lookup structures.
+def get_uniq_reads(
+    pos_nums: Iterable[int],
+    pattern: RelPattern,
+    batches: Iterable[RegionMutsBatch],
+    **kwargs,
+):
+    """Collect unique reads from batches and build lookup structures.
 
     Parameters
     ----------
@@ -310,22 +324,18 @@ def get_uniq_reads(pos_nums: Iterable[int],
     read_nums_per_batch = list()
     for batch_num, batch in enumerate(batches):
         if batch.batch != batch_num:
-            raise ValueError(
-                f"Batch {batch} is not in order (expected {batch_num})"
-            )
+            raise ValueError(f"Batch {batch} is not in order (expected {batch_num})")
         # Record the number of reads in the batch.
         read_nums_per_batch.append(batch.read_nums)
         # Find the reads with unique end coordinates and mutations.
-        for (read_num, read_data) in batch.iter_reads(pattern, **kwargs):
+        for read_num, read_data in batch.iter_reads(pattern, **kwargs):
             # Key each read by its end coordinates and by the positions
             # at which it has mutations, so that redundant reads map to
             # the same key; record each read as a tuple of its batch and
             # its read number within the batch.
             uniq_reads[read_data].append((batch_num, read_num))
     # Pre-process the unique reads to extract necessary information.
-    reads_ends, muts_per_pos = _uniq_reads_to_ends_muts(uniq_reads,
-                                                        pos_nums)
-    batch_to_uniq = _batch_to_uniq_read_num(read_nums_per_batch,
-                                            uniq_reads.values())
+    reads_ends, muts_per_pos = _uniq_reads_to_ends_muts(uniq_reads, pos_nums)
+    batch_to_uniq = _batch_to_uniq_read_num(read_nums_per_batch, uniq_reads.values())
     count_per_uniq = _count_uniq_reads(uniq_reads.values())
     return reads_ends, muts_per_pos, batch_to_uniq, count_per_uniq
