@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 from itertools import chain
 from pathlib import Path
-from typing import Any, Callable, Generator, Iterable
+from typing import Callable, Generator, Iterable
 
 import pandas as pd
 from click import Argument, Option

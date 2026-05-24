@@ -35,7 +35,6 @@ from seismicrna.core.unbias import (_clip,
                                     require_square_atleast2d,
                                     require_same_square_atleast2d,
                                     _calc_p_mut_given_span_merged)
-from seismicrna.core.validate import require_equal
 
 
 

@@ -11,7 +11,7 @@ from seismicrna.core import path
 from seismicrna.core.error import NoDataError
 from seismicrna.core.header import format_clust_name
 from seismicrna.core.logs import Level, set_config
-from seismicrna.core.rna import UNPAIRED_MARK, RNAStructure, to_ct
+from seismicrna.core.rna import RNAStructure, to_ct
 from seismicrna.core.seq.region import (BASE_NAME,
                                         POS_NAME,
                                         Region)
@@ -777,7 +777,7 @@ class TestAbstractTable(AbstractTestBase):
                                  self.SAMPLE,
                                  self.REF,
                                  "other_reg",
-                                 f"other_reg__average")
+                                 "other_reg__average")
         _write_ct(other_ct,
                   self.REF,
                   self.REFSEQ,

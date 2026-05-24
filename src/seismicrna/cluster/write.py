@@ -3,7 +3,6 @@ from math import inf
 from pathlib import Path
 from typing import Iterable
 
-import numpy as np
 
 from .data import ClusterDatasetTabulator, ClusterMutsDataset
 from .em import EMRun

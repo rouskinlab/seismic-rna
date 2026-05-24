@@ -6,7 +6,7 @@ import pandas as pd
 
 from seismicrna.core.arg import MUT_COLLISIONS_DROP, MUT_COLLISIONS_MERGE
 from seismicrna.core.header import CLUST_NAME, NUM_CLUSTS_NAME, REL_NAME
-from seismicrna.core.rel import MATCH, NOCOV, SUB_T, RelPattern
+from seismicrna.core.rel import MATCH, SUB_T, RelPattern
 from seismicrna.core.seq.region import BASE_NAME, POS_NAME
 from seismicrna.core.unbias import (
     calc_p_clust_given_noclose,

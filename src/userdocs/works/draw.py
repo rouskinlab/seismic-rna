@@ -207,7 +207,7 @@ def simulate_mu(is_paired: np.ndarray,
                 pb: float = 64.,
                 ua: float = 8.,
                 ub: float = 16.,
-                seed: int | None):
+                seed: int | None = None):
     """ Simulate mutation rates. """
     rng = np.random.default_rng(seed)
     n_pos, n_clust = is_paired.shape
@@ -220,7 +220,7 @@ def simulate_mu(is_paired: np.ndarray,
     return mu
 
 
-def simulate_pi(n_clust: int, alpha: float = 1., seed: int | None):
+def simulate_pi(n_clust: int, alpha: float = 1., seed: int | None = None):
     """ Simulate cluster proportions. """
     rng = np.random.default_rng(seed)
     return rng.dirichlet(np.repeat(alpha, n_clust))
@@ -230,7 +230,7 @@ def simulate_ends(n_reads: int,
                   n_pos: int,
                   p5: float = 1 / 3,
                   p3: float = 1 / 3,
-                  seed: int | None):
+                  seed: int | None = None):
     """ Simulate 5' and 3' end coordinates. """
     rng = np.random.default_rng(seed)
     partition = rng.multinomial(n_pos, [p5, 1. - (p5 + p3), p3], n_reads)

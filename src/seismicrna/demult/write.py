@@ -4,7 +4,6 @@ import gzip
 import shutil
 from collections import defaultdict
 from itertools import zip_longest
-from datetime import datetime
 from pathlib import Path
 from ..align.fqunit import FastqUnit, DuplicateSampleReferenceError, fastq_gz
 from ..core.logs import logger
@@ -258,7 +257,6 @@ def demult_fq_pipeline(fq_inp: FastqUnit,
                        **kwargs):
     """ Run all stages of the demult pipeline for one FASTQ file or
     one pair of mated FASTQ files. """
-    began = datetime.now()
     release_dir, working_dir = get_release_working_dirs(tmp_dir)
     logger.routine(f"Began processing {fq_inp} through the demult pipeline")
     # Get attributes of the sample and references.

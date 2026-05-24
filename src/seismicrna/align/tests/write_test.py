@@ -1,7 +1,6 @@
 import tempfile
 import unittest as ut
 from pathlib import Path
-from unittest.mock import patch
 
 from seismicrna.align.write import (calc_flags_sep_strands,
                                     fq_pipeline,

@@ -19,7 +19,6 @@ from ..idmut.dataset import load_idmut_dataset
 from ..idmut.report import IDmutReport
 from ..core.table import (COVER_REL,
                           INFOR_REL,
-                          MUTAT_REL,
                           SUBST_REL,
                           SUB_A_REL,
                           SUB_C_REL,

@@ -13,18 +13,14 @@ from .io import FilterBatchIO
 from .report import FilterReport
 from .table import FilterBatchTabulator
 from ..core import path
-from ..core.arg import (docdef,
-                        MUT_COLLISIONS_AUTO,
-                        MUT_COLLISIONS_DROP,
-                        MUT_COLLISIONS_MERGE,
-                        PROBE_DMS,
-                        PROBE_SHAPE)
+from ..core.arg import (MUT_COLLISIONS_DROP,
+                        MUT_COLLISIONS_MERGE)
 from ..core.batch import RegionMutsBatch
 from ..core.dataset import MissingBatchTypeError
 from ..core.error import IncompatibleValuesError
 from ..core.lists import PositionList
 from ..core.logs import logger
-from ..core.rel import RelPattern, HalfRelPattern
+from ..core.rel import RelPattern
 from ..core.report import filter_iter_no_convergence
 from ..core.seq import (BASEA,
                         BASEC,

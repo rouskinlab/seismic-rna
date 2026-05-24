@@ -88,46 +88,46 @@ def accumulate_counts(batch_counts: Iterable[tuple[Any, Any, Any, Any]],
          end_counts_i,
          count_per_pos_i,
          count_per_read_i) in batch_counts:
-        require_isinstance(f"num_reads_i",
+        require_isinstance("num_reads_i",
                            num_reads_i,
                            type(num_reads))
         if validate and isinstance(num_reads, pd.Series):
-            require_index_equals(f"num_reads_i.index",
+            require_index_equals("num_reads_i.index",
                                  num_reads_i.index,
                                  num_reads.index,
                                  "num_reads.index")
         num_reads += num_reads_i
         if end_counts is not None:
-            require_isinstance(f"end_counts_i",
+            require_isinstance("end_counts_i",
                                end_counts_i,
                                type(end_counts))
             if validate and isinstance(end_counts, pd.DataFrame):
-                require_index_equals(f"end_counts_i.columns",
+                require_index_equals("end_counts_i.columns",
                                      end_counts_i.columns,
                                      end_counts.columns,
                                      "end_counts.columns")
             end_counts = end_counts.add(end_counts_i,
                                         fill_value=zero).astype(dtype, copy=False)
         if count_per_pos is not None:
-            require_isinstance(f"count_per_pos_i",
+            require_isinstance("count_per_pos_i",
                                count_per_pos_i,
                                pd.DataFrame)
             if validate:
-                require_index_equals(f"count_per_pos_i.index",
+                require_index_equals("count_per_pos_i.index",
                                      count_per_pos_i.index,
                                      count_per_pos.index,
                                      "count_per_pos.index")
-                require_index_equals(f"count_per_pos_i.columns",
+                require_index_equals("count_per_pos_i.columns",
                                      count_per_pos_i.columns,
                                      count_per_pos.columns,
                                      "count_per_pos.columns")
             count_per_pos += count_per_pos_i
         if count_per_batch_read is not None:
-            require_isinstance(f"count_per_read_i",
+            require_isinstance("count_per_read_i",
                                count_per_read_i,
                                pd.DataFrame)
             if validate:
-                require_index_equals(f"count_per_read_i.columns",
+                require_index_equals("count_per_read_i.columns",
                                      count_per_read_i.columns,
                                      rel_header.index,
                                      "rel_header.index")

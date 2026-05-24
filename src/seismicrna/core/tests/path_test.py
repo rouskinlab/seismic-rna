@@ -1,3 +1,4 @@
+# ruff: noqa: F403, F405
 import unittest as ut
 from shutil import rmtree
 
