@@ -43,5 +43,4 @@ jobs:
         run: |
           echo "Running tests for $(seismic --version)"
           seismic --log "" --exit-on-error test -vv
-          bash seismic_cli_test.sh tmp_cli_test
-          rm -r tmp_cli_test
+          bash seismic_cli_test.sh
