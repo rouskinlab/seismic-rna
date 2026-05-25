@@ -307,13 +307,9 @@ class TestRelPattern(ut.TestCase):
                 pattern = RelPattern.from_counts(only_count=[fancy])
                 self.assertIsInstance(pattern.yes, HalfRelPattern)
                 self.assertIsInstance(pattern.nos, HalfRelPattern)
+                self.assertEqual(pattern.yes, HalfRelPattern.from_counts(count=[fancy]))
                 self.assertEqual(
-                    pattern.yes,
-                    HalfRelPattern.from_counts(count=[fancy]),
-                )
-                self.assertEqual(
-                    pattern.nos,
-                    HalfRelPattern.from_counts(count_ref=True),
+                    pattern.nos, HalfRelPattern.from_counts(count_ref=True)
                 )
                 result = pattern.intersect(RelPattern.muts())
                 self.assertIsInstance(result, RelPattern)

@@ -300,9 +300,7 @@ def _calc_modules_from_pairs(
     logger.routine("Began calculating modules")
     require_atleast("min_mut_gap", min_mut_gap, 0, classes=int)
     require_atleast("min_pairs", min_pairs, 1, classes=int)
-    require_greater(
-        "threshold_divisor", threshold_divisor, 0.0, classes=(float, int)
-    )
+    require_greater("threshold_divisor", threshold_divisor, 0.0, classes=(float, int))
     finished = set()
     # First, naively aggregate all pairs that overlap.
     modules = _aggregate_pairs(pairs)
@@ -557,11 +555,7 @@ def _calc_cluster_modules(
     # Find modules of correlated pairs.
     min_mut_gap, _ = set_mut_gap_params(probe, min_mut_gap)
     modules = _calc_modules_from_pairs(
-        pairs,
-        pair_fdr,
-        min_mut_gap,
-        min_pairs,
-        threshold_divisor=threshold_divisor,
+        pairs, pair_fdr, min_mut_gap, min_pairs, threshold_divisor=threshold_divisor
     )
     n_modules_before_filter = len(modules)
     # Determine what to do with gaps between regions.
