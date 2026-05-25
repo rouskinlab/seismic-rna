@@ -301,6 +301,23 @@ class TestRelPattern(ut.TestCase):
                             ),
                         )
 
+    def test_from_counts_only_count(self):
+        for _, _, _, fancy in iter_codes():
+            with self.subTest(fancy=fancy):
+                pattern = RelPattern.from_counts(only_count=[fancy])
+                self.assertIsInstance(pattern.yes, HalfRelPattern)
+                self.assertIsInstance(pattern.nos, HalfRelPattern)
+                self.assertEqual(
+                    pattern.yes,
+                    HalfRelPattern.from_counts(count=[fancy]),
+                )
+                self.assertEqual(
+                    pattern.nos,
+                    HalfRelPattern.from_counts(count_ref=True),
+                )
+                result = pattern.intersect(RelPattern.muts())
+                self.assertIsInstance(result, RelPattern)
+
     def test_allc(self):
         pattern = RelPattern.allc()
         self.assertEqual(pattern.yes, HalfRelPattern.allc())

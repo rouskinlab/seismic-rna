@@ -291,7 +291,7 @@ class RelPattern(object):
         no_count = list(no_count)
         only_count = list(only_count)
         if only_count:
-            yes = (HalfRelPattern.from_counts(count=only_count, no_count=no_count),)
+            yes = HalfRelPattern.from_counts(count=only_count, no_count=no_count)
             nos = HalfRelPattern.from_counts(count_ref=True, no_count=no_count)
         else:
             yes = HalfRelPattern.from_counts(
