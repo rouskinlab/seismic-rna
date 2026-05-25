@@ -13,7 +13,7 @@ from .io import FilterBatchIO
 from .report import FilterReport
 from .table import FilterBatchTabulator
 from ..core import path
-from ..core.arg import MUT_COLLISIONS_DROP, MUT_COLLISIONS_MERGE
+from ..core.arg import MUT_COLLISIONS_DROP, MUT_COLLISIONS_MERGE, PROBE_NONE
 from ..core.batch import RegionMutsBatch
 from ..core.dataset import MissingBatchTypeError
 from ..core.error import IncompatibleValuesError
@@ -173,7 +173,7 @@ class Filterer(object):
         self._iter = 0
         self._converged = False
         # Set the parameters for excluding positions from the region.
-        if not 0 < mask_polya <= 5:
+        if probe != PROBE_NONE and not 0 < mask_polya <= 5:
             logger.warning(
                 "It is not recommended to keep sequences of 5 or "
                 "more consecutive As because of an artifact during "
