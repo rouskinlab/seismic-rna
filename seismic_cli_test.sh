@@ -491,14 +491,18 @@ seismic --log "" --exit-on-error fold \
 ok "fold (fold-table-region)"
 
 # ===============================================================================
-# PHASE 9 - seismic draw  (outputs alongside fold data)
+# PHASE 9 - seismic draw  (outputs alongside fold data; requires RNARTISTCORE)
 # ===============================================================================
 step "Phase 9: seismic draw"
 
-substep "9a. draw - from fold output"
-seismic --log "" --exit-on-error draw \
-    "$OUT_DIR/$SAMPLE1/fold/$REF"
-ok "draw"
+if [ -n "${RNARTISTCORE:-}" ]; then
+    substep "9a. draw - from fold output"
+    seismic --log "" --exit-on-error draw \
+        "$OUT_DIR/$SAMPLE1/fold/$REF"
+    ok "draw"
+else
+    substep "9a. draw - SKIPPED (RNARTISTCORE not set)"
+fi
 
 # ===============================================================================
 # PHASE 10 - seismic graph  (all 13 subcommands)
@@ -627,14 +631,18 @@ seismic --log "" --exit-on-error wf \
     --fold
 ok "wf (fold)"
 
-substep "12e. wf - with fold + draw"
-seismic --log "" --exit-on-error wf \
-    "$FASTA" \
-    --dmfastqx "$SAMPLES_DIR/$SAMPLE1" \
-    --out-dir  "$WF_OUT/fold-draw" \
-    --probe DMS \
-    --fold --draw
-ok "wf (fold + draw)"
+if [ -n "${RNARTISTCORE:-}" ]; then
+    substep "12e. wf - with fold + draw"
+    seismic --log "" --exit-on-error wf \
+        "$FASTA" \
+        --dmfastqx "$SAMPLES_DIR/$SAMPLE1" \
+        --out-dir  "$WF_OUT/fold-draw" \
+        --probe DMS \
+        --fold --draw
+    ok "wf (fold + draw)"
+else
+    substep "12e. wf - with fold + draw - SKIPPED (RNARTISTCORE not set)"
+fi
 
 substep "12f. wf - SHAPE probe"
 seismic --log "" --exit-on-error wf \
@@ -732,5 +740,3 @@ ok "renumct"
 
 # ===============================================================================
 rm -r "$WORKDIR"
-echo
-echo "All CLI tests passed."
