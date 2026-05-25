@@ -546,6 +546,18 @@ class TestFilterSingle1Sample1Batch(
         self.assertListEqual(extract_positions(dataset), [1, 2, 3, 4, 5, 6, 7, 8])
         self.assertListEqual(extract_read_nums(dataset), [[0, 1, 2, 3, 4, 6, 7, 8]])
 
+    def test_only_mut_ag_min_ninfo_pos_6(self):
+        # only_mut=["ag"] counts only A->G substitutions (SUB_G=64) as mutations;
+        # all reference bases count as non-mutations.
+        # Informative reads per position:
+        #   pos 1 (C): reads 0,2,3,4,7 have MATCH -> 5 informative
+        #   pos 5 (A): reads 0,1,3,5,8 have MATCH -> 5 informative
+        #   all other positions: >= 7 informative reads
+        # At min_ninfo_pos=6, positions 1 and 5 are masked.
+        dataset = self.dataset(only_mut=["ag"], min_ninfo_pos=6)
+        self.assertListEqual(extract_positions(dataset), [2, 3, 4, 6, 7, 8])
+        self.assertListEqual(extract_read_nums(dataset), [[0, 1, 2, 3, 4, 5, 6, 7, 8]])
+
     def test_min_finfo_read_1(self):
         dataset = self.dataset(min_finfo_read=1.0)
         self.assertListEqual(extract_positions(dataset), [1, 2, 3, 4, 5, 6, 7, 8])
