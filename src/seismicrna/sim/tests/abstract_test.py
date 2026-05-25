@@ -731,7 +731,7 @@ class TestFormatParamTokens(AbstractTestBase):
 
     def _full_means(self) -> dict[str, float]:
         # Same key set _calc_ratio_stats returns, with arbitrary values.
-        means = {"loq": 0.01, "nm": 0.001, "nd": 0.5}
+        means = {"loq": 0.01, "nm": 0.001}
         for base in "acgt":
             means[f"{base}m"] = 0.002
             for other in "acgt":
@@ -741,15 +741,6 @@ class TestFormatParamTokens(AbstractTestBase):
 
     def _full_fvar(self) -> dict[str, float]:
         return {"a": 0.001, "c": 0.001, "g": 0.001, "t": 0.001}
-
-    def test_nd_token_not_emitted(self):
-        tokens = _format_param_tokens(
-            self._full_means(), self._full_fvar(), self._full_means(), self._full_fvar()
-        )
-        joined = " ".join(tokens)
-        self.assertNotIn(
-            " nd ", joined, msg=f"'nd' leaked into params output: {joined}"
-        )
 
     def test_emitted_tokens_round_trip_to_make_pmut_means(self):
         # Build pmut-paired/unpaired tuple lists from the (filtered) means
@@ -788,8 +779,7 @@ class TestFormatParamTokens(AbstractTestBase):
         )
 
     def test_all_other_keys_still_emitted(self):
-        # Every means key except "nd" must appear, on both paired and
-        # unpaired sides.
+        # Every means key must appear, on both paired and unpaired sides.
         means = self._full_means()
         tokens = _format_param_tokens(
             means, self._full_fvar(), means, self._full_fvar()
@@ -800,8 +790,6 @@ class TestFormatParamTokens(AbstractTestBase):
         vmut_p = opt_vmut_paired.opts[-1]
         vmut_u = opt_vmut_unpaired.opts[-1]
         for key in means:
-            if key == "nd":
-                continue
             self.assertIn(f"{pmut_p} {key} ", joined)
             self.assertIn(f"{pmut_u} {key} ", joined)
         for base in self._full_fvar():
