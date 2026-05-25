@@ -1210,11 +1210,15 @@ opt_gap_mode = Option(
     "regions to fill the gaps",
 )
 
-opt_threshold_multiplier = Option(
-    ("--threshold-multiplier",),
+opt_threshold_divisor = Option(
+    ("--threshold-divisor",),
     type=float,
     default=1.0,
-    help="Multiply the threshold for detecting modules by this factor",
+    help=(
+        "Divide the threshold for detecting modules by this value. "
+        "Increasing this value produces larger modules (more sensitivity, "
+        "less specificity), and vice versa."
+    ),
 )
 
 # Fold

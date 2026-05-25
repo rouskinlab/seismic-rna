@@ -116,7 +116,7 @@ from .arg import (
     opt_erase_tiles,
     opt_pair_fdr,
     opt_min_pairs,
-    opt_threshold_multiplier,
+    opt_threshold_divisor,
     opt_min_cluster_length,
     opt_max_cluster_length,
     opt_gap_mode,
@@ -632,7 +632,7 @@ TileMinOverlapF = OptionReportField(opt_tile_min_overlap)
 EraseTilesF = OptionReportField(opt_erase_tiles)
 PairFdrF = OptionReportField(opt_pair_fdr)
 MinPairsF = OptionReportField(opt_min_pairs)
-ThresholdMultiplierF = OptionReportField(opt_threshold_multiplier)
+ThresholdDivisorF = OptionReportField(opt_threshold_divisor)
 MinClusterLengthF = OptionReportField(opt_min_cluster_length)
 MaxClusterLengthF = OptionReportField(opt_max_cluster_length)
 GapModeF = OptionReportField(opt_gap_mode)

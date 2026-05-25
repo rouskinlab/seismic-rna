@@ -26,7 +26,7 @@ from ..core.error import IncompatibleValuesError, OutOfBoundsError
 from ..core.logs import logger
 from ..core.seq import DNA, unite
 from ..core.task import as_list_of_tuples, dispatch
-from ..core.validate import require_atleast
+from ..core.validate import require_atleast, require_greater
 from ..core.write import need_write
 from ..cluster.report import ClusterReport
 from ..core.report import BestKF
@@ -293,15 +293,15 @@ def _calc_modules_from_pairs(
     pair_fdr: float,
     min_mut_gap: int,
     min_pairs: int = 1,
-    threshold_multiplier: float = 1.0,
+    threshold_divisor: float = 1.0,
     preserve_null_pair_dists: bool = False,
     max_iter: int = 10000,
 ):
     logger.routine("Began calculating modules")
     require_atleast("min_mut_gap", min_mut_gap, 0, classes=int)
     require_atleast("min_pairs", min_pairs, 1, classes=int)
-    require_atleast(
-        "threshold_multiplier", threshold_multiplier, 0.0, classes=(float, int)
+    require_greater(
+        "threshold_divisor", threshold_divisor, 0.0, classes=(float, int)
     )
     finished = set()
     # First, naively aggregate all pairs that overlap.
@@ -331,7 +331,7 @@ def _calc_modules_from_pairs(
                 null_spans_per_pos = _calc_null_span_per_pos_rand_dists(
                     module_pairs, end5, end3, min_mut_gap
                 )
-            threshold = pair_fdr * null_spans_per_pos * threshold_multiplier
+            threshold = pair_fdr * null_spans_per_pos / threshold_divisor
             sufficient_spans_per_pos = spans_per_pos > threshold
             if sufficient_spans_per_pos.all():
                 # All positions have enough pairs spanning them: keep
@@ -502,7 +502,7 @@ def _calc_cluster_modules(
     probe: str,
     min_mut_gap: int | None,
     min_pairs: int,
-    threshold_multiplier: float,
+    threshold_divisor: float,
     min_length: int,
     max_length: int,
     gap_mode: str,
@@ -561,7 +561,7 @@ def _calc_cluster_modules(
         pair_fdr,
         min_mut_gap,
         min_pairs,
-        threshold_multiplier=threshold_multiplier,
+        threshold_divisor=threshold_divisor,
     )
     n_modules_before_filter = len(modules)
     # Determine what to do with gaps between regions.
@@ -611,7 +611,7 @@ def ensembles(
     erase_tiles: bool,
     pair_fdr: float,
     min_pairs: int,
-    threshold_multiplier: float,
+    threshold_divisor: float,
     min_cluster_length: int,
     max_cluster_length: int,
     gap_mode: str,
@@ -673,6 +673,7 @@ def ensembles(
     cluster_pos_table: bool,
     cluster_abundance_table: bool,
     verify_times: bool,
+    self_contained: bool,
     seed: int | None,
 ):
     """Run one IDmut report through the full ensembles pipeline."""
@@ -745,6 +746,7 @@ def ensembles(
             max_filter_iter=max_filter_iter,
             filter_pos_table=False,
             filter_read_table=False,
+            self_contained=self_contained,
             brotli_level=brotli_level,
             num_cpus=num_cpus,
             force=force,
@@ -758,7 +760,7 @@ def ensembles(
             probe=probe,
             min_mut_gap=min_mut_gap,
             min_pairs=min_pairs,
-            threshold_multiplier=threshold_multiplier,
+            threshold_divisor=threshold_divisor,
             min_length=min_cluster_length,
             max_length=max_cluster_length,
             gap_mode=gap_mode,
@@ -803,6 +805,7 @@ def ensembles(
                 max_filter_iter=max_filter_iter,
                 filter_pos_table=filter_pos_table,
                 filter_read_table=filter_read_table,
+                self_contained=self_contained,
                 brotli_level=brotli_level,
                 num_cpus=num_cpus,
                 force=force,
@@ -836,6 +839,7 @@ def ensembles(
                 cluster_pos_table=cluster_pos_table,
                 cluster_abundance_table=cluster_abundance_table,
                 verify_times=verify_times,
+                self_contained=self_contained,
                 brotli_level=brotli_level,
                 num_cpus=num_cpus,
                 force=force,
@@ -864,7 +868,7 @@ def ensembles(
             erase_tiles=erase_tiles,
             pair_fdr=pair_fdr,
             min_pairs=min_pairs,
-            threshold_multiplier=threshold_multiplier,
+            threshold_divisor=threshold_divisor,
             min_cluster_length=min_cluster_length,
             max_cluster_length=max_cluster_length,
             gap_mode=gap_mode,
