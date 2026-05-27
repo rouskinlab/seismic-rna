@@ -233,24 +233,23 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
         p_noclose_gap = np.empty(
             (self.max_read_length, self._real_hist.columns.size), dtype=float
         )
-        if p_noclose_gap.size > 0:
-            p_noclose_gap[0] = 1.0
-        logger.detail(
-            "Calculating null fraction of reads in which every pair "
-            "of mutations would have at least N bases between them, "
-            f"from N = 1 to {self.max_read_length - 1}"
-        )
-        for gap in range(1, self.max_read_length):
-            p_noclose_ends = calc_p_noclose_given_ends_auto(p_mut.values, gap)
-            p_noclose_gap[gap] = triu_dot(p_noclose_ends, p_ends)
-            logger.detail(f"N = {gap}: {p_noclose_gap[gap]}")
         # For every possible distance, calculate the fraction of reads
         # where the closest two mutations have exactly that distance,
         # and for 0 the fraction of reads with fewer than two mutations.
         p_dist = np.zeros_like(self._real_hist, dtype=float)
-        if p_dist.size > 0:
-            p_dist[0] = p_noclose_gap[self.max_read_length - 1]
-        p_dist[1 : self.max_read_length] = -np.diff(p_noclose_gap, axis=0)
+        if p_noclose_gap.size > 0 and p_dist.size > 0:
+            p_noclose_gap[0] = 1.0
+            logger.detail(
+                "Calculating null fraction of reads in which every pair "
+                "of mutations would have at least N bases between them, "
+                f"from N = 1 to {self.max_read_length - 1}"
+            )
+            for gap in range(1, self.max_read_length):
+                p_noclose_ends = calc_p_noclose_given_ends_auto(p_mut.values, gap)
+                p_noclose_gap[gap] = triu_dot(p_noclose_ends, p_ends)
+                logger.detail(f"N = {gap}: {p_noclose_gap[gap]}")
+            p_dist[0] = p_noclose_gap[-1]
+            p_dist[1 : self.max_read_length] = -np.diff(p_noclose_gap, axis=0)
         assert np.all(p_dist >= 0.0)
         assert np.allclose(p_dist.sum(axis=0), 1.0)
         # Multiply by the number of reads to obtain the histogram.
