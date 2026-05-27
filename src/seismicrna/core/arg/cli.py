@@ -1509,10 +1509,7 @@ opt_graph_quantile = Option(
 )
 
 opt_window = Option(
-    ("--window",),
-    type=int,
-    default=45,
-    help="Use a sliding window of this many bases",
+    ("--window",), type=int, default=45, help="Use a sliding window of this many bases"
 )
 
 opt_winmin = Option(
