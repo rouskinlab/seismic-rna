@@ -21,7 +21,7 @@ classifiers = [
 ]
 dependencies = [
     "brotli >=1.0",
-    "click >=8.1",
+    "click >=8.3",
     "fastqsplitter >=1.2",
     "kaleido ==0.2.1",
     "networkx >=3.4",

@@ -1509,7 +1509,7 @@ opt_graph_quantile = Option(
 )
 
 opt_window = Option(
-    ("--window", "-w"),
+    ("--window",),
     type=int,
     default=45,
     help="Use a sliding window of this many bases",
@@ -1762,7 +1762,7 @@ opt_include_graph = Option(
 # CT renumbering
 
 opt_ct_pos_5 = Option(
-    ("--ct-pos-5", "-c"),
+    ("--ct-pos-5",),
     type=(Path(exists=True), int),
     multiple=True,
     default=(),
@@ -1818,7 +1818,7 @@ opt_importmm_sample = Option(
 # Simulation
 
 opt_sim_dir = Option(
-    ("--sim-dir", "-o"),
+    ("--sim-dir",),
     type=Path(file_okay=False),
     default=os.path.join(".", "sim"),
     help="Write all simulated files to this directory",
@@ -1832,21 +1832,21 @@ opt_sample_sim = Option(
 )
 
 opt_refs = Option(
-    ("--refs", "-R"),
+    ("--refs",),
     type=str,
     default="sim-refs",
     help="Give this name to the file of simulated references",
 )
 
 opt_ref = Option(
-    ("--ref", "-r"),
+    ("--ref",),
     type=str,
     default="sim-ref",
     help="Give this name to the simulated reference",
 )
 
 opt_reflen = Option(
-    ("--reflen", "-N"),
+    ("--reflen",),
     type=int,
     default=280,
     help="Simulate a reference sequence with this many bases",
@@ -1884,14 +1884,14 @@ opt_min_marcd_sim = Option(
 )
 
 opt_profile_name = Option(
-    ("--profile-name", "-P"),
+    ("--profile-name",),
     type=str,
     default="simulated",
     help="Give the simulated structure and parameters this profile name",
 )
 
 opt_ct_file = Option(
-    ("--ct-file", "-i"),
+    ("--ct-file",),
     type=Path(exists=True, dir_okay=False),
     multiple=True,
     default=(),
@@ -1959,7 +1959,7 @@ opt_length_fvar = Option(
 )
 
 opt_clust_conc = Option(
-    ("--clust-conc", "-c"),
+    ("--clust-conc",),
     type=float,
     default=0.0,
     help="Set the concentration parameter for simulating cluster proportions",
@@ -1974,7 +1974,7 @@ opt_param_dir = Option(
 )
 
 opt_num_reads = Option(
-    ("--num-reads", "-n"),
+    ("--num-reads",),
     type=int,
     default=opt_batch_size.default,
     help="Simulate this many reads",
