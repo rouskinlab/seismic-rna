@@ -37,6 +37,7 @@ from ..core.arg import (
     merge_params,
 )
 from ..core.logs import logger
+from ..core.random import get_random_integer_generator
 from ..core.mu.compare import calc_mean_arcsine_distance, calc_pearson
 from ..core.rel import RelPattern
 from ..core.rna import from_ct
@@ -178,6 +179,7 @@ def run(
     seed: int | None,
 ):
     """Simulate FASTQ files from scratch."""
+    seeds = get_random_integer_generator(seed)
     mask_a, mask_c, mask_g, mask_u = set_mask_acgu(
         probe, mask_a, mask_c, mask_g, mask_u
     )
@@ -191,7 +193,7 @@ def run(
                 ref=ref,
                 reflen=reflen,
                 force=force,
-                seed=seed,
+                seed=next(seeds),
             )
         )
         # Simulate the structures.
@@ -248,7 +250,7 @@ def run(
             clust_conc=clust_conc,
             force=force,
             num_cpus=num_cpus,
-            seed=seed,
+            seed=next(seeds),
         )
         # Check if the clusters are sufficiently distinct, unless probe
         # is none, in which case there should be no distinct clusters.
@@ -305,7 +307,7 @@ def run(
         num_reads=num_reads,
         force=force,
         num_cpus=num_cpus,
-        seed=seed,
+        seed=next(seeds),
     )
 
 

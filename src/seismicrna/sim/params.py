@@ -6,6 +6,7 @@ from click import command
 
 from . import clusts as clusts_mod, ends as ends_mod, muts as muts_mod
 from ..core.arg import merge_params
+from ..core.random import get_random_integer_generator
 from ..core.run import run_func
 from ..core.seq import DNA
 
@@ -33,6 +34,7 @@ def run(
     seed: int | None,
 ):
     """Simulate parameter files."""
+    seeds = get_random_integer_generator(seed)
     # Since ct_file is used three times, ensure it is not an exhaustible
     # generator.
     ct_file = list(ct_file)
@@ -47,7 +49,7 @@ def run(
         region_primers=region_primers,
         force=force,
         num_cpus=num_cpus,
-        seed=seed,
+        seed=next(seeds),
     )
     ends_mod.run(
         ct_file=ct_file,
@@ -63,7 +65,7 @@ def run(
         clust_conc=clust_conc,
         force=force,
         num_cpus=num_cpus,
-        seed=seed,
+        seed=next(seeds),
     )
 
 

@@ -40,6 +40,7 @@ from ..core.arg import (
 )
 from ..core.array import get_length
 from ..core.logs import logger
+from ..core.random import get_random_integer_generator
 from ..core.ngs import HI_QUAL, LO_QUAL
 from ..core.rel import MATCH, NOCOV, SUB_A, SUB_C, SUB_G, SUB_T, DELET
 from ..core.report import SampleF
@@ -349,6 +350,7 @@ def from_param_dir(
     **kwargs,
 ):
     """Simulate a FASTQ file from parameter files."""
+    seeds = get_random_integer_generator(seed)
     sim_dir, _, _ = _get_param_dir_fields(param_dir)
     region, pmut, u5s, u3s, pends, pclust = _load_param_dir(param_dir, profile)
     batches = simulate_batches(
@@ -365,7 +367,7 @@ def from_param_dir(
         p_rev=p_rev,
         batch_size=opt_batch_size.default,
         write_read_names=True,
-        seed=seed,
+        seed=next(seeds),
         **kwargs,
     )
     # Convert each IDmutBatchIO into an IDmutRegionMutsBatch, which is
@@ -382,7 +384,7 @@ def from_param_dir(
         p_rev=p_rev,
         fq_gzip=fq_gzip,
         force=force,
-        seed=seed,
+        seed=next(seeds),
     )
 
 
@@ -457,6 +459,7 @@ def run(
     list[Path]
         Paths of all generated FASTQ files.
     """
+    seeds = get_random_integer_generator(seed)
     min_mut_gap, mut_collisions = set_mut_gap_params(probe, min_mut_gap, mut_collisions)
     min_mut_gap_weights, injected_mut_probs = set_sim_mut_params(
         probe, min_mut_gap_weights, injected_mut_probs
@@ -484,7 +487,7 @@ def run(
                         p_rev=reverse_fraction,
                         fq_gzip=fq_gzip,
                         force=force,
-                        seed=seed,
+                        seed=next(seeds),
                     ),
                 )
             )
@@ -513,7 +516,7 @@ def run(
                         fq_gzip=fq_gzip,
                         num_reads=num_reads,
                         force=force,
-                        seed=seed,
+                        seed=next(seeds),
                     ),
                 )
             )

@@ -509,8 +509,9 @@ def _sim_reads_dropped(
         nonzero=[CLUSTERS],
     )
     # Simulate the clusters and the mutations in each read.
-    clusts = _sim_clusters_dropped(p_clust_given_ends_noclose[end5s, end3s], seed)
-    muts = _sim_muts_dropped(end5s, end3s, clusts, p_mut, min_mut_gap, seed)
+    seeds = get_random_integer_generator(seed)
+    clusts = _sim_clusters_dropped(p_clust_given_ends_noclose[end5s, end3s], next(seeds))
+    muts = _sim_muts_dropped(end5s, end3s, clusts, p_mut, min_mut_gap, next(seeds))
     # Merge the mutation data and 5'/3' ends into one array of reads.
     reads = np.hstack([muts, end5s[:, np.newaxis], end3s[:, np.newaxis]], dtype=int)
     return reads, clusts
@@ -560,9 +561,10 @@ def _sim_reads_merged(
         nonzero=[CLUSTERS],
     )
     # Simulate the clusters and the mutations in each read.
+    seeds = get_random_integer_generator(seed)
     n_reads = dims[READS]
-    clusts = _sim_clusters_merged(p_clust, n_reads, seed)
-    muts = _sim_muts_merged(end5s, end3s, clusts, p_mut, min_mut_gap, seed)
+    clusts = _sim_clusters_merged(p_clust, n_reads, next(seeds))
+    muts = _sim_muts_merged(end5s, end3s, clusts, p_mut, min_mut_gap, next(seeds))
     # Merge the mutation data and 5'/3' ends into one array of reads.
     reads = np.hstack([muts, end5s[:, np.newaxis], end3s[:, np.newaxis]], dtype=int)
     return reads, clusts
