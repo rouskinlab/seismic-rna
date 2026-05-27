@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.25.2 (2026-05-27)
+
+### Bug fixes
+
+- Fixed several collisions between the short names of options.
+- Fixed an `AssertionError` in `seismic graph mutdist` if given 0 reads.
+- Fixed a lack of correction for multiple comparisons in `jackpot_test.py` that was causing the tests to fail.
+
 ## 0.25.1 (2026-05-27)
 
 ### Bug fixes
