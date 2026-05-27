@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.25.1 (2026-05-27)
+
+### Bug fixes
+
+- Fixed `seismic sim total` using the same random seed for every attempt if `--seed` was given.
+- Fixed `seismic graph mutdist` crashing if given 0 reads.
+
 ## 0.25.0 (2026-05-25)
 
 ### Breaking changes
