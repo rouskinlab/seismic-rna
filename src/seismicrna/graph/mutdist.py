@@ -250,8 +250,8 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
                 logger.detail(f"N = {gap}: {p_noclose_gap[gap]}")
             p_dist[0] = p_noclose_gap[-1]
             p_dist[1 : self.max_read_length] = -np.diff(p_noclose_gap, axis=0)
+            assert np.allclose(p_dist.sum(axis=0), 1.0)
         assert np.all(p_dist >= 0.0)
-        assert np.allclose(p_dist.sum(axis=0), 1.0)
         # Multiply by the number of reads to obtain the histogram.
         logger.routine(f"Ended calculating null histogram for {self}")
         return pd.DataFrame(

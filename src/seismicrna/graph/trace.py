@@ -358,8 +358,8 @@ def iter_rolling_auc_traces(aucs: pd.DataFrame, profile: str):
         yield get_rolling_auc_trace(auc, profile, str(struct))
 
 
-def get_line_trace(gini: pd.Series, cluster: str):
-    return go.Scatter(x=gini.index.get_level_values(POS_NAME), y=gini, name=cluster)
+def get_line_trace(data: pd.Series, cluster: str):
+    return go.Scatter(x=data.index.get_level_values(POS_NAME), y=data, name=cluster)
 
 
 def iter_line_traces(lines: pd.DataFrame):
