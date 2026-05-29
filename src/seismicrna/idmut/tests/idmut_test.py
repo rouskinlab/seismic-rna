@@ -1352,6 +1352,7 @@ class TestIDmutsLinesPaired(ut.TestCase):
         clip_end5: int = 0,
         clip_end3: int = 0,
         read1rev: bool = False,
+        overhangs: bool = True,
     ):
         """Generate a SAM line from the given information, and use it
         to compute the relationships."""
@@ -1390,7 +1391,7 @@ class TestIDmutsLinesPaired(ut.TestCase):
             ord(OK_QUAL),
             insert3,
             ambindel,
-            True,
+            overhangs,
             clip_end5,
             clip_end3,
         )
@@ -1405,7 +1406,7 @@ class TestIDmutsLinesPaired(ut.TestCase):
             ord(OK_QUAL),
             insert3,
             ambindel,
-            True,
+            overhangs,
             clip_end5,
             clip_end3,
         )
@@ -1462,6 +1463,50 @@ class TestIDmutsLinesPaired(ut.TestCase):
                         expect_rels,
                     )
                 self.assertEqual(result, expect)
+
+    def test_overhang_dovetail(self):
+        """Mates dovetail: each extends past the other's far end.
+
+        With --no-overhangs, the forward mate's 3' overhang and the
+        reverse mate's 5' overhang are trimmed before merging, so a
+        substitution in a trimmed overhang is dropped while one in the
+        overlap (present in both mates) is kept. With --overhangs, the
+        overhangs and their substitutions are retained.
+
+        R1(fwd)   GAACGT    (pos 3-8; SUB_A at pos 4)
+        R2(rev) AAGAAC      (pos 1-6; SUB_A at pos 2 and pos 4)
+        Ref     ACGTACGT
+        Pos     12345678
+        """
+        refseq = DNA("ACGTACGT")
+        read1 = DNA("GAACGT")  # forward mate, positions 3-8
+        read2 = DNA("AAGAAC")  # reverse mate, positions 1-6
+        qual = OK_QUAL * 6
+        kwargs = dict(
+            ref="ref",
+            refseq=refseq,
+            read1=read1,
+            qual1=qual,
+            cigar1="6M",
+            end51=3,
+            read2=read2,
+            qual2=qual,
+            cigar2="6M",
+            end52=1,
+        )
+        # Overhangs retained: forward keeps positions 3-8, reverse keeps
+        # 1-6, and both overhang substitutions are recorded.
+        self.assertEqual(
+            self.idmut(overhangs=True, **kwargs),
+            (([3, 1], [8, 6]), {2: SUB_A, 4: SUB_A}),
+        )
+        # Overhangs trimmed: both mates reduce to the overlap (3-6). The
+        # reverse mate's 5' overhang (positions 1-2, with SUB_A at pos 2)
+        # and the forward mate's 3' overhang (positions 7-8) are removed.
+        # The shared SUB_A at position 4 remains.
+        self.assertEqual(
+            self.idmut(overhangs=False, **kwargs), (([3, 3], [6, 6]), {4: SUB_A})
+        )
 
     def test_gap(self):
         """Reads are separated by a gap.

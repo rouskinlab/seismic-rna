@@ -659,7 +659,7 @@ static void trim_end5s(SamRead* read)
     for (size_t i = 0; i < num_segs; i++)
     {
         size_t seg_start = (read->end5s).ends[i];
-        (read->end5s).ends[i] = min(seg_start, read->ref_end5);
+        (read->end5s).ends[i] = max(seg_start, read->ref_end5);
     }
 }
 
@@ -670,7 +670,7 @@ static void trim_end3s(SamRead* read)
     for (size_t i = 0; i < num_segs; i++)
     {
         size_t seg_end = (read->end3s).ends[i];
-        (read->end3s).ends[i] = max(read->ref_end3, seg_end);
+        (read->end3s).ends[i] = min(read->ref_end3, seg_end);
     }
 }
 
@@ -885,9 +885,15 @@ static int parse_sam_line(SamRead *read,
     //     ^read->end (= 4 + read->seq)
     //      ^end      (= 5 + read->seq)
     // It is possible here for end to be NULL, if the line ended at the
-    // read sequence (with the quality string missing). If so, (end - 1)
-    // will overflow, but that's okay because this function will catch
-    // the error and return -1 when it tries to parse the read quality.
+    // read sequence (with the quality string missing). Computing
+    // (end - 1) on a NULL pointer would be undefined behavior, so guard
+    // against it explicitly and report the missing quality string as an
+    // error (the same error that parsing the read quality would raise).
+    if (end == NULL)
+    {
+        PyErr_SetString(IDmutError, "Failed to parse read quality");
+        return -1;
+    }
     read->end = end - 1;
 
     // Read length (using pointer arithmetic)
@@ -1154,9 +1160,12 @@ static size_t find_indel_index(IndelPod *pod, size_t label)
             return indel_index;
         }
     }
-    // In this algorithm, the label must always exist.
+    // In this algorithm, the label must always exist. If it somehow
+    // does not, abort rather than return a poison index (e.g. SIZE_MAX),
+    // which the caller would use to index pod->indels far out of bounds
+    // and silently corrupt memory.
     assert(0);
-    return -1;
+    abort();
 }
 
 
@@ -1785,7 +1794,7 @@ which will cause undefined and probably erroneous behavior.
 Do NOT call this function more than once on the same SamRead without
 first calling free_read(), or else the memory originally allocated to
 read->rels and read->pods will leak.
-Make SURE to call free_read() eventually, or else memory in pods->rels
+Make SURE to call free_read() eventually, or else memory in read->rels
 will leak. */
 static int id_muts_line(SamRead *read,
                         const char *line,
@@ -2173,6 +2182,7 @@ static inline int put_rel_in_dict(PyObject *rels_dict,
 static int put_rels_in_dict(PyObject *rels_dict,
                             const unsigned char *rels,
                             size_t read_pos,
+                            size_t num_rels,
                             size_t end5,
                             size_t end3)
 {
@@ -2187,6 +2197,8 @@ static int put_rels_in_dict(PyObject *rels_dict,
         // Since rels is an array whose 0th index is the read's mapping
         // position, subtract the mapping position from the position of
         // the relationship to find its 0-based index in rels.
+        // The index must lie within the relationship array.
+        assert(pos - read_pos < num_rels);
         unsigned char rel = rels[pos - read_pos];
         // It is impossible for any relationship within the region to be
         // irreconcilable (0) for one read: only between two reads.
@@ -2280,6 +2292,10 @@ static int put_2_rels_in_dict(PyObject *rels_dict,
             assert(seg5 >= rev_read->pos);
             for (size_t pos = seg5; pos <= seg3; pos++)
             {
+                // The relationship index must lie within each read's
+                // relationship array (whose length is num_rels).
+                assert(pos - fwd_read->pos < fwd_read->num_rels);
+                assert(pos - rev_read->pos < rev_read->num_rels);
                 unsigned char rel = (fwd_read->rels[pos - fwd_read->pos]
                                      &
                                      rev_read->rels[pos - rev_read->pos]);
@@ -2295,6 +2311,7 @@ static int put_2_rels_in_dict(PyObject *rels_dict,
             if (put_rels_in_dict(rels_dict,
                                  fwd_read->rels,
                                  fwd_read->pos,
+                                 fwd_read->num_rels,
                                  seg5,
                                  seg3))
             {
@@ -2307,6 +2324,7 @@ static int put_2_rels_in_dict(PyObject *rels_dict,
             if (put_rels_in_dict(rels_dict,
                                  rev_read->rels,
                                  rev_read->pos,
+                                 rev_read->num_rels,
                                  seg5,
                                  seg3))
             {
@@ -2515,8 +2533,10 @@ static PyObject *py_id_muts_lines(PyObject *self, PyObject *args)
             if (validate_pair(&read1, &read2))
                 {return cleanup(&read1, &read2, ends_rels_tuple);}
 
-            finalize_ends(&read1);
-            finalize_ends(&read2);
+            if (finalize_ends(&read1))
+                {return cleanup(&read1, &read2, ends_rels_tuple);}
+            if (finalize_ends(&read2))
+                {return cleanup(&read1, &read2, ends_rels_tuple);}
 
             // Determine which read is forward and which is reverse.
             if (read2.reverse)
@@ -2559,7 +2579,8 @@ static PyObject *py_id_muts_lines(PyObject *self, PyObject *args)
             fwd_read = &read1;
             rev_read = &read1;
             // Finalize ends for only read1.
-            finalize_ends(&read1);
+            if (finalize_ends(&read1))
+                {return cleanup(&read1, &read2, ends_rels_tuple);}
             size_t num_segs_fwd = get_num_segs(fwd_read);
             for (size_t i = 0; i < num_segs_fwd; i++)
             {
@@ -2568,6 +2589,7 @@ static PyObject *py_id_muts_lines(PyObject *self, PyObject *args)
                 if (put_rels_in_dict(rels_dict,
                                      read1.rels,
                                      read1.pos,
+                                     read1.num_rels,
                                      seg5,
                                      seg3))
                     {return cleanup(&read1, &read2, ends_rels_tuple);}
@@ -2608,7 +2630,8 @@ static PyObject *py_id_muts_lines(PyObject *self, PyObject *args)
     else
     {
         // The read comprises only a single mate.
-        finalize_ends(&read1);
+        if (finalize_ends(&read1))
+            {return cleanup(&read1, &read2, ends_rels_tuple);}
         size_t num_segs = get_num_segs(&read1);
         for (size_t i = 0; i < num_segs; i++)
             {
@@ -2617,6 +2640,7 @@ static PyObject *py_id_muts_lines(PyObject *self, PyObject *args)
                 if (put_rels_in_dict(rels_dict,
                                      read1.rels,
                                      read1.pos,
+                                     read1.num_rels,
                                      seg5,
                                      seg3))
                     {return cleanup(&read1, &read2, ends_rels_tuple);}
@@ -2674,8 +2698,14 @@ PyMODINIT_FUNC PyInit_idmut(void)
 
     // Define a new type of Python exception.
     IDmutError = PyErr_NewException("idmut.IDmutError", NULL, NULL);
+    if (IDmutError == NULL)
+    {
+        // Creating the exception type failed. Stop and return NULL.
+        Py_DECREF(module);
+        return NULL;
+    }
     // Add the exception type to the module.
-    Py_XINCREF(IDmutError);
+    Py_INCREF(IDmutError);
     if (PyModule_AddObject(module, "IDmutError", IDmutError))
     {
         // Adding the exception type failed. Stop and return NULL.
