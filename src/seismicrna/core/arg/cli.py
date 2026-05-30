@@ -7,6 +7,7 @@ from typing import Iterable
 
 from click import Argument, Choice, Option, Parameter, Path
 
+from .glob import GlobPath, expand_ct_pos_5, flatten_glob_results
 from ..io import DEFAULT_BROTLI_LEVEL
 from ..seq import DNA
 
@@ -202,25 +203,28 @@ opt_force = Option(
 # Sequencing read (FASTQ) files
 opt_fastqz = Option(
     ("--fastqz", "-z"),
-    type=Path(exists=True),
+    type=GlobPath(exists=True),
     multiple=True,
     default=(),
+    callback=flatten_glob_results,
     help="FASTQ file(s) of single-end reads",
 )
 
 opt_fastqy = Option(
     ("--fastqy", "-y"),
-    type=Path(exists=True),
+    type=GlobPath(exists=True),
     multiple=True,
     default=(),
+    callback=flatten_glob_results,
     help="FASTQ file(s) of paired-end reads with mates 1 and 2 interleaved",
 )
 
 opt_fastqx = Option(
     ("--fastqx", "-x"),
-    type=Path(exists=True),
+    type=GlobPath(exists=True),
     multiple=True,
     default=(),
+    callback=flatten_glob_results,
     help="FASTQ files of paired-end reads with mates 1 and 2 in separate files",
 )
 
@@ -319,25 +323,28 @@ opt_read_pos = Option(
 
 opt_dmfastqz = Option(
     ("--dmfastqz", "-Z"),
-    type=Path(exists=True, file_okay=True),
+    type=GlobPath(exists=True, file_okay=True),
     multiple=True,
     default=(),
+    callback=flatten_glob_results,
     help="Demultiplexed FASTQ files of single-end reads",
 )
 
 opt_dmfastqy = Option(
     ("--dmfastqy", "-Y"),
-    type=Path(exists=True, file_okay=True),
+    type=GlobPath(exists=True, file_okay=True),
     multiple=True,
     default=(),
+    callback=flatten_glob_results,
     help="Demultiplexed FASTQ files of paired-end reads interleaved in one file",
 )
 
 opt_dmfastqx = Option(
     ("--dmfastqx", "-X"),
-    type=Path(exists=True, file_okay=True),
+    type=GlobPath(exists=True, file_okay=True),
     multiple=True,
     default=(),
+    callback=flatten_glob_results,
     help="Demultiplexed FASTQ files of mate 1 and mate 2 reads",
 )
 
@@ -815,9 +822,10 @@ opt_mask_pos = Option(
 
 opt_mask_pos_file = Option(
     ("--mask-pos-file",),
-    type=Path(exists=True),
+    type=GlobPath(exists=True),
     multiple=True,
     default=(),
+    callback=flatten_glob_results,
     help="Mask positions in references from a file",
 )
 
@@ -831,9 +839,10 @@ opt_drop_read = Option(
 
 opt_drop_read_file = Option(
     ("--drop-read-file",),
-    type=Path(exists=True),
+    type=GlobPath(exists=True),
     multiple=True,
     default=(),
+    callback=flatten_glob_results,
     help="Drop the reads with names in this file",
 )
 
@@ -1541,16 +1550,17 @@ opt_terminal_pairs = Option(
 
 opt_struct_file = Option(
     ("--struct-file",),
-    type=Path(exists=True, dir_okay=True),
+    type=GlobPath(exists=True, dir_okay=True),
     multiple=True,
     default=(),
+    callback=flatten_glob_results,
     help="Compare mutational profiles to the structure(s) in this CT file",
 )
 
 opt_min_aucroc = Option(
     ("--min-aucroc",),
     type=float,
-    default=0.85,
+    default=0.0,
     help="Skip tables/profiles where the AUC-ROC is less than this value",
 )
 
@@ -1760,9 +1770,10 @@ opt_include_graph = Option(
 
 opt_ct_pos_5 = Option(
     ("--ct-pos-5",),
-    type=(Path(exists=True), int),
+    type=(GlobPath(exists=True), int),
     multiple=True,
     default=(),
+    callback=expand_ct_pos_5,
     help="Connectivity table (CT) file or directory of CT files "
     "and the 5' position to assign to each file",
 )
@@ -1889,9 +1900,10 @@ opt_profile_name = Option(
 
 opt_ct_file = Option(
     ("--ct-file",),
-    type=Path(exists=True, dir_okay=False),
+    type=GlobPath(exists=True, dir_okay=False),
     multiple=True,
     default=(),
+    callback=flatten_glob_results,
     help="Simulate parameters using the structure(s) in this CT file",
 )
 
@@ -1964,9 +1976,10 @@ opt_clust_conc = Option(
 
 opt_param_dir = Option(
     ("--param-dir", "-d"),
-    type=Path(exists=True, file_okay=False),
+    type=GlobPath(exists=True, file_okay=False),
     multiple=True,
     default=(),
+    callback=flatten_glob_results,
     help="Simulate data using parameter files in this directory",
 )
 

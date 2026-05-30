@@ -33,6 +33,13 @@ FILTER1="$OUT_DIR/$SAMPLE1/filter/$REF/full"
 FILTER1_70="$OUT_DIR/$SAMPLE1/filter/$REF/1-70"
 CLUSTER1="$OUT_DIR/$SAMPLE1/cluster/$REF"
 
+# -- Wildcard patterns matching the same paths (for glob expansion tests) ------
+CT_FILE_GLOB="$SIM_DIR/params/$REF/full/simulated.c?"
+PARAM_DIR_GLOB="$SIM_DIR/params/$REF/ful?"
+SAMPLE1_DIR_GLOB="$SAMPLES_DIR/sample[1]"
+SAMPLE2_DIR_GLOB="$SAMPLES_DIR/sample[2]"
+BOTH_SAMPLES_DIR_GLOB="$SAMPLES_DIR/sample[12]"
+
 # -- Helpers -------------------------------------------------------------------
 step()    { echo; echo "=== $* ==="; }
 substep() { echo "  -- $*"; }
@@ -89,11 +96,24 @@ seismic --log "" --exit-on-error sim muts \
     --force --seed 0
 ok "sim muts"
 
+substep "2c-glob. sim muts (wildcard --ct-file)"
+seismic --log "" --exit-on-error sim muts \
+    --ct-file "$CT_FILE_GLOB" \
+    $MUT_RATES \
+    --force --seed 0
+ok "sim muts (wildcard --ct-file)"
+
 substep "2d. sim ends"
 seismic --log "" --exit-on-error sim ends \
     --ct-file "$CT_FILE" \
     --force
 ok "sim ends"
+
+substep "2d-glob. sim ends (wildcard --ct-file)"
+seismic --log "" --exit-on-error sim ends \
+    --ct-file "$CT_FILE_GLOB" \
+    --force
+ok "sim ends (wildcard --ct-file)"
 
 substep "2e. sim clusts"
 seismic --log "" --exit-on-error sim clusts \
@@ -101,12 +121,25 @@ seismic --log "" --exit-on-error sim clusts \
     --force --seed 0
 ok "sim clusts"
 
+substep "2e-glob. sim clusts (wildcard --ct-file)"
+seismic --log "" --exit-on-error sim clusts \
+    --ct-file "$CT_FILE_GLOB" \
+    --force --seed 0
+ok "sim clusts (wildcard --ct-file)"
+
 substep "2f. sim params  (runs muts + ends + clusts together)"
 seismic --log "" --exit-on-error sim params \
     --ct-file "$CT_FILE" \
     $MUT_RATES \
     --force --seed 0
 ok "sim params"
+
+substep "2f-glob. sim params (wildcard --ct-file)"
+seismic --log "" --exit-on-error sim params \
+    --ct-file "$CT_FILE_GLOB" \
+    $MUT_RATES \
+    --force --seed 0
+ok "sim params (wildcard --ct-file)"
 
 substep "2g. sim fastq - sample1 (overwrite)"
 seismic --log "" --exit-on-error sim fastq \
@@ -116,6 +149,14 @@ seismic --log "" --exit-on-error sim fastq \
     --force --seed 0
 ok "sim fastq (sample1)"
 
+substep "2g-glob. sim fastq - sample1 (wildcard --param-dir)"
+seismic --log "" --exit-on-error sim fastq \
+    --param-dir "$PARAM_DIR_GLOB" \
+    --sample "$SAMPLE1" \
+    --num-reads $NUM_READS \
+    --force --seed 0
+ok "sim fastq (sample1, wildcard --param-dir)"
+
 substep "2h. sim fastq - sample2 (new)"
 seismic --log "" --exit-on-error sim fastq \
     --param-dir "$PARAM_DIR" \
@@ -124,6 +165,14 @@ seismic --log "" --exit-on-error sim fastq \
     --seed 1
 ok "sim fastq (sample2)"
 
+substep "2h-glob. sim fastq - sample2 (wildcard --param-dir)"
+seismic --log "" --exit-on-error sim fastq \
+    --param-dir "$PARAM_DIR_GLOB" \
+    --sample "$SAMPLE2" \
+    --num-reads $NUM_READS \
+    --force --seed 1
+ok "sim fastq (sample2, wildcard --param-dir)"
+
 substep "2i. sim idmut - sample1"
 seismic --log "" --exit-on-error sim idmut \
     --param-dir "$PARAM_DIR" \
@@ -131,6 +180,14 @@ seismic --log "" --exit-on-error sim idmut \
     --num-reads $NUM_READS \
     --force --seed 0
 ok "sim idmut (sample1)"
+
+substep "2i-glob. sim idmut - sample1 (wildcard --param-dir)"
+seismic --log "" --exit-on-error sim idmut \
+    --param-dir "$PARAM_DIR_GLOB" \
+    --sample "$SAMPLE1" \
+    --num-reads $NUM_READS \
+    --force --seed 0
+ok "sim idmut (sample1, wildcard --param-dir)"
 
 # ===============================================================================
 # PHASE 3 - seismic align
@@ -144,12 +201,28 @@ seismic --log "" --exit-on-error align \
     --out-dir  "$OUT_DIR"
 ok "align (sample1, default)"
 
+substep "3a-glob. align - sample1 (wildcard --dmfastqx)"
+seismic --log "" --exit-on-error align \
+    "$FASTA" \
+    --dmfastqx "$SAMPLE1_DIR_GLOB" \
+    --out-dir  "$OUT_DIR" \
+    --force
+ok "align (sample1, wildcard --dmfastqx)"
+
 substep "3b. align - sample2"
 seismic --log "" --exit-on-error align \
     "$FASTA" \
     --dmfastqx "$SAMPLES_DIR/$SAMPLE2" \
     --out-dir  "$OUT_DIR"
 ok "align (sample2)"
+
+substep "3b-glob. align - sample2 (wildcard --dmfastqx)"
+seismic --log "" --exit-on-error align \
+    "$FASTA" \
+    --dmfastqx "$SAMPLE2_DIR_GLOB" \
+    --out-dir  "$OUT_DIR" \
+    --force
+ok "align (sample2, wildcard --dmfastqx)"
 
 substep "3c. align - sample1, end-to-end alignment"
 seismic --log "" --exit-on-error align \
@@ -159,6 +232,14 @@ seismic --log "" --exit-on-error align \
     --bt2-end-to-end --force
 ok "align (end-to-end)"
 
+substep "3c-glob. align - sample1, end-to-end (wildcard --dmfastqx)"
+seismic --log "" --exit-on-error align \
+    "$FASTA" \
+    --dmfastqx "$SAMPLE1_DIR_GLOB" \
+    --out-dir  "$WORKDIR/align-e2e" \
+    --bt2-end-to-end --force
+ok "align (end-to-end, wildcard --dmfastqx)"
+
 substep "3d. align - sample1, no fastp"
 seismic --log "" --exit-on-error align \
     "$FASTA" \
@@ -166,6 +247,14 @@ seismic --log "" --exit-on-error align \
     --out-dir  "$WORKDIR/align-nofastp" \
     --no-fastp --force
 ok "align (no fastp)"
+
+substep "3d-glob. align - sample1, no fastp (wildcard --dmfastqx)"
+seismic --log "" --exit-on-error align \
+    "$FASTA" \
+    --dmfastqx "$SAMPLE1_DIR_GLOB" \
+    --out-dir  "$WORKDIR/align-nofastp" \
+    --no-fastp --force
+ok "align (no fastp, wildcard --dmfastqx)"
 
 # ===============================================================================
 # PHASE 4 - seismic idmut
@@ -603,6 +692,15 @@ seismic --log "" --exit-on-error wf \
     --probe DMS
 ok "wf (basic)"
 
+substep "12a-glob. wf - basic (wildcard --dmfastqx)"
+seismic --log "" --exit-on-error wf \
+    "$FASTA" \
+    --dmfastqx "$SAMPLE1_DIR_GLOB" \
+    --out-dir  "$WF_OUT/basic" \
+    --probe DMS \
+    --force
+ok "wf (basic, wildcard --dmfastqx)"
+
 substep "12b. wf - with --region-coords, DMS"
 seismic --log "" --exit-on-error wf \
     "$FASTA" \
@@ -611,6 +709,16 @@ seismic --log "" --exit-on-error wf \
     --probe DMS \
     --region-coords "$REF" 1 70
 ok "wf (region-coords)"
+
+substep "12b-glob. wf - with --region-coords (wildcard --dmfastqx)"
+seismic --log "" --exit-on-error wf \
+    "$FASTA" \
+    --dmfastqx "$SAMPLE1_DIR_GLOB" \
+    --out-dir  "$WF_OUT/region-coords" \
+    --probe DMS \
+    --region-coords "$REF" 1 70 \
+    --force
+ok "wf (region-coords, wildcard --dmfastqx)"
 
 substep "12c. wf - with clustering"
 seismic --log "" --exit-on-error wf \
@@ -622,6 +730,17 @@ seismic --log "" --exit-on-error wf \
     --max-clusters 2
 ok "wf (cluster)"
 
+substep "12c-glob. wf - with clustering (wildcard --dmfastqx)"
+seismic --log "" --exit-on-error wf \
+    "$FASTA" \
+    --dmfastqx "$SAMPLE1_DIR_GLOB" \
+    --out-dir  "$WF_OUT/cluster" \
+    --probe DMS \
+    --cluster \
+    --max-clusters 2 \
+    --force
+ok "wf (cluster, wildcard --dmfastqx)"
+
 substep "12d. wf - with fold"
 seismic --log "" --exit-on-error wf \
     "$FASTA" \
@@ -630,6 +749,16 @@ seismic --log "" --exit-on-error wf \
     --probe DMS \
     --fold
 ok "wf (fold)"
+
+substep "12d-glob. wf - with fold (wildcard --dmfastqx)"
+seismic --log "" --exit-on-error wf \
+    "$FASTA" \
+    --dmfastqx "$SAMPLE1_DIR_GLOB" \
+    --out-dir  "$WF_OUT/fold" \
+    --probe DMS \
+    --fold \
+    --force
+ok "wf (fold, wildcard --dmfastqx)"
 
 if [ -n "${RNARTISTCORE:-}" ]; then
     substep "12e. wf - with fold + draw"
@@ -640,6 +769,16 @@ if [ -n "${RNARTISTCORE:-}" ]; then
         --probe DMS \
         --fold --draw
     ok "wf (fold + draw)"
+
+    substep "12e-glob. wf - with fold + draw (wildcard --dmfastqx)"
+    seismic --log "" --exit-on-error wf \
+        "$FASTA" \
+        --dmfastqx "$SAMPLE1_DIR_GLOB" \
+        --out-dir  "$WF_OUT/fold-draw" \
+        --probe DMS \
+        --fold --draw \
+        --force
+    ok "wf (fold + draw, wildcard --dmfastqx)"
 else
     substep "12e. wf - with fold + draw - SKIPPED (RNARTISTCORE not set)"
 fi
@@ -652,6 +791,15 @@ seismic --log "" --exit-on-error wf \
     --probe SHAPE
 ok "wf (SHAPE probe)"
 
+substep "12f-glob. wf - SHAPE probe (wildcard --dmfastqx)"
+seismic --log "" --exit-on-error wf \
+    "$FASTA" \
+    --dmfastqx "$SAMPLE1_DIR_GLOB" \
+    --out-dir  "$WF_OUT/shape" \
+    --probe SHAPE \
+    --force
+ok "wf (SHAPE probe, wildcard --dmfastqx)"
+
 substep "12g. wf - end-to-end alignment"
 seismic --log "" --exit-on-error wf \
     "$FASTA" \
@@ -660,6 +808,16 @@ seismic --log "" --exit-on-error wf \
     --bt2-end-to-end \
     --probe DMS
 ok "wf (end-to-end)"
+
+substep "12g-glob. wf - end-to-end alignment (wildcard --dmfastqx)"
+seismic --log "" --exit-on-error wf \
+    "$FASTA" \
+    --dmfastqx "$SAMPLE1_DIR_GLOB" \
+    --out-dir  "$WF_OUT/e2e" \
+    --bt2-end-to-end \
+    --probe DMS \
+    --force
+ok "wf (end-to-end, wildcard --dmfastqx)"
 
 substep "12h. wf - two samples, cluster + all graphs"
 seismic --log "" --exit-on-error wf \
@@ -680,6 +838,26 @@ seismic --log "" --exit-on-error wf \
     --graph-mutdist \
     --graph-abundance
 ok "wf (multi-sample + all graphs)"
+
+substep "12h-glob. wf - two samples (single wildcard --dmfastqx matches both)"
+seismic --log "" --exit-on-error wf \
+    "$FASTA" \
+    --dmfastqx "$BOTH_SAMPLES_DIR_GLOB" \
+    --out-dir  "$WF_OUT/multi" \
+    --probe DMS \
+    --cluster \
+    --max-clusters 2 \
+    --graph-mprof \
+    --graph-ncov \
+    --graph-mhist \
+    --graph-giniroll \
+    --graph-roc \
+    --graph-aucroll \
+    --graph-poscorr \
+    --graph-mutdist \
+    --graph-abundance \
+    --force
+ok "wf (multi-sample + all graphs, wildcard --dmfastqx)"
 
 # ===============================================================================
 # PHASE 13 - Utility commands
@@ -737,6 +915,13 @@ seismic --log "" --exit-on-error renumct \
     --ct-pos-5 "$CT_FILE" 1 \
     --out-dir "$WORKDIR/renumct"
 ok "renumct"
+
+substep "13i-glob. renumct - renumber CT file (wildcard --ct-pos-5)"
+seismic --log "" --exit-on-error renumct \
+    --ct-pos-5 "$CT_FILE_GLOB" 1 \
+    --out-dir "$WORKDIR/renumct" \
+    --force
+ok "renumct (wildcard --ct-pos-5)"
 
 # ===============================================================================
 rm -r "$WORKDIR"
