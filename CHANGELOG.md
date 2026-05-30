@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.25.3 (2026-05-29)
+
+### New Features
+
+- Options that accept files and can be repeated (e.g. --fastqx, --struct-file) now accept glob patterns on the command line (as long as they are escaped so the shell does not expand them).
+
+### Bug fixes
+
+- Fixed a bug in the C version of IDmut in which overhangs would not be discarded even with the --no-overhangs option; added a unit test to ensure overhangs are removed.
+
 ## 0.25.2 (2026-05-27)
 
 ### Bug fixes
