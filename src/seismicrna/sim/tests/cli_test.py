@@ -77,6 +77,7 @@ class TestSimCLIInvocation(ut.TestCase):
     """Smoke-test each subcommand via CliRunner.
 
     Two tiers:
+
     - --help: validates Click's param parsing and help-text generation
       for every command (including fold, which needs a positional arg).
     - empty invocation ([]): calls run() through the full decorator

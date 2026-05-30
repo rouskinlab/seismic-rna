@@ -191,10 +191,14 @@ def get_subopt(subopt_out: Path, db_target: Path, force: bool = False):
     to a DB file.
 
     RNAsubopt output format (per sequence):
+
+    .. code-block:: text
+
         >NAME [N]          <- title; N = energy window in 0.01 kcal/mol units
         SEQ  MIN_E  MAX_E  <- sequence followed by energy-range values
         STRUCT  ENERGY     <- one line per suboptimal structure
         ...
+
     All fields on lines 2+ are whitespace-separated (3 spaces in practice).
     """
     if need_write(db_target, force):
