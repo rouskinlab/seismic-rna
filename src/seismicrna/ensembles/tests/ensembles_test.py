@@ -42,7 +42,7 @@ class TestCalcTiles(ut.TestCase):
         set_config(verbosity=Level.ERROR)
 
     def tearDown(self):
-        set_config(self._config)
+        set_config(*self._config)
 
     def test_tile_min_overlap_25(self):
         result = _calc_tiles(41, 145, 60, 0.25)
