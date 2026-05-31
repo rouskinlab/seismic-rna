@@ -2,7 +2,6 @@ from abc import ABC
 from functools import cached_property
 
 import numpy as np
-import pandas as pd
 
 from ..core.array import calc_inverse, get_length
 from ..core.batch import ReadBatch, RegionMutsBatch
@@ -42,12 +41,16 @@ class FilterReadBatch(PartialReadBatch):
 class FilterMutsBatch(FilterReadBatch, PartialRegionMutsBatch):
     @property
     def read_weights(self):
-        read_weights = None
+        # Masked reads are excluded by removing them upstream, not by
+        # weighting. The weighted counting path requires a per-cluster
+        # Series num_reads, which this batch (scalar num_reads) does not
+        # provide, so per-read weighting of masked reads is unsupported.
         if self.masked_reads_bool.any():
-            read_weights = np.ones(self.num_reads)
-            read_weights[self.masked_reads_bool] = 0
-            read_weights = pd.DataFrame(read_weights)
-        return read_weights
+            raise NotImplementedError(
+                "Per-read weighting of masked reads is not supported for "
+                f"{type(self).__name__}; remove masked reads instead"
+            )
+        return None
 
 
 def apply_filters(
