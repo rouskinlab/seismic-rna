@@ -458,7 +458,12 @@ class EndCoords(object):
     @cached_property
     def read_lengths(self):
         """Length of each read."""
-        return self.read_end3s - self.read_end5s + 1
+        # Fully-masked reads have read_end3 (0) < read_end5 (1); give them
+        # a length of 0 explicitly rather than relying on unsigned-integer
+        # wraparound of the subtraction.
+        return np.where(
+            self.read_end3s >= self.read_end5s, self.read_end3s - self.read_end5s + 1, 0
+        )
 
     @property
     def pos_dtype(self):

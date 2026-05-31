@@ -345,11 +345,23 @@ def calc_rels_per_read(
             pd.DataFrame, 0, index=cover_per_read.index, columns=cover_per_read.columns
         )
     )
-    counts[NOCOV] = count_base_types(pos_index) - cover_per_read
+    # Reindex to the columns of cover_per_read (all bases in DNA.alph(),
+    # e.g. including N) so that bases absent from pos_index become 0
+    # rather than NaN, and the column order is preserved.
+    counts[NOCOV] = (
+        count_base_types(pos_index).reindex(cover_per_read.columns, fill_value=0)
+        - cover_per_read
+    )
     match = cover_per_read.copy()
     counts[MATCH] = match
     for pos, base in pos_index:
-        for mut, reads in mutations[pos].items():
+        # mutations is expected to contain every position in pos_index;
+        # raise an interpretable error rather than a bare KeyError if not.
+        try:
+            pos_muts = mutations[pos]
+        except KeyError:
+            raise ValueError(f"Position {pos} is missing from mutations") from None
+        for mut, reads in pos_muts.items():
             if reads.size > 0:
                 rows = read_indexes[reads]
                 match[base].values[rows] -= 1
@@ -392,6 +404,12 @@ def calc_covered_reads_per_pos(
     seg_ends_mask: np.ndarray | None,
 ):
     """For each position, find all reads covering it."""
+    # Downstream merge-based set operations (e.g. the confusion matrix's
+    # _count_intersection) require the covering reads to be sorted, which
+    # holds only if read_nums is sorted. read_nums is always supposed to
+    # be sorted ascending, so verify it rather than re-sorting each array.
+    if read_nums.size > 1 and np.diff(read_nums).min() <= 0:
+        raise ValueError(f"read_nums must increase monotonically, but got {read_nums}")
     covering_reads = dict()
     for pos in pos_index.get_level_values(POS_NAME):
         covering_segs = np.logical_and(seg_end5s <= pos, seg_end3s >= pos)

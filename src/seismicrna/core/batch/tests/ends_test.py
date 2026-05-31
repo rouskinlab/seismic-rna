@@ -13,6 +13,8 @@ from seismicrna.core.batch.ends import (
     merge_read_ends,
     sort_segment_ends,
 )
+from seismicrna.core.seq import DNA, Region
+from seismicrna.filter.batch import FilterMutsBatch
 
 rng = np.random.default_rng(0)
 
@@ -564,6 +566,27 @@ class TestFindContiguousReads(ut.TestCase):
         self.assertTrue(
             np.array_equal(find_contiguous_reads(end5s, end3s, mask), expect)
         )
+
+
+class TestReadLengths(ut.TestCase):
+    def test_fully_masked_read_length_zero(self):
+        # A read whose only segment is masked (5' end > 3' end) gets
+        # read_end5 = 1 and read_end3 = 0; its length must be 0, not an
+        # unsigned-integer-wraparound value.
+        region = Region("r", DNA("AAAAA"))  # positions 1-5
+        read_nums = np.array([0, 1])
+        seg_end5s = np.array([[1], [3]])  # read 1 has 5' > 3' (masked)
+        seg_end3s = np.array([[5], [2]])
+        batch = FilterMutsBatch(
+            batch=0,
+            region=region,
+            read_nums=read_nums,
+            seg_end5s=seg_end5s,
+            seg_end3s=seg_end3s,
+            muts={pos: {} for pos in region.unmasked_int},
+        )
+        np.testing.assert_array_equal(batch.read_lengths, [5, 0])
+        self.assertTrue(np.all(batch.read_lengths >= 0))
 
 
 if __name__ == "__main__":

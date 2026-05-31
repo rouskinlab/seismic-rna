@@ -105,11 +105,10 @@ def calc_confusion_matrix(
     """
     logger.routine("Began calculating confusion matrix")
     for pos in pos_index.get_level_values(POS_NAME):
-        # Confirm all mutated reads are also covered.
-        assert np.all(
-            np.searchsorted(covering_reads[pos], mutated_reads[pos])
-            < covering_reads[pos].size
-        )
+        # Confirm all mutated reads are also covered. Use np.isin for a
+        # true membership test (the previous searchsorted check passed
+        # for in-range non-members).
+        assert np.all(np.isin(mutated_reads[pos], covering_reads[pos]))
     if read_weights is not None:
         require_isinstance("read_weights", read_weights, pd.DataFrame)
         if read_weights.index.size > 0:

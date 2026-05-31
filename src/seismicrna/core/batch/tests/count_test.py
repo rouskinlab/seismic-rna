@@ -6,6 +6,7 @@ import pandas as pd
 from seismicrna.core.array import calc_inverse
 from seismicrna.core.batch.count import (
     calc_coverage,
+    calc_covered_reads_per_pos,
     count_end_coords,
     calc_rels_per_pos,
     calc_rels_per_read,
@@ -14,6 +15,7 @@ from seismicrna.core.batch.count import (
 )
 from seismicrna.core.batch.ends import END5_COORD, END3_COORD
 from seismicrna.core.rel import HalfRelPattern, RelPattern
+from seismicrna.core.rel.code import MATCH, NOCOV
 from seismicrna.core.seq.region import SEQ_INDEX_NAMES, seq_pos_to_index
 from seismicrna.core.seq.xna import DNA
 
@@ -1083,6 +1085,71 @@ class TestCalcRelsPerRead(ut.TestCase):
             self.assertTrue(
                 rres.equals(pd.DataFrame(rexp, read_nums, ["A", "C", "G", "T"]))
             )
+
+    def test_missing_position_raises(self):
+        # A position in pos_index absent from mutations should raise an
+        # interpretable ValueError, not a bare KeyError.
+        positions = seq_pos_to_index(DNA("ACGT"), [1, 2, 3, 4], 1)
+        mutations = {1: {}, 2: {}, 4: {}}  # position 3 is missing
+        read_nums = np.array([0, 1])
+        read_indexes = calc_inverse(read_nums)
+        cover_per_read = pd.DataFrame.from_dict(
+            {base: pd.Series([1, 1], read_nums) for base in DNA.alph()}
+        )
+        with self.assertRaisesRegex(ValueError, "Position 3 is missing from mutations"):
+            calc_rels_per_read(mutations, positions, cover_per_read, read_indexes)
+
+    def test_nocov_fills_absent_base(self):
+        # cover_per_read carries every base in DNA.alph() (incl. N), but
+        # pos_index has no N positions. NOCOV must get a 0-filled N column
+        # (not NaN), with columns kept in DNA.alph() order.
+        positions = seq_pos_to_index(DNA("ACGT"), [1, 2, 3, 4], 1)
+        mutations = {1: {}, 2: {}, 3: {}, 4: {}}
+        read_nums = np.array([0, 1])
+        read_indexes = calc_inverse(read_nums)
+        cover_per_read = pd.DataFrame.from_dict(
+            {
+                "A": pd.Series([1, 1], read_nums),
+                "C": pd.Series([1, 1], read_nums),
+                "N": pd.Series([0, 0], read_nums),
+                "G": pd.Series([1, 1], read_nums),
+                "T": pd.Series([1, 1], read_nums),
+            }
+        )
+        rels_per_read = calc_rels_per_read(
+            mutations, positions, cover_per_read, read_indexes
+        )
+        nocov = rels_per_read[NOCOV]
+        self.assertListEqual(list(nocov.columns), list(DNA.alph()))
+        self.assertFalse(nocov.isna().to_numpy().any())
+        np.testing.assert_array_equal(nocov.to_numpy(), 0)
+        # MATCH equals the coverage when there are no mutations.
+        self.assertTrue(rels_per_read[MATCH].equals(cover_per_read))
+
+
+class TestCalcCoveredReadsPerPos(ut.TestCase):
+    def test_unsorted_read_nums_raises(self):
+        # read_nums must increase monotonically so that the covering reads
+        # are sorted for downstream merge-based set operations.
+        pos_index = seq_pos_to_index(DNA("ACGT"), [1, 2, 3, 4], 1)
+        read_nums = np.array([3, 1, 2])
+        seg_end5s = np.array([[1], [1], [1]])
+        seg_end3s = np.array([[4], [4], [4]])
+        with self.assertRaisesRegex(
+            ValueError, "read_nums must increase monotonically"
+        ):
+            calc_covered_reads_per_pos(pos_index, read_nums, seg_end5s, seg_end3s, None)
+
+    def test_sorted_read_nums_ok(self):
+        pos_index = seq_pos_to_index(DNA("ACGT"), [1, 2, 3, 4], 1)
+        read_nums = np.array([1, 2, 3])
+        seg_end5s = np.array([[1], [2], [1]])
+        seg_end3s = np.array([[2], [4], [4]])
+        covering = calc_covered_reads_per_pos(
+            pos_index, read_nums, seg_end5s, seg_end3s, None
+        )
+        np.testing.assert_array_equal(covering[1], [1, 3])
+        np.testing.assert_array_equal(covering[3], [2, 3])
 
 
 class TestCalcCountPerPos(ut.TestCase):
