@@ -2,7 +2,7 @@ name: Build and deploy documentation to GitHub Pages
 
 on:
   # Runs on releases targeting the main branch
-  release:
+  push:
     branches:
       - main
     paths:
