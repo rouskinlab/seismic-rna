@@ -49,7 +49,7 @@ line, but when a report file that is associated with brickle files is
 passed as an input file, the brickle files will be read.
 This process happens during the following commands:
 
-- ``all``
+- ``wf``
 - ``filter``
 - ``cluster``
 - ``table``

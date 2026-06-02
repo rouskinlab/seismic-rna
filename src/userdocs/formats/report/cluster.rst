@@ -1,110 +1,105 @@
 
 Cluster Report
---------------------------------------------------------------------------------
+--------------
 
 Cluster Report: Fields
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^
 
-======================================== ======================
-Name                                     Data Type
-======================================== ======================
-Name of Sample                           str
-Name of Reference                        str
-Name of Region                           str
-Number of Unique Bit Vectors             int
-Maximum Number of Clusters               int
-Number of Independent EM Runs            int
-Minimum EM Iterations per Cluster        int
-Maximum EM Iterations per Cluster        int
-Convergence Threshold for Log Likelihood float
-Iterations Until Convergence per Run     dict[int, list[int]]
-Log Likelihood per Run                   dict[int, list[float]]
-Mean Log Likelihood per Order            dict[int, float]
-Std. Dev. Log Likelihood per Order       dict[int, float]
-Variation of Information per Order       dict[int, float]
-Bayesian Information Criterion per Order dict[int, float]
-Optimal Number of Clusters               int
-Number of Batches                        int
-MD5 Checksums of Batches                 dict[str, list[str]]
-Branches                                 list[str]
-Time Began                               str
-Time Ended                               str
-Time Taken (minutes)                     float
-Version of SEISMIC-RNA                   str
-======================================== ======================
+==================================================================================================== ====================
+Name                                                                                                 Data Type           
+==================================================================================================== ====================
+Sample                                                                                               str                 
+Branches                                                                                             dict[str, str]      
+Reference                                                                                            str                 
+Region                                                                                               str                 
+Seed for the random number generator                                                                 int                 
+Start at this many clusters                                                                          int                 
+Stop at this many clusters (0 for no limit)                                                          int                 
+Try all numbers of clusters (Ks), even after finding the best number                                 bool                
+Write all numbers of clusters (Ks), rather than only the best number                                 bool                
+Remove runs with two clusters more similar than this correlation                                     float               
+Remove runs with two clusters that differ by less than this MARCD                                    float               
+Remove runs where a cluster differs by more than this ARCD from the ensemble average at any position float               
+Remove runs where any cluster's Gini coefficient exceeds this limit                                  float               
+Calculate the jackpotting quotient to find over-represented reads                                    bool                
+Confidence level for the jackpotting quotient confidence interval                                    float               
+Remove runs whose jackpotting quotient exceeds this limit                                            float               
+Maximum number of simulations to compute the jackpotting quotient                                    int                 
+Skip calculating the jackpotting quotient if the reads × positions exceeds this limit                int                 
+Remove Ks with a log likelihood gap larger than this (0 for no limit)                                float               
+Remove Ks where every run has less than this correlation vs. the best                                float               
+Remove Ks where every run has more than this MARCD vs. the best                                      float               
+Run EM (successfully) at least this number of times for each K                                       int                 
+Run EM (successfully or not) at most this number of times for each K                                 int                 
+Run EM for at least this many iterations                                                             int                 
+Run EM for at most this many iterations                                                              int                 
+Stop EM when the log likelihood increases by less than this threshold                                float               
+Number of unique reads                                                                               int                 
+Whether each number of clusters (K) passed filters                                                   dict[str, bool]     
+Best number of clusters                                                                              int                 
+Numbers of clusters written to batches                                                               list[int]           
+Number of batches                                                                                    int                 
+Checksums of batches (SHA-512)                                                                       dict[str, list[str]]
+Time began                                                                                           str                 
+Time ended                                                                                           str                 
+Time taken (minutes)                                                                                 float               
+Version of SEISMIC-RNA                                                                               str                 
+==================================================================================================== ====================
 
 Cluster Report: Example
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^
 
 ::
 
     {
-        "Name of Sample": "ldi",
-        "Name of Reference": "sars2_1799",
-        "Name of Region": "fse",
-        "Number of Unique Bit Vectors": 104850,
-        "Maximum Number of Clusters": 2,
-        "Number of Independent EM Runs": 1,
-        "Minimum EM Iterations per Cluster": 10,
-        "Maximum EM Iterations per Cluster": 300,
-        "Convergence Threshold for Log Likelihood": 0.01,
-        "Iterations Until Convergence per Run": {
-            "1": [
-                2
-            ],
-            "2": [
-                512
+        "Sample": "sample1",
+        "Branches": {
+            "align": "",
+            "idmut": "",
+            "filter": "",
+            "cluster": ""
+        },
+        "Reference": "myref",
+        "Region": "full",
+        "Seed for the random number generator": 918720378,
+        "Start at this many clusters": 1,
+        "Stop at this many clusters (0 for no limit)": 2,
+        "Try all numbers of clusters (Ks), even after finding the best number": false,
+        "Write all numbers of clusters (Ks), rather than only the best number": false,
+        "Remove runs with two clusters more similar than this correlation": 0.9,
+        "Remove runs with two clusters that differ by less than this MARCD": 0.016,
+        "Remove runs where a cluster differs by more than this ARCD from the ensemble average at any position": 0.2,
+        "Remove runs where any cluster's Gini coefficient exceeds this limit": 0.667,
+        "Calculate the jackpotting quotient to find over-represented reads": true,
+        "Confidence level for the jackpotting quotient confidence interval": 0.95,
+        "Remove runs whose jackpotting quotient exceeds this limit": 1.1,
+        "Maximum number of simulations to compute the jackpotting quotient": 12,
+        "Skip calculating the jackpotting quotient if the reads \u00d7 positions exceeds this limit": 268435456,
+        "Remove Ks with a log likelihood gap larger than this (0 for no limit)": 0.0,
+        "Remove Ks where every run has less than this correlation vs. the best": 0.97,
+        "Remove Ks where every run has more than this MARCD vs. the best": 0.008,
+        "Run EM (successfully) at least this number of times for each K": 6,
+        "Run EM (successfully or not) at most this number of times for each K": 30,
+        "Run EM for at least this many iterations": 10,
+        "Run EM for at most this many iterations": 500,
+        "Stop EM when the log likelihood increases by less than this threshold": 0.37,
+        "Number of unique reads": 1713,
+        "Whether each number of clusters (K) passed filters": {
+            "1": true,
+            "2": true
+        },
+        "Best number of clusters": 1,
+        "Numbers of clusters written to batches": [
+            1
+        ],
+        "Number of batches": 1,
+        "Checksums of batches (SHA-512)": {
+            "cluster": [
+                "f18798a185a2b4ab94d96b7a90939a605701d89795fcce7b5a9cd1f5c0106c5f507e91532b82d5129d8b77983200cfbd1c5f97e9d001e07a503393d54f6e4320"
             ]
         },
-        "Log Likelihood per Run": {
-            "1": [
-                -3078650.555
-            ],
-            "2": [
-                -3073073.026
-            ]
-        },
-        "Mean Log Likelihood per Order": {
-            "1": -3078650.555,
-            "2": -3073073.026
-        },
-        "Std. Dev. Log Likelihood per Order": {
-            "1": 0.0,
-            "2": 0.0
-        },
-        "Variation of Information per Order": {
-            "1": 0.0,
-            "2": 0.0
-        },
-        "Bayesian Information Criterion per Order": {
-            "1": 6158468.699,
-            "2": 6148481.23
-        },
-        "Optimal Number of Clusters": 2,
-        "Number of Batches": 16,
-        "MD5 Checksums of Batches": {
-            "clust": [
-                "6a88a23437d10cdb68e29beebf70abb8",
-                "2468a801a2686bd198bd726cc90ff30f",
-                "3efe0b5aea70954ff37ced0ce509fc40",
-                "d4361a74f58bfcaab96d9448eb6d91dd",
-                "b8aafa415ba94b6d8d34e3433316a2a3",
-                "21b2f8c6cd976858476cc52297e276b3",
-                "d120b2d3a8f67458bac23e68aad745ce",
-                "4176c9379dfa59a73954469290c90740",
-                "4be0122fc2d700f7d75f236cf11dcca3",
-                "1323277603f89c04fcb665a34e2790b1",
-                "4265f976d74f05d6a9bbacb4e4efe443",
-                "c76bc505a886475d93743202a6d61461",
-                "36af6fb7b3e8ab41ac569c5f6547b039",
-                "778d808c7d34aa3abf0cfcad1c5eb8a6",
-                "e007d6017dae45004c11906a6bc073da",
-                "c2e57a06bcde2a3dd99f8ed9ce7c4947"
-            ]
-        },
-        "Branches": [],
-        "Time Began": "2023-12-18 at 17:52:50",
-        "Time Ended": "2023-12-18 at 17:53:33",
-        "Time Taken (minutes)": 0.7,
-        "Version of SEISMIC-RNA": "0.10.0"
+        "Time began": "2026-05-31 at 12:53:29",
+        "Time ended": "2026-05-31 at 12:58:34",
+        "Time taken (minutes)": 5.1,
+        "Version of SEISMIC-RNA": "0.25.3"
     }

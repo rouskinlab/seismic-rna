@@ -123,7 +123,6 @@ the four columns "Read: A/C/G/T?".
 .. note::
     A byte that has more than one bit set to 1 does **not** count more than once
     towards the total number of matches or mutations.
-    To learn how mutations in relation vectors are counted, see [REF].
 
 Encoding ambiguous insertions and deletions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -171,9 +170,9 @@ Thus, the relationship byte at each position (Pos) in the alignment would be
 .. note::
     A byte that has more than one bit set to 1 does **not** count more than once
     towards the total number of matches or mutations.
-    To learn how mutations in relation vectors are counted, see [REF].
 
-To learn how the algorithm that finds ambiguous indels works, see [REF].
+To learn how the algorithm that finds ambiguous indels works, see
+:doc:`/algos/ambindel`.
 
 Encoding positions not covered by the read
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -13,16 +13,18 @@ SRC_DIR=$ROOT_DIR/src
 SEISMIC_DIR=$SRC_DIR/seismicrna
 DOCSRC_DIR=$SRC_DIR/userdocs
 PYAPI_DIR=$DOCSRC_DIR/api
+PYAPI_AUTODOC_DIR=$PYAPI_DIR/_autodoc
 
-# Delete the old Python API source files, if any.
-if [ -d $PYAPI_DIR ]
+# Delete the old auto-generated Python API source files, if any
+# (preserve $PYAPI_DIR/index.rst which is hand-written).
+if [ -d $PYAPI_AUTODOC_DIR ]
 then
-    rm -rv $PYAPI_DIR
+    rm -rv $PYAPI_AUTODOC_DIR
 fi
-mkdir $PYAPI_DIR
+mkdir -p $PYAPI_AUTODOC_DIR
 
-# Build the Python API source files.
-sphinx-apidoc -s rst --no-toc --no-headings --module-first -o $PYAPI_DIR $SEISMIC_DIR
+# Build the Python API source files into the _autodoc subdirectory.
+sphinx-apidoc -s rst --no-toc --no-headings --module-first -o $PYAPI_AUTODOC_DIR $SEISMIC_DIR
 
 # Delete the old GitHub Pages files, if any.
 if [ -d $BUILD_DIR ]
@@ -39,11 +41,4 @@ touch $BUILD_DIR/.nojekyll
 # Build the GitHub Pages files from the source files.
 sphinx-build -b html $DOCSRC_DIR $BUILD_DIR
 
-# Change the color of the upper left sidebar from the default (#2980b9)
-# to the shade of blue in the logo (#2186d9).
-DEFAULT_NAV_BACKGROUND="#2980b9"
-CUSTOM_NAV_BACKGROUND="#2186d9"
-for STYLESHEET in theme badge_only
-do
-  perl -pi -e "s/$DEFAULT_NAV_BACKGROUND/$CUSTOM_NAV_BACKGROUND/g" $BUILD_DIR/_static/css/$STYLESHEET.css
-done
+# Brand color (#a00821) is set via html_theme_options in conf.py.

@@ -1,7 +1,7 @@
 name: Build and Publish Project on PyPI
 
 on:
-  release:
+  push:
     branches:
       - main
   workflow_dispatch:

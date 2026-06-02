@@ -5,4 +5,6 @@ Algorithms
 .. toctree::
     :maxdepth: 2
 
+    ambindel
     compress
+    normalize

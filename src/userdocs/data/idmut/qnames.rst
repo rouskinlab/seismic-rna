@@ -2,7 +2,7 @@
 Read Names Batch
 ------------------------------------------------------------------------
 
-Each batch of relation vectors is a ``QnamesBatchIO`` object.
+Each batch of read names is a ``QnamesBatchIO`` object.
 
 Read names batch: Structure
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -94,7 +94,7 @@ corresponding to one position in the region's ``#positions`` field.
 
 .. note::
     These fields will be computed only if you give a table of data per
-    position (ending in ``per-pos.csv``).
+    position (ending in ``-position-table.csv``).
 
 Profile data (per read)
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -105,7 +105,7 @@ Profile data (per read)
 
 .. note::
     This field will be computed only if you give a table of data per
-    read (ending in ``per-read.csv.gz``).
+    read (ending in ``-read-table.csv.gz``).
 
 Profile data (per cluster)
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -115,7 +115,7 @@ Profile data (per cluster)
 
 .. note::
     This field will be computed only if you give a table of data per
-    cluster (``clust-freq.csv``).
+    cluster (``cluster-abundance-table.csv``).
 
 Sample results file: Path format
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

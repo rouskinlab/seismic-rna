@@ -27,13 +27,13 @@
      inkscape:pagecheckerboard="1"
      inkscape:deskcolor="#505050"
      inkscape:document-units="mm"
-     inkscape:zoom="0.9103486"
-     inkscape:cx="479.48665"
-     inkscape:cy="2251.8846"
-     inkscape:window-width="1352"
-     inkscape:window-height="1067"
-     inkscape:window-x="439"
-     inkscape:window-y="25"
+     inkscape:zoom="1.017864"
+     inkscape:cx="323.71712"
+     inkscape:cy="3176.7506"
+     inkscape:window-width="1792"
+     inkscape:window-height="1062"
+     inkscape:window-x="0"
+     inkscape:window-y="30"
      inkscape:window-maximized="0"
      inkscape:current-layer="layer1"
      showgrid="false" />
@@ -7020,14 +7020,14 @@
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;line-height:0.9;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
        x="78.362999"
-       y="327.14749"
+       y="319.14749"
        id="text5-4-4-4-99"
        clip-path="none"><tspan
          sodipodi:role="line"
          id="tspan5-3-6-4-4"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.362999"
-         y="327.14749">Type of Relationship</tspan></text>
+         y="319.14749">Type of Match/Mutation</tspan></text>
     <text
        xml:space="preserve"
        style="font-weight:bold;font-size:4.23333px;line-height:0.9;font-family:Arial;-inkscape-font-specification:'Arial, Bold';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
@@ -8188,91 +8188,91 @@
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;font-size:4.23333px;line-height:0.9;font-family:Lato;-inkscape-font-specification:'Lato, Light';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
        x="83.075401"
-       y="333.2355"
+       y="325.2355"
        id="text5-4-4-4-9"
        clip-path="none"><tspan
          sodipodi:role="line"
          id="tspan5-3-6-4-5"
          style="font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Light';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="83.075401"
-         y="333.2355">Match</tspan></text>
+         y="325.2355">Match</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;font-size:4.23333px;line-height:0.9;font-family:Lato;-inkscape-font-specification:'Lato, Light';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
        x="83.075401"
-       y="338.2355"
+       y="330.2355"
        id="text5-4-4-4-9-5"
        clip-path="none"><tspan
          sodipodi:role="line"
          id="tspan5-3-6-4-5-5"
          style="font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Light';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="83.075401"
-         y="338.2355">Deletion</tspan></text>
+         y="330.2355">Deletion</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;font-size:4.23333px;line-height:0.9;font-family:Lato;-inkscape-font-specification:'Lato, Light';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
        x="83.075401"
-       y="343.2355"
+       y="335.2355"
        id="text5-4-4-4-9-5-0"
        clip-path="none"><tspan
          sodipodi:role="line"
          id="tspan5-3-6-4-5-5-2"
          style="font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Light';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="83.075401"
-         y="343.2355">Insertion</tspan></text>
+         y="335.2355">Insertion</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;font-size:4.23333px;line-height:0.9;font-family:Lato;-inkscape-font-specification:'Lato, Light';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
        x="83.075401"
-       y="348.2355"
+       y="340.2355"
        id="text5-4-4-4-9-8"
        clip-path="none"><tspan
          sodipodi:role="line"
          id="tspan5-3-6-4-5-7"
          style="font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Light';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="83.075401"
-         y="348.2355">Substitution to A</tspan></text>
+         y="340.2355">Substitution to A</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;font-size:4.23333px;line-height:0.9;font-family:Lato;-inkscape-font-specification:'Lato, Light';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
        x="83.075401"
-       y="353.2355"
+       y="345.2355"
        id="text5-4-4-4-9-8-0"
        clip-path="none"><tspan
          sodipodi:role="line"
          id="tspan5-3-6-4-5-7-3"
          style="font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Light';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="83.075401"
-         y="353.2355">Substitution to C</tspan></text>
+         y="345.2355">Substitution to C</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;font-size:4.23333px;line-height:0.9;font-family:Lato;-inkscape-font-specification:'Lato, Light';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
        x="83.075401"
-       y="358.2355"
+       y="350.2355"
        id="text5-4-4-4-9-8-3"
        clip-path="none"><tspan
          sodipodi:role="line"
          id="tspan5-3-6-4-5-7-7"
          style="font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Light';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="83.075401"
-         y="358.2355">Substitution to G</tspan></text>
+         y="350.2355">Substitution to G</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;font-size:4.23333px;line-height:0.9;font-family:Lato;-inkscape-font-specification:'Lato, Light';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
        x="83.075401"
-       y="363.2355"
+       y="355.2355"
        id="text5-4-4-4-9-8-0-7"
        clip-path="none"><tspan
          sodipodi:role="line"
          id="tspan5-3-6-4-5-7-3-4"
          style="font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Light';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="83.075401"
-         y="363.2355">Substitution to T</tspan></text>
+         y="355.2355">Substitution to T</tspan></text>
     <g
        id="patch_2-3"
        style="stroke-linecap:butt;stroke-linejoin:round"
        clip-path="none"
-       transform="matrix(0.35277777,0,0,0.35277777,67.135232,329.64253)">
+       transform="matrix(0.35277777,0,0,0.35277777,67.135232,321.64253)">
       <path
          d="m 34.626667,10.906667 h 7.066666 V 1.013333 h -7.066666 z"
          clip-path="url(#pc80b302c03-1)"
@@ -8283,7 +8283,7 @@
        id="patch_25-0"
        style="stroke-linecap:butt;stroke-linejoin:round"
        clip-path="none"
-       transform="matrix(0.35277777,0,0,0.35277777,40.211242,330.65379)">
+       transform="matrix(0.35277777,0,0,0.35277777,40.211242,322.65379)">
       <path
          d="m 110.94667,22.213333 h 7.06666 V 12.32 h -7.06666 z"
          clip-path="url(#pc80b302c03-1)"
@@ -8294,7 +8294,7 @@
        id="patch_25-0-1"
        style="fill:#44aa99;fill-opacity:1;stroke-linecap:butt;stroke-linejoin:round"
        clip-path="none"
-       transform="matrix(0.35277777,0,0,0.35277777,40.211242,335.65379)">
+       transform="matrix(0.35277777,0,0,0.35277777,40.211242,327.65379)">
       <path
          d="m 110.94667,22.213333 h 7.06666 V 12.32 h -7.06666 z"
          clip-path="url(#pc80b302c03-1-9)"
@@ -8305,7 +8305,7 @@
        id="patch_29-4"
        style="stroke-linecap:butt;stroke-linejoin:round"
        clip-path="none"
-       transform="matrix(0.35277777,0,0,0.35277777,67.135232,351.66505)">
+       transform="matrix(0.35277777,0,0,0.35277777,67.135232,343.66505)">
       <path
          d="m 34.626667,33.52 h 7.066666 v -9.893333 h -7.066666 z"
          clip-path="url(#pc80b302c03-1)"
@@ -8316,19 +8316,19 @@
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;font-size:4.23333px;line-height:0.9;font-family:Lato;-inkscape-font-specification:'Lato, Light';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
        x="83.075401"
-       y="368.23547"
+       y="360.23547"
        id="text5-4-4-4-9-8-0-7-1"
        clip-path="none"><tspan
          sodipodi:role="line"
          id="tspan5-3-6-4-5-7-3-4-1"
          style="font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Light';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="83.075401"
-         y="368.23547">Ambiguity</tspan></text>
+         y="360.23547">Ambiguity</tspan></text>
     <g
        id="patch_29-4-9"
        style="fill:#888888;fill-opacity:1;stroke-linecap:butt;stroke-linejoin:round"
        clip-path="none"
-       transform="matrix(0.35277777,0,0,0.35277777,67.135232,356.66505)">
+       transform="matrix(0.35277777,0,0,0.35277777,67.135232,348.66505)">
       <path
          d="m 34.626667,33.52 h 7.066666 v -9.893333 h -7.066666 z"
          clip-path="url(#pc80b302c03-1-5)"
@@ -8339,7 +8339,7 @@
        id="patch_41-5"
        style="stroke-linecap:butt;stroke-linejoin:round"
        clip-path="none"
-       transform="matrix(0.35277777,0,0,0.35277777,64.143682,337.67631)">
+       transform="matrix(0.35277777,0,0,0.35277777,64.143682,329.67631)">
       <path
          d="m 43.106667,44.826667 h 7.066666 v -9.893334 h -7.066666 z"
          clip-path="url(#pc80b302c03-1)"
@@ -8350,7 +8350,7 @@
        id="patch_46-6"
        style="stroke-linecap:butt;stroke-linejoin:round"
        clip-path="none"
-       transform="matrix(0.35277777,0,0,0.35277777,49.185902,342.67631)">
+       transform="matrix(0.35277777,0,0,0.35277777,49.185902,334.67631)">
       <path
          d="m 85.506667,44.826667 h 7.066666 v -9.893334 h -7.066666 z"
          clip-path="url(#pc80b302c03-1)"
@@ -8361,7 +8361,7 @@
        id="patch_63-0"
        style="stroke-linecap:butt;stroke-linejoin:round"
        clip-path="none"
-       transform="matrix(0.35277777,0,0,0.35277777,37.219682,328.68757)">
+       transform="matrix(0.35277777,0,0,0.35277777,37.219682,320.68757)">
       <path
          d="m 119.42667,56.133333 h 7.06666 V 46.24 h -7.06666 z"
          clip-path="url(#pc80b302c03-1)"
@@ -8379,7 +8379,7 @@
          id="tspan5-3-6-4-4-3"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.362999"
-         y="546.62012">Type of Relationship</tspan></text>
+         y="546.62012">Counted as:</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;line-height:0.9;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
@@ -8391,7 +8391,7 @@
          id="tspan5-3-6-4-4-3-9"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.157684"
-         y="571.62012">&quot;Informative&quot; = Match or Mutation (   or   )</tspan></text>
+         y="571.62012">&quot;Informative&quot; = Match or a chosen type of Mutation (   or   )</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;line-height:0.9;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
@@ -8403,7 +8403,7 @@
          id="tspan5-3-6-4-4-3-9-7"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.157684"
-         y="575.62012">&quot;Non-masked&quot; = Informative or Uninformative (   or   or   )</tspan></text>
+         y="575.62012">&quot;Covered&quot; = Informative or Uninformative (   or   or   )</tspan></text>
     <text
        xml:space="preserve"
        style="font-weight:bold;font-size:4.23333px;line-height:0.9;font-family:Arial;-inkscape-font-specification:'Arial, Bold';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
@@ -8439,12 +8439,12 @@
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.161919"
          y="16.021437"
-         id="tspan258">- or SHAPE reagents</tspan><tspan
+         id="tspan258">- or SHAPE reagents (e.g. NAI)</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.161919"
          y="19.955238"
-         id="tspan259">- or carbodiimide reagents</tspan></text>
+         id="tspan259">- or carbodiimide reagents (e.g. ETC)</tspan></text>
     <text
        xml:space="preserve"
        style="font-weight:bold;font-size:4.23333px;line-height:0.9;font-family:Arial;-inkscape-font-specification:'Arial, Bold';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
@@ -8456,7 +8456,7 @@
          style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.161919"
          y="148.32317"
-         id="tspan254-9">1. Quality control the FASTQ file(s) using fastp.</tspan><tspan
+         id="tspan254-9">1. Quality control the FASTQ file(s).</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.161919"
@@ -8492,31 +8492,21 @@
                  style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
                  x="78.161919"
                  y="418.98984"
-                 id="tspan254-9-4">1. Determine the relationship between each base call and the</tspan><tspan
-                 sodipodi:role="line"
-                 style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
-                 x="78.161919"
-                 y="422.92365"
-                 id="tspan257-1-8">position of the reference to which it aligned.</tspan><tspan
+                 id="tspan257-1-8">1. Identify matches, mutations, and ambiguities in the reads.</tspan><tspan
                  sodipodi:role="line"
                  style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
                  x="78.161919"
-                 y="426.85745"
+                 y="422.92365"
                  id="tspan461">- Matches, substitutions, and deletions are marked as such.</tspan><tspan
                  sodipodi:role="line"
                  style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
                  x="78.161919"
+                 y="426.85745"
+                 id="tspan7">- Insertions are marked on the adjacent 3' (default) or 5' position.</tspan><tspan
+                 sodipodi:role="line"
+                 style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
+                 x="78.161919"
                  y="430.79126"
-                 id="tspan463">- Positions next to an insertion are marked with both the side of</tspan><tspan
-                 sodipodi:role="line"
-                 style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
-                 x="78.161919"
-                 y="434.72504"
-                 id="tspan465">the insertion on which they lie (5' or 3') and their own relationship.</tspan><tspan
-                 sodipodi:role="line"
-                 style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
-                 x="78.161919"
-                 y="438.65884"
                  id="tspan259-8-5">- Low-quality base calls are marked as ambiguities.</tspan></text>
           </g>
         </g>
@@ -8524,7 +8514,7 @@
     </g>
     <g
        id="g457-5"
-       transform="translate(0.10371374,-40.842357)">
+       transform="translate(0.10371374,-47.842357)">
       <g
          id="g458-9">
         <g
@@ -8559,7 +8549,7 @@
     </g>
     <g
        id="g457-5-3"
-       transform="translate(0.12488039,-22.842357)">
+       transform="translate(0.12488039,-29.842357)">
       <g
          id="g458-9-7">
         <g
@@ -8615,6 +8605,62 @@
         </g>
       </g>
     </g>
+    <g
+       id="g457-5-3-9"
+       transform="translate(0.12488039,4.157643)">
+      <g
+         id="g458-9-7-5">
+        <g
+           id="g459-9-8-5">
+          <g
+             id="g462-9-1-6">
+            <g
+               id="g469-1">
+              <text
+                 xml:space="preserve"
+                 style="font-weight:bold;font-size:4.23333px;line-height:0.9;font-family:Arial;-inkscape-font-specification:'Arial, Bold';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
+                 x="78.161919"
+                 y="418.98984"
+                 id="text5-4-4-4-99-6-1-9-34-0-7-2-5"
+                 clip-path="none"><tspan
+                   sodipodi:role="line"
+                   style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
+                   x="78.161919"
+                   y="418.98984"
+                   id="tspan542-4">4. At every position, calculate the rate of each type of mutation.</tspan></text>
+            </g>
+          </g>
+        </g>
+      </g>
+    </g>
+    <g
+       id="g457-5-3-9-3"
+       transform="translate(0.24130324,277.32413)">
+      <g
+         id="g458-9-7-5-2">
+        <g
+           id="g459-9-8-5-7">
+          <g
+             id="g462-9-1-6-0">
+            <g
+               id="g469-1-5">
+              <text
+                 xml:space="preserve"
+                 style="font-weight:bold;font-size:4.23333px;line-height:0.9;font-family:Arial;-inkscape-font-specification:'Arial, Bold';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
+                 x="78.161919"
+                 y="418.98984"
+                 id="text5-4-4-4-99-6-1-9-34-0-7-2-5-0"
+                 clip-path="none"><tspan
+                   sodipodi:role="line"
+                   style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
+                   x="78.161919"
+                   y="418.98984"
+                   id="tspan542-4-9">7. At every unmasked position, calculate the mutation rate.</tspan></text>
+            </g>
+          </g>
+        </g>
+      </g>
+    </g>
     <text
        xml:space="preserve"
        style="font-weight:bold;font-size:4.23333px;line-height:0.9;font-family:Arial;-inkscape-font-specification:'Arial, Bold';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
@@ -8626,7 +8672,7 @@
          style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.265633"
          y="169.42899"
-         id="tspan254-9-1">2. Align reads to reference sequence(s) using Bowtie 2.</tspan><tspan
+         id="tspan254-9-1">2. Align reads to reference sequence(s).</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.265633"
@@ -8673,44 +8719,54 @@
        xml:space="preserve"
        style="font-weight:bold;font-size:4.23333px;line-height:0.9;font-family:Arial;-inkscape-font-specification:'Arial, Bold';text-align:center;text-anchor:middle;fill:#d44d5c;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
        x="78.335487"
-       y="618.32721"
+       y="613.32721"
        id="text5-4-4-4-99-6-1-9-34-2-5-1"
        clip-path="none"><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#d44d5c;fill-opacity:1;stroke-width:0.5"
          x="78.335487"
-         y="618.32721"
-         id="tspan454-2">Note: Reads with two mutations separated by fewer than 3 nt are</tspan><tspan
-         sodipodi:role="line"
-         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#d44d5c;fill-opacity:1;stroke-width:0.5"
-         x="78.335487"
-         y="622.26099"
-         id="tspan527">underrepresented, creating a bias in the mutation rates.</tspan><tspan
+         y="613.32721"
+         id="tspan527">Note: Each probe causes biases in mutation rates that Filter corrects:</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#d44d5c;fill-opacity:1;stroke-width:0.5"
          x="78.335487"
-         y="626.19482"
-         id="tspan529">- Correcting the bias involves first masking out any remaining reads</tspan><tspan
+         y="617.26099"
+         id="tspan528">- DMS: reads with mutations closer than 4 nt are underrepresented.</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#d44d5c;fill-opacity:1;stroke-width:0.5"
          x="78.335487"
-         y="630.1286"
-         id="tspan528">that do happen to have two mutations closer than 3 nt.</tspan><tspan
+         y="621.19482"
+         id="tspan20">The filter step begins by dropping any remaining reads with mutations</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#d44d5c;fill-opacity:1;stroke-width:0.5"
          x="78.335487"
-         y="634.06244"
-         id="tspan436-8">- Then the mutation rates are adjusted to what they would have been</tspan><tspan
+         y="625.1286"
+         id="tspan21">less than 4 nt apart.</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#d44d5c;fill-opacity:1;stroke-width:0.5"
          x="78.335487"
-         y="637.99622"
-         id="tspan531">if there were no bias reads against reads with two mutations too close.</tspan><tspan
+         y="629.06244"
+         id="tspan16">- SHAPE: one adduct can cause multiple adjacent mutations in a row.</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#d44d5c;fill-opacity:1;stroke-width:0.5"
          x="78.335487"
-         y="641.93005"
-         id="tspan532">- Merely for illustration purposes, a minimum gap of 1 nt is used here.</tspan></text>
+         y="632.99622"
+         id="tspan532">The filter step begins by merging mutations less than 2 nt apart,</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#d44d5c;fill-opacity:1;stroke-width:0.5"
+         x="78.335487"
+         y="636.93005"
+         id="tspan18">keeping the 3'-most mutation (which would have caused the others).</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#d44d5c;fill-opacity:1;stroke-width:0.5"
+         x="78.335487"
+         y="640.86383"
+         id="tspan19">- Finally, the Filter step calculates what the mutation rates would have</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#d44d5c;fill-opacity:1;stroke-width:0.5"
+         x="78.335487"
+         y="644.79761"
+         id="tspan23">been in the absence of this bias.</tspan></text>
     <text
        xml:space="preserve"
        style="font-weight:bold;font-size:4.23333px;line-height:0.9;font-family:Arial;-inkscape-font-specification:'Arial, Bold';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
@@ -8798,7 +8854,7 @@
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.248703"
          y="271.31854"
-         id="tspan257-1-6-8-5-7-0">- The purpose is to avoid cluttering system with unusable BAM files.</tspan><tspan
+         id="tspan257-1-6-8-5-7-0">- The purpose is to avoid producing many unusable BAM files.</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.248703"
@@ -8834,22 +8890,20 @@
        id="text5-4-4-4-99-6-1-9-3-5"
        clip-path="none"><tspan
          sodipodi:role="line"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.286797"
          y="48.157166"
-         id="tspan263-8"><tspan
-           id="tspan264"
-           style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5">3. Sequence on your platform on choice</tspan></tspan><tspan
+         id="tspan263-8">3. Sequence on your platform on choice</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.286797"
          y="52.090969"
-         id="tspan266">- single-end</tspan><tspan
+         id="tspan267">- single-end or paired-end</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.286797"
          y="56.024773"
-         id="tspan267">- or paired-end</tspan></text>
+         id="tspan5">- short-read or long-read</tspan></text>
     <text
        xml:space="preserve"
        style="font-weight:bold;font-size:4.23333px;line-height:0.9;font-family:Arial;-inkscape-font-specification:'Arial, Bold';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
@@ -8858,12 +8912,15 @@
        id="text5-4-4-4-99-6-1-9-3-5-7"
        clip-path="none"><tspan
          sodipodi:role="line"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.409569"
          y="66.153831"
-         id="tspan263-8-7"><tspan
-           id="tspan264-3"
-           style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5">4. Generate FASTQ files for each sample </tspan></tspan></text>
+         id="tspan263-8-7">4. Generate FASTQ files for each sample</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:Lato;font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
+         x="78.409569"
+         y="70.087631"
+         id="tspan6">- compressed with gzip or uncompressed </tspan></text>
     <text
        xml:space="preserve"
        style="font-weight:bold;font-size:4.23333px;line-height:0.9;font-family:Arial;-inkscape-font-specification:'Arial, Bold';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
@@ -8875,7 +8932,7 @@
          id="tspan5-3-6-4-4-3-59-3"
          style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="20.178278"
-         y="505.51642">2. Pre-mask unusable positions:</tspan><tspan
+         y="505.51642">2. Mask positions that are unsuitable for analysis:</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="20.178278"
@@ -8885,7 +8942,7 @@
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="20.178278"
          y="513.38403"
-         id="tspan252">- poly(A) sequences</tspan><tspan
+         id="tspan252">- poly(A) sequences (default: 5 or more consecutive As)</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="20.178278"
@@ -8995,6 +9052,33 @@
     <text
        xml:space="preserve"
        style="font-weight:bold;font-size:4.23333px;line-height:0.9;font-family:Arial;-inkscape-font-specification:'Arial, Bold';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
+       x="122.87949"
+       y="857.42682"
+       id="text5-4-4-4-99-6-1-3-19-2-8-6"
+       clip-path="none"><tspan
+         sodipodi:role="line"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
+         x="122.87949"
+         y="857.42682"
+         id="tspan475-0-7-7">5. Calculate mutation rates for each cluster:</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
+         x="122.87949"
+         y="861.3606"
+         id="tspan496-0">- Weight each read by the probability that it</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
+         x="122.87949"
+         y="865.29443"
+         id="tspan37">belongs to each cluster when calculating the</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
+         x="122.87949"
+         y="869.22821"
+         id="tspan38">per-cluster mutation rates. </tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-weight:bold;font-size:4.23333px;line-height:0.9;font-family:Arial;-inkscape-font-specification:'Arial, Bold';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
        x="122.63184"
        y="723.14752"
        id="text5-4-4-4-99-6-1-3-19-5"
@@ -9047,44 +9131,49 @@
        xml:space="preserve"
        style="font-weight:bold;font-size:4.23333px;line-height:0.9;font-family:Arial;-inkscape-font-specification:'Arial, Bold';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
        x="122.63184"
-       y="945.68042"
+       y="943.68042"
        id="text5-4-4-4-99-6-1-3-19-5-3-2"
        clip-path="none"><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="122.63184"
-         y="945.68042"
-         id="tspan475-9-7-6">2. Model secondary structure(s) using the</tspan><tspan
+         y="943.68042"
+         id="tspan25">2. Model secondary structure(s) based on the</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="122.63184"
-         y="949.6142"
-         id="tspan500">Fold program from the RNAstructure suite.</tspan><tspan
+         y="947.6142"
+         id="tspan26">mutation rates.</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="122.63184"
-         y="953.54803"
-         id="tspan482-2-7">- Fold predicts secondary structures using a</tspan><tspan
+         y="951.54803"
+         id="tspan482-2-7">- The Fold step can use both RNAstructure</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="122.63184"
-         y="957.48181"
-         id="tspan501">thermodynamic model with a theoretically</tspan><tspan
+         y="955.48181"
+         id="tspan27">and ViennaRNA as backends.</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="122.63184"
-         y="961.41565"
-         id="tspan503">correct method of integrating DMS mutation</tspan><tspan
+         y="959.41565"
+         id="tspan28">- The Deigan, Cordero, or Eddy method can be</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="122.63184"
-         y="965.34943"
-         id="tspan498-7">rates (Cordero et al.).</tspan><tspan
+         y="963.34943"
+         id="tspan498-7">used to incorporate mutation rates.</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="122.63184"
-         y="969.28326"
-         id="tspan504">- Fold outputs structures in CT format.</tspan></text>
+         y="967.28326"
+         id="tspan504">- Fold outputs structures in connectivity table</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
+         x="122.63184"
+         y="971.21704"
+         id="tspan30">(CT) and dot-bracket formats.</tspan></text>
     <text
        xml:space="preserve"
        style="font-weight:bold;font-size:4.23333px;line-height:0.9;font-family:Arial;-inkscape-font-specification:'Arial, Bold';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
@@ -9096,32 +9185,27 @@
          style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="122.63184"
          y="979.83899"
-         id="tspan500-0">3. Reformat RNA structures for visualization.</tspan><tspan
+         id="tspan500-0">3. Prepare RNA structures for visualization.</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="122.63184"
          y="983.77277"
-         id="tspan498-7-6">- Rename each RNA structure to include both</tspan><tspan
+         id="tspan509">- RNA structures can be visualized directly</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="122.63184"
          y="987.7066"
-         id="tspan507">its free energy of folding and numerical rank.</tspan><tspan
+         id="tspan33">using RNArtist via &quot;seismic draw&quot;.</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="122.63184"
          y="991.64038"
-         id="tspan508">- Convert CT into dot-bracket (DB) format.</tspan><tspan
+         id="tspan32">- Fold also outputs the normalized mutation</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="122.63184"
          y="995.57422"
-         id="tspan509">- Output the normalized mutation rates as a</tspan><tspan
-         sodipodi:role="line"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
-         x="122.63184"
-         y="999.508"
-         id="tspan510">text file that can be read by VARNA.</tspan></text>
+         id="tspan510">rates as a text file that can be read by VARNA.</tspan></text>
     <text
        xml:space="preserve"
        style="font-weight:bold;font-size:4.23333px;line-height:0.9;font-family:Arial;-inkscape-font-specification:'Arial, Bold';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
@@ -9133,114 +9217,108 @@
          id="tspan5-3-6-4-4-3-59-3-5"
          style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.286797"
-         y="530.64978">3. Choose which types of relationships to count as mutations <tspan
-   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1"
-   id="tspan1-9-1" /></tspan><tspan
+         y="530.64978">3. Choose which types of mutations to count </tspan><tspan
          sodipodi:role="line"
-         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.286797"
          y="534.58356"
-         id="tspan224"><tspan
-           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1"
-           id="tspan225">(default: count substitutions of any base to any other base;</tspan></tspan><tspan
+         id="tspan12">By default, count all unambiguous mutations (substitutions, deletions,</tspan><tspan
          sodipodi:role="line"
-         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.286797"
          y="538.5174"
-         id="tspan237"><tspan
-           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1"
-           id="tspan238">do not count deletions/insertions/ambiguities at any base).</tspan></tspan></text>
+         id="tspan237">and insertions), but do not count ambiguities.</tspan></text>
     <text
        xml:space="preserve"
        style="font-weight:bold;font-size:4.23333px;line-height:0.9;font-family:Arial;-inkscape-font-specification:'Arial, Bold';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
        x="78.409569"
-       y="587.06189"
+       y="586.06189"
        id="text5-4-4-4-99-6-1-3-1-3"
        clip-path="none"><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.409569"
-         y="587.06189"
-         id="tspan230">4. Mask out unusable reads with</tspan><tspan
+         y="586.06189"
+         id="tspan230">4. Drop unusable reads with</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.409569"
-         y="590.99567"
-         id="tspan226">- too few non-masked base calls within the region</tspan><tspan
+         y="589.99567"
+         id="tspan226">- insufficient covered bases within the region</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.409569"
-         y="594.9295"
-         id="tspan244">- too small a ratio of informative to non-masked base calls</tspan><tspan
+         y="593.9295"
+         id="tspan244">- insufficient ratio of informative to covered bases</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.409569"
-         y="598.86328"
-         id="tspan241">- too large a ratio of mutations to informative base calls</tspan><tspan
+         y="597.86328"
+         id="tspan241">- excessive ratio of mutations to informative bases</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.409569"
-         y="602.79712"
-         id="tspan234">- two mutations too close together (default: gap of at least 3 nt)</tspan><tspan
+         y="601.79712"
+         id="tspan234">- two mutations too close together (default depends on probe)</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.409569"
-         y="606.7309"
+         y="605.7309"
          id="tspan243">- discontiguous mates (for paired-end reads only)</tspan></text>
     <text
        xml:space="preserve"
        style="font-weight:bold;font-size:4.23333px;line-height:0.9;font-family:Arial;-inkscape-font-specification:'Arial, Bold';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
        x="78.242355"
-       y="653.52631"
+       y="654.52631"
        id="text5-4-4-4-99-6-1-3-1-3-9"
        clip-path="none"><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.242355"
-         y="653.52631"
+         y="654.52631"
          id="tspan234-2">5. Mask out unusable positions with</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.242355"
-         y="657.46008"
-         id="tspan236">- too few informative base calls</tspan><tspan
+         y="658.46008"
+         id="tspan236">- insufficient informative bases</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.242355"
-         y="661.39392"
-         id="tspan247">- too large a ratio of mutations to informative base calls</tspan></text>
+         y="662.39392"
+         id="tspan247">- excessive ratio of mutations to informative bases</tspan></text>
     <text
        xml:space="preserve"
        style="font-weight:bold;font-size:4.23333px;line-height:0.9;font-family:Arial;-inkscape-font-specification:'Arial, Bold';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
        x="78.242355"
-       y="672.31396"
+       y="671.31396"
        id="text5-4-4-4-99-6-1-3-1-3-9-8"
        clip-path="none"><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.242355"
-         y="672.31396"
+         y="671.31396"
          id="tspan234-2-0">6. Repeat steps 4 and 5 until convergence.</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.242355"
-         y="676.24774"
+         y="675.24774"
          id="tspan236-2">- Masking out positions in step 5 can cause some reads that were kept</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.242355"
-         y="680.18158"
+         y="679.18158"
          id="tspan2">in step 4 to no longer pass the filters.</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.242355"
-         y="684.11536"
-         id="tspan3">- To solve this inconsistency, repeat steps 4 and 5 until the reads and</tspan><tspan
+         y="683.11536"
+         id="tspan3">- To solve this inconsistency, iterate steps 4 and 5 until no more reads</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="78.242355"
-         y="688.04919"
-         id="tspan4">positions that are masked stop changing.</tspan></text>
+         y="687.04919"
+         id="tspan4">or positions are filtered out during an iteration.</tspan></text>
     <text
        xml:space="preserve"
        style="font-weight:bold;font-size:4.23333px;line-height:0.9;font-family:Arial;-inkscape-font-specification:'Arial, Bold';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:10"
@@ -9336,7 +9414,7 @@
          id="tspan5-3-6-4-5-5-2-6"
          style="font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;font-size:4.23333px;font-family:Lato;-inkscape-font-specification:'Lato, Light';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke-width:0.5"
          x="83.075401"
-         y="562.70807">Uninformative</tspan></text>
+         y="562.70807">Neither (Uninformative)</tspan></text>
     <g
        id="patch_2-3-0"
        style="stroke-linecap:butt;stroke-linejoin:round"
@@ -9363,7 +9441,7 @@
        id="patch_2-3-0-7"
        style="stroke-linecap:butt;stroke-linejoin:round"
        clip-path="none"
-       transform="matrix(0.35277777,0,0,0.35277777,132.66631,568.18617)">
+       transform="matrix(0.35277777,0,0,0.35277777,164.30461,568.18617)">
       <path
          d="m 34.626667,10.906667 h 7.066666 V 1.013333 h -7.066666 z"
          clip-path="url(#pc80b302c03-1-3-2)"
@@ -9374,7 +9452,7 @@
        id="patch_25-0-4-2"
        style="fill:#661100;fill-opacity:1;stroke-linecap:butt;stroke-linejoin:round"
        clip-path="none"
-       transform="matrix(0.35277777,0,0,0.35277777,112.10441,564.19743)">
+       transform="matrix(0.35277777,0,0,0.35277777,143.74271,564.19743)">
       <path
          d="m 110.94667,22.213333 h 7.06666 V 12.32 h -7.06666 z"
          clip-path="url(#pc80b302c03-1-3-2)"
@@ -9386,7 +9464,7 @@
        id="patch_2-3-0-7-0"
        style="stroke-linecap:butt;stroke-linejoin:round"
        clip-path="none"
-       transform="matrix(0.35277777,0,0,0.35277777,153.95278,572.18617)">
+       transform="matrix(0.35277777,0,0,0.35277777,145.87529,572.18617)">
       <path
          d="m 34.626667,10.906667 h 7.066666 V 1.013333 h -7.066666 z"
          clip-path="url(#pc80b302c03-1-3-2-5)"
@@ -9397,7 +9475,7 @@
        id="patch_25-0-4-2-9"
        style="fill:#661100;fill-opacity:1;stroke-linecap:butt;stroke-linejoin:round"
        clip-path="none"
-       transform="matrix(0.35277777,0,0,0.35277777,134.1457,568.19743)">
+       transform="matrix(0.35277777,0,0,0.35277777,126.06821,568.19743)">
       <path
          d="m 110.94667,22.213333 h 7.06666 V 12.32 h -7.06666 z"
          clip-path="url(#pc80b302c03-1-3-2-5)"
@@ -9419,7 +9497,7 @@
        id="patch_25-0-1-6-4"
        style="fill:#888888;fill-opacity:1;stroke-linecap:butt;stroke-linejoin:round"
        clip-path="none"
-       transform="matrix(0.35277777,0,0,0.35277777,141.26262,568.19743)">
+       transform="matrix(0.35277777,0,0,0.35277777,133.18513,568.19743)">
       <path
          d="m 110.94667,22.213333 h 7.06666 V 12.32 h -7.06666 z"
          clip-path="url(#pc80b302c03-1-9-2-8)"
@@ -27004,12 +27082,12 @@
        d="M 33.452965,522.50231 H 57.401537"
        id="path224-3-4-9-9" />
     <path
-       style="fill:#ffffff;fill-opacity:0.5;stroke:#000000;stroke-width:0.25;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:1;marker-end:url(#marker222-9-4-9)"
-       d="m 24.47223,651.94169 v -2"
+       style="fill:#ffffff;fill-opacity:0.5;stroke:#000000;stroke-width:0.249999;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:1;marker-end:url(#marker222-9-4-9)"
+       d="m 24.472231,652.94167 v -3"
        id="path224-3-4-98" />
     <path
        style="fill:#ffffff;fill-opacity:0.5;stroke:#000000;stroke-width:0.25;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:1"
-       d="M 24.472252,651.94167 H 73.885254"
+       d="M 24.472252,652.94167 H 73.885254"
        id="path224-3-4-9-9-5" />
     <path
        style="fill:#ffffff;fill-opacity:0.5;stroke:#000000;stroke-width:0.25;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:1;marker-end:url(#marker222-9-9)"
@@ -27017,7 +27095,7 @@
        id="path224-35" />
     <path
        style="fill:#ffffff;fill-opacity:0.5;stroke:#000000;stroke-width:0.25;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:1"
-       d="m 73.885443,585.4506 h -3"
+       d="m 73.885443,584.4506 h -3"
        id="path224-3-3-2" />
     <path
        style="fill:#ffffff;fill-opacity:0.5;stroke:#000000;stroke-width:0.25;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:1;marker-end:url(#marker222-9-4-5)"

@@ -1,0 +1,85 @@
+/* Sidebar: upper logo/search area = logo red, nav tree = logo dark gray. */
+.wy-nav-side,
+.wy-side-scroll {
+    background-color: #242424;
+}
+
+.wy-side-nav-search,
+.wy-nav-top {
+    background-color: #a00821;
+}
+
+.wy-side-nav-search input[type="text"] {
+    background-color: #242424;
+    border-color: #242424;
+    color: #ffffff;
+}
+
+.wy-side-nav-search input[type="text"]::placeholder {
+    color: #d9d9d9;
+}
+
+.wy-menu-vertical li.current > a,
+.wy-menu-vertical li.current > a:hover {
+    background-color: #242424;
+    color: #d9d9d9;
+}
+
+/* Expanded sub-menu items (l2 and deeper) — slightly lighter gray. */
+.wy-menu-vertical li.toctree-l2 a,
+.wy-menu-vertical li.toctree-l2:hover,
+.wy-menu-vertical li.toctree-l2.current > a,
+.wy-menu-vertical li.toctree-l2.current > a:hover,
+.wy-menu-vertical li.toctree-l3 a,
+.wy-menu-vertical li.toctree-l3.current > a {
+    background-color: #424242;
+    color: #d9d9d9;
+}
+
+.wy-menu-vertical li.toctree-l4 a,
+.wy-menu-vertical li.toctree-l4.current > a {
+    background-color: #6e6e6e;
+    color: #d9d9d9;
+}
+
+/* Pattern background behind the text column at wide viewports (RTD/Renku theme). */
+@media screen and (min-width: 1100px) {
+    .wy-nav-content-wrap {
+        background: url(logo-pattern.png) center / cover;
+    }
+}
+
+/*
+ * News admonition on the home page: white background in both light and dark
+ * mode (override Furo's default tinted admonition background).
+ */
+.admonition.news {
+    --color-admonition-background: #ffffff;
+}
+
+[data-theme="dark"] .admonition.news {
+    --color-admonition-background: #ffffff;
+}
+
+/*
+ * Styles for the group-heading labels injected into the sidebar by
+ * nav_labels.js.
+ */
+.nav-group-label {
+    font-size: 0.7em;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.6;
+    padding: 0.8em 1em 0.3em 1em;
+    border-top: 1px solid rgba(128, 128, 128, 0.25);
+    margin-top: 0.4em;
+}
+
+/* First label has no top border (it's at the top of the group list) */
+.sidebar-tree li.toctree-l2:first-child .nav-group-label,
+.nav-group-label:first-child {
+    border-top: none;
+    margin-top: 0;
+    padding-top: 0.3em;
+}

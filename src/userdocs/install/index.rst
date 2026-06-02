@@ -223,7 +223,7 @@ ViennaRNA_    ``conda install -c bioconda -c conda-forge viennarna>=2.7.2``
     RNAstructure_ (version ≥ 6.6) and seqkit_ are required for the ``fold``
     and ``demult`` steps, respectively.
     ViennaRNA_ is optional: it is only needed if you use
-    ``--fold-backend RNAFold`` (see :doc:`../extras/run/fold`).
+    ``--fold-backend viennarna`` (see :doc:`/use/workflow/fold`).
 
 If a package fails to install using Conda, or if you are not using Conda, then
 follow its link above to find the instructions for installing it manually.

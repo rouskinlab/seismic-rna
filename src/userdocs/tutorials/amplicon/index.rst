@@ -1,6 +1,6 @@
-
+********************************************************************************
 Tutorial 1: Amplicon prepared with RT-PCR
-================================================================================
+********************************************************************************
 
 This tutorial demonstrates how to analyze a dataset that was prepared using
 RT-PCR (with forward and reverse primers) of one specific region of an RNA.
@@ -18,7 +18,7 @@ TL;DR
 
 #. Process the no-DMS control::
 
-    seismic wf -x fq/nodms --keep-gu --mask-polya 0 --min-mut-gap 0 hiv-rre.fa
+    seismic wf -x fq/nodms --keep-g --keep-u --mask-polya 0 --min-mut-gap 0 hiv-rre.fa
 
 #. Process the DMS-treated replicates separately::
 
@@ -27,8 +27,8 @@ TL;DR
 
 #. Pool the replicates and process them together::
 
-    seismic pool -p dms-pool out/dms[12]
-    seismic wf --mask-pos rre 176 -P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC --cluster --fold -q 0.95 hiv-rre.fa out/dms-pool/idmut
+    seismic pool dms-pool out/dms[12]
+    seismic wf --mask-pos rre 176 -P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC -k 2 --fold --fold-quantile 0.95 hiv-rre.fa out/dms-pool/idmut
 
 
 Scientific premise
@@ -94,14 +94,14 @@ Run the workflow on the no-DMS control
 
 Process the no-DMS control through the whole workflow with this command::
 
-    seismic wf -x fq/nodms --keep-gu --mask-polya 0 --min-mut-gap 0 hiv-rre.fa
+    seismic wf -x fq/nodms --keep-g --keep-u --mask-polya 0 --min-mut-gap 0 hiv-rre.fa
 
 This is what each of the arguments does:
 
 - ``wf`` means run the entire workflow.
 - ``-x fq/nodms`` means search inside ``fq/nodms`` for pairs of FASTQ files of
   paired-end reads with mate 1 and mate 2 in separate files.
-- ``--keep-gu`` means keep G and U bases (which do not react with DMS and should
+- ``--keep-g --keep-u`` means keep G and U bases (which do not react with DMS and should
   typically be masked out in DMS-modified samples).
 - ``--mask-polya 0`` means do not mask out poly(A) sequences (which can produce
   artifacts in DMS-modified samples).
@@ -191,13 +191,13 @@ so that it does not skew the results.
 
 Rerun the workflow with the option ``--mask-pos rre 176``::
 
-    seismic wf --force --keep-gu --mask-polya 0 --min-mut-gap 0 --mask-pos rre 176 hiv-rre.fa out/nodms/idmut/rre
+    seismic wf --force --keep-g --keep-u --mask-polya 0 --min-mut-gap 0 --mask-pos rre 176 hiv-rre.fa out/nodms/idmut/rre
 
 This is what each of the arguments does:
 
 - ``wf`` means run the entire workflow.
 - ``--force`` means overwrite any output files that already exist.
-- ``--keep-gu`` means keep G and U bases (which do not react with DMS and should
+- ``--keep-g --keep-u`` means keep G and U bases (which do not react with DMS and should
   typically be masked out in DMS-modified samples).
 - ``--mask-polya 0`` means do not mask out poly(A) sequences (which can produce
   artifacts in DMS-modified samples).
@@ -255,10 +255,10 @@ run the command ::
     seismic graph scatter out/dms[12]/filter/rre/26-204/filter-position-table.csv
 
 - ``graph scatter`` means graph a scatter plot.
-- ``out/dms[12]/table/rre/26-204/filter-position-table.csv`` means graph data from
+- ``out/dms[12]/filter/rre/26-204/filter-position-table.csv`` means graph data from
   these tables, where ``[12]`` is a `glob pattern`_ that is expanded by the
   shell into all files that match the pattern -- which in this case is
-  ``out/dms1/table/rre/26-204/filter-position-table.csv out/dms2/table/rre/26-204/filter-position-table.csv``.
+  ``out/dms1/filter/rre/26-204/filter-position-table.csv out/dms2/filter/rre/26-204/filter-position-table.csv``.
   You could instead type this expression to list both table files explicitly,
   but the former requires fewer key strokes.
 
@@ -282,10 +282,10 @@ so that they can be analyzed as a single sample, which is helpful whenever high
 coverage is necessary, such as during clustering.
 To combine the replicates, run this command::
 
-    seismic pool -p dms-pool out/dms[12]
+    seismic pool dms-pool out/dms[12]
 
 - ``pool`` means combine samples into a new "pooled" sample.
-- ``-p dms-pool`` means name the pooled sample ``dms-pool``.
+- ``dms-pool`` means name the pooled sample ``dms-pool``.
 - ``out/dms[12]`` means pool the samples in these directories, where ``[12]``
   is a `glob pattern`_ that is automatically expanded by the shell into all
   files that match the pattern -- which in this case is ``out/dms1 out/dms2``.
@@ -299,7 +299,7 @@ Now that the replicates are pooled, the overall coverage will be higher, and so
 clustering is more likely to detect true alternative structures.
 Process the pooled sample, including with clustering, by running this command::
 
-    seismic -v wf --mask-pos rre 176 -P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC --cluster --fold -q 0.95 hiv-rre.fa out/dms-pool/idmut
+    seismic -v wf --mask-pos rre 176 -P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC -k 2 --fold --fold-quantile 0.95 hiv-rre.fa out/dms-pool/idmut
 
 This is what each of the arguments does:
 
@@ -310,10 +310,10 @@ This is what each of the arguments does:
 - ``-P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC`` defines a
   region of the reference ``rre`` that corresponds to the amplicon flanked by
   primers ``GGAGCTTTGTTCCTTGGGTTCTTGG`` and ``GGAGCTGTTGATCCTTTAGGTATCTTTC``.
-- ``--cluster`` means enable clustering to find alternative structures.
+- ``-k 2`` means enable clustering to find alternative structures.
 - ``--fold`` means enable secondary structure prediction.
-- ``-q 0.95`` sets the 95th percentile of the mutation rates to 1 and scales the
-  rest of the data accordingly (required if using ``--fold``).
+- ``--fold-quantile 0.95`` sets the 95th percentile of the mutation rates to 1 and scales the
+  rest of the data accordingly (optional; 0.95 is the default).
 - ``hiv-rre.fa`` means use the sequence in this FASTA file as the reference
   (i.e. mutation-free) sequence for the RNA.
 - ``out/dms-pool/idmut`` means search inside ``out/dms-pool/idmut`` for data
@@ -329,46 +329,56 @@ the time and version)::
 
     {
         "Sample": "dms-pool",
+        "Branches": {
+            "align": "",
+            "idmut": "",
+            "filter": "",
+            "cluster": ""
+        },
         "Reference": "rre",
         "Region": "26-204",
-        "Number of unique reads": 12236,
+        "Seed for the random number generator": 708453219,
         "Start at this many clusters": 1,
-        "Stop at this many clusters (0 for no limit)": 0,
+        "Stop at this many clusters (0 for no limit)": 2,
         "Try all numbers of clusters (Ks), even after finding the best number": false,
         "Write all numbers of clusters (Ks), rather than only the best number": false,
         "Remove runs with two clusters more similar than this correlation": 0.9,
-        "Remove runs with two clusters different by less than this MARCD": 1.5,
+        "Remove runs with two clusters that differ by less than this MARCD": 0.016,
+        "Remove runs where a cluster differs by more than this ARCD from the ensemble average at any position": 0.2,
+        "Remove runs where any cluster's Gini coefficient exceeds this limit": 0.667,
         "Calculate the jackpotting quotient to find over-represented reads": true,
         "Confidence level for the jackpotting quotient confidence interval": 0.95,
-        "Remove runs whose jackpotting quotient exceeds this limit": 1.2,
-        "Remove Ks whose 1st/2nd log likelihood difference exceeds this gap": 250.0,
-        "Remove Ks where every run has less than this correlation vs. the best": 0.975,
-        "Remove Ks where every run has more than this MARCD vs. the best": 1.1,
-        "Run EM this many times for each number of clusters (K)": 12,
-        "Run EM for at least this many iterations (times number of clusters)": 10,
-        "Run EM for at most this many iterations (times number of clusters)": 500,
+        "Remove runs whose jackpotting quotient exceeds this limit": 1.1,
+        "Maximum number of simulations to compute the jackpotting quotient": 12,
+        "Skip calculating the jackpotting quotient if the reads × positions exceeds this limit": 268435456,
+        "Remove Ks with a log likelihood gap larger than this (0 for no limit)": 0.0,
+        "Remove Ks where every run has less than this correlation vs. the best": 0.97,
+        "Remove Ks where every run has more than this MARCD vs. the best": 0.008,
+        "Run EM (successfully) at least this number of times for each K": 6,
+        "Run EM (successfully or not) at most this number of times for each K": 30,
+        "Run EM for at least this many iterations": 10,
+        "Run EM for at most this many iterations": 500,
         "Stop EM when the log likelihood increases by less than this threshold": 0.37,
+        "Number of unique reads": 12236,
         "Whether each number of clusters (K) passed filters": {
             "1": true,
-            "2": true,
-            "3": false
+            "2": true
         },
         "Best number of clusters": 2,
         "Numbers of clusters written to batches": [
             2
         ],
         "Number of batches": 2,
-        "MD5 checksums of batches": {
+        "Checksums of batches (SHA-512)": {
             "cluster": [
-                "8f42feceefca3aba6dfbf2fba8072ecf",
-                "f3bb0d2bdd105ec91c3f84bf3a194bfe"
+                "8f42feceefca3aba6dfbf2fba8072ecf7b1d6b1a9e3c0d5f4a2b8c7d6e5f40312a9b8c7d6e5f4039281706a5b4c3d2e1f0a9b8c7d6e5f4039281706a5b4c3d2e1",
+                "f3bb0d2bdd105ec91c3f84bf3a194bfe2c0d5f4a2b8c7d6e5f40312a9b8c7d6e5f4039281706a5b4c3d2e1f0a9b8c7d6e5f4039281706a5b4c3d2e1f0a9b8c7d6"
             ]
         },
-        "Branches": [],
         "Time began": "2024-12-08 at 23:10:31",
         "Time ended": "2024-12-08 at 23:12:16",
         "Time taken (minutes)": 1.75,
-        "Version of SEISMIC-RNA": "0.22.0"
+        "Version of SEISMIC-RNA": "0.25.3"
     }
 
 The number of clusters detected is the field ``Best number of clusters``, which

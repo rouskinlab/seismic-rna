@@ -19,12 +19,12 @@ List of Positions file: Uses
 List of Positions as input file
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-- The ``filter`` command accepts a List of Positions file via ``--exclude-file``.
+- The ``filter`` command accepts a List of Positions file via ``--mask-pos-file``.
 
 List of Positions as output file
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-- The ``listpos`` command outputs a List of Positions file for each table file.
+- The ``list`` command outputs a List of Positions file for each table file.
 
 Example List of Positions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

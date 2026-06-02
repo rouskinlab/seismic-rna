@@ -1,5 +1,5 @@
 ********************************************************************************
-Commands, Arguments, Options
+Command Line Reference
 ********************************************************************************
 
 .. note::
@@ -40,6 +40,11 @@ Run individual steps of the workflow
 .. click:: seismicrna.idmut:cli
     :prog: seismic idmut
 
+.. _cli_pool:
+
+.. click:: seismicrna.pool:cli
+    :prog: seismic pool
+
 .. _cli_filter:
 
 .. click:: seismicrna.filter:cli
@@ -50,6 +55,16 @@ Run individual steps of the workflow
 .. click:: seismicrna.cluster:cli
     :prog: seismic cluster
 
+.. _cli_join:
+
+.. click:: seismicrna.join:cli
+    :prog: seismic join
+
+.. _cli_ensembles:
+
+.. click:: seismicrna.ensembles.main:cli
+    :prog: seismic ensembles
+
 .. _cli_table:
 
 .. click:: seismicrna.table:cli
@@ -59,11 +74,6 @@ Run individual steps of the workflow
 
 .. click:: seismicrna.fold:cli
     :prog: seismic fold
-
-.. _cli_collate:
-
-.. click:: seismicrna.collate:cli
-    :prog: seismic collate
 
 .. _cli_graph:
 
@@ -82,11 +92,23 @@ seismic graph
 .. click:: seismicrna.graph.corroll:cli
     :prog: seismic graph corroll
 
+.. click:: seismicrna.graph.giniroll:cli
+    :prog: seismic graph giniroll
+
+.. click:: seismicrna.graph.snrroll:cli
+    :prog: seismic graph snrroll
+
 .. click:: seismicrna.graph.histpos:cli
     :prog: seismic graph histpos
 
 .. click:: seismicrna.graph.histread:cli
     :prog: seismic graph histread
+
+.. click:: seismicrna.graph.mutdist:cli
+    :prog: seismic graph mutdist
+
+.. click:: seismicrna.graph.poscorr:cli
+    :prog: seismic graph poscorr
 
 .. click:: seismicrna.graph.roc:cli
     :prog: seismic graph roc
@@ -94,27 +116,71 @@ seismic graph
 .. click:: seismicrna.graph.aucroll:cli
     :prog: seismic graph aucroll
 
-Extra Utilities
+.. click:: seismicrna.graph.abundance:cli
+    :prog: seismic graph abundance
+
+.. _cli_draw:
+
+.. click:: seismicrna.draw.main:cli
+    :prog: seismic draw
+
+.. _cli_collate:
+
+.. click:: seismicrna.collate:cli
+    :prog: seismic collate
+
+.. _cli_export:
+
+.. click:: seismicrna.export.main:cli
+    :prog: seismic export
+
+Utility commands
 ================================================================================
 
-.. note::
-    For every extra utility (that is not part of the main workflow), the name
-    begins with ``+``.
+.. _cli_splitbam:
 
-.. _cli_listpos:
-
-.. click:: seismicrna.lists:cli
-    :prog: seismic listpos
+.. click:: seismicrna.align.split:cli
+    :prog: seismic splitbam
 
 .. _cli_cleanfa:
 
 .. click:: seismicrna.cleanfa:cli
     :prog: seismic cleanfa
 
+.. _cli_list:
+
+.. click:: seismicrna.lists:cli
+    :prog: seismic list
+
 .. _cli_renumct:
 
 .. click:: seismicrna.renumct:cli
     :prog: seismic renumct
+
+.. _cli_ct2db:
+
+.. click:: seismicrna.core.rna.convert:cli_ct2db
+    :prog: seismic ct2db
+
+.. _cli_db2ct:
+
+.. click:: seismicrna.core.rna.convert:cli_db2ct
+    :prog: seismic db2ct
+
+.. _cli_importmm:
+
+.. click:: seismicrna.importmm.main:cli
+    :prog: seismic importmm
+
+.. _cli_migrate:
+
+.. click:: seismicrna.migrate:cli
+    :prog: seismic migrate
+
+.. _cli_fold_datapath:
+
+.. click:: seismicrna.fold.datapath:cli_datapath
+    :prog: seismic fold datapath
 
 .. _cli_test:
 
@@ -144,9 +210,12 @@ seismic sim
 
 .. click:: seismicrna.sim.clusts:cli
     :prog: seismic sim clusts
-   
+
 .. click:: seismicrna.sim.idmut:cli
     :prog: seismic sim idmut
 
 .. click:: seismicrna.sim.fastq:cli
     :prog: seismic sim fastq
+
+.. click:: seismicrna.sim.abstract:cli
+    :prog: seismic sim abstract

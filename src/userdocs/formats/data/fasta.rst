@@ -89,8 +89,10 @@ Reference sequences for these commands must be input as FASTA files:
 FASTA as output file
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-- The ``align`` command outputs a file in FASTA format alongside each
-  file in CRAM format (with option ``--cram``).
+- The ``cleanfa`` command outputs a cleaned FASTA file for each input FASTA
+  file (see :doc:`/use/utility/cleanfa`).
+- The ``sim ref`` command outputs a FASTA file of simulated reference
+  sequence(s).
 
 FASTA as temporary file
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

@@ -76,8 +76,8 @@ Alignment maps for the IDmut step must be input as XAM files.
 XAM as output file
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-- The Align step outputs a file in CRAM (with option ``--cram``) or BAM (with
-  option ``--bam``) format for each reference to which each sample was aligned.
+- The Align step outputs a BAM file for each reference to which each sample was
+  aligned.
 
 XAM as temporary file
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

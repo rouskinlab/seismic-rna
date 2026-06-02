@@ -217,8 +217,9 @@ FASTQ as input file
 
 Sequencing reads for these commands must be input as FASTQ files:
 
-- ``all``
+- ``wf``
 - ``align``
+- ``demult``
 
 FASTQ as output file
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -230,7 +231,7 @@ FASTQ as temporary file
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 - The ``align`` command writes a temporary FASTQ file for each input
-  FASTQ that it trims with cutadapt (with option ``--cut``).
+  FASTQ that it trims with fastp.
 
 .. _FASTQ format: https://en.wikipedia.org/wiki/FASTQ_format
 .. _guide from Illumina: https://www.illumina.com/science/technology/next-generation-sequencing/plan-experiments/paired-end-vs-single-read.html

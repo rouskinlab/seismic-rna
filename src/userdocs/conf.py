@@ -8,7 +8,7 @@
 # -- Project information -----------------------------------------------------
 
 project = "seismic-rna"
-project_copyright = "2022-2025, the Rouskin Lab"
+project_copyright = "2022-2026, the Rouskin Lab"
 author = "Matthew Allan, Yves Martin, Scott Grote, Alberic de Lajarte, and Justin Aruda"
 
 # -- General configuration ---------------------------------------------------
@@ -27,12 +27,19 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
     "sphinx.ext.autosectionlabel",
+    "sphinx.ext.todo",
     "sphinx_click",
-    "sphinx_rtd_theme",
 ]
+
+# Show todo directives in rendered output so reviewers see what still
+# needs to be filled in.
+todo_include_todos = True
 
 # Templates
 templates_path = ["_templates"]
+
+# Static files (CSS, JS, images)
+html_static_path = ["_static", "../../logo"]
 
 # Generate automatic summaries
 autosummary_generate = True
@@ -71,9 +78,16 @@ intersphinx_mapping = {
 intersphinx_disabled_domains = ["std"]
 
 # -- Options for HTML output
-html_theme = "sphinx_rtd_theme"
+html_theme = "renku"
 html_logo = "../../logo/logo-200.png"
 html_favicon = "../../logo/favicon.ico"
+html_css_files = ["seismic.css"]
+html_js_files = ["nav_labels.js"]
+
+html_theme_options = {
+    "style_nav_header_background": "#a00821",
+    "collapse_navigation": False,
+}
 
 # -- Options for EPUB output
 epub_show_urls = "footnote"
