@@ -161,50 +161,49 @@ class PositionList(List, ABC):
         min_ninfo_pos: int = opt_min_ninfo_pos.default,
         max_fmut_pos: float = opt_max_fmut_pos.default,
     ):
-        logger.routine(f"Began making {cls} from {table}")
-        if not isinstance(table, cls.get_table_type()):
-            raise TypeError(
-                f"table must be {cls.get_table_type()}, but got {type(table)}"
+        with logger.debug.begin(f"making {cls} from {table}"):
+            if not isinstance(table, cls.get_table_type()):
+                raise TypeError(
+                    f"table must be {cls.get_table_type()}, but got {type(table)}"
+                )
+            region = table.region.copy(masks=False)
+            logger.trace(
+                f"{table} has {region.length} positions of which "
+                f"{region.unmasked_int.size} are in use "
+                f"and {region.masked_int.size} are masked"
             )
-        region = table.region.copy(masks=False)
-        logger.detail(
-            f"{table} has {region.length} positions of which "
-            f"{region.unmasked_int.size} are in use "
-            f"and {region.masked_int.size} are masked"
-        )
-        region.add_mask(
-            cls.MASK_NINFO,
-            region.range_int[
-                table.fetch_count(rel=INFOR_REL, squeeze=True) < min_ninfo_pos
-            ],
-        )
-        logger.detail(
-            f"{table} has {region.get_mask(cls.MASK_NINFO).size} "
-            f"positions with < {min_ninfo_pos} informative bases"
-        )
-        region.add_mask(
-            cls.MASK_FMUT,
-            region.range_int[
-                table.fetch_ratio(rel=MUTAT_REL, squeeze=True) > max_fmut_pos
-            ],
-        )
-        logger.detail(
-            f"{table} has {region.get_mask(cls.MASK_FMUT).size} "
-            f"positions with mutation rates > {max_fmut_pos}"
-        )
-        positions = region.masked_int
-        data = pd.MultiIndex.from_product(
-            [[table.ref], positions], names=cls.get_column_names()
-        ).to_frame(index=False)
-        new_list = cls(
-            data=data,
-            branches=path.add_branch(path.LIST_STEP, branch, table.branches),
-            **{attr: getattr(table, attr) for attr in cls.list_init_table_attrs()},
-        )
-        logger.detail(
-            f"{table} was used to produce a list of {positions.size} positions to mask"
-        )
-        logger.routine(f"Ended making {cls} from {table}")
+            region.add_mask(
+                cls.MASK_NINFO,
+                region.range_int[
+                    table.fetch_count(rel=INFOR_REL, squeeze=True) < min_ninfo_pos
+                ],
+            )
+            logger.trace(
+                f"{table} has {region.get_mask(cls.MASK_NINFO).size} "
+                f"positions with < {min_ninfo_pos} informative bases"
+            )
+            region.add_mask(
+                cls.MASK_FMUT,
+                region.range_int[
+                    table.fetch_ratio(rel=MUTAT_REL, squeeze=True) > max_fmut_pos
+                ],
+            )
+            logger.trace(
+                f"{table} has {region.get_mask(cls.MASK_FMUT).size} "
+                f"positions with mutation rates > {max_fmut_pos}"
+            )
+            positions = region.masked_int
+            data = pd.MultiIndex.from_product(
+                [[table.ref], positions], names=cls.get_column_names()
+            ).to_frame(index=False)
+            new_list = cls(
+                data=data,
+                branches=path.add_branch(path.LIST_STEP, branch, table.branches),
+                **{attr: getattr(table, attr) for attr in cls.list_init_table_attrs()},
+            )
+            logger.trace(
+                f"{table} produced a list of {positions.size} positions to mask"
+            )
         return new_list
 
 

@@ -200,7 +200,7 @@ class EMRunsK(object):
         """Whether this number of clusters passes the filters."""
         n_runs_passing, min_runs_passing = self._n_min_runs_passing(**kwargs)
         if n_runs_passing < min_runs_passing:
-            logger.detail(
+            logger.trace(
                 f"{self} did not pass: {n_runs_passing} runs passed, "
                 f"but needed {min_runs_passing}"
             )
@@ -211,7 +211,7 @@ class EMRunsK(object):
         # if one side is NaN).
         loglike_vs_best = self.loglike_vs_best(**kwargs)
         if loglike_vs_best > self.max_loglike_vs_best > 0.0:
-            logger.detail(
+            logger.trace(
                 f"{self} did not pass: difference between 1st/2nd "
                 f"log likelihoods is {loglike_vs_best}, but needed "
                 f"to be ≤ {self.max_loglike_vs_best}"
@@ -219,7 +219,7 @@ class EMRunsK(object):
             return False
         pearson_vs_best = self.pearson_vs_best(**kwargs)
         if pearson_vs_best < self.min_pearson_vs_best:
-            logger.detail(
+            logger.trace(
                 f"{self} did not pass: Pearson correlation between "
                 f"best run and any other run is {pearson_vs_best}, "
                 f"but needed to be ≥ {self.min_pearson_vs_best}"
@@ -227,13 +227,13 @@ class EMRunsK(object):
             return False
         marcd_vs_best = self.marcd_vs_best(**kwargs)
         if marcd_vs_best > self.max_marcd_vs_best:
-            logger.detail(
+            logger.trace(
                 f"{self} did not pass: MARCD between best run and "
                 f"any other run is {marcd_vs_best}, but needed to "
                 f"be ≤ {self.max_marcd_vs_best}"
             )
             return False
-        logger.detail(f"{self} passed all filters using {kwargs}")
+        logger.trace(f"{self} passed all filters using {kwargs}")
         return True
 
     def summarize(self, **kwargs):

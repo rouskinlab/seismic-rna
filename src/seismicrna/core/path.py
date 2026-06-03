@@ -923,7 +923,7 @@ def mkdir_if_needed(path: pathlib.Path | str):
             # e.g. if it is a file.
             raise NotADirectoryError(path) from None
         return path
-    logger.action(f"Created directory {path}")
+    logger.debug(f"Created directory {path}")
     return path
 
 
@@ -946,7 +946,7 @@ def symlink_if_needed(link_path: pathlib.Path | str, target_path: pathlib.Path |
                 f"{link_path} is a symbolic link to {readlink}, not to {target_path}"
             ) from None
         return link_path
-    logger.action(f"Made {link_path} a symbolic link to {target_path}")
+    logger.debug(f"Made {link_path} a symbolic link to {target_path}")
     return link_path
 
 
@@ -964,7 +964,7 @@ def rmdir_if_needed(
         # The path does not exist, so there is no need to delete it.
         # FileNotFoundError is a subclass of OSError, so need to handle
         # this exception before OSError.
-        logger.detail(f"Skipped removing directory {path}: does not exist")
+        logger.trace(f"Skipped removing directory {path}: does not exist")
         return path
     except NotADirectoryError:
         # Trying to rmdir() something that is not a directory should
@@ -987,7 +987,7 @@ def rmdir_if_needed(
             # to avoid logging that the directory was removed.
             logger.warning(error)
             return path
-    logger.action(f"Deleted directory {path}")
+    logger.debug(f"Deleted directory {path}")
 
 
 # Path creation routines
@@ -1028,7 +1028,7 @@ def randdir(
     it on the file system."""
     parent = sanitize(parent) if parent is not None else pathlib.Path.cwd()
     path = pathlib.Path(mkdtemp(dir=parent, prefix=prefix, suffix=suffix))
-    logger.action(f"Created directory {path}")
+    logger.debug(f"Created directory {path}")
     return path
 
 
@@ -1141,18 +1141,17 @@ def find_files(
         # Check if the file matches the segments.
         if path_matches(path, segments):
             # If so, then yield it.
-            logger.detail(f"Found file {path}")
+            logger.trace(f"Found file {path}")
             yield path
     else:
         # Search the directory for files matching the segments.
-        logger.routine(f"Began recursively searching directory {path}")
-        yield from chain(
-            *map(
-                partial(find_files, segments=segments, pre_sanitize=False),
-                path.iterdir(),
+        with logger.debug.begin(f"recursively searching directory {path}"):
+            yield from chain(
+                *map(
+                    partial(find_files, segments=segments, pre_sanitize=False),
+                    path.iterdir(),
+                )
             )
-        )
-        logger.routine(f"Ended recursively searching directory {path}")
 
 
 @deduplicated

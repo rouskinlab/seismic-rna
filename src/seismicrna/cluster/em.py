@@ -380,9 +380,7 @@ class EMRun(object):
 
     def _run(self):
         """Run the EM clustering algorithm."""
-        logger.routine(
-            f"Began {self} with {self._min_iter}-{self._max_iter} iterations"
-        )
+        logger.debug(f"Began {self} with {self._min_iter}-{self._max_iter} iterations")
         # The random number generator must be initialized with a seed
         # because on some (but not all) platforms, initializing with no
         # seed would cause every EMRun to have the same random state and
@@ -418,7 +416,7 @@ class EMRun(object):
                     f"{self}, iteration {self.iter} returned a "
                     f"non-finite log likelihood: {self.log_like}"
                 )
-            logger.detail(
+            logger.trace(
                 f"{self}, iteration {self.iter}: log likelihood = {self.log_like}"
             )
             # Check for convergence.
@@ -434,7 +432,7 @@ class EMRun(object):
                 # than the convergence cutoff and at least the minimum
                 # number of iterations have been run.
                 self.converged = True
-                logger.routine(
+                logger.debug(
                     f"Ended {self} on iteration {self.iter}: "
                     f"log likelihood = {self.log_like}"
                 )

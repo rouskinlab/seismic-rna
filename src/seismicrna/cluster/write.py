@@ -116,7 +116,7 @@ def run_ks(
             else:
                 min_runs_k = 1
                 max_runs_k = 1
-            logger.routine(
+            logger.debug(
                 f"Began {min_runs_k} - {max_runs_k} run(s) of EM with {k} cluster(s)"
             )
             # Accumulate EM runs for this K.
@@ -169,12 +169,12 @@ def run_ks(
                 # now to find clusters that meet those criteria.
                 passing = runs_ks[k].passing(allow_underclustered=False)
             assert k in runs_ks
-            logger.detail(runs_ks[k].summarize())
+            logger.trace(runs_ks[k].summarize())
             # Output each run's mutation rates and cluster proportions.
             for rank, run in enumerate(runs_k):
                 write_mus(run, rank=rank, **path_kwargs)
                 write_pis(run, rank=rank, **path_kwargs)
-            logger.routine(
+            logger.debug(
                 f"Ended {num_runs_k} ({len(runs_k)} successful) "
                 f"run(s) of EM with {k} cluster(s)"
             )
@@ -279,7 +279,7 @@ def cluster(
         # the same seed that is chosen randomly here.
         if seed is None:
             seed = next(iter(get_random_integer_generator(None)))
-            logger.detail(
+            logger.trace(
                 f"No random seed specified for clustering: using random seed {seed}"
             )
         runs_ks = run_ks(

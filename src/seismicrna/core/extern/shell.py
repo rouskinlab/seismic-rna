@@ -64,7 +64,7 @@ def cmds_to_subshell(cmds: list[str]):
 def run_cmd(cmd: str, text: bool | None = True, shell: bool = True):
     """Run a command via subprocess.run(), with logging."""
     # Log the command with which the process was run.
-    logger.action(f"Began running shell command:\n{cmd}")
+    logger.debug(f"Began running shell command:\n{cmd}")
     # Run the process and capture the output.
     process = run(cmd, shell=shell, capture_output=text is not None, text=text)
     failed = process.returncode != 0
@@ -78,8 +78,8 @@ def run_cmd(cmd: str, text: bool | None = True, shell: bool = True):
     )
     if failed:
         raise ShellCommandFailedError(message)
-    logger.detail(message)
-    logger.action("Ended running shell command")
+    logger.trace(message)
+    logger.debug("Ended running shell command")
     return process
 
 
@@ -152,13 +152,11 @@ class ShellCommand(object):
             # not already exist.
             opath.parent.mkdir(parents=True, exist_ok=True)
         action = self._format_action(ipath, opath)
-        logger.routine(f"Began {action}")
-        # Generate and run the command.
-        process = run_cmd(self._make_command(ipath, opath, **kwargs))
-        logger.routine(f"Ended {action}")
+        with logger.debug.begin(f"{action}"):
+            # Generate and run the command.
+            process = run_cmd(self._make_command(ipath, opath, **kwargs))
         if self._parse_output:
-            logger.routine(f"Began parsing output of {action}")
-            output = self._parse_output(process)
-            logger.routine(f"Ended parsing output of {action}")
+            with logger.debug.begin(f"parsing output of {action}"):
+                output = self._parse_output(process)
             return output
         return process

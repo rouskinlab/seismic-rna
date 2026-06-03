@@ -95,100 +95,101 @@ def _import_one_ref(
         )
         return None
 
-    logger.routine(f"Began importing MM reference {repr(ref_id)}")
-    began = datetime.now()
+    with logger.debug.begin(f"importing MM reference {repr(ref_id)}"):
+        began = datetime.now()
 
-    # Write the reference sequence.
-    refseq_io = RefseqIO(branches=branches, sample=sample, ref=ref_id, refseq=refseq)
-    _, refseq_checksum = refseq_io.save(release_dir, brotli_level)
-
-    # Build per-position mutation codes.
-    mut_codes = _build_mut_codes(refseq, insert3)
-
-    # Write batches.
-    region = Region(ref_id, refseq)
-    idmut_checksums: list[str] = []
-    name_checksums: list[str | None] = []
-    batch_counts = []
-    n_reads_rel = 0
-    batch_num = 0
-    batch_start = 0
-    while batch_start < n_reads_xam:
-        idmut_batch, name_batch = from_reads(
-            _iter_batch_reads(reads, batch_start, batch_size, mut_codes),
-            sample=sample,
-            branches=branches,
-            ref=ref_id,
-            refseq=refseq,
-            batch=batch_num,
-            write_read_names=write_read_names,
+        # Write the reference sequence.
+        refseq_io = RefseqIO(
+            branches=branches, sample=sample, ref=ref_id, refseq=refseq
         )
-        _, rc = idmut_batch.save(release_dir, brotli_level)
-        idmut_checksums.append(rc)
-        n_reads_rel += idmut_batch.num_reads
-        if idmut_pos_table or idmut_read_table:
-            batch_counts.append(
-                idmut_batch.to_region_batch(region).count_all(
-                    all_patterns(),
-                    count_pos=idmut_pos_table,
-                    count_read=idmut_read_table,
-                    count_ends=False,
-                )
+        _, refseq_checksum = refseq_io.save(release_dir, brotli_level)
+
+        # Build per-position mutation codes.
+        mut_codes = _build_mut_codes(refseq, insert3)
+
+        # Write batches.
+        region = Region(ref_id, refseq)
+        idmut_checksums: list[str] = []
+        name_checksums: list[str | None] = []
+        batch_counts = []
+        n_reads_rel = 0
+        batch_num = 0
+        batch_start = 0
+        while batch_start < n_reads_xam:
+            idmut_batch, name_batch = from_reads(
+                _iter_batch_reads(reads, batch_start, batch_size, mut_codes),
+                sample=sample,
+                branches=branches,
+                ref=ref_id,
+                refseq=refseq,
+                batch=batch_num,
+                write_read_names=write_read_names,
             )
+            _, rc = idmut_batch.save(release_dir, brotli_level)
+            idmut_checksums.append(rc)
+            n_reads_rel += idmut_batch.num_reads
+            if idmut_pos_table or idmut_read_table:
+                batch_counts.append(
+                    idmut_batch.to_region_batch(region).count_all(
+                        all_patterns(),
+                        count_pos=idmut_pos_table,
+                        count_read=idmut_read_table,
+                        count_ends=False,
+                    )
+                )
+            if write_read_names:
+                assert isinstance(name_batch, ReadNamesBatchIO)
+                _, nc = name_batch.save(release_dir, brotli_level)
+                name_checksums.append(nc)
+            else:
+                name_checksums.append(None)
+            batch_num += 1
+            batch_start += batch_size
+
+        checksums = {IDmutBatchIO.btype(): idmut_checksums}
         if write_read_names:
-            assert isinstance(name_batch, ReadNamesBatchIO)
-            _, nc = name_batch.save(release_dir, brotli_level)
-            name_checksums.append(nc)
-        else:
-            name_checksums.append(None)
-        batch_num += 1
-        batch_start += batch_size
+            checksums[ReadNamesBatchIO.btype()] = name_checksums
 
-    checksums = {IDmutBatchIO.btype(): idmut_checksums}
-    if write_read_names:
-        checksums[ReadNamesBatchIO.btype()] = name_checksums
+        if idmut_pos_table or idmut_read_table:
+            tabulator = IDmutCountTabulator(
+                batch_counts=batch_counts,
+                top=release_dir,
+                branches=branches,
+                sample=sample,
+                ref=ref_id,
+                refseq=refseq,
+                count_pos=idmut_pos_table,
+                count_read=idmut_read_table,
+                validate=False,
+            )
+            tabulator.write_tables(pos=idmut_pos_table, read=idmut_read_table)
 
-    if idmut_pos_table or idmut_read_table:
-        tabulator = IDmutCountTabulator(
-            batch_counts=batch_counts,
-            top=release_dir,
-            branches=branches,
+        ended = datetime.now()
+
+        # Write the report.
+        report = IDmutReport(
             sample=sample,
             ref=ref_id,
-            refseq=refseq,
-            count_pos=idmut_pos_table,
-            count_read=idmut_read_table,
-            validate=False,
+            branches=branches,
+            min_mapq=0,
+            phred_enc=0,
+            min_phred=0,
+            insert3=insert3,
+            ambindel=False,
+            overhangs=True,
+            clip_end5=0,
+            clip_end3=0,
+            min_reads=min_reads,
+            n_reads_xam=n_reads_xam,
+            n_reads_rel=n_reads_rel,
+            n_batches=len(idmut_checksums),
+            checksums=checksums,
+            refseq_checksum=refseq_checksum,
+            began=began,
+            ended=ended,
         )
-        tabulator.write_tables(pos=idmut_pos_table, read=idmut_read_table)
-
-    ended = datetime.now()
-
-    # Write the report.
-    report = IDmutReport(
-        sample=sample,
-        ref=ref_id,
-        branches=branches,
-        min_mapq=0,
-        phred_enc=0,
-        min_phred=0,
-        insert3=insert3,
-        ambindel=False,
-        overhangs=True,
-        clip_end5=0,
-        clip_end3=0,
-        min_reads=min_reads,
-        n_reads_xam=n_reads_xam,
-        n_reads_rel=n_reads_rel,
-        n_batches=len(idmut_checksums),
-        checksums=checksums,
-        refseq_checksum=refseq_checksum,
-        began=began,
-        ended=ended,
-    )
-    report_saved = report.save(release_dir)
-    release_to_out(out_dir, release_dir, report_saved.parent)
-    logger.routine(f"Ended importing MM reference {repr(ref_id)}")
+        report_saved = report.save(release_dir)
+        release_to_out(out_dir, release_dir, report_saved.parent)
     return report_path.parent
 
 

@@ -189,7 +189,7 @@ class TestFilter(ut.TestCase, ABC):
             self.end5s(),
             self.end3s(),
         )
-        set_config(verbosity=Level.FATAL, exit_on_error=True)
+        set_config(verbosity=Level.ERROR, exit_on_error=True)
 
     def tearDown(self):
         self._tmp.cleanup()

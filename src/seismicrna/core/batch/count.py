@@ -129,11 +129,11 @@ def calc_coverage(
     read_weights: pd.DataFrame | None = None,
 ):
     """Calculate the coverage per position and per read."""
-    logger.routine("Began calculating coverage per position and per read")
+    logger.debug("Began calculating coverage per position and per read")
     match_reads_segments(seg_end5s, seg_end3s, seg_ends_mask)
     # Find the positions in use.
     positions = pos_index.get_level_values(POS_NAME).values
-    logger.detail(f"There are {positions.size} position(s) in use")
+    logger.trace(f"There are {positions.size} position(s) in use")
     if positions.size == 0:
         # If there are no positions in use, return empty arrays.
         cover_per_pos = (
@@ -144,7 +144,7 @@ def calc_coverage(
         cover_per_read = pd.DataFrame.from_dict(
             {base: pd.Series(0, read_nums) for base in DNA.alph()}
         )
-        logger.routine("Ended calculating coverage per position and per read")
+        logger.debug("Ended calculating coverage per position and per read")
         return cover_per_pos, cover_per_read
     if positions.size > 1 and np.diff(positions).min() <= 0:
         raise ValueError(f"positions must increase monotonically, but got {positions}")
@@ -210,7 +210,7 @@ def calc_coverage(
             for base in DNA.alph()
         }
     )
-    logger.routine("Ended calculating coverage per position and per read")
+    logger.debug("Ended calculating coverage per position and per read")
     return cover_per_pos, cover_per_read
 
 

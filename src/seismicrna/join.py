@@ -57,7 +57,7 @@ def joined_filter_report_exists(
         }
     )
     if not filter_report_file.is_file():
-        logger.detail(
+        logger.trace(
             f"Joined filter report {filter_report_file} does not already exist"
         )
         return False
@@ -71,7 +71,7 @@ def joined_filter_report_exists(
             f"are being joined for the cluster step: {cluster_regs} "
             f"(use --force to overwrite {filter_report_file})"
         )
-    logger.detail(f"Joined filter report {filter_report_file} already exists")
+    logger.trace(f"Joined filter report {filter_report_file} already exists")
     return True
 
 
@@ -339,7 +339,7 @@ def run(
             branches_flat = tuple(path.flatten_branches(dataset.branches))
             key = (dataset.top, dataset.sample, branches_flat, dataset.ref, clustered)
             joins[key].extend(regs)
-            logger.detail(f"Added regions {regs} for {dataset}")
+            logger.trace(f"Added regions {regs} for {dataset}")
     # For every joined Cluster dataset that does not have a joined Filter
     # dataset, also create the joined Filter dataset.
     for (top, sample, branches_flat, ref, clustered), regs in list(joins.items()):

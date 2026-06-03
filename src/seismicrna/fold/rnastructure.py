@@ -211,7 +211,7 @@ def _guess_data_path_conda():
             f"{data_path} does not exist"
         )
     check_data_path(data_path)
-    logger.detail(f"Successfully guessed {DATAPATH}: {data_path}")
+    logger.trace(f"Successfully guessed {DATAPATH}: {data_path}")
     return data_path
 
 
@@ -224,7 +224,7 @@ def _guess_data_path_manual():
     fold_path = Path(fold_path)
     data_path = fold_path.parent.parent.joinpath("data_tables")
     check_data_path(data_path)
-    logger.detail(f"Successfully guessed {DATAPATH}: {data_path}")
+    logger.trace(f"Successfully guessed {DATAPATH}: {data_path}")
     return data_path
 
 
@@ -546,7 +546,7 @@ def retitle_ct(ct_input: Path, ct_output: Path, force: bool = False):
         text = "".join(lines)
         with open(ct_output, write_mode(force=True)) as f:
             f.write(text)
-        logger.routine(
+        logger.debug(
             f"Retitled CT file {ct_input}"
             + (f" to {ct_output}" if ct_input != ct_output else "")
         )

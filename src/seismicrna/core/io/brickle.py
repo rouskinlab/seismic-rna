@@ -94,21 +94,19 @@ def save_brickle(
         SHA-512 checksum of the written data.
     """
     require_isinstance("item", item, BrickleIO)
-    logger.routine(f"Began writing {item} to {file}")
-    # Save the item's state rather than the item itself.
-    state = item.__getstate__()
-    logger.detail(f"State attributes of {item}: {list(state)}")
-    logger.detail(f"Began compressing {item} with Brotli level {brotli_level}")
-    data = brotli.compress(
-        pickle.dumps(state, protocol=PICKLE_PROTOCOL), quality=brotli_level
-    )
-    logger.detail(f"Ended compressing {item} with Brotli level {brotli_level}")
-    with open(file, write_mode(force, binary=True)) as f:
-        f.write(data)
-    logger.action(f"Wrote {item} to {file}")
-    checksum = calc_sha512_bytes(data)
-    logger.detail(f"Computed SHA-512 checksum of {file}: {checksum}")
-    logger.routine(f"Ended writing {item} to {file}")
+    with logger.debug.begin(f"writing {item} to {file}"):
+        # Save the item's state rather than the item itself.
+        state = item.__getstate__()
+        logger.trace(f"State attributes of {item}: {list(state)}")
+        with logger.trace.begin(f"compressing {item} with Brotli level {brotli_level}"):
+            data = brotli.compress(
+                pickle.dumps(state, protocol=PICKLE_PROTOCOL), quality=brotli_level
+            )
+        with open(file, write_mode(force, binary=True)) as f:
+            f.write(data)
+        logger.debug(f"Wrote {item} to {file}")
+        checksum = calc_sha512_bytes(data)
+        logger.trace(f"Computed SHA-512 checksum of {file}: {checksum}")
     return checksum
 
 
@@ -132,26 +130,25 @@ def load_brickle(file: str | Path, data_type: type[BrickleIO], checksum: str):
         The loaded object.
     """
     require_issubclass("data_type", data_type, BrickleIO)
-    logger.routine(f"Began loading {data_type} from {file}")
-    with open(file, "rb") as f:
-        data = f.read()
-    if checksum:
-        sha512_digest = calc_sha512_bytes(data)
-        if sha512_digest != checksum:
-            raise BadChecksumError(
-                f"Expected SHA-512 digest of {file} to be {checksum}, "
-                f"but got {sha512_digest}"
-            )
-    state = pickle.loads(brotli.decompress(data))
-    logger.detail(f"{file} contains {type(state)}")
-    if isinstance(state, data_type):
-        item = state
-        state = item.__getstate__()
-    elif isinstance(state, dict):
-        item = object.__new__(data_type)
-        item.__setstate__(state)
-    else:
-        raise TypeError(f"Expected to unpickle {data_type}, but got {type(state)}")
-    logger.detail(f"State attributes of {item}: {list(state)}")
-    logger.routine(f"Ended loading {data_type} from {file}")
+    with logger.debug.begin(f"loading {data_type} from {file}"):
+        with open(file, "rb") as f:
+            data = f.read()
+        if checksum:
+            sha512_digest = calc_sha512_bytes(data)
+            if sha512_digest != checksum:
+                raise BadChecksumError(
+                    f"Expected SHA-512 digest of {file} to be {checksum}, "
+                    f"but got {sha512_digest}"
+                )
+        state = pickle.loads(brotli.decompress(data))
+        logger.trace(f"{file} contains {type(state)}")
+        if isinstance(state, data_type):
+            item = state
+            state = item.__getstate__()
+        elif isinstance(state, dict):
+            item = object.__new__(data_type)
+            item.__setstate__(state)
+        else:
+            raise TypeError(f"Expected to unpickle {data_type}, but got {type(state)}")
+        logger.trace(f"State attributes of {item}: {list(state)}")
     return item

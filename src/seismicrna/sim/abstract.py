@@ -81,48 +81,47 @@ def _calc_ratios(counts: pd.DataFrame, is_paired: np.ndarray):
             str, ["calculating ratios from", "counts:", counts, "is_paired:", is_paired]
         )
     )
-    logger.routine(f"Began {message}")
-    is_unpaired = ~is_paired
+    with logger.debug.begin(f"{message}"):
+        is_unpaired = ~is_paired
 
-    def calc_ratio(num: str, den: str, rows):
-        return (counts.loc[rows, num] / counts.loc[rows, den]).dropna().values
+        def calc_ratio(num: str, den: str, rows):
+            return (counts.loc[rows, num] / counts.loc[rows, den]).dropna().values
 
-    # Get fraction of low-quality bases.
-    key = "loq"
-    numer, denom = get_other_parameters()[key]
-    paired_ratios = {key: 1.0 - calc_ratio(numer, denom, is_paired)}
-    logger.detail(f"paired[{key}] = {paired_ratios[key]}")
-    unpaired_ratios = {key: 1.0 - calc_ratio(numer, denom, is_unpaired)}
-    logger.detail(f"unpaired[{key}] = {unpaired_ratios[key]}")
-    # Get fraction of mutated Ns.
-    is_n = counts.index.get_level_values(BASE_NAME) == BASEN
-    is_n_paired = is_n & is_paired
-    is_n_unpaired = is_n & is_unpaired
-    for key, (numer, denom) in get_other_parameters().items():
-        if key.startswith(BASEN.lower()):
-            paired_ratios[key] = calc_ratio(numer, denom, is_n_paired)
-            logger.detail(f"paired[{key}] = {paired_ratios[key]}")
-            unpaired_ratios[key] = calc_ratio(numer, denom, is_n_unpaired)
-            logger.detail(f"unpaired[{key}] = {unpaired_ratios[key]}")
-    # Get parameters of the four DNA bases.
-    for base in DNA.four():
-        lower_base = base.lower()
-        is_base = counts.index.get_level_values(BASE_NAME) == base
-        is_base_paired = is_base & is_paired
-        is_base_unpaired = is_base & is_unpaired
-        for code, (numer, denom) in get_acgt_parameters().items():
-            if lower_base != code:
-                key = f"{lower_base}{code}"
-                paired_ratios[key] = calc_ratio(numer, denom, is_base_paired)
-                logger.detail(f"paired[{key}] = {paired_ratios[key]}")
-                unpaired_ratios[key] = calc_ratio(numer, denom, is_base_unpaired)
-                logger.detail(f"unpaired[{key}] = {unpaired_ratios[key]}")
-    logger.routine(f"Ended {message}")
+        # Get fraction of low-quality bases.
+        key = "loq"
+        numer, denom = get_other_parameters()[key]
+        paired_ratios = {key: 1.0 - calc_ratio(numer, denom, is_paired)}
+        logger.trace(f"paired[{key}] = {paired_ratios[key]}")
+        unpaired_ratios = {key: 1.0 - calc_ratio(numer, denom, is_unpaired)}
+        logger.trace(f"unpaired[{key}] = {unpaired_ratios[key]}")
+        # Get fraction of mutated Ns.
+        is_n = counts.index.get_level_values(BASE_NAME) == BASEN
+        is_n_paired = is_n & is_paired
+        is_n_unpaired = is_n & is_unpaired
+        for key, (numer, denom) in get_other_parameters().items():
+            if key.startswith(BASEN.lower()):
+                paired_ratios[key] = calc_ratio(numer, denom, is_n_paired)
+                logger.trace(f"paired[{key}] = {paired_ratios[key]}")
+                unpaired_ratios[key] = calc_ratio(numer, denom, is_n_unpaired)
+                logger.trace(f"unpaired[{key}] = {unpaired_ratios[key]}")
+        # Get parameters of the four DNA bases.
+        for base in DNA.four():
+            lower_base = base.lower()
+            is_base = counts.index.get_level_values(BASE_NAME) == base
+            is_base_paired = is_base & is_paired
+            is_base_unpaired = is_base & is_unpaired
+            for code, (numer, denom) in get_acgt_parameters().items():
+                if lower_base != code:
+                    key = f"{lower_base}{code}"
+                    paired_ratios[key] = calc_ratio(numer, denom, is_base_paired)
+                    logger.trace(f"paired[{key}] = {paired_ratios[key]}")
+                    unpaired_ratios[key] = calc_ratio(numer, denom, is_base_unpaired)
+                    logger.trace(f"unpaired[{key}] = {unpaired_ratios[key]}")
     return paired_ratios, unpaired_ratios
 
 
 def _accumulate_ratios(paired_unpaired_ratios: Iterable[tuple[dict, dict]]):
-    logger.routine("Began accumulating groups of ratios")
+    logger.debug("Began accumulating groups of ratios")
     all_paired_ratios = new_parameter_dict()
     all_unpaired_ratios = new_parameter_dict()
     count = 0
@@ -130,15 +129,15 @@ def _accumulate_ratios(paired_unpaired_ratios: Iterable[tuple[dict, dict]]):
         assert paired_ratios.keys() == all_paired_ratios.keys()
         for key, ratios in paired_ratios.items():
             all_paired_ratios[key] = np.concatenate([all_paired_ratios[key], ratios])
-            logger.detail(f"accum_paired[{key}] = {all_paired_ratios[key]}")
+            logger.trace(f"accum_paired[{key}] = {all_paired_ratios[key]}")
         assert unpaired_ratios.keys() == all_unpaired_ratios.keys()
         for key, ratios in unpaired_ratios.items():
             all_unpaired_ratios[key] = np.concatenate(
                 [all_unpaired_ratios[key], ratios]
             )
-            logger.detail(f"accum_unpaired[{key}] = {all_unpaired_ratios[key]}")
+            logger.trace(f"accum_unpaired[{key}] = {all_unpaired_ratios[key]}")
         count += 1
-    logger.routine(f"Ended accumulating {count} group(s) of ratios")
+    logger.debug(f"Ended accumulating {count} group(s) of ratios")
     return all_paired_ratios, all_unpaired_ratios
 
 

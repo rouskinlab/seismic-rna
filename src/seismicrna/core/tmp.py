@@ -31,7 +31,7 @@ def release_to_out(out_dir: Path, release_dir: Path, initial_path: Path):
     Path
         Final path of the file or directory in the output directory.
     """
-    logger.routine(f"Began releasing {initial_path} from {release_dir} to {out_dir}")
+    logger.debug(f"Began releasing {initial_path} from {release_dir} to {out_dir}")
     # Determine the path in the output directory.
     out_path = transpath(out_dir, release_dir, initial_path)
     if initial_path.exists():
@@ -44,10 +44,10 @@ def release_to_out(out_dir: Path, release_dir: Path, initial_path: Path):
         except FileNotFoundError:
             # The output path does not yet exist.
             deleted = False
-            logger.detail(f"Output path {out_path} does not yet exist")
+            logger.trace(f"Output path {out_path} does not yet exist")
         else:
             deleted = True
-            logger.action(
+            logger.debug(
                 f"Moved output path {out_path} to {delete_path} (to be deleted)"
             )
         try:
@@ -65,15 +65,13 @@ def release_to_out(out_dir: Path, release_dir: Path, initial_path: Path):
                     move(initial_path, out_path)
                 else:
                     raise
-            logger.action(
-                f"Moved initial path {initial_path} to output path {out_path}"
-            )
+            logger.debug(f"Moved initial path {initial_path} to output path {out_path}")
         except Exception:
             if deleted:
                 # If an error occurred, then restore the original output
                 # path before raising the exception.
                 delete_path.rename(out_path)
-                logger.action(
+                logger.debug(
                     f"Moved {delete_path} (to be deleted) "
                     f"back to output path {out_path}"
                 )
@@ -86,10 +84,10 @@ def release_to_out(out_dir: Path, release_dir: Path, initial_path: Path):
         # original directory can be deleted safely.
         rmdir_if_needed(delete_path, rmtree=True, raise_on_rmtree_error=False)
     else:
-        logger.detail(f"Skipped releasing {initial_path} (does not exist)")
+        logger.trace(f"Skipped releasing {initial_path} (does not exist)")
     if not out_path.exists():
         raise FileNotFoundError(out_path)
-    logger.routine(f"Ended releasing {initial_path} to {out_path}")
+    logger.debug(f"Ended releasing {initial_path} to {out_path}")
     return out_path
 
 

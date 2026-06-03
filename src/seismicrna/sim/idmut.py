@@ -69,13 +69,13 @@ def set_sim_mut_params(
     """
     if min_mut_gap_weights is None:
         min_mut_gap_weights = DEFAULT_MIN_MUT_GAP_WEIGHTS[probe]
-        logger.detail(
+        logger.trace(
             f"Auto-selected min_mut_gap_weights={repr(min_mut_gap_weights)} "
             f"for probe {repr(probe)}"
         )
     if injected_mut_probs is None:
         injected_mut_probs = DEFAULT_INJECTED_MUT_PROBS[probe]
-        logger.detail(
+        logger.trace(
             f"Auto-selected injected_mut_probs={repr(injected_mut_probs)} "
             f"for probe {repr(probe)}"
         )

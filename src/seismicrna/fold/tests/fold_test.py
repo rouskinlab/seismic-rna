@@ -188,7 +188,7 @@ class FoldCombinationsBase(ut.TestCase):
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
         self._out_dir = Path(self._tmp.name)
-        set_config(verbosity=Level.FATAL, exit_on_error=True)
+        set_config(verbosity=Level.ERROR, exit_on_error=True)
         idmut_report = write_idmut(self._out_dir)
         self._filter_dirs = {
             probe: run_filter(

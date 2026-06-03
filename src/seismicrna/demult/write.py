@@ -112,22 +112,21 @@ def list_demulted_fqs(
 
 def list_demult(fq_units: list[FastqUnit], refs: set[str]):
     """List every expected demultiplexed FASTQ from a multiplexed FASTQ."""
-    logger.routine("Began listing demultiplexed FASTQs")
-    # Map each combination of a sample and reference to a FASTQ unit.
-    demult_fqs: dict[tuple[str, str], FastqUnit] = dict()
-    for fq_unit in fq_units:
-        fq_refs = refs
-        # Add each sample-reference pair to the expected demultiplexed fastqs.
-        sample = fq_unit.sample
-        for ref in fq_refs:
-            logger.detail(
-                f"Adding demultiplexed FASTQ {repr(ref)} for sample {repr(sample)}"
-            )
-            sample_ref = sample, ref
-            if sample_ref in demult_fqs:
-                raise DuplicateSampleReferenceError(sample_ref)
-            demult_fqs[sample_ref] = fq_unit
-    logger.routine("Ended listing demultiplexed FASTQs")
+    with logger.debug.begin("listing demultiplexed FASTQs"):
+        # Map each combination of a sample and reference to a FASTQ unit.
+        demult_fqs: dict[tuple[str, str], FastqUnit] = dict()
+        for fq_unit in fq_units:
+            fq_refs = refs
+            # Add each sample-reference pair to the expected demultiplexed fastqs.
+            sample = fq_unit.sample
+            for ref in fq_refs:
+                logger.trace(
+                    f"Adding demultiplexed FASTQ {repr(ref)} for sample {repr(sample)}"
+                )
+                sample_ref = sample, ref
+                if sample_ref in demult_fqs:
+                    raise DuplicateSampleReferenceError(sample_ref)
+                demult_fqs[sample_ref] = fq_unit
     return demult_fqs
 
 
@@ -151,7 +150,7 @@ def demult_samples(
     """Run the demult pipeline and return a tuple of all fastq files
     from the pipeline."""
     if not fq_units:
-        logger.detail("No FASTQ files or pairs of files were given to demult")
+        logger.trace("No FASTQ files or pairs of files were given to demult")
         return list()
     # Even though the ancestors argument of path.add_branch() is empty,
     # use it instead of just "branches = {path.DEMULT_STEP: branch}" in
@@ -252,30 +251,29 @@ def demult_fqs_pipeline(
 ) -> list[Path]:
     """Run all stages of demultiplexing for one or more FASTQ files or pairs
     of mated FASTQ files."""
-    logger.routine("Began running the demultiplexing pipeline")
-    # Validate the maximum number of processes.
-    if num_cpus < 1:
-        logger.warning("--num_cpus must be ≥ 1: setting to 1")
-        num_cpus = 1
-    # Make the arguments for each demultiplexing task.
-    iter_args: list[tuple[FastqUnit, str, str]] = list()
+    with logger.debug.begin("running the demultiplexing pipeline"):
+        # Validate the maximum number of processes.
+        if num_cpus < 1:
+            logger.warning("--num_cpus must be ≥ 1: setting to 1")
+            num_cpus = 1
+        # Make the arguments for each demultiplexing task.
+        iter_args: list[tuple[FastqUnit, str, str]] = list()
 
-    for fq_unit in fq_units:
-        iter_args.append((fq_unit, barcodes))
-        # Add these arguments to the lists of arguments that
-        # will be passed to fq_pipeline.
-    # Generate demultiplexed FASTQ files.
-    fq_dirs = dispatch(
-        demult_fq_pipeline,
-        num_cpus=num_cpus,
-        pass_num_cpus=True,
-        as_list=True,
-        ordered=False,
-        raise_on_error=False,
-        args=iter_args,
-        kwargs=dict(tmp_dir=tmp_dir, force_serial=True, **kwargs),
-    )
-    logger.routine("Ended running the demultiplexing pipeline")
+        for fq_unit in fq_units:
+            iter_args.append((fq_unit, barcodes))
+            # Add these arguments to the lists of arguments that
+            # will be passed to fq_pipeline.
+        # Generate demultiplexed FASTQ files.
+        fq_dirs = dispatch(
+            demult_fq_pipeline,
+            num_cpus=num_cpus,
+            pass_num_cpus=True,
+            as_list=True,
+            ordered=False,
+            raise_on_error=False,
+            args=iter_args,
+            kwargs=dict(tmp_dir=tmp_dir, force_serial=True, **kwargs),
+        )
     # Return the final demultiplexed FASTQ directories.
     return fq_dirs
 
@@ -292,7 +290,7 @@ def demult_fq_pipeline(
     """Run all stages of the demult pipeline for one FASTQ file or
     one pair of mated FASTQ files."""
     release_dir, working_dir = get_release_working_dirs(tmp_dir)
-    logger.routine(f"Began processing {fq_inp} through the demult pipeline")
+    logger.debug(f"Began processing {fq_inp} through the demult pipeline")
     # Get attributes of the sample and references.
 
     num_split = num_cpus - 1
@@ -638,7 +636,7 @@ def demult_ahocorasick(
                     "\n".join("\n".join(record) for record in records) + "\n"
                 )
 
-    logger.detail(
+    logger.trace(
         f"Identified {count} out of {total} reads ({100 * (count / total):.3f}%)"
     )
 

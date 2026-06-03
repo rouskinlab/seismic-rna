@@ -124,51 +124,50 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
 
     @cached_property
     def _data(self):
-        logger.routine(f"Began calculating real histogram for {self}")
-        results = dispatch(
-            _calc_hists,
-            num_cpus=self.num_cpus,
-            pass_num_cpus=False,
-            as_list=False,
-            ordered=False,
-            raise_on_error=True,
-            args=as_list_of_tuples(range(self.dataset.num_batches)),
-            kwargs=dict(
-                dataset=self.dataset,
-                pattern=self.pattern,
-                rel_name=self.rel_name,
-                count_pos_ends=self.calc_null,
-            ),
-        )
-        max_read_length = 0
-        hists = _init_hists(self.dataset, self.rel_name)
-        counts = list()
-        for batch_max_read_length, batch_hists, batch_counts in results:
-            if batch_max_read_length > max_read_length:
-                max_read_length = batch_max_read_length
-            hists += batch_hists
-            if self.calc_null:
-                assert batch_counts is not None
-                counts.append(batch_counts)
-        if self.calc_null:
-            # Calculate the mutation rates and 5'/3' ends.
-            dataset_type = type(self.dataset)
-            tabulator_type = get_tabulator_type(dataset_type, count=True)
-            init_keywords = set(get_tabulator_type(dataset_type).init_kws()) - {
-                "get_batch_count_all",
-                "num_batches",
-            }
-            kwargs = {kw: getattr(self.dataset, kw) for kw in init_keywords}
-            tabulator = tabulator_type(
-                batch_counts=counts,
-                count_ends=True,
-                count_pos=True,
-                count_read=False,
-                **kwargs,
+        with logger.debug.begin(f"calculating real histogram for {self}"):
+            results = dispatch(
+                _calc_hists,
+                num_cpus=self.num_cpus,
+                pass_num_cpus=False,
+                as_list=False,
+                ordered=False,
+                raise_on_error=True,
+                args=as_list_of_tuples(range(self.dataset.num_batches)),
+                kwargs=dict(
+                    dataset=self.dataset,
+                    pattern=self.pattern,
+                    rel_name=self.rel_name,
+                    count_pos_ends=self.calc_null,
+                ),
             )
-        else:
-            tabulator = None
-        logger.routine(f"Ended calculating real histogram for {self}")
+            max_read_length = 0
+            hists = _init_hists(self.dataset, self.rel_name)
+            counts = list()
+            for batch_max_read_length, batch_hists, batch_counts in results:
+                if batch_max_read_length > max_read_length:
+                    max_read_length = batch_max_read_length
+                hists += batch_hists
+                if self.calc_null:
+                    assert batch_counts is not None
+                    counts.append(batch_counts)
+            if self.calc_null:
+                # Calculate the mutation rates and 5'/3' ends.
+                dataset_type = type(self.dataset)
+                tabulator_type = get_tabulator_type(dataset_type, count=True)
+                init_keywords = set(get_tabulator_type(dataset_type).init_kws()) - {
+                    "get_batch_count_all",
+                    "num_batches",
+                }
+                kwargs = {kw: getattr(self.dataset, kw) for kw in init_keywords}
+                tabulator = tabulator_type(
+                    batch_counts=counts,
+                    count_ends=True,
+                    count_pos=True,
+                    count_read=False,
+                    **kwargs,
+                )
+            else:
+                tabulator = None
         return max_read_length, hists, tabulator
 
     @property
@@ -212,48 +211,47 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
 
     @cached_property
     def _null_hist(self):
-        logger.routine(f"Began calculating null histogram for {self}")
-        if self.dataset.is_clustered:
-            end_counts = self.tabulator.end_counts.loc[:, self.loc_clusters]
-            num_reads = self.tabulator.num_reads.loc[self.loc_clusters].values
-        else:
-            end_counts = self.tabulator.end_counts
-            num_reads = self.tabulator.num_reads
-        end5 = self.dataset.region.end5
-        end5s = np.asarray(end_counts.index.get_level_values(FIELD_END5) - end5)
-        end3s = np.asarray(end_counts.index.get_level_values(FIELD_END3) - end5)
-        p_ends = np.atleast_3d(
-            calc_p_ends_observed(
-                self.dataset.region.length, end5s, end3s, end_counts.values
+        with logger.debug.begin(f"calculating null histogram for {self}"):
+            if self.dataset.is_clustered:
+                end_counts = self.tabulator.end_counts.loc[:, self.loc_clusters]
+                num_reads = self.tabulator.num_reads.loc[self.loc_clusters].values
+            else:
+                end_counts = self.tabulator.end_counts
+                num_reads = self.tabulator.num_reads
+            end5 = self.dataset.region.end5
+            end5s = np.asarray(end_counts.index.get_level_values(FIELD_END5) - end5)
+            end3s = np.asarray(end_counts.index.get_level_values(FIELD_END3) - end5)
+            p_ends = np.atleast_3d(
+                calc_p_ends_observed(
+                    self.dataset.region.length, end5s, end3s, end_counts.values
+                )
             )
-        )
-        p_mut = self.table.fetch_ratio(k=self.k, rel=self.rel_name)
-        # For every possible gap, calculate the fraction of reads that
-        # have no two mutations closer than that gap.
-        p_noclose_gap = np.empty(
-            (self.max_read_length, self._real_hist.columns.size), dtype=float
-        )
-        # For every possible distance, calculate the fraction of reads
-        # where the closest two mutations have exactly that distance,
-        # and for 0 the fraction of reads with fewer than two mutations.
-        p_dist = np.zeros_like(self._real_hist, dtype=float)
-        if p_noclose_gap.size > 0 and p_dist.size > 0:
-            p_noclose_gap[0] = 1.0
-            logger.detail(
-                "Calculating null fraction of reads in which every pair "
-                "of mutations would have at least N bases between them, "
-                f"from N = 1 to {self.max_read_length - 1}"
+            p_mut = self.table.fetch_ratio(k=self.k, rel=self.rel_name)
+            # For every possible gap, calculate the fraction of reads that
+            # have no two mutations closer than that gap.
+            p_noclose_gap = np.empty(
+                (self.max_read_length, self._real_hist.columns.size), dtype=float
             )
-            for gap in range(1, self.max_read_length):
-                p_noclose_ends = calc_p_noclose_given_ends_auto(p_mut.values, gap)
-                p_noclose_gap[gap] = triu_dot(p_noclose_ends, p_ends)
-                logger.detail(f"N = {gap}: {p_noclose_gap[gap]}")
-            p_dist[0] = p_noclose_gap[-1]
-            p_dist[1 : self.max_read_length] = -np.diff(p_noclose_gap, axis=0)
-            assert np.allclose(p_dist.sum(axis=0), 1.0)
-        assert np.all(p_dist >= 0.0)
-        # Multiply by the number of reads to obtain the histogram.
-        logger.routine(f"Ended calculating null histogram for {self}")
+            # For every possible distance, calculate the fraction of reads
+            # where the closest two mutations have exactly that distance,
+            # and for 0 the fraction of reads with fewer than two mutations.
+            p_dist = np.zeros_like(self._real_hist, dtype=float)
+            if p_noclose_gap.size > 0 and p_dist.size > 0:
+                p_noclose_gap[0] = 1.0
+                logger.trace(
+                    "Calculating null fraction of reads in which every pair "
+                    "of mutations would have at least N bases between them, "
+                    f"from N = 1 to {self.max_read_length - 1}"
+                )
+                for gap in range(1, self.max_read_length):
+                    p_noclose_ends = calc_p_noclose_given_ends_auto(p_mut.values, gap)
+                    p_noclose_gap[gap] = triu_dot(p_noclose_ends, p_ends)
+                    logger.trace(f"N = {gap}: {p_noclose_gap[gap]}")
+                p_dist[0] = p_noclose_gap[-1]
+                p_dist[1 : self.max_read_length] = -np.diff(p_noclose_gap, axis=0)
+                assert np.allclose(p_dist.sum(axis=0), 1.0)
+            assert np.all(p_dist >= 0.0)
+            # Multiply by the number of reads to obtain the histogram.
         return pd.DataFrame(
             p_dist * num_reads,
             index=self._real_hist.index,

@@ -1,6 +1,7 @@
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from inspect import getmodule
 from itertools import filterfalse, repeat
+from os import getpid
 from typing import Any, Callable, Iterable
 
 from .logs import Level, logger, get_config, set_config
@@ -59,6 +60,11 @@ class Task(object):
     def __init__(self, func: Callable):
         self._func = func
         self._config = get_config()
+        # Record the process and the open logging contexts of the process
+        # that creates this task, so that if the task runs in a child
+        # process, its log can begin one level deeper than its parent's.
+        self._pid = getpid()
+        self._context_levels = list(logger.context_levels)
 
     @property
     def name(self):
@@ -76,18 +82,21 @@ class Task(object):
             close_file_stream = True
         else:
             close_file_stream = False
+        if getpid() != self._pid:
+            # This task is running in a child process, whose logger starts
+            # with no contexts. Reproduce the parent's contexts and add one
+            # always-visible level (the lowest level, shown at any verbosity)
+            # so the child's log nests one level deeper than its parent's.
+            logger.context_levels = list(self._context_levels) + [min(Level)]
         verbosity = self._config.verbosity
         description_items = list()
-        if verbosity >= Level.ACTION:
+        if verbosity >= Level.DEBUG:
             description_items.extend(map(repr, args))
-        if verbosity >= Level.ROUTINE:
             description_items.extend(f"{k}={repr(v)}" for k, v in kwargs.items())
         description = f"{self.name}({', '.join(description_items)})"
         try:
-            logger.task(f"Began {description}")
-            result = self._func(*args, **kwargs)
-            logger.task(f"Ended {description}")
-            return result
+            with logger.info.begin(description):
+                return self._func(*args, **kwargs)
         finally:
             if close_file_stream and logger.file_stream is not None:
                 # If the logger's configuration needed to be set, then
@@ -140,7 +149,7 @@ def _dispatch(
     require_equal("len(funcs)", num_tasks, len(args), "len(args)")
     if num_tasks == 0:
         # No tasks to run: return.
-        logger.task("No tasks were given to dispatch")
+        logger.info("No tasks were given to dispatch")
         return list()
     # Determine how to parallelize each task.
     pool_size, num_cpus_per_task = calc_pool_size(
@@ -149,26 +158,28 @@ def _dispatch(
     if pass_num_cpus:
         # Add the number of processes as a keyword argument.
         kwargs = {**kwargs, "num_cpus": num_cpus_per_task}
-        logger.detail(
+        logger.trace(
             f"Calculated size of process pool: {pool_size}, "
             f"each with {num_cpus_per_task} processor(s)"
         )
     else:
-        logger.detail(f"Calculated size of process pool: {pool_size}")
+        logger.trace(f"Calculated size of process pool: {pool_size}")
     # Run the tasks.
     num_failed = 0
     if pass_force_serial:
         kwargs = {**kwargs, "force_serial": force_serial}
     if pool_size > 1:
         # Run the tasks in parallel.
-        with ProcessPoolExecutor(max_workers=pool_size) as pool:
-            logger.task(f"Opened pool of {pool_size} processes")
+        with (
+            logger.info.begin(f"pool of {pool_size} processes"),
+            ProcessPoolExecutor(max_workers=pool_size) as pool,
+        ):
             # Create and submit a Future for each task.
             futures = [
                 pool.submit(Task(func), *task_args, **kwargs)
                 for func, task_args in zip(funcs, args, strict=True)
             ]
-            logger.task(f"Waiting for {num_tasks} tasks to finish")
+            logger.info(f"Waiting for {num_tasks} tasks to finish")
             for future in futures if ordered else as_completed(futures):
                 try:
                     yield future.result()
@@ -178,28 +189,26 @@ def _dispatch(
                     else:
                         logger.error(error)
                         num_failed += 1
-        logger.task(f"Closed pool of {pool_size} processes")
     else:
         # Run the tasks in series.
-        logger.task(f"Began running {num_tasks} task(s) in series")
-        for func, task_args in zip(funcs, args, strict=True):
-            try:
-                task = Task(func)
-                yield task(*task_args, **kwargs)
-            except Exception as error:
-                if raise_on_error:
-                    raise error
-                else:
-                    logger.error(error)
-                    num_failed += 1
-        logger.task(f"Ended running {num_tasks} task(s) in series")
+        with logger.info.begin(f"running {num_tasks} task(s) in series"):
+            for func, task_args in zip(funcs, args, strict=True):
+                try:
+                    task = Task(func)
+                    yield task(*task_args, **kwargs)
+                except Exception as error:
+                    if raise_on_error:
+                        raise error
+                    else:
+                        logger.error(error)
+                        num_failed += 1
     if num_failed:
         message = f"Failed {num_failed} of {num_tasks} task(s)"
         if raise_on_error:
             raise RuntimeError(message)
         logger.warning(message)
     else:
-        logger.task(f"All {num_tasks} task(s) completed successfully")
+        logger.info(f"All {num_tasks} task(s) completed successfully")
 
 
 def dispatch(

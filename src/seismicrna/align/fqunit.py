@@ -476,7 +476,7 @@ class FastqUnit(object):
             segs = path.FASTQ_SEGS
         sample_refs = set()
         for fq in path.find_files_chain(fqs, segs):
-            logger.detail(f"Generating {cls} from {fq}")
+            logger.trace(f"Generating {cls} from {fq}")
             try:
                 fq_unit = cls(phred_enc=phred_enc, one_ref=one_ref, **{key: fq})
             except Exception as error:
@@ -485,7 +485,7 @@ class FastqUnit(object):
                 sample_ref = fq_unit.sample, fq_unit.ref
                 if sample_ref in sample_refs:
                     raise DuplicateSampleReferenceError(sample_ref)
-                logger.detail(f"Generated {cls.__name__} for {sample_ref}")
+                logger.trace(f"Generated {cls.__name__} for {sample_ref}")
                 yield fq_unit
 
     @classmethod
@@ -549,7 +549,7 @@ class FastqUnit(object):
             except Exception as error:
                 logger.error(error)
             else:
-                logger.detail(f"Generated {cls.__name__} for {sample_ref}")
+                logger.trace(f"Generated {cls.__name__} for {sample_ref}")
                 yield fq_unit
 
     @classmethod
@@ -581,44 +581,47 @@ class FastqUnit(object):
             in which `os.path.listdir` returns file paths.
         """
         # List all FASTQ files.
-        logger.routine(f"Began generating {cls.__name__} instances")
-        # single-end
-        yield from cls._from_files(
-            phred_enc=phred_enc,
-            one_ref=False,
-            fqs=fastq_args.get(cls.KEY_SINGLE, ()),
-            key=cls.KEY_SINGLE,
-        )
-        # interleaved paired-end
-        yield from cls._from_files(
-            phred_enc=phred_enc,
-            one_ref=False,
-            fqs=fastq_args.get(cls.KEY_INTER, ()),
-            key=cls.KEY_INTER,
-        )
-        # mated paired-end
-        yield from cls._from_mates(
-            phred_enc=phred_enc, one_ref=False, fqs=fastq_args.get(cls.KEY_MATED, ())
-        )
-        # demultiplexed single-end
-        yield from cls._from_files(
-            phred_enc=phred_enc,
-            one_ref=True,
-            fqs=fastq_args.get(cls.KEY_DSINGLE, ()),
-            key=cls.KEY_SINGLE,
-        )
-        # demultiplexed interleaved paired-end
-        yield from cls._from_files(
-            phred_enc=phred_enc,
-            one_ref=True,
-            fqs=fastq_args.get(cls.KEY_DINTER, ()),
-            key=cls.KEY_INTER,
-        )
-        # demultiplexed mated paired-end
-        yield from cls._from_mates(
-            phred_enc=phred_enc, one_ref=True, fqs=fastq_args.get(cls.KEY_DMATED, ())
-        )
-        logger.routine(f"Ended generating {cls.__name__} instances")
+        with logger.debug.begin(f"generating {cls.__name__} instances"):
+            # single-end
+            yield from cls._from_files(
+                phred_enc=phred_enc,
+                one_ref=False,
+                fqs=fastq_args.get(cls.KEY_SINGLE, ()),
+                key=cls.KEY_SINGLE,
+            )
+            # interleaved paired-end
+            yield from cls._from_files(
+                phred_enc=phred_enc,
+                one_ref=False,
+                fqs=fastq_args.get(cls.KEY_INTER, ()),
+                key=cls.KEY_INTER,
+            )
+            # mated paired-end
+            yield from cls._from_mates(
+                phred_enc=phred_enc,
+                one_ref=False,
+                fqs=fastq_args.get(cls.KEY_MATED, ()),
+            )
+            # demultiplexed single-end
+            yield from cls._from_files(
+                phred_enc=phred_enc,
+                one_ref=True,
+                fqs=fastq_args.get(cls.KEY_DSINGLE, ()),
+                key=cls.KEY_SINGLE,
+            )
+            # demultiplexed interleaved paired-end
+            yield from cls._from_files(
+                phred_enc=phred_enc,
+                one_ref=True,
+                fqs=fastq_args.get(cls.KEY_DINTER, ()),
+                key=cls.KEY_INTER,
+            )
+            # demultiplexed mated paired-end
+            yield from cls._from_mates(
+                phred_enc=phred_enc,
+                one_ref=True,
+                fqs=fastq_args.get(cls.KEY_DMATED, ()),
+            )
 
     def __str__(self):
         return " ".join([self.kind, " and ".join(map(str, self.paths.values()))])

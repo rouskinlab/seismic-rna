@@ -228,7 +228,7 @@ def get_subopt(subopt_out: Path, db_target: Path, force: bool = False):
         text = "".join(lines)
         with open(db_target, mode=write_mode(force=True)) as f:
             f.write(text)
-        logger.routine(
+        logger.debug(
             f"Suboptimal structures from {subopt_out} written" + f" to {db_target}"
         )
 
@@ -276,6 +276,6 @@ def extract_energies(vienna_input: Path, db_output: Path, force: bool = False):
         text = "".join(lines)
         with open(db_output, write_mode(force=True)) as f:
             f.write(text)
-        logger.routine(
+        logger.debug(
             f"Energies extracted from file {vienna_input}" + f" to {db_output}"
         )

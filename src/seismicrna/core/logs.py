@@ -1,3 +1,6 @@
+import os
+import shutil
+import textwrap
 from abc import ABC, abstractmethod
 from collections import namedtuple
 from datetime import datetime
@@ -5,47 +8,54 @@ from enum import IntEnum
 from functools import cache, wraps
 from pathlib import Path
 from sys import stderr
-from traceback import format_exception, format_exception_only
-from typing import Callable, Optional, TextIO
+from traceback import format_exception
+from typing import Callable, Iterable, Optional, TextIO
 
 
 class Level(IntEnum):
     """Level of a logging message."""
 
-    FATAL = -3
     ERROR = -2
     WARNING = -1
-    STATUS = 0
-    TASK = 1
-    ACTION = 2
-    ROUTINE = 3
-    DETAIL = 4
+    INFO = 0
+    DEBUG = 1
+    TRACE = 2
 
 
 DEFAULT_COLOR = True
 DEFAULT_EXIT_ON_ERROR = True
-DEFAULT_VERBOSITY = Level.STATUS
-FILE_VERBOSITY = Level.DETAIL
-EXC_INFO_VERBOSITY = Level.TASK
+DEFAULT_VERBOSITY = Level.INFO
+FILE_VERBOSITY = Level.TRACE
+
+# Number of spaces by which to indent each level of nesting depth.
+INDENT = "  "
 
 
 class Message(object):
-    """Message with a logging level."""
+    """Message with a logging level and enclosing nesting contexts."""
 
-    __slots__ = ["level", "content"]
+    __slots__ = ["level", "content", "context_levels"]
 
-    def __init__(self, level: Level, content: object):
+    def __init__(
+        self, level: Level, content: object, context_levels: Iterable[Level] = ()
+    ):
         self.level = level
         self.content = content
+        # Levels of the task contexts enclosing this message, from outermost
+        # to innermost; snapshotted so that later changes do not affect it.
+        self.context_levels = tuple(context_levels)
+
+    def depth(self, verbosity: int):
+        """Indentation depth at the given verbosity: the number of enclosing
+        contexts that are themselves visible at that verbosity. Contexts whose
+        level is above the verbosity (i.e. hidden) add no indentation, so
+        visible messages never jump several levels at once."""
+        return sum(1 for level in self.context_levels if level <= verbosity)
 
     def __str__(self):
         content = self.content
         if isinstance(content, BaseException):
-            if exc_info():
-                formatter = format_exception
-            else:
-                formatter = format_exception_only
-            content = "".join(formatter(content))
+            content = "".join(format_exception(content))
         elif not isinstance(content, str):
             content = str(content)
         return content
@@ -68,11 +78,11 @@ class Formatter(object):
 
     __slots__ = ["formatter"]
 
-    def __init__(self, formatter: Callable[[Message], str]):
+    def __init__(self, formatter: Callable[[Message, int], str]):
         self.formatter = formatter
 
-    def __call__(self, message: Message):
-        return self.formatter(message)
+    def __call__(self, message: Message, depth: int):
+        return self.formatter(message, depth)
 
 
 class Stream(ABC):
@@ -93,7 +103,10 @@ class Stream(ABC):
     def log(self, message: Message):
         """Log a message to the stream."""
         if self.filterer(message):
-            self.stream.write(self.formatter(message))
+            # Indent by the contexts that are visible at this stream's own
+            # verbosity, so each stream's indentation matches what it shows.
+            depth = message.depth(self.filterer.verbosity)
+            self.stream.write(self.formatter(message, depth))
 
 
 class ConsoleStream(Stream):
@@ -129,9 +142,51 @@ class FileStream(Stream):
             self._file = None
 
 
-def format_console_plain(message: Message):
+def indent_content(content: str, indent: str):
+    """Indent the first line and every continuation line of content."""
+    return indent + content.replace("\n", "\n" + indent)
+
+
+def wrap_console(content: str, first_indent: str, cont_indent: str, width: int):
+    """Wrap content to at most `width` columns.
+
+    The first visual line is prefixed with `first_indent` and every other
+    visual line (whether produced by wrapping or by a line break already in
+    `content`) with `cont_indent`. Words longer than the available width are
+    not broken, so the wrapped lines may occasionally exceed `width`."""
+    lines = []
+    for i, line in enumerate(content.split("\n")):
+        lead = first_indent if i == 0 else cont_indent
+        if len(lead) + len(line) <= width:
+            # The line already fits; keep it (and its whitespace) intact.
+            lines.append(lead + line)
+        else:
+            lines.extend(
+                textwrap.wrap(
+                    line,
+                    width=width,
+                    initial_indent=lead,
+                    subsequent_indent=cont_indent,
+                    break_long_words=False,
+                    break_on_hyphens=False,
+                )
+                or [lead]
+            )
+    return "\n".join(lines)
+
+
+def format_console_plain(message: Message, depth: int = 0):
     """Format a message to log on the console without color."""
-    return f"{message.level.name: <8}{message}\n"
+    # The level and process ID form a fixed-width prefix so that columns
+    # stay aligned; the message text is indented by nesting depth and wrapped
+    # to one less than the terminal width, with continuation lines aligned
+    # under the message column.
+    prefix = f"{message.level.name: <8}{os.getpid()}  "
+    indent = INDENT * depth
+    first_indent = prefix + indent
+    cont_indent = " " * len(prefix) + indent
+    width = max(shutil.get_terminal_size().columns - 1, len(cont_indent) + 1)
+    return wrap_console(str(message), first_indent, cont_indent, width) + "\n"
 
 
 class AnsiCode(object):
@@ -174,35 +229,86 @@ class AnsiCode(object):
 #       echo -ne "\033[38;5;${i}m  ${i} "
 #   done
 LEVEL_COLORS = {
-    Level.FATAL: "".join([AnsiCode.format_color(198), AnsiCode.format(AnsiCode.BOLD)]),
     Level.ERROR: AnsiCode.format_color(160),
     Level.WARNING: AnsiCode.format_color(214),
-    Level.STATUS: AnsiCode.format_color(28),
-    Level.TASK: AnsiCode.format_color(38),
-    Level.ACTION: AnsiCode.format_color(69),
-    Level.ROUTINE: AnsiCode.format_color(147),
-    Level.DETAIL: AnsiCode.format_color(247),
+    Level.INFO: AnsiCode.format_color(28),
+    Level.DEBUG: AnsiCode.format_color(69),
+    Level.TRACE: AnsiCode.format_color(247),
 }
 
 
-def format_console_color(message: Message):
+def format_console_color(message: Message, depth: int = 0):
     """Format a message to log on the console with color."""
     # Get the ANSI format codes based on the message's logging level.
     fmt = LEVEL_COLORS.get(message.level, AnsiCode.reset())
     # Wrap the formatted text with ANSI format codes.
-    return "".join([fmt, format_console_plain(message), AnsiCode.reset()])
+    return "".join([fmt, format_console_plain(message, depth), AnsiCode.reset()])
 
 
-def format_logfile(message: Message):
+def format_logfile(message: Message, depth: int = 0):
     """Format a message to write into the log file."""
     timestamp = datetime.now().strftime("on %Y-%m-%d at %H:%M:%S.%f")
-    return f"LOGMSG> {message.level.name} {timestamp}\n{message}\n\n"
+    indent = INDENT * depth
+    body = indent_content(str(message), indent)
+    return f"LOGMSG> {message.level.name} {os.getpid()} {timestamp}\n{body}\n\n"
+
+
+class TaskContext(object):
+    """Context manager that delimits a task in the log.
+
+    On entry, it logs ``Began {name}`` and pushes its level onto the logger's
+    context stack so that messages logged inside the block are indented. On
+    normal exit, it pops the context back off and logs ``Ended {name}``. If the
+    block exits because of an exception, the context is still popped, but the
+    ``Ended`` message is skipped (the task did not finish successfully)."""
+
+    __slots__ = ["_logger", "_level", "_name"]
+
+    def __init__(self, logger: "Logger", level: Level, name: object):
+        self._logger = logger
+        self._level = level
+        self._name = name
+
+    def __enter__(self):
+        self._logger._log(self._level, f"Began {self._name}")
+        self._logger.context_levels.append(self._level)
+        return self._logger
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self._logger.context_levels.pop()
+        if exc_type is None:
+            self._logger._log(self._level, f"Ended {self._name}")
+        return False
+
+
+class LevelLogger(object):
+    """Log messages at one logging level.
+
+    Calling the object logs its argument verbatim at this level. The
+    ``begin`` method returns a context manager that brackets a task with
+    ``Began``/``Ended`` messages and indents the messages logged inside it."""
+
+    __slots__ = ["_logger", "_level"]
+
+    def __init__(self, logger: "Logger", level: Level):
+        self._logger = logger
+        self._level = level
+
+    def __call__(self, content: object):
+        self._logger._log(self._level, content)
+
+    def begin(self, name: object):
+        """Context manager that logs ``Began {name}``/``Ended {name}`` and
+        indents the messages logged inside the block."""
+        return TaskContext(self._logger, self._level, name)
 
 
 class Logger(object):
     """Log messages to the console and to files."""
 
-    __slots__ = ["console_stream", "file_stream", "exit_on_error"]
+    __slots__ = ["console_stream", "file_stream", "exit_on_error", "context_levels"] + [
+        level.name.lower() for level in Level
+    ]
 
     def __init__(
         self,
@@ -213,11 +319,17 @@ class Logger(object):
         self.console_stream = console_stream
         self.file_stream = file_stream
         self.exit_on_error = exit_on_error
+        # Levels of the currently open task contexts, used to indent messages.
+        self.context_levels = []
+        # Create one callable LevelLogger per logging level, e.g. so that
+        # self.trace(content) logs content at the TRACE level.
+        for level in Level:
+            setattr(self, level.name.lower(), LevelLogger(self, level))
 
     def _log(self, level: Level, content: object):
         """Create and log a message to the stream(s)."""
-        message = Message(level, content)
-        if level <= Level.ERROR and self.exit_on_error:
+        message = Message(level, content, self.context_levels)
+        if level == Level.ERROR and self.exit_on_error:
             if isinstance(content, BaseException):
                 raise content
             raise RuntimeError(str(message))
@@ -225,30 +337,6 @@ class Logger(object):
             self.console_stream.log(message)
         if self.file_stream is not None:
             self.file_stream.log(message)
-
-    def fatal(self, content: object):
-        self._log(Level.FATAL, content)
-
-    def error(self, content: object):
-        self._log(Level.ERROR, content)
-
-    def warning(self, content: object):
-        self._log(Level.WARNING, content)
-
-    def status(self, content: object):
-        self._log(Level.STATUS, content)
-
-    def task(self, content: object):
-        self._log(Level.TASK, content)
-
-    def action(self, content: object):
-        self._log(Level.ACTION, content)
-
-    def routine(self, content: object):
-        self._log(Level.ROUTINE, content)
-
-    def detail(self, content: object):
-        self._log(Level.DETAIL, content)
 
 
 logger = Logger()
@@ -266,6 +354,9 @@ def erase_config():
         logger.file_stream.close()
     logger.file_stream = None
     logger.exit_on_error = DEFAULT_EXIT_ON_ERROR
+    # Clear the context stack so that no indentation leaks across runs and
+    # so that each parallel worker starts with no enclosing contexts.
+    logger.context_levels = []
 
 
 def set_config(
@@ -321,11 +412,6 @@ def get_config():
     )
 
 
-def exc_info():
-    """Whether to log exception information."""
-    return get_config().verbosity >= EXC_INFO_VERBOSITY
-
-
 def log_exceptions(default: Optional[Callable]):
     """If any exception occurs, catch it and return the default."""
 
@@ -336,7 +422,7 @@ def log_exceptions(default: Optional[Callable]):
             try:
                 return func(*args, **kwargs)
             except Exception as error:
-                logger.fatal(error)
+                logger.error(error)
                 return default() if default is not None else None
 
         return wrapper

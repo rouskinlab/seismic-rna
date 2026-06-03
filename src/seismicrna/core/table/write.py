@@ -205,17 +205,17 @@ class Tabulator(ABC):
                 if pos:
                     yield table_type(self)
                 else:
-                    logger.detail(f"Skipped {table_type} for {self}")
+                    logger.trace(f"Skipped {table_type} for {self}")
             elif issubclass(table_type, ReadTableWriter):
                 if read:
                     yield table_type(self)
                 else:
-                    logger.detail(f"Skipped {table_type} for {self}")
+                    logger.trace(f"Skipped {table_type} for {self}")
             elif issubclass(table_type, AbundanceTableWriter):
                 if clust:
                     yield table_type(self)
                 else:
-                    logger.detail(f"Skipped {table_type} for {self}")
+                    logger.trace(f"Skipped {table_type} for {self}")
             else:
                 # This should never happen; checking just in case.
                 raise TypeError(table_type)
@@ -249,9 +249,8 @@ class CountTabulator(Tabulator, ABC):
 
     @cached_property
     def _counts(self):
-        logger.routine(f"Began tabulating {self}")
-        counts = accumulate_counts(self._batch_counts, **self._accum_kwargs)
-        logger.routine(f"Ended tabulating {self}")
+        with logger.debug.begin(f"tabulating {self}"):
+            counts = accumulate_counts(self._batch_counts, **self._accum_kwargs)
         return counts
 
 
@@ -273,14 +272,13 @@ class BatchTabulator(Tabulator, ABC):
 
     @cached_property
     def _counts(self):
-        logger.routine(f"Began tabulating {self}")
-        counts = accumulate_batches(
-            self._get_batch_count_all,
-            self.num_batches,
-            num_cpus=self.num_cpus,
-            **self._accum_kwargs,
-        )
-        logger.routine(f"Ended tabulating {self}")
+        with logger.debug.begin(f"tabulating {self}"):
+            counts = accumulate_batches(
+                self._get_batch_count_all,
+                self.num_batches,
+                num_cpus=self.num_cpus,
+                **self._accum_kwargs,
+            )
         return counts
 
 
@@ -337,7 +335,7 @@ class TableWriter(Table, ABC):
         """Write the table's rounded data to the table's CSV file."""
         if need_write(self.path, force):
             self.data.round(decimals=PRECISION).to_csv(self.path)
-            logger.action(f"Wrote {self} to {self.path}")
+            logger.debug(f"Wrote {self} to {self.path}")
         return self.path
 
 

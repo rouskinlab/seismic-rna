@@ -370,7 +370,7 @@ def iter_table_pairs(tables: Iterable[Table]):
     for (ref, reg), table_group in table_groups.items():
         n_files = len(table_group)
         n_pairs = n_files * (n_files - 1) // 2
-        logger.detail(
+        logger.trace(
             f"Found {n_files} table(s) and {n_pairs} pair(s) "
             f"with reference {repr(ref)} and region {repr(reg)}"
         )

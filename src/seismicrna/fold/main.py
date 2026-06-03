@@ -156,76 +156,75 @@ def fold_region(
     if need_write(report_file, force):
         began = datetime.now()
         rna.write_varna_color_file(out_dir, branch)
-        logger.routine(f"Began folding {rna}")
-        fasta_tmp = rna.write_fasta(tmp_dir, branch)
-        mus_file = rna.write_mus_file(tmp_dir, branch)
-        ct_tmp = rna.get_ct_file(tmp_dir, branch)
-        ct_out = rna.get_ct_file(out_dir, branch)
-        vienna_tmp = None
-        db_tmp = None
-        try:
-            if fold_backend == FOLD_BACKEND_VIENNARNA:
-                if pseudoknots:
-                    raise IncompatibleOptionsError(
-                        f"fold_backend={FOLD_BACKEND_VIENNARNA} "
-                        f"is incompatible with pseudoknots={pseudoknots}"
+        with logger.debug.begin(f"folding {rna}"):
+            fasta_tmp = rna.write_fasta(tmp_dir, branch)
+            mus_file = rna.write_mus_file(tmp_dir, branch)
+            ct_tmp = rna.get_ct_file(tmp_dir, branch)
+            ct_out = rna.get_ct_file(out_dir, branch)
+            vienna_tmp = None
+            db_tmp = None
+            try:
+                if fold_backend == FOLD_BACKEND_VIENNARNA:
+                    if pseudoknots:
+                        raise IncompatibleOptionsError(
+                            f"fold_backend={FOLD_BACKEND_VIENNARNA} "
+                            f"is incompatible with pseudoknots={pseudoknots}"
+                        )
+                    vienna_tmp = rna.get_vienna_file(tmp_dir, branch)
+                    db_tmp = rna.get_db_file(tmp_dir, branch)
+                    run_rnafold(
+                        fasta_tmp,
+                        ct_tmp,
+                        ct_out,
+                        vienna_tmp,
+                        db_tmp,
+                        sp_data=mus_file,
+                        sp_strategy=rna.rnafold_sp_strategy,
+                        eddy_prior_paired_file=eddy_prior_paired_file,
+                        eddy_prior_unpaired_file=eddy_prior_unpaired_file,
+                        fold_constraint=fold_constraint,
+                        fold_commands=fold_commands,
+                        fold_temp_c=rna.fold_temp_c,
+                        fold_isolated=fold_isolated,
+                        fold_md=fold_md,
+                        fold_max=fold_max,
+                        fold_mfe=fold_mfe,
+                        fold_edelta=fold_edelta,
+                        end5=rna.region.end5,
+                        num_cpus=num_cpus,
+                        fold_dry_run=fold_dry_run,
                     )
-                vienna_tmp = rna.get_vienna_file(tmp_dir, branch)
-                db_tmp = rna.get_db_file(tmp_dir, branch)
-                run_rnafold(
-                    fasta_tmp,
-                    ct_tmp,
-                    ct_out,
-                    vienna_tmp,
-                    db_tmp,
-                    sp_data=mus_file,
-                    sp_strategy=rna.rnafold_sp_strategy,
-                    eddy_prior_paired_file=eddy_prior_paired_file,
-                    eddy_prior_unpaired_file=eddy_prior_unpaired_file,
-                    fold_constraint=fold_constraint,
-                    fold_commands=fold_commands,
-                    fold_temp_c=rna.fold_temp_c,
-                    fold_isolated=fold_isolated,
-                    fold_md=fold_md,
-                    fold_max=fold_max,
-                    fold_mfe=fold_mfe,
-                    fold_edelta=fold_edelta,
-                    end5=rna.region.end5,
-                    num_cpus=num_cpus,
-                    fold_dry_run=fold_dry_run,
-                )
-            else:
-                rnastructure_shape_args = rna.get_rnastructure_shape_args(
-                    tmp_dir, branch
-                )
-                run_rnastructure(
-                    fasta_tmp,
-                    ct_tmp,
-                    ct_out,
-                    pseudoknots=pseudoknots,
-                    fold_temp_k=rna.fold_temp_k,
-                    end5=rna.region.end5,
-                    num_cpus=num_cpus,
-                    fold_dry_run=fold_dry_run,
-                    fold_constraint=fold_constraint,
-                    fold_isolated=fold_isolated,
-                    fold_md=fold_md,
-                    fold_mfe=fold_mfe,
-                    fold_max=fold_max,
-                    fold_percent=fold_percent,
-                    **rnastructure_shape_args,
-                )
-        finally:
-            if not keep_tmp:
-                fasta_tmp.unlink(missing_ok=True)
-                mus_file.unlink(missing_ok=True)
-                if ct_tmp != ct_out:
-                    ct_tmp.unlink(missing_ok=True)
-                if db_tmp is not None:
-                    db_tmp.unlink(missing_ok=True)
-                if vienna_tmp is not None:
-                    vienna_tmp.unlink(missing_ok=True)
-        logger.routine(f"Ended folding {rna}")
+                else:
+                    rnastructure_shape_args = rna.get_rnastructure_shape_args(
+                        tmp_dir, branch
+                    )
+                    run_rnastructure(
+                        fasta_tmp,
+                        ct_tmp,
+                        ct_out,
+                        pseudoknots=pseudoknots,
+                        fold_temp_k=rna.fold_temp_k,
+                        end5=rna.region.end5,
+                        num_cpus=num_cpus,
+                        fold_dry_run=fold_dry_run,
+                        fold_constraint=fold_constraint,
+                        fold_isolated=fold_isolated,
+                        fold_md=fold_md,
+                        fold_mfe=fold_mfe,
+                        fold_max=fold_max,
+                        fold_percent=fold_percent,
+                        **rnastructure_shape_args,
+                    )
+            finally:
+                if not keep_tmp:
+                    fasta_tmp.unlink(missing_ok=True)
+                    mus_file.unlink(missing_ok=True)
+                    if ct_tmp != ct_out:
+                        ct_tmp.unlink(missing_ok=True)
+                    if db_tmp is not None:
+                        db_tmp.unlink(missing_ok=True)
+                    if vienna_tmp is not None:
+                        vienna_tmp.unlink(missing_ok=True)
         ct_file = ct_out
         if not fold_dry_run:
             ct_to_db(ct_file, force=True)

@@ -181,7 +181,7 @@ class AbstractTestBase(ut.TestCase):
         # exit_on_error=False keeps logger.error from re-raising; the code
         # under test relies on find_files_chain swallowing FS errors via
         # logger.error so it can return an empty result.
-        set_config(verbosity=Level.FATAL, exit_on_error=False)
+        set_config(verbosity=Level.ERROR, exit_on_error=False)
 
     @classmethod
     def tearDownClass(cls):

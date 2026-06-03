@@ -122,38 +122,37 @@ def _calc_tile_coords(
 ):
     """Calculate the tiled coordinates for one IDmut dataset."""
     ref = dataset.ref
-    logger.routine(f"Began calculating tiles for reference {repr(ref)}")
-    if tile_length > 0:
-        # Use a prespecified region length.
-        ref_tile_length = tile_length
-    else:
-        # Set the region length to twice the median read length.
-        logger.routine("Began calculating optimal tile length")
-        batches_read_lengths = dispatch(
-            _get_batch_read_lengths,
-            num_cpus=num_cpus,
-            pass_num_cpus=False,
-            as_list=True,
-            ordered=False,
-            raise_on_error=True,
-            args=as_list_of_tuples(dataset.batch_nums),
-            kwargs=dict(dataset=dataset),
-        )
-        if sum(a.size for a in batches_read_lengths) == 0:
-            raise ValueError(f"{dataset} has 0 reads")
-        read_lengths = np.concatenate(batches_read_lengths, axis=0)
-        median_read_length = np.median(read_lengths)
-        if median_read_length < 1:
-            raise ValueError(
-                f"The median read length must be ≥ 1, but got {median_read_length}"
+    with logger.debug.begin(f"calculating tiles for reference {repr(ref)}"):
+        if tile_length > 0:
+            # Use a prespecified region length.
+            ref_tile_length = tile_length
+        else:
+            # Set the region length to twice the median read length.
+            logger.debug("Began calculating optimal tile length")
+            batches_read_lengths = dispatch(
+                _get_batch_read_lengths,
+                num_cpus=num_cpus,
+                pass_num_cpus=False,
+                as_list=True,
+                ordered=False,
+                raise_on_error=True,
+                args=as_list_of_tuples(dataset.batch_nums),
+                kwargs=dict(dataset=dataset),
             )
-        logger.detail(f"The median read length is {median_read_length}")
-        ref_tile_length = round(2 * median_read_length)
-        logger.routine(f"Ended calculating optimal tile length: {ref_tile_length}")
-    tiles = _calc_tiles(
-        total_region.end5, total_region.end3, ref_tile_length, tile_min_overlap
-    )
-    logger.routine(f"Ended calculating tiles for reference {repr(ref)}")
+            if sum(a.size for a in batches_read_lengths) == 0:
+                raise ValueError(f"{dataset} has 0 reads")
+            read_lengths = np.concatenate(batches_read_lengths, axis=0)
+            median_read_length = np.median(read_lengths)
+            if median_read_length < 1:
+                raise ValueError(
+                    f"The median read length must be ≥ 1, but got {median_read_length}"
+                )
+            logger.trace(f"The median read length is {median_read_length}")
+            ref_tile_length = round(2 * median_read_length)
+            logger.debug(f"Ended calculating optimal tile length: {ref_tile_length}")
+        tiles = _calc_tiles(
+            total_region.end5, total_region.end3, ref_tile_length, tile_min_overlap
+        )
     return [(ref, end5, end3) for end5, end3 in tiles]
 
 
@@ -192,7 +191,7 @@ def _find_correlated_pairs(dataset: FilterMutsDataset, pair_fdr: float, num_cpus
     # Return the significantly correlated pairs.
     pairs = n.index
     pairs_significant = pairs[is_significant].to_list()
-    logger.detail(
+    logger.trace(
         f"{dataset} has {len(pairs_significant)} pairs with "
         f"significant correlations out of {len(pairs)} total pairs"
     )
@@ -297,7 +296,7 @@ def _calc_modules_from_pairs(
     preserve_null_pair_dists: bool = False,
     max_iter: int = 10000,
 ):
-    logger.routine("Began calculating modules")
+    logger.debug("Began calculating modules")
     require_atleast("min_mut_gap", min_mut_gap, 0, classes=int)
     require_atleast("min_pairs", min_pairs, 1, classes=int)
     require_greater("threshold_divisor", threshold_divisor, 0.0, classes=(float, int))
@@ -305,7 +304,7 @@ def _calc_modules_from_pairs(
     # First, naively aggregate all pairs that overlap.
     modules = _aggregate_pairs(pairs)
     for i in range(max_iter):
-        logger.detail(f"Modules at iteration {i}: {modules}")
+        logger.trace(f"Modules at iteration {i}: {modules}")
         new_modules = list()
         for module in modules:
             if module in finished:
@@ -355,7 +354,7 @@ def _calc_modules_from_pairs(
         modules = new_modules
     else:
         logger.warning(f"Modules did not converge in {max_iter} iterations")
-    logger.routine(f"Ended calculating modules: {modules}")
+    logger.debug(f"Ended calculating modules: {modules}")
     return modules
 
 
@@ -570,7 +569,7 @@ def _calc_cluster_modules(
         modules = _filter_modules_length(modules, min_length, max_length)
     else:
         raise ValueError(gap_mode)
-    logger.routine(f"Ended adjusting modules: {modules}")
+    logger.debug(f"Ended adjusting modules: {modules}")
     if n_modules_before_filter > 0 and not modules:
         logger.warning(
             f"All {n_modules_before_filter} module(s) were removed "
@@ -878,14 +877,13 @@ def ensembles(
         # Erase the tiles at the
         if erase_tiles:
             # Delete the filter reports and batches of the tiles.
-            logger.routine("Began deleting tiled reports and batches")
-            for file in path.find_files_chain(
-                tiled_dirs, FilterReport.get_path_seg_types()
-            ):
-                file.unlink(missing_ok=True)
-            for file in path.find_files_chain(
-                tiled_dirs, FilterBatchIO.get_path_seg_types()
-            ):
-                file.unlink(missing_ok=True)
-            logger.routine("Ended deleting tiled reports and batches")
+            with logger.debug.begin("deleting tiled reports and batches"):
+                for file in path.find_files_chain(
+                    tiled_dirs, FilterReport.get_path_seg_types()
+                ):
+                    file.unlink(missing_ok=True)
+                for file in path.find_files_chain(
+                    tiled_dirs, FilterBatchIO.get_path_seg_types()
+                ):
+                    file.unlink(missing_ok=True)
     return report_file.parent

@@ -295,132 +295,133 @@ def adjust_counts(
     else:
         n_rels = table_per_pos.columns.size
     action += f" and {n_rels} relationships"
-    logger.routine(f"Began {action}")
-    # Determine which positions are unmasked.
-    unmask = region.unmasked_bool
-    # Calculate the fraction of mutations at each position among reads
-    # with no two mutations too close.
-    with np.errstate(divide="ignore"):
-        # Ignore division by zero, which is acceptable here because any
-        # resulting NaN values are zeroed by nan_to_num.
-        p_mut_given_noclose = np.nan_to_num(
-            _masked_pos_to_zero(
-                table_per_pos[MUTAT_REL] / table_per_pos[INFOR_REL], region
+    with logger.debug.begin(f"{action}"):
+        # Determine which positions are unmasked.
+        unmask = region.unmasked_bool
+        # Calculate the fraction of mutations at each position among reads
+        # with no two mutations too close.
+        with np.errstate(divide="ignore"):
+            # Ignore division by zero, which is acceptable here because any
+            # resulting NaN values are zeroed by nan_to_num.
+            p_mut_given_noclose = np.nan_to_num(
+                _masked_pos_to_zero(
+                    table_per_pos[MUTAT_REL] / table_per_pos[INFOR_REL], region
+                )
             )
-        )
-    if isinstance(n_reads_clust, int):
-        # There is only one cluster, so the probability that each read
-        # belongs to that cluster is 1.
-        p_clust_given_noclose = np.array([1.0])
-        # Calculate the parameters.
-        p_mut, p_ends, p_clust = calc_params(
-            p_mut_given_noclose,
-            p_ends_given_clust_noclose,
-            p_clust_given_noclose,
-            min_mut_gap,
-            mut_collisions,
-            quick_unbias=quick_unbias,
-            quick_unbias_thresh=quick_unbias_thresh,
-        )
-        # Compute the probability that reads would have no two mutations
-        # too close.
-        p_noclose_given_clust = calc_p_noclose_given_clust(
-            p_ends, calc_p_noclose_given_ends_auto(p_mut, min_mut_gap)
-        )
-        # Drop the cluster dimension from the parameters.
-        if p_mut.shape != (region.length, 1):
-            raise ValueError(
-                f"p_mut must have shape {(region.length, 1)}, but got {p_mut.shape}"
-            )
-        p_mut = p_mut.reshape((-1,))
-        if p_clust.shape != (1,):
-            raise ValueError(f"p_clust must have shape {(1,)}, but got {p_clust.shape}")
-        p_clust = float(p_clust[0])
-        if not np.isclose(p_clust, 1.0):
-            raise ValueError(f"p_clust must equal 1., but got {p_clust}")
-        if p_noclose_given_clust.shape != (1,):
-            raise ValueError(
-                f"p_noclose_given_clust must have shape {(1,)}, "
-                f"but got {p_noclose_given_clust.shape}"
-            )
-        p_noclose = p_noclose_given_clust = float(p_noclose_given_clust[0])
-        # Compute the number of reads.
-        n_clust = n_reads_clust / p_noclose
-    elif isinstance(n_reads_clust, pd.Series):
-        # Calculate the number of reads with no two mutations too close
-        # for each k.
-        n_reads_noclose_ks = n_reads_clust.groupby(level=NUM_CLUSTS_NAME).sum()
-        # Determine the numbers of clusters.
-        ks = validate_ks(n_reads_noclose_ks.index.values)
-        # Calculate the parameters for each k separately.
-        p_mut = np.empty_like(p_mut_given_noclose)
-        p_clust = np.empty_like(n_reads_clust.values)
-        p_noclose_given_clust = np.empty_like(n_reads_clust.values)
-        n_clust = pd.Series(index=n_reads_clust.index)
-        for k in ks:
-            ki = n_reads_clust.index.get_level_values(NUM_CLUSTS_NAME) == k
-            # Calculate the fraction of reads with no two mutations too
-            # close in each cluster.
-            n_reads_noclose = float(n_reads_noclose_ks.at[k])
-            p_clust_given_noclose = n_reads_clust.loc[k].values / n_reads_noclose
-            # Calculate the parameters for each cluster.
-            p_mut[:, ki], p_ends, p_clust[ki] = calc_params(
-                p_mut_given_noclose[:, ki],
-                p_ends_given_clust_noclose[:, :, ki],
+        if isinstance(n_reads_clust, int):
+            # There is only one cluster, so the probability that each read
+            # belongs to that cluster is 1.
+            p_clust_given_noclose = np.array([1.0])
+            # Calculate the parameters.
+            p_mut, p_ends, p_clust = calc_params(
+                p_mut_given_noclose,
+                p_ends_given_clust_noclose,
                 p_clust_given_noclose,
                 min_mut_gap,
                 mut_collisions,
+                quick_unbias=quick_unbias,
+                quick_unbias_thresh=quick_unbias_thresh,
             )
-            # Compute the probability that reads from each cluster would
-            # have no two mutations too close.
-            p_noclose_given_clust[ki] = calc_p_noclose_given_clust(
-                p_ends, calc_p_noclose_given_ends_auto(p_mut[:, ki], min_mut_gap)
+            # Compute the probability that reads would have no two mutations
+            # too close.
+            p_noclose_given_clust = calc_p_noclose_given_clust(
+                p_ends, calc_p_noclose_given_ends_auto(p_mut, min_mut_gap)
             )
-            # Compute the probability that reads from any cluster would
-            # have no two mutations too close.
-            p_noclose = float(np.vdot(p_noclose_given_clust[ki], p_clust[ki]))
-            # Compute the number of reads in each cluster.
-            n_clust.at[k] = (n_reads_noclose / p_noclose) * p_clust[ki]
-    else:
-        raise TypeError(
-            "n_reads_clust must be an int or Series, "
-            f"but got {type(n_reads_clust).__name__}"
-        )
-    # Remove masked positions from the mutation rates.
-    p_mut = p_mut[unmask]
-    # Create the table of adjusted counts.
-    # Initialize an empty DataFrame of the adjusted counts with the same
-    # index and columns as the observed counts.
-    n_rels = pd.DataFrame(np.nan, table_per_pos.index, table_per_pos.columns)
-    # Assume that the observance bias affects the counts of covered and
-    # informative bases equally, so p_noclose_given_ends is defined as:
-    # p_noclose_given_ends := ninfo_obs / n_info
-    # from which we can estimate the informative bases after adjustment:
-    # n_info = ninfo_obs / p_noclose_given_ends
-    n_cov = table_per_pos.loc[unmask, COVER_REL].values / p_noclose_given_clust
-    n_info = table_per_pos.loc[unmask, INFOR_REL].values / p_noclose_given_clust
-    n_rels.loc[unmask, COVER_REL] = n_cov
-    n_rels.loc[unmask, INFOR_REL] = n_info
-    # From the definition of the adjusted fraction of mutations:
-    # p_mut := n_mut / n_info
-    # we can also estimate the mutated bases after adjustment:
-    n_mut = p_mut * n_info
-    n_rels.loc[unmask, MUTAT_REL] = n_mut
-    # From the definition of informative bases:
-    # n_info := n_ref + n_mut
-    # we can estimate the matched bases after adjustment:
-    n_ref = n_info - n_mut
-    n_rels.loc[unmask, MATCH_REL] = n_ref
-    # Compute the factor by which n_mut was scaled for each position.
-    with np.errstate(divide="ignore", invalid="ignore"):
-        # Division by 0 is possible if no mutations were observed at a
-        # given position, resulting in a NaN value at that position.
-        scale = n_mut / table_per_pos.loc[unmask, MUTAT_REL].values
-    # Replace NaN values with 1 so that missing values do not propagate
-    # during multiplication.
-    scale = np.nan_to_num(scale, nan=1.0)
-    # Scale every subtype of mutation by this factor.
-    for mut in SUBMUTS:
-        n_rels.loc[unmask, mut] = scale * table_per_pos.loc[unmask, mut].values
-    logger.routine(f"Ended {action}")
+            # Drop the cluster dimension from the parameters.
+            if p_mut.shape != (region.length, 1):
+                raise ValueError(
+                    f"p_mut must have shape {(region.length, 1)}, but got {p_mut.shape}"
+                )
+            p_mut = p_mut.reshape((-1,))
+            if p_clust.shape != (1,):
+                raise ValueError(
+                    f"p_clust must have shape {(1,)}, but got {p_clust.shape}"
+                )
+            p_clust = float(p_clust[0])
+            if not np.isclose(p_clust, 1.0):
+                raise ValueError(f"p_clust must equal 1., but got {p_clust}")
+            if p_noclose_given_clust.shape != (1,):
+                raise ValueError(
+                    f"p_noclose_given_clust must have shape {(1,)}, "
+                    f"but got {p_noclose_given_clust.shape}"
+                )
+            p_noclose = p_noclose_given_clust = float(p_noclose_given_clust[0])
+            # Compute the number of reads.
+            n_clust = n_reads_clust / p_noclose
+        elif isinstance(n_reads_clust, pd.Series):
+            # Calculate the number of reads with no two mutations too close
+            # for each k.
+            n_reads_noclose_ks = n_reads_clust.groupby(level=NUM_CLUSTS_NAME).sum()
+            # Determine the numbers of clusters.
+            ks = validate_ks(n_reads_noclose_ks.index.values)
+            # Calculate the parameters for each k separately.
+            p_mut = np.empty_like(p_mut_given_noclose)
+            p_clust = np.empty_like(n_reads_clust.values)
+            p_noclose_given_clust = np.empty_like(n_reads_clust.values)
+            n_clust = pd.Series(index=n_reads_clust.index)
+            for k in ks:
+                ki = n_reads_clust.index.get_level_values(NUM_CLUSTS_NAME) == k
+                # Calculate the fraction of reads with no two mutations too
+                # close in each cluster.
+                n_reads_noclose = float(n_reads_noclose_ks.at[k])
+                p_clust_given_noclose = n_reads_clust.loc[k].values / n_reads_noclose
+                # Calculate the parameters for each cluster.
+                p_mut[:, ki], p_ends, p_clust[ki] = calc_params(
+                    p_mut_given_noclose[:, ki],
+                    p_ends_given_clust_noclose[:, :, ki],
+                    p_clust_given_noclose,
+                    min_mut_gap,
+                    mut_collisions,
+                )
+                # Compute the probability that reads from each cluster would
+                # have no two mutations too close.
+                p_noclose_given_clust[ki] = calc_p_noclose_given_clust(
+                    p_ends, calc_p_noclose_given_ends_auto(p_mut[:, ki], min_mut_gap)
+                )
+                # Compute the probability that reads from any cluster would
+                # have no two mutations too close.
+                p_noclose = float(np.vdot(p_noclose_given_clust[ki], p_clust[ki]))
+                # Compute the number of reads in each cluster.
+                n_clust.at[k] = (n_reads_noclose / p_noclose) * p_clust[ki]
+        else:
+            raise TypeError(
+                "n_reads_clust must be an int or Series, "
+                f"but got {type(n_reads_clust).__name__}"
+            )
+        # Remove masked positions from the mutation rates.
+        p_mut = p_mut[unmask]
+        # Create the table of adjusted counts.
+        # Initialize an empty DataFrame of the adjusted counts with the same
+        # index and columns as the observed counts.
+        n_rels = pd.DataFrame(np.nan, table_per_pos.index, table_per_pos.columns)
+        # Assume that the observance bias affects the counts of covered and
+        # informative bases equally, so p_noclose_given_ends is defined as:
+        # p_noclose_given_ends := ninfo_obs / n_info
+        # from which we can estimate the informative bases after adjustment:
+        # n_info = ninfo_obs / p_noclose_given_ends
+        n_cov = table_per_pos.loc[unmask, COVER_REL].values / p_noclose_given_clust
+        n_info = table_per_pos.loc[unmask, INFOR_REL].values / p_noclose_given_clust
+        n_rels.loc[unmask, COVER_REL] = n_cov
+        n_rels.loc[unmask, INFOR_REL] = n_info
+        # From the definition of the adjusted fraction of mutations:
+        # p_mut := n_mut / n_info
+        # we can also estimate the mutated bases after adjustment:
+        n_mut = p_mut * n_info
+        n_rels.loc[unmask, MUTAT_REL] = n_mut
+        # From the definition of informative bases:
+        # n_info := n_ref + n_mut
+        # we can estimate the matched bases after adjustment:
+        n_ref = n_info - n_mut
+        n_rels.loc[unmask, MATCH_REL] = n_ref
+        # Compute the factor by which n_mut was scaled for each position.
+        with np.errstate(divide="ignore", invalid="ignore"):
+            # Division by 0 is possible if no mutations were observed at a
+            # given position, resulting in a NaN value at that position.
+            scale = n_mut / table_per_pos.loc[unmask, MUTAT_REL].values
+        # Replace NaN values with 1 so that missing values do not propagate
+        # during multiplication.
+        scale = np.nan_to_num(scale, nan=1.0)
+        # Scale every subtype of mutation by this factor.
+        for mut in SUBMUTS:
+            n_rels.loc[unmask, mut] = scale * table_per_pos.loc[unmask, mut].values
     return n_rels, n_clust

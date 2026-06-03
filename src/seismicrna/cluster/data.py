@@ -191,206 +191,206 @@ def get_clust_params(dataset: ClusterMutsDataset, num_cpus: int = 1):
     """Get the mutation rates and proportion for each cluster. If table
     files already exist, then use them to get the parameters; otherwise,
     calculate the parameters from the dataset."""
-    logger.routine(f"Began obtaining cluster parameters from {dataset}")
-    # Try to load the tables from files.
-    path_fields = {
-        path.TOP: dataset.top,
-        path.SAMPLE: dataset.sample,
-        path.BRANCHES: dataset.branches,
-        path.REF: dataset.ref,
-        path.REG: dataset.region.name,
-    }
-    pos_table_file = ClusterPositionTableLoader.build_path(path_fields)
-    if pos_table_file.is_file():
-        pos_table = ClusterPositionTableLoader(
-            pos_table_file, verify_times=dataset.verify_times
-        )
-        logger.detail(f"Position table {pos_table_file} exists")
-    else:
-        pos_table = None
-        logger.detail(f"Position table {pos_table_file} does not exist")
-    abundance_table_file = ClusterAbundanceTableLoader.build_path(path_fields)
-    if abundance_table_file.is_file():
-        abundance_table = ClusterAbundanceTableLoader(
-            abundance_table_file, verify_times=dataset.verify_times
-        )
-        logger.detail(f"Abundance table {abundance_table_file} exists")
-    else:
-        abundance_table = None
-        logger.detail(f"Abundance table {abundance_table_file} does not exist")
-    # If either table file does not exist, then calculate the tables.
-    if pos_table is None or abundance_table is None:
-        logger.detail("Tabulating is needed because at least one table does not exist")
-        tabulator = ClusterBatchTabulator(
-            top=dataset.top,
-            sample=dataset.sample,
-            branches=dataset.branches,
-            region=dataset.region,
-            refseq=dataset.refseq,
-            pattern=dataset.pattern,
-            min_mut_gap=dataset.min_mut_gap,
-            mut_collisions=dataset.mut_collisions,
-            quick_unbias=dataset.quick_unbias,
-            quick_unbias_thresh=dataset.quick_unbias_thresh,
-            ks=dataset.ks,
-            num_batches=dataset.num_batches,
-            get_batch_count_all=dataset.get_batch_count_all,
-            count_ends=True,
-            count_pos=(pos_table is None),
-            count_read=False,
-            num_cpus=num_cpus,
-        )
-        if pos_table is None:
-            pos_table = ClusterPositionTableWriter(tabulator)
-        if abundance_table is None:
-            abundance_table = ClusterAbundanceTableWriter(tabulator)
-    else:
-        logger.detail("Tabulating is not needed because all tables exist")
-    # Calculate the parameters from the tables.
-    mus = pos_table.fetch_ratio(rel=MUTAT_REL).loc[:, MUTAT_REL]
-    pis = abundance_table.proportions
-    # Merge the parameters into one DataFrame with the proportions as
-    # the first row with the index (0, "p") and the mutation rates on
-    # subsequent rows.
-    pis_df = pis.to_frame().T
-    assert mus.index.names == [POS_NAME, BASE_NAME]
-    pis_df.index = pd.MultiIndex.from_tuples([(0, "p")], names=mus.index.names)
-    assert pis.index.equals(mus.columns)
-    params = pd.concat([pis_df, mus])
-    logger.routine(f"Ended obtaining cluster parameters from {dataset}")
+    with logger.debug.begin(f"obtaining cluster parameters from {dataset}"):
+        # Try to load the tables from files.
+        path_fields = {
+            path.TOP: dataset.top,
+            path.SAMPLE: dataset.sample,
+            path.BRANCHES: dataset.branches,
+            path.REF: dataset.ref,
+            path.REG: dataset.region.name,
+        }
+        pos_table_file = ClusterPositionTableLoader.build_path(path_fields)
+        if pos_table_file.is_file():
+            pos_table = ClusterPositionTableLoader(
+                pos_table_file, verify_times=dataset.verify_times
+            )
+            logger.trace(f"Position table {pos_table_file} exists")
+        else:
+            pos_table = None
+            logger.trace(f"Position table {pos_table_file} does not exist")
+        abundance_table_file = ClusterAbundanceTableLoader.build_path(path_fields)
+        if abundance_table_file.is_file():
+            abundance_table = ClusterAbundanceTableLoader(
+                abundance_table_file, verify_times=dataset.verify_times
+            )
+            logger.trace(f"Abundance table {abundance_table_file} exists")
+        else:
+            abundance_table = None
+            logger.trace(f"Abundance table {abundance_table_file} does not exist")
+        # If either table file does not exist, then calculate the tables.
+        if pos_table is None or abundance_table is None:
+            logger.trace(
+                "Tabulating is needed because at least one table does not exist"
+            )
+            tabulator = ClusterBatchTabulator(
+                top=dataset.top,
+                sample=dataset.sample,
+                branches=dataset.branches,
+                region=dataset.region,
+                refseq=dataset.refseq,
+                pattern=dataset.pattern,
+                min_mut_gap=dataset.min_mut_gap,
+                mut_collisions=dataset.mut_collisions,
+                quick_unbias=dataset.quick_unbias,
+                quick_unbias_thresh=dataset.quick_unbias_thresh,
+                ks=dataset.ks,
+                num_batches=dataset.num_batches,
+                get_batch_count_all=dataset.get_batch_count_all,
+                count_ends=True,
+                count_pos=(pos_table is None),
+                count_read=False,
+                num_cpus=num_cpus,
+            )
+            if pos_table is None:
+                pos_table = ClusterPositionTableWriter(tabulator)
+            if abundance_table is None:
+                abundance_table = ClusterAbundanceTableWriter(tabulator)
+        else:
+            logger.trace("Tabulating is not needed because all tables exist")
+        # Calculate the parameters from the tables.
+        mus = pos_table.fetch_ratio(rel=MUTAT_REL).loc[:, MUTAT_REL]
+        pis = abundance_table.proportions
+        # Merge the parameters into one DataFrame with the proportions as
+        # the first row with the index (0, "p") and the mutation rates on
+        # subsequent rows.
+        pis_df = pis.to_frame().T
+        assert mus.index.names == [POS_NAME, BASE_NAME]
+        pis_df.index = pd.MultiIndex.from_tuples([(0, "p")], names=mus.index.names)
+        assert pis.index.equals(mus.columns)
+        params = pd.concat([pis_df, mus])
     return params
 
 
 def _join_regions_k(region_params: dict[str, pd.DataFrame]):
     """Determine the optimal way to join regions ."""
-    logger.routine("Began determining the optimal way to join clusters")
-    from scipy.optimize import Bounds, LinearConstraint, milp
-    from scipy.sparse import csr_matrix
+    with logger.debug.begin("determining the optimal way to join clusters"):
+        from scipy.optimize import Bounds, LinearConstraint, milp
+        from scipy.sparse import csr_matrix
 
-    # Validate the arguments.
-    n = len(region_params)
-    assert n >= 1
-    dfs = iter(region_params.values())
-    df = next(dfs)
-    assert isinstance(df, pd.DataFrame)
-    clusters = df.columns
-    assert isinstance(clusters, pd.Index)
-    assert not isinstance(clusters, pd.MultiIndex)
-    k = clusters.size
-    assert k >= 1
-    assert clusters.tolist() == list_clusts(k)
-    for df in dfs:
+        # Validate the arguments.
+        n = len(region_params)
+        assert n >= 1
+        dfs = iter(region_params.values())
+        df = next(dfs)
         assert isinstance(df, pd.DataFrame)
-        assert df.columns.equals(clusters)
-    logger.detail(f"There are {n} regions and {k} clusters")
-    # Calculate matrices of the cost of joining each pair of clusters
-    # from each pair of regions.
-    cost_matrices = dict()
-    for (reg1, df1), (reg2, df2) in combinations(region_params.items(), 2):
-        # Even if the regions share no positions, their indexes will
-        # both include the proportion (0, "p").
-        overlap = df1.index.intersection(df2.index)
-        assert overlap.size > 0
-        logger.detail(
-            f"Regions {repr(reg1)} and {repr(reg2)} share {overlap.size} parameter(s)"
-        )
-        # Collect the cost of joining each cluster from region 1 with
-        # each cluster from region 2.
-        cost_matrix = pd.DataFrame(np.nan, clusters, clusters)
-        for cluster1, cluster2 in product(clusters, repeat=2):
-            # Use total arcsine distances as the costs.
-            cost = calc_sum_arcsine_distance(
-                df1.loc[overlap, cluster1], df2.loc[overlap, cluster2]
+        clusters = df.columns
+        assert isinstance(clusters, pd.Index)
+        assert not isinstance(clusters, pd.MultiIndex)
+        k = clusters.size
+        assert k >= 1
+        assert clusters.tolist() == list_clusts(k)
+        for df in dfs:
+            assert isinstance(df, pd.DataFrame)
+            assert df.columns.equals(clusters)
+        logger.trace(f"There are {n} regions and {k} clusters")
+        # Calculate matrices of the cost of joining each pair of clusters
+        # from each pair of regions.
+        cost_matrices = dict()
+        for (reg1, df1), (reg2, df2) in combinations(region_params.items(), 2):
+            # Even if the regions share no positions, their indexes will
+            # both include the proportion (0, "p").
+            overlap = df1.index.intersection(df2.index)
+            assert overlap.size > 0
+            logger.trace(
+                f"Regions {repr(reg1)}, {repr(reg2)} share {overlap.size} parameter(s)"
             )
-            cost_matrix.at[cluster1, cluster2] = cost
-        logger.detail(
-            f"Regions {repr(reg1)} and {repr(reg2)} "
-            f"have a cost matrix of\n{cost_matrix}"
-        )
-        assert not np.any(np.isnan(cost_matrix))
-        cost_matrices[reg1, reg2] = cost_matrix
-    # Build a hypergraph where every hyperedge connects n nodes, one
-    # from each region.
-    region_names = list(region_params)
-    nodes = {node: i for i, node in enumerate(product(region_names, clusters))}
-    hyperedges = [
-        tuple(zip(region_names, cluster_nums, strict=True))
-        for cluster_nums in product(clusters, repeat=n)
-    ]
-    hyperedge_costs = np.array(
-        [
-            sum(
-                cost_matrices[reg1, reg2].at[clust1, clust2]
-                for ((reg1, clust1), (reg2, clust2)) in combinations(hyperedge, 2)
+            # Collect the cost of joining each cluster from region 1 with
+            # each cluster from region 2.
+            cost_matrix = pd.DataFrame(np.nan, clusters, clusters)
+            for cluster1, cluster2 in product(clusters, repeat=2):
+                # Use total arcsine distances as the costs.
+                cost = calc_sum_arcsine_distance(
+                    df1.loc[overlap, cluster1], df2.loc[overlap, cluster2]
+                )
+                cost_matrix.at[cluster1, cluster2] = cost
+            logger.trace(
+                f"Regions {repr(reg1)} and {repr(reg2)} "
+                f"have a cost matrix of\n{cost_matrix}"
             )
-            for hyperedge in hyperedges
+            assert not np.any(np.isnan(cost_matrix))
+            cost_matrices[reg1, reg2] = cost_matrix
+        # Build a hypergraph where every hyperedge connects n nodes, one
+        # from each region.
+        region_names = list(region_params)
+        nodes = {node: i for i, node in enumerate(product(region_names, clusters))}
+        hyperedges = [
+            tuple(zip(region_names, cluster_nums, strict=True))
+            for cluster_nums in product(clusters, repeat=n)
         ]
-    )
-    logger.detail(
-        f"Built a hypergraph with {len(nodes)} node(s) "
-        f"and {len(hyperedges)} hyperedge(s)"
-    )
-    # Build a sparse boolean matrix where rows are nodes and columns are
-    # edges, with a 1 if the edge contains the node and 0 otherwise.
-    matrix_rows = list()
-    matrix_cols = list()
-    for col, hyperedge in enumerate(hyperedges):
-        for node in hyperedge:
-            row = nodes[node]
-            matrix_rows.append(row)
-            matrix_cols.append(col)
-    num_indices = n * len(hyperedges)
-    assert len(matrix_rows) == num_indices
-    assert len(matrix_cols) == num_indices
-    incidence_matrix = csr_matrix(
-        (
-            np.ones(num_indices, dtype=int),
-            (np.array(matrix_rows), np.array(matrix_cols)),
-        ),
-        shape=(len(nodes), len(hyperedges)),
-    )
-    # Require every node to appear in exactly one hyperedge.
-    node_bounds = np.ones(len(nodes), dtype=int)
-    constraints = LinearConstraint(incidence_matrix, node_bounds, node_bounds)
-    # Require every possible edge to occur zero or one time.
-    integrality = np.ones(len(hyperedges), dtype=bool)
-    edge_bounds = Bounds(0, 1)
-    logger.detail(
-        "Created mixed-integer linear program: "
-        "min_x(cx), subject to Ax = 1, x ∈ {0, 1}; "
-        f"c and x are length {len(hyperedges)}, "
-        f"and A has dimensions {incidence_matrix.shape}"
-    )
-    # Find the edges that give the smallest cost.
-    logger.detail(
-        "Began solving mixed-integer linear program (this could take a while)"
-    )
-    result = milp(
-        hyperedge_costs,
-        integrality=integrality,
-        bounds=edge_bounds,
-        constraints=constraints,
-    )
-    if result.status != 0 or not result.success:
-        raise RuntimeError(
-            f"Failed to determine optimal way to join regions {region_names} "
-            f"with {k} clusters"
+        hyperedge_costs = np.array(
+            [
+                sum(
+                    cost_matrices[reg1, reg2].at[clust1, clust2]
+                    for ((reg1, clust1), (reg2, clust2)) in combinations(hyperedge, 2)
+                )
+                for hyperedge in hyperedges
+            ]
         )
-    logger.detail(
-        "Ended solving mixed-integer linear program: "
-        f"minimum total cost is {result.fun}"
-    )
-    # Return a list of the filtered hyperedges.
-    selected_hyperedges = [
-        hyperedge
-        for hyperedge, is_selected in zip(hyperedges, result.x, strict=True)
-        if is_selected
-    ]
-    assert len(selected_hyperedges) == k
-    logger.detail(
-        f"Selected {k} hyperedges:\n" + "\n".join(map(str, selected_hyperedges))
-    )
-    logger.routine("Ended determining the optimal way to join clusters")
+        logger.trace(
+            f"Built a hypergraph with {len(nodes)} node(s) "
+            f"and {len(hyperedges)} hyperedge(s)"
+        )
+        # Build a sparse boolean matrix where rows are nodes and columns are
+        # edges, with a 1 if the edge contains the node and 0 otherwise.
+        matrix_rows = list()
+        matrix_cols = list()
+        for col, hyperedge in enumerate(hyperedges):
+            for node in hyperedge:
+                row = nodes[node]
+                matrix_rows.append(row)
+                matrix_cols.append(col)
+        num_indices = n * len(hyperedges)
+        assert len(matrix_rows) == num_indices
+        assert len(matrix_cols) == num_indices
+        incidence_matrix = csr_matrix(
+            (
+                np.ones(num_indices, dtype=int),
+                (np.array(matrix_rows), np.array(matrix_cols)),
+            ),
+            shape=(len(nodes), len(hyperedges)),
+        )
+        # Require every node to appear in exactly one hyperedge.
+        node_bounds = np.ones(len(nodes), dtype=int)
+        constraints = LinearConstraint(incidence_matrix, node_bounds, node_bounds)
+        # Require every possible edge to occur zero or one time.
+        integrality = np.ones(len(hyperedges), dtype=bool)
+        edge_bounds = Bounds(0, 1)
+        logger.trace(
+            "Created mixed-integer linear program: "
+            "min_x(cx), subject to Ax = 1, x ∈ {0, 1}; "
+            f"c and x are length {len(hyperedges)}, "
+            f"and A has dimensions {incidence_matrix.shape}"
+        )
+        # Find the edges that give the smallest cost.
+        logger.trace(
+            "Began solving mixed-integer linear program (this could take a while)"
+        )
+        result = milp(
+            hyperedge_costs,
+            integrality=integrality,
+            bounds=edge_bounds,
+            constraints=constraints,
+        )
+        if result.status != 0 or not result.success:
+            raise RuntimeError(
+                f"Failed to determine optimal way to join regions {region_names} "
+                f"with {k} clusters"
+            )
+        logger.trace(
+            "Ended solving mixed-integer linear program: "
+            f"minimum total cost is {result.fun}"
+        )
+        # Return a list of the filtered hyperedges.
+        selected_hyperedges = [
+            hyperedge
+            for hyperedge, is_selected in zip(hyperedges, result.x, strict=True)
+            if is_selected
+        ]
+        assert len(selected_hyperedges) == k
+        logger.trace(
+            f"Selected {k} hyperedges:\n" + "\n".join(map(str, selected_hyperedges))
+        )
     return selected_hyperedges
 
 

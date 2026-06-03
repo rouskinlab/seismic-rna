@@ -116,19 +116,21 @@ def generate_batch(
     **kwargs,
 ):
     """Compute relationships for every SAM record in one batch."""
-    logger.routine(f"Began calculating batch {batch} of {xam_view}")
-    idmut_batch, name_batch = from_reads(
-        idmut_records(
-            xam_view.iter_records(batch), ref=xam_view.ref, refseq=str(refseq), **kwargs
-        ),
-        branches=xam_view.branches,
-        sample=xam_view.sample,
-        ref=xam_view.ref,
-        refseq=refseq,
-        batch=batch,
-        write_read_names=write_read_names,
-    )
-    logger.routine(f"Ended calculating batch {batch} of {xam_view}")
+    with logger.debug.begin(f"calculating batch {batch} of {xam_view}"):
+        idmut_batch, name_batch = from_reads(
+            idmut_records(
+                xam_view.iter_records(batch),
+                ref=xam_view.ref,
+                refseq=str(refseq),
+                **kwargs,
+            ),
+            branches=xam_view.branches,
+            sample=xam_view.sample,
+            ref=xam_view.ref,
+            refseq=refseq,
+            batch=batch,
+            write_read_names=write_read_names,
+        )
     # Save the IDmutBatchIO instance, which has as few attributes as
     # possible to make the file as small as possible.
     _, idmut_checksum = idmut_batch.save(top, brotli_level)
@@ -235,7 +237,7 @@ class RelationWriter(object):
     ):
         """Compute the relationships for every read in a XAM file,
         split among one or more batches."""
-        logger.routine(f"Began generating batches for {self._xam}")
+        logger.debug(f"Began generating batches for {self._xam}")
         try:
             kwargs = dict(
                 xam_view=self._xam,
@@ -275,7 +277,7 @@ class RelationWriter(object):
                 checksums[ReadNamesBatchIO.btype()] = name_checksums
             else:
                 assert not any(name_checksums)
-            logger.routine(f"Ended generating batches for {self._xam}")
+            logger.debug(f"Ended generating batches for {self._xam}")
             return batch_counts, checksums
         finally:
             if not keep_tmp:

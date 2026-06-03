@@ -129,7 +129,7 @@ class TestImportMM(ut.TestCase):
     """Integration tests: import a two-reference MM file and verify outputs."""
 
     def setUp(self):
-        set_config(verbosity=Level.FATAL, exit_on_error=True)
+        set_config(verbosity=Level.ERROR, exit_on_error=True)
         self._tmpdir = tempfile.TemporaryDirectory()
         root = Path(self._tmpdir.name)
         self._mm_path = root / "test.mm"
@@ -287,7 +287,7 @@ class TestRFCountIntegration(ut.TestCase):
             )
             return  # rf-count not installed; trivially passes
 
-        set_config(verbosity=Level.FATAL, exit_on_error=True)
+        set_config(verbosity=Level.ERROR, exit_on_error=True)
         try:
             with tempfile.TemporaryDirectory() as tmpdir:
                 root = Path(tmpdir)

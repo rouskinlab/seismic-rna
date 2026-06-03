@@ -970,7 +970,7 @@ def bootstrap_jackpot_scores(
         ["uniq_end5s", "uniq_end3s", "counts_per_uniq", "p_mut", "p_ends", "p_clust"],
     )
     n_reads = counts_per_uniq.sum()
-    logger.routine(
+    logger.debug(
         f"Began boostrapping null jackpotting scores for a dataset "
         f"with {n_reads} reads and a real jackpotting score of "
         f"{real_jackpot_score}"
@@ -1002,7 +1002,7 @@ def bootstrap_jackpot_scores(
         null_g_anomalies = calc_semi_g_anomaly(num_obs, log_exp)
         null_jackpotting_score = calc_jackpot_score(null_g_anomalies, n_reads)
         null_jackpotting_scores.append(null_jackpotting_score)
-        logger.detail(f"Null jackpotting score: {null_jackpotting_score}")
+        logger.trace(f"Null jackpotting score: {null_jackpotting_score}")
         # Calculate a confidence interval for the mean jackpotting score
         # of the null models simulated so far.
         js_ci_lo, js_ci_up = calc_jackpot_score_ci(
@@ -1014,7 +1014,7 @@ def bootstrap_jackpot_scores(
         jq_ci_lo = calc_jackpot_quotient(real_jackpot_score, js_ci_up)
         jq_ci_up = calc_jackpot_quotient(real_jackpot_score, js_ci_lo)
         if not np.isnan(jq_ci_lo) and not np.isnan(jq_ci_up):
-            logger.detail(f"{conf_pct}: {jq_ci_lo} - {jq_ci_up}")
+            logger.trace(f"{conf_pct}: {jq_ci_lo} - {jq_ci_up}")
         # Stop when the confidence interval lies entirely below or above
         # max_jackpot_quotient, so it's clear whether the jackpotting
         # quotient is less or greater than max_jackpot_quotient.
@@ -1032,5 +1032,5 @@ def bootstrap_jackpot_scores(
             f"the maximum jackpotting quotient {max_jackpot_quotient}, "
             "making the data ambiguously jackpotted"
         )
-    logger.routine("Ended boostrapping null jackpotting scores")
+    logger.debug("Ended boostrapping null jackpotting scores")
     return np.array(null_jackpotting_scores)

@@ -90,7 +90,7 @@ def to_ct(structures: Iterable[RNAStructure], ct_path: Path, force: bool = False
         # Write the structures to the file.
         with open(ct_path, write_mode(force)) as f:
             f.write(text)
-        logger.action(f"Wrote {ct_path}")
+        logger.debug(f"Wrote {ct_path}")
 
 
 def to_db(structures: Iterable[RNAStructure], db_path: Path, force: bool = False):
@@ -115,7 +115,7 @@ def to_db(structures: Iterable[RNAStructure], db_path: Path, force: bool = False
         # Write the structures to the file.
         with open(db_path, write_mode(force)) as f:
             f.write(text)
-        logger.action(f"Wrote {db_path}")
+        logger.debug(f"Wrote {db_path}")
 
 
 def renumber_ct(ct_in: Path, ct_out: Path, seq5: int, force: bool = False):

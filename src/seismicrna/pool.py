@@ -269,7 +269,7 @@ def run(
         branches_flat = tuple(path.flatten_branches(dataset.branches))
         key = (dataset.top, branches_flat, dataset.ref)
         pools[key].extend(samples)
-        logger.detail(f"Added samples {samples} for {dataset}")
+        logger.trace(f"Added samples {samples} for {dataset}")
     # Make each pool of samples, dropping any that were skipped by the
     # pairwise similarity filter (pool_samples returns None for those).
     return [

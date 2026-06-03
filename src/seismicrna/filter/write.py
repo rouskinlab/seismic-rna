@@ -352,7 +352,7 @@ class Filterer(object):
         mask_pos = np.array(
             [pos for ref, pos in mask_pos if ref == dataset_ref], dtype=int
         )
-        logger.detail(
+        logger.trace(
             f"Got {mask_pos.size} positions listed individually "
             f"to pre-exclude for reference {repr(dataset_ref)}"
         )
@@ -361,7 +361,7 @@ class Filterer(object):
             file_data = PositionList.load_data(file)
             ref_rows = file_data[FIELD_REF] == dataset_ref
             file_pos = file_data.loc[ref_rows, POS_NAME].values
-            logger.detail(
+            logger.trace(
                 f"Got {file_pos.size} positions in {file} "
                 f"to pre-exclude for reference {repr(dataset_ref)}"
             )
@@ -373,7 +373,7 @@ class Filterer(object):
         mask_pos = mask_pos[
             np.logical_and(mask_pos >= self.region.end5, mask_pos <= self.region.end3)
         ]
-        logger.detail(
+        logger.trace(
             f"Got {mask_pos.size} positions to pre-exclude "
             f"for reference {repr(dataset_ref)}"
         )
@@ -390,14 +390,14 @@ class Filterer(object):
                 # Ensure every read name is unique.
                 drop_read.update(map(str.rstrip, f))
         drop_read = np.asarray(list(drop_read), dtype=str)
-        logger.detail(f"Got {drop_read.size} reads to pre-exclude")
+        logger.trace(f"Got {drop_read.size} reads to pre-exclude")
         return drop_read
 
     def _drop_predefined_reads(self, batch: RegionMutsBatch):
         """Drop reads from a predefined list."""
         if self.drop_read.size == 0:
             # Pre-exclude no reads.
-            logger.detail(f"{self} skipped pre-excluding reads in {batch}")
+            logger.trace(f"{self} skipped pre-excluding reads in {batch}")
             return batch
         # Load the names of the reads in this batch.
         try:
@@ -415,7 +415,7 @@ class Filterer(object):
         reads = batch.read_nums[
             np.isin(names_batch.names, self.drop_read, assume_unique=True, invert=True)
         ]
-        logger.detail(f"{self} kept {reads.size} reads after pre-excluding")
+        logger.trace(f"{self} kept {reads.size} reads after pre-excluding")
         # Return a new batch of only those reads.
         return apply_filters(batch, reads)
 
@@ -427,7 +427,7 @@ class Filterer(object):
         reads = batch.read_nums[
             batch.cover_per_read.values.sum(axis=1) >= self.min_ncov_read
         ]
-        logger.detail(
+        logger.trace(
             f"{self} kept {reads.size} reads with coverage "
             f"≥ {self.min_ncov_read} in {batch}"
         )
@@ -441,7 +441,7 @@ class Filterer(object):
                 f"min_fcov_read must be in [0, 1], but got {self.min_fcov_read}"
             )
         if self.min_fcov_read == 0.0:
-            logger.detail(
+            logger.trace(
                 f"{self} skipped filtering reads with insufficient "
                 f"coverage fractions in {batch}"
             )
@@ -450,7 +450,7 @@ class Filterer(object):
         n_pos = self.region.size
         fcov = ncov / n_pos if n_pos > 0 else np.zeros(ncov.size)
         reads = batch.read_nums[fcov >= self.min_fcov_read]
-        logger.detail(
+        logger.trace(
             f"{self} kept {reads.size} reads with coverage "
             f"fractions ≥ {self.min_fcov_read} in {batch}"
         )
@@ -460,15 +460,13 @@ class Filterer(object):
         """Drop reads with discontiguous mates."""
         if not self.drop_discontig:
             # Keep discontiguous reads.
-            logger.detail(
+            logger.trace(
                 f"{self} skipped filtering reads with discontiguous mates in {batch}"
             )
             return batch
         # Find the reads with contiguous mates.
         reads = batch.read_nums[batch.contiguous]
-        logger.detail(
-            f"{self} kept {reads.size} reads with contiguous mates in {batch}"
-        )
+        logger.trace(f"{self} kept {reads.size} reads with contiguous mates in {batch}")
         # Return a new batch of only those reads.
         return apply_filters(batch, reads)
 
@@ -480,7 +478,7 @@ class Filterer(object):
             )
         if self.min_finfo_read == 0.0:
             # All reads have sufficiently many informative positions.
-            logger.detail(
+            logger.trace(
                 f"{self} skipped filtering reads with insufficient "
                 f"informative fractions in {batch}"
             )
@@ -489,7 +487,7 @@ class Filterer(object):
         info, muts = batch.count_per_read(self.pattern)
         finfo_read = info.values / batch.cover_per_read.values.sum(axis=1)
         reads = info.index.values[finfo_read >= self.min_finfo_read]
-        logger.detail(
+        logger.trace(
             f"{self} kept {reads.size} reads with informative "
             f"fractions ≥ {self.min_finfo_read} in {batch}"
         )
@@ -504,7 +502,7 @@ class Filterer(object):
             )
         if self.max_fmut_read == 1.0:
             # All reads have sufficiently few mutations.
-            logger.detail(
+            logger.trace(
                 f"{self} skipped filtering reads with excessive "
                 f"mutation fractions in {batch}"
             )
@@ -514,7 +512,7 @@ class Filterer(object):
         with np.errstate(invalid="ignore"):
             fmut_read = muts.values / info.values
         reads = info.index.values[fmut_read <= self.max_fmut_read]
-        logger.detail(
+        logger.trace(
             f"{self} kept {reads.size} reads with mutated "
             f"fractions ≤ {self.max_fmut_read} in {batch}"
         )
@@ -528,21 +526,21 @@ class Filterer(object):
             raise ValueError(f"min_mut_gap must be ≥ 0, but got {self.min_mut_gap}")
         if self.min_mut_gap == 0:
             # No read can have a pair of mutations that are too close.
-            logger.detail(
+            logger.trace(
                 f"{self} skipped filtering pairs of mutations too close in {batch}"
             )
             return batch
         if self.mut_collisions == MUT_COLLISIONS_DROP:
             # Drop reads with pairs of mutations that are too close.
             reads = batch.reads_noclose_muts(self.pattern, self.min_mut_gap)
-            logger.detail(
+            logger.trace(
                 f"{self} kept {reads.size} reads with no two mutations "
                 f"separated by < {self.min_mut_gap} nt in {batch}"
             )
             return apply_filters(batch, reads)
         if self.mut_collisions == MUT_COLLISIONS_MERGE:
             # Merge nearby mutations into a single mutation.
-            logger.detail(
+            logger.trace(
                 f"{self} merged mutations closer than {self.min_mut_gap} nt in {batch}"
             )
             return FilterMutsBatch(
@@ -651,12 +649,12 @@ class Filterer(object):
         checksum_file = self._get_checksum_path(batch_num)
         with open(checksum_file, "x") as f:
             f.write(checksum)
-            logger.detail(f"Wrote checksum {repr(checksum)} to {checksum_file}")
+            logger.trace(f"Wrote checksum {repr(checksum)} to {checksum_file}")
         # Save the read counts.
         n_reads_file = self._get_n_reads_path(batch_num)
         with open(n_reads_file, "x") as f:
             json.dump(n_reads, f)
-            logger.detail(f"Wrote number of reads {n_reads} to {n_reads_file}")
+            logger.trace(f"Wrote number of reads {n_reads} to {n_reads_file}")
         return batch.count_all(**kwargs)
 
     def _filter_positions(self, info: pd.Series, muts: pd.Series):
@@ -715,12 +713,12 @@ class Filterer(object):
                 for category, n_reads in json.load(f).items():
                     if self._iter == 1 or category != self.DROP_READ_INIT:
                         self._n_reads[category] += n_reads
-                        logger.detail(
+                        logger.trace(
                             f"{self} batch {batch_num} had {n_reads} "
                             f"{repr(category)} on iteration {self._iter}"
                         )
             n_reads_file.unlink()
-        logger.detail(
+        logger.trace(
             f"{self} on iteration {self._iter} counted "
             + "\n".join(
                 f"{category}: {n_reads}" for category, n_reads in self._n_reads.items()
@@ -742,17 +740,16 @@ class Filterer(object):
         unmasked_curr = self.pos_kept
         self._iter = 1
         while True:
-            logger.routine(f"Began {self} iteration {self._iter}")
-            unmasked_prev = unmasked_curr
-            tabulator = self._filter_iteration()
-            unmasked_curr = self.pos_kept
-            logger.detail(f"{self} kept {unmasked_curr.size} position(s)")
-            logger.routine(f"Ended {self} iteration {self._iter}")
+            with logger.debug.begin(f"{self} iteration {self._iter}"):
+                unmasked_prev = unmasked_curr
+                tabulator = self._filter_iteration()
+                unmasked_curr = self.pos_kept
+                logger.trace(f"{self} kept {unmasked_curr.size} position(s)")
             # Filtering has converged if the same positions were
             # masked before and after this iteration.
             if np.array_equal(unmasked_prev, unmasked_curr):
                 self._converged = True
-                logger.routine(f"{self} converged on iteration {self._iter}")
+                logger.debug(f"{self} converged on iteration {self._iter}")
             # Create and save the report after the opportunity to set
             # self._converged to True (so that the report will have the
             # correct value of self._converged) and before returning.

@@ -2023,13 +2023,13 @@ opt_fq_gzip = Option(
 opt_verbose = Option(
     ("--verbose", "-v"),
     count=True,
-    help="Log more messages (-v, -vv, -vvv, -vvvv) on stderr",
+    help="Log more messages (-v for debug, -vv for trace) on stderr",
 )
 
 opt_quiet = Option(
     ("--quiet", "-q"),
     count=True,
-    help="Log fewer messages (-q, -qq, -qqq, -qqqq) on stderr",
+    help="Log fewer messages (-q for warning, -qq for error) on stderr",
 )
 
 opt_log = Option(

@@ -733,7 +733,7 @@ class RNArtistRun(object):
                 ]
             )
             if RNARTIST_VERSION != RNARTIST_FALLBACK_VERSION:
-                logger.action(
+                logger.debug(
                     f"Attempting to load RNArtistCore version {RNARTIST_VERSION}"
                 )
             for args in args_to_try:

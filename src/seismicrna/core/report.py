@@ -883,24 +883,23 @@ class Report(SampleFileIO, ABC):
 
     @classmethod
     def load(cls, file: str | Path) -> Report:
-        logger.routine(f"Began loading {cls.__name__} from {file}")
-        with open(file) as f:
-            report = cls.from_dict(json.load(f))
-        # Ensure that the path-related fields in the JSON data match the
-        # actual path of the JSON file.
-        top, path_fields = cls.parse_path(file)
-        for key, value in report.get_path_field_values().items():
-            if key == BranchesF.key:
-                # The branches in the report must be flattened to match
-                # the value from parsin the path.
-                value = flatten_branches(value)
-            if value != path_fields.get(key):
-                raise InconsistentValueError(
-                    f"Got different values for {repr(key)} in path "
-                    f"({repr(path_fields.get(key))}) and contents "
-                    f"({repr(value)}) of {file}"
-                )
-        logger.routine(f"Ended loading {cls.__name__} from {file}")
+        with logger.debug.begin(f"loading {cls.__name__} from {file}"):
+            with open(file) as f:
+                report = cls.from_dict(json.load(f))
+            # Ensure that the path-related fields in the JSON data match the
+            # actual path of the JSON file.
+            top, path_fields = cls.parse_path(file)
+            for key, value in report.get_path_field_values().items():
+                if key == BranchesF.key:
+                    # The branches in the report must be flattened to match
+                    # the value from parsin the path.
+                    value = flatten_branches(value)
+                if value != path_fields.get(key):
+                    raise InconsistentValueError(
+                        f"Got different values for {repr(key)} in path "
+                        f"({repr(path_fields.get(key))}) and contents "
+                        f"({repr(value)}) of {file}"
+                    )
         return report
 
     @classmethod
@@ -982,7 +981,7 @@ class Report(SampleFileIO, ABC):
         if need_write(save_path, force):
             with open(save_path, write_mode(force)) as f:
                 f.write(text)
-            logger.action(f"Wrote {self} to {save_path}")
+            logger.debug(f"Wrote {self} to {save_path}")
         return save_path
 
     def __setattr__(self, key: str, value: Any):

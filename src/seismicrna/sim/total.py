@@ -184,7 +184,7 @@ def run(
         probe, mask_a, mask_c, mask_g, mask_u
     )
     for attempt in range(1, max(max_tries, 1) + 1):
-        logger.routine(f"Began simulation attempt {attempt} of up to {max_tries}")
+        logger.debug(f"Began simulation attempt {attempt} of up to {max_tries}")
         # Simulate the reference sequence.
         fasta = str(
             ref_mod.run(

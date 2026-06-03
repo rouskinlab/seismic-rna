@@ -13,10 +13,8 @@ def log_command(command: str):
 
         @wraps(func)
         def wrapper(*args, **kwargs):
-            logger.status(f"Began {command}")
-            result = func(*args, **kwargs)
-            logger.status(f"Ended {command}")
-            return result
+            with logger.info.begin(command):
+                return func(*args, **kwargs)
 
         return wrapper
 

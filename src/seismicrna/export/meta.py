@@ -108,7 +108,7 @@ def combine_metadata(
     try:
         item_metadata = parsed_metadata[item]
     except KeyError:
-        logger.detail(f"No metadata were given for {what} {repr(item)}")
+        logger.trace(f"No metadata were given for {what} {repr(item)}")
         return special_metadata
     # Check for any keys in the parsed metadata that match those in the
     # special metadata.
