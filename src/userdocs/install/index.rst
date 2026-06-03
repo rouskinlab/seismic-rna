@@ -36,7 +36,7 @@ SEISMIC-RNA is available from the Bioconda_ channel and compatible with Python
 
 To install, type this into a terminal::
 
-    conda create -n seismic python=3.12
+    conda create -n seismic python=3.14
     conda activate seismic
     conda install -c bioconda -c conda-forge seismic-rna
 
@@ -80,7 +80,7 @@ Step 2: Create a Conda environment for SEISMIC-RNA
 Once Conda is installed, create a new virtual environment into which SEISMIC-RNA
 and all other necessary software will go::
 
-    conda create -n seismic python=3.12
+    conda create -n seismic python=3.14
 
 You can name your environment whatever you like using the ``-n`` option; in this
 example, it is named ``seismic``.
@@ -91,7 +91,7 @@ example, it is named ``seismic``.
     type its name every time before using it.
 
 You must indicate which version of Python to use; we recommend the most recent
-stable release (currently version 3.12), though SEISMIC-RNA is compatible with
+stable release (currently version 3.14), though SEISMIC-RNA is compatible with
 version 3.11 and later.
 
 Step 3: Activate the Conda environment for SEISMIC-RNA
