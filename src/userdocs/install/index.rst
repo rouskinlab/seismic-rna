@@ -10,23 +10,6 @@ SEISMIC-RNA runs on Linux and macOS.
 If you use Windows, we recommend installing and running SEISMIC-RNA using the
 `Windows Subsystem for Linux (WSL)`_.
 
-.. note::
-
-    SEISMIC-RNA will run on Apple Silicon (M1, M2, M3, etc.) ARM processors, but
-    installation with Conda may not work.
-    If that happens to you, see :ref:`conda_install_fails`.
-
-We recommend the following hardware specifications, depending on your usage:
-
-================ =========== ==== ======== ============
-Reads (millions) Length (kb) CPUs RAM (GB) Storage (GB)
-================ =========== ==== ======== ============
-              <1          <1    4        8           16
-            1-10         1-3    8       16           32
-          10-100        3-10   16       32           64
-            ≥100         ≥10  ≥32      ≥64         ≥128
-================ =========== ==== ======== ============
-
 
 Option 1: Install with Conda, if you already know how to use it
 ================================================================================
