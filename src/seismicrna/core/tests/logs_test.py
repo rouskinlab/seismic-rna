@@ -155,16 +155,12 @@ class TestSetConfig(ut.TestCase):
                 lines = log_file.readlines()
                 self.assertEqual(len(lines), 6)
                 self.assertTrue(
-                    lines[0].startswith(
-                        f"LOGMSG> {Level.DEBUG.name} {os.getpid()}"
-                    )
+                    lines[0].startswith(f"LOGMSG> {Level.DEBUG.name} {os.getpid()}")
                 )
                 self.assertEqual(lines[1], f"{msg1}\n")
                 self.assertEqual(lines[2], "\n")
                 self.assertTrue(
-                    lines[3].startswith(
-                        f"LOGMSG> {Level.TRACE.name} {os.getpid()}"
-                    )
+                    lines[3].startswith(f"LOGMSG> {Level.TRACE.name} {os.getpid()}")
                 )
                 self.assertEqual(lines[4], f"{msg2}\n")
                 self.assertEqual(lines[5], "\n")
@@ -272,6 +268,17 @@ class TestDepth(ut.TestCase):
             with logger.debug.begin("task"):
                 self.assertEqual(len(logger.context_levels), 1)
                 raise ValueError("boom")
+        self.assertEqual(len(logger.context_levels), 0)
+
+    @restore_config
+    def test_reconfigure_inside_begin_does_not_crash(self):
+        # Reconfiguring logging while a context is open (as the `test` command
+        # does) must not corrupt the stack or raise on exit.
+        set_config(verbosity=Level.INFO, log_color=False)
+        with logger.info.begin("outer"):
+            self.assertEqual(len(logger.context_levels), 1)
+            set_config(verbosity=Level.DEBUG, log_color=False)
+            self.assertEqual(len(logger.context_levels), 1)
         self.assertEqual(len(logger.context_levels), 0)
 
     def test_depth_counts_only_visible_contexts(self):

@@ -253,56 +253,6 @@ def format_logfile(message: Message, depth: int = 0):
     return f"LOGMSG> {message.level.name} {os.getpid()} {timestamp}\n{body}\n\n"
 
 
-class TaskContext(object):
-    """Context manager that delimits a task in the log.
-
-    On entry, it logs ``Began {name}`` and pushes its level onto the logger's
-    context stack so that messages logged inside the block are indented. On
-    normal exit, it pops the context back off and logs ``Ended {name}``. If the
-    block exits because of an exception, the context is still popped, but the
-    ``Ended`` message is skipped (the task did not finish successfully)."""
-
-    __slots__ = ["_logger", "_level", "_name"]
-
-    def __init__(self, logger: "Logger", level: Level, name: object):
-        self._logger = logger
-        self._level = level
-        self._name = name
-
-    def __enter__(self):
-        self._logger._log(self._level, f"Began {self._name}")
-        self._logger.context_levels.append(self._level)
-        return self._logger
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self._logger.context_levels.pop()
-        if exc_type is None:
-            self._logger._log(self._level, f"Ended {self._name}")
-        return False
-
-
-class LevelLogger(object):
-    """Log messages at one logging level.
-
-    Calling the object logs its argument verbatim at this level. The
-    ``begin`` method returns a context manager that brackets a task with
-    ``Began``/``Ended`` messages and indents the messages logged inside it."""
-
-    __slots__ = ["_logger", "_level"]
-
-    def __init__(self, logger: "Logger", level: Level):
-        self._logger = logger
-        self._level = level
-
-    def __call__(self, content: object):
-        self._logger._log(self._level, content)
-
-    def begin(self, name: object):
-        """Context manager that logs ``Began {name}``/``Ended {name}`` and
-        indents the messages logged inside the block."""
-        return TaskContext(self._logger, self._level, name)
-
-
 class Logger(object):
     """Log messages to the console and to files."""
 
@@ -323,8 +273,11 @@ class Logger(object):
         self.context_levels = []
         # Create one callable LevelLogger per logging level, e.g. so that
         # self.trace(content) logs content at the TRACE level.
-        for level in Level:
-            setattr(self, level.name.lower(), LevelLogger(self, level))
+        self.error = LevelLogger(self, Level.ERROR)
+        self.warning = LevelLogger(self, Level.WARNING)
+        self.info = LevelLogger(self, Level.INFO)
+        self.debug = LevelLogger(self, Level.DEBUG)
+        self.trace = LevelLogger(self, Level.TRACE)
 
     def _log(self, level: Level, content: object):
         """Create and log a message to the stream(s)."""
@@ -339,6 +292,61 @@ class Logger(object):
             self.file_stream.log(message)
 
 
+class TaskContext(object):
+    """Context manager that delimits a task in the log.
+
+    On entry, it logs ``Began {name}`` and pushes its level onto the logger's
+    context stack so that messages logged inside the block are indented. On
+    normal exit, it pops the context back off and logs ``Ended {name}``. If the
+    block exits because of an exception, the context is still popped, but the
+    ``Ended`` message is skipped (the task did not finish successfully)."""
+
+    __slots__ = ["_logger", "_level", "_name"]
+
+    def __init__(self, logger: Logger, level: Level, name: object):
+        self._logger = logger
+        self._level = level
+        self._name = name
+
+    def __enter__(self):
+        self._logger._log(self._level, f"Began {self._name}")
+        self._logger.context_levels.append(self._level)
+        return self._logger
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        # Guard against an empty stack so that logging can never crash the
+        # program, even if the context stack was reset while this block ran.
+        try:
+            self._logger.context_levels.pop()
+        except IndexError:
+            pass
+        if exc_type is None:
+            self._logger._log(self._level, f"Ended {self._name}")
+        return False
+
+
+class LevelLogger(object):
+    """Log messages at one logging level.
+
+    Calling the object logs its argument verbatim at this level. The
+    ``begin`` method returns a context manager that brackets a task with
+    ``Began``/``Ended`` messages and indents the messages logged inside it."""
+
+    __slots__ = ["_logger", "_level"]
+
+    def __init__(self, logger: Logger, level: Level):
+        self._logger = logger
+        self._level = level
+
+    def __call__(self, content: object):
+        self._logger._log(self._level, content)
+
+    def begin(self, name: object):
+        """Context manager that logs ``Began {name}``/``Ended {name}`` and
+        indents the messages logged inside the block."""
+        return TaskContext(self._logger, self._level, name)
+
+
 logger = Logger()
 
 
@@ -348,15 +356,18 @@ LoggerConfig = namedtuple(
 
 
 def erase_config():
-    """Erase the existing logger configuration."""
+    """Erase the existing logger configuration.
+
+    The context stack is deliberately left untouched: it is runtime state
+    managed by the task contexts (and reset per worker by Task), not part of
+    the configuration. Clearing it here would corrupt the stack if logging is
+    reconfigured while a task context is open (e.g. the test command, which
+    reconfigures logging inside its own ``begin`` block)."""
     logger.console_stream = None
     if logger.file_stream is not None:
         logger.file_stream.close()
     logger.file_stream = None
     logger.exit_on_error = DEFAULT_EXIT_ON_ERROR
-    # Clear the context stack so that no indentation leaks across runs and
-    # so that each parallel worker starts with no enclosing contexts.
-    logger.context_levels = []
 
 
 def set_config(
@@ -431,16 +442,18 @@ def log_exceptions(default: Optional[Callable]):
 
 
 def restore_config(func: Callable):
-    """After the function exits, restore the logging configuration that
-    was in place before the function ran."""
+    """After the function exits, restore the logging configuration (and the
+    context stack) that was in place before the function ran."""
 
     @wraps(func)
     def wrapper(*args, **kwargs):
         config = get_config()
+        context_levels = list(logger.context_levels)
         try:
             return func(*args, **kwargs)
         finally:
             set_config(**config._asdict())
+            logger.context_levels = context_levels
 
     return wrapper
 
