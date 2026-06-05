@@ -124,7 +124,7 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
 
     @cached_property
     def _data(self):
-        with logger.debug.begin(f"calculating real histogram for {self}"):
+        with logger.debug.begin("calculating real histogram for {}", self):
             results = dispatch(
                 _calc_hists,
                 num_cpus=self.num_cpus,
@@ -211,7 +211,7 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
 
     @cached_property
     def _null_hist(self):
-        with logger.debug.begin(f"calculating null histogram for {self}"):
+        with logger.debug.begin("calculating null histogram for {}", self):
             if self.dataset.is_clustered:
                 end_counts = self.tabulator.end_counts.loc[:, self.loc_clusters]
                 num_reads = self.tabulator.num_reads.loc[self.loc_clusters].values
@@ -241,12 +241,13 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
                 logger.trace(
                     "Calculating null fraction of reads in which every pair "
                     "of mutations would have at least N bases between them, "
-                    f"from N = 1 to {self.max_read_length - 1}"
+                    "from N = 1 to {}",
+                    self.max_read_length - 1,
                 )
                 for gap in range(1, self.max_read_length):
                     p_noclose_ends = calc_p_noclose_given_ends_auto(p_mut.values, gap)
                     p_noclose_gap[gap] = triu_dot(p_noclose_ends, p_ends)
-                    logger.trace(f"N = {gap}: {p_noclose_gap[gap]}")
+                    logger.trace("N = {}: {}", gap, p_noclose_gap[gap])
                 p_dist[0] = p_noclose_gap[-1]
                 p_dist[1 : self.max_read_length] = -np.diff(p_noclose_gap, axis=0)
                 assert np.allclose(p_dist.sum(axis=0), 1.0)

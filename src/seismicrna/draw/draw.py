@@ -312,7 +312,7 @@ class RNArtistRun(object):
         self.mus_reg = match.group(1) if match else None
         self.table_type = match.group(2) if match else None
         if not match:
-            logger.warning(f"Could not parse profile: {self.profile}.")
+            logger.warning("Could not parse profile: {}.", self.profile)
 
     def __init__(
         self,
@@ -436,7 +436,7 @@ class RNArtistRun(object):
             return TABLES.get(self.table_type)
         else:
             logger.warning(
-                f"Cannot use table of type {self.table_type} to calculate AUROC."
+                "Cannot use table of type {} to calculate AUROC.", self.table_type
             )
         return None, None
 
@@ -475,7 +475,7 @@ class RNArtistRun(object):
                 else None
             )
         else:
-            logger.warning(f"{self.table_file} does not exist.")
+            logger.warning("{} does not exist.", self.table_file)
             return None
 
     def get_ct_file(self, top: Path):
@@ -633,7 +633,7 @@ class RNArtistRun(object):
             if self.color:
                 return parse_color_file(color_file)
         else:
-            logger.warning(f"{color_file} does not exist. Defaulting to --no-color")
+            logger.warning("{} does not exist. Defaulting to --no-color", color_file)
             self.color = False
         return dict()
 
@@ -734,7 +734,7 @@ class RNArtistRun(object):
             )
             if RNARTIST_VERSION != RNARTIST_FALLBACK_VERSION:
                 logger.debug(
-                    f"Attempting to load RNArtistCore version {RNARTIST_VERSION}"
+                    "Attempting to load RNArtistCore version {}", RNARTIST_VERSION
                 )
             for args in args_to_try:
                 try:

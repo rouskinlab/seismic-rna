@@ -51,8 +51,10 @@ def guess_temperature_to_celsius(temp: float | int):
         return temp
     # Assume Kelvin if the temperature is greater than the midpoint.
     logger.warning(
-        f"Assuming temperature {temp} is in Kelvin: if you meant it to be in "
-        f"Celsius, please enter it as {round(celsius_to_kelvin(temp), 2)}"
+        "Assuming temperature {} is in Kelvin: if you meant it to be in "
+        "Celsius, please enter it as {}",
+        temp,
+        round(celsius_to_kelvin(temp), 2),
     )
     return kelvin_to_celsius(temp)
 

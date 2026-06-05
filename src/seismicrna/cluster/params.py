@@ -53,7 +53,7 @@ def write_single_run_table(
     data = getattr(run, attr)
     file = get_table_path(top, branches, sample, ref, reg, table, run.k, rank)
     data.round(PRECISION).to_csv(file, header=True, index=True)
-    logger.debug(f"Wrote {table} of {run} to {file}")
+    logger.debug("Wrote {} of {} to {}", table, run, file)
     return file
 
 

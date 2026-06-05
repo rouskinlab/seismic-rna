@@ -204,7 +204,8 @@ def get_db_structs(table: PositionTable, k: int | None, clust: int | None):
                 energies[profile.mus_name] = energy
         else:
             logger.warning(
-                f"No structure model available for {profile}: {db_file} does not exist"
+                "No structure model available for {}: {} does not exist",
+                profile, db_file,
             )
     return structs, energies
 

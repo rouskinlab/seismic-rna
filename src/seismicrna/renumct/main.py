@@ -44,8 +44,9 @@ def run(
     }
     if multi_starts:
         logger.warning(
-            f"Got multiple start positions for {multi_starts}; "
-            f"using the largest start position for each file"
+            "Got multiple start positions for {}; "
+            "using the largest start position for each file",
+            multi_starts,
         )
     # Use the largest start position for each file.
     file_start = {file: max(starts) for file, starts in file_starts.items()}

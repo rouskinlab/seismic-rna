@@ -31,7 +31,7 @@ def run_k(
     if k < 1:
         raise ValueError(f"k must be ≥ 1, but got {k}")
     if num_runs < 1:
-        logger.warning(f"Expected num_runs to be ≥ 1, but got {num_runs}: setting to 1")
+        logger.warning("Expected num_runs to be ≥ 1, but got {}: setting to 1", num_runs)
         num_runs = 1
     # Use the main seed to generate a unique seed for each run of EM.
     seeds = [s for _, s in zip(range(num_runs), get_random_integer_generator(seed))]
@@ -48,8 +48,11 @@ def run_k(
     )
     if len(runs) < num_runs:
         logger.warning(
-            f"Obtained only {len(runs)} (of {num_runs}) "
-            f"run(s) of {uniq_reads} with {k} cluster(s)"
+            "Obtained only {} (of {}) run(s) of {} with {} cluster(s)",
+            len(runs),
+            num_runs,
+            uniq_reads,
+            k,
         )
     return sort_runs(runs)
 
@@ -79,17 +82,19 @@ def run_ks(
 ):
     """Run EM with multiple numbers of clusters."""
     if min_em_runs < 1:
-        logger.warning(f"min_em_runs must be ≥ 1, but got {min_em_runs}; setting to 1")
+        logger.warning("min_em_runs must be ≥ 1, but got {}; setting to 1", min_em_runs)
         min_em_runs = 1
     if max_em_runs < min_em_runs:
         logger.warning(
             "max_em_runs must be ≥ min_em_runs, "
-            f"but got min_em_runs={min_em_runs} and max_em_runs={max_em_runs}; "
-            f"setting to {min_em_runs}"
+            "but got min_em_runs={} and max_em_runs={}; setting to {}",
+            min_em_runs,
+            max_em_runs,
+            min_em_runs,
         )
         max_em_runs = min_em_runs
     if num_cpus < 1:
-        logger.warning(f"num_cpus must be ≥ 1, but got {num_cpus}; setting to 1")
+        logger.warning("num_cpus must be ≥ 1, but got {}; setting to 1", num_cpus)
         num_cpus = 1
     path_kwargs = {
         path.TOP: top,
@@ -116,8 +121,8 @@ def run_ks(
             else:
                 min_runs_k = 1
                 max_runs_k = 1
-            logger.debug(
-                f"Began {min_runs_k} - {max_runs_k} run(s) of EM with {k} cluster(s)"
+            logger.info(
+                "Began EM k={}: {}-{} run(s)", k, min_runs_k, max_runs_k
             )
             # Accumulate EM runs for this K.
             runs_k = list()
@@ -175,8 +180,10 @@ def run_ks(
                 write_mus(run, rank=rank, **path_kwargs)
                 write_pis(run, rank=rank, **path_kwargs)
             logger.debug(
-                f"Ended {num_runs_k} ({len(runs_k)} successful) "
-                f"run(s) of EM with {k} cluster(s)"
+                "Ended EM k={}: {} attempted, {} successful",
+                k,
+                num_runs_k,
+                len(runs_k),
             )
             # Check if this K is the best encounted so far. Use
             # allow_underclustered=True because the algorithm should
@@ -237,12 +244,15 @@ def cluster(
             or dataset.mut_collisions != DEFAULT_MUT_COLLISIONS[dataset.probe]
         ):
             logger.warning(
-                f"When clustering with probe {repr(dataset.probe)}, it is recommended "
-                f"to use min_mut_gap={DEFAULT_MIN_MUT_GAPS[dataset.probe]} "
-                f"and mut_collisions={DEFAULT_MUT_COLLISIONS[dataset.probe]}, "
-                f"but got min_mut_gap={dataset.min_mut_gap} "
-                f"and mut_collisions={dataset.mut_collisions}. "
-                "The chosen settings make false positive clusters more likely."
+                "When clustering with probe {!r}, it is recommended "
+                "to use min_mut_gap={} and mut_collisions={}, "
+                "but got min_mut_gap={} and mut_collisions={}. "
+                "The chosen settings make false positive clusters more likely.",
+                dataset.probe,
+                DEFAULT_MIN_MUT_GAPS[dataset.probe],
+                DEFAULT_MUT_COLLISIONS[dataset.probe],
+                dataset.min_mut_gap,
+                dataset.mut_collisions,
             )
         # Load the unique reads.
         uniq_reads = UniqReads.from_dataset_contig(dataset, branch)
@@ -279,8 +289,8 @@ def cluster(
         # the same seed that is chosen randomly here.
         if seed is None:
             seed = next(iter(get_random_integer_generator(None)))
-            logger.trace(
-                f"No random seed specified for clustering: using random seed {seed}"
+            logger.debug(
+                "No random seed specified for clustering: using random seed {}", seed
             )
         runs_ks = run_ks(
             uniq_reads,
@@ -300,8 +310,8 @@ def cluster(
             write_ks = [runs_ks[best_k]]
         else:
             logger.warning(
-                f"No Ks passed filters for {dataset}: "
-                f"defaulting to ensemble average (K = 1)"
+                "No Ks passed filters for {}: defaulting to ensemble average (K = 1)",
+                dataset,
             )
             write_ks = [runs_ks[1]]
         # Output the cluster memberships in batches of reads.

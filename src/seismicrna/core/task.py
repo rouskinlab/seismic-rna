@@ -30,10 +30,10 @@ def calc_pool_size(num_tasks: int, num_cpus: int, force_serial: bool = False):
         - Number of CPUs for each task in the pool. Always ≥ 1.
     """
     if num_cpus < 1:
-        logger.warning(f"num_cpus must be ≥ 1, but got {num_cpus}; defaulting to 1")
+        logger.warning("num_cpus must be ≥ 1, but got {}; defaulting to 1", num_cpus)
         num_cpus = 1
     if num_tasks < 1:
-        logger.warning(f"num_tasks must be ≥ 1, but got {num_tasks}; defaulting to 1")
+        logger.warning("num_tasks must be ≥ 1, but got {}; defaulting to 1", num_tasks)
         num_tasks = 1
     # The number of tasks that can run concurrently is the smallest of
     # (a) the number of tasks and (b) the number of processors.
@@ -149,37 +149,33 @@ def _dispatch(
     require_equal("len(funcs)", num_tasks, len(args), "len(args)")
     if num_tasks == 0:
         # No tasks to run: return.
-        logger.info("No tasks were given to dispatch")
+        logger.warning("No tasks were given to dispatch")
         return list()
     # Determine how to parallelize each task.
     pool_size, num_cpus_per_task = calc_pool_size(
         num_tasks, num_cpus, force_serial=force_serial
     )
+    logger.trace(
+        "Run {} task(s) simultaneously, each using {} processor(s)",
+        pool_size,
+        num_cpus_per_task,
+    )
     if pass_num_cpus:
         # Add the number of processes as a keyword argument.
         kwargs = {**kwargs, "num_cpus": num_cpus_per_task}
-        logger.trace(
-            f"Calculated size of process pool: {pool_size}, "
-            f"each with {num_cpus_per_task} processor(s)"
-        )
-    else:
-        logger.trace(f"Calculated size of process pool: {pool_size}")
     # Run the tasks.
-    num_failed = 0
     if pass_force_serial:
         kwargs = {**kwargs, "force_serial": force_serial}
     if pool_size > 1:
         # Run the tasks in parallel.
-        with (
-            logger.info.begin(f"pool of {pool_size} processes"),
-            ProcessPoolExecutor(max_workers=pool_size) as pool,
-        ):
+        with ProcessPoolExecutor(max_workers=pool_size) as pool:
+            pool_name = f"process pool {id(pool)}"
+            logger.trace("Opened {} with {} processors", pool_name, pool_size)
             # Create and submit a Future for each task.
             futures = [
                 pool.submit(Task(func), *task_args, **kwargs)
                 for func, task_args in zip(funcs, args, strict=True)
             ]
-            logger.info(f"Waiting for {num_tasks} tasks to finish")
             for future in futures if ordered else as_completed(futures):
                 try:
                     yield future.result()
@@ -188,27 +184,18 @@ def _dispatch(
                         raise error
                     else:
                         logger.error(error)
-                        num_failed += 1
+            logger.trace("Closed {} with {} processors", pool_name, pool_size)
     else:
         # Run the tasks in series.
-        with logger.info.begin(f"running {num_tasks} task(s) in series"):
-            for func, task_args in zip(funcs, args, strict=True):
-                try:
-                    task = Task(func)
-                    yield task(*task_args, **kwargs)
-                except Exception as error:
-                    if raise_on_error:
-                        raise error
-                    else:
-                        logger.error(error)
-                        num_failed += 1
-    if num_failed:
-        message = f"Failed {num_failed} of {num_tasks} task(s)"
-        if raise_on_error:
-            raise RuntimeError(message)
-        logger.warning(message)
-    else:
-        logger.info(f"All {num_tasks} task(s) completed successfully")
+        for func, task_args in zip(funcs, args, strict=True):
+            try:
+                task = Task(func)
+                yield task(*task_args, **kwargs)
+            except Exception as error:
+                if raise_on_error:
+                    raise error
+                else:
+                    logger.error(error)
 
 
 def dispatch(
@@ -256,16 +243,19 @@ def dispatch(
     kwargs: dict[str, Any] | None
         Keyword arguments to pass to every function call.
     """
-    results = _dispatch(
-        funcs,
-        num_cpus=num_cpus,
-        pass_num_cpus=pass_num_cpus,
-        ordered=ordered,
-        raise_on_error=raise_on_error,
-        args=args,
-        kwargs=kwargs,
-    )
-    return list(results) if as_list else iter(results)
+    with logger.trace.begin(
+        "dispatch({}, num_cpus={}, pass_num_cpus={}, ordered={}, raise_on_error={}) "
+    ):
+        results = _dispatch(
+            funcs,
+            num_cpus=num_cpus,
+            pass_num_cpus=pass_num_cpus,
+            ordered=ordered,
+            raise_on_error=raise_on_error,
+            args=args,
+            kwargs=kwargs,
+        )
+        return list(results) if as_list else iter(results)
 
 
 def as_list_of_tuples(args: Iterable[Any]):

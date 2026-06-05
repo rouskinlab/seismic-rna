@@ -25,7 +25,7 @@ def need_write(query: str | Path, force: bool = False, warn: bool = True):
     if force or not query.exists():
         return True
     if warn:
-        logger.warning(f"{query} exists: use --force to overwrite")
+        logger.warning("{} exists: use --force to overwrite", query)
     return False
 
 

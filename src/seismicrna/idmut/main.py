@@ -52,7 +52,7 @@ def check_duplicates(xam_files: list[Path]):
                 fields[path.REF],
                 tuple(fields[path.BRANCHES]),
             )
-            logger.trace(f"{xam_file}: {combo}")
+            logger.trace("{}: {}", xam_file, combo)
             if combo in combos:
                 raise DuplicateSampleReferenceError(combo)
             combos.add(combo)

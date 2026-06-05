@@ -281,9 +281,9 @@ def view_xam_cmd(
             # View only reads aligning to this reference.
             args.append(ref)
             if end5 is not None:
-                logger.warning(f"Got end5 = {end5} but not end3")
+                logger.warning("Got end5 = {} but not end3", end5)
             if end3 is not None:
-                logger.warning(f"Got end3 = {end3} but not end5")
+                logger.warning("Got end3 = {} but not end5", end3)
     elif end5 is not None or end3 is not None:
         logger.warning("Options end5 and end3 require a reference name")
     return args_to_cmd(args)
@@ -353,9 +353,10 @@ def count_single_paired(flagstats: dict):
             "which indicates a bug"
         )
     logger.trace(
-        f"Proper pairs: {paired_end_pairs_proper}\n"
-        f"Other paired-end reads: {paired_end_reads_improper}\n"
-        f"Single-end reads: {single_end_reads}"
+        "Proper pairs: {}\nOther paired-end reads: {}\nSingle-end reads: {}",
+        paired_end_pairs_proper,
+        paired_end_reads_improper,
+        single_end_reads,
     )
     return paired_end_pairs_proper, paired_end_reads_improper, single_end_reads
 
@@ -427,7 +428,7 @@ def parse_ref_header(process: CompletedProcess):
                     break
             else:
                 # The sequence name was not found.
-                logger.warning(f"Failed to find sequence name in line:\n{line}")
+                logger.warning("Failed to find sequence name in line:\n{}", line)
 
 
 run_ref_header = ShellCommand(

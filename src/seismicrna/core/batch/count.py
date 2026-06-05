@@ -133,7 +133,7 @@ def calc_coverage(
     match_reads_segments(seg_end5s, seg_end3s, seg_ends_mask)
     # Find the positions in use.
     positions = pos_index.get_level_values(POS_NAME).values
-    logger.trace(f"There are {positions.size} position(s) in use")
+    logger.trace("There are {} position(s) in use", positions.size)
     if positions.size == 0:
         # If there are no positions in use, return empty arrays.
         cover_per_pos = (

@@ -49,7 +49,7 @@ def cli(
     else:
         log_file_path = None
     set_config(verbose - quiet, log_file_path, log_color, exit_on_error)
-    logger.trace(f"This is SEISMIC-RNA version {__version__}")
+    logger.trace("This is SEISMIC-RNA version {}", __version__)
 
 
 # Add all commands to the main CLI command group.

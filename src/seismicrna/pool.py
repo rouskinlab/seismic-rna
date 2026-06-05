@@ -122,8 +122,11 @@ def pool_samples(
     sample_counts = Counter(samples)
     if max(sample_counts.values()) > 1:
         logger.warning(
-            f"Pool {repr(pooled_sample)} with reference {repr(ref)} "
-            f"in {out_dir} got duplicate samples: {sample_counts}"
+            "Pool {!r} with reference {!r} in {} got duplicate samples: {}",
+            pooled_sample,
+            ref,
+            out_dir,
+            sample_counts,
         )
     samples = sorted(sample_counts)
     # Determine the output report file.
@@ -202,10 +205,16 @@ def pool_samples(
             pearson = float(calc_pearson(mu1, mu2))
             if pearson < min_pearson:
                 logger.warning(
-                    f"Skipping pool {repr(pooled_sample)} with reference {repr(ref)} "
-                    f"in {out_dir}: Pearson r = {pearson:.4f} between "
-                    f"{repr(s1)} and {repr(s2)} is less than "
-                    f"min_pearson = {min_pearson}"
+                    "Skipping pool {!r} with reference {!r} in {}: "
+                    "Pearson r = {:.4f} between {!r} and {!r} is less than "
+                    "min_pearson = {}",
+                    pooled_sample,
+                    ref,
+                    out_dir,
+                    pearson,
+                    s1,
+                    s2,
+                    min_pearson,
                 )
                 return None
             marcd = float(calc_mean_arcsine_distance(mu1, mu2))
@@ -269,7 +278,7 @@ def run(
         branches_flat = tuple(path.flatten_branches(dataset.branches))
         key = (dataset.top, branches_flat, dataset.ref)
         pools[key].extend(samples)
-        logger.trace(f"Added samples {samples} for {dataset}")
+        logger.trace("Added samples {} for {}", samples, dataset)
     # Make each pool of samples, dropping any that were skipped by the
     # pairwise similarity filter (pool_samples returns None for those).
     return [

@@ -126,7 +126,7 @@ def from_reads(
     drop_empty_reads: bool = True,
 ):
     """Gather reads into a batch of relationships."""
-    with logger.debug.begin(f"gathering reads into batch {batch}"):
+    with logger.debug.begin("gathering reads into batch {}", batch):
         max_segs = -1
         diff_segs = False
         names = list()
@@ -153,15 +153,19 @@ def from_reads(
                     # segments from other reads only if max_segs >= 0.
                     if max_segs >= 0:
                         logger.trace(
-                            f"Read {repr(name)} has {num_segs} segments, "
-                            f"more than {max_segs} in previous reads"
+                            "Read {!r} has {} segments, more than {} in previous reads",
+                            name,
+                            num_segs,
+                            max_segs,
                         )
                         diff_segs = True
                     max_segs = num_segs
                 else:
                     logger.trace(
-                        f"Read {repr(name)} has {num_segs} segments, "
-                        f"fewer than {max_segs} in previous reads"
+                        "Read {!r} has {} segments, fewer than {} in previous reads",
+                        name,
+                        num_segs,
+                        max_segs,
                     )
                     diff_segs = True
             names.append(name)
@@ -174,7 +178,7 @@ def from_reads(
             max_segs = 0
         # Ensure all reads have the same number of segments, padding with
         # extra no-coverage segments (end5=1, end3=0) as necessary.
-        logger.trace(f"The most segments in one read is {max_segs}")
+        logger.trace("The most segments in one read is {}", max_segs)
         if diff_segs:
             for end5s, end3s in zip(seg_end5s, seg_end3s, strict=True):
                 num_segs = len(end5s)
@@ -183,7 +187,7 @@ def from_reads(
                     padding = max_segs - num_segs
                     end5s.extend([1] * padding)
                     end3s.extend([0] * padding)
-            logger.trace(f"Padded all reads to {max_segs} segments")
+            logger.trace("Padded all reads to {} segments", max_segs)
         # Convert seg_end5s and seg_end3s to NumPy arrays.
         num_reads = len(names)
         assert len(seg_end5s) == len(seg_end3s) == num_reads
@@ -220,7 +224,7 @@ def from_reads(
                             curr_read_nums, keep_read_nums, assume_unique=True
                         )
                         rels[rel] = keep_read_inverse[keep_curr_read_nums]
-                logger.trace(f"Dropped {num_reads - keep_read_nums.size} empty reads")
+                logger.trace("Dropped {} empty reads", num_reads - keep_read_nums.size)
         # Assemble and return the batches.
         idmut_batch = IDmutBatchIO(
             sample=sample,

@@ -24,7 +24,7 @@ def pairs_to_dict(pairs: Iterable[tuple[int, int]]):
             # There is no pairing partner at this position: add it.
             pair_dict[a] = b
         elif b2 == b:
-            logger.warning(f"Pair {a, b} was given multiple times")
+            logger.warning("Pair {} was given multiple times", (a, b))
         else:
             # A previous partner conflicts with the current partner.
             raise ValueError(f"Position {a} was given pairs with both {b2} and {b}")
@@ -68,7 +68,7 @@ def pairs_to_table(pairs: Iterable[tuple[int, int]], region: Region):
             # There is no pairing partner at this position: add it.
             table[index] = b
         elif b2 == b:
-            logger.warning(f"Pair {a, b} was given multiple times")
+            logger.warning("Pair {} was given multiple times", (a, b))
         else:
             # A previous partner conflicts with the current partner.
             raise ValueError(f"Position {a} was given pairs with both {b2} and {b}")

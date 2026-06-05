@@ -1641,7 +1641,8 @@ def calc_params(
         else:
             logger.warning(
                 "Mutation rates and distribution of end coordinates "
-                f"failed to converge in {max_iter} iterations"
+                "failed to converge in {} iterations",
+                max_iter,
             )
     else:
         # If reads are not being dropped, then only the mutation rates

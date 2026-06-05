@@ -122,7 +122,7 @@ def _calc_tile_coords(
 ):
     """Calculate the tiled coordinates for one IDmut dataset."""
     ref = dataset.ref
-    with logger.debug.begin(f"calculating tiles for reference {repr(ref)}"):
+    with logger.debug.begin("calculating tiles for reference {!r}", ref):
         if tile_length > 0:
             # Use a prespecified region length.
             ref_tile_length = tile_length
@@ -147,9 +147,9 @@ def _calc_tile_coords(
                 raise ValueError(
                     f"The median read length must be ≥ 1, but got {median_read_length}"
                 )
-            logger.trace(f"The median read length is {median_read_length}")
+            logger.trace("The median read length is {}", median_read_length)
             ref_tile_length = round(2 * median_read_length)
-            logger.debug(f"Ended calculating optimal tile length: {ref_tile_length}")
+            logger.debug("Ended calculating optimal tile length: {}", ref_tile_length)
         tiles = _calc_tiles(
             total_region.end5, total_region.end3, ref_tile_length, tile_min_overlap
         )
@@ -192,8 +192,10 @@ def _find_correlated_pairs(dataset: FilterMutsDataset, pair_fdr: float, num_cpus
     pairs = n.index
     pairs_significant = pairs[is_significant].to_list()
     logger.trace(
-        f"{dataset} has {len(pairs_significant)} pairs with "
-        f"significant correlations out of {len(pairs)} total pairs"
+        "{} has {} pairs with significant correlations out of {} total pairs",
+        dataset,
+        len(pairs_significant),
+        len(pairs),
     )
     return pairs_significant
 
@@ -304,7 +306,7 @@ def _calc_modules_from_pairs(
     # First, naively aggregate all pairs that overlap.
     modules = _aggregate_pairs(pairs)
     for i in range(max_iter):
-        logger.trace(f"Modules at iteration {i}: {modules}")
+        logger.trace("Modules at iteration {}: {}", i, modules)
         new_modules = list()
         for module in modules:
             if module in finished:
@@ -353,8 +355,8 @@ def _calc_modules_from_pairs(
             break
         modules = new_modules
     else:
-        logger.warning(f"Modules did not converge in {max_iter} iterations")
-    logger.debug(f"Ended calculating modules: {modules}")
+        logger.warning("Modules did not converge in {} iterations", max_iter)
+    logger.debug("Ended calculating modules: {}", modules)
     return modules
 
 
@@ -569,11 +571,13 @@ def _calc_cluster_modules(
         modules = _filter_modules_length(modules, min_length, max_length)
     else:
         raise ValueError(gap_mode)
-    logger.debug(f"Ended adjusting modules: {modules}")
+    logger.debug("Ended adjusting modules: {}", modules)
     if n_modules_before_filter > 0 and not modules:
         logger.warning(
-            f"All {n_modules_before_filter} module(s) were removed "
-            f"by length filter (min={min_length}, max={max_length})"
+            "All {} module(s) were removed by length filter (min={}, max={})",
+            n_modules_before_filter,
+            min_length,
+            max_length,
         )
     # Write the pairs and modules to CSV files.
     report_dir.mkdir(parents=True, exist_ok=True)
@@ -847,7 +851,7 @@ def ensembles(
         else:
             # Skip clustering if no modules were found.
             logger.warning(
-                f"No modules of correlated pairs found in {idmut_report_file}"
+                "No modules of correlated pairs found in {}", idmut_report_file
             )
             cluster_dirs = list()
             best_ks = list()

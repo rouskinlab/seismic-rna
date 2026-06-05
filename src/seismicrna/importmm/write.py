@@ -90,12 +90,12 @@ def _import_one_ref(
     n_reads_xam = len(reads)
     if n_reads_xam < min_reads:
         logger.warning(
-            f"Skipping reference {repr(ref_id)}: "
-            f"{n_reads_xam} reads < min_reads ({min_reads})"
+            "Skipping reference {!r}: {} reads < min_reads ({})",
+            ref_id, n_reads_xam, min_reads,
         )
         return None
 
-    with logger.debug.begin(f"importing MM reference {repr(ref_id)}"):
+    with logger.debug.begin("importing MM reference {!r}", ref_id):
         began = datetime.now()
 
         # Write the reference sequence.

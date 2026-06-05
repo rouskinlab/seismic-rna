@@ -32,8 +32,10 @@ def _parse_metadata(file: Path, index_col: str):
     for item in df.index:
         if item in metadata:
             logger.warning(
-                f"Metadata for {index_col.lower()} {repr(item)} "
-                f"were given multiple times in file {file}"
+                "Metadata for {} {!r} were given multiple times in file {}",
+                index_col.lower(),
+                item,
+                file,
             )
             continue
         metadata[item] = {
@@ -108,7 +110,7 @@ def combine_metadata(
     try:
         item_metadata = parsed_metadata[item]
     except KeyError:
-        logger.trace(f"No metadata were given for {what} {repr(item)}")
+        logger.trace("No metadata were given for {} {!r}", what, item)
         return special_metadata
     # Check for any keys in the parsed metadata that match those in the
     # special metadata.

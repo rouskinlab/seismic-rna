@@ -134,12 +134,13 @@ def set_mut_gap_params(
     """
     if min_mut_gap is None:
         min_mut_gap = DEFAULT_MIN_MUT_GAPS[probe]
-        logger.trace(f"Auto-selected min_mut_gap={min_mut_gap} for probe {repr(probe)}")
+        logger.trace("Auto-selected min_mut_gap={} for probe {!r}", min_mut_gap, probe)
     if mut_collisions == MUT_COLLISIONS_AUTO:
         mut_collisions = DEFAULT_MUT_COLLISIONS[probe]
         logger.trace(
-            f"Auto-selected mut_collisions={repr(mut_collisions)} for probe "
-            f"{repr(probe)}"
+            "Auto-selected mut_collisions={!r} for probe {!r}",
+            mut_collisions,
+            probe,
         )
     return min_mut_gap, mut_collisions
 

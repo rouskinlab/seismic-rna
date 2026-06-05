@@ -211,7 +211,7 @@ def _guess_data_path_conda():
             f"{data_path} does not exist"
         )
     check_data_path(data_path)
-    logger.trace(f"Successfully guessed {DATAPATH}: {data_path}")
+    logger.trace("Successfully guessed {}: {}", DATAPATH, data_path)
     return data_path
 
 
@@ -224,7 +224,7 @@ def _guess_data_path_manual():
     fold_path = Path(fold_path)
     data_path = fold_path.parent.parent.joinpath("data_tables")
     check_data_path(data_path)
-    logger.trace(f"Successfully guessed {DATAPATH}: {data_path}")
+    logger.trace("Successfully guessed {}: {}", DATAPATH, data_path)
     return data_path
 
 
@@ -236,7 +236,7 @@ def guess_data_path():
     except OSError as error:
         errors.append(error)
         logger.warning(
-            f"The {DATAPATH} environment variable is not valid; attempting to guess it"
+            "The {} environment variable is not valid; attempting to guess it", DATAPATH
         )
     for guess_func in [_guess_data_path_conda, _guess_data_path_manual]:
         try:
@@ -285,7 +285,7 @@ def make_rnastructure_cmd(
     """Make a command for 'Fold', 'Fold-smp', or 'ShapeKnots'."""
     if pseudoknots:
         if num_cpus > 1:
-            logger.warning(f"ShapeKnots cannot use {num_cpus} threads; defaulting to 1")
+            logger.warning("ShapeKnots cannot use {} threads; defaulting to 1", num_cpus)
         args = [RNASTRUCTURE_SHAPEKNOTS_CMD]
     else:
         if num_cpus > 1:
@@ -318,8 +318,9 @@ def make_rnastructure_cmd(
             default_temp_k = opt_fold_temp.default + ZERO_CELSIUS
             if abs(fold_temp_k - default_temp_k) > 0.01:
                 logger.warning(
-                    f"ShapeKnots cannot fold at {fold_temp_k} K; "
-                    f"defaulting to {default_temp_k} K"
+                    "ShapeKnots cannot fold at {} K; defaulting to {} K",
+                    fold_temp_k,
+                    default_temp_k,
                 )
         else:
             args.extend(["--temperature", fold_temp_k])
@@ -466,7 +467,8 @@ def parse_rnastructure_ct_title(line: str):
                 raise RNAStructureConnectivityTableTitleLineFormatError(line)
             logger.warning(
                 "CT line contains no energy term (probably because "
-                f"no base pairs were predicted): {repr(line)}"
+                "no base pairs were predicted): {!r}",
+                line,
             )
             energy = 0.0
         else:
@@ -547,8 +549,7 @@ def retitle_ct(ct_input: Path, ct_output: Path, force: bool = False):
         with open(ct_output, write_mode(force=True)) as f:
             f.write(text)
         logger.debug(
-            f"Retitled CT file {ct_input}"
-            + (f" to {ct_output}" if ct_input != ct_output else "")
+            "Retitled CT file {}{}", ct_input, f" to {ct_output}" if ct_input != ct_output else ""
         )
 
 

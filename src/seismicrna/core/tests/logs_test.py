@@ -10,12 +10,8 @@ from seismicrna.core.logs import (
     Logger,
     Level,
     LoggerConfig,
-    Message,
     INDENT,
-    FILE_VERBOSITY,
-    format_console_color,
-    format_console_plain,
-    format_logfile,
+    format_body,
     get_config,
     set_config,
     erase_config,
@@ -83,7 +79,6 @@ class TestLoggingExitOnError(ut.TestCase):
     @restore_config
     def test_exit_on_error(self):
         set_config(verbosity=(Level.ERROR - 1), exit_on_error=True)
-        # A message logged at the error level raises.
         self.assertRaisesRegex(
             RuntimeError, "An error has occurred", logger.error, "An error has occurred"
         )
@@ -93,15 +88,13 @@ class TestLoggingExitOnError(ut.TestCase):
             logger.error,
             ZeroDivisionError("Cannot divide by 0"),
         )
-        # A message logged below the error level never raises, even when its
-        # content is an exception.
+        # Messages below the error level never raise, even with exception content.
         logger.warning("An error has occurred")
         logger.warning(ZeroDivisionError("Cannot divide by 0"))
 
     @restore_config
     def test_no_exit_on_error(self):
         set_config(verbosity=(Level.ERROR - 1), exit_on_error=False)
-        # None of these calls should raise an error.
         logger.error("An error has occurred")
         logger.error(ZeroDivisionError("Cannot divide by 0"))
 
@@ -109,10 +102,10 @@ class TestLoggingExitOnError(ut.TestCase):
 class TestEraseConfig(ut.TestCase):
     def test_erase_config(self):
         set_config(verbosity=3, exit_on_error=False)
-        self.assertEqual(logger.console_stream.filterer.verbosity, 3)
+        self.assertEqual(logger.verbosity, 3)
         self.assertFalse(logger.exit_on_error)
         erase_config()
-        self.assertIsNone(logger.console_stream)
+        self.assertFalse(logger.console_enabled)
         self.assertIsNone(logger.file_stream)
         self.assertTrue(logger.exit_on_error)
 
@@ -121,49 +114,69 @@ class TestSetConfig(ut.TestCase):
     @restore_config
     def test_defaults(self):
         erase_config()
-        self.assertIsNone(logger.console_stream)
+        self.assertFalse(logger.console_enabled)
         self.assertIsNone(logger.file_stream)
         self.assertTrue(logger.exit_on_error)
         set_config()
         self.assertTrue(logger.exit_on_error)
-        self.assertEqual(logger.console_stream.filterer.verbosity, 0)
-        self.assertIs(logger.console_stream.formatter.formatter, format_console_color)
+        self.assertEqual(logger.verbosity, 0)
+        self.assertTrue(logger.log_color)
 
     @restore_config
     def test_verbosity(self):
         for verbosity in [-3, -2, -1, 0, 1, 2, 3]:
             set_config(verbosity=verbosity)
-            self.assertEqual(logger.console_stream.filterer.verbosity, verbosity)
+            self.assertEqual(logger.verbosity, verbosity)
 
     @restore_config
-    def test_log_file(self):
-        log_file_path = Path(os.path.abspath("test.log"))
-        msg1 = "Some logging text"
-        msg2 = "More logging text"
+    def test_log_file_same_verbosity(self):
+        """File records at the same verbosity as the console."""
+        log_file_path = Path(os.path.abspath("test_same_verbosity.log"))
+        msg_info = "An info message"
+        msg_debug = "Some debug text"
+        msg_trace = "Some trace text"
         try:
-            set_config(log_file_path=log_file_path)
-            self.assertEqual(logger.file_stream.filterer.verbosity, FILE_VERBOSITY)
-            self.assertIs(logger.file_stream.formatter.formatter, format_logfile)
-            self.assertEqual(logger.file_stream.file_path, log_file_path)
-            # Test logging a message to the file.
-            logger.debug(msg1)
-            logger.trace(msg2)
-            # The file stream must be closed explicitly to flush the log
-            # messages to the file before reading with readlines().
+            # Set verbosity to INFO — DEBUG and TRACE should NOT appear in file.
+            set_config(verbosity=Level.INFO, log_file_path=log_file_path, log_color=False)
+            stream = io.StringIO()
+            with mock.patch("seismicrna.core.logs.stderr", stream):
+                logger.info(msg_info)
+                logger.debug(msg_debug)
+                logger.trace(msg_trace)
             logger.file_stream.close()
             with open(log_file_path) as log_file:
-                lines = log_file.readlines()
-                self.assertEqual(len(lines), 6)
-                self.assertTrue(
-                    lines[0].startswith(f"LOGMSG> {Level.DEBUG.name} {os.getpid()}")
-                )
-                self.assertEqual(lines[1], f"{msg1}\n")
-                self.assertEqual(lines[2], "\n")
-                self.assertTrue(
-                    lines[3].startswith(f"LOGMSG> {Level.TRACE.name} {os.getpid()}")
-                )
-                self.assertEqual(lines[4], f"{msg2}\n")
-                self.assertEqual(lines[5], "\n")
+                content = log_file.read()
+            self.assertIn(msg_info, content)
+            self.assertNotIn(msg_debug, content)
+            self.assertNotIn(msg_trace, content)
+        finally:
+            try:
+                os.remove(log_file_path)
+            except FileNotFoundError:
+                pass
+
+    @restore_config
+    def test_log_file_timestamp_prefix(self):
+        """File lines carry a timestamp prefix; body matches console body."""
+        log_file_path = Path(os.path.abspath("test.log"))
+        msg = "Hello log file"
+        # Timestamp format is always "%Y-%m-%d %H:%M:%S" (19 chars) + " " = 20.
+        ts_prefix_len = len("YYYY-MM-DD HH:MM:SS ")
+        try:
+            set_config(
+                verbosity=Level.DEBUG, log_file_path=log_file_path, log_color=False
+            )
+            console_stream = io.StringIO()
+            with mock.patch("seismicrna.core.logs.stderr", console_stream):
+                logger.debug(msg)
+            logger.file_stream.close()
+            with open(log_file_path) as log_file:
+                file_content = log_file.read()
+            console_body = console_stream.getvalue()
+            # File line = "<YYYY-MM-DD HH:MM:SS> " + console body
+            self.assertTrue(file_content.startswith("20"))  # starts with a year
+            # The body portion (after the timestamp prefix) matches the console.
+            self.assertEqual(file_content[ts_prefix_len:], console_body)
         finally:
             try:
                 os.remove(log_file_path)
@@ -173,9 +186,7 @@ class TestSetConfig(ut.TestCase):
     @restore_config
     def test_no_log_color(self):
         set_config(log_color=False)
-        self.assertTrue(logger.exit_on_error)
-        self.assertEqual(logger.console_stream.filterer.verbosity, 0)
-        self.assertIs(logger.console_stream.formatter.formatter, format_console_plain)
+        self.assertFalse(logger.log_color)
 
     @restore_config
     def test_exit_on_error(self):
@@ -207,45 +218,84 @@ class TestGetConfig(ut.TestCase):
                 pass
 
 
-class TestFormatConsole(ut.TestCase):
+class TestFormatBody(ut.TestCase):
     def test_level_pid_message(self):
-        message = Message(Level.INFO, "hello world")
-        formatted = format_console_plain(message)
-        self.assertIn(Level.INFO.name, formatted)
-        self.assertIn(f"{os.getpid()}", formatted)
-        self.assertTrue(formatted.endswith("hello world\n"))
+        body = format_body(Level.INFO, "hello world", 0)
+        self.assertIn(Level.INFO.name, body)
+        self.assertIn(f"{os.getpid()}", body)
+        self.assertTrue(body.endswith("hello world\n"))
 
     def test_depth_indents_message_only(self):
-        # At depth 0 the message follows the prefix directly.
-        flat = format_console_plain(Message(Level.TRACE, "msg"), 0)
-        # At depth 2 the message is indented by two INDENT units, but the
-        # level/PID prefix is unchanged.
-        nested = format_console_plain(Message(Level.TRACE, "msg"), 2)
-        prefix = f"{Level.TRACE.name: <8}{os.getpid()}  "
+        flat = format_body(Level.TRACE, "msg", 0)
+        nested = format_body(Level.TRACE, "msg", 2)
+        prefix = f"{Level.TRACE.name:<8}{os.getpid()}  "
         self.assertEqual(flat, f"{prefix}msg\n")
         self.assertEqual(nested, f"{prefix}{INDENT * 2}msg\n")
 
     def test_multiline_message_aligned(self):
-        # Continuation lines align under the message column (the level/PID
-        # prefix width plus the depth indent), not under column 0.
-        formatted = format_console_plain(Message(Level.TRACE, "line1\nline2"), 1)
-        prefix_len = len(f"{Level.TRACE.name: <8}{os.getpid()}  ")
+        formatted = format_body(Level.TRACE, "line1\nline2", 1)
+        prefix_len = len(f"{Level.TRACE.name:<8}{os.getpid()}  ")
         out_lines = formatted.splitlines()
         self.assertTrue(out_lines[0].endswith("line1"))
         self.assertEqual(out_lines[1], " " * prefix_len + INDENT + "line2")
 
     def test_long_message_wrapped_to_terminal_width(self):
-        # Force a known terminal width via the COLUMNS environment variable.
         with mock.patch.dict(os.environ, {"COLUMNS": "50"}):
-            content = " ".join(["word"] * 40)
-            formatted = format_console_plain(Message(Level.INFO, content))
-        out_lines = formatted.splitlines()
+            body = format_body(Level.INFO, " ".join(["word"] * 40), 0)
+        out_lines = body.splitlines()
         self.assertGreater(len(out_lines), 1)
-        # Every line is wrapped to at most one less than the terminal width.
         for line in out_lines:
             self.assertLessEqual(len(line), 49)
-        # No content is lost by wrapping.
-        self.assertEqual(formatted.count("word"), 40)
+        self.assertEqual(body.count("word"), 40)
+
+
+class TestLazyFormatting(ut.TestCase):
+    """Template is formatted only when the level is visible."""
+
+    @restore_config
+    def test_skips_format_when_level_hidden(self):
+        set_config(verbosity=Level.INFO, log_color=False, exit_on_error=False)
+        stream = io.StringIO()
+        with mock.patch("seismicrna.core.logs.stderr", stream):
+            # This would raise KeyError if .format() were called — field "bad"
+            # is not in the positional args.  At TRACE verbosity (hidden at INFO)
+            # it must be silently skipped.
+            logger.trace("value = {bad}", "oops")
+        self.assertEqual(stream.getvalue(), "")
+
+    @restore_config
+    def test_formats_when_level_visible(self):
+        set_config(verbosity=Level.TRACE, log_color=False)
+        stream = io.StringIO()
+        with mock.patch("seismicrna.core.logs.stderr", stream):
+            logger.trace("x = {}, y = {}", 1, 2)
+        self.assertIn("x = 1, y = 2", stream.getvalue())
+
+    @restore_config
+    def test_keyword_args(self):
+        set_config(verbosity=Level.DEBUG, log_color=False)
+        stream = io.StringIO()
+        with mock.patch("seismicrna.core.logs.stderr", stream):
+            logger.debug("ref={ref} reg={reg}", ref="myref", reg="myreg")
+        out = stream.getvalue()
+        self.assertIn("ref=myref", out)
+        self.assertIn("reg=myreg", out)
+
+    @restore_config
+    def test_plain_string_no_args(self):
+        set_config(verbosity=Level.INFO, log_color=False)
+        stream = io.StringIO()
+        with mock.patch("seismicrna.core.logs.stderr", stream):
+            logger.info("plain message with no args")
+        self.assertIn("plain message with no args", stream.getvalue())
+
+    @restore_config
+    def test_exception_object(self):
+        set_config(verbosity=Level.ERROR, log_color=False, exit_on_error=False)
+        stream = io.StringIO()
+        with mock.patch("seismicrna.core.logs.stderr", stream):
+            logger.error(ValueError("something broke"))
+        self.assertIn("something broke", stream.getvalue())
 
 
 class TestDepth(ut.TestCase):
@@ -272,24 +322,12 @@ class TestDepth(ut.TestCase):
 
     @restore_config
     def test_reconfigure_inside_begin_does_not_crash(self):
-        # Reconfiguring logging while a context is open (as the `test` command
-        # does) must not corrupt the stack or raise on exit.
         set_config(verbosity=Level.INFO, log_color=False)
         with logger.info.begin("outer"):
             self.assertEqual(len(logger.context_levels), 1)
             set_config(verbosity=Level.DEBUG, log_color=False)
             self.assertEqual(len(logger.context_levels), 1)
         self.assertEqual(len(logger.context_levels), 0)
-
-    def test_depth_counts_only_visible_contexts(self):
-        # A message enclosed by an INFO context and a DEBUG context.
-        message = Message(Level.INFO, "x", context_levels=[Level.INFO, Level.DEBUG])
-        # At INFO verbosity the DEBUG context is hidden, so it adds no indent.
-        self.assertEqual(message.depth(Level.INFO), 1)
-        # At DEBUG verbosity both contexts are visible and both indent.
-        self.assertEqual(message.depth(Level.DEBUG), 2)
-        # At WARNING verbosity neither context is visible.
-        self.assertEqual(message.depth(Level.WARNING), 0)
 
     @restore_config
     def test_hidden_context_does_not_indent_console(self):
@@ -302,8 +340,21 @@ class TestDepth(ut.TestCase):
                 logger.info("visible message")
         out = stream.getvalue()
         self.assertNotIn("hidden outer", out)
-        prefix = f"{Level.INFO.name: <8}{os.getpid()}  "
+        prefix = f"{Level.INFO.name:<8}{os.getpid()}  "
         self.assertIn(f"{prefix}visible message", out)
+
+    @restore_config
+    def test_visible_context_indents_nested_message(self):
+        # At DEBUG verbosity, messages inside a DEBUG context are indented.
+        set_config(verbosity=Level.DEBUG, log_color=False)
+        stream = io.StringIO()
+        with mock.patch("seismicrna.core.logs.stderr", stream):
+            with logger.debug.begin("outer"):
+                logger.debug("inner message")
+        out = stream.getvalue()
+        # The "inner message" line must contain one level of indentation.
+        inner_line = [l for l in out.splitlines() if "inner message" in l][0]
+        self.assertIn(INDENT, inner_line)
 
 
 class TestBeginEnd(ut.TestCase):
@@ -311,15 +362,12 @@ class TestBeginEnd(ut.TestCase):
     def test_logs_began_and_ended(self):
         set_config(verbosity=Level.TRACE, log_color=False)
         stream = io.StringIO()
-        # logs.py binds `stderr` at import, so patch it directly to capture
-        # console output (redirect_stderr would not affect it).
         with mock.patch("seismicrna.core.logs.stderr", stream):
             with logger.debug.begin("doing x"):
                 logger.trace("progress")
         output = stream.getvalue()
         self.assertIn("Began doing x", output)
         self.assertIn("Ended doing x", output)
-        # The nested message is indented by one level.
         self.assertIn(f"{INDENT}progress", output)
 
     @restore_config
@@ -334,16 +382,30 @@ class TestBeginEnd(ut.TestCase):
         self.assertIn("Began doing x", output)
         self.assertNotIn("Ended doing x", output)
 
-
-class TestVerbatimCall(ut.TestCase):
     @restore_config
-    def test_verbatim_call_still_works(self):
-        set_config(verbosity=Level.TRACE, log_color=False)
+    def test_begin_with_format_args(self):
+        set_config(verbosity=Level.DEBUG, log_color=False)
         stream = io.StringIO()
         with mock.patch("seismicrna.core.logs.stderr", stream):
-            logger.trace("just a message")
-        self.assertIn("just a message", stream.getvalue())
-        self.assertIsInstance(logger, Logger)
+            with logger.debug.begin("processing {} items", 42):
+                pass
+        out = stream.getvalue()
+        self.assertIn("Began processing 42 items", out)
+        self.assertIn("Ended processing 42 items", out)
+
+    @restore_config
+    def test_begin_hidden_does_not_format(self):
+        # begin() at DEBUG level is hidden at INFO verbosity — template must
+        # not be formatted.
+        set_config(verbosity=Level.INFO, log_color=False)
+        stream = io.StringIO()
+        with mock.patch("seismicrna.core.logs.stderr", stream):
+            # Passing bad positional arg — would raise if .format() were called.
+            with logger.debug.begin("value = {bad}", "oops"):
+                logger.info("still visible")
+        out = stream.getvalue()
+        self.assertNotIn("value", out)
+        self.assertIn("still visible", out)
 
 
 if __name__ == "__main__":

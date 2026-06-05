@@ -70,8 +70,10 @@ def format_phred_arg(phred_enc: int):
     """Format a Phred score argument for Bowtie2."""
     if phred_enc not in PHRED_ENCS:
         logger.warning(
-            f"Expected phred_enc to be one of {PHRED_ENCS}, "
-            f"but got {phred_enc}, which may cause problems"
+            "Expected phred_enc to be one of {}, "
+            "but got {}, which may cause problems",
+            PHRED_ENCS,
+            phred_enc,
         )
     return f"--phred{phred_enc}"
 
@@ -476,7 +478,7 @@ class FastqUnit(object):
             segs = path.FASTQ_SEGS
         sample_refs = set()
         for fq in path.find_files_chain(fqs, segs):
-            logger.trace(f"Generating {cls} from {fq}")
+            logger.trace("Generating {} from {}", cls, fq)
             try:
                 fq_unit = cls(phred_enc=phred_enc, one_ref=one_ref, **{key: fq})
             except Exception as error:
@@ -485,7 +487,7 @@ class FastqUnit(object):
                 sample_ref = fq_unit.sample, fq_unit.ref
                 if sample_ref in sample_refs:
                     raise DuplicateSampleReferenceError(sample_ref)
-                logger.trace(f"Generated {cls.__name__} for {sample_ref}")
+                logger.trace("Generated {} for {}", cls.__name__, sample_ref)
                 yield fq_unit
 
     @classmethod
@@ -549,7 +551,7 @@ class FastqUnit(object):
             except Exception as error:
                 logger.error(error)
             else:
-                logger.trace(f"Generated {cls.__name__} for {sample_ref}")
+                logger.trace("Generated {} for {}", cls.__name__, sample_ref)
                 yield fq_unit
 
     @classmethod
@@ -581,7 +583,7 @@ class FastqUnit(object):
             in which `os.path.listdir` returns file paths.
         """
         # List all FASTQ files.
-        with logger.debug.begin(f"generating {cls.__name__} instances"):
+        with logger.debug.begin("generating {} instances", cls.__name__):
             # single-end
             yield from cls._from_files(
                 phred_enc=phred_enc,

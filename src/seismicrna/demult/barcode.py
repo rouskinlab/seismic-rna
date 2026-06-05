@@ -66,7 +66,7 @@ def get_ref_barcodes(ref_meta_file: Path):
             # the value given currently.
             if prev == value:
                 # If so, then warn about it.
-                logger.warning(f"Key {key} mapped to {repr(value)} multiple times")
+                logger.warning("Key {} mapped to {!r} multiple times", key, value)
             else:
                 # If not, then raise an error because it is ambiguous
                 # which value to use.
@@ -177,7 +177,7 @@ def get_coords_by_name(coords: Iterable[tuple[str, int | DNA, int, int | None]])
         else:
             raise ValueError(f"Unexpected number of values for coord {coord}")
         if coord_val in coords_map[ref]:
-            logger.warning(f"Skipping duplicate coordinates: {coord}")
+            logger.warning("Skipping duplicate coordinates: {}", coord)
         else:
             coords_map[ref].add(coord_val)
     return coords_map

@@ -72,7 +72,7 @@ def get_reg_ends_primers(regs_file: Path):
             # the value given currently.
             if prev == value:
                 # If so, then warn about it.
-                logger.warning(f"Key {key} mapped to {repr(value)} multiple times")
+                logger.warning("Key {} mapped to {!r} multiple times", key, value)
             else:
                 # If not, then raise an error because it is ambiguous
                 # which value to use.
@@ -292,8 +292,9 @@ def iter_windows(
     margin5, margin3 = window_to_margins(size)
     if min_count > size:
         logger.warning(
-            f"min_count ({min_count}) is > window size ({size}), "
-            "so no positions will have enough data"
+            "min_count ({}) is > window size ({}), so no positions will have enough data",
+            min_count,
+            size,
         )
     # Yield each window from each series.
     for center in index_to_pos(index):
@@ -996,7 +997,7 @@ def get_ends_by_ref(ends: Iterable[tuple[str, int | DNA, int | DNA]]):
     for ref, end5, end3 in ends:
         ref_ends = end5, end3
         if ref_ends in refs_ends[ref]:
-            logger.warning(f"Skipping duplicate 5'/3' ends: {ref_ends}")
+            logger.warning("Skipping duplicate 5'/3' ends: {}", ref_ends)
         else:
             refs_ends[ref].add(ref_ends)
     return refs_ends
@@ -1069,12 +1070,14 @@ class RefRegions(object):
                 self._regions[region.ref][region.ends] = region
             elif seen.name == region.name:
                 # The region was seen already with the same name.
-                logger.warning(f"Got duplicate region: {region}")
+                logger.warning("Got duplicate region: {}", region)
             else:
                 # The region was seen already with a different name.
                 logger.error(
-                    f"Region {seen} was redefined with as {region}; "
-                    f"using the first encountered: {seen}"
+                    "Region {} was redefined with as {}; using the first encountered: {}",
+                    seen,
+                    region,
+                    seen,
                 )
 
     def list(self, ref: str):

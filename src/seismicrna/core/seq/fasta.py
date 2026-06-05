@@ -109,7 +109,7 @@ def parse_fasta(
         item_type = f"{seq_type.__name__} sequence"
     else:
         raise ValueError(seq_type)
-    with logger.debug.begin(f"parsing {item_type}s in FASTA file {fasta}"):
+    with logger.debug.begin("parsing {}s in FASTA file {}", item_type, fasta):
         names = set()
         skipped = 0
         if only is not None and not isinstance(only, set):
@@ -137,21 +137,21 @@ def parse_fasta(
                             segments.append(line.rstrip(linesep))
                             line = f.readline()
                         seq = seq_type("".join(segments))
-                        logger.trace(f"Parsed {repr(name)} ({len(seq)} nt {item_type})")
+                        logger.trace("Parsed {!r} ({} nt {})", name, len(seq), item_type)
                         yield name, seq
                     else:
                         # In name-only mode, yield only the reference name.
-                        logger.trace(f"Parsed {repr(name)}")
+                        logger.trace("Parsed {!r}", name)
                         yield name
                 else:
-                    logger.trace(f"Skipped {repr(name)}")
+                    logger.trace("Skipped {!r}", name)
                     skipped += 1
                 # Skip to the next name line if there is one, otherwise to
                 # the end of the file; ignore blank lines.
                 while line and not line.startswith(FASTA_NAME_MARK):
                     line = f.readline()
-        logger.trace(f"Parsed {len(names)} {item_type}s in FASTA file {fasta}")
-        logger.trace(f"Skipped {skipped} {item_type}s in FASTA file {fasta}")
+        logger.trace("Parsed {} {}s in FASTA file {}", len(names), item_type, fasta)
+        logger.trace("Skipped {} {}s in FASTA file {}", skipped, item_type, fasta)
 
 
 def get_fasta_seq(fasta: str | Path, seq_type: type[XNA], name: str):
@@ -174,7 +174,7 @@ def write_fasta(
     fasta = path.sanitize(fasta, strict=False)
     path.check_file_extension(fasta, path.FastaExt)
     if need_write(fasta, force):
-        with logger.debug.begin(f"writing FASTA file {fasta}"):
+        with logger.debug.begin("writing FASTA file {}", fasta):
             with NamedTemporaryFile(
                 "w",
                 dir=fasta.parent,
@@ -183,7 +183,7 @@ def write_fasta(
                 delete=False,
             ) as f:
                 tmp_fasta = Path(f.file.name)
-            logger.debug(f"Created temporary FASTA file {tmp_fasta}")
+            logger.debug("Created temporary FASTA file {}", tmp_fasta)
             try:
                 # Write the new FASTA in a temporary file.
                 with open(tmp_fasta, "w") as f:
@@ -202,13 +202,15 @@ def write_fasta(
                             raise DuplicateReferenceNameError(name)
                         f.write(format_fasta_record(name, seq, wrap))
                         logger.trace(
-                            f"Wrote {repr(name)} ({len(seq)} nt "
-                            f"{type(seq).__name__} sequence)"
+                            "Wrote {!r} ({} nt {} sequence)",
+                            name,
+                            len(seq),
+                            type(seq).__name__,
                         )
                         names.add(name)
                 # Release the FASTA file.
                 tmp_fasta.rename(fasta)
-                logger.debug(f"Released temporary FASTA file {tmp_fasta} to {fasta}")
+                logger.debug("Released temporary FASTA file {} to {}", tmp_fasta, fasta)
             finally:
                 # The temporary FASTA file would have been renamed already
                 # if the write operation had succeeded; if not, delete it.
@@ -217,7 +219,7 @@ def write_fasta(
                 except FileNotFoundError:
                     pass
                 else:
-                    logger.debug(f"Deleted temporary FASTA file {tmp_fasta}")
-            logger.trace(f"Wrote {len(names)} sequence(s) to FASTA file {fasta}")
+                    logger.debug("Deleted temporary FASTA file {}", tmp_fasta)
+            logger.trace("Wrote {} sequence(s) to FASTA file {}", len(names), fasta)
     else:
-        logger.trace(f"Skipped overwriting FASTA file {fasta}")
+        logger.trace("Skipped overwriting FASTA file {}", fasta)

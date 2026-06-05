@@ -116,7 +116,7 @@ def generate_batch(
     **kwargs,
 ):
     """Compute relationships for every SAM record in one batch."""
-    with logger.debug.begin(f"calculating batch {batch} of {xam_view}"):
+    with logger.debug.begin("calculating batch {} of {}", batch, xam_view):
         idmut_batch, name_batch = from_reads(
             idmut_records(
                 xam_view.iter_records(batch),
@@ -237,7 +237,7 @@ class RelationWriter(object):
     ):
         """Compute the relationships for every read in a XAM file,
         split among one or more batches."""
-        logger.debug(f"Began generating batches for {self._xam}")
+        logger.debug("Began generating batches for {}", self._xam)
         try:
             kwargs = dict(
                 xam_view=self._xam,
@@ -277,7 +277,7 @@ class RelationWriter(object):
                 checksums[ReadNamesBatchIO.btype()] = name_checksums
             else:
                 assert not any(name_checksums)
-            logger.debug(f"Ended generating batches for {self._xam}")
+            logger.debug("Ended generating batches for {}", self._xam)
             return batch_counts, checksums
         finally:
             if not keep_tmp:

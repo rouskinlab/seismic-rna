@@ -159,8 +159,9 @@ class StructOneTableGraph(OneTableRelClusterGroupGraph, OneRelGraph, ABC):
                     yield RNAState.from_struct_profile(struct, profile)
             except FileNotFoundError:
                 logger.error(
-                    f"Structure file {ct_file} does not exist; "
-                    "please obtain the file, e.g. using seismic fold"
+                    "Structure file {} does not exist; "
+                    "please obtain the file, e.g. using seismic fold",
+                    ct_file,
                 )
 
 
@@ -218,10 +219,12 @@ class StructOneTableWriter(OneTableRelClusterGroupWriter, ABC):
                 struct_files.append(file)
             else:
                 logger.warning(
-                    f"Skipped CT file {file} in region directory "
-                    f"{repr(path.REG)} in reference directory "
-                    f"{repr(ref)}, which differs from the reference "
-                    f"name of the table file {repr(self.table.ref)}"
+                    "Skipped CT file {} in region directory {!r} in reference directory "
+                    "{!r}, which differs from the reference name of the table file {!r}",
+                    file,
+                    path.REG,
+                    ref,
+                    self.table.ref,
                 )
         if struct_files:
             fold_regs = list()

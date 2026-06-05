@@ -363,7 +363,7 @@ def iter_table_pairs(tables: Iterable[Table]):
     for table in tables:
         key = table.ref, table.reg
         if table in table_groups[key]:
-            logger.warning(f"Duplicate reference and region: {key}")
+            logger.warning("Duplicate reference and region: {}", key)
         else:
             table_groups[key].append(table)
     # Yield every pair of tables from each table group.
@@ -371,8 +371,11 @@ def iter_table_pairs(tables: Iterable[Table]):
         n_files = len(table_group)
         n_pairs = n_files * (n_files - 1) // 2
         logger.trace(
-            f"Found {n_files} table(s) and {n_pairs} pair(s) "
-            f"with reference {repr(ref)} and region {repr(reg)}"
+            "Found {} table(s) and {} pair(s) with reference {!r} and region {!r}",
+            n_files,
+            n_pairs,
+            ref,
+            reg,
         )
         # Sort the tables by sample to ensure the order of combinations
         # is consistent no matter the order of the "tables" argument.

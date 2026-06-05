@@ -67,12 +67,14 @@ def _calc_bic(
         )
     if n_data < min_data_param_ratio * n_params:
         logger.warning(
-            f"The Bayesian Information Criterion (BIC) uses an "
-            f"approximation that is valid only when the size of the "
-            f"sample (n = {n_data}) is much larger than the number "
-            f"of parameters being estimated (p = {n_params}). "
-            f"This model does not meet this criterion, so the BIC "
-            f"may not indicate the model's complexity accurately."
+            "The Bayesian Information Criterion (BIC) uses an "
+            "approximation that is valid only when the size of the "
+            "sample (n = {}) is much larger than the number "
+            "of parameters being estimated (p = {}). "
+            "This model does not meet this criterion, so the BIC "
+            "may not indicate the model's complexity accurately.",
+            n_data,
+            n_params,
         )
     with np.errstate(divide="ignore", invalid="ignore"):
         return n_params * np.log(n_data) - 2.0 * log_like
@@ -355,8 +357,9 @@ class EMRun(object):
         if n_nonzero := np.count_nonzero(self._p_mut[self._masked]):
             p_mut_masked = self._p_mut[self._masked]
             logger.warning(
-                f"{n_nonzero} masked position(s) have a mutation rate ≠ 0: "
-                f"{p_mut_masked[p_mut_masked != 0.0]}"
+                "{} masked position(s) have a mutation rate ≠ 0: {}",
+                n_nonzero,
+                p_mut_masked[p_mut_masked != 0.0],
             )
             self._p_mut[self._masked] = 0.0
 
@@ -380,7 +383,7 @@ class EMRun(object):
 
     def _run(self):
         """Run the EM clustering algorithm."""
-        logger.debug(f"Began {self} with {self._min_iter}-{self._max_iter} iterations")
+        logger.info("Began {}: {}-{} iterations", self, self._min_iter, self._max_iter)
         # The random number generator must be initialized with a seed
         # because on some (but not all) platforms, initializing with no
         # seed would cause every EMRun to have the same random state and
@@ -400,7 +403,7 @@ class EMRun(object):
         # Initialize cluster membership with a Dirichlet distribution.
         self._resps = rng.dirichlet(alpha=conc_params, size=self.uniq_reads.num_uniq)
         if self.uniq_reads.num_uniq == 0 or self._n_pos_unmasked == 0:
-            logger.warning(f"{self} got 0 reads or positions: stopping")
+            logger.warning("{} got 0 reads or positions: stopping", self)
             self._log_likes.append(0.0)
             return
         # Run EM until the log likelihood converges or the number of
@@ -417,15 +420,18 @@ class EMRun(object):
                     f"non-finite log likelihood: {self.log_like}"
                 )
             logger.trace(
-                f"{self}, iteration {self.iter}: log likelihood = {self.log_like}"
+                "{}, iteration {}: log likelihood = {}", self, self.iter, self.log_like
             )
             # Check for convergence.
             if self._delta_log_like < 0.0:
                 # The log likelihood should not decrease.
                 logger.warning(
-                    f"{self}, iteration {self.iter} had a smaller "
-                    f"log likelihood ({self.log_like}) than the "
-                    f"previous iteration ({self._log_like_prev})"
+                    "{}, iteration {} had a smaller log likelihood ({}) "
+                    "than the previous iteration ({})",
+                    self,
+                    self.iter,
+                    self.log_like,
+                    self._log_like_prev,
                 )
             if self._delta_log_like < self._em_thresh and self.iter >= self._min_iter:
                 # Converge if the increase in log likelihood is smaller
@@ -433,8 +439,10 @@ class EMRun(object):
                 # number of iterations have been run.
                 self.converged = True
                 logger.debug(
-                    f"Ended {self} on iteration {self.iter}: "
-                    f"log likelihood = {self.log_like}"
+                    "Ended {} on iteration {}: log likelihood = {}",
+                    self,
+                    self.iter,
+                    self.log_like,
                 )
                 # Cache the jackpotting quotient here (though it will
                 # not be used yet) so that this expensive calculation
@@ -443,8 +451,10 @@ class EMRun(object):
         # The log likelihood did not converge within the maximum number
         # of permitted iterations.
         logger.warning(
-            f"{self} failed to converge within {self._max_iter} "
-            f"iterations: last log likelihood = {self.log_like}"
+            "{} failed to converge within {} iterations: last log likelihood = {}",
+            self,
+            self._max_iter,
+            self.log_like,
         )
 
     @cached_property
@@ -544,10 +554,13 @@ class EMRun(object):
             return np.nan
         if self.n_reads * self._n_pos_total > self._jackpot_max_data:
             logger.warning(
-                f"Skipping the jackpotting calculation for {self} "
-                f"because number of reads ({self.n_reads}) times "
-                f"number of positions ({self._n_pos_total}) "
-                f"exceeds the limit ({self._jackpot_max_data})"
+                "Skipping the jackpotting calculation for {} "
+                "because number of reads ({}) times "
+                "number of positions ({}) exceeds the limit ({})",
+                self,
+                self.n_reads,
+                self._n_pos_total,
+                self._jackpot_max_data,
             )
             return np.nan
         try:

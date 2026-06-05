@@ -121,7 +121,7 @@ def list_demult(fq_units: list[FastqUnit], refs: set[str]):
             sample = fq_unit.sample
             for ref in fq_refs:
                 logger.trace(
-                    f"Adding demultiplexed FASTQ {repr(ref)} for sample {repr(sample)}"
+                    "Adding demultiplexed FASTQ {!r} for sample {!r}", ref, sample
                 )
                 sample_ref = sample, ref
                 if sample_ref in demult_fqs:
@@ -290,7 +290,7 @@ def demult_fq_pipeline(
     """Run all stages of the demult pipeline for one FASTQ file or
     one pair of mated FASTQ files."""
     release_dir, working_dir = get_release_working_dirs(tmp_dir)
-    logger.debug(f"Began processing {fq_inp} through the demult pipeline")
+    logger.debug("Began processing {} through the demult pipeline", fq_inp)
     # Get attributes of the sample and references.
 
     num_split = num_cpus - 1
@@ -505,7 +505,7 @@ def process_fq_part(
             None,
         )
         if not seg_pattern:
-            logger.error(f"{fq_path} does not match any known FASTQ pattern.")
+            logger.error("{} does not match any known FASTQ pattern.", fq_path)
             continue
 
         dm_fastq_segs = fq_seg_map[seg_pattern]
@@ -555,7 +555,7 @@ def check_matches(matches: Iterable[tuple[tuple[int, str, set]]], barcodes):
         return None
 
     if len(samples) > 1:
-        logger.warning(f"Read matched more than one sample {samples}")
+        logger.warning("Read matched more than one sample {}", samples)
         # raise ValueError(f"Read matched more than one sample {samples}")
         return None
     else:
@@ -637,7 +637,10 @@ def demult_ahocorasick(
                 )
 
     logger.trace(
-        f"Identified {count} out of {total} reads ({100 * (count / total):.3f}%)"
+        "Identified {} out of {} reads ({:.3f}%)",
+        count,
+        total,
+        100 * (count / total),
     )
 
     return tuple((tuple(out_fqs[name].paths.values()) for name in barcodes.uniq_names))

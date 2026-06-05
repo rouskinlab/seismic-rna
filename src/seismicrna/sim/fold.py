@@ -276,8 +276,9 @@ def run(
     check_fold_deps(fold_backend, pseudoknots)
     if not fold_mfe and fold_min > fold_max:
         logger.warning(
-            f"fold_min ({fold_min}) > fold_max ({fold_max}): "
-            f"setting fold_min = fold_max"
+            "fold_min ({}) > fold_max ({}): setting fold_min = fold_max",
+            fold_min,
+            fold_max,
         )
         fold_min = fold_max
     # List the regions.

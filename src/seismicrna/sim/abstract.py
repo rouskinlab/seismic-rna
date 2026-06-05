@@ -81,7 +81,7 @@ def _calc_ratios(counts: pd.DataFrame, is_paired: np.ndarray):
             str, ["calculating ratios from", "counts:", counts, "is_paired:", is_paired]
         )
     )
-    with logger.debug.begin(f"{message}"):
+    with logger.debug.begin("{}", message):
         is_unpaired = ~is_paired
 
         def calc_ratio(num: str, den: str, rows):
@@ -91,9 +91,9 @@ def _calc_ratios(counts: pd.DataFrame, is_paired: np.ndarray):
         key = "loq"
         numer, denom = get_other_parameters()[key]
         paired_ratios = {key: 1.0 - calc_ratio(numer, denom, is_paired)}
-        logger.trace(f"paired[{key}] = {paired_ratios[key]}")
+        logger.trace("paired[{}] = {}", key, paired_ratios[key])
         unpaired_ratios = {key: 1.0 - calc_ratio(numer, denom, is_unpaired)}
-        logger.trace(f"unpaired[{key}] = {unpaired_ratios[key]}")
+        logger.trace("unpaired[{}] = {}", key, unpaired_ratios[key])
         # Get fraction of mutated Ns.
         is_n = counts.index.get_level_values(BASE_NAME) == BASEN
         is_n_paired = is_n & is_paired
@@ -101,9 +101,9 @@ def _calc_ratios(counts: pd.DataFrame, is_paired: np.ndarray):
         for key, (numer, denom) in get_other_parameters().items():
             if key.startswith(BASEN.lower()):
                 paired_ratios[key] = calc_ratio(numer, denom, is_n_paired)
-                logger.trace(f"paired[{key}] = {paired_ratios[key]}")
+                logger.trace("paired[{}] = {}", key, paired_ratios[key])
                 unpaired_ratios[key] = calc_ratio(numer, denom, is_n_unpaired)
-                logger.trace(f"unpaired[{key}] = {unpaired_ratios[key]}")
+                logger.trace("unpaired[{}] = {}", key, unpaired_ratios[key])
         # Get parameters of the four DNA bases.
         for base in DNA.four():
             lower_base = base.lower()
@@ -114,9 +114,9 @@ def _calc_ratios(counts: pd.DataFrame, is_paired: np.ndarray):
                 if lower_base != code:
                     key = f"{lower_base}{code}"
                     paired_ratios[key] = calc_ratio(numer, denom, is_base_paired)
-                    logger.trace(f"paired[{key}] = {paired_ratios[key]}")
+                    logger.trace("paired[{}] = {}", key, paired_ratios[key])
                     unpaired_ratios[key] = calc_ratio(numer, denom, is_base_unpaired)
-                    logger.trace(f"unpaired[{key}] = {unpaired_ratios[key]}")
+                    logger.trace("unpaired[{}] = {}", key, unpaired_ratios[key])
     return paired_ratios, unpaired_ratios
 
 
@@ -129,15 +129,15 @@ def _accumulate_ratios(paired_unpaired_ratios: Iterable[tuple[dict, dict]]):
         assert paired_ratios.keys() == all_paired_ratios.keys()
         for key, ratios in paired_ratios.items():
             all_paired_ratios[key] = np.concatenate([all_paired_ratios[key], ratios])
-            logger.trace(f"accum_paired[{key}] = {all_paired_ratios[key]}")
+            logger.trace("accum_paired[{}] = {}", key, all_paired_ratios[key])
         assert unpaired_ratios.keys() == all_unpaired_ratios.keys()
         for key, ratios in unpaired_ratios.items():
             all_unpaired_ratios[key] = np.concatenate(
                 [all_unpaired_ratios[key], ratios]
             )
-            logger.trace(f"accum_unpaired[{key}] = {all_unpaired_ratios[key]}")
+            logger.trace("accum_unpaired[{}] = {}", key, all_unpaired_ratios[key])
         count += 1
-    logger.debug(f"Ended accumulating {count} group(s) of ratios")
+    logger.debug("Ended accumulating {} group(s) of ratios", count)
     return all_paired_ratios, all_unpaired_ratios
 
 
@@ -164,8 +164,10 @@ def abstract_table(
             if not ct_file.is_file():
                 # If no CT file exists from the fold step either, then stop.
                 logger.warning(
-                    f"CT file for {repr(table.ref)} profile {repr(profile.profile)} "
-                    f"does not exist: {ct_file}"
+                    "CT file for {!r} profile {!r} does not exist: {}",
+                    table.ref,
+                    profile.profile,
+                    ct_file,
                 )
                 continue
         structures = iter(from_ct(ct_file))
@@ -173,7 +175,7 @@ def abstract_table(
         try:
             struct = next(structures)
         except StopIteration:
-            logger.warning(f"{ct_file} contains 0 structures: skipping")
+            logger.warning("{} contains 0 structures: skipping", ct_file)
             continue
         # Check if there is more than one structure in the CT file.
         try:
@@ -181,7 +183,7 @@ def abstract_table(
         except StopIteration:
             pass
         else:
-            logger.warning(f"{ct_file} contains > 1 structure; using the first")
+            logger.warning("{} contains > 1 structure; using the first", ct_file)
         counts = table.fetch_count(k=hk, clust=hc)
         counts = counts.set_axis(counts.columns.get_level_values(-1), axis=1)
         counts = counts.reindex(struct.is_paired.index)
@@ -191,7 +193,11 @@ def abstract_table(
             if not (auc >= min_aucroc):
                 cluster = f" cluster {hk}-{hc}" if hk > 0 else ""
                 logger.warning(
-                    f"Skipping {table}{cluster}: AUC-ROC = {auc} (< {min_aucroc})"
+                    "Skipping {}{}: AUC-ROC = {} (< {})",
+                    table,
+                    cluster,
+                    auc,
+                    min_aucroc,
                 )
                 continue
         all_ratios.append(_calc_ratios(counts, struct.is_paired.values))
@@ -304,8 +310,8 @@ def run(
         ct_files = ref_profile_to_ct[table.ref]
         if not ct_files and struct_file:
             logger.warning(
-                "No CT files given with --struct-file matched tables with reference "
-                f"{repr(table.ref)}"
+                "No CT files given with --struct-file matched tables with reference {!r}",
+                table.ref,
             )
         args.append((table, regions, ct_files))
     table_ratios = dispatch(

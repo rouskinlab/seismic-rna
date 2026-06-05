@@ -165,7 +165,7 @@ class PartialTabulator(Tabulator, ABC):
         # Partial tabulators must count 5'/3' ends or else calculating
         # self.p_ends_given_clust_noclose will fail.
         if not count_ends:
-            logger.warning(f"count_ends must be True for {type(self.__name__)}")
+            logger.warning("count_ends must be True for {}", type(self).__name__)
         super().__init__(region=region, count_ends=True, **kwargs)
         self.refseq = refseq
         self.pattern = pattern
@@ -203,11 +203,11 @@ class PartialTabulator(Tabulator, ABC):
         if self.correct_bias:
             if self.region.length > np.sqrt(1_000_000_000):
                 logger.warning(
-                    "Using bias correction on a region with "
-                    f"{self.region.length} positions requires "
+                    "Using bias correction on a region with {} positions requires "
                     ">1 GB of memory. If this is impractical, you "
                     "can (at the cost of lower accuracy) disable "
-                    "bias correction using --min-mut-gap 0."
+                    "bias correction using --min-mut-gap 0.",
+                    self.region.length,
                 )
             try:
                 return adjust_counts(
@@ -295,7 +295,7 @@ def adjust_counts(
     else:
         n_rels = table_per_pos.columns.size
     action += f" and {n_rels} relationships"
-    with logger.debug.begin(f"{action}"):
+    with logger.debug.begin("{}", action):
         # Determine which positions are unmasked.
         unmask = region.unmasked_bool
         # Calculate the fraction of mutations at each position among reads

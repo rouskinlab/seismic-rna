@@ -94,19 +94,19 @@ def save_brickle(
         SHA-512 checksum of the written data.
     """
     require_isinstance("item", item, BrickleIO)
-    with logger.debug.begin(f"writing {item} to {file}"):
+    with logger.debug.begin("writing {} to {}", item, file):
         # Save the item's state rather than the item itself.
         state = item.__getstate__()
-        logger.trace(f"State attributes of {item}: {list(state)}")
-        with logger.trace.begin(f"compressing {item} with Brotli level {brotli_level}"):
+        logger.trace("State attributes of {}: {}", item, list(state))
+        with logger.trace.begin("compressing {} with Brotli level {}", item, brotli_level):
             data = brotli.compress(
                 pickle.dumps(state, protocol=PICKLE_PROTOCOL), quality=brotli_level
             )
         with open(file, write_mode(force, binary=True)) as f:
             f.write(data)
-        logger.debug(f"Wrote {item} to {file}")
+        logger.debug("Wrote {} to {}", item, file)
         checksum = calc_sha512_bytes(data)
-        logger.trace(f"Computed SHA-512 checksum of {file}: {checksum}")
+        logger.trace("Computed SHA-512 checksum of {}: {}", file, checksum)
     return checksum
 
 
@@ -130,7 +130,7 @@ def load_brickle(file: str | Path, data_type: type[BrickleIO], checksum: str):
         The loaded object.
     """
     require_issubclass("data_type", data_type, BrickleIO)
-    with logger.debug.begin(f"loading {data_type} from {file}"):
+    with logger.debug.begin("loading {} from {}", data_type, file):
         with open(file, "rb") as f:
             data = f.read()
         if checksum:
@@ -141,7 +141,7 @@ def load_brickle(file: str | Path, data_type: type[BrickleIO], checksum: str):
                     f"but got {sha512_digest}"
                 )
         state = pickle.loads(brotli.decompress(data))
-        logger.trace(f"{file} contains {type(state)}")
+        logger.trace("{} contains {}", file, type(state))
         if isinstance(state, data_type):
             item = state
             state = item.__getstate__()
@@ -150,5 +150,5 @@ def load_brickle(file: str | Path, data_type: type[BrickleIO], checksum: str):
             item.__setstate__(state)
         else:
             raise TypeError(f"Expected to unpickle {data_type}, but got {type(state)}")
-        logger.trace(f"State attributes of {item}: {list(state)}")
+        logger.trace("State attributes of {}: {}", item, list(state))
     return item

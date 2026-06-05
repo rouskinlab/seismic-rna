@@ -229,7 +229,7 @@ def get_subopt(subopt_out: Path, db_target: Path, force: bool = False):
         with open(db_target, mode=write_mode(force=True)) as f:
             f.write(text)
         logger.debug(
-            f"Suboptimal structures from {subopt_out} written" + f" to {db_target}"
+            "Suboptimal structures from {} written to {}", subopt_out, db_target
         )
 
 
@@ -262,10 +262,8 @@ def extract_energies(vienna_input: Path, db_output: Path, force: bool = False):
                 struct_line = f.readline()
                 if " " not in struct_line:
                     logger.error(
-                        (
-                            "No energy value could be "
-                            f"parsed from the vienna line {struct_line}"
-                        )
+                        "No energy value could be parsed from the vienna line {}",
+                        struct_line,
                     )
                 struct_line_parts = struct_line.split(" ")
                 struct_line = struct_line_parts[0] + "\n"
@@ -277,5 +275,5 @@ def extract_energies(vienna_input: Path, db_output: Path, force: bool = False):
         with open(db_output, write_mode(force=True)) as f:
             f.write(text)
         logger.debug(
-            f"Energies extracted from file {vienna_input}" + f" to {db_output}"
+            "Energies extracted from file {} to {}", vienna_input, db_output
         )

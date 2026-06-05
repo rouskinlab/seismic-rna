@@ -184,7 +184,7 @@ def run(
         probe, mask_a, mask_c, mask_g, mask_u
     )
     for attempt in range(1, max(max_tries, 1) + 1):
-        logger.debug(f"Began simulation attempt {attempt} of up to {max_tries}")
+        logger.debug("Began simulation attempt {} of up to {}", attempt, max_tries)
         # Simulate the reference sequence.
         fasta = str(
             ref_mod.run(
@@ -225,8 +225,10 @@ def run(
             # If not, delete the simulated FASTA and start over.
             Path(fasta).unlink(missing_ok=True)
             logger.warning(
-                f"Got fewer than fold_min={fold_min} clusters "
-                f"on attempt {attempt} of up to {max_tries}"
+                "Got fewer than fold_min={} clusters on attempt {} of up to {}",
+                fold_min,
+                attempt,
+                max_tries,
             )
             # Increase fold_edelta in case that parameter is limiting
             # the number of structures.
@@ -279,7 +281,9 @@ def run(
             ]:
                 ct_file.with_suffix(suffix).unlink(missing_ok=True)
             logger.warning(
-                f"Clusters were too similar on attempt {attempt} of up to {max_tries}"
+                "Clusters were too similar on attempt {} of up to {}",
+                attempt,
+                max_tries,
             )
             continue
         # Successfully generated structures and parameters.

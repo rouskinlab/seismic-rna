@@ -161,16 +161,18 @@ class PositionList(List, ABC):
         min_ninfo_pos: int = opt_min_ninfo_pos.default,
         max_fmut_pos: float = opt_max_fmut_pos.default,
     ):
-        with logger.debug.begin(f"making {cls} from {table}"):
+        with logger.debug.begin("making {} from {}", cls, table):
             if not isinstance(table, cls.get_table_type()):
                 raise TypeError(
                     f"table must be {cls.get_table_type()}, but got {type(table)}"
                 )
             region = table.region.copy(masks=False)
             logger.trace(
-                f"{table} has {region.length} positions of which "
-                f"{region.unmasked_int.size} are in use "
-                f"and {region.masked_int.size} are masked"
+                "{} has {} positions of which {} are in use and {} are masked",
+                table,
+                region.length,
+                region.unmasked_int.size,
+                region.masked_int.size,
             )
             region.add_mask(
                 cls.MASK_NINFO,
@@ -179,8 +181,10 @@ class PositionList(List, ABC):
                 ],
             )
             logger.trace(
-                f"{table} has {region.get_mask(cls.MASK_NINFO).size} "
-                f"positions with < {min_ninfo_pos} informative bases"
+                "{} has {} positions with < {} informative bases",
+                table,
+                region.get_mask(cls.MASK_NINFO).size,
+                min_ninfo_pos,
             )
             region.add_mask(
                 cls.MASK_FMUT,
@@ -189,8 +193,10 @@ class PositionList(List, ABC):
                 ],
             )
             logger.trace(
-                f"{table} has {region.get_mask(cls.MASK_FMUT).size} "
-                f"positions with mutation rates > {max_fmut_pos}"
+                "{} has {} positions with mutation rates > {}",
+                table,
+                region.get_mask(cls.MASK_FMUT).size,
+                max_fmut_pos,
             )
             positions = region.masked_int
             data = pd.MultiIndex.from_product(
@@ -202,7 +208,9 @@ class PositionList(List, ABC):
                 **{attr: getattr(table, attr) for attr in cls.list_init_table_attrs()},
             )
             logger.trace(
-                f"{table} produced a list of {positions.size} positions to mask"
+                "{} produced a list of {} positions to mask",
+                table,
+                positions.size,
             )
         return new_list
 

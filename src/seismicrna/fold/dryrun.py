@@ -9,5 +9,5 @@ def dry_run(fold_cmds: Iterable[str], parent_dir: Path):
     command_text = "".join(f"{cmd}\n" for cmd in fold_cmds)
     with open(command_file, "x") as f:
         f.write(command_text)
-    logger.debug(f"Wrote fold commands to {command_file}:\n{command_text}")
+    logger.debug("Wrote fold commands to {}:\n{}", command_file, command_text)
     return command_file

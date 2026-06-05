@@ -56,7 +56,7 @@ def accumulate_counts(
         Total (num_reads, end_counts, count_per_pos, count_per_read).
     """
     rels = list(patterns)
-    with logger.debug.begin(f"accumulating counts of patterns {rels}"):
+    with logger.debug.begin("accumulating counts of patterns {}", rels):
         header = make_header(rels=rels, ks=ks)
         end_counts_index = pd.MultiIndex.from_arrays(
             [np.array([], dtype=int) for _ in END_COORDS], names=END_COORDS
@@ -200,7 +200,7 @@ def accumulate_batches(
     tuple
         Total (num_reads, end_counts, count_per_pos, count_per_read).
     """
-    with logger.debug.begin(f"accumulating counts of {num_batches} batches"):
+    with logger.debug.begin("accumulating counts of {} batches", num_batches):
         # Generate the counts for the batches in parallel.
         batch_counts = dispatch(
             get_batch_count_all,
@@ -279,7 +279,7 @@ def accumulate_confusion_matrices(
         Total (n, a, b, ab) confusion matrix components.
     """
     with logger.debug.begin(
-        f"accumulating confusion matrices of {num_batches} batches"
+        "accumulating confusion matrices of {} batches", num_batches
     ):
         n, a, b, ab = init_confusion_matrix(pos_index, clusters, min_gap)
         for n_batch, a_batch, b_batch, ab_batch in dispatch(

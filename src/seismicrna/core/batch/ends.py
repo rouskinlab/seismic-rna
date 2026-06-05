@@ -365,7 +365,8 @@ def simulate_segment_ends(
         raise ValueError("Got 0 valid pairs of 5'/3' ends (all have 5' end > 3' end)")
     elif num_ends < valid_ends.size:
         logger.warning(
-            f"Got {valid_ends.size - num_ends} pairs of 5'/3' ends for which 5' > 3'"
+            "Got {} pairs of 5'/3' ends for which 5' > 3'",
+            valid_ends.size - num_ends,
         )
         uniq_end5s = uniq_end5s[valid_ends]
         uniq_end3s = uniq_end3s[valid_ends]

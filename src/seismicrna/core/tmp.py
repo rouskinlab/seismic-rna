@@ -31,7 +31,7 @@ def release_to_out(out_dir: Path, release_dir: Path, initial_path: Path):
     Path
         Final path of the file or directory in the output directory.
     """
-    logger.debug(f"Began releasing {initial_path} from {release_dir} to {out_dir}")
+    logger.debug("Began releasing {} from {} to {}", initial_path, release_dir, out_dir)
     # Determine the path in the output directory.
     out_path = transpath(out_dir, release_dir, initial_path)
     if initial_path.exists():
@@ -44,11 +44,11 @@ def release_to_out(out_dir: Path, release_dir: Path, initial_path: Path):
         except FileNotFoundError:
             # The output path does not yet exist.
             deleted = False
-            logger.trace(f"Output path {out_path} does not yet exist")
+            logger.trace("Output path {} does not yet exist", out_path)
         else:
             deleted = True
             logger.debug(
-                f"Moved output path {out_path} to {delete_path} (to be deleted)"
+                "Moved output path {} to {} (to be deleted)", out_path, delete_path
             )
         try:
             # Move the initial path to the output location.
@@ -57,23 +57,25 @@ def release_to_out(out_dir: Path, release_dir: Path, initial_path: Path):
             except OSError as e:
                 if e.errno == errno.EXDEV:
                     logger.warning(
-                        "Non-atomic move: temporary and output are on "
-                        f"different filesystems; moving {initial_path} to "
-                        f"{out_path} via copy-delete; data loss may occur "
-                        "if interrupted"
+                        "Non-atomic move: temporary and output are on different "
+                        "filesystems; moving {} to {} via copy-delete; data loss "
+                        "may occur if interrupted",
+                        initial_path,
+                        out_path,
                     )
                     move(initial_path, out_path)
                 else:
                     raise
-            logger.debug(f"Moved initial path {initial_path} to output path {out_path}")
+            logger.debug("Moved initial path {} to output path {}", initial_path, out_path)
         except Exception:
             if deleted:
                 # If an error occurred, then restore the original output
                 # path before raising the exception.
                 delete_path.rename(out_path)
                 logger.debug(
-                    f"Moved {delete_path} (to be deleted) "
-                    f"back to output path {out_path}"
+                    "Moved {} (to be deleted) back to output path {}",
+                    delete_path,
+                    out_path,
                 )
             else:
                 # No original files were moved to the delete directory,
@@ -84,10 +86,10 @@ def release_to_out(out_dir: Path, release_dir: Path, initial_path: Path):
         # original directory can be deleted safely.
         rmdir_if_needed(delete_path, rmtree=True, raise_on_rmtree_error=False)
     else:
-        logger.trace(f"Skipped releasing {initial_path} (does not exist)")
+        logger.trace("Skipped releasing {} (does not exist)", initial_path)
     if not out_path.exists():
         raise FileNotFoundError(out_path)
-    logger.debug(f"Ended releasing {initial_path} to {out_path}")
+    logger.debug("Ended releasing {} to {}", initial_path, out_path)
     return out_path
 
 

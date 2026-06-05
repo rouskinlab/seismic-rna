@@ -156,7 +156,7 @@ def fold_region(
     if need_write(report_file, force):
         began = datetime.now()
         rna.write_varna_color_file(out_dir, branch)
-        with logger.debug.begin(f"folding {rna}"):
+        with logger.debug.begin("folding {}", rna):
             fasta_tmp = rna.write_fasta(tmp_dir, branch)
             mus_file = rna.write_mus_file(tmp_dir, branch)
             ct_tmp = rna.get_ct_file(tmp_dir, branch)

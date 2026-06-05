@@ -211,8 +211,9 @@ def fastp_cmd(
                 args.extend(["--adapter_sequence_r2", fastp_adapter_2])
             else:
                 logger.warning(
-                    f"Ignored fastp_adapter_2 ({repr(fastp_adapter_2)}) "
-                    f"for {fq_inp} because it has single-end reads"
+                    "Ignored fastp_adapter_2 ({!r}) for {} because it has single-end reads",
+                    fastp_adapter_2,
+                    fq_inp,
                 )
         if fastp_adapter_fasta:
             args.extend(["--adapter_fasta", fastp_adapter_fasta])
@@ -250,7 +251,7 @@ def get_bowtie2_index_paths(prefix: Path):
     """Return the Bowtie 2 index paths for a FASTA file."""
     suffix = prefix.suffix
     if suffix in path.FASTA_EXTS:
-        logger.warning(f"Bowtie 2 index prefix {prefix} has a FASTA extension")
+        logger.warning("Bowtie 2 index prefix {} has a FASTA extension", prefix)
     return [prefix.with_suffix(suffix + ext) for ext in path.BOWTIE2_INDEX_EXTS]
 
 

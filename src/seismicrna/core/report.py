@@ -883,7 +883,7 @@ class Report(SampleFileIO, ABC):
 
     @classmethod
     def load(cls, file: str | Path) -> Report:
-        with logger.debug.begin(f"loading {cls.__name__} from {file}"):
+        with logger.debug.begin("loading {} from {}", cls.__name__, file):
             with open(file) as f:
                 report = cls.from_dict(json.load(f))
             # Ensure that the path-related fields in the JSON data match the
@@ -937,16 +937,18 @@ class Report(SampleFileIO, ABC):
             # warning and ignore the extra fields (to make different
             # versions compatible).
             logger.warning(
-                f"{type(self).__name__} got extra fields, "
-                f"which it discarded: {list(kwargs)}"
+                "{} got extra fields, which it discarded: {}",
+                type(self).__name__,
+                list(kwargs),
             )
         if defaulted:
             # If the report file was missing keyword arguments that have
             # default values, AND if parsing the report file succeeded,
             # then warn about the default values.
             logger.warning(
-                f"{type(self).__name__} is missing fields "
-                f"and using defaults: {defaulted}"
+                "{} is missing fields and using defaults: {}",
+                type(self).__name__,
+                defaulted,
             )
 
     def get_field(self, field: ReportField, missing_ok: bool = False):
@@ -981,7 +983,7 @@ class Report(SampleFileIO, ABC):
         if need_write(save_path, force):
             with open(save_path, write_mode(force)) as f:
                 f.write(text)
-            logger.debug(f"Wrote {self} to {save_path}")
+            logger.debug("Wrote {} to {}", self, save_path)
         return save_path
 
     def __setattr__(self, key: str, value: Any):

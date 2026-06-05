@@ -191,7 +191,7 @@ def get_clust_params(dataset: ClusterMutsDataset, num_cpus: int = 1):
     """Get the mutation rates and proportion for each cluster. If table
     files already exist, then use them to get the parameters; otherwise,
     calculate the parameters from the dataset."""
-    with logger.debug.begin(f"obtaining cluster parameters from {dataset}"):
+    with logger.debug.begin("obtaining cluster parameters from {}", dataset):
         # Try to load the tables from files.
         path_fields = {
             path.TOP: dataset.top,
@@ -205,19 +205,19 @@ def get_clust_params(dataset: ClusterMutsDataset, num_cpus: int = 1):
             pos_table = ClusterPositionTableLoader(
                 pos_table_file, verify_times=dataset.verify_times
             )
-            logger.trace(f"Position table {pos_table_file} exists")
+            logger.trace("Position table {} exists", pos_table_file)
         else:
             pos_table = None
-            logger.trace(f"Position table {pos_table_file} does not exist")
+            logger.trace("Position table {} does not exist", pos_table_file)
         abundance_table_file = ClusterAbundanceTableLoader.build_path(path_fields)
         if abundance_table_file.is_file():
             abundance_table = ClusterAbundanceTableLoader(
                 abundance_table_file, verify_times=dataset.verify_times
             )
-            logger.trace(f"Abundance table {abundance_table_file} exists")
+            logger.trace("Abundance table {} exists", abundance_table_file)
         else:
             abundance_table = None
-            logger.trace(f"Abundance table {abundance_table_file} does not exist")
+            logger.trace("Abundance table {} does not exist", abundance_table_file)
         # If either table file does not exist, then calculate the tables.
         if pos_table is None or abundance_table is None:
             logger.trace(
@@ -283,7 +283,7 @@ def _join_regions_k(region_params: dict[str, pd.DataFrame]):
         for df in dfs:
             assert isinstance(df, pd.DataFrame)
             assert df.columns.equals(clusters)
-        logger.trace(f"There are {n} regions and {k} clusters")
+        logger.trace("There are {} regions and {} clusters", n, k)
         # Calculate matrices of the cost of joining each pair of clusters
         # from each pair of regions.
         cost_matrices = dict()
@@ -293,7 +293,7 @@ def _join_regions_k(region_params: dict[str, pd.DataFrame]):
             overlap = df1.index.intersection(df2.index)
             assert overlap.size > 0
             logger.trace(
-                f"Regions {repr(reg1)}, {repr(reg2)} share {overlap.size} parameter(s)"
+                "Regions {!r}, {!r} share {} parameter(s)", reg1, reg2, overlap.size
             )
             # Collect the cost of joining each cluster from region 1 with
             # each cluster from region 2.
@@ -305,8 +305,7 @@ def _join_regions_k(region_params: dict[str, pd.DataFrame]):
                 )
                 cost_matrix.at[cluster1, cluster2] = cost
             logger.trace(
-                f"Regions {repr(reg1)} and {repr(reg2)} "
-                f"have a cost matrix of\n{cost_matrix}"
+                "Regions {!r} and {!r} have a cost matrix of\n{}", reg1, reg2, cost_matrix
             )
             assert not np.any(np.isnan(cost_matrix))
             cost_matrices[reg1, reg2] = cost_matrix
@@ -328,8 +327,9 @@ def _join_regions_k(region_params: dict[str, pd.DataFrame]):
             ]
         )
         logger.trace(
-            f"Built a hypergraph with {len(nodes)} node(s) "
-            f"and {len(hyperedges)} hyperedge(s)"
+            "Built a hypergraph with {} node(s) and {} hyperedge(s)",
+            len(nodes),
+            len(hyperedges),
         )
         # Build a sparse boolean matrix where rows are nodes and columns are
         # edges, with a 1 if the edge contains the node and 0 otherwise.
@@ -358,9 +358,10 @@ def _join_regions_k(region_params: dict[str, pd.DataFrame]):
         edge_bounds = Bounds(0, 1)
         logger.trace(
             "Created mixed-integer linear program: "
-            "min_x(cx), subject to Ax = 1, x ∈ {0, 1}; "
-            f"c and x are length {len(hyperedges)}, "
-            f"and A has dimensions {incidence_matrix.shape}"
+            "min_x(cx), subject to Ax = 1, x ∈ {{0, 1}}; "
+            "c and x are length {}, and A has dimensions {}",
+            len(hyperedges),
+            incidence_matrix.shape,
         )
         # Find the edges that give the smallest cost.
         logger.trace(
@@ -378,8 +379,8 @@ def _join_regions_k(region_params: dict[str, pd.DataFrame]):
                 f"with {k} clusters"
             )
         logger.trace(
-            "Ended solving mixed-integer linear program: "
-            f"minimum total cost is {result.fun}"
+            "Ended solving mixed-integer linear program: minimum total cost is {}",
+            result.fun,
         )
         # Return a list of the filtered hyperedges.
         selected_hyperedges = [
@@ -389,7 +390,7 @@ def _join_regions_k(region_params: dict[str, pd.DataFrame]):
         ]
         assert len(selected_hyperedges) == k
         logger.trace(
-            f"Selected {k} hyperedges:\n" + "\n".join(map(str, selected_hyperedges))
+            "Selected {} hyperedges:\n{}", k, "\n".join(map(str, selected_hyperedges))
         )
     return selected_hyperedges
 
