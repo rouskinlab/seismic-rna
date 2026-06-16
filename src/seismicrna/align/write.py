@@ -50,7 +50,7 @@ def write_tmp_ref_files(
     corresponds to a FASTQ file from demultiplexing."""
     ref_paths: dict[str, tuple[Path, Path]] = dict()
     if refs:
-        with logger.debug.single_context("writing temporary FASTA files"):
+        with logger.debug.single_context("Writing temporary FASTA files"):
             # Parse the FASTA only if there are any references to write.
             for record in parse_fasta(refset_path, DNA):
                 ref, _ = record

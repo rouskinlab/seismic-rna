@@ -237,53 +237,52 @@ class RelationWriter(object):
     ):
         """Compute the relationships for every read in a XAM file,
         split among one or more batches."""
-        logger.debug("Began generating batches for {}", self._xam)
-        try:
-            kwargs = dict(
-                sam_view=self._xam,
-                top=top,
-                refseq=self.refseq,
-                min_qual=ord(encode_phred(min_phred, phred_enc)),
-                write_read_names=write_read_names,
-                **kwargs,
-            )
-            results = dispatch(
-                generate_batch,
-                num_cpus=num_cpus,
-                pass_num_cpus=False,
-                as_list=True,
-                ordered=True,
-                raise_on_error=True,
-                args=as_list_of_tuples(self._xam.indexes),
-                kwargs=kwargs,
-            )
-            if results:
-                (batch_counts, idmut_checksums, name_checksums) = map(
-                    list, zip(*results, strict=True)
+        with logger.debug.single_context("Generating batches for {}", self._xam):
+            try:
+                kwargs = dict(
+                    sam_view=self._xam,
+                    top=top,
+                    refseq=self.refseq,
+                    min_qual=ord(encode_phred(min_phred, phred_enc)),
+                    write_read_names=write_read_names,
+                    **kwargs,
                 )
-            else:
-                batch_counts = list()
-                idmut_checksums = list()
-                name_checksums = list()
-            assert (
-                len(self._xam.indexes)
-                == len(batch_counts)
-                == len(idmut_checksums)
-                == len(name_checksums)
-            )
-            checksums = {IDmutBatchIO.btype(): idmut_checksums}
-            if write_read_names:
-                assert all(name_checksums)
-                checksums[ReadNamesBatchIO.btype()] = name_checksums
-            else:
-                assert not any(name_checksums)
-            logger.debug("Ended generating batches for {}", self._xam)
-            return batch_counts, checksums
-        finally:
-            if not keep_tmp:
-                # Delete the temporary SAM file (which can be massive)
-                # before exiting.
-                self._xam.delete_tmp_sam()
+                results = dispatch(
+                    generate_batch,
+                    num_cpus=num_cpus,
+                    pass_num_cpus=False,
+                    as_list=True,
+                    ordered=True,
+                    raise_on_error=True,
+                    args=as_list_of_tuples(self._xam.indexes),
+                    kwargs=kwargs,
+                )
+                if results:
+                    (batch_counts, idmut_checksums, name_checksums) = map(
+                        list, zip(*results, strict=True)
+                    )
+                else:
+                    batch_counts = list()
+                    idmut_checksums = list()
+                    name_checksums = list()
+                assert (
+                    len(self._xam.indexes)
+                    == len(batch_counts)
+                    == len(idmut_checksums)
+                    == len(name_checksums)
+                )
+                checksums = {IDmutBatchIO.btype(): idmut_checksums}
+                if write_read_names:
+                    assert all(name_checksums)
+                    checksums[ReadNamesBatchIO.btype()] = name_checksums
+                else:
+                    assert not any(name_checksums)
+                return batch_counts, checksums
+            finally:
+                if not keep_tmp:
+                    # Delete the temporary SAM file (which can be massive)
+                    # before exiting.
+                    self._xam.delete_tmp_sam()
 
     def write(
         self,

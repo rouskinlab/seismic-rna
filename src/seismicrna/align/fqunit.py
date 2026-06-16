@@ -582,7 +582,7 @@ class FastqUnit(object):
             in which `os.path.listdir` returns file paths.
         """
         # List all FASTQ files.
-        with logger.debug.single_context("generating {} instances", cls.__name__):
+        with logger.debug.single_context("Generating {} instances", cls.__name__):
             # single-end
             yield from cls._from_files(
                 phred_enc=phred_enc,
