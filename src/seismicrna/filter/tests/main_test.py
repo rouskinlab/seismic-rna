@@ -7,14 +7,109 @@ from pathlib import Path
 
 import numpy as np
 
+from seismicrna.core.arg.cli import (
+    PROBE_DMS,
+    PROBE_ETC,
+    PROBE_NONE,
+    PROBE_SHAPE,
+    MUT_COLLISIONS_AUTO,
+    MUT_COLLISIONS_DROP,
+    MUT_COLLISIONS_MERGE,
+)
 from seismicrna.core.logs import Level, set_config
 from seismicrna.core.seq.region import Region
 from seismicrna.core.seq.xna import DNA
 from seismicrna.filter.dataset import FilterMutsDataset
-from seismicrna.filter.main import run as run_filter
+from seismicrna.filter.main import run as run_filter, set_mask_polya, set_mut_gap_params
 from seismicrna.pool import run as run_pool
 from seismicrna.idmut.io import IDmutBatchIO, ReadNamesBatchIO, RefseqIO
 from seismicrna.idmut.report import IDmutReport
+
+
+class TestSetMaskPolya(ut.TestCase):
+
+    def test_dms_default(self):
+        self.assertEqual(set_mask_polya(PROBE_DMS), 5)
+
+    def test_shape_default(self):
+        self.assertEqual(set_mask_polya(PROBE_SHAPE), 5)
+
+    def test_etc_default(self):
+        self.assertEqual(set_mask_polya(PROBE_ETC), 5)
+
+    def test_none_default(self):
+        self.assertEqual(set_mask_polya(PROBE_NONE), 0)
+
+    def test_explicit_value_overrides_default(self):
+        self.assertEqual(set_mask_polya(PROBE_DMS, 3), 3)
+
+    def test_explicit_zero_overrides_probe_default(self):
+        self.assertEqual(set_mask_polya(PROBE_DMS, 0), 0)
+
+    def test_explicit_value_none_default(self):
+        self.assertEqual(set_mask_polya(PROBE_NONE, 4), 4)
+
+
+class TestSetMutGapParams(ut.TestCase):
+
+    def test_dms_default_gap(self):
+        gap, _ = set_mut_gap_params(PROBE_DMS)
+        self.assertEqual(gap, 4)
+
+    def test_shape_default_gap(self):
+        gap, _ = set_mut_gap_params(PROBE_SHAPE)
+        self.assertEqual(gap, 2)
+
+    def test_etc_default_gap(self):
+        gap, _ = set_mut_gap_params(PROBE_ETC)
+        self.assertEqual(gap, 2)
+
+    def test_none_default_gap(self):
+        gap, _ = set_mut_gap_params(PROBE_NONE)
+        self.assertEqual(gap, 0)
+
+    def test_dms_default_collisions(self):
+        _, collisions = set_mut_gap_params(PROBE_DMS)
+        self.assertEqual(collisions, MUT_COLLISIONS_DROP)
+
+    def test_shape_default_collisions(self):
+        _, collisions = set_mut_gap_params(PROBE_SHAPE)
+        self.assertEqual(collisions, MUT_COLLISIONS_MERGE)
+
+    def test_etc_default_collisions(self):
+        _, collisions = set_mut_gap_params(PROBE_ETC)
+        self.assertEqual(collisions, MUT_COLLISIONS_MERGE)
+
+    def test_none_default_collisions(self):
+        _, collisions = set_mut_gap_params(PROBE_NONE)
+        self.assertEqual(collisions, MUT_COLLISIONS_DROP)
+
+    def test_explicit_gap_overrides_default(self):
+        gap, _ = set_mut_gap_params(PROBE_DMS, min_mut_gap=1)
+        self.assertEqual(gap, 1)
+
+    def test_explicit_zero_gap_overrides_default(self):
+        gap, _ = set_mut_gap_params(PROBE_DMS, min_mut_gap=0)
+        self.assertEqual(gap, 0)
+
+    def test_explicit_collisions_drop_overrides_auto(self):
+        _, collisions = set_mut_gap_params(PROBE_SHAPE, mut_collisions=MUT_COLLISIONS_DROP)
+        self.assertEqual(collisions, MUT_COLLISIONS_DROP)
+
+    def test_explicit_collisions_merge_overrides_auto(self):
+        _, collisions = set_mut_gap_params(PROBE_DMS, mut_collisions=MUT_COLLISIONS_MERGE)
+        self.assertEqual(collisions, MUT_COLLISIONS_MERGE)
+
+    def test_explicit_gap_and_collisions(self):
+        gap, collisions = set_mut_gap_params(
+            PROBE_DMS, min_mut_gap=3, mut_collisions=MUT_COLLISIONS_MERGE
+        )
+        self.assertEqual(gap, 3)
+        self.assertEqual(collisions, MUT_COLLISIONS_MERGE)
+
+    def test_auto_collisions_resolves_for_none_probe(self):
+        _, collisions = set_mut_gap_params(PROBE_NONE, mut_collisions=MUT_COLLISIONS_AUTO)
+        self.assertEqual(collisions, MUT_COLLISIONS_DROP)
 
 
 POOLED_SAMPLE = "pooled"

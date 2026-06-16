@@ -79,6 +79,16 @@ DEFAULT_MUT_COLLISIONS = {
     PROBE_NONE: MUT_COLLISIONS_DROP,
 }
 
+DEFAULT_MASK_POLYAS = {
+    # Chemical probes can produce artifacts in poly(A) stretches; mask
+    # them by default with a length threshold of 5.
+    PROBE_DMS: 5,
+    PROBE_SHAPE: 5,
+    PROBE_ETC: 5,
+    # With no probe, poly(A) masking is not needed.
+    PROBE_NONE: 0,
+}
+
 DEFAULT_MIN_MUT_GAP_WEIGHTS = {
     # DMS-MaPseq has a bias toward certain min_mut_gap values; this
     # mixture reproduces that bias when simulating reads.
@@ -792,8 +802,8 @@ opt_only_mut = Option(
 opt_mask_polya = Option(
     ("--mask-polya",),
     type=int,
-    default=5,
-    help="Mask stretches of at least this many consecutive A bases (0 disables)",
+    default=None,
+    help="Mask stretches of at least this many consecutive A bases (0 disables); defaults to 5 for chemical probes, 0 for none",
 )
 
 opt_mask_a = Option(

@@ -14,6 +14,7 @@ from ..core.arg import (
     MUT_COLLISIONS_AUTO,
     DEFAULT_MIN_MUT_GAPS,
     DEFAULT_MUT_COLLISIONS,
+    DEFAULT_MASK_POLYAS,
     arg_input_path,
     opt_tmp_pfx,
     opt_branch,
@@ -143,6 +144,29 @@ def set_mut_gap_params(
     return min_mut_gap, mut_collisions
 
 
+def set_mask_polya(probe: str, mask_polya: int | None = None):
+    """Resolve poly(A) masking threshold based on the probe type.
+
+    Parameters
+    ----------
+    probe: str
+        Probe type (one of the values in ``PROBES``), used to set the
+        default when ``mask_polya`` is ``None``.
+    mask_polya: int or None, optional
+        Minimum consecutive-A stretch length to mask; if None, a
+        probe-specific default is used.
+
+    Returns
+    -------
+    int
+        Resolved ``mask_polya`` value.
+    """
+    if mask_polya is None:
+        mask_polya = DEFAULT_MASK_POLYAS[probe]
+        logger.trace("Auto-selected mask_polya={} for probe {!r}", mask_polya, probe)
+    return mask_polya
+
+
 def load_regions(
     input_path: Iterable[str | Path],
     coords: Iterable[tuple[str, int, int]],
@@ -197,7 +221,7 @@ def run(
     mask_c: bool | None,
     mask_g: bool | None,
     mask_u: bool | None,
-    mask_polya: int,
+    mask_polya: int | None,
     mask_pos: Iterable[tuple[str, int]],
     mask_pos_file: Iterable[str | Path],
     drop_read: Iterable[str],
@@ -232,6 +256,7 @@ def run(
     mask_a, mask_c, mask_g, mask_u = set_mask_acgu(
         probe, mask_a, mask_c, mask_g, mask_u
     )
+    mask_polya = set_mask_polya(probe, mask_polya)
     min_mut_gap, mut_collisions = set_mut_gap_params(probe, min_mut_gap, mut_collisions)
     datasets, regions = load_regions(
         input_path,
