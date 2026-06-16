@@ -17,7 +17,7 @@ from ..core.extern import (
     cmds_to_pipe,
 )
 from ..core.io import calc_sha512_path
-from ..core.logs import logger
+from ..core.logs import logger, format_sample_reference_region
 from ..core.ngs import DuplicateSampleReferenceError
 
 FQ_LINES_PER_READ = 4
@@ -70,8 +70,7 @@ def format_phred_arg(phred_enc: int):
     """Format a Phred score argument for Bowtie2."""
     if phred_enc not in PHRED_ENCS:
         logger.warning(
-            "Expected phred_enc to be one of {}, "
-            "but got {}, which may cause problems",
+            "Expected phred_enc to be one of {}, but got {}, which may cause problems",
             PHRED_ENCS,
             phred_enc,
         )
@@ -583,7 +582,7 @@ class FastqUnit(object):
             in which `os.path.listdir` returns file paths.
         """
         # List all FASTQ files.
-        with logger.debug.begin("generating {} instances", cls.__name__):
+        with logger.debug.single_context("generating {} instances", cls.__name__):
             # single-end
             yield from cls._from_files(
                 phred_enc=phred_enc,
@@ -626,7 +625,5 @@ class FastqUnit(object):
             )
 
     def __str__(self):
-        return " ".join([self.kind, " and ".join(map(str, self.paths.values()))])
-
-    def __repr__(self):
-        return str(self)
+        srr = format_sample_reference_region(self.sample, self.ref)
+        return f"{type(self).__name__} of {srr}"

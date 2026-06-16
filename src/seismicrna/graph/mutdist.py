@@ -124,7 +124,7 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
 
     @cached_property
     def _data(self):
-        with logger.debug.begin("calculating real histogram for {}", self):
+        with logger.debug.single_context("calculating real histogram for {}", self):
             results = dispatch(
                 _calc_hists,
                 num_cpus=self.num_cpus,
@@ -211,7 +211,7 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
 
     @cached_property
     def _null_hist(self):
-        with logger.debug.begin("calculating null histogram for {}", self):
+        with logger.debug.single_context("calculating null histogram for {}", self):
             if self.dataset.is_clustered:
                 end_counts = self.tabulator.end_counts.loc[:, self.loc_clusters]
                 num_reads = self.tabulator.num_reads.loc[self.loc_clusters].values

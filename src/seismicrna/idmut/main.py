@@ -43,7 +43,7 @@ from ..core.task import as_list_of_tuples, dispatch
 def check_duplicates(xam_files: list[Path]):
     """Check if any combination of sample, reference, and branches
     occurs more than once."""
-    with logger.debug.begin("checking for duplicates"):
+    with logger.debug.single_context("checking for duplicates"):
         combos = set()
         for xam_file in xam_files:
             fields = path.parse(xam_file, path.XAM_SEGS)

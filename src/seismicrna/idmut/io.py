@@ -126,7 +126,7 @@ def from_reads(
     drop_empty_reads: bool = True,
 ):
     """Gather reads into a batch of relationships."""
-    with logger.debug.begin("gathering reads into batch {}", batch):
+    with logger.debug.single_context("gathering reads into batch {}", batch):
         max_segs = -1
         diff_segs = False
         names = list()

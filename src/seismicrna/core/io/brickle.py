@@ -8,7 +8,7 @@ import brotli
 
 from .checksum import BadChecksumError, calc_sha512_bytes
 from .file import FileIO, SampleFileIO, RefFileIO, RegFileIO
-from ..logs import logger
+from ..logs import logger, format_sample_reference_region
 from ..validate import require_isinstance, require_issubclass
 from ..write import write_mode
 
@@ -61,11 +61,19 @@ class RefBrickleIO(SampleBrickleIO, RefFileIO, ABC):
         super().__init__(*args, **kwargs)
         self.ref = ref
 
+    def __str__(self):
+        srr = format_sample_reference_region(self.sample, self.ref)
+        return f"{type(self).__name__} of {srr}"
+
 
 class RegBrickleIO(RefBrickleIO, RegFileIO, ABC):
     def __init__(self, *args, reg: str, **kwargs):
         super().__init__(*args, **kwargs)
         self.reg = reg
+
+    def __str__(self):
+        srr = format_sample_reference_region(self.sample, self.ref, self.reg)
+        return f"{type(self).__name__} of {srr}"
 
 
 def save_brickle(
@@ -94,19 +102,22 @@ def save_brickle(
         SHA-512 checksum of the written data.
     """
     require_isinstance("item", item, BrickleIO)
-    with logger.debug.begin("writing {} to {}", item, file):
+    with logger.debug.single_context("Writing {} to {}", item, file):
         # Save the item's state rather than the item itself.
         state = item.__getstate__()
         logger.trace("State attributes of {}: {}", item, list(state))
-        with logger.trace.begin("compressing {} with Brotli level {}", item, brotli_level):
+        with logger.trace.single_context(
+            "Compressing {} with Brotli level {}", item, brotli_level
+        ):
             data = brotli.compress(
                 pickle.dumps(state, protocol=PICKLE_PROTOCOL), quality=brotli_level
             )
         with open(file, write_mode(force, binary=True)) as f:
             f.write(data)
         logger.debug("Wrote {} to {}", item, file)
-        checksum = calc_sha512_bytes(data)
-        logger.trace("Computed SHA-512 checksum of {}: {}", file, checksum)
+        with logger.trace.single_context("Computing SHA-512 digest of {}", file):
+            checksum = calc_sha512_bytes(data)
+            logger.trace("SHA-512 digest of {} is {}", file, checksum)
     return checksum
 
 
@@ -130,18 +141,26 @@ def load_brickle(file: str | Path, data_type: type[BrickleIO], checksum: str):
         The loaded object.
     """
     require_issubclass("data_type", data_type, BrickleIO)
-    with logger.debug.begin("loading {} from {}", data_type, file):
+    with logger.debug.single_context("Loading {} from {}", data_type, file):
         with open(file, "rb") as f:
             data = f.read()
         if checksum:
-            sha512_digest = calc_sha512_bytes(data)
+            with logger.trace.single_context("Computing SHA-512 digest of {}", file):
+                sha512_digest = calc_sha512_bytes(data)
+                logger.trace("SHA-512 digest of {} is {}", file, sha512_digest)
             if sha512_digest != checksum:
                 raise BadChecksumError(
                     f"Expected SHA-512 digest of {file} to be {checksum}, "
                     f"but got {sha512_digest}"
                 )
+        else:
+            logger.trace(
+                "Skipping the SHA-512 digest of {} because no checksum was given", file
+            )
         state = pickle.loads(brotli.decompress(data))
-        logger.trace("{} contains {}", file, type(state))
+        logger.trace(
+            "{} contains an object of type {}", file, repr(type(state).__name__)
+        )
         if isinstance(state, data_type):
             item = state
             state = item.__getstate__()

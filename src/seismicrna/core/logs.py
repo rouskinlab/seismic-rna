@@ -26,7 +26,14 @@ DEFAULT_EXIT_ON_ERROR = True
 DEFAULT_VERBOSITY = Level.INFO
 
 # Number of spaces by which to indent each level of nesting depth.
-INDENT = "  "
+INDENT = 2 * " "
+
+
+def format_sample_reference_region(sample: str, ref: str, region: str = ""):
+    formatted = f"sample {repr(sample)} over reference {repr(ref)}"
+    if region:
+        return f"{formatted} region {repr(region)}"
+    return formatted
 
 
 class FileStream(object):
@@ -87,7 +94,7 @@ def format_body(level: Level, content: str, depth: int) -> str:
     aligned; the message text is indented by nesting depth and wrapped to one
     less than the terminal width, with continuation lines aligned under the
     message column."""
-    prefix = f"{level.name:<8}{os.getpid()}  "
+    prefix = f"{level.name.capitalize():<7} {str(os.getpid())[:7]:>7} "
     indent = INDENT * depth
     first_indent = prefix + indent
     cont_indent = " " * len(prefix) + indent
@@ -102,8 +109,6 @@ class AnsiCode(object):
     START = "\033["  # Indicate the start of an ANSI format code.
     END = "m"  # Indicate the end of an ANSI format code.
     RESET = 0  # Reset any existing formatting.
-    # Format codes.
-    BOLD = 1
 
     @classmethod
     @cache
@@ -130,10 +135,8 @@ class AnsiCode(object):
 
 
 # Level-specific color formatting.
-# The color of each code can be displayed in a bash terminal as follows:
-#   for i in {0..255}; do
-#       echo -ne "\033[38;5;${i}m  ${i} "
-#   done
+# The color of each code can be displayed with this Bash command:
+# for i in {0..255}; do echo -ne "\033[38;5;${i}m  ${i} "; done
 LEVEL_COLORS = {
     Level.ERROR: AnsiCode.format_color(160),
     Level.WARNING: AnsiCode.format_color(214),
@@ -145,11 +148,13 @@ LEVEL_COLORS = {
 
 def color_wrap(level: Level, body: str) -> str:
     """Bracket a formatted body with the ANSI color for the given level."""
-    fmt = LEVEL_COLORS.get(level, AnsiCode.reset())
-    return fmt + body + AnsiCode.reset()
+    try:
+        return f"{LEVEL_COLORS[level]}{body}{AnsiCode.reset()}"
+    except KeyError:
+        return body
 
 
-class TaskContext(object):
+class LoggingContext(object):
     """Context manager that delimits a task in the log.
 
     On entry, it logs ``Began {name}`` and pushes its level onto the logger's
@@ -158,39 +163,52 @@ class TaskContext(object):
     block exits because of an exception, the context is still popped, but the
     ``Ended`` message is skipped (the task did not finish successfully)."""
 
-    __slots__ = ["_logger", "_level", "_template", "_args", "_kwargs"]
+    __slots__ = ["_logger", "_level", "_template", "_began_ended", "_args", "_kwargs"]
 
     def __init__(
         self,
         logger: "Logger",
         level: Level,
         template: object,
+        began_ended: bool,
         args: tuple,
         kwargs: dict,
     ):
         self._logger = logger
         self._level = level
         self._template = template
+        self._began_ended = began_ended
         self._args = args
         self._kwargs = kwargs
 
     def __enter__(self):
-        self._logger._log(
-            self._level, "Began " + str(self._template), self._args, self._kwargs
-        )
+        if self._began_ended:
+            template = f"Began {self._template}"
+        else:
+            template = self._template
+        self._logger._log(self._level, template, self._args, self._kwargs)
         self._logger.context_levels.append(self._level)
         return self._logger
 
     def __exit__(self, exc_type, exc_value, traceback):
         # Guard against an empty stack so that logging can never crash the
-        # program, even if the context stack was reset while this block ran.
-        if self._logger.context_levels:
+        # program, even if the context stack was erased while this block ran.
+        try:
             self._logger.context_levels.pop()
-        if exc_type is None:
-            self._logger._log(
-                self._level, "Ended " + str(self._template), self._args, self._kwargs
+        except IndexError:
+            self._logger.warning(
+                "The logging context was erased in the middle of a context block: "
+                "this indicates a bug in or misuse of the logging system."
             )
-        return False
+        if self._began_ended:
+            if exc_type is not None:
+                self._logger.warning(
+                    f"FAILED {self._template}", self._args, self._kwargs
+                )
+            else:
+                self._logger._log(
+                    self._level, f"Ended {self._template}", self._args, self._kwargs
+                )
 
 
 class LevelLogger(object):
@@ -211,28 +229,19 @@ class LevelLogger(object):
     def __call__(self, template: object, *args, **kwargs):
         self._logger._log(self._level, template, args, kwargs)
 
-    def begin(self, template: object, *args, **kwargs):
-        """Context manager that logs ``Began {name}``/``Ended {name}`` and
-        indents the messages logged inside the block."""
-        return TaskContext(self._logger, self._level, template, args, kwargs)
+    def single_context(self, template: object, *args, **kwargs):
+        """Context manager that logs a message at the beginning and indents
+        messages logged inside the block."""
+        return LoggingContext(self._logger, self._level, template, False, args, kwargs)
+
+    def double_context(self, template: object, *args, **kwargs):
+        """Context manager that logs a message at the beginning and the end
+        and indents messages logged inside the block."""
+        return LoggingContext(self._logger, self._level, template, True, args, kwargs)
 
 
 class Logger(object):
     """Log messages to the console and to files."""
-
-    __slots__ = [
-        "verbosity",
-        "log_color",
-        "console_enabled",
-        "file_stream",
-        "exit_on_error",
-        "context_levels",
-        "error",
-        "warning",
-        "info",
-        "debug",
-        "trace",
-    ]
 
     def __init__(self):
         self.verbosity = DEFAULT_VERBOSITY
@@ -249,35 +258,40 @@ class Logger(object):
         self.info = LevelLogger(self, Level.INFO)
         self.debug = LevelLogger(self, Level.DEBUG)
         self.trace = LevelLogger(self, Level.TRACE)
-    
+
     def _build_content(self, template: object, args: tuple, kwargs: dict) -> str:
         """Build the final message string from a template and optional args."""
         if isinstance(template, BaseException):
             return "".join(format_exception(template))
-        s = str(template)
+        if isinstance(template, str):
+            s = template
+        else:
+            s = str(template)
         if args or kwargs:
             return s.format(*args, **kwargs)
         return s
 
     def _log(self, level: Level, template: object, args: tuple, kwargs: dict):
         """Log a message, formatting the template only if the level is visible."""
-        if level == Level.ERROR and self.exit_on_error:
-            content = self._build_content(template, args, kwargs)
+        if level <= Level.ERROR and self.exit_on_error:
             if isinstance(template, BaseException):
                 raise template
-            raise RuntimeError(content)
-        # Lazy short-circuit: skip all formatting if the level exceeds verbosity.
-        if level > self.verbosity:
+            raise RuntimeError(self._build_content(template, args, kwargs))
+        # Short-circuit if the verbosity is less than the logging level
+        # or no logging outputs are enabled.
+        if level > self.verbosity or not (self.console_enabled or self.file_stream):
             return
         content = self._build_content(template, args, kwargs)
         # Indent by the contexts that are visible at the current verbosity.
         depth = sum(1 for lvl in self.context_levels if lvl <= self.verbosity)
         body = format_body(level, content, depth)
         if self.console_enabled:
-            stderr.write(color_wrap(level, body) if self.log_color else body)
+            if self.log_color:
+                body = color_wrap(level, body)
+            stderr.write(body)
         if self.file_stream is not None:
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            self.file_stream.stream.write(timestamp + " " + body)
+            timestamp = datetime.now().strftime(r"%Y-%m-%d %H:%M:%S.%f")
+            self.file_stream.stream.write(f"{timestamp}  {body}")
 
 
 logger = Logger()
@@ -306,9 +320,9 @@ def erase_config():
 
 
 def set_config(
-    verbosity: int = 0,
+    verbosity: int = DEFAULT_VERBOSITY,
     log_file_path: str | Path | None = None,
-    log_color: bool = True,
+    log_color: bool = DEFAULT_COLOR,
     exit_on_error: bool = DEFAULT_EXIT_ON_ERROR,
 ):
     """Configure the main logger with handlers and verbosity.

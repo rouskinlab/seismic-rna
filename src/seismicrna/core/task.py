@@ -82,21 +82,16 @@ class Task(object):
             close_file_stream = True
         else:
             close_file_stream = False
-        if getpid() != self._pid:
+        pid = getpid()
+        if pid != self._pid:
             # This task is running in a child process, whose logger starts
             # with no contexts. Reproduce the parent's contexts and add one
             # always-visible level (the lowest level, shown at any verbosity)
             # so the child's log nests one level deeper than its parent's.
             logger.context_levels = list(self._context_levels) + [min(Level)]
-        verbosity = self._config.verbosity
-        description_items = list()
-        if verbosity >= Level.DEBUG:
-            description_items.extend(map(repr, args))
-            description_items.extend(f"{k}={repr(v)}" for k, v in kwargs.items())
-        description = f"{self.name}({', '.join(description_items)})"
+            logger.debug("Process {} is a child of process {}", pid, self._pid)
         try:
-            with logger.info.begin(description):
-                return self._func(*args, **kwargs)
+            return self._func(*args, **kwargs)
         finally:
             if close_file_stream and logger.file_stream is not None:
                 # If the logger's configuration needed to be set, then
@@ -169,8 +164,7 @@ def _dispatch(
     if pool_size > 1:
         # Run the tasks in parallel.
         with ProcessPoolExecutor(max_workers=pool_size) as pool:
-            pool_name = f"process pool {id(pool)}"
-            logger.trace("Opened {} with {} processors", pool_name, pool_size)
+            logger.trace("Opened process pool with {} processors", pool_size)
             # Create and submit a Future for each task.
             futures = [
                 pool.submit(Task(func), *task_args, **kwargs)
@@ -184,7 +178,7 @@ def _dispatch(
                         raise error
                     else:
                         logger.error(error)
-            logger.trace("Closed {} with {} processors", pool_name, pool_size)
+        logger.trace("Closed process pool with {} processors", pool_size)
     else:
         # Run the tasks in series.
         for func, task_args in zip(funcs, args, strict=True):
@@ -243,19 +237,16 @@ def dispatch(
     kwargs: dict[str, Any] | None
         Keyword arguments to pass to every function call.
     """
-    with logger.trace.begin(
-        "dispatch({}, num_cpus={}, pass_num_cpus={}, ordered={}, raise_on_error={}) "
-    ):
-        results = _dispatch(
-            funcs,
-            num_cpus=num_cpus,
-            pass_num_cpus=pass_num_cpus,
-            ordered=ordered,
-            raise_on_error=raise_on_error,
-            args=args,
-            kwargs=kwargs,
-        )
-        return list(results) if as_list else iter(results)
+    results = _dispatch(
+        funcs,
+        num_cpus=num_cpus,
+        pass_num_cpus=pass_num_cpus,
+        ordered=ordered,
+        raise_on_error=raise_on_error,
+        args=args,
+        kwargs=kwargs,
+    )
+    return list(results) if as_list else iter(results)
 
 
 def as_list_of_tuples(args: Iterable[Any]):

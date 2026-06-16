@@ -122,7 +122,7 @@ def _calc_tile_coords(
 ):
     """Calculate the tiled coordinates for one IDmut dataset."""
     ref = dataset.ref
-    with logger.debug.begin("calculating tiles for reference {!r}", ref):
+    with logger.debug.single_context("calculating tiles for reference {!r}", ref):
         if tile_length > 0:
             # Use a prespecified region length.
             ref_tile_length = tile_length
@@ -881,7 +881,7 @@ def ensembles(
         # Erase the tiles at the
         if erase_tiles:
             # Delete the filter reports and batches of the tiles.
-            with logger.debug.begin("deleting tiled reports and batches"):
+            with logger.debug.single_context("deleting tiled reports and batches"):
                 for file in path.find_files_chain(
                     tiled_dirs, FilterReport.get_path_seg_types()
                 ):

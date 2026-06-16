@@ -129,89 +129,115 @@ def calc_coverage(
     read_weights: pd.DataFrame | None = None,
 ):
     """Calculate the coverage per position and per read."""
-    logger.debug("Began calculating coverage per position and per read")
-    match_reads_segments(seg_end5s, seg_end3s, seg_ends_mask)
-    # Find the positions in use.
-    positions = pos_index.get_level_values(POS_NAME).values
-    logger.trace("There are {} position(s) in use", positions.size)
-    if positions.size == 0:
-        # If there are no positions in use, return empty arrays.
-        cover_per_pos = (
-            pd.DataFrame(0.0, pos_index, read_weights.columns)
-            if read_weights is not None
-            else pd.Series(0.0, pos_index)
+    with logger.debug.single_context("calculating coverage per position and per read"):
+        match_reads_segments(seg_end5s, seg_end3s, seg_ends_mask)
+        # Find the positions in use.
+        positions = pos_index.get_level_values(POS_NAME).values
+        logger.trace("There are {} position(s) in use", positions.size)
+        if positions.size == 0:
+            # If there are no positions in use, return empty arrays.
+            cover_per_pos = (
+                pd.DataFrame(0.0, pos_index, read_weights.columns)
+                if read_weights is not None
+                else pd.Series(0.0, pos_index)
+            )
+            cover_per_read = pd.DataFrame.from_dict(
+                {base: pd.Series(0, read_nums) for base in DNA.alph()}
+            )
+            logger.trace(
+                "cover_per_pos={}({}, {})",
+                type(cover_per_pos).__name__,
+                cover_per_pos.shape,
+                cover_per_pos.dtypes
+                if read_weights is not None
+                else cover_per_pos.dtype,
+            )
+            logger.trace(
+                "cover_per_read={}({}, {})",
+                type(cover_per_read).__name__,
+                cover_per_read.shape,
+                cover_per_read.dtypes,
+            )
+            return cover_per_pos, cover_per_read
+        if positions.size > 1 and np.diff(positions).min() <= 0:
+            raise ValueError(
+                f"positions must increase monotonically, but got {positions}"
+            )
+        min_pos = positions[0]
+        max_pos = positions[-1]
+        # Validate the dimensions.
+        dim_names = [(POSITIONS,), (READS,), (READS, SEGMENTS), (READS, SEGMENTS)]
+        arrays = [positions, read_nums, seg_end5s, seg_end3s]
+        names = ["positions", "read_nums", "seg_end5s", "seg_end3s"]
+        if read_weights is not None:
+            if not isinstance(read_weights, pd.DataFrame):
+                raise TypeError(
+                    "If given, read_weights must be DataFrame, "
+                    f"but got {type(read_weights).__name__}"
+                )
+            read_weights = read_weights.loc[read_nums]
+            dim_names.append((READS, CLUSTERS))
+            arrays.append(read_weights.values)
+            names.append("read_weights")
+        find_dims(dim_names, arrays, names)
+        # Clip the end coordinates to the minimum and maximum positions.
+        # Sort the end coordinates and label the 3' end of each contiguous
+        # segment.
+        ends_sorted, is_contig_end5, is_contig_end3 = sort_segment_ends(
+            seg_end5s.clip(min_pos, max_pos + 1),
+            seg_end3s.clip(min_pos - 1, max_pos),
+            seg_ends_mask,
         )
+        # Find the cumulative count of each base up to each position.
+        bases = list()
+        base_count = list()
+        for base, base_pos in iter_base_types(pos_index):
+            bases.append(base)
+            is_base = np.zeros(max_pos + 1, dtype=bool)
+            is_base[base_pos.get_level_values(POS_NAME)] = True
+            base_count.append(np.cumsum(is_base))
+        base_count = np.stack(base_count, axis=1)
+        # Compute the coverage per position and per read.
+        cover_per_pos, cover_per_read = _calc_coverage(
+            ends_sorted,
+            is_contig_end5,
+            is_contig_end3,
+            (read_weights.values if read_weights is not None else 1),
+            base_count,
+        )
+        cover_per_pos = cover_per_pos.round(PRECISION)
+        # Reformat the coverage into pandas objects.
+        cover_per_pos = cover_per_pos[positions - 1]
+        if read_weights is not None:
+            cover_per_pos = pd.DataFrame(
+                cover_per_pos, index=pos_index, columns=read_weights.columns
+            )
+        else:
+            cover_per_pos = pd.Series(
+                cover_per_pos.reshape(positions.size), index=pos_index
+            )
         cover_per_read = pd.DataFrame.from_dict(
-            {base: pd.Series(0, read_nums) for base in DNA.alph()}
+            {
+                base: pd.Series(
+                    (cover_per_read[:, bases.index(base)] if base in bases else 0),
+                    index=read_nums,
+                )
+                for base in DNA.alph()
+            }
         )
-        logger.debug("Ended calculating coverage per position and per read")
+        logger.trace(
+            "cover_per_pos={}({}, {})",
+            type(cover_per_pos).__name__,
+            cover_per_pos.shape,
+            cover_per_pos.dtypes if read_weights is not None else cover_per_pos.dtype,
+        )
+        logger.trace(
+            "cover_per_read={}({}, {})",
+            type(cover_per_read).__name__,
+            cover_per_read.shape,
+            cover_per_read.dtypes,
+        )
         return cover_per_pos, cover_per_read
-    if positions.size > 1 and np.diff(positions).min() <= 0:
-        raise ValueError(f"positions must increase monotonically, but got {positions}")
-    min_pos = positions[0]
-    max_pos = positions[-1]
-    # Validate the dimensions.
-    dim_names = [(POSITIONS,), (READS,), (READS, SEGMENTS), (READS, SEGMENTS)]
-    arrays = [positions, read_nums, seg_end5s, seg_end3s]
-    names = ["positions", "read_nums", "seg_end5s", "seg_end3s"]
-    if read_weights is not None:
-        if not isinstance(read_weights, pd.DataFrame):
-            raise TypeError(
-                "If given, read_weights must be DataFrame, "
-                f"but got {type(read_weights).__name__}"
-            )
-        read_weights = read_weights.loc[read_nums]
-        dim_names.append((READS, CLUSTERS))
-        arrays.append(read_weights.values)
-        names.append("read_weights")
-    find_dims(dim_names, arrays, names)
-    # Clip the end coordinates to the minimum and maximum positions.
-    # Sort the end coordinates and label the 3' end of each contiguous
-    # segment.
-    ends_sorted, is_contig_end5, is_contig_end3 = sort_segment_ends(
-        seg_end5s.clip(min_pos, max_pos + 1),
-        seg_end3s.clip(min_pos - 1, max_pos),
-        seg_ends_mask,
-    )
-    # Find the cumulative count of each base up to each position.
-    bases = list()
-    base_count = list()
-    for base, base_pos in iter_base_types(pos_index):
-        bases.append(base)
-        is_base = np.zeros(max_pos + 1, dtype=bool)
-        is_base[base_pos.get_level_values(POS_NAME)] = True
-        base_count.append(np.cumsum(is_base))
-    base_count = np.stack(base_count, axis=1)
-    # Compute the coverage per position and per read.
-    cover_per_pos, cover_per_read = _calc_coverage(
-        ends_sorted,
-        is_contig_end5,
-        is_contig_end3,
-        (read_weights.values if read_weights is not None else 1),
-        base_count,
-    )
-    cover_per_pos = cover_per_pos.round(PRECISION)
-    # Reformat the coverage into pandas objects.
-    cover_per_pos = cover_per_pos[positions - 1]
-    if read_weights is not None:
-        cover_per_pos = pd.DataFrame(
-            cover_per_pos, index=pos_index, columns=read_weights.columns
-        )
-    else:
-        cover_per_pos = pd.Series(
-            cover_per_pos.reshape(positions.size), index=pos_index
-        )
-    cover_per_read = pd.DataFrame.from_dict(
-        {
-            base: pd.Series(
-                (cover_per_read[:, bases.index(base)] if base in bases else 0),
-                index=read_nums,
-            )
-            for base in DNA.alph()
-        }
-    )
-    logger.debug("Ended calculating coverage per position and per read")
-    return cover_per_pos, cover_per_read
 
 
 def calc_rels_per_pos(
@@ -330,7 +356,13 @@ def calc_rels_per_pos(
     else:
         tot_reads = num_reads
     counts[NOCOV].loc[nocov_indices] = tot_reads
-    return dict(counts)
+    result = dict(counts)
+    logger.trace(
+        "rels_per_pos: {} relationship type(s) over {} position(s)",
+        len(result),
+        len(pos_index),
+    )
+    return result
 
 
 def calc_rels_per_read(
@@ -376,7 +408,13 @@ def calc_rels_per_read(
     ]
     if errors:
         raise ValueError("\n".join(errors))
-    return dict(counts)
+    result = dict(counts)
+    logger.trace(
+        "rels_per_read: {} relationship type(s) over {} read(s)",
+        len(result),
+        len(cover_per_read),
+    )
+    return result
 
 
 def calc_reads_per_pos(
@@ -393,6 +431,7 @@ def calc_reads_per_pos(
             if all(pattern.fits(base, mut))
         ]
         reads[pos] = np.unique(np.hstack(pos_reads)) if pos_reads else np.array([], int)
+    logger.trace("reads_per_pos: {} position(s)", len(reads))
     return reads
 
 
@@ -416,6 +455,7 @@ def calc_covered_reads_per_pos(
         if seg_ends_mask is not None:
             covering_segs &= ~seg_ends_mask
         covering_reads[pos] = read_nums[covering_segs.any(axis=1)]
+    logger.trace("covered_reads_per_pos: {} position(s)", len(covering_reads))
     return covering_reads
 
 
@@ -450,6 +490,18 @@ def calc_count_per_pos(
                 info.loc[index] += pos_counts
                 if is_fits:
                     fits.loc[index] += pos_counts
+    logger.trace(
+        "info={}({}, {})",
+        type(info).__name__,
+        info.shape,
+        info.dtypes if isinstance(info, pd.DataFrame) else info.dtype,
+    )
+    logger.trace(
+        "fits={}({}, {})",
+        type(fits).__name__,
+        fits.shape,
+        fits.dtypes if isinstance(fits, pd.DataFrame) else fits.dtype,
+    )
     return info, fits
 
 
@@ -470,4 +522,6 @@ def calc_count_per_read(
                 info += read_counts
                 if is_fits:
                     fits += read_counts
+    logger.trace("info={}({}, {})", type(info).__name__, info.shape, info.dtype)
+    logger.trace("fits={}({}, {})", type(fits).__name__, fits.shape, fits.dtype)
     return info, fits

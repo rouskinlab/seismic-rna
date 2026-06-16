@@ -56,7 +56,7 @@ def accumulate_counts(
         Total (num_reads, end_counts, count_per_pos, count_per_read).
     """
     rels = list(patterns)
-    with logger.debug.begin("accumulating counts of patterns {}", rels):
+    with logger.debug.single_context("accumulating counts of patterns {}", rels):
         header = make_header(rels=rels, ks=ks)
         end_counts_index = pd.MultiIndex.from_arrays(
             [np.array([], dtype=int) for _ in END_COORDS], names=END_COORDS
@@ -149,6 +149,21 @@ def accumulate_counts(
             count_per_read = pd.DataFrame(columns=rel_header.index, dtype=dtype)
         else:
             count_per_read = None
+        logger.trace("num_reads={}", num_reads)
+        if count_per_pos is not None:
+            logger.trace(
+                "count_per_pos={}({}, {})",
+                type(count_per_pos).__name__,
+                count_per_pos.shape,
+                count_per_pos.dtypes,
+            )
+        if count_per_read is not None:
+            logger.trace(
+                "count_per_read={}({}, {})",
+                type(count_per_read).__name__,
+                count_per_read.shape,
+                count_per_read.dtypes,
+            )
     return num_reads, end_counts, count_per_pos, count_per_read
 
 
@@ -200,7 +215,7 @@ def accumulate_batches(
     tuple
         Total (num_reads, end_counts, count_per_pos, count_per_read).
     """
-    with logger.debug.begin("accumulating counts of {} batches", num_batches):
+    with logger.debug.single_context("accumulating counts of {} batches", num_batches):
         # Generate the counts for the batches in parallel.
         batch_counts = dispatch(
             get_batch_count_all,
@@ -278,8 +293,8 @@ def accumulate_confusion_matrices(
     tuple
         Total (n, a, b, ab) confusion matrix components.
     """
-    with logger.debug.begin(
-        "accumulating confusion matrices of {} batches", num_batches
+    with logger.debug.single_context(
+        "Accumulating confusion matrices of {} batches", num_batches
     ):
         n, a, b, ab = init_confusion_matrix(pos_index, clusters, min_gap)
         for n_batch, a_batch, b_batch, ab_batch in dispatch(

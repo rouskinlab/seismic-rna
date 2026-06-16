@@ -205,7 +205,8 @@ def get_db_structs(table: PositionTable, k: int | None, clust: int | None):
         else:
             logger.warning(
                 "No structure model available for {}: {} does not exist",
-                profile, db_file,
+                profile,
+                db_file,
             )
     return structs, energies
 

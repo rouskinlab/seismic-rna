@@ -112,7 +112,7 @@ def list_demulted_fqs(
 
 def list_demult(fq_units: list[FastqUnit], refs: set[str]):
     """List every expected demultiplexed FASTQ from a multiplexed FASTQ."""
-    with logger.debug.begin("listing demultiplexed FASTQs"):
+    with logger.debug.single_context("listing demultiplexed FASTQs"):
         # Map each combination of a sample and reference to a FASTQ unit.
         demult_fqs: dict[tuple[str, str], FastqUnit] = dict()
         for fq_unit in fq_units:
@@ -251,7 +251,7 @@ def demult_fqs_pipeline(
 ) -> list[Path]:
     """Run all stages of demultiplexing for one or more FASTQ files or pairs
     of mated FASTQ files."""
-    with logger.debug.begin("running the demultiplexing pipeline"):
+    with logger.debug.single_context("running the demultiplexing pipeline"):
         # Validate the maximum number of processes.
         if num_cpus < 1:
             logger.warning("--num_cpus must be ≥ 1: setting to 1")
@@ -637,10 +637,7 @@ def demult_ahocorasick(
                 )
 
     logger.trace(
-        "Identified {} out of {} reads ({:.3f}%)",
-        count,
-        total,
-        100 * (count / total),
+        "Identified {} out of {} reads ({:.3f}%)", count, total, 100 * (count / total)
     )
 
     return tuple((tuple(out_fqs[name].paths.values()) for name in barcodes.uniq_names))

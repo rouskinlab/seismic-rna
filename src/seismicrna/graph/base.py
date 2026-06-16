@@ -22,6 +22,7 @@ from ..core.arg import (
     opt_num_cpus,
 )
 from ..core.dataset import MutsDataset
+from ..core.logs import format_sample_reference_region
 from ..core.seq import DNA
 from ..core.table import Table
 from ..core.write import need_write
@@ -359,10 +360,8 @@ class BaseGraph(ABC):
         return " ".join(self._title_main + self._title_details)
 
     def __str__(self):
-        return (
-            f"{type(self).__name__} of sample {repr(self.sample)} "
-            f"reference {repr(self.ref)} region {repr(self.reg)}"
-        )
+        srr = format_sample_reference_region(self.sample, self.ref, self.reg)
+        return f"{type(self).__name__} of {srr}"
 
 
 class BaseWriter(ABC):

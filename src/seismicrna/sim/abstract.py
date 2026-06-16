@@ -81,7 +81,7 @@ def _calc_ratios(counts: pd.DataFrame, is_paired: np.ndarray):
             str, ["calculating ratios from", "counts:", counts, "is_paired:", is_paired]
         )
     )
-    with logger.debug.begin("{}", message):
+    with logger.debug.single_context("{}", message):
         is_unpaired = ~is_paired
 
         def calc_ratio(num: str, den: str, rows):

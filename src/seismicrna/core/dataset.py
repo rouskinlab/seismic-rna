@@ -9,7 +9,7 @@ from .batch import MutsBatch, RegionMutsBatch, ReadBatch, list_batch_nums
 from .error import InconsistentValueError, NoDataError
 from .header import NO_K
 from .io import MutsBatchIO, ReadBatchIO
-from .logs import logger
+from .logs import logger, format_sample_reference_region
 from .rel import RelPattern
 from .report import (
     BranchesF,
@@ -147,13 +147,19 @@ class Dataset(ABC):
 
     def iter_batches(self):
         """Yield each batch."""
-        for batch_num in self.batch_nums:
-            yield self.get_batch(batch_num)
+        with logger.trace.single_context(
+            "Iterating through {} batches in {}", self.num_batches, self
+        ):
+            for batch_num in self.batch_nums:
+                yield self.get_batch(batch_num)
 
     @cached_property
     def num_reads(self):
         """Number of reads in the dataset."""
-        return sum(batch.num_reads for batch in self.iter_batches())
+        with logger.trace.single_context("Counting reads in {}", self):
+            num_reads = sum(batch.num_reads for batch in self.iter_batches())
+            logger.trace("{} contains {} reads", self, num_reads)
+            return num_reads
 
     def link_data_dirs_to_tmp(self, tmp_dir: Path):
         """Make links to a dataset in a temporary directory."""
@@ -163,10 +169,8 @@ class Dataset(ABC):
             path.symlink_if_needed(tmp_data_dir, data_dir)
 
     def __str__(self):
-        return f"{type(self).__name__}({self.report_file})"
-
-    def __repr__(self):
-        return str(self)
+        srr = format_sample_reference_region(self.sample, self.ref)
+        return f"{type(self).__name__} of {srr}"
 
 
 class UnbiasDataset(Dataset, ABC):
@@ -225,6 +229,10 @@ class RegionDataset(Dataset, ABC):
     def region(self) -> Region:
         """Region of the dataset."""
 
+    def __str__(self):
+        srr = format_sample_reference_region(self.sample, self.ref, self.region.name)
+        return f"{type(self).__name__} of {srr}"
+
 
 class MutsDataset(RegionDataset, ABC):
     """Dataset with a known region and explicit mutational data."""
@@ -239,15 +247,10 @@ class MutsDataset(RegionDataset, ABC):
 
     def get_batch_count_all(self, batch_num: int, **kwargs):
         """Calculate the counts for a specific batch of data."""
-        return self.get_batch(batch_num).count_all(**kwargs)
-
-    def iter_batches(self):
-        # Reimplement this method (already implemented by Dataset) for
-        # the sole purpose of enabling type linters to determine that
-        # MutsDataset.iter_batches() yields RegionMutsBatch objects
-        # instead of plain ReadBatch objects.
-        for batch_num in self.batch_nums:
-            yield self.get_batch(batch_num)
+        with logger.trace.single_context(
+            "Calculating counts for {} batch {}", self, batch_num
+        ):
+            return self.get_batch(batch_num).count_all(**kwargs)
 
 
 class LoadFunction(object):
@@ -380,26 +383,37 @@ class LoadedDataset(Dataset, ABC):
 
     def get_batch_checksum(self, batch_num: int):
         """Get the checksum of a specific batch from the report."""
-        require_atleast("batch_num", batch_num, 0, classes=int)
-        require_atmost(
-            "batch_num", batch_num, self.num_batches - 1, "num_batches", classes=int
-        )
-        checksums = self.report.get_field(ChecksumsF)
-        try:
-            return checksums[self.get_btype_name()][batch_num]
-        except KeyError:
-            # Report does not have checksums for this type of batch.
-            raise MissingBatchTypeError(self.get_batch_type())
-        except IndexError:
-            # Report does not have a checksum for this batch number.
-            raise MissingBatchError(batch_num)
+        with logger.trace.single_context(
+            "Reading checksum for {} batch {} from the report", self, batch_num
+        ):
+            require_atleast("batch_num", batch_num, 0, classes=int)
+            require_atmost(
+                "batch_num", batch_num, self.num_batches - 1, "num_batches", classes=int
+            )
+            checksums = self.report.get_field(ChecksumsF)
+            try:
+                checksum = checksums[self.get_btype_name()][batch_num]
+            except KeyError:
+                # Report does not have checksums for this type of batch.
+                raise MissingBatchTypeError(self.get_batch_type())
+            except IndexError:
+                # Report does not have a checksum for this batch number.
+                raise MissingBatchError(batch_num)
+            logger.trace("Checksum for {} batch {} is {}", self, batch_num, checksum)
+            return checksum
 
     def get_batch(self, batch_num: int) -> ReadBatchIO | MutsBatchIO:
-        batch = self.get_batch_type().load(
-            self.get_batch_path(batch_num), checksum=self.get_batch_checksum(batch_num)
-        )
-        assert batch.batch == batch_num
-        return batch
+        with logger.trace.single_context("Loading {} batch {}", self, batch_num):
+            require_atleast("batch_num", batch_num, 0, classes=int)
+            require_atmost(
+                "batch_num", batch_num, self.num_batches - 1, "num_batches", classes=int
+            )
+            batch = self.get_batch_type().load(
+                self.get_batch_path(batch_num),
+                checksum=self.get_batch_checksum(batch_num),
+            )
+            assert batch.batch == batch_num
+            return batch
 
 
 class MergedDataset(Dataset, ABC):
@@ -524,35 +538,56 @@ class TallDataset(MergedDataset, ABC):
     def _translate_batch_num(self, batch_num: int):
         """Translate a batch number into the numbers of the dataset and
         of the batch within the dataset."""
-        require_atleast("batch_num", batch_num, 0, classes=int)
-        require_atmost(
-            "batch_num", batch_num, self.num_batches - 1, "num_batches", classes=int
-        )
-        try:
-            # Check if the translated batch number has been cached.
-            dataset_num, dataset_batch_num = self._batch_nums_table[batch_num]
-            return dataset_num, dataset_batch_num
-        except KeyError:
-            # If not, then calculate it.
-            dataset_batch_num = batch_num
-            for dataset_num, num_batches in enumerate(self.nums_batches):
-                assert dataset_batch_num >= 0
-                if dataset_batch_num < num_batches:
-                    # Cache the translated batch number.
-                    self._batch_nums_table[batch_num] = (dataset_num, dataset_batch_num)
-                    return dataset_num, dataset_batch_num
-                dataset_batch_num -= num_batches
-        raise ValueError(f"{self} has no batch with number {batch_num}")
+        with logger.trace.single_context(
+            "Translating batch number {} for {}", batch_num, self
+        ):
+            require_atleast("batch_num", batch_num, 0, classes=int)
+            require_atmost(
+                "batch_num", batch_num, self.num_batches - 1, "num_batches", classes=int
+            )
+            try:
+                # Check if the translated batch number has been cached.
+                dataset_num, dataset_batch_num = self._batch_nums_table[batch_num]
+                logger.trace(
+                    "Batch {} of {} is batch {} of dataset {}",
+                    batch_num,
+                    self,
+                    dataset_batch_num,
+                    dataset_num,
+                )
+                return dataset_num, dataset_batch_num
+            except KeyError:
+                # If not, then calculate it.
+                dataset_batch_num = batch_num
+                for dataset_num, num_batches in enumerate(self.nums_batches):
+                    assert dataset_batch_num >= 0
+                    if dataset_batch_num < num_batches:
+                        # Cache the translated batch number.
+                        self._batch_nums_table[batch_num] = (
+                            dataset_num,
+                            dataset_batch_num,
+                        )
+                        logger.trace(
+                            "Batch {} of {} is batch {} of dataset {}",
+                            batch_num,
+                            self,
+                            dataset_batch_num,
+                            dataset_num,
+                        )
+                        return dataset_num, dataset_batch_num
+                    dataset_batch_num -= num_batches
+            raise ValueError(f"Cannot translate batch number {batch_num} for {self}")
 
     def get_batch(self, batch_num: int):
-        # Determine the dataset and the batch number in that dataset.
-        dataset_num, dataset_batch_num = self._translate_batch_num(batch_num)
-        # Load the batch.
-        batch = self.datasets[dataset_num].get_batch(dataset_batch_num)
-        # Renumber the batch from the numbering in its original dataset
-        # to the numbering in the pooled dataset.
-        batch.batch = batch_num
-        return batch
+        with logger.trace.single_context("Loading {} batch {}", self, batch_num):
+            # Determine the dataset and the batch number in that dataset.
+            dataset_num, dataset_batch_num = self._translate_batch_num(batch_num)
+            # Load the batch.
+            batch = self.datasets[dataset_num].get_batch(dataset_batch_num)
+            # Renumber the batch from the numbering in its original dataset
+            # to the numbering in the pooled dataset.
+            batch.batch = batch_num
+            return batch
 
 
 class WideDataset(MergedRegionDataset, ABC):
@@ -601,11 +636,12 @@ class WideDataset(MergedRegionDataset, ABC):
         """Join corresponding batches of data."""
 
     def get_batch(self, batch_num: int):
-        # Join the batch with that number from every dataset.
-        return self._join(
-            (dataset.region.name, dataset.get_batch(batch_num))
-            for dataset in self.datasets
-        )
+        with logger.trace.single_context("Assembling {} batch {}", self, batch_num):
+            # Join the batch with that number from every dataset.
+            return self._join(
+                (dataset.region.name, dataset.get_batch(batch_num))
+                for dataset in self.datasets
+            )
 
 
 class WideMutsDataset(WideDataset, MutsDataset, ABC):
@@ -711,8 +747,9 @@ class MultistepDataset(MutsDataset, ABC):
         return self.report.get_field(NumBatchesF)
 
     def get_batch(self, batch_num: int):
-        batch2 = self.dataset2.get_batch(batch_num)
-        batch1 = (
-            None if batch2.is_self_contained else self.dataset1.get_batch(batch_num)
-        )
-        return self._integrate(batch1, batch2)
+        with logger.trace.single_context("Assembling {} batch {}", self, batch_num):
+            batch2 = self.dataset2.get_batch(batch_num)
+            batch1 = (
+                None if batch2.is_self_contained else self.dataset1.get_batch(batch_num)
+            )
+            return self._integrate(batch1, batch2)

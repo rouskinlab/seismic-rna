@@ -13,7 +13,7 @@ def log_command(command: str):
 
         @wraps(func)
         def wrapper(*args, **kwargs):
-            with logger.info.begin(command):
+            with logger.info.double_context("running the '{}' command", command):
                 return func(*args, **kwargs)
 
         return wrapper

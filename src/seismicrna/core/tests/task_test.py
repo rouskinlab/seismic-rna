@@ -54,8 +54,8 @@ class TestTaskDepth(ut.TestCase):
         child_depth = observed["depth"]
 
         self.assertEqual(child_depth, same_process_depth + 1)
-        self.assertEqual(same_process_depth, 4)
-        self.assertEqual(child_depth, 5)
+        self.assertEqual(same_process_depth, 3)
+        self.assertEqual(child_depth, 4)
 
 
 if __name__ == "__main__":

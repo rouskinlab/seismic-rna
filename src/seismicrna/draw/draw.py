@@ -17,7 +17,7 @@ from ..core.extern.shell import (
     ShellCommandFailedError,
 )
 from ..core.header import AVERAGE_PREFIX
-from ..core.logs import logger
+from ..core.logs import logger, format_sample_reference_region
 from ..core.report import SampleF, BranchesF, RefF, RegF, ProfileF
 from ..core.rna.io import from_ct
 from ..core.rna.state import RNAState
@@ -373,6 +373,10 @@ class RNArtistRun(object):
         self.verify_times = verify_times
         self.fold_table_region = fold_table_region
         self._parse_profile()
+
+    def __str__(self):
+        srr = format_sample_reference_region(self.sample, self.ref, self.reg)
+        return f"{type(self).__name__} of {srr}"
 
     def _get_dir_fields(self, top: Path):
         """Get the path fields for the directory of this RNA.

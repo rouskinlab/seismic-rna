@@ -17,6 +17,7 @@ from ..core.arg import (
     opt_num_cpus,
 )
 from ..core.batch import END5_COORD, END3_COORD
+from ..core.logs import logger
 from ..core.rna import find_ct_region
 from ..core.run import run_func
 from ..core.stats import calc_beta_params
@@ -216,6 +217,7 @@ def sim_pends_ct(
             length_fvar,
             keep_empty_reads=False,
         )
+        logger.trace("pends={}({}, {})", type(pends).__name__, pends.shape, pends.dtype)
         uniq_ends = {END5_COORD: uniq_end5s, END3_COORD: uniq_end3s}
         pends = pd.Series(
             pends,

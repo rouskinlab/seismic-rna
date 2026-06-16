@@ -66,7 +66,9 @@ def release_to_out(out_dir: Path, release_dir: Path, initial_path: Path):
                     move(initial_path, out_path)
                 else:
                     raise
-            logger.debug("Moved initial path {} to output path {}", initial_path, out_path)
+            logger.debug(
+                "Moved initial path {} to output path {}", initial_path, out_path
+            )
         except Exception:
             if deleted:
                 # If an error occurred, then restore the original output

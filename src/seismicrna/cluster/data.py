@@ -191,7 +191,7 @@ def get_clust_params(dataset: ClusterMutsDataset, num_cpus: int = 1):
     """Get the mutation rates and proportion for each cluster. If table
     files already exist, then use them to get the parameters; otherwise,
     calculate the parameters from the dataset."""
-    with logger.debug.begin("obtaining cluster parameters from {}", dataset):
+    with logger.debug.single_context("obtaining cluster parameters from {}", dataset):
         # Try to load the tables from files.
         path_fields = {
             path.TOP: dataset.top,
@@ -264,7 +264,7 @@ def get_clust_params(dataset: ClusterMutsDataset, num_cpus: int = 1):
 
 def _join_regions_k(region_params: dict[str, pd.DataFrame]):
     """Determine the optimal way to join regions ."""
-    with logger.debug.begin("determining the optimal way to join clusters"):
+    with logger.debug.single_context("determining the optimal way to join clusters"):
         from scipy.optimize import Bounds, LinearConstraint, milp
         from scipy.sparse import csr_matrix
 
@@ -305,7 +305,10 @@ def _join_regions_k(region_params: dict[str, pd.DataFrame]):
                 )
                 cost_matrix.at[cluster1, cluster2] = cost
             logger.trace(
-                "Regions {!r} and {!r} have a cost matrix of\n{}", reg1, reg2, cost_matrix
+                "Regions {!r} and {!r} have a cost matrix of\n{}",
+                reg1,
+                reg2,
+                cost_matrix,
             )
             assert not np.any(np.isnan(cost_matrix))
             cost_matrices[reg1, reg2] = cost_matrix

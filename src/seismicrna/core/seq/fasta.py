@@ -109,7 +109,7 @@ def parse_fasta(
         item_type = f"{seq_type.__name__} sequence"
     else:
         raise ValueError(seq_type)
-    with logger.debug.begin("parsing {}s in FASTA file {}", item_type, fasta):
+    with logger.debug.single_context("parsing {}s in FASTA file {}", item_type, fasta):
         names = set()
         skipped = 0
         if only is not None and not isinstance(only, set):
@@ -137,7 +137,9 @@ def parse_fasta(
                             segments.append(line.rstrip(linesep))
                             line = f.readline()
                         seq = seq_type("".join(segments))
-                        logger.trace("Parsed {!r} ({} nt {})", name, len(seq), item_type)
+                        logger.trace(
+                            "Parsed {!r} ({} nt {})", name, len(seq), item_type
+                        )
                         yield name, seq
                     else:
                         # In name-only mode, yield only the reference name.
@@ -174,7 +176,7 @@ def write_fasta(
     fasta = path.sanitize(fasta, strict=False)
     path.check_file_extension(fasta, path.FastaExt)
     if need_write(fasta, force):
-        with logger.debug.begin("writing FASTA file {}", fasta):
+        with logger.debug.single_context("writing FASTA file {}", fasta):
             with NamedTemporaryFile(
                 "w",
                 dir=fasta.parent,

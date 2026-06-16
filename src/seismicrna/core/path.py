@@ -613,7 +613,10 @@ class PathSegment(object):
         }
 
     def __str__(self):
-        return f"{type(self).__name__} {repr(self.name)}"
+        return self.name
+
+    def __repr__(self):
+        return str(self)
 
 
 # Field names
@@ -1082,14 +1085,14 @@ def parse_top_separate(path: str | pathlib.Path, segment_types: Iterable[PathSeg
     return field_values.pop(TOP), field_values
 
 
-def path_matches(path: str | pathlib.Path, segments: Iterable[PathSegment]):
+def path_matches(path: str | pathlib.Path, segments: Sequence[PathSegment]):
     """Check if a path matches a sequence of path segments.
 
     Parameters
     ----------
     path: str | pathlib.Path
         Path of the file/directory.
-    segments: Iterable[PathSegment]
+    segments: Sequence[PathSegment]
         Sequence of path segments to check if the file matches.
 
     Returns
@@ -1103,15 +1106,37 @@ def path_matches(path: str | pathlib.Path, segments: Iterable[PathSegment]):
         parse(path, segments)
     except PathError:
         # The path does not match this sequence of path segments.
+        logger.trace("Path {} does not match segments {}", path, segments)
         return False
     else:
         # The path matches this sequence of path segments.
+        logger.trace("Path {} matches segments {}", path, segments)
         return True
+
+
+def _find_files_recursive(path: pathlib.Path, segments: list[PathSegment]):
+    if path.is_file():
+        # Check if the file matches the segments.
+        if path_matches(path, segments):
+            # If so, then yield it.
+            logger.debug("Found file {}", path)
+            yield path
+    else:
+        # Search the directory for files matching the segments.
+        with logger.debug.single_context(
+            "Searching directory {} for files matching {}", path, segments
+        ):
+            yield from chain(
+                *map(partial(_find_files_recursive, segments=segments), path.iterdir())
+            )
 
 
 @deduplicated
 def find_files(
-    path: str | pathlib.Path, segments: Sequence[PathSegment], pre_sanitize: bool = True
+    path: str | pathlib.Path,
+    segments: Sequence[PathSegment],
+    pre_sanitize: bool = True,
+    warn_if_no_matches: bool = True,
 ):
     """Yield all files that match a sequence of path segments.
     The behavior depends on what `path` is:
@@ -1126,7 +1151,7 @@ def find_files(
     path: str | pathlib.Path
         Path of a file to check or a directory to search recursively.
     segments: Sequence[PathSegment]
-        Sequence(s) of Path segments to check if each file matches.
+        Sequence(s) of path segments to check if each file matches.
     pre_sanitize: bool
         Whether to sanitize the path before searching it.
 
@@ -1137,33 +1162,58 @@ def find_files(
     """
     if pre_sanitize:
         path = sanitize(path, strict=True)
-    if path.is_file():
-        # Check if the file matches the segments.
-        if path_matches(path, segments):
-            # If so, then yield it.
-            logger.trace("Found file {}", path)
-            yield path
+    if not isinstance(segments, list):
+        segments = list(segments)
+    num_files = 0
+    for file in _find_files_recursive(path, segments):
+        num_files += 1
+        yield file
+    if num_files == 0 and warn_if_no_matches:
+        logger.warning("No files in {} matched segments {}", path, segments)
     else:
-        # Search the directory for files matching the segments.
-        with logger.debug.begin("recursively searching directory {}", path):
-            yield from chain(
-                *map(
-                    partial(find_files, segments=segments, pre_sanitize=False),
-                    path.iterdir(),
-                )
-            )
+        logger.debug(
+            "Found {} file(s) in {} matching segments {}", num_files, path, segments
+        )
 
 
 @deduplicated
 def find_files_chain(
-    paths: Iterable[str | pathlib.Path], segments: Sequence[PathSegment]
+    paths: Iterable[str | pathlib.Path],
+    segments: Sequence[PathSegment],
+    warn_if_no_matches: bool = True,
 ):
     """Yield from `find_files` called on every path in `paths`."""
-    for path in deduplicate(paths):
-        try:
-            yield from find_files(path, segments)
-        except Exception as error:
-            logger.error(error)
+    if not isinstance(paths, list):
+        paths = list(paths)
+    if not isinstance(segments, list):
+        segments = list(segments)
+    if paths:
+        num_files = 0
+        for path in deduplicate(paths):
+            try:
+                for file in _find_files_recursive(path, segments):
+                    num_files += 1
+                    yield file
+            except Exception as error:
+                logger.error(
+                    "Failed to search {} for files matching segments {}:\n{}",
+                    path,
+                    segments,
+                    error,
+                )
+        if num_files == 0 and warn_if_no_matches:
+            logger.warning("No files in {} matched segments {}", paths, segments)
+        else:
+            logger.debug(
+                "Found {} file(s) in {} matching segments {}",
+                num_files,
+                paths,
+                segments,
+            )
+    else:
+        logger.debug(
+            "Got no paths in which to search for files matching segments {}", segments
+        )
 
 
 # Path transformation routines

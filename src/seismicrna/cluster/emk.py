@@ -298,26 +298,29 @@ class EMRunsK(object):
 
 def find_best_k(ks: Iterable[EMRunsK], **kwargs):
     """Find the best number of clusters."""
-    # Sort the runs by increasing numbers of clusters.
-    ks = sorted(ks, key=lambda runs: runs.k)
-    if not ks:
-        logger.warning("No numbers of clusters exist")
-        return 0
-    # Select only the numbers of clusters that pass the filters.
-    # For the largest number of clusters, underclustering can be allowed
-    # to permit this number to be identified as the best number so far;
-    # for all other numbers, use all filters.
-    ks_passing = [runs for runs in ks[:-1] if runs.passing()]
-    if ks[-1].passing(**kwargs):
-        ks_passing.append(ks[-1])
-    if not ks_passing:
-        logger.warning("No numbers of clusters pass the filters")
-        return 0
-    # Of the remaining numbers of clusters, find the number that gives
-    # the smallest BIC.
-    ks_passing = sorted(ks_passing, key=lambda runs: runs.best.bic)
-    # Return that number of clusters.
-    return ks_passing[0].k
+    with logger.debug.single_context("find_best_k"):
+        # Sort the runs by increasing numbers of clusters.
+        ks = sorted(ks, key=lambda runs: runs.k)
+        if not ks:
+            logger.warning("No numbers of clusters exist")
+            return 0
+        # Select only the numbers of clusters that pass the filters.
+        # For the largest number of clusters, underclustering can be allowed
+        # to permit this number to be identified as the best number so far;
+        # for all other numbers, use all filters.
+        ks_passing = [runs for runs in ks[:-1] if runs.passing()]
+        if ks[-1].passing(**kwargs):
+            ks_passing.append(ks[-1])
+        if not ks_passing:
+            logger.warning("No numbers of clusters pass the filters")
+            return 0
+        # Of the remaining numbers of clusters, find the number that gives
+        # the smallest BIC.
+        ks_passing = sorted(ks_passing, key=lambda runs: runs.best.bic)
+        # Return that number of clusters.
+        best_k = ks_passing[0].k
+        logger.trace("best_k={}", best_k)
+    return best_k
 
 
 def assign_clusterings(mus1: np.ndarray, mus2: np.ndarray):

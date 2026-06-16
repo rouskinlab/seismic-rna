@@ -26,11 +26,10 @@ from .base import (
     AbundanceTable,
     all_patterns,
 )
-from .. import path
 from ..batch import accumulate_batches, accumulate_counts
 from ..dataset import MutsDataset
 from ..header import Header, make_header
-from ..logs import logger
+from ..logs import logger, format_sample_reference_region
 from ..seq import Region
 from ..write import need_write
 
@@ -226,18 +225,9 @@ class Tabulator(ABC):
             files.append(table.write(force))
         return files
 
-    @cached_property
-    def _str_dict(self):
-        return {
-            path.TOP: self.top,
-            path.SAMPLE: self.sample,
-            path.BRANCHES: self.branches,
-            path.REF: self.ref,
-            path.REG: self.region.name,
-        }
-
     def __str__(self):
-        return f"{type(self).__name__} of {self._str_dict}"
+        srr = format_sample_reference_region(self.sample, self.ref, self.region.name)
+        return f"{type(self).__name__} for {srr}"
 
 
 class CountTabulator(Tabulator, ABC):
@@ -249,7 +239,7 @@ class CountTabulator(Tabulator, ABC):
 
     @cached_property
     def _counts(self):
-        with logger.debug.begin("tabulating {}", self):
+        with logger.debug.single_context("tabulating {}", self):
             counts = accumulate_counts(self._batch_counts, **self._accum_kwargs)
         return counts
 
@@ -272,7 +262,7 @@ class BatchTabulator(Tabulator, ABC):
 
     @cached_property
     def _counts(self):
-        with logger.debug.begin("tabulating {}", self):
+        with logger.debug.single_context("tabulating {}", self):
             counts = accumulate_batches(
                 self._get_batch_count_all,
                 self.num_batches,

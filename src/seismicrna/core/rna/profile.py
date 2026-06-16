@@ -5,6 +5,7 @@ import pandas as pd
 
 from .base import RNARegion
 from .. import path
+from ..logs import format_sample_reference_region
 from ..seq import write_fasta
 
 
@@ -47,6 +48,10 @@ class RNAProfile(RNARegion):
         if mus.min() < 0.0 or mus.max() > 1.0:
             raise ValueError(f"Got mutation rates outside [0, 1]:\n{mus}")
         self.mus = mus.reindex(self.region.range)
+
+    def __str__(self):
+        srr = format_sample_reference_region(self.sample, self.ref, self.reg)
+        return f"{type(self).__name__} of {srr}"
 
     @cached_property
     def init_args(self):

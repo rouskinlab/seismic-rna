@@ -883,7 +883,7 @@ class Report(SampleFileIO, ABC):
 
     @classmethod
     def load(cls, file: str | Path) -> Report:
-        with logger.debug.begin("loading {} from {}", cls.__name__, file):
+        with logger.debug.single_context("loading {} from {}", cls.__name__, file):
             with open(file) as f:
                 report = cls.from_dict(json.load(f))
             # Ensure that the path-related fields in the JSON data match the

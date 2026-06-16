@@ -137,7 +137,9 @@ class TestSetConfig(ut.TestCase):
         msg_trace = "Some trace text"
         try:
             # Set verbosity to INFO — DEBUG and TRACE should NOT appear in file.
-            set_config(verbosity=Level.INFO, log_file_path=log_file_path, log_color=False)
+            set_config(
+                verbosity=Level.INFO, log_file_path=log_file_path, log_color=False
+            )
             stream = io.StringIO()
             with mock.patch("seismicrna.core.logs.stderr", stream):
                 logger.info(msg_info)
@@ -160,8 +162,8 @@ class TestSetConfig(ut.TestCase):
         """File lines carry a timestamp prefix; body matches console body."""
         log_file_path = Path(os.path.abspath("test.log"))
         msg = "Hello log file"
-        # Timestamp format is always "%Y-%m-%d %H:%M:%S" (19 chars) + " " = 20.
-        ts_prefix_len = len("YYYY-MM-DD HH:MM:SS ")
+        # Timestamp format is always "YYYY-%m-%d %H:%M:%S" (19 chars) + "  " = 28.
+        ts_prefix_len = len("YYYY-MM-DD HH:MM:SS.ffffff  ")
         try:
             set_config(
                 verbosity=Level.DEBUG, log_file_path=log_file_path, log_color=False
@@ -173,8 +175,8 @@ class TestSetConfig(ut.TestCase):
             with open(log_file_path) as log_file:
                 file_content = log_file.read()
             console_body = console_stream.getvalue()
-            # File line = "<YYYY-MM-DD HH:MM:SS> " + console body
-            self.assertTrue(file_content.startswith("20"))  # starts with a year
+            # File line = "<YYYY-MM-DD HH:MM:SS.ffffff> " + console body
+            self.assertTrue(file_content.startswith("20"))  # starts with year
             # The body portion (after the timestamp prefix) matches the console.
             self.assertEqual(file_content[ts_prefix_len:], console_body)
         finally:
@@ -221,20 +223,20 @@ class TestGetConfig(ut.TestCase):
 class TestFormatBody(ut.TestCase):
     def test_level_pid_message(self):
         body = format_body(Level.INFO, "hello world", 0)
-        self.assertIn(Level.INFO.name, body)
+        self.assertIn(Level.INFO.name.capitalize(), body)
         self.assertIn(f"{os.getpid()}", body)
         self.assertTrue(body.endswith("hello world\n"))
 
     def test_depth_indents_message_only(self):
         flat = format_body(Level.TRACE, "msg", 0)
         nested = format_body(Level.TRACE, "msg", 2)
-        prefix = f"{Level.TRACE.name:<8}{os.getpid()}  "
+        prefix = f"{Level.TRACE.name.capitalize():<7} {str(os.getpid())[:7]:>7} "
         self.assertEqual(flat, f"{prefix}msg\n")
         self.assertEqual(nested, f"{prefix}{INDENT * 2}msg\n")
 
     def test_multiline_message_aligned(self):
         formatted = format_body(Level.TRACE, "line1\nline2", 1)
-        prefix_len = len(f"{Level.TRACE.name:<8}{os.getpid()}  ")
+        prefix_len = len(f"{Level.TRACE.name.capitalize():<7} {str(os.getpid())[:7]:>7} ")
         out_lines = formatted.splitlines()
         self.assertTrue(out_lines[0].endswith("line1"))
         self.assertEqual(out_lines[1], " " * prefix_len + INDENT + "line2")
@@ -302,46 +304,51 @@ class TestDepth(ut.TestCase):
     @restore_config
     def test_begin_pushes_and_restores(self):
         set_config(verbosity=Level.TRACE, log_color=False)
-        self.assertEqual(len(logger.context_levels), 0)
-        with logger.debug.begin("outer"):
-            self.assertEqual(len(logger.context_levels), 1)
-            with logger.debug.begin("inner"):
-                self.assertEqual(len(logger.context_levels), 2)
-            self.assertEqual(len(logger.context_levels), 1)
-        self.assertEqual(len(logger.context_levels), 0)
+        initial = len(logger.context_levels)
+        with logger.debug.single_context("outer"):
+            self.assertEqual(len(logger.context_levels), initial + 1)
+            with logger.debug.single_context("inner"):
+                self.assertEqual(len(logger.context_levels), initial + 2)
+            self.assertEqual(len(logger.context_levels), initial + 1)
+        self.assertEqual(len(logger.context_levels), initial)
 
     @restore_config
     def test_context_restored_on_exception(self):
         set_config(verbosity=Level.TRACE, log_color=False, exit_on_error=False)
-        self.assertEqual(len(logger.context_levels), 0)
+        initial = len(logger.context_levels)
         with self.assertRaises(ValueError):
-            with logger.debug.begin("task"):
-                self.assertEqual(len(logger.context_levels), 1)
+            with logger.debug.single_context("task"):
+                self.assertEqual(len(logger.context_levels), initial + 1)
                 raise ValueError("boom")
-        self.assertEqual(len(logger.context_levels), 0)
+        self.assertEqual(len(logger.context_levels), initial)
 
     @restore_config
     def test_reconfigure_inside_begin_does_not_crash(self):
         set_config(verbosity=Level.INFO, log_color=False)
-        with logger.info.begin("outer"):
-            self.assertEqual(len(logger.context_levels), 1)
+        initial = len(logger.context_levels)
+        with logger.info.single_context("outer"):
+            self.assertEqual(len(logger.context_levels), initial + 1)
             set_config(verbosity=Level.DEBUG, log_color=False)
-            self.assertEqual(len(logger.context_levels), 1)
-        self.assertEqual(len(logger.context_levels), 0)
+            self.assertEqual(len(logger.context_levels), initial + 1)
+        self.assertEqual(len(logger.context_levels), initial)
 
     @restore_config
     def test_hidden_context_does_not_indent_console(self):
         # At INFO verbosity, an INFO message inside a DEBUG context is not
-        # indented, because the enclosing DEBUG "Began" line is itself hidden.
+        # indented more than one outside it, because the enclosing DEBUG
+        # context is itself hidden.
         set_config(verbosity=Level.INFO, log_color=False)
         stream = io.StringIO()
         with mock.patch("seismicrna.core.logs.stderr", stream):
-            with logger.debug.begin("hidden outer"):
+            logger.info("baseline")
+            with logger.debug.single_context("hidden outer"):
                 logger.info("visible message")
         out = stream.getvalue()
         self.assertNotIn("hidden outer", out)
-        prefix = f"{Level.INFO.name:<8}{os.getpid()}  "
-        self.assertIn(f"{prefix}visible message", out)
+        lines = out.splitlines()
+        # Both lines must end the same way (same indentation from outer context).
+        self.assertEqual(lines[0].split("baseline")[0],
+                         lines[1].split("visible message")[0])
 
     @restore_config
     def test_visible_context_indents_nested_message(self):
@@ -349,11 +356,11 @@ class TestDepth(ut.TestCase):
         set_config(verbosity=Level.DEBUG, log_color=False)
         stream = io.StringIO()
         with mock.patch("seismicrna.core.logs.stderr", stream):
-            with logger.debug.begin("outer"):
+            with logger.debug.single_context("outer"):
                 logger.debug("inner message")
         out = stream.getvalue()
         # The "inner message" line must contain one level of indentation.
-        inner_line = [l for l in out.splitlines() if "inner message" in l][0]
+        inner_line = [line for line in out.splitlines() if "inner message" in line][0]
         self.assertIn(INDENT, inner_line)
 
 
@@ -363,7 +370,7 @@ class TestBeginEnd(ut.TestCase):
         set_config(verbosity=Level.TRACE, log_color=False)
         stream = io.StringIO()
         with mock.patch("seismicrna.core.logs.stderr", stream):
-            with logger.debug.begin("doing x"):
+            with logger.debug.double_context("doing x"):
                 logger.trace("progress")
         output = stream.getvalue()
         self.assertIn("Began doing x", output)
@@ -376,7 +383,7 @@ class TestBeginEnd(ut.TestCase):
         stream = io.StringIO()
         with mock.patch("seismicrna.core.logs.stderr", stream):
             with self.assertRaises(ValueError):
-                with logger.debug.begin("doing x"):
+                with logger.debug.double_context("doing x"):
                     raise ValueError("boom")
         output = stream.getvalue()
         self.assertIn("Began doing x", output)
@@ -387,7 +394,7 @@ class TestBeginEnd(ut.TestCase):
         set_config(verbosity=Level.DEBUG, log_color=False)
         stream = io.StringIO()
         with mock.patch("seismicrna.core.logs.stderr", stream):
-            with logger.debug.begin("processing {} items", 42):
+            with logger.debug.double_context("processing {} items", 42):
                 pass
         out = stream.getvalue()
         self.assertIn("Began processing 42 items", out)
@@ -401,7 +408,7 @@ class TestBeginEnd(ut.TestCase):
         stream = io.StringIO()
         with mock.patch("seismicrna.core.logs.stderr", stream):
             # Passing bad positional arg — would raise if .format() were called.
-            with logger.debug.begin("value = {bad}", "oops"):
+            with logger.debug.double_context("value = {bad}", "oops"):
                 logger.info("still visible")
         out = stream.getvalue()
         self.assertNotIn("value", out)

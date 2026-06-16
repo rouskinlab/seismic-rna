@@ -27,6 +27,7 @@ from ..core.arg import (
     PROBES,
 )
 from ..core.error import NoDataError
+from ..core.logs import logger
 from ..core.header import RelClustHeader, list_clusts, make_header
 from ..core.rel import (
     MATCH,
@@ -517,6 +518,12 @@ def sim_pmut(
         ]
         pmut.loc[outside] = 0.0
         pmut.loc[outside, MATCH] = 1.0
+    logger.trace(
+        "pmut={}({}, {})",
+        type(pmut).__name__,
+        pmut.shape,
+        pmut.dtypes.values[0] if len(pmut.dtypes) > 0 else "empty",
+    )
     return pmut
 
 

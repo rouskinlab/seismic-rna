@@ -64,23 +64,24 @@ def cmds_to_subshell(cmds: list[str]):
 def run_cmd(cmd: str, text: bool | None = True, shell: bool = True):
     """Run a command via subprocess.run(), with logging."""
     # Log the command with which the process was run.
-    logger.debug("Began running shell command:\n{}", cmd)
-    # Run the process and capture the output.
-    process = run(cmd, shell=shell, capture_output=text is not None, text=text)
-    failed = process.returncode != 0
-    result = f"FAILED (code {process.returncode})" if failed else "SUCCEEDED"
-    message = "\n".join(
-        [
-            f"Shell command {result}:\n{cmd}\n",
-            f"STDOUT:\n{process.stdout}\n",
-            f"STDERR:\n{process.stderr}\n",
-        ]
-    )
-    if failed:
-        raise ShellCommandFailedError(message)
-    logger.trace(message)
-    logger.debug("Ended running shell command")
-    return process
+    with logger.debug.single_context("Shell:\n{}", cmd):
+        # Run the process and capture the output.
+        process = run(cmd, shell=shell, capture_output=text is not None, text=text)
+        failed = process.returncode != 0
+        result = (
+            f"FAILED with exit code {process.returncode}" if failed else "SUCCEEDED"
+        )
+        message = "\n".join(
+            [
+                f"{result}:\n{cmd}\n",
+                f"STDOUT:\n{process.stdout}\n",
+                f"STDERR:\n{process.stderr}\n",
+            ]
+        )
+        if failed:
+            raise ShellCommandFailedError(message)
+        logger.debug(message)
+        return process
 
 
 def iopaths(has_ipath: bool = True, has_opath: bool = True):
@@ -132,11 +133,11 @@ class ShellCommand(object):
         self._parse_output = parse
         self._action = action
 
-    def _format_action(self, ipath, opath):
+    def _format_action(self, ipath: Path | Any | None, opath: Path | Any | None):
         action = self._action
-        if ipath:
+        if ipath is not None:
             action = f"{action} {ipath}"
-        if opath:
+        if opath is not None:
             action = f"{action} to {opath}"
         return action
 
@@ -152,11 +153,11 @@ class ShellCommand(object):
             # not already exist.
             opath.parent.mkdir(parents=True, exist_ok=True)
         action = self._format_action(ipath, opath)
-        with logger.debug.begin("{}", action):
+        with logger.debug.single_context("{}", action):
             # Generate and run the command.
             process = run_cmd(self._make_command(ipath, opath, **kwargs))
         if self._parse_output:
-            with logger.debug.begin("parsing output of {}", action):
+            with logger.debug.single_context("Parsing output of {}", action):
                 output = self._parse_output(process)
             return output
         return process

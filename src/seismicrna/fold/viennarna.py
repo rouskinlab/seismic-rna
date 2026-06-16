@@ -274,6 +274,4 @@ def extract_energies(vienna_input: Path, db_output: Path, force: bool = False):
         text = "".join(lines)
         with open(db_output, write_mode(force=True)) as f:
             f.write(text)
-        logger.debug(
-            "Energies extracted from file {} to {}", vienna_input, db_output
-        )
+        logger.debug("Energies extracted from file {} to {}", vienna_input, db_output)

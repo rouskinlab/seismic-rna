@@ -68,7 +68,9 @@ def _load_refseq_str(refseq_file: Path) -> str | None:
 
         return str(decompress(compressed))
     except Exception as error:
-        logger.warning("Could not read reference sequence from {}: {}", refseq_file, error)
+        logger.warning(
+            "Could not read reference sequence from {}: {}", refseq_file, error
+        )
         return None
 
 

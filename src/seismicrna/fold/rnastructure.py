@@ -285,7 +285,9 @@ def make_rnastructure_cmd(
     """Make a command for 'Fold', 'Fold-smp', or 'ShapeKnots'."""
     if pseudoknots:
         if num_cpus > 1:
-            logger.warning("ShapeKnots cannot use {} threads; defaulting to 1", num_cpus)
+            logger.warning(
+                "ShapeKnots cannot use {} threads; defaulting to 1", num_cpus
+            )
         args = [RNASTRUCTURE_SHAPEKNOTS_CMD]
     else:
         if num_cpus > 1:
@@ -549,7 +551,9 @@ def retitle_ct(ct_input: Path, ct_output: Path, force: bool = False):
         with open(ct_output, write_mode(force=True)) as f:
             f.write(text)
         logger.debug(
-            "Retitled CT file {}{}", ct_input, f" to {ct_output}" if ct_input != ct_output else ""
+            "Retitled CT file {}{}",
+            ct_input,
+            f" to {ct_output}" if ct_input != ct_output else "",
         )
 
 

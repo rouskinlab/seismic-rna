@@ -31,7 +31,9 @@ def run_k(
     if k < 1:
         raise ValueError(f"k must be ≥ 1, but got {k}")
     if num_runs < 1:
-        logger.warning("Expected num_runs to be ≥ 1, but got {}: setting to 1", num_runs)
+        logger.warning(
+            "Expected num_runs to be ≥ 1, but got {}: setting to 1", num_runs
+        )
         num_runs = 1
     # Use the main seed to generate a unique seed for each run of EM.
     seeds = [s for _, s in zip(range(num_runs), get_random_integer_generator(seed))]
@@ -121,9 +123,7 @@ def run_ks(
             else:
                 min_runs_k = 1
                 max_runs_k = 1
-            logger.info(
-                "Began EM k={}: {}-{} run(s)", k, min_runs_k, max_runs_k
-            )
+            logger.info("Began EM k={}: {}-{} run(s)", k, min_runs_k, max_runs_k)
             # Accumulate EM runs for this K.
             runs_k = list()
             num_runs_k = 0
@@ -180,10 +180,7 @@ def run_ks(
                 write_mus(run, rank=rank, **path_kwargs)
                 write_pis(run, rank=rank, **path_kwargs)
             logger.debug(
-                "Ended EM k={}: {} attempted, {} successful",
-                k,
-                num_runs_k,
-                len(runs_k),
+                "Ended EM k={}: {} attempted, {} successful", k, num_runs_k, len(runs_k)
             )
             # Check if this K is the best encounted so far. Use
             # allow_underclustered=True because the algorithm should

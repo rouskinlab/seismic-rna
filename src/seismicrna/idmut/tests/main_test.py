@@ -170,7 +170,7 @@ class TestIDmutEmpty(TestIDmut):
 
     def test_min_reads(self):
         self.assertRaisesRegex(
-            ValueError, "Insufficient reads in Alignment map", self.batches, min_reads=1
+            ValueError, "Insufficient reads in", self.batches, min_reads=1
         )
 
 
@@ -204,7 +204,7 @@ class TestIDmutSingle(TestIDmut):
 
     def test_min_reads(self):
         self.assertRaisesRegex(
-            ValueError, "Insufficient reads in Alignment map", self.batches, min_reads=5
+            ValueError, "Insufficient reads in SamFileViewer", self.batches, min_reads=5
         )
 
     def test_min_phred(self):
@@ -364,7 +364,7 @@ class TestIDmutPaired(TestIDmut):
 
     def test_min_reads(self):
         self.assertRaisesRegex(
-            ValueError, "Insufficient reads in Alignment map", self.batches, min_reads=7
+            ValueError, "Insufficient reads in SamFileViewer", self.batches, min_reads=7
         )
 
     def test_min_phred(self):

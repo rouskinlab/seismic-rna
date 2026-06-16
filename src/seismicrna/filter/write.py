@@ -472,14 +472,14 @@ class Filterer(object):
         if not self.drop_discontig:
             # Keep discontiguous reads.
             logger.trace(
-                "{} skipped filtering reads with discontiguous mates in {}",
-                self,
-                batch,
+                "{} skipped filtering reads with discontiguous mates in {}", self, batch
             )
             return batch
         # Find the reads with contiguous mates.
         reads = batch.read_nums[batch.contiguous]
-        logger.trace("{} kept {} reads with contiguous mates in {}", self, reads.size, batch)
+        logger.trace(
+            "{} kept {} reads with contiguous mates in {}", self, reads.size, batch
+        )
         # Return a new batch of only those reads.
         return apply_filters(batch, reads)
 
@@ -548,9 +548,7 @@ class Filterer(object):
         if self.min_mut_gap == 0:
             # No read can have a pair of mutations that are too close.
             logger.trace(
-                "{} skipped filtering pairs of mutations too close in {}",
-                self,
-                batch,
+                "{} skipped filtering pairs of mutations too close in {}", self, batch
             )
             return batch
         if self.mut_collisions == MUT_COLLISIONS_DROP:
@@ -620,71 +618,74 @@ class Filterer(object):
     def _filter_batch_reads(self, batch_num: int, **kwargs):
         """Drop the reads in the batch that do not pass the filters
         and return a new batch without those reads."""
-        n_reads = dict()
-        # Load the batch.
-        batch = self.dataset.get_batch(batch_num)
-        # Determine the initial number of reads in the batch.
-        n_reads[self.DROP_READ_INIT] = (n := batch.num_reads)
-        if self._iter == 1:
-            # Mask positions in the dataset that are masked in the region.
-            batch = apply_filters(batch, region=self.region)
-            # Drop reads from a predefined list.
-            batch = self._drop_predefined_reads(batch)
-            n_reads[self.DROP_READ_LIST] = n - (n := batch.num_reads)
-        # Drop reads with too few covered positions.
-        batch = self._drop_min_ncov_read(batch)
-        n_reads[self.DROP_READ_NCOV] = n - (n := batch.num_reads)
-        # Drop reads covering too small a fraction of the region.
-        batch = self._drop_min_fcov_read(batch)
-        n_reads[self.DROP_READ_FCOV] = n - (n := batch.num_reads)
-        # Drop reads with discontiguous mates.
-        batch = self._drop_discontig(batch)
-        n_reads[self.DROP_READ_DISCONTIG] = n - (n := batch.num_reads)
-        # Drop reads with too few informative positions.
-        batch = self._drop_min_finfo_read(batch)
-        n_reads[self.DROP_READ_FINFO] = n - (n := batch.num_reads)
-        # Drop reads with too many mutations.
-        batch = self._drop_max_fmut_read(batch)
-        n_reads[self.DROP_READ_FMUT] = n - (n := batch.num_reads)
-        # Filter out mutations that are too close together.
-        batch = self._filter_min_mut_gap(batch)
-        n_reads[self.DROP_READ_GAP] = n - (n := batch.num_reads)
-        # Record the number of reads remaining after filtering.
-        n_reads[self.DROP_READ_KEPT] = n
-        # Save the batch.
-        sc_kwargs = (
-            dict(
-                region=batch.region,
-                seg_end5s=batch.seg_end5s,
-                seg_end3s=batch.seg_end3s,
-                muts=batch.muts,
+        with logger.trace.single_context(
+            "Filtering reads in {} batch {}", self, batch_num
+        ):
+            n_reads = dict()
+            # Load the batch.
+            batch = self.dataset.get_batch(batch_num)
+            # Determine the initial number of reads in the batch.
+            n_reads[self.DROP_READ_INIT] = (n := batch.num_reads)
+            if self._iter == 1:
+                # Mask positions in the dataset that are masked in the region.
+                batch = apply_filters(batch, region=self.region)
+                # Drop reads from a predefined list.
+                batch = self._drop_predefined_reads(batch)
+                n_reads[self.DROP_READ_LIST] = n - (n := batch.num_reads)
+            # Drop reads with too few covered positions.
+            batch = self._drop_min_ncov_read(batch)
+            n_reads[self.DROP_READ_NCOV] = n - (n := batch.num_reads)
+            # Drop reads covering too small a fraction of the region.
+            batch = self._drop_min_fcov_read(batch)
+            n_reads[self.DROP_READ_FCOV] = n - (n := batch.num_reads)
+            # Drop reads with discontiguous mates.
+            batch = self._drop_discontig(batch)
+            n_reads[self.DROP_READ_DISCONTIG] = n - (n := batch.num_reads)
+            # Drop reads with too few informative positions.
+            batch = self._drop_min_finfo_read(batch)
+            n_reads[self.DROP_READ_FINFO] = n - (n := batch.num_reads)
+            # Drop reads with too many mutations.
+            batch = self._drop_max_fmut_read(batch)
+            n_reads[self.DROP_READ_FMUT] = n - (n := batch.num_reads)
+            # Filter out mutations that are too close together.
+            batch = self._filter_min_mut_gap(batch)
+            n_reads[self.DROP_READ_GAP] = n - (n := batch.num_reads)
+            # Record the number of reads remaining after filtering.
+            n_reads[self.DROP_READ_KEPT] = n
+            # Save the batch.
+            sc_kwargs = (
+                dict(
+                    region=batch.region,
+                    seg_end5s=batch.seg_end5s,
+                    seg_end3s=batch.seg_end3s,
+                    muts=batch.muts,
+                )
+                if self.self_contained
+                else {}
             )
-            if self.self_contained
-            else {}
-        )
-        batch_file = FilterBatchIO(
-            sample=self.dataset.sample,
-            branches=self.branches,
-            ref=self.dataset.ref,
-            reg=self.region.name,
-            batch=batch.batch,
-            read_nums=batch.read_nums,
-            **sc_kwargs,
-        )
-        _, checksum = batch_file.save(
-            self.top, brotli_level=self.brotli_level, force=self._force_write
-        )
-        # Save the checksum.
-        checksum_file = self._get_checksum_path(batch_num)
-        with open(checksum_file, "x") as f:
-            f.write(checksum)
-            logger.trace("Wrote checksum {!r} to {}", checksum, checksum_file)
-        # Save the read counts.
-        n_reads_file = self._get_n_reads_path(batch_num)
-        with open(n_reads_file, "x") as f:
-            json.dump(n_reads, f)
-            logger.trace("Wrote number of reads {} to {}", n_reads, n_reads_file)
-        return batch.count_all(**kwargs)
+            batch_file = FilterBatchIO(
+                sample=self.dataset.sample,
+                branches=self.branches,
+                ref=self.dataset.ref,
+                reg=self.region.name,
+                batch=batch.batch,
+                read_nums=batch.read_nums,
+                **sc_kwargs,
+            )
+            _, checksum = batch_file.save(
+                self.top, brotli_level=self.brotli_level, force=self._force_write
+            )
+            # Save the checksum.
+            checksum_file = self._get_checksum_path(batch_num)
+            with open(checksum_file, "x") as f:
+                f.write(checksum)
+                logger.trace("Wrote checksum {!r} to {}", checksum, checksum_file)
+            # Save the read counts.
+            n_reads_file = self._get_n_reads_path(batch_num)
+            with open(n_reads_file, "x") as f:
+                json.dump(n_reads, f)
+                logger.trace("Wrote number of reads {} to {}", n_reads, n_reads_file)
+            return batch.count_all(**kwargs)
 
     def _filter_positions(self, info: pd.Series, muts: pd.Series):
         """Mask the positions that do not pass the filters."""
@@ -775,7 +776,7 @@ class Filterer(object):
         unmasked_curr = self.pos_kept
         self._iter = 1
         while True:
-            with logger.debug.begin("{} iteration {}", self, self._iter):
+            with logger.debug.single_context("{} iteration {}", self, self._iter):
                 unmasked_prev = unmasked_curr
                 tabulator = self._filter_iteration()
                 unmasked_curr = self.pos_kept

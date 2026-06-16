@@ -16,7 +16,7 @@ from .names import CLUST_PROP_NAME
 from .uniq import UniqReads
 from ..core.array import get_length
 from ..core.header import ClustHeader
-from ..core.logs import logger
+from ..core.logs import logger, format_sample_reference_region
 from ..core.mu import (
     calc_arcsine_distance,
     calc_mean_arcsine_distance,
@@ -77,7 +77,11 @@ def _calc_bic(
             n_params,
         )
     with np.errstate(divide="ignore", invalid="ignore"):
-        return n_params * np.log(n_data) - 2.0 * log_like
+        bic = n_params * np.log(n_data) - 2.0 * log_like
+    logger.trace(
+        "BIC(n_params={}, n_data={}, log_like={}) = {}", n_params, n_data, log_like, bic
+    )
+    return bic
 
 
 def _calc_log_like(logp_marginal: np.ndarray, counts_per_uniq: np.ndarray):
@@ -318,50 +322,56 @@ class EMRun(object):
 
     def _max_step(self):
         """Run the Maximization step of the EM algorithm."""
-        # Estimate the parameters based on observed data.
-        (p_mut_observed, p_ends_observed, p_clust_observed) = calc_params_observed(
-            self._n_pos_total,
-            self._unmasked,
-            self.uniq_reads.muts_per_pos,
-            self._end5s,
-            self._end3s,
-            self._counts_per_uniq,
-            self._resps,
-        )
-        if self.iter > 1:
-            # If this iteration is not the first, then use the previous
-            # values of the parameters as the initial guesses.
-            guess_p_mut = self._p_mut
-            guess_p_ends = self._p_ends
-            guess_p_clust = self._p_clust
-        else:
-            # Otherwise, do not guess the initial parameters.
-            guess_p_mut = None
-            guess_p_ends = None
-            guess_p_clust = None
-        # Update the parameters.
-        self._p_mut, self._p_ends, self._p_clust = calc_params(
-            p_mut_observed,
-            p_ends_observed,
-            p_clust_observed,
-            self.uniq_reads.min_mut_gap,
-            self.uniq_reads.mut_collisions,
-            guess_p_mut,
-            guess_p_ends,
-            guess_p_clust,
-            prenormalize=False,
-            quick_unbias=self.uniq_reads.quick_unbias,
-            quick_unbias_thresh=self.uniq_reads.quick_unbias_thresh,
-        )
-        # Ensure all masked positions have a mutation rate of 0.
-        if n_nonzero := np.count_nonzero(self._p_mut[self._masked]):
-            p_mut_masked = self._p_mut[self._masked]
-            logger.warning(
-                "{} masked position(s) have a mutation rate ≠ 0: {}",
-                n_nonzero,
-                p_mut_masked[p_mut_masked != 0.0],
+        with logger.trace.single_context("M-step of {}, iteration {}", self, self.iter):
+            # Estimate the parameters based on observed data.
+            (p_mut_observed, p_ends_observed, p_clust_observed) = calc_params_observed(
+                self._n_pos_total,
+                self._unmasked,
+                self.uniq_reads.muts_per_pos,
+                self._end5s,
+                self._end3s,
+                self._counts_per_uniq,
+                self._resps,
             )
-            self._p_mut[self._masked] = 0.0
+            logger.trace("Calculated observed parameters of {}", self)
+            if self.iter > 1:
+                # If this iteration is not the first, then use the previous
+                # values of the parameters as the initial guesses.
+                guess_p_mut = self._p_mut
+                guess_p_ends = self._p_ends
+                guess_p_clust = self._p_clust
+                logger.trace(
+                    "Used previous iteration as initial guess for {}, iteration {}",
+                    self,
+                    self.iter,
+                )
+            else:
+                # Otherwise, do not guess the initial parameters.
+                guess_p_mut = None
+                guess_p_ends = None
+                guess_p_clust = None
+            # Update the parameters.
+            self._p_mut, self._p_ends, self._p_clust = calc_params(
+                p_mut_observed,
+                p_ends_observed,
+                p_clust_observed,
+                self.uniq_reads.min_mut_gap,
+                self.uniq_reads.mut_collisions,
+                guess_p_mut,
+                guess_p_ends,
+                guess_p_clust,
+                prenormalize=False,
+                quick_unbias=self.uniq_reads.quick_unbias,
+                quick_unbias_thresh=self.uniq_reads.quick_unbias_thresh,
+            )
+            # Ensure all masked positions have a mutation rate of 0.
+            if n_nonzero := np.count_nonzero(self._p_mut[self._masked]):
+                logger.warning(
+                    "{} masked position(s) of {} have a mutation rate ≠ 0",
+                    n_nonzero,
+                    self,
+                )
+                self._p_mut[self._masked] = 0.0
 
     def _exp_step(self):
         """Run the Expectation step of the EM algorithm."""
@@ -383,79 +393,104 @@ class EMRun(object):
 
     def _run(self):
         """Run the EM clustering algorithm."""
-        logger.info("Began {}: {}-{} iterations", self, self._min_iter, self._max_iter)
-        # The random number generator must be initialized with a seed
-        # because on some (but not all) platforms, initializing with no
-        # seed would cause every EMRun to have the same random state and
-        # thus the same trajectory, which defeats the purpose of running
-        # multiple trajectories. By giving every EMRun a unique seed,
-        # the runs can be forced to have different trajectories.
-        rng = np.random.default_rng(self._seed)
-        # Choose the concentration parameters using a standard uniform
-        # distribution so that the reads assigned to each cluster can
-        # vary widely among the clusters (helping to make the clusters
-        # distinct from the beginning) and among different runs of the
-        # algorithm (helping to start the runs in very different states
-        # so that they can explore much of the parameter space).
-        # Use the half-open interval (0, 1] because the concentration
-        # parameter of a Dirichlet distribution can be 1 but not 0.
-        conc_params = 1.0 - rng.random(self.k)
-        # Initialize cluster membership with a Dirichlet distribution.
-        self._resps = rng.dirichlet(alpha=conc_params, size=self.uniq_reads.num_uniq)
-        if self.uniq_reads.num_uniq == 0 or self._n_pos_unmasked == 0:
-            logger.warning("{} got 0 reads or positions: stopping", self)
-            self._log_likes.append(0.0)
-            return
-        # Run EM until the log likelihood converges or the number of
-        # iterations reaches max_iter, whichever happens first.
-        self.converged = False
-        for self.iter in range(1, self._max_iter + 1):
-            # Update the parameters.
-            self._max_step()
-            # Update the cluster membership and log likelihood.
-            self._exp_step()
-            if not np.isfinite(self.log_like):
-                raise ValueError(
-                    f"{self}, iteration {self.iter} returned a "
-                    f"non-finite log likelihood: {self.log_like}"
-                )
-            logger.trace(
-                "{}, iteration {}: log likelihood = {}", self, self.iter, self.log_like
+        with logger.info.single_context("Running {}", self):
+            logger.debug(
+                "\n".join(
+                    [
+                        "Attributes of {}:",
+                        "- total reads: {}",
+                        "- unique reads: {}",
+                        "- total positions: {}",
+                        "- unmasked positions: {}",
+                    ]
+                ),
+                self,
+                self.n_reads,
+                self.uniq_reads.num_uniq,
+                self._n_pos_total,
+                self._n_pos_unmasked,
             )
-            # Check for convergence.
-            if self._delta_log_like < 0.0:
-                # The log likelihood should not decrease.
-                logger.warning(
-                    "{}, iteration {} had a smaller log likelihood ({}) "
-                    "than the previous iteration ({})",
-                    self,
-                    self.iter,
-                    self.log_like,
-                    self._log_like_prev,
-                )
-            if self._delta_log_like < self._em_thresh and self.iter >= self._min_iter:
-                # Converge if the increase in log likelihood is smaller
-                # than the convergence cutoff and at least the minimum
-                # number of iterations have been run.
-                self.converged = True
-                logger.debug(
-                    "Ended {} on iteration {}: log likelihood = {}",
-                    self,
-                    self.iter,
-                    self.log_like,
-                )
-                # Cache the jackpotting quotient here (though it will
-                # not be used yet) so that this expensive calculation
-                # can be performed in parallel, just like clustering.
-                return self.jackpot_quotient
-        # The log likelihood did not converge within the maximum number
-        # of permitted iterations.
-        logger.warning(
-            "{} failed to converge within {} iterations: last log likelihood = {}",
-            self,
-            self._max_iter,
-            self.log_like,
-        )
+            # The random number generator must be initialized with a seed
+            # because on some (but not all) platforms, initializing with no
+            # seed would cause every EMRun to have the same random state and
+            # thus the same trajectory, which defeats the purpose of running
+            # multiple trajectories. By giving every EMRun a unique seed,
+            # the runs can be forced to have different trajectories.
+            rng = np.random.default_rng(self._seed)
+            # Choose the concentration parameters using a standard uniform
+            # distribution so that the reads assigned to each cluster can
+            # vary widely among the clusters (helping to make the clusters
+            # distinct from the beginning) and among different runs of the
+            # algorithm (helping to start the runs in very different states
+            # so that they can explore much of the parameter space).
+            # Use the half-open interval (0, 1] because the concentration
+            # parameter of a Dirichlet distribution can be 1 but not 0.
+            conc_params = 1.0 - rng.random(self.k)
+            # Initialize cluster membership with a Dirichlet distribution.
+            self._resps = rng.dirichlet(
+                alpha=conc_params, size=self.uniq_reads.num_uniq
+            )
+            if self.uniq_reads.num_uniq == 0 or self._n_pos_unmasked == 0:
+                logger.warning("{} got 0 reads or positions: stopping", self)
+                self._log_likes.append(0.0)
+                return
+            # Run EM until the log likelihood converges or the number of
+            # iterations reaches max_iter, whichever happens first.
+            self.converged = False
+            for self.iter in range(1, self._max_iter + 1):
+                with logger.debug.single_context("{}, iteration {}", self, self.iter):
+                    # Update the parameters.
+                    self._max_step()
+                    # Update the cluster membership and log likelihood.
+                    self._exp_step()
+                    if not np.isfinite(self.log_like):
+                        raise ValueError(
+                            f"{self}, iteration {self.iter} returned a "
+                            f"non-finite log likelihood: {self.log_like}"
+                        )
+                    logger.trace(
+                        "Log likelihood of {}, iteration {}: {}",
+                        self,
+                        self.iter,
+                        self.log_like,
+                    )
+                    # Check for convergence.
+                    if self._delta_log_like < 0.0:
+                        # The log likelihood should not decrease.
+                        logger.warning(
+                            "{}, iteration {} had a smaller log likelihood ({}) "
+                            "than the previous iteration ({})",
+                            self,
+                            self.iter,
+                            self.log_like,
+                            self._log_like_prev,
+                        )
+                    if (
+                        self._delta_log_like < self._em_thresh
+                        and self.iter >= self._min_iter
+                    ):
+                        # Converge if the increase in log likelihood is smaller
+                        # than the convergence cutoff and at least the minimum
+                        # number of iterations have been run.
+                        self.converged = True
+                        logger.debug(
+                            "{} ended on iteration {}: log likelihood = {}",
+                            self,
+                            self.iter,
+                            self.log_like,
+                        )
+                        # Cache the jackpotting quotient here (though it will
+                        # not be used yet) so that this expensive calculation
+                        # can be performed in parallel, just like clustering.
+                        return self.jackpot_quotient
+            # The log likelihood did not converge within the maximum number
+            # of permitted iterations.
+            logger.warning(
+                "{} failed to converge within {} iterations: last log likelihood = {}",
+                self,
+                self._max_iter,
+                self.log_like,
+            )
 
     @cached_property
     def log_exp_values(self):
@@ -472,6 +507,7 @@ class EMRun(object):
     @cached_property
     def pis(self):
         """Proportion of each cluster, corrected for observer bias."""
+        logger.trace(f"Calculating cluster proportions of {self}")
         return pd.DataFrame(
             self._p_clust[:, np.newaxis],
             index=self._clusters,
@@ -482,6 +518,7 @@ class EMRun(object):
     def mus(self):
         """Mutation rate of each position in each cluster, corrected
         for observer bias."""
+        logger.trace(f"Calculating cluster mutation rates of {self}")
         return pd.DataFrame(
             self._p_mut[self._unmasked],
             index=self.uniq_reads.region.unmasked_int,
@@ -492,7 +529,10 @@ class EMRun(object):
     def mus_ens_avg(self):
         """Mutation rate of each position in the ensemble average,
         corrected for observer bias."""
-        return self.mus @ self.pis
+        with logger.trace.single_context(
+            "Calculating ensemble average mutation rates of {}", self
+        ):
+            return self.mus @ self.pis
 
     def get_resps(self, batch_num: int):
         """Cluster memberships of the reads in a batch.
@@ -508,69 +548,82 @@ class EMRun(object):
             DataFrame of shape (reads in batch x clusters) with the
             posterior probability that each read belongs to each cluster.
         """
-        batch_uniq_nums = self.uniq_reads.batch_to_uniq[batch_num]
-        return pd.DataFrame(
-            self._resps[batch_uniq_nums],
-            index=batch_uniq_nums.index,
-            columns=self._clusters,
-        )
+        with logger.trace.single_context("Calculating cluster memberships of {}", self):
+            batch_uniq_nums = self.uniq_reads.batch_to_uniq[batch_num]
+            return pd.DataFrame(
+                self._resps[batch_uniq_nums],
+                index=batch_uniq_nums.index,
+                columns=self._clusters,
+            )
 
     @cached_property
     def semi_g_anomalies(self):
         """Semi-G-anomaly of each read."""
-        return calc_semi_g_anomaly(self._counts_per_uniq, self.log_exp_values)
+        with logger.trace.single_context("Calculating semi-G-anomalies of {}", self):
+            return calc_semi_g_anomaly(self._counts_per_uniq, self.log_exp_values)
 
     @cached_property
     def jackpot_score(self):
         """Jackpotting score: expected value of the G-anomaly."""
-        return calc_jackpot_score(self.semi_g_anomalies, self.n_reads)
+        with logger.trace.single_context("Calculating jackpotting scores of {}", self):
+            return calc_jackpot_score(self.semi_g_anomalies, self.n_reads)
 
     @cached_property
     def _null_jackpot_scores(self):
         """Jackpotting score of each null model."""
-        return bootstrap_jackpot_scores(
-            self._end5s,
-            self._end3s,
-            self._counts_per_uniq,
-            self._p_mut,
-            self._p_ends,
-            self._p_clust,
-            self.uniq_reads.min_mut_gap,
-            self.uniq_reads.mut_collisions,
-            self._unmasked,
-            self.jackpot_score,
-            self._jackpot_conf_level,
-            self._max_jackpot_quotient,
-            self._max_jackpot_sims,
-            seed=self._seed,
-        )
+        with logger.trace.single_context(
+            "Bootstrapping null jackpotting scores of {}", self
+        ):
+            return bootstrap_jackpot_scores(
+                self._end5s,
+                self._end3s,
+                self._counts_per_uniq,
+                self._p_mut,
+                self._p_ends,
+                self._p_clust,
+                self.uniq_reads.min_mut_gap,
+                self.uniq_reads.mut_collisions,
+                self._unmasked,
+                self.jackpot_score,
+                self._jackpot_conf_level,
+                self._max_jackpot_quotient,
+                self._max_jackpot_sims,
+                seed=self._seed,
+            )
 
     @cached_property
     def jackpot_quotient(self):
         """Jackpotting quotient: jackpotting score divided by the score
         of the median null model."""
-        if not self._jackpot:
-            # Skip calculating the jackpotting quotient.
-            return np.nan
-        if self.n_reads * self._n_pos_total > self._jackpot_max_data:
-            logger.warning(
-                "Skipping the jackpotting calculation for {} "
-                "because number of reads ({}) times "
-                "number of positions ({}) exceeds the limit ({})",
-                self,
-                self.n_reads,
-                self._n_pos_total,
-                self._jackpot_max_data,
-            )
-            return np.nan
-        try:
-            null_jackpot_scores = self._null_jackpot_scores
-        except Exception as error:
-            logger.warning(error)
-            return np.nan
-        return calc_jackpot_quotient(
-            self.jackpot_score, float(np.median(null_jackpot_scores))
-        )
+        with logger.debug.single_context(
+            "Calculating jackpotting quotient of {}", self
+        ):
+            if not self._jackpot:
+                # Skip calculating the jackpotting quotient.
+                return np.nan
+            if self.n_reads * self._n_pos_total > self._jackpot_max_data:
+                logger.warning(
+                    "Skipping the jackpotting calculation for {} "
+                    "because number of reads ({}) times "
+                    "number of positions ({}) exceeds the limit ({})",
+                    self,
+                    self.n_reads,
+                    self._n_pos_total,
+                    self._jackpot_max_data,
+                )
+                return np.nan
+            try:
+                null_jackpot_scores = self._null_jackpot_scores
+                median_null = float(np.median(null_jackpot_scores))
+            except Exception as error:
+                logger.warning(
+                    "Failed to calculate jackpotting quotient of {}:\n{}", self, error
+                )
+                return np.nan
+            logger.trace("Median null jackpotting score of {} is {}", self, median_null)
+            jq = calc_jackpot_quotient(self.jackpot_score, median_null)
+            logger.trace("Jackpotting quotient of {} is {}", self, jq)
+            return jq
 
     def _calc_p_mut_pairs(
         self,
@@ -627,7 +680,7 @@ class EMRun(object):
         return np.max(gini) if gini.size > 0 else np.nan
 
     def __str__(self):
-        return f"{type(self).__name__}: {self.uniq_reads}; {self.k} cluster(s)"
-
-    def __repr__(self):
-        return str(self)
+        srr = format_sample_reference_region(
+            self.uniq_reads.sample, self.uniq_reads.ref, self.uniq_reads.region.name
+        )
+        return f"EM run of {srr}, {self.k} cluster(s), seed={self._seed}"

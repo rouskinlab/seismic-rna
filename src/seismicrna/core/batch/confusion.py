@@ -103,56 +103,55 @@ def calc_confusion_matrix(
 
     And return .., A., .B, AB in that order.
     """
-    with logger.debug.begin("calculating confusion matrix"):
-        for pos in pos_index.get_level_values(POS_NAME):
-            # Confirm all mutated reads are also covered. Use np.isin for a
-            # true membership test (the previous searchsorted check passed
-            # for in-range non-members).
-            assert np.all(np.isin(mutated_reads[pos], covering_reads[pos]))
-        if read_weights is not None:
-            require_isinstance("read_weights", read_weights, pd.DataFrame)
-            if read_weights.index.size > 0:
-                max_read_num = int(read_weights.index.max())
-            else:
-                max_read_num = -1
-            rwv = np.empty((max_read_num + 1, read_weights.columns.size), dtype=float)
-            rwv[read_weights.index] = read_weights
+    for pos in pos_index.get_level_values(POS_NAME):
+        # Confirm all mutated reads are also covered. Use np.isin for a
+        # true membership test (the previous searchsorted check passed
+        # for in-range non-members).
+        assert np.all(np.isin(mutated_reads[pos], covering_reads[pos]))
+    if read_weights is not None:
+        require_isinstance("read_weights", read_weights, pd.DataFrame)
+        if read_weights.index.size > 0:
+            max_read_num = int(read_weights.index.max())
         else:
-            rwv = None
-        # Initialize the confusion matrix.
-        n, a, b, ab = init_confusion_matrix(
-            pos_index,
-            (read_weights.columns if read_weights is not None else None),
-            min_gap=min_gap,
-        )
-        # Cache the values for faster access.
-        nv = n.values
-        av = a.values
-        bv = b.values
-        abv = ab.values
-        # For each pair of positions, count the reads in each category.
-        for i, (pos5, pos3) in enumerate(n.index):
-            # This method of counting the intersection is faster than matrix
-            # multiplication, even though it needs to loop over every pair.
-            # For speed, use x.values[i] instead of x.at[(pos5, pos3)].
-            if read_weights is None:
-                nv[i] = _count_intersection(covering_reads[pos5], covering_reads[pos3])
-                av[i] = _count_intersection(covering_reads[pos3], mutated_reads[pos5])
-                bv[i] = _count_intersection(covering_reads[pos5], mutated_reads[pos3])
-                abv[i] = _count_intersection(mutated_reads[pos5], mutated_reads[pos3])
-            else:
-                nv[i] = _count_intersection_weighted(
-                    covering_reads[pos5], covering_reads[pos3], rwv
-                )
-                av[i] = _count_intersection_weighted(
-                    covering_reads[pos3], mutated_reads[pos5], rwv
-                )
-                bv[i] = _count_intersection_weighted(
-                    covering_reads[pos5], mutated_reads[pos3], rwv
-                )
-                abv[i] = _count_intersection_weighted(
-                    mutated_reads[pos5], mutated_reads[pos3], rwv
-                )
+            max_read_num = -1
+        rwv = np.empty((max_read_num + 1, read_weights.columns.size), dtype=float)
+        rwv[read_weights.index] = read_weights
+    else:
+        rwv = None
+    # Initialize the confusion matrix.
+    n, a, b, ab = init_confusion_matrix(
+        pos_index,
+        (read_weights.columns if read_weights is not None else None),
+        min_gap=min_gap,
+    )
+    # Cache the values for faster access.
+    nv = n.values
+    av = a.values
+    bv = b.values
+    abv = ab.values
+    # For each pair of positions, count the reads in each category.
+    for i, (pos5, pos3) in enumerate(n.index):
+        # This method of counting the intersection is faster than matrix
+        # multiplication, even though it needs to loop over every pair.
+        # For speed, use x.values[i] instead of x.at[(pos5, pos3)].
+        if read_weights is None:
+            nv[i] = _count_intersection(covering_reads[pos5], covering_reads[pos3])
+            av[i] = _count_intersection(covering_reads[pos3], mutated_reads[pos5])
+            bv[i] = _count_intersection(covering_reads[pos5], mutated_reads[pos3])
+            abv[i] = _count_intersection(mutated_reads[pos5], mutated_reads[pos3])
+        else:
+            nv[i] = _count_intersection_weighted(
+                covering_reads[pos5], covering_reads[pos3], rwv
+            )
+            av[i] = _count_intersection_weighted(
+                covering_reads[pos3], mutated_reads[pos5], rwv
+            )
+            bv[i] = _count_intersection_weighted(
+                covering_reads[pos5], mutated_reads[pos3], rwv
+            )
+            abv[i] = _count_intersection_weighted(
+                mutated_reads[pos5], mutated_reads[pos3], rwv
+            )
     return n, a, b, ab
 
 

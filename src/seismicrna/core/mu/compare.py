@@ -6,6 +6,7 @@ import pandas as pd
 from .nan import auto_removes_nan
 from .scale import calc_ranks
 from ..arg import KEY_PEARSON, KEY_SPEARMAN, KEY_DETERM, KEY_MARCD
+from ..logs import logger
 from ..seq import get_shared_index, iter_windows
 
 
@@ -226,15 +227,21 @@ def compare_windows(
     min_count: int = 2,
 ):
     """Compare two Series via sliding windows."""
-    if isinstance(method, str):
-        # If the comparison method is given a string, then fetch the
-        # function itself.
-        method = get_comp_func(method)
-    # Initialize an empty Series for the sliding comparison.
-    values = pd.Series(np.nan, index=get_shared_index([mus1.index, mus2.index]))
-    # Calculate the value of the comparison for each window.
-    for center, (win1, win2) in iter_windows(
-        mus1, mus2, size=size, min_count=min_count
+    with logger.trace.single_context(
+        "compare_windows: {} position(s), size={}", len(mus1), size
     ):
-        values.at[center] = method(win1, win2)
+        if isinstance(method, str):
+            # If the comparison method is given a string, then fetch the
+            # function itself.
+            method = get_comp_func(method)
+        # Initialize an empty Series for the sliding comparison.
+        values = pd.Series(np.nan, index=get_shared_index([mus1.index, mus2.index]))
+        # Calculate the value of the comparison for each window.
+        for center, (win1, win2) in iter_windows(
+            mus1, mus2, size=size, min_count=min_count
+        ):
+            values.at[center] = method(win1, win2)
+        logger.trace(
+            "values={}({}, {})", type(values).__name__, values.shape, values.dtype
+        )
     return values

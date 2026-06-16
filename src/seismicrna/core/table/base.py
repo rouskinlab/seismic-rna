@@ -10,6 +10,7 @@ from .. import path
 from ..batch import RB_INDEX_NAMES
 from ..dataset import LoadFunction
 from ..header import REL_NAME, Header, parse_header
+from ..logs import logger, format_sample_reference_region
 from ..mu import winsorize
 from ..rel import HalfRelPattern, RelPattern
 from ..rna import RNAProfile
@@ -254,7 +255,8 @@ class Table(path.HasRefFilePath, ABC):
         """Table's data."""
 
     def __str__(self):
-        return f"{type(self).__name__}: {self.path}"
+        srr = format_sample_reference_region(self.sample, self.ref, self.reg)
+        return f"{type(self).__name__} of {srr}"
 
 
 class RelTypeTable(Table, ABC):
@@ -300,11 +302,12 @@ class RelTypeTable(Table, ABC):
         self, *, exclude_masked: bool = False, squeeze: bool = False, **kwargs
     ) -> pd.Series | pd.DataFrame:
         """Fetch counts of one or more columns."""
-        return self._format_data(
-            self._fetch_data(self.header.select(**kwargs), exclude_masked),
-            precision=None,
-            squeeze=squeeze,
-        )
+        with logger.trace.single_context("Fetching counts of {}", self):
+            return self._format_data(
+                self._fetch_data(self.header.select(**kwargs), exclude_masked),
+                precision=None,
+                squeeze=squeeze,
+            )
 
     def fetch_ratio(
         self,
@@ -316,16 +319,17 @@ class RelTypeTable(Table, ABC):
         **kwargs,
     ) -> pd.Series | pd.DataFrame:
         """Fetch ratios of one or more columns."""
-        # Fetch the data for the numerator.
-        numer = self._fetch_data(self.header.select(**kwargs), exclude_masked)
-        # Fetch the data for the denominator.
-        denom = self._fetch_data(_get_denom_cols(numer.columns), exclude_masked)
-        # Compute the ratio of the numerator and the denominator.
-        return self._format_data(
-            winsorize(numer / denom.values, quantile),
-            precision=precision,
-            squeeze=squeeze,
-        )
+        with logger.trace.single_context("Fetching ratios of {}", self):
+            # Fetch the data for the numerator.
+            numer = self._fetch_data(self.header.select(**kwargs), exclude_masked)
+            # Fetch the data for the denominator.
+            denom = self._fetch_data(_get_denom_cols(numer.columns), exclude_masked)
+            # Compute the ratio of the numerator and the denominator.
+            return self._format_data(
+                winsorize(numer / denom.values, quantile),
+                precision=precision,
+                squeeze=squeeze,
+            )
 
 
 class PositionTable(RelTypeTable, ABC):
@@ -368,21 +372,23 @@ class PositionTable(RelTypeTable, ABC):
     @cached_property
     def region(self):
         """Region covered by the table."""
-        # Infer masked positions from the table.
-        masked_bool = self.data.isna().all(axis=1)
-        unmasked_bool = ~masked_bool
-        unmasked = self.data.index[unmasked_bool]
-        unmasked_int = index_to_pos(unmasked)
-        region = Region(
-            self.ref,
-            self.seq,
-            seq5=self.end5,
-            end5=self.end5,
-            end3=self.end3,
-            name=self.reg,
-        )
-        region.add_mask(self.MASK, unmasked_int, complement=True)
-        return region
+        with logger.trace.single_context("Determining region of {}", self):
+            # Infer masked positions from the table.
+            masked_bool = self.data.isna().all(axis=1)
+            unmasked_bool = ~masked_bool
+            unmasked = self.data.index[unmasked_bool]
+            unmasked_int = index_to_pos(unmasked)
+            region = Region(
+                self.ref,
+                self.seq,
+                seq5=self.end5,
+                end5=self.end5,
+                end3=self.end3,
+                name=self.reg,
+            )
+            region.add_mask(self.MASK, unmasked_int, complement=True)
+            logger.trace("Region of {} is {}", self, region)
+            return region
 
     def _fetch_data(self, columns: pd.Index, exclude_masked: bool = False):
         return (
@@ -415,14 +421,15 @@ class PositionTable(RelTypeTable, ABC):
         clust: int | None = None,
     ):
         """Yield RNA mutational profiles from the table."""
-        yield from self._iter_profiles(
-            fold_table_region=fold_table_region,
-            regions=regions,
-            quantile=quantile,
-            rel=rel,
-            k=k,
-            clust=clust,
-        )
+        with logger.trace.single_context("Iterating mutational profiles of {}", self):
+            yield from self._iter_profiles(
+                fold_table_region=fold_table_region,
+                regions=regions,
+                quantile=quantile,
+                rel=rel,
+                k=k,
+                clust=clust,
+            )
 
     def _compute_ci(
         self,
@@ -450,30 +457,38 @@ class PositionTable(RelTypeTable, ABC):
         tuple[pandas.DataFrame, pandas.DataFrame]
             Lower and upper bounds of the confidence interval.
         """
-        from scipy.stats import binom
+        with logger.trace.single_context(
+            r"Calculating {} % confidence intervals for {} of {}",
+            confidence * 100,
+            ("ratios" if use_ratio else "counts"),
+            self,
+        ):
+            from scipy.stats import binom
 
-        if not 0.0 <= confidence < 1.0:
-            raise ValueError(
-                f"confidence level must be in [0, 1), but got {confidence}"
+            if not 0.0 <= confidence < 1.0:
+                raise ValueError(
+                    f"confidence level must be in [0, 1), but got {confidence}"
+                )
+            # Fetch the probability of each relationship.
+            p = self.fetch_ratio(exclude_masked=True, **kwargs)
+            # Fetch the number of reads for each relationship.
+            n = np.asarray(
+                np.round(
+                    self._fetch_data(
+                        _get_denom_cols(p.columns), exclude_masked=True
+                    ).values
+                ),
+                dtype=int,
             )
-        # Fetch the probability of each relationship.
-        p = self.fetch_ratio(exclude_masked=True, **kwargs)
-        # Fetch the number of reads for each relationship.
-        n = np.asarray(
-            np.round(
-                self._fetch_data(_get_denom_cols(p.columns), exclude_masked=True).values
-            ),
-            dtype=int,
-        )
-        # Model the counts using binomial distributions.
-        lo, up = binom.interval(confidence, n, p.values)
-        # Copy the confidence interval bounds into two DataFrames.
-        index = self.region.unmasked if exclude_masked else self.data.index
-        lower = pd.DataFrame(np.nan, index=index, columns=p.columns)
-        upper = pd.DataFrame(np.nan, index=index, columns=p.columns)
-        lower.loc[self.region.unmasked] = lo / n if use_ratio else lo
-        upper.loc[self.region.unmasked] = up / n if use_ratio else up
-        return lower, upper
+            # Model the counts using binomial distributions.
+            lo, up = binom.interval(confidence, n, p.values)
+            # Copy the confidence interval bounds into two DataFrames.
+            index = self.region.unmasked if exclude_masked else self.data.index
+            lower = pd.DataFrame(np.nan, index=index, columns=p.columns)
+            upper = pd.DataFrame(np.nan, index=index, columns=p.columns)
+            lower.loc[self.region.unmasked] = lo / n if use_ratio else lo
+            upper.loc[self.region.unmasked] = up / n if use_ratio else up
+            return lower, upper
 
     def ci_count(self, confidence: float, **kwargs):
         """Confidence intervals of counts, under these simplifications:

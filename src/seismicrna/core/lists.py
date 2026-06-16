@@ -8,7 +8,7 @@ import pandas as pd
 from . import path
 from .arg import opt_max_fmut_pos, opt_min_ninfo_pos
 from .io import RefFileIO
-from .logs import logger
+from .logs import logger, format_sample_reference_region
 from .seq import FIELD_REF, POS_NAME
 from .table import (
     READ_TITLE,
@@ -121,6 +121,10 @@ class List(RefFileIO, ABC):
         self.validate_data(data)
         self.data = data
 
+    def __str__(self):
+        srr = format_sample_reference_region(self.sample, self.ref)
+        return f"{type(self).__name__} of {srr}"
+
     def save(self, top: Path, force: bool = False):
         file = self.get_path(top)
         if not force and file.exists():
@@ -161,7 +165,7 @@ class PositionList(List, ABC):
         min_ninfo_pos: int = opt_min_ninfo_pos.default,
         max_fmut_pos: float = opt_max_fmut_pos.default,
     ):
-        with logger.debug.begin("making {} from {}", cls, table):
+        with logger.debug.single_context("making {} from {}", cls, table):
             if not isinstance(table, cls.get_table_type()):
                 raise TypeError(
                     f"table must be {cls.get_table_type()}, but got {type(table)}"
@@ -208,9 +212,7 @@ class PositionList(List, ABC):
                 **{attr: getattr(table, attr) for attr in cls.list_init_table_attrs()},
             )
             logger.trace(
-                "{} produced a list of {} positions to mask",
-                table,
-                positions.size,
+                "{} produced a list of {} positions to mask", table, positions.size
             )
         return new_list
 

@@ -264,7 +264,11 @@ class HalfRelPattern(object):
         return self.__class__(*(set(self.codes) & set(other.codes)))
 
     def __str__(self):
-        return f"{type(self).__name__} {self.patterns}"
+        pattern_str = ",".join(f"{n}={v}" for n, v in self.patterns.items())
+        return f"{type(self).__name__}({pattern_str})"
+
+    def __repr__(self):
+        return str(self)
 
     def __hash__(self):
         return hash(tuple(getattr(self, x) for x in self.__slots__))
@@ -345,7 +349,10 @@ class RelPattern(object):
         return self.__class__(self.nos, self.yes)
 
     def __str__(self):
-        return f"{type(self).__name__} + [{self.yes}] - [{self.nos}]"
+        return f"{type(self).__name__}({self.yes};{self.nos})"
+
+    def __repr__(self):
+        return str(self)
 
     def __hash__(self):
         return hash(tuple(getattr(self, x) for x in self.__slots__))

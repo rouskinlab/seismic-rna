@@ -8,6 +8,7 @@ import pandas as pd
 from .names import BIT_VECTOR_NAME
 from ..core import path
 from ..core.array import get_length
+from ..core.logs import format_sample_reference_region
 from ..core.batch import EndCoords, RegionMutsBatch
 from ..core.rel import RelPattern
 from ..core.seq import Region
@@ -233,9 +234,8 @@ class UniqReads(EndCoords):
         )
 
     def __str__(self):
-        return "".join(
-            [type(self).__name__, f"(sample={repr(self.sample)};{self.region})"]
-        )
+        srr = format_sample_reference_region(self.sample, self.ref, self.region.name)
+        return f"{type(self).__name__} of {srr}"
 
     def __repr__(self):
         return str(self)

@@ -642,7 +642,7 @@ def xamgen_cmd(
 
 
 run_xamgen = ShellCommand(
-    "aligning, filtering, and sorting by position", xamgen_cmd, parse_bowtie2
+    "Aligning, filtering, and sorting by position", xamgen_cmd, parse_bowtie2
 )
 
 

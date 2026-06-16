@@ -50,7 +50,7 @@ def write_tmp_ref_files(
     corresponds to a FASTQ file from demultiplexing."""
     ref_paths: dict[str, tuple[Path, Path]] = dict()
     if refs:
-        with logger.debug.begin("writing temporary FASTA files"):
+        with logger.debug.single_context("writing temporary FASTA files"):
             # Parse the FASTA only if there are any references to write.
             for record in parse_fasta(refset_path, DNA):
                 ref, _ = record
@@ -86,11 +86,7 @@ def write_tmp_ref_files(
     if missing:
         # If any references in refs do not have sequences, then log an
         # error but continue with the references that have sequences.
-        logger.error(
-            "Missing sequences in {}: {}",
-            refset_path,
-            ", ".join(missing),
-        )
+        logger.error("Missing sequences in {}: {}", refset_path, ", ".join(missing))
     return ref_paths
 
 
@@ -241,9 +237,7 @@ def separate_strands(
         # Renaming overwrites the original BAM file of both strands.
         bam_fwd.rename(xam_file)
         logger.trace(
-            "Overwrote {} with only the forward-stand reads from {}",
-            xam_file,
-            bam_fwd,
+            "Overwrote {} with only the forward-stand reads from {}", xam_file, bam_fwd
         )
         logger.debug("Ended separating forward and reverse strands in {}", xam_file)
         return bam_rev
@@ -271,7 +265,9 @@ def extract_reference(
     **kwargs,
 ):
     """Extract one reference from a XAM file."""
-    with logger.debug.begin("extracting reference {!r} from {}", ref, xam_whole):
+    with logger.debug.single_context(
+        "extracting reference {!r} from {}", ref, xam_whole
+    ):
         if min_reads < 0:
             min_reads = 0
             logger.warning("min_reads must be ≥ 0, but got {}: set to 0", min_reads)
@@ -318,8 +314,7 @@ def extract_reference(
                 logger.trace("{} has {} read(s)", xam, num_reads)
                 if num_reads < min_reads:
                     logger.warning(
-                        "Skipped sample {!r} reference {!r}: "
-                        "{} < {} read(s)",
+                        "Skipped sample {!r} reference {!r}: {} < {} read(s)",
                         sample,
                         ref,
                         num_reads,
@@ -370,15 +365,14 @@ def split_references(
     num_cpus: int = 1,
 ):
     """Split a XAM file into one file per reference."""
-    with logger.debug.begin("splitting {} by reference", xam_whole):
+    with logger.debug.single_context("splitting {} by reference", xam_whole):
         sample = path.parse(xam_whole, path.XAM_SEGS)[path.SAMPLE]
         # Guess how many reads mapped to each reference by the index stats.
         refs_counts = run_idxstats(xam_whole)
         # Guess which references received enough reads.
         guess_refs = {ref for ref, count in refs_counts.items() if count >= min_reads}
         logger.trace(
-            "Guessed that there are ≥ {} read(s) in each of the "
-            "{} reference(s) {}",
+            "Guessed that there are ≥ {} read(s) in each of the {} reference(s) {}",
             min_reads,
             len(guess_refs),
             sorted(guess_refs),
@@ -527,7 +521,9 @@ def fq_pipeline(
     """Run all stages of the alignment pipeline for one FASTQ file or
     one pair of mated FASTQ files."""
     began = datetime.now()
-    with logger.debug.begin("processing {} through the alignment pipeline", fq_inp):
+    with logger.debug.single_context(
+        "processing {} through the alignment pipeline", fq_inp
+    ):
         # Get attributes of the sample and references.
         sample = fq_inp.sample
         refset = path.parse(fasta, [path.FastaSeg])[path.REF]
@@ -651,9 +647,7 @@ def fq_pipeline(
                 raise RuntimeError(f"{xam_whole} has {n_paired} paired-end reads")
             reads_filter = {"single-end": singles}
         logger.trace(
-            "Determined {} contained {} reads after filtering",
-            xam_whole,
-            reads_filter,
+            "Determined {} contained {} reads after filtering", xam_whole, reads_filter
         )
         # Split the whole XAM file into one XAM file for each reference.
         reads_refs = split_references(
@@ -770,7 +764,7 @@ def fqs_pipeline(
 ) -> list[Path]:
     """Run all stages of alignment for one or more FASTQ files or pairs
     of mated FASTQ files."""
-    with logger.debug.begin("running the alignment pipeline"):
+    with logger.debug.single_context("running the alignment pipeline"):
         # Validate the maximum number of processes.
         if num_cpus < 1:
             logger.warning("num_cpus must be ≥ 1: setting to 1")
@@ -779,8 +773,7 @@ def fqs_pipeline(
         tmp_refs = set(filter(None, (fq_unit.ref for fq_unit in fq_units)))
         if tmp_refs:
             logger.trace(
-                "Found {} references among demultiplexed FASTQ files",
-                len(tmp_refs),
+                "Found {} references among demultiplexed FASTQ files", len(tmp_refs)
             )
         # Write a temporary FASTA file and Bowtie2 index for each
         # demultiplexed FASTQ.
@@ -798,9 +791,7 @@ def fqs_pipeline(
         for fq_unit in fq_units:
             if fq_unit.ref is not None:
                 logger.trace(
-                    "{} contains reads from 1 reference, {!r}",
-                    fq_unit,
-                    fq_unit.ref,
+                    "{} contains reads from 1 reference, {!r}", fq_unit, fq_unit.ref
                 )
                 # If the FASTQ came from demultiplexing (so contains
                 # reads from only one reference), then align to the
@@ -882,7 +873,7 @@ def fqs_pipeline(
 
 def list_alignments(fq_units: list[FastqUnit], refs: set[str]):
     """List every expected alignment of a sample to a reference."""
-    with logger.debug.begin("listing alignments"):
+    with logger.debug.single_context("listing alignments"):
         # Map each combination of a sample and reference to a FASTQ unit.
         alignments: dict[tuple[str, str], FastqUnit] = dict()
         for fq_unit in fq_units:

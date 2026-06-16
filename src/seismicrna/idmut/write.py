@@ -5,10 +5,10 @@ from typing import Iterable
 
 from .io import from_reads, ReadNamesBatchIO, IDmutBatchIO, RefseqIO
 from .report import IDmutReport
-from .sam import XamViewer
+from .sam import SamFileViewer
 from .table import IDmutCountTabulator
 from ..core import path
-from ..core.logs import logger
+from ..core.logs import logger, format_sample_reference_region
 from ..core.ngs import encode_phred
 from ..core.seq import DNA, Region, get_fasta_seq
 from ..core.table import all_patterns
@@ -106,7 +106,7 @@ def idmut_records(
 def generate_batch(
     batch: int,
     *,
-    xam_view: XamViewer,
+    sam_view: SamFileViewer,
     top: Path,
     refseq: DNA,
     brotli_level: int,
@@ -116,17 +116,17 @@ def generate_batch(
     **kwargs,
 ):
     """Compute relationships for every SAM record in one batch."""
-    with logger.debug.begin("calculating batch {} of {}", batch, xam_view):
+    with logger.debug.single_context("calculating batch {} of {}", batch, sam_view):
         idmut_batch, name_batch = from_reads(
             idmut_records(
-                xam_view.iter_records(batch),
-                ref=xam_view.ref,
+                sam_view.iter_records(batch),
+                ref=sam_view.ref,
                 refseq=str(refseq),
                 **kwargs,
             ),
-            branches=xam_view.branches,
-            sample=xam_view.sample,
-            ref=xam_view.ref,
+            branches=sam_view.branches,
+            sample=sam_view.sample,
+            ref=sam_view.ref,
             refseq=refseq,
             batch=batch,
             write_read_names=write_read_names,
@@ -142,7 +142,7 @@ def generate_batch(
         name_checksum = None
     # Generate an IDmutRegionMutsBatch in order to count the mutations,
     # which the IDmutBatchIO instance cannot do.
-    idmut_region_batch = idmut_batch.to_region_batch(Region(xam_view.ref, refseq))
+    idmut_region_batch = idmut_batch.to_region_batch(Region(sam_view.ref, refseq))
     return (
         idmut_region_batch.count_all(
             all_patterns(), count_pos=count_pos, count_read=count_read, count_ends=False
@@ -156,19 +156,19 @@ class RelationWriter(object):
     """Compute and write relationships for all reads from one sample
     aligned to one reference sequence."""
 
-    def __init__(self, xam_view: XamViewer, fasta_file: str | Path):
+    def __init__(self, sam_view: SamFileViewer, fasta_file: str | Path):
         """
         Initialize a RelationWriter.
 
         Parameters
         ----------
-        xam_view: XamViewer
+        sam_view: SamFileViewer
             Viewer for the input XAM file, providing access to reads
             and batch indexes.
         fasta_file: str | Path
             Path to the FASTA file containing the reference sequence.
         """
-        self._xam = xam_view
+        self._xam = sam_view
         self._fasta = fasta_file
 
     @property
@@ -240,7 +240,7 @@ class RelationWriter(object):
         logger.debug("Began generating batches for {}", self._xam)
         try:
             kwargs = dict(
-                xam_view=self._xam,
+                sam_view=self._xam,
                 top=top,
                 refseq=self.refseq,
                 min_qual=ord(encode_phred(min_phred, phred_enc)),
@@ -378,7 +378,8 @@ class RelationWriter(object):
         return report_file.parent
 
     def __str__(self):
-        return f"{type(self).__name__}:{self._xam}"
+        srr = format_sample_reference_region(self.sample, self.ref)
+        return f"{type(self).__name__} of {srr}"
 
 
 def idmut_xam(
@@ -394,6 +395,6 @@ def idmut_xam(
     """Write the batches of relationships for one XAM file."""
     release_dir, working_dir = get_release_working_dirs(tmp_dir)
     writer = RelationWriter(
-        XamViewer(xam_file, working_dir, branch, batch_size, num_cpus=num_cpus), fasta
+        SamFileViewer(xam_file, working_dir, branch, batch_size, num_cpus=num_cpus), fasta
     )
     return writer.write(**kwargs, num_cpus=num_cpus, release_dir=release_dir)

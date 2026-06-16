@@ -288,6 +288,8 @@ def run(
         ends=fold_coords,
         primers=fold_primers,
     )
+    sim_dir = Path(sim_dir)
+    sim_dir.mkdir(parents=True, exist_ok=True)
     return dispatch(
         fold_region,
         num_cpus=num_cpus,
@@ -297,7 +299,7 @@ def run(
         raise_on_error=False,
         args=as_list_of_tuples(regions.regions),
         kwargs=dict(
-            sim_dir=Path(sim_dir),
+            sim_dir=sim_dir,
             tmp_dir=tmp_dir,
             profile_name=profile_name,
             fold_backend=fold_backend,
