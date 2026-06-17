@@ -19,6 +19,8 @@ from ..core import path
 from ..core.arg import (
     ILLUMINA_TRUSEQ_ADAPTER_R1,
     ILLUMINA_TRUSEQ_ADAPTER_R2,
+    MUT_COLLISIONS_DROP,
+    MUT_COLLISIONS_MERGE,
     arg_input_path,
     opt_param_dir,
     opt_profile_name,
@@ -27,9 +29,7 @@ from ..core.arg import (
     opt_paired_end,
     opt_reverse_fraction,
     opt_probe,
-    opt_min_mut_gap,
     opt_min_mut_gap_weights,
-    opt_mut_collisions,
     opt_injected_mut_probs,
     opt_fq_gzip,
     opt_num_reads,
@@ -48,7 +48,6 @@ from ..core.run import run_func
 from ..core.seq import DNA, BASEA, BASEC, BASEG, BASET, BASEN
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write, write_mode
-from ..filter.main import set_mut_gap_params
 from ..idmut.batch import ReadNamesBatch, IDmutRegionMutsBatch
 from ..idmut.dataset import ReadNamesDataset, IDmutMutsDataset, load_idmut_dataset
 from ..idmut.report import IDmutReport
@@ -399,9 +398,7 @@ def run(
     read_length: int,
     reverse_fraction: float,
     probe: str,
-    min_mut_gap: int | None,
     min_mut_gap_weights: str | None,
-    mut_collisions: str,
     injected_mut_probs: str | None,
     fq_gzip: bool,
     num_reads: int,
@@ -431,14 +428,10 @@ def run(
     reverse_fraction: float
         Fraction of reads where mate 1 is reverse-complemented.
     probe: str
-        Probe type (e.g. DMS); used to set default `min_mut_gap`.
-    min_mut_gap: int | None
-        Minimum gap between mutations; None to use the probe default.
+        Probe type (e.g. DMS); used to set probe-specific defaults.
     min_mut_gap_weights: str | None
         Comma-separated gap:weight pairs for a bias mixture; None to use
-        the probe default, empty string to use the single min_mut_gap.
-    mut_collisions: str
-        How to handle reads with close mutations: "drop" or "merge".
+        the probe default, empty string to use the probe-default single gap.
     injected_mut_probs: str | None
         Comma-separated offset:prob pairs (offset ≥ 1) for injecting a
         mutation at each offset 5' of an existing mutation; None to use
@@ -460,12 +453,16 @@ def run(
         Paths of all generated FASTQ files.
     """
     seeds = get_random_integer_generator(seed)
-    min_mut_gap, mut_collisions = set_mut_gap_params(probe, min_mut_gap, mut_collisions)
     min_mut_gap_weights, injected_mut_probs = set_sim_mut_params(
         probe, min_mut_gap_weights, injected_mut_probs
     )
-    injected_mut_probs_dict = parse_injected_mut_probs(injected_mut_probs)
     min_mut_gap_weights_dict = parse_min_mut_gap_weights(min_mut_gap_weights)
+    injected_mut_probs_dict = parse_injected_mut_probs(injected_mut_probs)
+    mut_collisions = (
+        MUT_COLLISIONS_DROP
+        if min_mut_gap_weights_dict or not injected_mut_probs_dict
+        else MUT_COLLISIONS_MERGE
+    )
     report_files = as_list_of_tuples(
         path.find_files_chain(input_path, load_idmut_dataset.report_path_seg_types)
     )
@@ -509,7 +506,6 @@ def run(
                         paired=paired_end,
                         read_length=read_length,
                         p_rev=reverse_fraction,
-                        min_mut_gap=min_mut_gap,
                         min_mut_gap_weights=min_mut_gap_weights_dict,
                         injected_mut_probs=injected_mut_probs_dict,
                         mut_collisions=mut_collisions,
@@ -535,9 +531,7 @@ params = [
     opt_read_length,
     opt_reverse_fraction,
     opt_probe,
-    opt_min_mut_gap,
     opt_min_mut_gap_weights,
-    opt_mut_collisions,
     opt_injected_mut_probs,
     opt_fq_gzip,
     opt_num_reads,

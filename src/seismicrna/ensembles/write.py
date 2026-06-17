@@ -626,7 +626,7 @@ def ensembles(
     mask_c: bool | None,
     mask_g: bool | None,
     mask_u: bool | None,
-    mask_polya: int,
+    mask_polya: int | None,
     mask_pos: Iterable[tuple[str, int]],
     mask_pos_file: Iterable[str | Path],
     drop_read: Iterable[str],

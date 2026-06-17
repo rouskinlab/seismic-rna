@@ -164,7 +164,7 @@ class IDmutRegionMutsBatch(IDmutMutsBatch, RegionMutsBatch):
             p_rev,
             seed=next(seeds),
         )
-        simulated_all = cls(
+        simulated = cls(
             region=region,
             seg_end5s=seg_end5s,
             seg_end3s=seg_end3s,
@@ -173,17 +173,17 @@ class IDmutRegionMutsBatch(IDmutMutsBatch, RegionMutsBatch):
         )
         if min_mut_gap <= 0:
             # No additional changes needed.
-            return simulated_all
+            return simulated
         if mut_collisions == MUT_COLLISIONS_DROP:
             # Remove reads with two mutations too close.
-            reads_noclose = simulated_all.reads_noclose_muts(
+            reads_noclose = simulated.reads_noclose_muts(
                 RelPattern.muts(), min_mut_gap
             )
             reads_exclude = np.setdiff1d(
-                simulated_all.read_nums, reads_noclose, assume_unique=True
+                simulated.read_nums, reads_noclose, assume_unique=True
             )
             renumber = calc_inverse(reads_noclose, what="reads_noclose")
-            return cls(
+            no_mut_collisions = cls(
                 region=region,
                 seg_end5s=seg_end5s[reads_noclose],
                 seg_end3s=seg_end3s[reads_noclose],
@@ -194,29 +194,30 @@ class IDmutRegionMutsBatch(IDmutMutsBatch, RegionMutsBatch):
                         ]
                         for rel, reads in rels.items()
                     }
-                    for pos, rels in simulated_all.muts.items()
+                    for pos, rels in simulated.muts.items()
                 },
                 **kwargs,
             )
-        if mut_collisions == MUT_COLLISIONS_MERGE:
-            # First merge to keep only true modifications.
-            merged = cls(
+        elif mut_collisions == MUT_COLLISIONS_MERGE:
+            # Merge to keep only true modifications.
+            no_mut_collisions = cls(
                 region=region,
                 seg_end5s=seg_end5s,
                 seg_end3s=seg_end3s,
-                muts=simulated_all.merge_close_muts(RelPattern.muts(), min_mut_gap),
+                muts=simulated.merge_close_muts(RelPattern.muts(), min_mut_gap),
                 **kwargs,
             )
-            if not injected_mut_probs:
-                return merged
-            # Then inject RT artifacts 5' of true modifications only.
-            return cls(
-                region=region,
-                seg_end5s=seg_end5s,
-                seg_end3s=seg_end3s,
-                muts=merged.inject_close_muts(
-                    RelPattern.muts(), injected_mut_probs, seed=next(seeds)
-                ),
-                **kwargs,
-            )
-        raise ValueError(f"Invalid mut_collisions: {repr(mut_collisions)}")
+        else:
+            raise ValueError(f"Invalid mut_collisions: {repr(mut_collisions)}")
+        if not injected_mut_probs:
+            return no_mut_collisions
+        # Inject RT artifacts 5' of true modifications.
+        return cls(
+            region=region,
+            seg_end5s=no_mut_collisions.seg_end5s,
+            seg_end3s=no_mut_collisions.seg_end3s,
+            muts=no_mut_collisions.inject_close_muts(
+                RelPattern.muts(), injected_mut_probs, seed=next(seeds)
+            ),
+            **kwargs,
+        )

@@ -12,6 +12,8 @@ from ..core import path
 from ..core.arg import (
     DEFAULT_INJECTED_MUT_PROBS,
     DEFAULT_MIN_MUT_GAP_WEIGHTS,
+    MUT_COLLISIONS_DROP,
+    MUT_COLLISIONS_MERGE,
     opt_param_dir,
     opt_profile_name,
     opt_sample_sim,
@@ -20,9 +22,7 @@ from ..core.arg import (
     opt_read_length,
     opt_reverse_fraction,
     opt_probe,
-    opt_min_mut_gap,
     opt_min_mut_gap_weights,
-    opt_mut_collisions,
     opt_injected_mut_probs,
     opt_num_reads,
     opt_batch_size,
@@ -36,7 +36,6 @@ from ..core.logs import logger
 from ..core.rna import find_ct_region
 from ..core.run import run_func
 from ..core.task import as_list_of_tuples, dispatch
-from ..filter.main import set_mut_gap_params
 from ..idmut.sim import simulate_idmut
 
 COMMAND = __name__.split(os.path.extsep)[-1]
@@ -195,9 +194,7 @@ def run(
     read_length: int,
     reverse_fraction: float,
     probe: str,
-    min_mut_gap: int | None,
     min_mut_gap_weights: str | None,
-    mut_collisions: str,
     injected_mut_probs: str | None,
     num_reads: int,
     batch_size: int,
@@ -209,12 +206,14 @@ def run(
     seed: int | None,
 ):
     """Simulate an IDmut dataset."""
-    min_mut_gap, mut_collisions = set_mut_gap_params(probe, min_mut_gap, mut_collisions)
     min_mut_gap_weights, injected_mut_probs = set_sim_mut_params(
         probe, min_mut_gap_weights, injected_mut_probs
     )
-    injected_mut_probs_dict = parse_injected_mut_probs(injected_mut_probs)
     min_mut_gap_weights_dict = parse_min_mut_gap_weights(min_mut_gap_weights)
+    injected_mut_probs_dict = parse_injected_mut_probs(injected_mut_probs)
+    mut_collisions = (
+        MUT_COLLISIONS_MERGE if injected_mut_probs_dict else MUT_COLLISIONS_DROP
+    )
     return dispatch(
         _from_param_dir,
         num_cpus=num_cpus,
@@ -230,7 +229,6 @@ def run(
             paired=paired_end,
             read_length=read_length,
             p_rev=reverse_fraction,
-            min_mut_gap=min_mut_gap,
             min_mut_gap_weights=min_mut_gap_weights_dict,
             injected_mut_probs=injected_mut_probs_dict,
             mut_collisions=mut_collisions,
@@ -254,9 +252,7 @@ params = [
     opt_read_length,
     opt_reverse_fraction,
     opt_probe,
-    opt_min_mut_gap,
     opt_min_mut_gap_weights,
-    opt_mut_collisions,
     opt_injected_mut_probs,
     opt_num_reads,
     opt_batch_size,

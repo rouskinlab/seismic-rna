@@ -43,7 +43,8 @@ from ..core.rel import RelPattern
 from ..core.rna import from_ct
 from ..core.run import run_func
 from ..core.seq import DNA, parse_fasta, RefRegions
-from ..filter.main import set_mask_acgu
+from .idmut import set_sim_mut_params
+from ..filter.main import set_mask_acgu, set_mask_polya
 from ..idmut.sim import calc_pmut_pattern
 
 COMMAND = __name__.split(os.path.extsep)[-1]
@@ -158,7 +159,7 @@ def run(
     mask_c: bool | None,
     mask_g: bool | None,
     mask_u: bool | None,
-    mask_polya: int,
+    mask_polya: int | None,
     max_fraction_ident: float,
     max_pearson_sim: float,
     min_marcd_sim: float,
@@ -167,9 +168,7 @@ def run(
     read_length: int,
     reverse_fraction: float,
     probe: str,
-    min_mut_gap: int,
     min_mut_gap_weights: str | None,
-    mut_collisions: str,
     injected_mut_probs: str | None,
     fq_gzip: bool,
     num_reads: int,
@@ -182,6 +181,10 @@ def run(
     seeds = get_random_integer_generator(seed)
     mask_a, mask_c, mask_g, mask_u = set_mask_acgu(
         probe, mask_a, mask_c, mask_g, mask_u
+    )
+    mask_polya = set_mask_polya(probe, mask_polya)
+    min_mut_gap_weights, injected_mut_probs = set_sim_mut_params(
+        probe, min_mut_gap_weights, injected_mut_probs
     )
     for attempt in range(1, max(max_tries, 1) + 1):
         logger.debug("Began simulation attempt {} of up to {}", attempt, max_tries)
@@ -303,9 +306,7 @@ def run(
         read_length=read_length,
         reverse_fraction=reverse_fraction,
         probe=probe,
-        min_mut_gap=min_mut_gap,
         min_mut_gap_weights=min_mut_gap_weights,
-        mut_collisions=mut_collisions,
         injected_mut_probs=injected_mut_probs,
         fq_gzip=fq_gzip,
         num_reads=num_reads,

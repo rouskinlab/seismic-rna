@@ -127,8 +127,8 @@ def simulate_batches(
     uniq_end5s: np.ndarray,
     uniq_end3s: np.ndarray,
     num_reads: int,
-    min_mut_gap: int,
     min_mut_gap_weights: dict[int, float],
+    injected_mut_probs: dict[int, float],
     mut_collisions: str,
     seed: int | None,
     **kwargs,
@@ -150,11 +150,15 @@ def simulate_batches(
         Random seed for reproducibility; None for no fixed seed.
     min_mut_gap_weights: dict[int, float]
         Mapping of min_mut_gap value to weight. When non-empty, reads for
-        each cluster are split across the gap values proportionally;
-        overrides the single min_mut_gap passed via kwargs. An empty dict
-        uses the single min_mut_gap from kwargs.
+        each cluster are split across the gap values proportionally. When
+        empty, the gap is derived from the maximum offset in
+        injected_mut_probs (or 0 if that is also empty).
+    injected_mut_probs: dict[int, float]
+        Mapping of 5' offset to injection probability. Passed to each
+        simulate_cluster call and used to derive the gap when
+        min_mut_gap_weights is empty.
     mut_collisions: str
-        How to handle reads with mutations closer than min_mut_gap.
+        How to handle reads with mutations closer than the gap.
     **kwargs
         Additional keyword arguments forwarded to `simulate_cluster`.
 
@@ -229,9 +233,9 @@ def simulate_batches(
         )
         # Simulate batches for each cluster and gap.
         for k, clust in pclust.index:
-            for gap in min_mut_gap_weights:
+            for min_mut_gap in min_mut_gap_weights:
                 pmut_cluster = pmut.loc[:, (slice(None), k, clust)]
-                n_gap = int(num_reads_clusters.at[gap, (k, clust)])
+                n_gap = int(num_reads_clusters.at[min_mut_gap, (k, clust)])
                 if n_gap > 0:
                     for batch in simulate_cluster(
                         first_batch,
@@ -240,7 +244,8 @@ def simulate_batches(
                         pmut=pmut_cluster,
                         pends=pends,
                         seed=next(seeds),
-                        min_mut_gap=gap,
+                        min_mut_gap=min_mut_gap,
+                        injected_mut_probs=injected_mut_probs,
                         mut_collisions=mut_collisions,
                         uniq_end5s=uniq_end5s,
                         uniq_end3s=uniq_end3s,
@@ -249,6 +254,8 @@ def simulate_batches(
                         yield batch
                         first_batch += 1
     else:
+        # Derive the gap from the max injection distance, or 0 if no injection.
+        min_mut_gap = max(injected_mut_probs) if injected_mut_probs else 0
         if mut_collisions == MUT_COLLISIONS_DROP:
             pmut_given_clust = calc_pmut_pattern(
                 pmut, RelPattern.muts(), normalize=False
@@ -283,6 +290,7 @@ def simulate_batches(
                 pends=pends,
                 seed=next(seeds),
                 min_mut_gap=min_mut_gap,
+                injected_mut_probs=injected_mut_probs,
                 mut_collisions=mut_collisions,
                 uniq_end5s=uniq_end5s,
                 uniq_end3s=uniq_end3s,
