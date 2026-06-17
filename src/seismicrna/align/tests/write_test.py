@@ -125,8 +125,6 @@ class TestFqPipeline(ut.TestCase):
                     read_length=50,
                     reverse_fraction=0.0,
                     probe="SHAPE",
-                    min_mut_gap=None,
-                    mut_collisions="auto",
                     fq_gzip=False,
                     num_reads=1024,
                     keep_tmp=False,

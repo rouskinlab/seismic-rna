@@ -142,7 +142,6 @@ class TestSimulateBatches(ut.TestCase):
         self,
         mut_collisions: str,
         seed: int,
-        min_mut_gap: int = 0,
         min_mut_gap_weights: dict | None = None,
     ):
         return list(
@@ -153,7 +152,6 @@ class TestSimulateBatches(ut.TestCase):
                 pends=np.array([1.0]),
                 num_reads=self.NUM_READS,
                 seed=0,
-                min_mut_gap=min_mut_gap,
                 min_mut_gap_weights=(
                     self.P_GAP if min_mut_gap_weights is None else min_mut_gap_weights
                 ),
@@ -266,15 +264,15 @@ class TestSimulateBatches(ut.TestCase):
         )
         return self.NUM_READS * p_clust_given_noclose
 
-    def test_drop_read_counts_without_gap_weights(self):
+    def test_drop_read_counts_single_gap(self):
         """Single-gap DROP path must yield ~num_reads final reads."""
         min_mut_gap = 1
         rng = np.random.default_rng(seed=0)
         seed = int(rng.integers(2**32))
         batches = self._run(
-            MUT_COLLISIONS_DROP, seed, min_mut_gap=min_mut_gap, min_mut_gap_weights={}
+            MUT_COLLISIONS_DROP, seed, min_mut_gap_weights={min_mut_gap: 1.0}
         )
-        # batch_size == num_reads, so each cluster produces exactly one batch.
+        # One gap and batch_size == num_reads, so each cluster produces one batch.
         self.assertEqual(len(batches), len(self.PCLUST))
         expected = self._expected_drop_no_weights(seed, min_mut_gap)
         actual = np.array([batch.num_reads for batch, _ in batches])
