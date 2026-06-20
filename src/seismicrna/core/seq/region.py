@@ -1,11 +1,10 @@
+from __future__ import annotations
 import re
 from collections import defaultdict, namedtuple
 from functools import cached_property, reduce
 from pathlib import Path
 from typing import Iterable, Sequence
 
-import numpy as np
-import pandas as pd
 
 from .refs import RefSeqs
 from .xna import BASEA, BASEC, BASEG, BASET, BASEN, DNA, RNA
@@ -53,6 +52,7 @@ def get_reg_ends_primers(regs_file: Path):
         the table, then that name will be used as the region name.
         Otherwise, the region name will be an empty string.
     """
+    import pandas as pd
 
     # Initialize dictionaries mapping references and positions/primers
     # to region names.
@@ -148,6 +148,9 @@ def seq_pos_to_index(seq: DNA, positions: Sequence[int], start: int):
         MultiIndex of the same length as positions where each index is a
         tuple of (position, base).
     """
+    import numpy as np
+    import pandas as pd
+
     if start < 1:
         raise ValueError(f"The start position must be ≥ 1, but got {start}")
     # Cast positions to a NumPy integer array.
@@ -193,6 +196,8 @@ def index_to_pos(index: pd.MultiIndex):
 
 def index_to_seq(index: pd.MultiIndex, allow_gaps: bool = False):
     """Get the DNA sequence from a MultiIndex of (pos, base) pairs."""
+    import numpy as np
+
     # Get the numeric positions and verify that there is at least one.
     if index.size == 0:
         # Checks for sorted and contiguous positions will fail if there
@@ -232,6 +237,9 @@ def get_shared_index(indexes: Iterable[pd.MultiIndex], empty_ok: bool = False):
     pandas.MultiIndex
         The shared index.
     """
+    import numpy as np
+    import pandas as pd
+
     # Ensure indexes is a list-like object.
     indexes = [index.copy(deep=True).remove_unused_levels() for index in indexes]
     try:
@@ -287,6 +295,8 @@ def iter_windows(
     *series: pd.Series, size: int, min_count: int = 1, include_nan: bool = False
 ):
     # Determine the index; the index of all series must match.
+    import numpy as np
+
     index = get_shared_index((s.index for s in series), empty_ok=True)
     # Calculate the 5' and 3' margins.
     margin5, margin3 = window_to_margins(size)
@@ -377,6 +387,8 @@ class Region(object):
         name: str | None = None
             Name of the region. If None, defaults to `self.range`.
         """
+        import numpy as np
+
         self.ref = ref
         if seq5 < 1:
             raise ValueError(f"seq5 must be ≥ 1, but got {seq5}")
@@ -463,6 +475,8 @@ class Region(object):
     @property
     def masked_int(self) -> np.ndarray:
         """Masked positions as integers."""
+        import numpy as np
+
         # Do not cache this method since self._masks can change.
         return reduce(np.union1d, self._masks.values(), np.array([], int))
 
@@ -476,12 +490,16 @@ class Region(object):
     @property
     def masked_bool(self) -> np.ndarray:
         """Masked positions as a boolean array."""
+        import numpy as np
+
         # Do not cache this method since self.masked_int can change.
         return np.isin(self.range_int, self.masked_int)
 
     @property
     def unmasked_bool(self) -> np.ndarray:
         """Unmasked positions as a boolean array."""
+        import numpy as np
+
         # Do not cache this method since self.masked_bool can change.
         return np.logical_not(self.masked_bool)
 
@@ -507,11 +525,15 @@ class Region(object):
     @cached_property
     def range_int(self):
         """All positions in the region as integers."""
+        import numpy as np
+
         return np.arange(self.end5, self.end3 + 1, dtype=int)
 
     @cached_property
     def range_one(self):
         """All 1-indexed positions in the region as integers."""
+        import numpy as np
+
         return np.arange(1, self.length + 1, dtype=int)
 
     @cached_property
@@ -542,6 +564,8 @@ class Region(object):
 
     def get_mask(self, name: str, missing_ok: bool = False):
         """Get the positions masked under the given name."""
+        import numpy as np
+
         try:
             return self._masks[name]
         except KeyError:
@@ -561,6 +585,8 @@ class Region(object):
         complement: bool = False
             If True, then leave only positions in `positions` unmasked.
         """
+        import numpy as np
+
         # Convert positions to a NumPy integer array.
         p = np.unique(np.asarray(list(positions), dtype=int))
         # Check for positions outside the region.
@@ -617,6 +643,8 @@ class Region(object):
     def _find_polya(self, min_length: int) -> np.ndarray:
         """Array of each position within a stretch of `min_length` or
         more consecutive adenines."""
+        import numpy as np
+
         if min_length < 0:
             raise ValueError(f"min_length must be ≥ 0, but got {min_length}")
         # Initialize a list of 0-indexed positions in poly(A) sequences.
@@ -688,6 +716,8 @@ class Region(object):
         return str(self)
 
     def __eq__(self, other):
+        import numpy as np
+
         if self is other:
             return True
         if not isinstance(other, Region):
@@ -733,6 +763,8 @@ def intersect(*regions: Region, name: str | None = None):
     Region
         Intersection of all given regions.
     """
+    import numpy as np
+
     if not regions:
         raise ValueError("Cannot intersect zero regions")
     # Confirm that all reference names match.
@@ -802,6 +834,9 @@ def unite(
     Region
         Union of all given regions.
     """
+    import numpy as np
+    import pandas as pd
+
     regions = list(regions)
     if not regions:
         raise ValueError("Cannot unite 0 regions")

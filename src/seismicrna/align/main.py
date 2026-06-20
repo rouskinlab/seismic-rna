@@ -5,8 +5,8 @@ from click import command
 
 from .fqunit import FastqUnit
 from .write import align_samples
-from ..core.arg import (
-    CMD_ALIGN,
+from ..core.arg.cmd import CMD_ALIGN
+from ..core.arg.cli import (
     arg_fasta,
     opt_fastqz,
     opt_fastqy,
@@ -61,13 +61,8 @@ from ..core.arg import (
     opt_seed,
     optional_path,
 )
-from ..core.extern import (
-    BOWTIE2_CMD,
-    BOWTIE2_BUILD_CMD,
-    FASTP_CMD,
-    SAMTOOLS_CMD,
-    require_dependency,
-)
+from ..core.shell import BOWTIE2_CMD, BOWTIE2_BUILD_CMD, FASTP_CMD, SAMTOOLS_CMD
+from ..core.depend import require_dependency
 from ..core.run import run_func
 
 

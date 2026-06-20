@@ -27,7 +27,6 @@ from seismicrna.idmut.report import IDmutReport
 
 
 class TestSetMaskPolya(ut.TestCase):
-
     def test_dms_default(self):
         self.assertEqual(set_mask_polya(PROBE_DMS), 5)
 
@@ -51,7 +50,6 @@ class TestSetMaskPolya(ut.TestCase):
 
 
 class TestSetMutGapParams(ut.TestCase):
-
     def test_dms_default_gap(self):
         gap, _ = set_mut_gap_params(PROBE_DMS)
         self.assertEqual(gap, 4)
@@ -93,11 +91,15 @@ class TestSetMutGapParams(ut.TestCase):
         self.assertEqual(gap, 0)
 
     def test_explicit_collisions_drop_overrides_auto(self):
-        _, collisions = set_mut_gap_params(PROBE_SHAPE, mut_collisions=MUT_COLLISIONS_DROP)
+        _, collisions = set_mut_gap_params(
+            PROBE_SHAPE, mut_collisions=MUT_COLLISIONS_DROP
+        )
         self.assertEqual(collisions, MUT_COLLISIONS_DROP)
 
     def test_explicit_collisions_merge_overrides_auto(self):
-        _, collisions = set_mut_gap_params(PROBE_DMS, mut_collisions=MUT_COLLISIONS_MERGE)
+        _, collisions = set_mut_gap_params(
+            PROBE_DMS, mut_collisions=MUT_COLLISIONS_MERGE
+        )
         self.assertEqual(collisions, MUT_COLLISIONS_MERGE)
 
     def test_explicit_gap_and_collisions(self):
@@ -108,7 +110,9 @@ class TestSetMutGapParams(ut.TestCase):
         self.assertEqual(collisions, MUT_COLLISIONS_MERGE)
 
     def test_auto_collisions_resolves_for_none_probe(self):
-        _, collisions = set_mut_gap_params(PROBE_NONE, mut_collisions=MUT_COLLISIONS_AUTO)
+        _, collisions = set_mut_gap_params(
+            PROBE_NONE, mut_collisions=MUT_COLLISIONS_AUTO
+        )
         self.assertEqual(collisions, MUT_COLLISIONS_DROP)
 
 

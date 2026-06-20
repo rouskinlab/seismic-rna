@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 
 from .base import BaseGraph, BaseRunner
-from ..core.arg import opt_rels
-from ..core.table import get_rel_name
+from ..core.arg.cli import opt_rels
+from ..core.table.base import get_rel_name
 
 
 class RelGraph(BaseGraph, ABC):

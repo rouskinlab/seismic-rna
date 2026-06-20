@@ -1,8 +1,7 @@
-import numpy as np
-import pandas as pd
+from __future__ import annotations
 
 from ..array import get_length
-from ..seq import POS_NAME, iter_windows
+from ..seq.region import POS_NAME, iter_windows
 from ..validate import require_isinstance, require_equal
 
 
@@ -26,6 +25,9 @@ def _sort_paired(profile: pd.Series, *structs: pd.Series | None):
     tuple[pandas.Series, ...]
         Values in `paired` sorted by values in `profile`.
     """
+    import numpy as np
+    import pandas as pd
+
     assert isinstance(profile, pd.Series)
     # Use only positions with non-missing mutation data.
     profile_not_nan = profile.loc[np.logical_not(np.isnan(profile.values))]
@@ -60,6 +62,9 @@ def _compute_fpr_tpr(
     tuple[numpy.ndarray, numpy.ndarray]
         FPR and TPR axes, respectively.
     """
+    import numpy as np
+    import pandas as pd
+
     assert isinstance(sorted_paired, pd.Series)
     assert sorted_paired.dtype == bool
     if sorted_unpaired is not None:
@@ -143,6 +148,8 @@ def compute_auc(fpr: np.ndarray, tpr: np.ndarray):
     float
         AUC-ROC
     """
+    import numpy as np
+
     require_isinstance("fpr", fpr, np.ndarray)
     require_isinstance("tpr", tpr, np.ndarray)
     n = get_length(fpr)
@@ -202,6 +209,9 @@ def compute_rolling_auc(
     pandas.Series
         AUC-ROC at each position.
     """
+    import numpy as np
+    import pandas as pd
+
     # Initialize an empty series to hold the AUC-ROC values.
     aucrocs = pd.Series(np.nan, index=profile.index)
     # Compute the AUC-ROC for each sliding window.

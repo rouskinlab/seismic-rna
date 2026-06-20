@@ -5,10 +5,10 @@ from typing import Iterable
 from click import command
 
 from . import clusts as clusts_mod, ends as ends_mod, muts as muts_mod
-from ..core.arg import merge_params
+from ..core.arg.cli import merge_params
 from ..core.random import get_random_integer_generator
 from ..core.run import run_func
-from ..core.seq import DNA
+from ..core.seq.xna import DNA
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 

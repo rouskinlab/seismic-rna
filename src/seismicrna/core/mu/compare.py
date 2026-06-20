@@ -1,13 +1,12 @@
+from __future__ import annotations
 from typing import Callable
 
-import numpy as np
-import pandas as pd
 
 from .nan import auto_removes_nan
 from .scale import calc_ranks
-from ..arg import KEY_PEARSON, KEY_SPEARMAN, KEY_DETERM, KEY_MARCD
+from ..arg.cli import KEY_PEARSON, KEY_SPEARMAN, KEY_DETERM, KEY_MARCD
 from ..logs import logger
-from ..seq import get_shared_index, iter_windows
+from ..seq.region import get_shared_index, iter_windows
 
 
 def calc_arcsine_distance(
@@ -32,6 +31,8 @@ def calc_arcsine_distance(
     float | np.ndarray | pd.Series | pd.DataFrame
         Arcsine distance: ``2/π * |arcsin(√mus1) - arcsin(√mus2)|``
     """
+    import numpy as np
+
     return np.abs(np.arcsin(2.0 * mus1 - 1.0) - np.arcsin(2.0 * mus2 - 1.0)) / np.pi
 
 
@@ -56,6 +57,8 @@ def calc_sum_arcsine_distance(
     float | np.ndarray | pd.Series
         Sum of arcsine distances.
     """
+    import numpy as np
+
     return np.sum(calc_arcsine_distance(mus1, mus2), axis=0)
 
 
@@ -80,6 +83,8 @@ def calc_mean_arcsine_distance(
     float | np.ndarray | pd.Series
         Mean arcsine distance.
     """
+    import numpy as np
+
     return np.mean(calc_arcsine_distance(mus1, mus2), axis=0)
 
 
@@ -105,6 +110,8 @@ def calc_pearson(
     float | np.ndarray | pd.Series
         Pearson correlation coefficient.
     """
+    import numpy as np
+
     # Calculate the mean of each input over the first axis.
     mean1 = np.mean(mus1, axis=0)
     mean2 = np.mean(mus2, axis=0)
@@ -141,6 +148,8 @@ def calc_coeff_determ(
     float | np.ndarray | pd.Series
         Coefficient of determination.
     """
+    import numpy as np
+
     # The coefficient of determination equals the squared Pearson r.
     return np.square(calc_pearson(mus1, mus2))
 
@@ -227,6 +236,9 @@ def compare_windows(
     min_count: int = 2,
 ):
     """Compare two Series via sliding windows."""
+    import numpy as np
+    import pandas as pd
+
     with logger.trace.single_context(
         "compare_windows: {} position(s), size={}", len(mus1), size
     ):

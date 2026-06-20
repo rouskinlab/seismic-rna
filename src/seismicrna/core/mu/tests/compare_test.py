@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import pearsonr, spearmanr
 
-from seismicrna.core.mu import (
+from seismicrna.core.mu.compare import (
     calc_arcsine_distance,
     calc_sum_arcsine_distance,
     calc_mean_arcsine_distance,
@@ -16,7 +16,8 @@ from seismicrna.core.mu import (
     get_comp_func,
     get_comp_name,
 )
-from seismicrna.core.seq import DNA, seq_pos_to_index
+from seismicrna.core.seq.xna import DNA
+from seismicrna.core.seq.region import seq_pos_to_index
 
 
 class TestCalcArcsineDistance(ut.TestCase):

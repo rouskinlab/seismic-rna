@@ -7,8 +7,8 @@ from typing import Iterable
 from click import command
 
 from .core import path
-from .core.arg import (
-    CMD_POOL,
+from .core.arg.cmd import CMD_POOL
+from .core.arg.cli import (
     arg_input_path,
     arg_pooled_sample,
     opt_min_pearson_pool,
@@ -26,7 +26,7 @@ from .core.logs import logger
 from .core.mu.compare import calc_mean_arcsine_distance, calc_pearson
 from .core.report import BranchesF
 from .core.run import run_func
-from .core.table import INFOR_REL, MUTAT_REL
+from .core.table.base import INFOR_REL, MUTAT_REL
 from .core.task import dispatch
 from .core.tmp import release_to_out, with_tmp_dir
 from .core.write import need_write

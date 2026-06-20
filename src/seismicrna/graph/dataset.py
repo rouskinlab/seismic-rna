@@ -12,12 +12,12 @@ from .base import (
 )
 from .cgroup import ClusterGroupRunner, cgroup_table
 from .onesource import OneSourceClusterGroupGraph
-from .rel import OneRelGraph, RelRunner
-from ..core.arg import opt_verify_times
-from ..core.dataset import MutsDataset
-from ..core.table import get_subpattern
-from ..core.task import dispatch
 from ..table import load_all_datasets
+from .rel import OneRelGraph, RelRunner
+from ..core.arg.cli import opt_verify_times
+from ..core.dataset import MutsDataset
+from ..core.table.base import get_subpattern
+from ..core.task import dispatch
 
 
 class DatasetGraph(OneRelGraph, OneSourceClusterGroupGraph, ABC):

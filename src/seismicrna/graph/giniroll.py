@@ -3,7 +3,7 @@ import os
 from click import command
 
 from .statroll import RollingStatGraph, RollingStatRunner, RollingStatWriter
-from ..core.mu import calc_gini
+from ..core.mu.measure import calc_gini
 from ..core.run import log_command
 
 COMMAND = __name__.split(os.path.extsep)[-1]

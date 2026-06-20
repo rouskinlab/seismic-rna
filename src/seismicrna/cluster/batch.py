@@ -1,6 +1,6 @@
+from __future__ import annotations
 from functools import cached_property
 
-import pandas as pd
 
 from ..filter.batch import PartialRegionMutsBatch, PartialReadBatch
 

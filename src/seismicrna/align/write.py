@@ -16,9 +16,9 @@ from .xamops import (
     run_xamgen,
 )
 from ..core import path
-from ..core.io import calc_sha512_path
+from ..core.io.checksum import calc_sha512_path
 from ..core.logs import logger
-from ..core.ngs import (
+from ..core.ngs.xam import (
     FLAG_PAIRED,
     FLAG_PROPER,
     FLAG_FIRST,
@@ -32,7 +32,8 @@ from ..core.ngs import (
     run_idxstats,
     xam_paired,
 )
-from ..core.seq import DNA, get_fasta_seq, parse_fasta, write_fasta
+from ..core.seq.xna import DNA
+from ..core.seq.fasta import get_fasta_seq, parse_fasta, write_fasta
 from ..core.task import dispatch
 
 

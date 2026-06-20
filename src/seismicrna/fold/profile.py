@@ -1,19 +1,19 @@
+from __future__ import annotations
 from functools import cached_property
 from pathlib import Path
 
-import pandas as pd
 
 from ..core import path
-from ..core.arg import (
+from ..core.arg.cli import (
     FOLD_ENERGY_METHODS,
     FOLD_ENERGY_METHOD_CORDERO,
     FOLD_ENERGY_METHOD_DEIGAN,
     FOLD_ENERGY_METHOD_EDDY,
 )
 from ..core.logs import logger
-from ..core.mu import winsorize
-from ..core.rna import RNAProfile
-from ..core.seq import write_fasta
+from ..core.mu.scale import winsorize
+from ..core.rna.profile import RNAProfile
+from ..core.seq.fasta import write_fasta
 from ..core.validate import (
     require_atleast,
     require_between,
@@ -245,6 +245,8 @@ class RNAFoldProfile(RNAProfile):
 
     def write_mus_file(self, top: Path, branch: str):
         """Write the mutation rates to a file."""
+        import pandas as pd
+
         # The mutation rates must be numbered starting from 1 at the
         # beginning of the region, even if the region does not start
         # at 1. Renumber the region from 1.

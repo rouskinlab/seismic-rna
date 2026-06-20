@@ -8,7 +8,9 @@ from jinja2 import Template
 
 from ..cluster.data import ClusterPositionTable, ClusterPositionTableLoader
 from ..core import path
-from ..core.extern.shell import (
+from ..core.arg.cmd import CMD_DRAW
+from ..core.depend import require_env_var
+from ..core.shell import (
     args_to_cmd,
     run_cmd,
     JAVA_CMD,
@@ -752,9 +754,6 @@ class RNArtistRun(object):
                     "Running RNArtistCore with jgo failed. Falling back to manual "
                     "installation."
                 )
-                from ..core.arg import CMD_DRAW
-                from ..core.extern import require_env_var
-
                 require_env_var("RNARTISTCORE", CMD_DRAW)
                 RNARTIST_PATH = os.environ.get("RNARTISTCORE")
                 rnartist_cmd = args_to_cmd(

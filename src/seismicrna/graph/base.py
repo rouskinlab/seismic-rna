@@ -1,17 +1,23 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from functools import cached_property
 from itertools import chain
 from pathlib import Path
-from typing import Callable, Generator, Iterable
+from typing import TYPE_CHECKING, Callable, Generator, Iterable
 
-import pandas as pd
 from click import Argument, Option
-from plotly import graph_objects as go
-from plotly.subplots import make_subplots
+
+if TYPE_CHECKING:
+    from plotly import graph_objects as go
 
 from ..cluster.data import ClusterDataset, ClusterTable, ClusterAbundanceTable
 from ..core import path
-from ..core.arg import (
+from ..filter.dataset import FilterDataset
+from ..filter.table import FilterTable
+from ..idmut.dataset import IDmutDataset
+from ..idmut.table import IDmutTable
+from ..core.arg.cli import (
     arg_input_path,
     opt_csv,
     opt_html,
@@ -23,13 +29,9 @@ from ..core.arg import (
 )
 from ..core.dataset import MutsDataset
 from ..core.logs import format_sample_reference_region
-from ..core.seq import DNA
-from ..core.table import Table
+from ..core.seq.xna import DNA
+from ..core.table.base import Table
 from ..core.write import need_write
-from ..filter.dataset import FilterDataset
-from ..filter.table import FilterTable
-from ..idmut.dataset import IDmutDataset
-from ..idmut.table import IDmutTable
 
 # Define actions.
 ACTION_IDMUT = "unfiltered"
@@ -248,6 +250,8 @@ class BaseGraph(ABC):
 
     def _figure_init(self):
         """Initialize the figure."""
+        from plotly.subplots import make_subplots
+
         return make_subplots(**self._subplots_params)
 
     def _figure_data(self, figure: go.Figure):

@@ -13,7 +13,8 @@ from seismicrna.core.batch.ends import (
     merge_read_ends,
     sort_segment_ends,
 )
-from seismicrna.core.seq import DNA, Region
+from seismicrna.core.seq.xna import DNA
+from seismicrna.core.seq.region import Region
 from seismicrna.filter.batch import FilterMutsBatch
 
 rng = np.random.default_rng(0)

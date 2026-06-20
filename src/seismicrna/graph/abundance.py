@@ -1,9 +1,13 @@
+from __future__ import annotations
+
 import os
 from collections import defaultdict
 from functools import cached_property
-from plotly import graph_objects as go
+from typing import TYPE_CHECKING
 
-import pandas as pd
+if TYPE_CHECKING:
+    from plotly import graph_objects as go
+
 from click import command
 
 from .onetable import OneTableGraph, OneTableWriter, OneTableRunner
@@ -65,6 +69,8 @@ class ClusterAbundanceGraph(OneTableGraph):
 
     @cached_property
     def data(self):
+        import pandas as pd
+
         if self.use_ratio:
             table_data = self.table.proportions
         else:

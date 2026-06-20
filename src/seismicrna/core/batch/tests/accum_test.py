@@ -9,7 +9,7 @@ from seismicrna.core.batch.ends import END5_COORD, END3_COORD
 from seismicrna.core.batch.index import RB_INDEX_NAMES
 from seismicrna.core.batch.muts import RegionMutsBatch
 from seismicrna.core.header import RelClustHeader
-from seismicrna.core.rel import RelPattern
+from seismicrna.core.rel.pattern import RelPattern
 from seismicrna.core.seq.region import Region
 from seismicrna.core.seq.xna import DNA
 from seismicrna.filter.batch import FilterMutsBatch

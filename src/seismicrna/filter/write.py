@@ -1,11 +1,10 @@
+from __future__ import annotations
 import json
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 from typing import Iterable
 
-import numpy as np
-import pandas as pd
 
 from .batch import FilterMutsBatch, apply_filters
 from .dataset import FilterMutsDataset
@@ -13,15 +12,15 @@ from .io import FilterBatchIO
 from .report import FilterReport
 from .table import FilterBatchTabulator
 from ..core import path
-from ..core.arg import MUT_COLLISIONS_DROP, MUT_COLLISIONS_MERGE, PROBE_NONE
-from ..core.batch import RegionMutsBatch
+from ..core.arg.cli import MUT_COLLISIONS_DROP, MUT_COLLISIONS_MERGE, PROBE_NONE
+from ..core.batch.muts import RegionMutsBatch
 from ..core.dataset import MissingBatchTypeError
 from ..core.error import IncompatibleValuesError
 from ..core.lists import PositionList
 from ..core.logs import logger
-from ..core.rel import RelPattern
+from ..core.rel.pattern import RelPattern
 from ..core.report import filter_iter_no_convergence
-from ..core.seq import (
+from ..core.seq.region import (
     BASEA,
     BASEC,
     BASEG,
@@ -32,7 +31,7 @@ from ..core.seq import (
     Region,
     index_to_pos,
 )
-from ..core.table import MUTAT_REL, INFOR_REL
+from ..core.table.base import MUTAT_REL, INFOR_REL
 from ..core.tmp import release_to_out, with_tmp_dir
 from ..core.write import need_write
 from ..idmut.dataset import IDmutMutsDataset, PoolMutsDataset, load_read_names_dataset
@@ -347,6 +346,8 @@ class Filterer(object):
         self, mask_pos: Iterable[tuple[str, int]], mask_pos_file: Iterable[str | Path]
     ):
         """List all positions to mask."""
+        import numpy as np
+
         # Collect the positions to mask from the list.
         dataset_ref = self.dataset.ref
         mask_pos = np.array(
@@ -386,6 +387,8 @@ class Filterer(object):
     @staticmethod
     def _get_drop_read(drop_read: Iterable[str], drop_read_file: Iterable[str | Path]):
         """List all reads to drop."""
+        import numpy as np
+
         # Ensure that the given read names are all strings.
         drop_read = set(map(str, drop_read))
         # List reads to exclude from file(s).
@@ -399,6 +402,8 @@ class Filterer(object):
 
     def _drop_predefined_reads(self, batch: RegionMutsBatch):
         """Drop reads from a predefined list."""
+        import numpy as np
+
         if self.drop_read.size == 0:
             # Pre-exclude no reads.
             logger.trace("{} skipped pre-excluding reads in {}", self, batch)
@@ -443,6 +448,8 @@ class Filterer(object):
 
     def _drop_min_fcov_read(self, batch: RegionMutsBatch):
         """Drop reads covering too small a fraction of the region."""
+        import numpy as np
+
         if not 0.0 <= self.min_fcov_read <= 1.0:
             raise ValueError(
                 f"min_fcov_read must be in [0, 1], but got {self.min_fcov_read}"
@@ -513,6 +520,8 @@ class Filterer(object):
 
     def _drop_max_fmut_read(self, batch: RegionMutsBatch):
         """Drop reads with too many mutations."""
+        import numpy as np
+
         if not 0.0 <= self.max_fmut_read <= 1.0:
             raise ValueError(
                 f"max_fmut_read must be ≥ 0, ≤ 1, but got {self.max_fmut_read}"
@@ -769,6 +778,8 @@ class Filterer(object):
         return tabulator
 
     def run_filtering(self):
+        import numpy as np
+
         if self._iter > 0:
             raise ValueError(f"{self} already filtered the data")
         # Mask positions based on the parameters.

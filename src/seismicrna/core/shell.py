@@ -4,7 +4,7 @@ from pathlib import Path
 from subprocess import CompletedProcess, run
 from typing import Any, Callable
 
-from ..logs import logger
+from .logs import logger
 
 # Commands for external applications
 ECHO_CMD = "echo"

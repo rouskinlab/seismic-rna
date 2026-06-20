@@ -3,7 +3,7 @@ from sys import stdout
 from click import command
 
 from .rnastructure import guess_data_path, DATAPATH
-from ..core.arg import CMD_DATAPATH
+from ..core.arg.cmd import CMD_DATAPATH
 from ..core.run import run_func
 
 

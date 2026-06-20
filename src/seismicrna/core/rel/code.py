@@ -1,7 +1,4 @@
-from ..types import get_uint_type
-
 REL_SIZE = 1
-REL_TYPE = get_uint_type(REL_SIZE)
 
 # Integer encodings for relationships
 IRREC = int("00000000", 2)  # 000: irreconcilable mates

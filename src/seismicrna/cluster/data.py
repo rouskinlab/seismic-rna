@@ -1,16 +1,15 @@
+from __future__ import annotations
 from abc import ABC
 from functools import cached_property
 from itertools import combinations, product
 from typing import Any
 
-import numpy as np
-import pandas as pd
 
 from .batch import ClusterMutsBatch
 from .io import ClusterFile, ClusterBatchIO
 from .report import ClusterReport, JoinClusterReport
 from ..core import path
-from ..core.batch import MutsBatch
+from ..core.batch.muts import MutsBatch
 from ..core.dataset import (
     LoadFunction,
     Dataset,
@@ -39,17 +38,14 @@ from ..core.join import (
     JoinMutsDataset,
 )
 from ..core.logs import logger
-from ..core.mu import calc_sum_arcsine_distance
+from ..core.mu.compare import calc_sum_arcsine_distance
 from ..core.report import JoinedClustersF, KsWrittenF, BestKF
-from ..core.seq import POS_NAME, BASE_NAME
-from ..core.table import (
-    MUTAT_REL,
-    TableLoader,
-    PositionTableLoader,
+from ..core.seq.region import POS_NAME, BASE_NAME
+from ..core.table.base import MUTAT_REL, AbundanceTable, RelTypeTable
+from ..core.table.load import TableLoader, PositionTableLoader
+from ..core.table.write import (
     BatchTabulator,
     CountTabulator,
-    AbundanceTable,
-    RelTypeTable,
     PositionTableWriter,
     AbundanceTableWriter,
 )
@@ -155,6 +151,8 @@ class ClusterMutsDataset(ClusterDataset, MultistepDataset, UnbiasDataset):
         return getattr(self.dataset2, "best_k")
 
     def _integrate(self, batch1: FilterMutsBatch | None, batch2: ClusterBatchIO):
+        import numpy as np
+
         if batch2.is_self_contained:
             if batch1 is not None:
                 raise ValueError(f"batch1 must be None when {batch2} is self-contained")
@@ -191,6 +189,8 @@ def get_clust_params(dataset: ClusterMutsDataset, num_cpus: int = 1):
     """Get the mutation rates and proportion for each cluster. If table
     files already exist, then use them to get the parameters; otherwise,
     calculate the parameters from the dataset."""
+    import pandas as pd
+
     with logger.debug.single_context("obtaining cluster parameters from {}", dataset):
         # Try to load the tables from files.
         path_fields = {
@@ -264,6 +264,9 @@ def get_clust_params(dataset: ClusterMutsDataset, num_cpus: int = 1):
 
 def _join_regions_k(region_params: dict[str, pd.DataFrame]):
     """Determine the optimal way to join regions ."""
+    import numpy as np
+    import pandas as pd
+
     with logger.debug.single_context("determining the optimal way to join clusters"):
         from scipy.optimize import Bounds, LinearConstraint, milp
         from scipy.sparse import csr_matrix
@@ -465,6 +468,8 @@ class JoinClusterMutsDataset(ClusterDataset, JoinMutsDataset, MergedUnbiasDatase
 
     def _reg_cols(self, reg: str):
         """Get the columns for a region's responsibilities."""
+        import pandas as pd
+
         clusts = self.joined_clusts[reg]
         return pd.MultiIndex.from_tuples(
             [(k, clusts[k][clust]) for k, clust in self.clusts],
@@ -473,6 +478,8 @@ class JoinClusterMutsDataset(ClusterDataset, JoinMutsDataset, MergedUnbiasDatase
 
     def _reg_resps(self, reg: str, resps: pd.DataFrame):
         """Get the cluster responsibilities for a region."""
+        import pandas as pd
+
         # Reorder the columns.
         reordered = resps.loc[:, self._reg_cols(reg)]
         # Rename the columns by increasing k and cluster.
@@ -559,6 +566,8 @@ class ClusterAbundanceTableLoader(TableLoader, ClusterAbundanceTable):
 
     @cached_property
     def data(self) -> pd.Series:
+        import pandas as pd
+
         data = pd.read_csv(self.path, index_col=self.get_index_cols()).squeeze(axis=1)
         if not isinstance(data, pd.Series):
             raise ValueError(f"{self} must have one column, but got\n{data}")

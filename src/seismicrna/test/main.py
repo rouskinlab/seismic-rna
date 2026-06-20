@@ -3,7 +3,8 @@ from os.path import dirname
 
 from click import command
 
-from seismicrna.core.arg import CMD_TEST, opt_verbose
+from ..core.arg.cmd import CMD_TEST
+from ..core.arg.cli import opt_verbose
 from seismicrna.core.logs import Level, restore_config, set_config
 from seismicrna.core.run import run_func
 

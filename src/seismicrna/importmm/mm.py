@@ -2,7 +2,7 @@ import struct
 from pathlib import Path
 from typing import Iterator
 
-from ..core.seq import DNA
+from ..core.seq.xna import DNA
 
 EOF_MARKER = b"[mmeof]"
 

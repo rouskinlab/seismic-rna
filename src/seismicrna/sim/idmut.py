@@ -1,19 +1,19 @@
+from __future__ import annotations
 import os
 from pathlib import Path
 from typing import Iterable
 
-import numpy as np
 from click import command
 
 from .clusts import load_pclust
 from .ends import load_pends
 from .muts import load_pmut
 from ..core import path
-from ..core.arg import (
+from ..core.arg.cli import (
     DEFAULT_INJECTED_MUT_PROBS,
     DEFAULT_MIN_MUT_GAP_WEIGHTS,
-    MUT_COLLISIONS_DROP,
-    MUT_COLLISIONS_MERGE,
+    DEFAULT_MUT_COLLISIONS,
+    MUT_COLLISIONS_AUTO,
     opt_param_dir,
     opt_profile_name,
     opt_sample_sim,
@@ -23,6 +23,7 @@ from ..core.arg import (
     opt_reverse_fraction,
     opt_probe,
     opt_min_mut_gap_weights,
+    opt_mut_collisions,
     opt_injected_mut_probs,
     opt_num_reads,
     opt_batch_size,
@@ -33,7 +34,7 @@ from ..core.arg import (
     opt_seed,
 )
 from ..core.logs import logger
-from ..core.rna import find_ct_region
+from ..core.rna.io import find_ct_region
 from ..core.run import run_func
 from ..core.task import as_list_of_tuples, dispatch
 from ..idmut.sim import simulate_idmut
@@ -43,6 +44,7 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 
 def set_sim_mut_params(
     probe: str,
+    mut_collisions: str = MUT_COLLISIONS_AUTO,
     min_mut_gap_weights: str | None = None,
     injected_mut_probs: str | None = None,
 ):
@@ -52,7 +54,10 @@ def set_sim_mut_params(
     ----------
     probe: str
         Probe type (one of the values in ``PROBES``), used to set
-        defaults when a parameter is ``None``.
+        defaults when a parameter is ``None`` / ``MUT_COLLISIONS_AUTO``.
+    mut_collisions: str, optional
+        How to handle reads with close mutations; if ``MUT_COLLISIONS_AUTO``,
+        a probe-specific default is used.
     min_mut_gap_weights: str or None, optional
         Comma-separated gap:weight pairs; if None, a probe-specific
         default is used. Pass an empty string to disable.
@@ -63,9 +68,15 @@ def set_sim_mut_params(
 
     Returns
     -------
-    tuple[str, str]
-        Resolved ``(min_mut_gap_weights, injected_mut_probs)`` strings.
+    tuple[str, str, str]
+        Resolved ``(mut_collisions, min_mut_gap_weights, injected_mut_probs)``
+        strings.
     """
+    if mut_collisions == MUT_COLLISIONS_AUTO:
+        mut_collisions = DEFAULT_MUT_COLLISIONS[probe]
+        logger.trace(
+            "Auto-selected mut_collisions={!r} for probe {!r}", mut_collisions, probe
+        )
     if min_mut_gap_weights is None:
         min_mut_gap_weights = DEFAULT_MIN_MUT_GAP_WEIGHTS[probe]
         logger.trace(
@@ -80,11 +91,13 @@ def set_sim_mut_params(
             injected_mut_probs,
             probe,
         )
-    return min_mut_gap_weights, injected_mut_probs
+    return mut_collisions, min_mut_gap_weights, injected_mut_probs
 
 
 def parse_min_mut_gap_weights(min_mut_gap_weights: str) -> dict[int, float]:
     """Parse a comma-separated 'gap:weight' string into a dict."""
+    import numpy as np
+
     weights = dict()
     for pair in min_mut_gap_weights.split(","):
         if not pair.strip():
@@ -195,6 +208,7 @@ def run(
     reverse_fraction: float,
     probe: str,
     min_mut_gap_weights: str | None,
+    mut_collisions: str,
     injected_mut_probs: str | None,
     num_reads: int,
     batch_size: int,
@@ -206,14 +220,11 @@ def run(
     seed: int | None,
 ):
     """Simulate an IDmut dataset."""
-    min_mut_gap_weights, injected_mut_probs = set_sim_mut_params(
-        probe, min_mut_gap_weights, injected_mut_probs
+    mut_collisions, min_mut_gap_weights, injected_mut_probs = set_sim_mut_params(
+        probe, mut_collisions, min_mut_gap_weights, injected_mut_probs
     )
     min_mut_gap_weights_dict = parse_min_mut_gap_weights(min_mut_gap_weights)
     injected_mut_probs_dict = parse_injected_mut_probs(injected_mut_probs)
-    mut_collisions = (
-        MUT_COLLISIONS_MERGE if injected_mut_probs_dict else MUT_COLLISIONS_DROP
-    )
     return dispatch(
         _from_param_dir,
         num_cpus=num_cpus,
@@ -253,6 +264,7 @@ params = [
     opt_reverse_fraction,
     opt_probe,
     opt_min_mut_gap_weights,
+    opt_mut_collisions,
     opt_injected_mut_probs,
     opt_num_reads,
     opt_batch_size,

@@ -2,8 +2,9 @@ import unittest as ut
 from typing import Iterable
 
 from seismicrna.idmut.aux.infer import infer_read
-from seismicrna.core.rel import DELET, INS_5, INS_3, ANY_N, SUB_A, SUB_C, SUB_G, SUB_T
-from seismicrna.core.seq import DNA
+from seismicrna.core.rel.pattern import DELET, SUB_A, SUB_C, SUB_G, SUB_T
+from seismicrna.core.rel.code import INS_5, INS_3, ANY_N
+from seismicrna.core.seq.xna import DNA
 
 
 class TestInferRead(ut.TestCase):

@@ -1,7 +1,7 @@
 from click import group
 
 from . import abstract, clusts, ends, fastq, fold, muts, params, ref, idmut, total
-from ..core.arg import CMD_SIM
+from ..core.arg.cmd import CMD_SIM
 
 
 # Group for all sim commands

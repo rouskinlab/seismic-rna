@@ -1,2 +1,1 @@
-from .pattern import *  # noqa: F403
-from .code import *  # noqa: F403
+"""Relationship patterns/codes: import directly from submodules (e.g. ``from ..rel.<submodule> import <name>``)."""

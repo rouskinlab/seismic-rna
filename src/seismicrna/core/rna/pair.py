@@ -1,9 +1,9 @@
+from __future__ import annotations
 from typing import Iterable
 
-import pandas as pd
 
 from ..logs import logger
-from ..seq import FIELD_END5, FIELD_END3, POS_NAME, Region
+from ..seq.region import FIELD_END5, FIELD_END3, POS_NAME, Region
 
 
 UNPAIRED = 0
@@ -55,6 +55,8 @@ def dict_to_pairs(pair_dict: dict[int, int]):
 def pairs_to_table(pairs: Iterable[tuple[int, int]], region: Region):
     """Series of every position in the region and the base to which it
     pairs, or 0 if it does not pair."""
+    import pandas as pd
+
     table = pd.Series(UNPAIRED, index=region.range)
     seq = str(region.seq)
 
@@ -127,6 +129,8 @@ def renumber_pairs(pairs: Iterable[tuple[int, int]], offset: int):
 
 def find_enclosing_pairs(table: pd.Series):
     """Find the base pair that encloses each position."""
+    import pandas as pd
+
     enclosing = pd.DataFrame(UNPAIRED, table.index, [FIELD_END5, FIELD_END3])
     stack = list()
     for (position, _), partner in table.items():

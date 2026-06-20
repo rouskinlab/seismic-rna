@@ -2,8 +2,8 @@ from typing import Iterable
 from click import command
 from pathlib import Path
 from ..core import path
-from ..core.arg import (
-    CMD_DRAW,
+from ..core.arg.cmd import CMD_DRAW
+from ..core.arg.cli import (
     arg_input_path,
     opt_fold_table_region,
     opt_force,

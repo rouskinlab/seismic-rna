@@ -1,19 +1,19 @@
+from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 from typing import Callable
 
-import numpy as np
-import pandas as pd
 
 from .batch import format_read_name
 from .io import ReadNamesBatchIO, IDmutBatchIO, RefseqIO
 from .report import IDmutReport
 from ..core import path
-from ..core.arg import MUT_COLLISIONS_DROP
+from ..core.arg.cli import MUT_COLLISIONS_DROP
 from ..core.header import parse_header
 from ..core.random import stochastic_round, get_random_integer_generator
-from ..core.rel import MATCH, RelPattern
-from ..core.seq import BASE_NAME, DNA, index_to_pos
+from ..core.rel.pattern import MATCH, RelPattern
+from ..core.seq.region import BASE_NAME, index_to_pos
+from ..core.seq.xna import DNA
 from ..core.tmp import release_to_out
 from ..core.unbias import (
     calc_p_noclose_given_clust,
@@ -28,6 +28,8 @@ def make_p_ends_2d(
 ) -> np.ndarray:
     """Convert a 1-D end-pair probability array to a 2-D (positions ×
     positions) matrix required by calc_p_noclose_given_clust."""
+    import numpy as np
+
     positions = index_to_pos(pmut_index)
     min_pos = int(positions.min())
     num_pos = len(positions)
@@ -103,6 +105,8 @@ def calc_pmut_pattern(pmut: pd.DataFrame, pattern: RelPattern, normalize: bool =
         p_noclose for simulation, where non-informative (AMB) positions are
         treated as non-mutations by reads_noclose_muts.
     """
+    import pandas as pd
+
     header = parse_header(pmut.columns)
     rels = list(map(int, header.get_rel_header().index))
     # Accumulate the frequencies of all selected mutations.
@@ -167,6 +171,9 @@ def simulate_batches(
     tuple[IDmutBatchIO, ReadNamesBatchIO | None]
         Pairs of idmut and (optionally) read-name batch objects.
     """
+    import numpy as np
+    import pandas as pd
+
     seeds = get_random_integer_generator(seed)
     rng = np.random.default_rng(next(seeds))
     # Simulate the number of reads per cluster, adjusting pclust to

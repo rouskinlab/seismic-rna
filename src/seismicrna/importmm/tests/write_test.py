@@ -1,9 +1,14 @@
 import json
+import shutil
+import subprocess
 import struct
 import tempfile
 import unittest as ut
 from pathlib import Path
 
+import pandas as pd
+
+from seismicrna.align import run as run_align
 from seismicrna.core import path
 from seismicrna.core.logs import Level, logger, set_config
 from seismicrna.core.rel.code import (
@@ -17,9 +22,15 @@ from seismicrna.core.rel.code import (
     SUB_T,
 )
 from seismicrna.core.report import NumReadsXamF, NumReadsRelF, RefF, SampleF
-from seismicrna.core.seq import DNA
+from seismicrna.core.seq.xna import DNA
 from seismicrna.importmm.write import _build_mut_codes, import_mm
+from seismicrna.idmut import run as run_idmut
 from seismicrna.idmut.report import IDmutReport
+from seismicrna.sim.ref import run as run_sim_ref
+from seismicrna.core.arg.cli import PROBE_DMS
+from seismicrna.sim.fold import run as run_sim_fold
+from seismicrna.sim.params import run as run_sim_params
+from seismicrna.sim.fastq import run as run_sim_fastq
 
 _SAMPLE = "test_sample"
 _BRANCH = ""
@@ -269,17 +280,6 @@ class TestRFCountIntegration(ut.TestCase):
     _REF = "integ_ref"
 
     def test_matches_idmut(self):
-        import shutil
-        import subprocess
-        import pandas as pd
-        from seismicrna.align import run as run_align
-        from seismicrna.idmut import run as run_idmut
-        from seismicrna.sim.ref import run as run_sim_ref
-        from seismicrna.core.arg.cli import PROBE_DMS
-        from seismicrna.sim.fold import run as run_sim_fold
-        from seismicrna.sim.params import run as run_sim_params
-        from seismicrna.sim.fastq import run as run_sim_fastq
-
         if shutil.which("rf-count") is None:
             logger.warning(
                 "Skipped test of importing Mutation Map files from "
@@ -372,7 +372,7 @@ class TestRFCountIntegration(ut.TestCase):
                     paired_end=False,
                     read_length=50,
                     seed=42,
-                    injected_mut_probs="1:0.2,2:0.04,3:0.008",
+                    injected_mut_probs="",
                     min_mut_gap_weights="",
                 )
                 samples_dir = fastqs[0].parent.parent.parent

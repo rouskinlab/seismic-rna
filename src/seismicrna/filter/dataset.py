@@ -1,10 +1,10 @@
+from __future__ import annotations
 from abc import ABC
 from functools import cached_property
 
-import numpy as np
 
 from .batch import FilterMutsBatch, apply_filters
-from ..core.arg import MUT_COLLISIONS_MERGE
+from ..core.arg.cli import MUT_COLLISIONS_MERGE
 from .io import FilterBatchIO
 from .report import FilterReport, JoinFilterReport
 from ..core.dataset import (
@@ -22,7 +22,7 @@ from ..core.join import (
     MUTS,
     JoinMutsDataset,
 )
-from ..core.rel import RelPattern
+from ..core.rel.pattern import RelPattern
 from ..core.report import (
     CountMutsF,
     CountRefsF,
@@ -38,7 +38,7 @@ from ..core.report import (
     QuickUnbiasThreshF,
     JoinedClustersF,
 )
-from ..core.seq import Region
+from ..core.seq.region import Region
 from ..idmut.batch import IDmutMutsBatch
 from ..idmut.dataset import AverageDataset, load_idmut_dataset
 
@@ -158,6 +158,8 @@ class FilterMutsDataset(FilterDataset, MultistepDataset, UnbiasDataset):
             A batch containing only the reads and positions that pass
             the filter, clipped to the dataset's region.
         """
+        import numpy as np
+
         if batch2.is_self_contained:
             if batch1 is not None:
                 raise ValueError(f"batch1 must be None when {batch2} is self-contained")

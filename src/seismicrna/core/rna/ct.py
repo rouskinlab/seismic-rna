@@ -2,7 +2,8 @@ from pathlib import Path
 from typing import TextIO
 
 from .. import path
-from ..seq import RNA, Region
+from ..seq.xna import RNA
+from ..seq.region import Region
 
 NUM_FIELDS = 6
 

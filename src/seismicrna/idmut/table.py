@@ -5,20 +5,18 @@ from typing import Iterable
 from .dataset import load_idmut_dataset
 from .io import IDmutFile
 from ..core.header import RelHeader
-from ..core.seq import DNA, Region
-from ..core.table import (
+from ..core.seq.xna import DNA
+from ..core.seq.region import Region
+from ..core.table.write import (
     Tabulator,
     BatchTabulator,
     CountTabulator,
     DatasetTabulator,
-    PositionTable,
-    PositionTableLoader,
     PositionTableWriter,
-    ReadTable,
-    ReadTableLoader,
     ReadTableWriter,
-    RelTypeTable,
 )
+from ..core.table.base import PositionTable, ReadTable, RelTypeTable
+from ..core.table.load import PositionTableLoader, ReadTableLoader
 
 
 class AverageTable(RelTypeTable, ABC):

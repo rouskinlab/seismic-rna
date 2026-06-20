@@ -5,7 +5,8 @@ from click import command
 
 from .io import ct_to_db, db_to_ct
 from .. import path
-from ..arg import CMD_CT2DB, CMD_DB2CT, arg_input_path, opt_force, opt_num_cpus
+from ..arg.cmd import CMD_CT2DB, CMD_DB2CT
+from ..arg.cli import arg_input_path, opt_force, opt_num_cpus
 from ..run import run_func
 from ..task import as_list_of_tuples, dispatch
 

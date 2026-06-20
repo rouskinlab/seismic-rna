@@ -9,8 +9,9 @@ from .cigarop import count_cigar_muts, find_cigar_op_pos_read, find_cigar_op_pos
 from .infer import infer_read
 from .iterrel import iter_relvecs_all
 from ..py.cigar import CIG_DELET, CIG_INSRT, parse_cigar
-from ...core.rel import INS_5, INS_3, MATCH
-from ...core.seq import DNA, expand_degenerate_seq
+from ...core.rel.code import INS_5, INS_3
+from ...core.rel.pattern import MATCH
+from ...core.seq.xna import DNA, expand_degenerate_seq
 
 
 def _connected_indels(indels1: Sequence[int], indels2: Sequence[int]):

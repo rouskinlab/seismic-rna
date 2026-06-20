@@ -1,7 +1,7 @@
 from abc import ABC
 
 from ..core import path
-from ..core.io import RegFileIO
+from ..core.io.file import RegFileIO
 
 
 class EnsemblesFile(path.HasRegFilePath, ABC):

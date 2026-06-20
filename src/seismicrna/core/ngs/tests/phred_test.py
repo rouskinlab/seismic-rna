@@ -8,7 +8,7 @@ Tests for the Quality Core Module
 
 import unittest as ut
 
-from ..phred import (
+from seismicrna.core.ngs.phred import (
     LO_QUAL,
     OK_QUAL,
     HI_QUAL,

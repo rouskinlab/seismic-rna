@@ -12,8 +12,8 @@ from . import (
     collate as collate_mod,
     export as export_mod,
 )
-from .core.arg import (
-    CMD_WORKFLOW,
+from .core.arg.cmd import CMD_WORKFLOW
+from .core.arg.cli import (
     merge_params,
     opt_branch,
     opt_demultiplex,
@@ -51,8 +51,8 @@ from .core.arg import (
     opt_collate,
 )
 from .core.run import run_func
-from .core.seq import DNA
-from .core.table import (
+from .core.seq.xna import DNA
+from .core.table.base import (
     DELET_REL,
     INSRT_REL,
     MUTAT_REL,

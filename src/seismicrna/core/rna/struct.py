@@ -1,8 +1,7 @@
+from __future__ import annotations
 from functools import cached_property
 from typing import Iterable
 
-import numpy as np
-import pandas as pd
 
 from .base import RNARegion
 from .db import DB_NAME_MARK, format_db_string, parse_db_string
@@ -14,7 +13,8 @@ from .pair import (
     renumber_pairs,
     table_to_pairs,
 )
-from ..seq import POS_NAME, DNA, RNA, Region, intersect
+from ..seq.region import POS_NAME, Region, intersect
+from ..seq.xna import DNA, RNA
 from ..validate import require_isinstance, require_equal
 
 IDX_FIELD = "Index"
@@ -162,6 +162,8 @@ class RNAStructure(RNARegion):
     def is_paired_internally(self):
         """Whether each base is paired and between two other base pairs
         (no bulges or other unpaired bases next to it)."""
+        import numpy as np
+
         is_internal = self.is_paired.copy()
         # A base can be between two other base pairs only if both bases
         # to its 5' and its 3' are paired.
@@ -201,6 +203,8 @@ class RNAStructure(RNARegion):
         return self.is_paired & ~self.is_paired_internally
 
     def _subregion_kwargs(self, end5: int, end3: int, title: str | None = None):
+        import numpy as np
+
         return super()._subregion_kwargs(end5, end3) | dict(
             title=(title if title is not None else f"{self.title}_{end5}-{end3}"),
             pairs=table_to_pairs(
@@ -225,6 +229,8 @@ class RNAStructure(RNARegion):
     @cached_property
     def ct_data(self):
         """Convert the connectivity table to a DataFrame."""
+        import pandas as pd
+
         # Make an index the same length as the region and starting
         # from 1 (CT files must start at index 1).
         index = pd.Index(self.region.range_one, name=IDX_FIELD)
@@ -277,6 +283,8 @@ def calc_wfmi(
     struct1: RNAStructure, struct2: RNAStructure, terminal_pairs: bool = True
 ):
     """Weighted Fowlkes-Mallows index between two structures."""
+    import numpy as np
+
     require_isinstance("struct1", struct1, RNAStructure)
     require_isinstance("struct2", struct2, RNAStructure)
     region = struct1.region

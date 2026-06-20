@@ -1,6 +1,6 @@
-import numpy as np
+from __future__ import annotations
 
-from ..core.arg import MUT_COLLISIONS_DROP, MUT_COLLISIONS_MERGE
+from ..core.arg.cli import MUT_COLLISIONS_DROP, MUT_COLLISIONS_MERGE
 from ..core.array import find_dims
 from ..core.unbias import (
     UNIQUE_READS,
@@ -15,6 +15,8 @@ from ..core.unbias import (
 
 def _zero_masked(p_mut: np.ndarray, unmasked: np.ndarray):
     """Set mutation rates of masked positions to zero."""
+    import numpy as np
+
     p_mut_unmasked = np.zeros_like(p_mut)
     p_mut_unmasked[unmasked] = p_mut[unmasked]
     return p_mut_unmasked
@@ -67,6 +69,8 @@ def _calc_logp_joint(
     np.ndarray
         2D (unique reads x clusters) array of log joint probabilities.
     """
+    import numpy as np
+
     # Validate the dimensions.
     find_dims(
         [
@@ -177,6 +181,8 @@ def _calc_logp_marginal(logp_joint: np.ndarray):
     np.ndarray
         1D (unique reads) array of log marginal probabilities.
     """
+    import numpy as np
+
     # Sum the joint probability over all clusters (axis 1).
     return np.logaddexp.reduce(logp_joint, axis=1)
 
@@ -211,6 +217,8 @@ def calc_marginal_resps(*args, **kwargs):
         2D (unique reads x clusters) array of posterior probabilities
         that each read belongs to each cluster.
     """
+    import numpy as np
+
     logp_joint = _calc_logp_joint(*args, **kwargs)
     logp_marginal = _calc_logp_marginal(logp_joint)
     # Calculate the posterior probability that each read came from

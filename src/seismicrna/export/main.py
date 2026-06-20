@@ -7,8 +7,8 @@ from click import command
 from .meta import parse_refs_metadata, parse_samples_metadata
 from .web import export_sample
 from ..cluster.data import ClusterPositionTableLoader, ClusterAbundanceTableLoader
-from ..core.arg import (
-    CMD_EXPORT,
+from ..core.arg.cmd import CMD_EXPORT
+from ..core.arg.cli import (
     arg_input_path,
     opt_samples_meta,
     opt_refs_meta,

@@ -28,8 +28,15 @@ from . import (
     __version__,
 )
 from .align import split
-from .core import path, rna
-from .core.arg import opt_exit_on_error, opt_log, opt_log_color, opt_quiet, opt_verbose
+from .core import path
+from .core.rna.convert import cli_ct2db as rna_cli_ct2db, cli_db2ct as rna_cli_db2ct
+from .core.arg.cli import (
+    opt_exit_on_error,
+    opt_log,
+    opt_log_color,
+    opt_quiet,
+    opt_verbose,
+)
 from .core.logs import logger, set_config
 from .urls import cli_docs, cli_github, cli_pypi, cli_conda, cli_biorxiv
 
@@ -38,7 +45,7 @@ params = [opt_verbose, opt_quiet, opt_log, opt_log_color, opt_exit_on_error]
 
 # Group for main commands
 @group(params=params, context_settings={"show_default": True})
-@version_option(__version__)
+@version_option(__version__, prog_name="seismic-rna")
 def cli(
     verbose: int, quiet: int, log: str | Path, log_color: bool, exit_on_error: bool
 ):
@@ -81,8 +88,8 @@ for module in [
 ]:
     cli.add_command(module.cli)
 
-cli.add_command(rna.convert.cli_ct2db)
-cli.add_command(rna.convert.cli_db2ct)
+cli.add_command(rna_cli_ct2db)
+cli.add_command(rna_cli_db2ct)
 cli.add_command(fold.cli_datapath)
 cli.add_command(cli_docs)
 cli.add_command(cli_github)

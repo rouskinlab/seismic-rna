@@ -5,7 +5,7 @@ from itertools import product
 import numpy as np
 import pandas as pd
 
-from seismicrna.core.mu import reframe, reframe_like, auto_reframe
+from seismicrna.core.mu.frame import reframe, reframe_like, auto_reframe
 
 
 def broadcastable(vshape: tuple[int, ...], tshape: tuple[int, ...]):

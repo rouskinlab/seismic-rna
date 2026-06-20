@@ -5,8 +5,8 @@ from typing import Iterable
 from click import command
 
 from ..core import path
-from ..core.arg import (
-    CMD_RENUMCT,
+from ..core.arg.cmd import CMD_RENUMCT
+from ..core.arg.cli import (
     opt_ct_pos_5,
     opt_inplace,
     opt_out_dir,
@@ -14,7 +14,7 @@ from ..core.arg import (
     opt_num_cpus,
 )
 from ..core.logs import logger
-from ..core.rna import renumber_ct as renumber_ct
+from ..core.rna.io import renumber_ct as renumber_ct
 from ..core.run import run_func
 from ..core.task import dispatch
 

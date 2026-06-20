@@ -1,4 +1,4 @@
-import numpy as np
+from __future__ import annotations
 
 from .array import ensure_same_length, get_length
 
@@ -14,6 +14,8 @@ def _validate_alpha(alpha: np.ndarray):
 
 
 def _validate_mean_variance(mean: np.ndarray, variance: np.ndarray, n: int = 1):
+    import numpy as np
+
     if (length := ensure_same_length(mean, variance, "mean", "variance")) < 2:
         raise ValueError(f"Must have at least 2 alpha parameters, but got {length}")
     if mean.min() <= 0.0:
@@ -64,6 +66,8 @@ def calc_dirichlet_params(mean: np.ndarray, variance: np.ndarray):
     np.ndarray
         Concentration parameters.
     """
+    import numpy as np
+
     _validate_mean_variance(mean, variance)
     concentrations = (mean * (1.0 - mean)) / variance - 1.0
     concentration = concentrations.mean()
@@ -93,6 +97,8 @@ def calc_beta_mv(alpha: float, beta: float):
     tuple[float, float]
         Mean and variance of the beta distribution.
     """
+    import numpy as np
+
     (mean, _), (variance, _) = calc_dirichlet_mv(np.array([alpha, beta]))
     return float(mean), float(variance)
 
@@ -113,6 +119,8 @@ def calc_beta_params(mean: float, variance: float):
     tuple[float, float]
         Alpha and beta parameters of the beta distribution.
     """
+    import numpy as np
+
     alpha, beta = calc_dirichlet_params(
         np.array([mean, 1.0 - mean]), np.array([variance, variance])
     )
@@ -136,6 +144,8 @@ def kumaraswamy_pdf(x: np.ndarray, a: float | int, b: float | int):
     np.ndarray
         Kumaraswamy distribution PDF at input values.
     """
+    import numpy as np
+
     require_greater("a", a, 0.0, classes=(float, int))
     require_greater("b", b, 0.0, classes=(float, int))
     return (a * b) * np.power(x, a - 1.0) * np.power(1.0 - np.power(x, a), b - 1.0)

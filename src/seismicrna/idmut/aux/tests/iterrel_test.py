@@ -5,21 +5,9 @@ from typing import Generator, Sequence
 import numpy as np
 
 from seismicrna.idmut.aux.iterrel import iter_relvecs_q53, iter_relvecs_all
-from seismicrna.core.rel import (
-    DELET,
-    INS_5,
-    INS_3,
-    SUB_A,
-    SUB_C,
-    SUB_G,
-    SUB_T,
-    ANY_B,
-    ANY_D,
-    ANY_H,
-    ANY_V,
-    ANY_N,
-)
-from seismicrna.core.seq import DNA, expand_degenerate_seq
+from seismicrna.core.rel.pattern import DELET, SUB_A, SUB_C, SUB_G, SUB_T
+from seismicrna.core.rel.code import INS_5, INS_3, ANY_B, ANY_D, ANY_H, ANY_V, ANY_N
+from seismicrna.core.seq.xna import DNA, expand_degenerate_seq
 
 
 class TestIterRelvecsQ53(ut.TestCase):

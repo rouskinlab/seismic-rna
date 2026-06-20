@@ -1,10 +1,10 @@
+from __future__ import annotations
 from functools import cached_property
 
-import numpy as np
 
 from ..array import ensure_order, ensure_same_length, find_dims
 from ..logs import logger
-from ..seq import Region
+from ..seq.region import Region
 from ..types import fit_uint_type
 from ..validate import require_isinstance, require_equal, require_atleast
 
@@ -24,6 +24,8 @@ class BadSegmentEndsError(ValueError):
 def count_reads_segments(
     seg_ends: np.ndarray, what: str = "seg_ends"
 ) -> tuple[int, int]:
+    import numpy as np
+
     require_isinstance(what, seg_ends, np.ndarray)
     require_equal(f"{what}.ndim", seg_ends.ndim, 2, error_type=BadSegmentEndsError)
     num_reads, num_segs = seg_ends.shape
@@ -73,6 +75,8 @@ def match_reads_segments(
 
 def find_read_end5s(seg_end5s: np.ndarray, seg_ends_mask: np.ndarray | None):
     """Find the 5' end of each read."""
+    import numpy as np
+
     num_reads, num_segs = match_reads_segments(seg_end5s, seg_end5s, seg_ends_mask)
     if num_segs == 0:
         # There are 0 segments, so default to 5' end = 1.
@@ -103,6 +107,8 @@ def find_read_end5s(seg_end5s: np.ndarray, seg_ends_mask: np.ndarray | None):
 
 def find_read_end3s(seg_end3s: np.ndarray, seg_ends_mask: np.ndarray | None):
     """Find the 3' end of each read."""
+    import numpy as np
+
     num_reads, num_segs = match_reads_segments(seg_end3s, seg_end3s, seg_ends_mask)
     if num_segs == 0:
         # There are 0 segments, so default to 3' end = 0.
@@ -133,6 +139,8 @@ def find_read_end3s(seg_end3s: np.ndarray, seg_ends_mask: np.ndarray | None):
 
 def merge_read_ends(read_end5s: np.ndarray, read_end3s: np.ndarray):
     """Return the 5' and 3' ends as one 2D array."""
+    import numpy as np
+
     ensure_same_length(read_end5s, read_end3s, "read_end5s", "read_end3s")
     return np.column_stack([read_end5s, read_end3s])
 
@@ -169,6 +177,8 @@ def sanitize_segment_ends(
         type, and if `check_values` is True then all between `min_pos`
         and `max_pos` (inclusive).
     """
+    import numpy as np
+
     num_reads, num_segs = match_reads_segments(seg_end5s, seg_end3s, None)
     if check_values:
         for i in range(num_segs):
@@ -210,6 +220,8 @@ def sanitize_segment_ends(
 
 
 def _roll_unmasked(matrix: np.ndarray, mask: np.ndarray):
+    import numpy as np
+
     assert isinstance(matrix, np.ndarray)
     assert isinstance(mask, np.ndarray)
     assert matrix.ndim == 2
@@ -267,6 +279,8 @@ def sort_segment_ends(
         - Labels of whether each coordinate is a 3' end of a contiguous
           segment
     """
+    import numpy as np
+
     _, num_segs = match_reads_segments(seg_end5s, seg_end3s, seg_ends_mask)
     # Make the 5' ends 0-indexed and merge them with the 3' ends.
     if seg_end5s.size > 0 and seg_end5s.min() == 0:
@@ -306,6 +320,8 @@ def find_contiguous_reads(
     seg_end5s: np.ndarray, seg_end3s: np.ndarray, seg_ends_mask: np.ndarray | None
 ):
     """Whether the segments of each read are contiguous."""
+    import numpy as np
+
     num_reads, num_segs = match_reads_segments(seg_end5s, seg_end3s, seg_ends_mask)
     if num_segs <= 1:
         # Reads with fewer than 2 segments cannot be discontiguous.
@@ -349,6 +365,8 @@ def simulate_segment_ends(
     tuple[np.ndarray, np.ndarray]
         5' and 3' segment end coordinates of the simulated reads.
     """
+    import numpy as np
+
     require_atleast("num_reads", num_reads, 0)
     if num_reads == 0:
         return np.array([], dtype=int), np.array([], dtype=int)
@@ -440,6 +458,8 @@ class EndCoords(object):
     @cached_property
     def seg_ends_mask(self) -> np.ndarray | None:
         """Whether each pair of 5' and 3' ends is masked out."""
+        import numpy as np
+
         # Store seg_ends_mask as a cached_property, not an instance
         # attribute, so that it never consumes space in the file system.
         seg_ends_mask = self.seg_end5s > self.seg_end3s
@@ -458,6 +478,8 @@ class EndCoords(object):
     @cached_property
     def read_lengths(self):
         """Length of each read."""
+        import numpy as np
+
         # Fully-masked reads have read_end3 (0) < read_end5 (1); give them
         # a length of 0 explicitly rather than relying on unsigned-integer
         # wraparound of the subtraction.
@@ -480,6 +502,8 @@ class EndCoords(object):
     @cached_property
     def num_contiguous(self):
         """Number of contiguous reads."""
+        import numpy as np
+
         return np.count_nonzero(self.contiguous)
 
     @cached_property

@@ -1,11 +1,10 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import Counter
 from functools import cached_property
 from itertools import chain
 from typing import Iterable
 
-import numpy as np
-import pandas as pd
 
 from .validate import (
     require_equal,
@@ -278,6 +277,8 @@ class Header(ABC):
 
     def select(self, **kwargs) -> pd.Index:
         """Select and return items from the header as an Index."""
+        import numpy as np
+
         index = self.index
         selected = np.ones(index.size, dtype=bool)
         # Handle combinations of k and clust in a list of tuples.
@@ -400,6 +401,8 @@ class RelHeader(Header):
 
     @cached_property
     def index(self):
+        import pandas as pd
+
         return pd.Index(self.rels, name=REL_NAME)
 
     def iter_clust_indexes(self):
@@ -435,6 +438,8 @@ class ClustHeader(Header):
 
     @cached_property
     def index(self):
+        import pandas as pd
+
         return pd.MultiIndex.from_tuples(self.clusts, names=self.get_level_names())
 
     def iter_clust_indexes(self):
@@ -447,6 +452,8 @@ class RelClustHeader(ClustHeader, RelHeader):
 
     @cached_property
     def index(self):
+        import pandas as pd
+
         return pd.MultiIndex.from_tuples(
             [(rel, k, clust) for rel in self.rels for k, clust in self.clusts],
             names=self.get_level_names(),
@@ -490,6 +497,9 @@ def parse_header(index: pd.Index | pd.MultiIndex):
     Header
         New Header whose index is `index`.
     """
+    import numpy as np
+    import pandas as pd
+
     if isinstance(index, pd.MultiIndex):
         names = index.names
         if REL_NAME in names:

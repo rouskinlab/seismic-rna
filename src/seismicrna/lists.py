@@ -3,8 +3,8 @@ from typing import Iterable
 
 from click import command
 
-from .core.arg import (
-    CMD_LIST,
+from .core.arg.cmd import CMD_LIST
+from .core.arg.cli import (
     arg_input_path,
     opt_branch,
     opt_min_ninfo_pos,
@@ -14,7 +14,8 @@ from .core.arg import (
 )
 from .core.lists import List, PositionList
 from .core.run import run_func
-from .core.table import MUTAT_REL, PositionTable, PositionTableLoader
+from .core.table.base import MUTAT_REL, PositionTable
+from .core.table.load import PositionTableLoader
 from .core.task import dispatch
 from .core.write import need_write
 from .filter.lists import FilterPositionList

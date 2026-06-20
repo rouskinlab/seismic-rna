@@ -11,7 +11,7 @@ from .onetable import (
 )
 from .rel import OneRelGraph
 from ..core import path
-from ..core.arg import (
+from ..core.arg.cli import (
     opt_struct_file,
     opt_branch,
     opt_fold_regions_file,
@@ -21,10 +21,12 @@ from ..core.arg import (
     opt_terminal_pairs,
     optional_path,
 )
-from ..core.logs import logger
-from ..core.rna import RNAState, from_ct
-from ..core.seq import DNA, RefRegions
 from ..fold.main import load_foldable_tables
+from ..core.logs import logger
+from ..core.rna.state import RNAState
+from ..core.rna.io import from_ct
+from ..core.seq.xna import DNA
+from ..core.seq.region import RefRegions
 
 
 class StructOneTableGraph(OneTableRelClusterGroupGraph, OneRelGraph, ABC):

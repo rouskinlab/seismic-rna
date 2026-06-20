@@ -1,3 +1,4 @@
+from __future__ import annotations
 import os
 import sys
 from collections import defaultdict
@@ -6,12 +7,10 @@ from itertools import chain
 from pathlib import Path
 from typing import Iterable
 
-import numpy as np
-import pandas as pd
 from click import command
 
 from ..core import path
-from ..core.arg import (
+from ..core.arg.cli import (
     arg_input_path,
     opt_branch,
     opt_fold_coords,
@@ -29,10 +28,12 @@ from ..core.arg import (
     optional_path,
 )
 from ..core.logs import logger
-from ..core.rna import RNAState, from_ct
+from ..core.rna.state import RNAState
+from ..core.rna.io import from_ct
 from ..core.run import run_func
-from ..core.seq import DNA, RefRegions, Region, BASE_NAME, BASEN
-from ..core.table import (
+from ..core.seq.xna import DNA
+from ..core.seq.region import RefRegions, Region, BASE_NAME, BASEN
+from ..core.table.base import (
     COVER_REL,
     INFOR_REL,
     MUTAT_REL,
@@ -66,6 +67,8 @@ def get_other_parameters():
 
 
 def new_parameter_dict():
+    import numpy as np
+
     parameters = {code: np.array([], dtype=float) for code in get_other_parameters()}
     for base in DNA.four():
         lower_base = base.lower()
@@ -121,6 +124,8 @@ def _calc_ratios(counts: pd.DataFrame, is_paired: np.ndarray):
 
 
 def _accumulate_ratios(paired_unpaired_ratios: Iterable[tuple[dict, dict]]):
+    import numpy as np
+
     logger.debug("Began accumulating groups of ratios")
     all_paired_ratios = new_parameter_dict()
     all_unpaired_ratios = new_parameter_dict()
@@ -225,6 +230,8 @@ def _format_param_tokens(
 
 
 def _calc_ratio_stats(ratios: dict[str, np.ndarray], margin: float = 1.0e-6):
+    import numpy as np
+
     require_between("margin", margin, 0.0, 1.0, classes=float, inclusive=False)
     max_value = 1.0 - margin
     means = {

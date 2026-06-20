@@ -1,7 +1,6 @@
+from __future__ import annotations
 from pathlib import Path
 
-import pandas as pd
-import plotly.express as px
 
 from .emk import EMRunsK, NOCONV
 from .names import JACKPOT_QUOTIENT
@@ -28,6 +27,8 @@ ATTRS = {
 
 def tabulate_attr(ks: list[EMRunsK], attr: str):
     """Tabulate the values for one attribute."""
+    import pandas as pd
+
     # Cast runs.k and run from int to str to make them both categorial.
     # If runs.k is numeric, then the bars will be stacked, not grouped.
     # If run is numeric, then the run number will be indicated with a
@@ -51,6 +52,8 @@ def tabulate_attr(ks: list[EMRunsK], attr: str):
 
 def tabulate(ks: list[EMRunsK]):
     """Tabulate all attributes."""
+    import pandas as pd
+
     return pd.DataFrame.from_dict(
         {title: tabulate_attr(ks, key) for key, title in ATTRS.items()}
     )
@@ -64,6 +67,8 @@ def write_table(table: pd.DataFrame, cluster_dir: Path):
 
 def graph_attr(attr: pd.Series, passing_text: list[str] | None = None):
     """Graph one attribute."""
+    import plotly.express as px
+
     return px.bar(
         attr.to_frame().reset_index(names=K_RUN_NAMES),
         x=NUM_CLUSTS_NAME,

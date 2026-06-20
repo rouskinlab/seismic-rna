@@ -15,7 +15,7 @@ from . import (
     scatter,
     snrroll,
 )
-from ..core.arg import CMD_GRAPH
+from ..core.arg.cmd import CMD_GRAPH
 
 
 # Group for all graph commands

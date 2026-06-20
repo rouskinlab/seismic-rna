@@ -1,9 +1,13 @@
+from __future__ import annotations
+
 import os
 from functools import cached_property
 
-import pandas as pd
 from click import command
-from plotly import graph_objects as go
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from plotly import graph_objects as go
 
 from .table import TableWriter, PositionTableRunner
 from .onestruct import StructOneTableGraph, StructOneTableRunner, StructOneTableWriter
@@ -31,6 +35,8 @@ class RollingAUCGraph(StructOneTableGraph, RollingGraph):
     @cached_property
     def data(self):
         # Collect the rolling AUC-ROC from every RNA state.
+        import pandas as pd
+
         data = dict()
         for state in self.iter_states():
             key = state.mus_name, state.title

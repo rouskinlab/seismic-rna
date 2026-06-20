@@ -2,9 +2,9 @@ from functools import cached_property
 from pathlib import Path
 
 from ..core import path
-from ..core.extern import cmds_to_pipe
+from ..core.shell import cmds_to_pipe
 from ..core.logs import logger, format_sample_reference_region
-from ..core.ngs import (
+from ..core.ngs.xam import (
     SAM_DELIM,
     FLAG_PAIRED,
     FLAG_PROPER,

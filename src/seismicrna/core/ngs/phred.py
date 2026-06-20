@@ -1,4 +1,4 @@
-from ..arg import opt_min_phred, opt_phred_enc
+from ..arg.cli import opt_min_phred, opt_phred_enc
 
 
 def encode_phred(phred_score: int, phred_encoding: int):

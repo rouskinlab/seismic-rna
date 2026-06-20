@@ -1,9 +1,7 @@
+from __future__ import annotations
 from functools import wraps
 from numbers import Number
 from typing import Callable, Iterable
-
-import numpy as np
-import pandas as pd
 
 
 def reframe(
@@ -41,6 +39,9 @@ def reframe(
     numpy.ndarray | pandas.Series | pandas.DataFrame
         Value(s) in their new array-like object.
     """
+    import numpy as np
+    import pandas as pd
+
     if axes is None:
         # No axes specified: return just the values as a NumPy array.
         return np.asarray(values)
@@ -110,6 +111,9 @@ def reframe_like(
     numpy.ndarray | pandas.Series | pandas.DataFrame
         Value(s) in their new array-like object.
     """
+    import numpy as np
+    import pandas as pd
+
     # Determine the axes to pass to reframe based on the type of target.
     if isinstance(target, np.ndarray):
         axes = target.shape
@@ -147,6 +151,8 @@ def auto_reframe(func: Callable):
 
     @wraps(func)
     def wrapper(data: np.ndarray | pd.Series | pd.DataFrame, *args, **kwargs):
+        import numpy as np
+
         # Compute the result of the function as a NumPy array.
         result = np.asarray(func(np.asarray(data), *args, **kwargs))
         # Reframe the result like the input argument, dropping any axes

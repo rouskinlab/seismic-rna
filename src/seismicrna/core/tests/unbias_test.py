@@ -5,15 +5,8 @@ import numpy as np
 from numba import jit
 
 from seismicrna.core.unbias import (
-    _clip,
-    _normalize,
-    _adjust_min_gap,
-    _triu_cumsum,
     triu_dot,
-    _triu_norm,
-    _triu_mul,
-    _triu_sum,
-    _triu_div,
+    triu_norm,
     calc_p_ends_observed,
     calc_p_nomut_window,
     calc_p_noclose_given_ends,
@@ -21,8 +14,8 @@ from seismicrna.core.unbias import (
     calc_p_mut_given_span_dropped,
     calc_p_mut_given_span,
     calc_p_ends,
-    _slice_p_ends,
-    _find_split_positions,
+    slice_p_ends,
+    find_split_positions,
     calc_p_clust,
     calc_p_noclose_given_clust,
     calc_p_noclose,
@@ -32,10 +25,19 @@ from seismicrna.core.unbias import (
     calc_p_clust_given_noclose,
     calc_params,
     calc_rectangular_sum,
-    _calc_rectangular_sum_weighted,
     require_square_atleast2d,
     require_same_square_atleast2d,
-    _calc_p_mut_given_span_merged,
+)
+from seismicrna.core.unbias_jit import (
+    clip_jit,
+    normalize_jit,
+    adjust_min_gap_jit,
+    triu_cumsum_jit,
+    triu_mul_jit,
+    triu_sum_jit,
+    triu_div_jit,
+    calc_rectangular_sum_weighted_jit,
+    calc_p_mut_given_span_merged_jit,
 )
 
 
@@ -54,7 +56,7 @@ def triu_sum(a: np.ndarray):
         and subsequent dimensions of `a`.
     """
     require_square_atleast2d("a", a)
-    return _triu_sum(a)
+    return triu_sum_jit(a)
 
 
 @jit()
@@ -481,7 +483,7 @@ class TestClip(ut.TestCase):
             mus[nan_indexes] = np.nan
             # Confirm that the values are NaN.
             self.assertEqual(np.count_nonzero(np.isnan(mus)), n_nan)
-            clipped = _clip(mus)
+            clipped = clip_jit(mus)
             # Test that all clipped mutation rates are in [0, 1].
             self.assertTrue(np.all(clipped >= 0.0) and np.all(clipped <= 1.0))
             # Test that NaN values in mus become 0 values in clipped.
@@ -493,7 +495,7 @@ class TestClip(ut.TestCase):
         rng = np.random.default_rng(seed=0)
         mus = rng.random(64, dtype=float)
         # All values are in [0, 1] and so should not be clipped.
-        self.assertTrue(np.allclose(mus, _clip(mus)))
+        self.assertTrue(np.allclose(mus, clip_jit(mus)))
 
 
 class TestNormalize(ut.TestCase):
@@ -502,7 +504,7 @@ class TestNormalize(ut.TestCase):
         for ndim in range(1, 4):
             for dims in product(range(5), repeat=ndim):
                 x = 1.0 - rng.random(dims)
-                result = _normalize(x)
+                result = normalize_jit(x)
                 self.assertEqual(result.shape, x.shape)
                 if x.size > 0:
                     self.assertTrue(np.isclose(result.sum(), 1.0))
@@ -513,7 +515,7 @@ class TestNormalize(ut.TestCase):
         for ndim in range(1, 4):
             for dims in product(range(5), repeat=ndim):
                 x = np.zeros(dims)
-                result = _normalize(x)
+                result = normalize_jit(x)
                 self.assertEqual(result.shape, x.shape)
                 if x.size > 0:
                     self.assertTrue(np.isclose(result.sum(), 1.0))
@@ -599,7 +601,7 @@ class TestTriuMul(ut.TestCase):
         b = 1.0 - rng.random()
         expect = np.array([[a * b]])
         self.assertTrue(
-            np.array_equal(_triu_mul(np.array([[a]]), np.array([[b]])), expect)
+            np.array_equal(triu_mul_jit(np.array([[a]]), np.array([[b]])), expect)
         )
 
     def test_1x1x1(self):
@@ -608,14 +610,14 @@ class TestTriuMul(ut.TestCase):
         b = 1.0 - rng.random()
         expect = np.array([[[a * b]]])
         self.assertTrue(
-            np.array_equal(_triu_mul(np.array([[[a]]]), np.array([[[b]]])), expect)
+            np.array_equal(triu_mul_jit(np.array([[[a]]]), np.array([[[b]]])), expect)
         )
 
     def test_2x2(self):
         a = np.array([[12.0, 3.0], [20.0, 56.0]])
         b = np.array([[2.0, 3.0], [5.0, 7.0]])
         expect = np.array([[24.0, 9.0], [np.nan, 392.0]])
-        self.assertTrue(triu_allclose(_triu_mul(a, b), expect))
+        self.assertTrue(triu_allclose(triu_mul_jit(a, b), expect))
 
     def test_2x2x2(self):
         a = np.array([[[2.0, 20.0], [2.0, 36.0]], [[3.0, 7.0], [12.0, 40.0]]])
@@ -623,7 +625,7 @@ class TestTriuMul(ut.TestCase):
         expect = np.array(
             [[[2.0, 100.0], [4.0, 216.0]], [[np.nan, np.nan], [48.0, 320.0]]]
         )
-        self.assertTrue(triu_allclose(_triu_mul(a, b), expect))
+        self.assertTrue(triu_allclose(triu_mul_jit(a, b), expect))
 
 
 class TestTriuDiv(ut.TestCase):
@@ -633,7 +635,7 @@ class TestTriuDiv(ut.TestCase):
         d = 1.0 - rng.random()
         expect = np.array([[n / d]])
         self.assertTrue(
-            np.array_equal(_triu_div(np.array([[n]]), np.array([[d]])), expect)
+            np.array_equal(triu_div_jit(np.array([[n]]), np.array([[d]])), expect)
         )
 
     def test_1x1x1(self):
@@ -642,20 +644,20 @@ class TestTriuDiv(ut.TestCase):
         d = 1.0 - rng.random()
         expect = np.array([[[n / d]]])
         self.assertTrue(
-            np.array_equal(_triu_div(np.array([[[n]]]), np.array([[[d]]])), expect)
+            np.array_equal(triu_div_jit(np.array([[[n]]]), np.array([[[d]]])), expect)
         )
 
     def test_2x2(self):
         numer = np.array([[12.0, 3.0], [20.0, 56.0]])
         denom = np.array([[2.0, 3.0], [5.0, 7.0]])
         expect = np.array([[6.0, 1.0], [np.nan, 8.0]])
-        self.assertTrue(triu_allclose(_triu_div(numer, denom), expect))
+        self.assertTrue(triu_allclose(triu_div_jit(numer, denom), expect))
 
     def test_2x2x2(self):
         numer = np.array([[[2.0, 20.0], [2.0, 36.0]], [[3.0, 7.0], [12.0, 40.0]]])
         denom = np.array([[[1.0, 5.0], [2.0, 6.0]], [[3.0, 7.0], [4.0, 8.0]]])
         expect = np.array([[[2.0, 4.0], [1.0, 6.0]], [[np.nan, np.nan], [3.0, 5.0]]])
-        self.assertTrue(triu_allclose(_triu_div(numer, denom), expect))
+        self.assertTrue(triu_allclose(triu_div_jit(numer, denom), expect))
 
 
 class TestTriuSum(ut.TestCase):
@@ -719,7 +721,7 @@ class TestTriuCumSum(ut.TestCase):
         rng = np.random.default_rng(seed=0)
         for ndim in range(2, 6):
             array = rng.random((0,) * ndim)
-            result = _triu_cumsum(array)
+            result = triu_cumsum_jit(array)
             self.assertEqual(result.shape, array.shape)
             self.assertTrue(triu_allclose(result, array))
 
@@ -727,7 +729,7 @@ class TestTriuCumSum(ut.TestCase):
         rng = np.random.default_rng(seed=0)
         for ndim in range(2, 6):
             array = rng.random((1,) * ndim)
-            result = _triu_cumsum(array)
+            result = triu_cumsum_jit(array)
             self.assertEqual(result.shape, array.shape)
             self.assertTrue(triu_allclose(result, array))
 
@@ -736,33 +738,33 @@ class TestTriuCumSum(ut.TestCase):
         x = rng.random()
         y = rng.random()
         array = np.array([[[x, y]]])
-        self.assertTrue(triu_allclose(_triu_cumsum(array), array))
+        self.assertTrue(triu_allclose(triu_cumsum_jit(array), array))
 
     def test_2x2(self):
         array = np.array([[1.0, 2.0], [3.0, 4.0]])
         expect = np.array([[3.0, 2.0], [10.0, 6.0]])
-        self.assertTrue(triu_allclose(_triu_cumsum(array), expect))
+        self.assertTrue(triu_allclose(triu_cumsum_jit(array), expect))
 
     def test_2x2x1(self):
         array = np.array([[[1.0], [2.0]], [[3.0], [4.0]]])
         expect = np.array([[[3.0], [2.0]], [[10.0], [6.0]]])
-        self.assertTrue(triu_allclose(_triu_cumsum(array), expect))
+        self.assertTrue(triu_allclose(triu_cumsum_jit(array), expect))
 
     def test_2x2x2(self):
         array = np.array([[[1.0, 5.0], [2.0, 6.0]], [[3.0, 7.0], [4.0, 8.0]]])
         expect = np.array([[[3.0, 11.0], [2.0, 6.0]], [[0.0, 0.0], [6.0, 14.0]]])
-        self.assertTrue(triu_allclose(_triu_cumsum(array), expect))
+        self.assertTrue(triu_allclose(triu_cumsum_jit(array), expect))
 
     def test_3x3(self):
         array = np.array([[3.0, 4.0, 6.0], [7.0, 8.0, 9.0], [1.0, 2.0, 5.0]])
         expect = np.array([[13.0, 10.0, 6.0], [0.0, 27.0, 15.0], [0.0, 0.0, 20.0]])
-        self.assertTrue(triu_allclose(_triu_cumsum(array), expect))
+        self.assertTrue(triu_allclose(triu_cumsum_jit(array), expect))
 
     def test_explicit_sum(self):
         rng = np.random.default_rng(seed=0)
         for npos in range(8):
             array = rng.random((npos, npos))
-            result = _triu_cumsum(array)
+            result = triu_cumsum_jit(array)
             for row in range(npos):
                 for col in range(npos):
                     if row > col:
@@ -783,60 +785,60 @@ class TestTriuNorm(ut.TestCase):
         rng = np.random.default_rng(seed=0)
         array = rng.random((0, 0))
         expect = np.ones_like(array)
-        self.compare(_triu_norm(array), expect)
+        self.compare(triu_norm(array), expect)
 
     def test_0x0x1(self):
         rng = np.random.default_rng(seed=0)
         array = rng.random((0, 0, 1))
         expect = np.ones_like(array)
-        self.compare(_triu_norm(array), expect)
+        self.compare(triu_norm(array), expect)
 
     def test_1x1(self):
         rng = np.random.default_rng(seed=0)
         array = rng.random((1, 1))
         expect = np.ones_like(array)
-        self.compare(_triu_norm(array), expect)
+        self.compare(triu_norm(array), expect)
 
     def test_1x1x1(self):
         rng = np.random.default_rng(seed=0)
         array = rng.random((1, 1, 1))
         expect = np.ones_like(array)
-        self.compare(_triu_norm(array), expect)
+        self.compare(triu_norm(array), expect)
 
     def test_1x1x2(self):
         rng = np.random.default_rng(seed=0)
         array = rng.random((1, 1, 2))
         expect = np.ones_like(array)
-        self.compare(_triu_norm(array), expect)
+        self.compare(triu_norm(array), expect)
 
     def test_2x2(self):
         array = np.array([[1.0, 2.0], [3.0, 4.0]])
         expect = np.array([[1 / 7, 2 / 7], [np.nan, 4 / 7]])
-        self.compare(_triu_norm(array), expect)
+        self.compare(triu_norm(array), expect)
 
     def test_2x2_zero(self):
         array = np.array([[0.0, 0.0], [3.0, 0.0]])
         expect = np.array([[1 / 3, 1 / 3], [np.nan, 1 / 3]])
-        self.compare(_triu_norm(array), expect)
+        self.compare(triu_norm(array), expect)
 
     def test_2x2x1(self):
         array = np.array([[[1.0], [2.0]], [[3.0], [4.0]]])
         expect = np.array([[[1 / 7], [2 / 7]], [[np.nan], [4 / 7]]])
-        self.compare(_triu_norm(array), expect)
+        self.compare(triu_norm(array), expect)
 
     def test_2x2x2(self):
         array = np.array([[[1.0, 5.0], [2.0, 6.0]], [[3.0, 7.0], [4.0, 8.0]]])
         expect = np.array(
             [[[1 / 7, 5 / 19], [2 / 7, 6 / 19]], [[np.nan, np.nan], [4 / 7, 8 / 19]]]
         )
-        self.compare(_triu_norm(array), expect)
+        self.compare(triu_norm(array), expect)
 
     def test_2x2x2_zero(self):
         array = np.array([[[1.0, 0.0], [2.0, 0.0]], [[3.0, 5.0], [4.0, 0.0]]])
         expect = np.array(
             [[[1 / 7, 1 / 3], [2 / 7, 1 / 3]], [[np.nan, np.nan], [4 / 7, 1 / 3]]]
         )
-        self.compare(_triu_norm(array), expect)
+        self.compare(triu_norm(array), expect)
 
     def test_2x2x2x2(self):
         array = np.array(
@@ -857,7 +859,7 @@ class TestTriuNorm(ut.TestCase):
                 ],
             ]
         )
-        self.compare(_triu_norm(array), expect)
+        self.compare(triu_norm(array), expect)
 
     def test_2x2x2x2_zero(self):
         array = np.array(
@@ -878,7 +880,7 @@ class TestTriuNorm(ut.TestCase):
                 ],
             ]
         )
-        self.compare(_triu_norm(array), expect)
+        self.compare(triu_norm(array), expect)
 
 
 class TestAdjustMinGap(ut.TestCase):
@@ -886,25 +888,25 @@ class TestAdjustMinGap(ut.TestCase):
         for npos in range(10):
             for gap in range(npos):
                 with self.subTest(npos=npos, gap=gap):
-                    self.assertEqual(_adjust_min_gap(npos, gap), gap)
+                    self.assertEqual(adjust_min_gap_jit(npos, gap), gap)
 
     def test_zero_lt_npos_le_gap(self):
         for gap in range(10):
             for npos in range(1, gap + 1):
                 with self.subTest(npos=npos, gap=gap):
-                    self.assertEqual(_adjust_min_gap(npos, gap), npos - 1)
+                    self.assertEqual(adjust_min_gap_jit(npos, gap), npos - 1)
 
     def test_npos_le_zero_le_gap(self):
         for npos in range(-4, 1):
             for gap in range(5):
                 with self.subTest(npos=npos, gap=gap):
-                    self.assertEqual(_adjust_min_gap(npos, gap), 0)
+                    self.assertEqual(adjust_min_gap_jit(npos, gap), 0)
 
     def test_gap_le_zero_le_npos(self):
         for npos in range(5):
             for gap in range(-4, 1):
                 with self.subTest(npos=npos, gap=gap):
-                    self.assertEqual(_adjust_min_gap(npos, gap), 0)
+                    self.assertEqual(adjust_min_gap_jit(npos, gap), 0)
 
 
 class TestCalcPNoCloseGivenEnds(ut.TestCase):
@@ -1207,8 +1209,8 @@ class TestCalcPMutGivenSpanDropped(ut.TestCase):
                 inter_lo, inter_up = binom.interval(
                     confidence, n_expect, p_ends_given_clust_noclose_theory
                 )
-                inter_lo = _triu_div(inter_lo, n_expect)
-                inter_up = _triu_div(inter_up, n_expect)
+                inter_lo = triu_div_jit(inter_lo, n_expect)
+                inter_up = triu_div_jit(inter_up, n_expect)
                 end5s_noclose = end5s[has_no_close]
                 end3s_noclose = end3s[has_no_close]
                 for end5 in range(n_pos):
@@ -1322,7 +1324,7 @@ class TestCalcPMutGivenSpanMerged(ut.TestCase):
                 p_mut_given_span = case_rng.random((n_pos, n_cls))
                 p_ends = np.triu(case_rng.random((n_pos, n_pos)))
                 p_ends /= p_ends.sum()
-                p_expect = _calc_p_mut_given_span_merged(
+                p_expect = calc_p_mut_given_span_merged_jit(
                     p_mut_given_span, p_ends, min_gap
                 )
                 p_result = self._simulate_after_merge(
@@ -1339,19 +1341,19 @@ class TestCalcPMutGivenSpanMerged(ut.TestCase):
 class TestSlicePEnds(ut.TestCase):
     def test_0x0(self):
         p_ends = np.empty((0, 0))
-        self.assertTrue(np.array_equal(_slice_p_ends(p_ends, p_ends, 0, 0), p_ends))
+        self.assertTrue(np.array_equal(slice_p_ends(p_ends, p_ends, 0, 0), p_ends))
 
     def test_slice_3x3(self):
         p_ends = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]])
-        p_ends_cumsum = _triu_cumsum(p_ends)
-        result = _slice_p_ends(p_ends, p_ends_cumsum, 1, 2)
+        p_ends_cumsum = triu_cumsum_jit(p_ends)
+        result = slice_p_ends(p_ends, p_ends_cumsum, 1, 2)
         expect = np.array([[16.0]])
         self.assertTrue(triu_allclose(result, expect))
 
     def test_slice_5x5(self):
         p_ends = np.arange(25.0).reshape((5, 5))
-        p_ends_cumsum = _triu_cumsum(p_ends)
-        result = _slice_p_ends(p_ends, p_ends_cumsum, 1, 4)
+        p_ends_cumsum = triu_cumsum_jit(p_ends)
+        result = slice_p_ends(p_ends, p_ends_cumsum, 1, 4)
         expect = np.array([[7.0, 9.0, 24.0], [0.0, 12.0, 27.0], [0.0, 0.0, 37.0]])
         self.assertTrue(triu_allclose(result, expect))
 
@@ -1361,7 +1363,7 @@ class TestFindSplitPositions(ut.TestCase):
         for min_gap in range(4):
             self.assertTrue(
                 np.array_equal(
-                    _find_split_positions(np.array([[]]), min_gap, 0.0),
+                    find_split_positions(np.array([[]]), min_gap, 0.0),
                     np.array([], dtype=int),
                 )
             )
@@ -1372,7 +1374,7 @@ class TestFindSplitPositions(ut.TestCase):
         for min_gap in range(4):
             self.assertTrue(
                 np.array_equal(
-                    _find_split_positions(p_mut, min_gap, 0.0), np.array([], dtype=int)
+                    find_split_positions(p_mut, min_gap, 0.0), np.array([], dtype=int)
                 )
             )
 
@@ -1382,7 +1384,7 @@ class TestFindSplitPositions(ut.TestCase):
         for min_gap in range(4):
             self.assertTrue(
                 np.array_equal(
-                    _find_split_positions(p_mut, min_gap, 1.0), np.array([], dtype=int)
+                    find_split_positions(p_mut, min_gap, 1.0), np.array([], dtype=int)
                 )
             )
 
@@ -1392,21 +1394,21 @@ class TestFindSplitPositions(ut.TestCase):
         for thresh in np.linspace(0.0, 1.0, 5):
             self.assertTrue(
                 np.array_equal(
-                    _find_split_positions(p_mut, 0, thresh), np.array([], dtype=int)
+                    find_split_positions(p_mut, 0, thresh), np.array([], dtype=int)
                 )
             )
 
     def test_gap1_split1_single_mid(self):
         p_mut = np.array([[0.2, 0.1, 0.1, 0.0, 0.1, 0.2]]).T
         self.assertTrue(
-            np.array_equal(_find_split_positions(p_mut, 1, 0.0), np.array([3, 4]))
+            np.array_equal(find_split_positions(p_mut, 1, 0.0), np.array([3, 4]))
         )
 
     def test_gap1_single_end5(self):
         p_mut = np.array([[0.0, 0.1, 0.1, 0.3, 0.1, 0.2]]).T
         self.assertTrue(
             np.array_equal(
-                _find_split_positions(p_mut, 1, 0.0), np.array([1], dtype=int)
+                find_split_positions(p_mut, 1, 0.0), np.array([1], dtype=int)
             )
         )
 
@@ -1414,7 +1416,7 @@ class TestFindSplitPositions(ut.TestCase):
         p_mut = np.array([[0.0, 0.0, 0.1, 0.3, 0.1, 0.2]]).T
         self.assertTrue(
             np.array_equal(
-                _find_split_positions(p_mut, 2, 0.0), np.array([2], dtype=int)
+                find_split_positions(p_mut, 2, 0.0), np.array([2], dtype=int)
             )
         )
 
@@ -1422,7 +1424,7 @@ class TestFindSplitPositions(ut.TestCase):
         p_mut = np.array([[0.0, 0.0, 0.0, 0.3, 0.1, 0.2]]).T
         self.assertTrue(
             np.array_equal(
-                _find_split_positions(p_mut, 3, 0.0), np.array([3], dtype=int)
+                find_split_positions(p_mut, 3, 0.0), np.array([3], dtype=int)
             )
         )
 
@@ -1430,7 +1432,7 @@ class TestFindSplitPositions(ut.TestCase):
         p_mut = np.array([[0.2, 0.1, 0.1, 0.3, 0.1, 0.0]]).T
         self.assertTrue(
             np.array_equal(
-                _find_split_positions(p_mut, 1, 0.0), np.array([5], dtype=int)
+                find_split_positions(p_mut, 1, 0.0), np.array([5], dtype=int)
             )
         )
 
@@ -1438,7 +1440,7 @@ class TestFindSplitPositions(ut.TestCase):
         p_mut = np.array([[0.2, 0.1, 0.1, 0.3, 0.0, 0.0]]).T
         self.assertTrue(
             np.array_equal(
-                _find_split_positions(p_mut, 2, 0.0), np.array([4], dtype=int)
+                find_split_positions(p_mut, 2, 0.0), np.array([4], dtype=int)
             )
         )
 
@@ -1446,62 +1448,62 @@ class TestFindSplitPositions(ut.TestCase):
         p_mut = np.array([[0.2, 0.1, 0.1, 0.0, 0.0, 0.0]]).T
         self.assertTrue(
             np.array_equal(
-                _find_split_positions(p_mut, 3, 0.0), np.array([3], dtype=int)
+                find_split_positions(p_mut, 3, 0.0), np.array([3], dtype=int)
             )
         )
 
     def test_gap1_split1_double(self):
         p_mut = np.array([[0.2, 0.1, 0.0, 0.0, 0.1, 0.2]]).T
         self.assertTrue(
-            np.array_equal(_find_split_positions(p_mut, 1, 0.0), np.array([2, 4]))
+            np.array_equal(find_split_positions(p_mut, 1, 0.0), np.array([2, 4]))
         )
 
     def test_gap1_split1_triple(self):
         p_mut = np.array([[0.2, 0.1, 0.0, 0.0, 0.0, 0.2]]).T
         self.assertTrue(
-            np.array_equal(_find_split_positions(p_mut, 1, 0.0), np.array([2, 5]))
+            np.array_equal(find_split_positions(p_mut, 1, 0.0), np.array([2, 5]))
         )
 
     def test_gap1_split0_quadruple(self):
         p_mut = np.array([[0.2, 0.1, 0.0, 0.0, 0.0, 0.0]]).T
         self.assertTrue(
             np.array_equal(
-                _find_split_positions(p_mut, 1, 0.0), np.array([2], dtype=int)
+                find_split_positions(p_mut, 1, 0.0), np.array([2], dtype=int)
             )
         )
 
     def test_gap1_split2(self):
         p_mut = np.array([[0.2, 0.0, 0.1, 0.0, 0.1, 0.2]]).T
         self.assertTrue(
-            np.array_equal(_find_split_positions(p_mut, 1, 0.0), np.array([1, 2, 3, 4]))
+            np.array_equal(find_split_positions(p_mut, 1, 0.0), np.array([1, 2, 3, 4]))
         )
 
     def test_gap2_split0(self):
         p_mut = np.array([[0.2, 0.0, 0.1, 0.0, 0.1, 0.2]]).T
         self.assertTrue(
             np.array_equal(
-                _find_split_positions(p_mut, 2, 0.0), np.array([], dtype=int)
+                find_split_positions(p_mut, 2, 0.0), np.array([], dtype=int)
             )
         )
 
     def test_gap2_split1(self):
         p_mut = np.array([[0.2, 0.1, 0.0, 0.0, 0.1, 0.2]]).T
         self.assertTrue(
-            np.array_equal(_find_split_positions(p_mut, 2, 0.0), np.array([2, 4]))
+            np.array_equal(find_split_positions(p_mut, 2, 0.0), np.array([2, 4]))
         )
 
     def test_gap4_split0(self):
         p_mut = np.array([[0.2, 0.1, 0.0, 0.0, 0.1, 0.2]]).T
         self.assertTrue(
             np.array_equal(
-                _find_split_positions(p_mut, 4, 0.0), np.array([], dtype=int)
+                find_split_positions(p_mut, 4, 0.0), np.array([], dtype=int)
             )
         )
 
     def test_gap4_split1(self):
         p_mut = np.array([[0.2, 0.1, 0.0, 0.0, 0.1, 0.2]]).T
         self.assertTrue(
-            np.array_equal(_find_split_positions(p_mut, 4, 0.1), np.array([1, 5]))
+            np.array_equal(find_split_positions(p_mut, 4, 0.1), np.array([1, 5]))
         )
 
     def test_generic_split(self):
@@ -1539,7 +1541,7 @@ class TestFindSplitPositions(ut.TestCase):
             for thresh in np.linspace(0.0, 1.0, 6):
                 self.assertTrue(
                     np.array_equal(
-                        _find_split_positions(p, gap, thresh),
+                        find_split_positions(p, gap, thresh),
                         find_split_positions_slow(p, gap, thresh),
                     )
                 )
@@ -1834,7 +1836,7 @@ class TestCalcRectangularSumWeighted(ut.TestCase):
                 with self.subTest(npos=npos, ncls=ncls):
                     array = rng.random((npos, npos, ncls))
                     weights = rng.random((npos, npos))
-                    fast = _calc_rectangular_sum_weighted(array, weights)
+                    fast = calc_rectangular_sum_weighted_jit(array, weights)
                     slow = self.calc_weighted_slow(array, weights)
                     self.assertEqual(fast.shape, (npos, ncls))
                     self.assertTrue(np.allclose(fast, slow))
@@ -1846,7 +1848,7 @@ class TestCalcRectangularSumWeighted(ut.TestCase):
                 with self.subTest(npos=npos, ncls=ncls):
                     array = rng.random((npos, npos, ncls))
                     weights = np.ones((npos, npos))
-                    fast = _calc_rectangular_sum_weighted(array, weights)
+                    fast = calc_rectangular_sum_weighted_jit(array, weights)
                     unweighted = calc_rectangular_sum(array)
                     self.assertEqual(fast.shape, (npos, ncls))
                     self.assertTrue(np.allclose(fast, unweighted))

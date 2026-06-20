@@ -1,12 +1,11 @@
+from __future__ import annotations
 import gzip
 import os
 from itertools import chain
 from pathlib import Path
 from typing import Any, Iterable
 
-import numpy as np
 from click import command
-from numba import jit
 
 from .idmut import (
     _get_param_dir_fields,
@@ -16,11 +15,9 @@ from .idmut import (
     set_sim_mut_params,
 )
 from ..core import path
-from ..core.arg import (
+from ..core.arg.cli import (
     ILLUMINA_TRUSEQ_ADAPTER_R1,
     ILLUMINA_TRUSEQ_ADAPTER_R2,
-    MUT_COLLISIONS_DROP,
-    MUT_COLLISIONS_MERGE,
     arg_input_path,
     opt_param_dir,
     opt_profile_name,
@@ -30,6 +27,7 @@ from ..core.arg import (
     opt_reverse_fraction,
     opt_probe,
     opt_min_mut_gap_weights,
+    opt_mut_collisions,
     opt_injected_mut_probs,
     opt_fq_gzip,
     opt_num_reads,
@@ -41,11 +39,11 @@ from ..core.arg import (
 from ..core.array import get_length
 from ..core.logs import logger
 from ..core.random import get_random_integer_generator
-from ..core.ngs import HI_QUAL, LO_QUAL
-from ..core.rel import MATCH, NOCOV, SUB_A, SUB_C, SUB_G, SUB_T, DELET
+from ..core.ngs.phred import HI_QUAL, LO_QUAL
+from ..core.rel.code import NOCOV
 from ..core.report import SampleF
 from ..core.run import run_func
-from ..core.seq import DNA, BASEA, BASEC, BASEG, BASET, BASEN
+from ..core.seq.xna import DNA
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write, write_mode
 from ..idmut.batch import ReadNamesBatch, IDmutRegionMutsBatch
@@ -54,94 +52,6 @@ from ..idmut.report import IDmutReport
 from ..idmut.sim import simulate_batches
 
 COMMAND = __name__.split(os.path.extsep)[-1]
-
-
-@jit()
-def _complement(base: str):
-    """JIT-compiled function to get the complement of a base."""
-    if base == BASEA:
-        return BASET
-    if base == BASEC:
-        return BASEG
-    if base == BASEG:
-        return BASEC
-    if base == BASET:
-        return BASEA
-    return BASEN
-
-
-@jit()
-def _generate_fastq_read_qual(
-    rels: np.ndarray,
-    refseq: str,
-    adapter: str,
-    read_length: int,
-    revcomp: bool,
-    hi_qual: str,
-    lo_qual: str,
-):
-    """Generate a FASTQ line for a read."""
-    (ref_length,) = rels.shape
-    # Map each type of relationship to a type of base in the read.
-    if revcomp:
-        ref_pos = ref_length - 1
-        ref_inc = -1
-        sub_a = BASET
-        sub_c = BASEG
-        sub_g = BASEC
-        sub_t = BASEA
-    else:
-        ref_pos = 0
-        ref_inc = 1
-        sub_a = BASEA
-        sub_c = BASEC
-        sub_g = BASEG
-        sub_t = BASET
-    # Fill the read with high-quality Gs (the default base in Illumina).
-    read = np.full(read_length, BASEG)
-    qual = np.full(read_length, hi_qual)
-    # Add bases to the read.
-    read_pos = 0
-    while read_pos < read_length and 0 <= ref_pos < ref_length:
-        rel = rels[ref_pos]
-        if rel == MATCH:
-            ref_base = refseq[ref_pos]
-            read[read_pos] = _complement(ref_base) if revcomp else ref_base
-            qual[read_pos] = hi_qual
-            read_pos += 1
-        elif rel == SUB_T:
-            read[read_pos] = sub_t
-            qual[read_pos] = hi_qual
-            read_pos += 1
-        elif rel == SUB_G:
-            read[read_pos] = sub_g
-            qual[read_pos] = hi_qual
-            read_pos += 1
-        elif rel == SUB_C:
-            read[read_pos] = sub_c
-            qual[read_pos] = hi_qual
-            read_pos += 1
-        elif rel == SUB_A:
-            read[read_pos] = sub_a
-            qual[read_pos] = hi_qual
-            read_pos += 1
-        elif rel == DELET:
-            # Deletion: do not add any base to the read.
-            pass
-        else:
-            # Assume a low-quality base call: add an N to the read.
-            read[read_pos] = BASEN
-            qual[read_pos] = lo_qual
-            read_pos += 1
-        ref_pos += ref_inc
-    # Add the adapter to the end of the read.
-    adapter_pos = 0
-    adapter_length = len(adapter)
-    while read_pos < read_length and adapter_pos < adapter_length:
-        read[read_pos] = adapter[adapter_pos]
-        read_pos += 1
-        adapter_pos += 1
-    return "".join(read), "".join(qual)
 
 
 def generate_fastq_record(
@@ -155,6 +65,8 @@ def generate_fastq_record(
     lo_qual: str = LO_QUAL,
 ):
     """Generate a FASTQ line for a read."""
+    import numpy as np
+
     if len(refseq) < get_length(rels, "rels"):
         raise ValueError(
             f"Length of the reference sequence ({len(refseq)}) "
@@ -162,7 +74,11 @@ def generate_fastq_record(
         )
     if np.any(rels == NOCOV):
         raise ValueError(f"rels contains {NOCOV}: {rels}")
-    read, qual = _generate_fastq_read_qual(
+    # Imported here (not at module level) so importing this module does not
+    # import numba via fastq_jit.
+    from .fastq_jit import generate_fastq_read_qual
+
+    read, qual = generate_fastq_read_qual(
         rels, refseq, adapter, read_length, reverse, hi_qual, lo_qual
     )
     return f"@{name}\n{read}\n+\n{qual}\n"
@@ -215,6 +131,8 @@ def generate_fastq(
     seed: int | None = None,
 ):
     """Generate FASTQ file(s) from a dataset."""
+    import numpy as np
+
     rng = np.random.default_rng(seed)
     if paired:
         segs_list = [path.DMFASTQ1_SEGS, path.DMFASTQ2_SEGS]
@@ -399,6 +317,7 @@ def run(
     reverse_fraction: float,
     probe: str,
     min_mut_gap_weights: str | None,
+    mut_collisions: str,
     injected_mut_probs: str | None,
     fq_gzip: bool,
     num_reads: int,
@@ -432,6 +351,9 @@ def run(
     min_mut_gap_weights: str | None
         Comma-separated gap:weight pairs for a bias mixture; None to use
         the probe default, empty string to use the probe-default single gap.
+    mut_collisions: str
+        How to handle reads with close mutations: "drop", "merge", or
+        "auto" to select based on the probe.
     injected_mut_probs: str | None
         Comma-separated offset:prob pairs (offset ≥ 1) for injecting a
         mutation at each offset 5' of an existing mutation; None to use
@@ -453,16 +375,11 @@ def run(
         Paths of all generated FASTQ files.
     """
     seeds = get_random_integer_generator(seed)
-    min_mut_gap_weights, injected_mut_probs = set_sim_mut_params(
-        probe, min_mut_gap_weights, injected_mut_probs
+    mut_collisions, min_mut_gap_weights, injected_mut_probs = set_sim_mut_params(
+        probe, mut_collisions, min_mut_gap_weights, injected_mut_probs
     )
     min_mut_gap_weights_dict = parse_min_mut_gap_weights(min_mut_gap_weights)
     injected_mut_probs_dict = parse_injected_mut_probs(injected_mut_probs)
-    mut_collisions = (
-        MUT_COLLISIONS_DROP
-        if min_mut_gap_weights_dict or not injected_mut_probs_dict
-        else MUT_COLLISIONS_MERGE
-    )
     report_files = as_list_of_tuples(
         path.find_files_chain(input_path, load_idmut_dataset.report_path_seg_types)
     )
@@ -532,6 +449,7 @@ params = [
     opt_reverse_fraction,
     opt_probe,
     opt_min_mut_gap_weights,
+    opt_mut_collisions,
     opt_injected_mut_probs,
     opt_fq_gzip,
     opt_num_reads,

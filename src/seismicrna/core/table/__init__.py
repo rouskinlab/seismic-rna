@@ -1,3 +1,1 @@
-from .base import *  # noqa: F403
-from .load import *  # noqa: F403
-from .write import *  # noqa: F403
+"""Tables: import directly from submodules (e.g. ``from ..table.<submodule> import <name>``)."""

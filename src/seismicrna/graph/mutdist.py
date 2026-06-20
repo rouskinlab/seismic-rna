@@ -1,25 +1,24 @@
+from __future__ import annotations
 import os
 from functools import cached_property
 
-import numpy as np
-import pandas as pd
 from click import command
 
 from .cgroup import make_tracks
 from .color import ColorMapGraph, RelColorMap
 from .dataset import DatasetGraph, DatasetWriter, DatasetRunner
 from .trace import HIST_COUNT_NAME, get_hist_trace
-from ..core.arg import opt_mutdist_null
+from ..core.arg.cli import opt_mutdist_null
+from ..core.unbias import calc_p_noclose_given_ends_auto, calc_p_ends_observed, triu_dot
+from ..table import get_tabulator_type
 from ..core.dataset import MutsDataset
 from ..core.header import REL_NAME, make_header
 from ..core.logs import logger
-from ..core.rel import RelPattern
+from ..core.rel.pattern import RelPattern
 from ..core.run import log_command
-from ..core.seq import FIELD_END5, FIELD_END3
-from ..core.table import PositionTable, all_patterns
+from ..core.seq.region import FIELD_END5, FIELD_END3
+from ..core.table.base import PositionTable, all_patterns
 from ..core.task import as_list_of_tuples, dispatch
-from ..core.unbias import calc_p_noclose_given_ends_auto, calc_p_ends_observed, triu_dot
-from ..table import get_tabulator_type
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 NULL_SUFFIX = "-NULL"
@@ -34,6 +33,8 @@ def _get_num_bins(dataset: MutsDataset):
 
 
 def _init_hists(dataset: MutsDataset, rel_name: str):
+    import pandas as pd
+
     header = make_header(rels=[rel_name], ks=dataset.ks)
     return pd.DataFrame(
         0.0 if header.get_is_clustered() else 0,
@@ -52,6 +53,9 @@ def _calc_hists(
 ):
     """Calculate the histogram of the smallest distances between two
     mutations in a read."""
+    import numpy as np
+    import pandas as pd
+
     batch = dataset.get_batch(batch_num)
     hists = _init_hists(dataset, rel_name)
     min_mut_dist = batch.calc_min_mut_dist(pattern)
@@ -211,6 +215,9 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
 
     @cached_property
     def _null_hist(self):
+        import numpy as np
+        import pandas as pd
+
         with logger.debug.single_context("calculating null histogram for {}", self):
             if self.dataset.is_clustered:
                 end_counts = self.tabulator.end_counts.loc[:, self.loc_clusters]
@@ -262,6 +269,9 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
     @cached_property
     def g_test(self):
         """G-test statistic and P-value."""
+        import numpy as np
+        import pandas as pd
+
         if self.calc_null:
             observed = self._real_hist.values
             expected = self._null_hist.values
@@ -293,6 +303,8 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
 
     @cached_property
     def data(self):
+        import pandas as pd
+
         if self.calc_null:
             return pd.concat([self._real_hist, self._null_hist], axis=1)
         return self._real_hist

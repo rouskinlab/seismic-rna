@@ -7,13 +7,15 @@ from typing import Iterable
 
 from click.testing import CliRunner
 
+import numpy as np
+
 from seismicrna.align import run as run_align
 from seismicrna.cluster import run as run_cluster
 from seismicrna.core import path
 from seismicrna.core.arg.cli import GROUP_BY_K, GROUP_ALL, KEY_PEARSON, PROBE_DMS
 from seismicrna.core.header import list_ks_clusts, K_CLUST_KEY
 from seismicrna.core.logs import Level, get_config, set_config
-from seismicrna.core.ngs import DuplicateSampleReferenceError
+from seismicrna.core.ngs.xam import DuplicateSampleReferenceError
 from seismicrna.fold import run as run_fold
 from seismicrna.graph.base import ACTION_IDMUT
 from seismicrna.graph.cgroup import make_tracks
@@ -25,6 +27,7 @@ from seismicrna.graph.scatter import ScatterRunner
 from seismicrna.graph.snrroll import RollingSNRRunner
 from seismicrna.join import run as run_join
 from seismicrna.filter import run as run_filter
+from seismicrna.filter.dataset import FilterMutsDataset
 from seismicrna.pool import run as run_pool
 from seismicrna.idmut import run as run_idmut
 from seismicrna.sim.fastq import run as run_sim_fastq
@@ -876,9 +879,6 @@ class TestWorkflowTwoOutDirs(ut.TestCase):
     def test_self_contained_filter_and_cluster(self):
         """Filter and cluster batches written with self_contained=True carry full
         mutation data and load correctly from the self-contained path."""
-        import numpy as np
-        from seismicrna.filter.dataset import FilterMutsDataset
-
         # Simulate data.
         fasta = run_sim_ref(
             sim_dir=self.sim_dir, ref=self.REF, refs=self.REFS, reflen=60

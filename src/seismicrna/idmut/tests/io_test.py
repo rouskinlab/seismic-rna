@@ -2,7 +2,7 @@ import unittest as ut
 
 import numpy as np
 
-from seismicrna.core.seq import DNA
+from seismicrna.core.seq.xna import DNA
 from seismicrna.idmut.io import from_reads
 
 

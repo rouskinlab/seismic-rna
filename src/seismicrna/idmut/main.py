@@ -6,8 +6,8 @@ from click import command
 from .strands import write_both_strands
 from .write import idmut_xam
 from ..core import path
-from ..core.arg import (
-    CMD_IDMUT,
+from ..core.arg.cmd import CMD_IDMUT
+from ..core.arg.cli import (
     arg_input_path,
     arg_fasta,
     opt_out_dir,
@@ -35,7 +35,7 @@ from ..core.arg import (
     opt_keep_tmp,
 )
 from ..core.logs import logger
-from ..core.ngs import DuplicateSampleReferenceError
+from ..core.ngs.xam import DuplicateSampleReferenceError
 from ..core.run import run_func
 from ..core.task import as_list_of_tuples, dispatch
 

@@ -14,7 +14,7 @@ from .report import ClusterReport
 from .summary import write_summaries
 from .uniq import UniqReads
 from ..core import path
-from ..core.arg import DEFAULT_MIN_MUT_GAPS, DEFAULT_MUT_COLLISIONS
+from ..core.arg.cli import DEFAULT_MIN_MUT_GAPS, DEFAULT_MUT_COLLISIONS
 from ..core.header import validate_ks
 from ..core.logs import logger
 from ..core.random import get_random_integer_generator

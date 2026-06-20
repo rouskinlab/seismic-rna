@@ -1,14 +1,14 @@
+from __future__ import annotations
 from abc import ABC
 from functools import cached_property
 from pathlib import Path
 from typing import Iterable
 
-import pandas as pd
 
 from .. import path
 from ..header import parse_header
 from ..logs import logger
-from ..table import Table, PositionTable, ReadTable, RelTypeTable
+from .base import Table, PositionTable, ReadTable, RelTypeTable
 
 
 class TableLoader(Table, ABC):
@@ -50,6 +50,8 @@ class RelTypeTableLoader(TableLoader, RelTypeTable, ABC):
 
     @cached_property
     def data(self) -> pd.DataFrame:
+        import pandas as pd
+
         data = pd.read_csv(
             self.path, index_col=self.get_index_cols(), header=self.get_header_rows()
         )

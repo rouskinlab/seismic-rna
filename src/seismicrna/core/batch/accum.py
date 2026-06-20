@@ -1,15 +1,15 @@
+from __future__ import annotations
 from typing import Any, Callable, Iterable
 
-import numpy as np
-import pandas as pd
 
 from .confusion import init_confusion_matrix
 from .ends import END_COORDS
 from .muts import RegionMutsBatch
 from ..header import make_header
 from ..logs import logger
-from ..rel import RelPattern
-from ..seq import DNA, seq_pos_to_index
+from ..rel.pattern import RelPattern
+from ..seq.xna import DNA
+from ..seq.region import seq_pos_to_index
 from ..task import as_list_of_tuples, dispatch
 from ..validate import require_isinstance, require_index_equals
 
@@ -55,6 +55,9 @@ def accumulate_counts(
     tuple
         Total (num_reads, end_counts, count_per_pos, count_per_read).
     """
+    import numpy as np
+    import pandas as pd
+
     rels = list(patterns)
     with logger.debug.single_context("accumulating counts of patterns {}", rels):
         header = make_header(rels=rels, ks=ks)

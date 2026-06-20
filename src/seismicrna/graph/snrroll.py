@@ -1,13 +1,12 @@
+from __future__ import annotations
 import os
 
-import numpy as np
-import pandas as pd
 from click import command
 
 from .statroll import RollingStatGraph, RollingStatRunner, RollingStatWriter
-from ..core.mu import calc_signal_noise
+from ..core.mu.measure import calc_signal_noise
 from ..core.run import log_command
-from ..core.seq import BASEA, BASEC, BASE_NAME
+from ..core.seq.region import BASEA, BASEC, BASE_NAME
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -15,6 +14,8 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 class RollingSNRGraph(RollingStatGraph):
     @classmethod
     def stat_func(cls):
+        import numpy as np
+        import pandas as pd
 
         def calc_snr(data: pd.Series):
             bases = data.index.get_level_values(BASE_NAME)

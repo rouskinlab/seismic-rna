@@ -7,7 +7,7 @@ from .db import parse_db_file_as_pairs
 from .struct import RNAStructure
 from ..logs import logger
 from ..path import CT_EXT, DB_EXT
-from ..seq import Region
+from ..seq.region import Region
 from ..write import need_write, write_mode
 
 

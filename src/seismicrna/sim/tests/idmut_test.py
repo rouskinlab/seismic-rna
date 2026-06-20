@@ -4,9 +4,9 @@ from itertools import product
 import numpy as np
 import pandas as pd
 
-from seismicrna.core.arg import MUT_COLLISIONS_DROP, MUT_COLLISIONS_MERGE
+from seismicrna.core.arg.cli import MUT_COLLISIONS_DROP, MUT_COLLISIONS_MERGE
 from seismicrna.core.header import CLUST_NAME, NUM_CLUSTS_NAME, REL_NAME
-from seismicrna.core.rel import MATCH, SUB_T, RelPattern
+from seismicrna.core.rel.pattern import MATCH, SUB_T, RelPattern
 from seismicrna.core.seq.region import BASE_NAME, POS_NAME
 from seismicrna.core.unbias import (
     calc_p_clust_given_noclose,
@@ -139,10 +139,7 @@ class TestSimulateBatches(ut.TestCase):
         return pd.Series(self.PCLUST, index=index)
 
     def _run(
-        self,
-        mut_collisions: str,
-        seed: int,
-        min_mut_gap_weights: dict | None = None,
+        self, mut_collisions: str, seed: int, min_mut_gap_weights: dict | None = None
     ):
         return list(
             simulate_batches(

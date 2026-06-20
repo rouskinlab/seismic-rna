@@ -1,14 +1,15 @@
+from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
-import numpy as np
 
 from .mm import iter_mm_file
 from ..core import path
 from ..core.logs import logger
 from ..core.rel.code import DELET, INS_3, INS_5, SUB_A, SUB_C, SUB_G, SUB_T, SUB_N
-from ..core.seq import DNA, Region
-from ..core.table import all_patterns
+from ..core.seq.xna import DNA
+from ..core.seq.region import Region
+from ..core.table.base import all_patterns
 from ..core.tmp import get_release_working_dirs, release_to_out
 from ..core.write import need_write
 from ..idmut.io import from_reads, ReadNamesBatchIO, IDmutBatchIO, RefseqIO
@@ -33,6 +34,8 @@ def _build_mut_codes(refseq: DNA, insert3: bool) -> np.ndarray:
     insert3), and all substitutions except the one matching the reference
     base (which would be a match, not a mutation).
     """
+    import numpy as np
+
     ins_code = INS_3 if insert3 else INS_5
     codes = np.zeros(len(refseq) + 1, dtype=np.uint8)
     for i, base in enumerate(str(refseq), start=1):

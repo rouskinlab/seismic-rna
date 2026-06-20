@@ -1,11 +1,9 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import Counter
 from functools import cached_property
 from typing import Iterable
 
-import numpy as np
-import pandas as pd
-from numba import jit
 
 from .confusion import calc_confusion_matrix
 from .count import (
@@ -23,9 +21,11 @@ from .read import ReadBatch
 from ..array import calc_inverse, find_dims
 from ..header import REL_NAME, make_header
 from ..logs import logger
-from ..rel import MATCH, NOCOV, REL_TYPE, RelPattern
-from ..seq import DNA, Region, index_to_pos
-from ..types import fit_uint_type
+from ..rel.pattern import MATCH, RelPattern
+from ..rel.code import NOCOV, REL_SIZE
+from ..seq.xna import DNA
+from ..seq.region import Region, index_to_pos
+from ..types import fit_uint_type, get_uint_type
 
 NUM_READS = "reads"
 NUM_SEGMENTS = "segments"
@@ -57,6 +57,8 @@ def sanitize_muts(
     dict[int, dict[int, np.ndarray]]
         Sanitized mutation data.
     """
+    import numpy as np
+
     result = {
         int(pos): (
             {int(rel): np.asarray(reads, data_type) for rel, reads in muts[pos].items()}
@@ -91,10 +93,15 @@ def simulate_muts(
         Mutation data: mapping from position to relationship code to
         read numbers.
     """
+    import numpy as np
+    import pandas as pd
+
     rng = np.random.default_rng(seed)
     num_reads, _ = match_reads_segments(seg_end5s, seg_end3s, None)
     read_nums = np.arange(num_reads, dtype=fit_uint_type(num_reads))
-    rels = np.asarray(pmut.columns.get_level_values(REL_NAME), dtype=REL_TYPE)
+    rels = np.asarray(
+        pmut.columns.get_level_values(REL_NAME), dtype=get_uint_type(REL_SIZE)
+    )
     if MATCH not in rels:
         raise ValueError(f"Relationships omit matches ({MATCH}): {rels}")
     if NOCOV in rels:
@@ -125,18 +132,6 @@ def simulate_muts(
                     )
     logger.trace("simulate_muts: {} reads, {} position(s)", num_reads, len(muts))
     return muts
-
-
-@jit()
-def _fill_matches(
-    matrix: np.ndarray,
-    index5s: np.ndarray,
-    index3s: np.ndarray,
-    unmasked_read_indexes: np.ndarray,
-):
-    """Fill all covered positions with matches."""
-    for i, read_index in enumerate(unmasked_read_indexes):
-        matrix[read_index, index5s[i] : index3s[i]] = MATCH
 
 
 def calc_muts_matrix(
@@ -170,6 +165,9 @@ def calc_muts_matrix(
         DataFrame of relationship codes, indexed by read number and
         columned by position index.
     """
+    import numpy as np
+    import pandas as pd
+
     dims = find_dims(
         [(NUM_READS,), (NUM_READS, NUM_SEGMENTS), (NUM_READS, NUM_SEGMENTS)],
         [read_nums, seg_end5s, seg_end3s],
@@ -180,6 +178,10 @@ def calc_muts_matrix(
     region_unmasked = region.unmasked_int
     matrix = np.full((num_reads, region_unmasked.size), NOCOV)
     if matrix.size > 0:
+        # fill_matches is numba-jitted; import it lazily (see core.batch.jit)
+        # so that importing this module does not import numba.
+        from .muts_jit import fill_matches
+
         # Map each 5' and 3' end coordinate to its index in the unmasked
         # positions of the region.
         pos5_indexes = calc_inverse(
@@ -202,7 +204,7 @@ def calc_muts_matrix(
             end5s = seg_end5s[unmasked_read_indexes, s]
             end3s = seg_end3s[unmasked_read_indexes, s]
             if unmasked_read_indexes.size > 0:
-                _fill_matches(
+                fill_matches(
                     matrix,
                     pos5_indexes[end5s],
                     pos3_indexes[end3s],
@@ -230,6 +232,8 @@ class MutsBatch(EndCoords, ReadBatch, ABC):
         masked_read_nums: np.ndarray | list[int] | None = None,
         **kwargs,
     ):
+        import numpy as np
+
         super().__init__(region=region, sanitize=sanitize, **kwargs)
         # Validate and store the mutations.
         self.muts = sanitize_muts(muts, region, self.read_dtype, sanitize)
@@ -239,6 +243,8 @@ class MutsBatch(EndCoords, ReadBatch, ABC):
     @cached_property
     def pos_nums(self):
         """Positions in use."""
+        import numpy as np
+
         return np.fromiter(self.muts, self.pos_dtype)
 
     @property
@@ -259,6 +265,8 @@ class MutsBatch(EndCoords, ReadBatch, ABC):
 
 def _add_to_column(added: pd.Series | pd.DataFrame, frame: pd.DataFrame, column: str):
     """Add the values in `added` to the column `column` of `frame`."""
+    import pandas as pd
+
     frame_col = frame[column]
     if not frame_col.index.equals(added.index):
         raise ValueError(
@@ -399,6 +407,8 @@ class RegionMutsBatch(MutsBatch, ABC):
         count_read: bool = True,
     ):
         """Calculate all counts."""
+        import pandas as pd
+
         count_items = []
         if count_ends:
             count_items.append("ends")
@@ -460,6 +470,8 @@ class RegionMutsBatch(MutsBatch, ABC):
     def calc_min_mut_dist(self, pattern: RelPattern):
         """For each read, calculate the smallest distance (i.e. the gap
         plus 1) between any two mutations."""
+        import numpy as np
+
         with logger.trace.single_context(
             "Calculating minimum distance between mutations matching {} per read in {}",
             pattern,
@@ -505,6 +517,8 @@ class RegionMutsBatch(MutsBatch, ABC):
 
     def reads_noclose_muts(self, pattern: RelPattern, min_gap: int):
         """List the reads with no two mutations too close."""
+        import numpy as np
+
         with logger.trace.single_context(
             "Finding reads with no mutations matching {} closer than {} nt in {}",
             pattern,
@@ -537,6 +551,8 @@ class RegionMutsBatch(MutsBatch, ABC):
         occuring at non-modified positions shortly 5' of modifications,
         and therefore distinguishes probe-modified positions from all
         mutated positions."""
+        import numpy as np
+
         with logger.trace.single_context(
             "Merging mutations matching {} closer than {} nt in {}",
             pattern,
@@ -605,6 +621,8 @@ class RegionMutsBatch(MutsBatch, ABC):
     ):
         """Return a new muts dictionary with extra mutations injected
         at each offset 5' of existing mutations."""
+        import numpy as np
+
         with logger.trace.single_context(
             "Injecting mutations matching {} with probabilities {} into {}",
             pattern,
@@ -743,6 +761,8 @@ class RegionMutsBatch(MutsBatch, ABC):
         require_contiguous: bool = False,
     ):
         """End coordinates and mutated positions in each read."""
+        import numpy as np
+
         with logger.trace.single_context(
             "Iterating through positions matching {} and {} per read in {}",
             pattern,

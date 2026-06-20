@@ -1,12 +1,13 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from functools import cached_property
 
-import pandas as pd
 
 from .cgroup import make_tracks
 from .dataset import DatasetGraph, DatasetWriter, DatasetRunner
 from .trace import get_pairwise_position_trace
-from ..core.batch import POSITION_A, POSITION_B, accumulate_confusion_matrices
+from ..core.batch.confusion import POSITION_A, POSITION_B
+from ..core.batch.accum import accumulate_confusion_matrices
 from ..core.dataset import UnbiasDataset
 from ..core.header import NO_CLUST, NO_CLUSTS, NUM_CLUSTS_NAME, CLUST_NAME
 
@@ -33,6 +34,8 @@ class PositionPairGraph(DatasetGraph, ABC):
 
     @cached_property
     def data(self):
+        import pandas as pd
+
         if self.row_tracks is not None and self.row_tracks != NO_CLUSTS:
             clusters = pd.MultiIndex.from_tuples(
                 self.row_tracks, names=[NUM_CLUSTS_NAME, CLUST_NAME]

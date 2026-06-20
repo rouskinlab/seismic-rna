@@ -1,9 +1,14 @@
+from __future__ import annotations
+
 import os
 from abc import ABC
 from functools import cached_property
 
 from click import command
-from plotly import graph_objects as go
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from plotly import graph_objects as go
 
 from .color import ColorMapGraph, RelColorMap, SeqColorMap
 from .onetable import (
@@ -16,7 +21,7 @@ from .table import PositionTableRunner
 from .trace import iter_seq_base_bar_traces, iter_seqbar_stack_traces
 from ..core.header import parse_header
 from ..core.run import log_command
-from ..core.seq import POS_NAME
+from ..core.seq.region import POS_NAME
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 

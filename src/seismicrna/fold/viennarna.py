@@ -7,7 +7,7 @@ from pathlib import Path
 
 from .dryrun import dry_run
 from .rnastructure import retitle_ct
-from ..core.extern import (
+from ..core.shell import (
     VIENNA_RNAFOLD_CMD,
     VIENNA_RNASUBOPT_CMD,
     cmds_to_pipe,
@@ -17,7 +17,7 @@ from ..core.extern import (
     run_cmd,
 )
 from ..core.logs import logger
-from ..core.rna import renumber_ct, db_to_ct
+from ..core.rna.io import renumber_ct, db_to_ct
 from ..core.write import need_write, write_mode
 
 ENERGY_UNIT = "kcal/mol"

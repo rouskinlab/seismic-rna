@@ -8,8 +8,8 @@ from .fqunit import format_phred_arg
 from .report import SplitReport
 from .write import split_references
 from ..core import path
-from ..core.arg import (
-    CMD_SPLITBAM,
+from ..core.arg.cmd import CMD_SPLITBAM
+from ..core.arg.cli import (
     arg_fasta,
     arg_input_path,
     opt_phred_enc,
@@ -43,15 +43,11 @@ from ..core.arg import (
     opt_seed,
 )
 from ..core.error import DuplicateValueError
-from ..core.extern import (
-    BOWTIE2_CMD,
-    BOWTIE2_BUILD_CMD,
-    SAMTOOLS_CMD,
-    require_dependency,
-)
-from ..core.io import calc_sha512_path
+from ..core.shell import BOWTIE2_CMD, BOWTIE2_BUILD_CMD, SAMTOOLS_CMD
+from ..core.depend import require_dependency
+from ..core.io.checksum import calc_sha512_path
 from ..core.logs import logger
-from ..core.ngs import run_flagstat, run_sort_xam, run_index_xam, xam_paired
+from ..core.ngs.xam import run_flagstat, run_sort_xam, run_index_xam, xam_paired
 from ..core.run import run_func
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.tmp import release_to_out

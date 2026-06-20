@@ -5,12 +5,14 @@ from pathlib import Path
 from typing import Any, Callable, Iterable
 
 from . import path
-from .batch import MutsBatch, RegionMutsBatch, ReadBatch, list_batch_nums
+from .batch.muts import MutsBatch, RegionMutsBatch
+from .batch.read import ReadBatch
+from .batch.index import list_batch_nums
 from .error import InconsistentValueError, NoDataError
 from .header import NO_K
-from .io import MutsBatchIO, ReadBatchIO
+from .io.batch import MutsBatchIO, ReadBatchIO
 from .logs import logger, format_sample_reference_region
-from .rel import RelPattern
+from .rel.pattern import RelPattern
 from .report import (
     BranchesF,
     SampleF,
@@ -26,7 +28,8 @@ from .report import (
     BatchedReport,
     MissingFieldWithNoDefaultError,
 )
-from .seq import DNA, Region, unite
+from .seq.xna import DNA
+from .seq.region import Region, unite
 from .validate import (
     require_isinstance,
     require_issubclass,

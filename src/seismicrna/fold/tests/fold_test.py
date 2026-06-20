@@ -5,7 +5,7 @@ from pathlib import Path
 
 import numpy as np
 
-from seismicrna.core.arg import (
+from seismicrna.core.arg.cli import (
     FOLD_BACKEND_AUTO,
     FOLD_BACKEND_RNASTRUCTURE,
     FOLD_BACKEND_VIENNARNA,
@@ -18,13 +18,13 @@ from seismicrna.core.arg import (
     PROBE_ETC,
     PROBE_NONE,
 )
-from seismicrna.core.extern import (
+from seismicrna.core.shell import (
     RNASTRUCTURE_FOLD_CMD,
     RNASTRUCTURE_SHAPEKNOTS_CMD,
     VIENNA_RNAFOLD_CMD,
     VIENNA_RNASUBOPT_CMD,
-    dependency_exists,
 )
+from seismicrna.core.depend import dependency_exists
 from seismicrna.core.logs import Level, set_config
 from seismicrna.core.report import (
     FoldBackendF,

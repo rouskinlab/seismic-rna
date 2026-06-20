@@ -1,15 +1,16 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from functools import cached_property
 from typing import Any, Iterable
 
-import numpy as np
 
 from .array import locate_elements
-from .batch import MutsBatch, match_reads_segments
+from .batch.muts import MutsBatch
+from .batch.ends import match_reads_segments
 from .dataset import WideMutsDataset
-from .io import RegFileIO
+from .io.file import RegFileIO
 from .report import Report
-from .seq import Region
+from .seq.region import Region
 from .types import fit_uint_type
 from .validate import require_equal
 
@@ -26,6 +27,8 @@ def _join_position(
     add_muts: dict[int, dict[int, np.ndarray]],
     position: int,
 ):
+    import numpy as np
+
     if pos_muts := muts.get(position):
         if add_pos_muts := add_muts.get(position):
             joined_pos_muts = dict()
@@ -58,6 +61,8 @@ def _join_position(
 
 
 def _join_attrs(attrs: dict[str, Any], add_attrs: dict[str, Any], region: Region):
+    import numpy as np
+
     require_equal(
         "attrs[BATCH_NUM]",
         attrs[BATCH_NUM],

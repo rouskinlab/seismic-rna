@@ -5,8 +5,8 @@ from click import command
 
 from .cleanfa import clean_fasta
 from ..core import path
-from ..core.arg import (
-    CMD_CLEANFA,
+from ..core.arg.cmd import CMD_CLEANFA
+from ..core.arg.cli import (
     arg_input_path,
     opt_inplace,
     opt_out_dir,

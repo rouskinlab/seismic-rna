@@ -1,7 +1,8 @@
 from pathlib import Path
 
 from ..align.write import format_ref_reverse
-from ..core.seq import DNA, parse_fasta, write_fasta
+from ..core.seq.xna import DNA
+from ..core.seq.fasta import parse_fasta, write_fasta
 
 
 def generate_both_strands(ref: str, seq: DNA, rev_label: str):

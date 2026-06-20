@@ -2,9 +2,11 @@ from itertools import product, combinations, combinations_with_replacement as cw
 from typing import Sequence
 
 from ..py.encode import encode_rel
-from ...core.ngs import LO_QUAL, OK_QUAL, HI_QUAL
-from ...core.rel import DELET, INS_5, INS_3, MATCH
-from ...core.seq import DNA, Region
+from ...core.ngs.phred import LO_QUAL, OK_QUAL, HI_QUAL
+from ...core.rel.pattern import DELET, MATCH
+from ...core.rel.code import INS_5, INS_3
+from ...core.seq.xna import DNA
+from ...core.seq.region import Region
 
 
 def iter_relvecs_q53(

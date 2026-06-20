@@ -1,7 +1,7 @@
+from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-import pandas as pd
 
 from ..core.logs import logger
 
@@ -22,6 +22,8 @@ def _parse_metadata(file: Path, index_col: str):
     dict
         Parsed metadata
     """
+    import pandas as pd
+
     metadata = dict()
     df = pd.read_csv(file, index_col=index_col)
     if df.columns.has_duplicates:

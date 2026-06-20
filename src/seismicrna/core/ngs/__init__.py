@@ -1,2 +1,1 @@
-from .phred import *  # noqa: F403
-from .xam import *  # noqa: F403
+"""NGS utilities: import directly from submodules (e.g. ``from ..ngs.<submodule> import <name>``)."""

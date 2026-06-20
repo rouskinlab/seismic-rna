@@ -9,9 +9,9 @@ from shutil import which
 
 from .dryrun import dry_run
 from .profile import ZERO_CELSIUS
-from ..core.arg import opt_fold_temp
+from ..core.arg.cli import opt_fold_temp
 from ..core.error import IncompatibleValuesError
-from ..core.extern import (
+from ..core.shell import (
     RNASTRUCTURE_FOLD_CMD,
     RNASTRUCTURE_FOLD_SMP_CMD,
     RNASTRUCTURE_SHAPEKNOTS_CMD,
@@ -19,7 +19,7 @@ from ..core.extern import (
     run_cmd,
 )
 from ..core.logs import logger
-from ..core.rna import renumber_ct
+from ..core.rna.io import renumber_ct
 from ..core.write import need_write, write_mode
 
 ENERGY_UNIT = "kcal/mol"

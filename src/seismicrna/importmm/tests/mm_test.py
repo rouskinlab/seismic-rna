@@ -3,7 +3,7 @@ import tempfile
 import unittest as ut
 from pathlib import Path
 
-from seismicrna.core.seq import DNA
+from seismicrna.core.seq.xna import DNA
 from seismicrna.importmm.mm import iter_mm_file
 
 # ---------------------------------------------------------------------------

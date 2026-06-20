@@ -1,8 +1,12 @@
+from __future__ import annotations
+
 import os
 
-import numpy as np
 from click import command
-from plotly import graph_objects as go
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from plotly import graph_objects as go
 
 from .color import ColorMapGraph, SeqColorMap
 from .rel import OneRelGraph
@@ -14,7 +18,7 @@ from .twotable import (
     TwoTableRelClusterGroupRunner,
 )
 from ..core.run import log_command
-from ..core.seq import POS_NAME
+from ..core.seq.region import POS_NAME
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -51,6 +55,8 @@ class DeltaProfileGraph(TwoTableMergedClusterGroupGraph, OneRelGraph, ColorMapGr
     @property
     def _merge_data(self):
         """Compute the difference between the profiles."""
+        import numpy as np
+
         return np.subtract
 
     def _figure_layout(self, fig: go.Figure):

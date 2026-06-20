@@ -4,9 +4,10 @@ import numpy as np
 import pandas as pd
 
 from seismicrna.core.batch.muts import calc_muts_matrix
-from seismicrna.core.rel import RelPattern
+from seismicrna.core.rel.pattern import RelPattern
 from seismicrna.core.rel.code import DELET, MATCH, NOCOV, SUB_A, SUB_C, SUB_G, SUB_T
-from seismicrna.core.seq import DNA, Region
+from seismicrna.core.seq.xna import DNA
+from seismicrna.core.seq.region import Region
 from seismicrna.filter.batch import FilterMutsBatch
 
 

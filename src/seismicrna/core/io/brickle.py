@@ -4,16 +4,18 @@ from functools import cached_property
 from pathlib import Path
 from typing import Any
 
-import brotli
-
 from .checksum import BadChecksumError, calc_sha512_bytes
-from .file import FileIO, SampleFileIO, RefFileIO, RegFileIO
+from .file import (
+    FileIO,
+    SampleFileIO,
+    RefFileIO,
+    RegFileIO,
+    DEFAULT_BROTLI_LEVEL,
+    PICKLE_PROTOCOL,
+)
 from ..logs import logger, format_sample_reference_region
 from ..validate import require_isinstance, require_issubclass
 from ..write import write_mode
-
-DEFAULT_BROTLI_LEVEL = 10
-PICKLE_PROTOCOL = 5
 
 
 class BrickleIO(FileIO, ABC):
@@ -101,6 +103,8 @@ def save_brickle(
     str
         SHA-512 checksum of the written data.
     """
+    import brotli
+
     require_isinstance("item", item, BrickleIO)
     with logger.debug.single_context("Writing {} to {}", item, file):
         # Save the item's state rather than the item itself.
@@ -140,6 +144,8 @@ def load_brickle(file: str | Path, data_type: type[BrickleIO], checksum: str):
     BrickleIO
         The loaded object.
     """
+    import brotli
+
     require_issubclass("data_type", data_type, BrickleIO)
     with logger.debug.single_context("Loading {} from {}", data_type, file):
         with open(file, "rb") as f:

@@ -1,8 +1,7 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from functools import cached_property
 
-import numpy as np
-import pandas as pd
 
 from .color import ColorMapGraph, RelColorMap
 from .onetable import (
@@ -12,7 +11,7 @@ from .onetable import (
 )
 from .rel import MultiRelsGraph
 from .trace import HIST_COUNT_NAME, HIST_LOWER_NAME, HIST_UPPER_NAME, iter_hist_traces
-from ..core.arg import opt_hist_bins, opt_hist_margin
+from ..core.arg.cli import opt_hist_bins, opt_hist_margin
 from ..core.header import parse_header
 
 
@@ -31,6 +30,9 @@ def get_edges_index(edges: np.ndarray, use_ratio: bool):
     pandas.Index | pandas.MultiIndex
         Index for the edges.
     """
+    import numpy as np
+    import pandas as pd
+
     # Determine the lower and upper edge of each bin.
     lower = edges[:-1]
     upper = edges[1:]
@@ -91,6 +93,9 @@ class HistogramGraph(OneTableRelClusterGroupGraph, MultiRelsGraph, ColorMapGraph
     @cached_property
     def data(self):
         # Fetch the raw data from the table.
+        import numpy as np
+        import pandas as pd
+
         data = self._fetch_data(self.table, k=self.k, clust=self.clust)
         # Determine the edges of the bins.
         edges = self.get_edges(data)
@@ -109,6 +114,8 @@ class HistogramGraph(OneTableRelClusterGroupGraph, MultiRelsGraph, ColorMapGraph
 
     def get_bounds(self, data: pd.DataFrame):
         """Get the lower and upper bounds of the histogram."""
+        import numpy as np
+
         try:
             lo = float(np.nanmin(data))
         except ValueError:
@@ -131,6 +138,8 @@ class HistogramGraph(OneTableRelClusterGroupGraph, MultiRelsGraph, ColorMapGraph
 
     def get_edges(self, data: pd.DataFrame):
         """Get the edges of the histogram bins."""
+        import numpy as np
+
         # Make bins of floating-point values.
         lower, upper = self.get_bounds(data)
         if self.use_ratio:

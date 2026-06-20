@@ -1,10 +1,9 @@
+from __future__ import annotations
 from typing import Iterable
 
-import numpy as np
-from numba import jit
 
 from .marginal import calc_marginal
-from ..core.arg import MUT_COLLISIONS_DROP, MUT_COLLISIONS_MERGE
+from ..core.arg.cli import MUT_COLLISIONS_DROP, MUT_COLLISIONS_MERGE
 from ..core.array import find_dims, get_length
 from ..core.logs import logger
 from ..core.random import get_random_integer_generator, stochastic_round
@@ -46,66 +45,10 @@ def linearize_ends_matrix(p_ends: np.ndarray):
     values: np.ndarray
         1D array of values at (end5s, end3s) in p_ends.
     """
+    import numpy as np
+
     end5s, end3s = np.nonzero(np.triu(p_ends))
     return end5s, end3s, p_ends[end5s, end3s]
-
-
-@jit()
-def _assign_clusters_dropped(
-    clusters: np.ndarray,
-    p_clust_given_read: np.ndarray,
-    n_reads_per_clust: np.ndarray,
-    rng: np.random.Generator,
-):
-    """Assign one cluster to each read.
-
-    Parameters
-    ----------
-    clusters: np.ndarray
-        1D (reads) integer array into which the cluster assigned to each
-        read will be written.
-    p_clust_given_read: np.ndarray
-        2D (reads x clusters) float array of the probability that each
-        read belongs to each cluster.
-    n_reads_per_clust: np.ndarray
-        1D (clusters) integer array of the number of reads to assign to
-        each cluster.
-    rng: np.random.Generator
-        Random number generator used to permute read order and draw
-        random values for cluster selection.
-
-    Additionally, this function makes the following assumptions; if any
-    assumption is violated, this function can produce incorrect results
-    or attempt to access invalid memory addresses, potentially causing
-    a segmentation fault.
-    - There must be at least 1 cluster.
-    - Every element of `p_clust_given_read` is ≥ 0 and ≤ 1.
-    - Every row of `p_clust_given_read` sums to 1.
-    - All elements of `n_reads_per_clust` are non-negative integers.
-    - `n_reads_per_clust` sums to the number of reads (i.e. the lengths
-      of `clusters` and `p_clust_given_read`).
-    """
-    n_reads, n_clust = p_clust_given_read.shape
-    # Iterate through the reads in random order to eliminate bias that
-    # can arise from the order in which reads are assigned.
-    read_order = rng.permutation(n_reads)
-    for i in read_order:
-        rand_i = rng.random()
-        # Calculate the probability of selecting each cluster for this
-        # read.
-        p_clust_i = p_clust_given_read[i] * n_reads_per_clust
-        p_clust_i /= p_clust_i.sum()
-        # Select the cluster based on the probabilities.
-        p_clust_i_sum = 0.0
-        for k in range(n_clust):
-            p_clust_i_sum += p_clust_i[k]
-            if rand_i < p_clust_i_sum:
-                # Assign the read to the cluster.
-                clusters[i] = k
-                # Decrement the number of reads remaining in that cluster.
-                n_reads_per_clust[k] -= 1
-                break
-    return clusters
 
 
 def _sim_clusters_dropped(p_clust_given_read: np.ndarray, seed: int | None):
@@ -131,6 +74,11 @@ def _sim_clusters_dropped(p_clust_given_read: np.ndarray, seed: int | None):
         1D (reads) integer array of the cluster index assigned to each
         read.
     """
+    # Import numpy and jackpot_jit here so that importing this module does not
+    # import numpy and numba (which is slow).
+    import numpy as np
+    from .jackpot_jit import assign_clusters_dropped
+
     n_reads, n_clust = p_clust_given_read.shape
     if p_clust_given_read.size > 0 and p_clust_given_read.min() <= 0.0:
         raise ValueError(
@@ -165,7 +113,7 @@ def _sim_clusters_dropped(p_clust_given_read: np.ndarray, seed: int | None):
         pass
     # Choose the cluster for each read.
     rng = np.random.default_rng(next(seeds))
-    _assign_clusters_dropped(clusters, p_clust_given_read, n_reads_per_clust, rng)
+    assign_clusters_dropped(clusters, p_clust_given_read, n_reads_per_clust, rng)
     return clusters
 
 
@@ -192,6 +140,8 @@ def _sim_clusters_merged(p_clust: np.ndarray, n_reads: int, seed: int | None):
         1D (reads) integer array of the cluster index assigned to each
         read.
     """
+    import numpy as np
+
     (n_clust,) = p_clust.shape
     if n_clust <= 0:
         raise ValueError("At least one cluster is required")
@@ -223,113 +173,6 @@ def _sim_clusters_merged(p_clust: np.ndarray, n_reads: int, seed: int | None):
     # Choose the cluster for each read.
     rng = np.random.default_rng(next(seeds))
     return rng.permutation(np.repeat(np.arange(n_clust), n_reads_per_clust))
-
-
-@jit()
-def _sim_muts_dropped_jit(
-    muts: np.ndarray,
-    end5s: np.ndarray,
-    end3s: np.ndarray,
-    clusts: np.ndarray,
-    p_mut_t: np.ndarray,
-    min_mut_gap: int,
-    max_attempts: int,
-    rng: np.random.Generator,
-):
-    """Simulate the array of mutations. Drop reads with mutations too
-    close.
-
-    This function is meant to be called only after the arguments have
-    been validated and thus makes the following assumptions:
-
-    - muts is a C-contiguous NumPy boolean array with shape
-      (reads x positions), initially all False.
-    - end5s, end3s, and clusts are 1D NumPy integer arrays of the same
-      length.
-    - p_mut_t is a C-contiguous 2D NumPy float array with shape
-      (clusters x positions) — the transpose of the usual p_mut so that
-      each cluster's per-position rates are a contiguous 1D row.
-    - p_mut_t has at least one row.
-    - max_attempts ≥ 1
-    """
-    (n_reads,) = clusts.shape
-    n_pos = muts.shape[1]
-    # Reusable scratch buffer of positions placed during the current
-    # attempt. Deferred commit (write to muts only on success) avoids
-    # ever having to clear muts on a failed attempt.
-    placed = np.empty(n_pos, dtype=np.int64)
-    error = False
-    for i in range(n_reads):
-        k = clusts[i]
-        end5 = end5s[i]
-        end3 = end3s[i]
-        p_mut_k = p_mut_t[k]
-        read_valid = False
-        n_placed = 0
-        for _ in range(max_attempts):
-            read_valid = True
-            n_placed = 0
-            # Sentinel chosen so the first candidate j cannot collide.
-            last_mut = end5 - min_mut_gap - 1
-            for j in range(end5, end3 + 1):
-                if rng.random() < p_mut_k[j]:
-                    if j - last_mut <= min_mut_gap:
-                        read_valid = False
-                        break
-                    placed[n_placed] = j
-                    n_placed += 1
-                    last_mut = j
-            if read_valid:
-                break
-        if not read_valid:
-            error = True
-            break
-        muts_i = muts[i]
-        for p in range(n_placed):
-            muts_i[placed[p]] = True
-    return error
-
-
-@jit()
-def _sim_muts_merged_jit(
-    muts: np.ndarray,
-    end5s: np.ndarray,
-    end3s: np.ndarray,
-    clusts: np.ndarray,
-    p_mut_t: np.ndarray,
-    min_mut_gap: int,
-    rng: np.random.Generator,
-):
-    """Simulate the array of mutations. Merge mutations too close.
-
-    This function is meant to be called only after the arguments have
-    been validated and thus makes the following assumptions:
-
-    - muts is a C-contiguous NumPy boolean array with shape
-      (reads x positions), initially all False.
-    - end5s, end3s, and clusts are 1D NumPy integer arrays of the same
-      length.
-    - p_mut_t is a C-contiguous 2D NumPy float array with shape
-      (clusters x positions) — the transpose of the usual p_mut so that
-      each cluster's per-position rates are a contiguous 1D row.
-    - p_mut_t has at least one row.
-    - min_mut_gap ≥ 0
-    """
-    (n_reads,) = clusts.shape
-    skip = min_mut_gap + 1
-    for i in range(n_reads):
-        k = clusts[i]
-        end5 = end5s[i]
-        end3 = end3s[i]
-        p_mut_k = p_mut_t[k]
-        muts_i = muts[i]
-        j = end3
-        while j >= end5:
-            if rng.random() < p_mut_k[j]:
-                muts_i[j] = True
-                j -= skip
-            else:
-                j -= 1
 
 
 def _sim_muts_dropped(
@@ -376,6 +219,11 @@ def _sim_muts_dropped(
         2D (reads x positions) boolean array of whether each base in
         each read is mutated.
     """
+    # Import numpy and jackpot_jit here so that importing this module does not
+    # import numpy and numba (which is slow).
+    import numpy as np
+    from .jackpot_jit import sim_muts_dropped_jit
+
     require_atleast("min_mut_gap", min_mut_gap, 0, classes=int)
     # Validate the dimensions.
     dims = find_dims(
@@ -393,7 +241,7 @@ def _sim_muts_dropped(
     # Transpose to (clusters x positions) so each cluster's per-position
     # rates are a contiguous 1D row inside the JIT inner loop.
     p_mut_t = np.ascontiguousarray(p_mut.T)
-    error = _sim_muts_dropped_jit(
+    error = sim_muts_dropped_jit(
         muts, end5s, end3s, clusts, p_mut_t, min_mut_gap, max_attempts, rng
     )
     if error:
@@ -443,6 +291,11 @@ def _sim_muts_merged(
         2D (reads x positions) boolean array of whether each base in
         each read is mutated.
     """
+    # Import numpy and jackpot_jit here so that importing this module does not
+    # import numpy and numba (which is slow).
+    import numpy as np
+    from .jackpot_jit import sim_muts_merged_jit
+
     require_atleast("min_mut_gap", min_mut_gap, 0, classes=int)
     # Validate the dimensions.
     dims = find_dims(
@@ -460,7 +313,7 @@ def _sim_muts_merged(
     # Transpose to (clusters x positions) so each cluster's per-position
     # rates are a contiguous 1D row inside the JIT inner loop.
     p_mut_t = np.ascontiguousarray(p_mut.T)
-    _sim_muts_merged_jit(muts, end5s, end3s, clusts, p_mut_t, min_mut_gap, rng)
+    sim_muts_merged_jit(muts, end5s, end3s, clusts, p_mut_t, min_mut_gap, rng)
     return muts
 
 
@@ -502,6 +355,8 @@ def _sim_reads_dropped(
     clusts: np.ndarray
         1D (reads) integer array of the cluster assigned to each read.
     """
+    import numpy as np
+
     find_dims(
         [(READS,), (READS,), (POSITIONS, POSITIONS, CLUSTERS), (POSITIONS, CLUSTERS)],
         [end5s, end3s, p_clust_given_ends_noclose, p_mut],
@@ -556,6 +411,8 @@ def _sim_reads_merged(
     clusts: np.ndarray
         1D (reads) integer array of the cluster assigned to each read.
     """
+    import numpy as np
+
     dims = find_dims(
         [(READS,), (READS,), (CLUSTERS,), (POSITIONS, CLUSTERS)],
         [end5s, end3s, p_clust, p_mut],
@@ -617,6 +474,8 @@ def _calc_obs_exp(
         1D (unique reads) float array of the log expected count of each
         unique read.
     """
+    import numpy as np
+
     dims = find_dims(
         [(READS, POSITIONS), (READS,)], [reads, clusts], ["reads", "clusts"]
     )
@@ -771,6 +630,8 @@ def calc_semi_g_anomaly(num_obs: int | np.ndarray, log_exp: float | np.ndarray):
     int | np.ndarray
         Semi-G-anomaly: num_obs * (log(num_obs) - log_exp).
     """
+    import numpy as np
+
     with np.errstate(divide="ignore"):
         result = num_obs * (np.log(num_obs) - log_exp)
     # By convention, 0 * log(0/E) = 0 (the limit as O→0⁺).
@@ -837,6 +698,8 @@ def calc_jackpot_score_ci(jackpot_scores: Iterable[float], confidence_level: flo
     ci_up: float
         Upper bound of the confidence interval.
     """
+    import numpy as np
+
     # Ensure g_stats is a NumPy array of floats with no NaN/inf values.
     if not isinstance(jackpot_scores, (np.ndarray, list)):
         jackpot_scores = list(jackpot_scores)
@@ -891,6 +754,8 @@ def calc_jackpot_quotient(real_jackpot_score: float, null_jackpot_score: float):
     float
         Jackpotting quotient
     """
+    import numpy as np
+
     return np.exp(real_jackpot_score - null_jackpot_score)
 
 
@@ -957,6 +822,8 @@ def bootstrap_jackpot_scores(
     np.ndarray
         1D array of jackpotting scores from the null bootstrap replicates.
     """
+    import numpy as np
+
     find_dims(
         [
             (UNIQUE_READS,),

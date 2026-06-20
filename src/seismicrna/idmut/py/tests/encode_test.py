@@ -1,10 +1,16 @@
 import unittest as ut
 from string import printable
 
-from ..encode import SUBS_ENCODINGS, SUBS_DECODINGS, is_acgt, encode_rel
-from ....core.ngs import LO_QUAL, HI_QUAL
-from ....core.rel import MATCH, ANY_N
-from ....core.seq import DNA
+from seismicrna.idmut.py.encode import (
+    SUBS_ENCODINGS,
+    SUBS_DECODINGS,
+    is_acgt,
+    encode_rel,
+)
+from seismicrna.core.ngs.phred import LO_QUAL, HI_QUAL
+from seismicrna.core.rel.pattern import MATCH
+from seismicrna.core.rel.code import ANY_N
+from seismicrna.core.seq.xna import DNA
 
 
 class TestSubsCoding(ut.TestCase):

@@ -1,23 +1,17 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from functools import cache
 from pathlib import Path
 from typing import Iterable, Self
 
-import pandas as pd
 
 from . import path
-from .arg import opt_max_fmut_pos, opt_min_ninfo_pos
-from .io import RefFileIO
+from .arg.cli import opt_max_fmut_pos, opt_min_ninfo_pos
+from .io.file import RefFileIO
 from .logs import logger, format_sample_reference_region
-from .seq import FIELD_REF, POS_NAME
-from .table import (
-    READ_TITLE,
-    INFOR_REL,
-    MUTAT_REL,
-    RelTypeTable,
-    PositionTableLoader,
-    RelTypeTableLoader,
-)
+from .seq.region import FIELD_REF, POS_NAME
+from .table.base import READ_TITLE, INFOR_REL, MUTAT_REL, RelTypeTable
+from .table.load import PositionTableLoader, RelTypeTableLoader
 from .validate import require_isinstance, require_equal
 
 
@@ -73,6 +67,8 @@ class List(RefFileIO, ABC):
 
     @classmethod
     def validate_data(cls, data: pd.DataFrame):
+        import pandas as pd
+
         require_isinstance("data", data, pd.DataFrame)
         require_equal(
             "data.columns.to_list()",
@@ -83,6 +79,8 @@ class List(RefFileIO, ABC):
 
     @classmethod
     def load_data(cls, file: str | Path, only_ref: bool = False):
+        import pandas as pd
+
         data = pd.read_csv(file)
         cls.validate_data(data)
         if only_ref:
@@ -165,6 +163,8 @@ class PositionList(List, ABC):
         min_ninfo_pos: int = opt_min_ninfo_pos.default,
         max_fmut_pos: float = opt_max_fmut_pos.default,
     ):
+        import pandas as pd
+
         with logger.debug.single_context("making {} from {}", cls, table):
             if not isinstance(table, cls.get_table_type()):
                 raise TypeError(

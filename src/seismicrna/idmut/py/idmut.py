@@ -11,8 +11,9 @@ from .cigar import (
 )
 from .encode import encode_rel
 from .error import IDmutError
-from ...core.ngs import MAX_FLAG, SAM_DELIM
-from ...core.rel import MATCH, DELET, NOCOV, IRREC
+from ...core.ngs.xam import MAX_FLAG, SAM_DELIM
+from ...core.rel.pattern import MATCH, DELET
+from ...core.rel.code import NOCOV, IRREC
 
 
 class SamFlag(object):

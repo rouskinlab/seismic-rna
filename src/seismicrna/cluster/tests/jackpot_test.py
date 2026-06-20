@@ -42,8 +42,8 @@ from seismicrna.core.unbias import (
     calc_p_noclose_given_ends,
     calc_p_ends_given_noclose,
     calc_p_mut_given_span_dropped,
-    _calc_p_mut_given_span_merged,
 )
+from seismicrna.core.unbias_jit import calc_p_mut_given_span_merged_jit
 from seismicrna.filter import run as run_filter
 from seismicrna.filter.dataset import FilterMutsDataset
 from seismicrna.sim.fold import run as run_sim_fold
@@ -285,7 +285,7 @@ class TestSimReads(ut.TestCase):
         p_ends /= p_ends.sum()
         p_clust = rng.dirichlet(np.full(n_clust, cluster_alpha))
         # Calculate the parameters with no two mutations too close.
-        p_mut_given_span_merged = _calc_p_mut_given_span_merged(
+        p_mut_given_span_merged = calc_p_mut_given_span_merged_jit(
             p_mut, p_ends, min_mut_gap
         )
         uniq_end5s, uniq_end3s, p_ends_linear = linearize_ends_matrix(p_ends)

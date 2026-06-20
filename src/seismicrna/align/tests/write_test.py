@@ -5,7 +5,7 @@ from pathlib import Path
 from seismicrna.align.write import calc_flags_sep_strands, fq_pipeline, FastqUnit
 from seismicrna.align.xamops import run_bowtie2_build
 from seismicrna.core.logs import Level, get_config, set_config, restore_config
-from seismicrna.core.ngs import (
+from seismicrna.core.ngs.xam import (
     FLAG_PAIRED,
     FLAG_PROPER,
     FLAG_FIRST,

@@ -2,7 +2,7 @@ import unittest as ut
 
 import numpy as np
 
-from ..code import (
+from seismicrna.core.rel.code import (
     IRREC,
     INDEL,
     NOCOV,
@@ -22,14 +22,14 @@ from ..code import (
     ANY_V,
     ANY_N,
     REL_SIZE,
-    REL_TYPE,
 )
+from seismicrna.core.types import get_uint_type
 
 
 class TestConstants(ut.TestCase):
     def test_rel_size_type(self):
         self.assertIs(REL_SIZE, 1)
-        self.assertIs(REL_TYPE, np.uint8)
+        self.assertIs(get_uint_type(REL_SIZE), np.uint8)
 
     def test_primary_codes(self):
         """Test the primary relation codes."""

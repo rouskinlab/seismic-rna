@@ -1,5 +1,5 @@
+from __future__ import annotations
 from typing import Iterable
-import numpy as np
 import gzip
 import shutil
 from collections import defaultdict
@@ -8,12 +8,12 @@ from pathlib import Path
 from ..align.fqunit import FastqUnit, DuplicateSampleReferenceError, fastq_gz
 from ..core.logs import logger
 from ..core import path
-from ..core.seq import parse_fasta
-from ..core.extern.shell import args_to_cmd, run_cmd, SEQKIT_CMD
+from ..core.seq.fasta import parse_fasta
+from ..core.shell import args_to_cmd, run_cmd, SEQKIT_CMD
 from ..core.task import dispatch, as_list_of_tuples
 from ..core.tmp import get_release_working_dirs, release_to_out
 from ..core.path import symlink_if_needed, mkdir_if_needed, FQ_ALL_EXTS
-from ..core.seq import DNA
+from ..core.seq.xna import DNA
 from .barcode import RefBarcodes
 
 PART_STR = ".part_"
@@ -289,6 +289,8 @@ def demult_fq_pipeline(
 ):
     """Run all stages of the demult pipeline for one FASTQ file or
     one pair of mated FASTQ files."""
+    import numpy as np
+
     release_dir, working_dir = get_release_working_dirs(tmp_dir)
     logger.debug("Began processing {} through the demult pipeline", fq_inp)
     # Get attributes of the sample and references.

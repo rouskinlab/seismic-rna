@@ -12,7 +12,8 @@ from seismicrna.core.rna.pair import (
     table_to_pairs,
     find_enclosing_pairs,
 )
-from seismicrna.core.seq import FIELD_END5, FIELD_END3, DNA, Region
+from seismicrna.core.seq.region import FIELD_END5, FIELD_END3, Region
+from seismicrna.core.seq.xna import DNA
 
 
 class TestConstants(ut.TestCase):

@@ -10,10 +10,9 @@ from itertools import chain
 from pathlib import Path
 from typing import Any, Callable, Hashable, Iterable
 
-import numpy as np
 from click import Option
 
-from .arg import (
+from .arg.cli import (
     opt_seed,
     opt_phred_enc,
     opt_fastp,
@@ -125,10 +124,11 @@ from .arg import (
     opt_max_marcd_pool,
 )
 from .error import InconsistentValueError
-from .io import SampleFileIO, ReadBatchIO, RefFileIO, RegFileIO
+from .io.file import SampleFileIO, RefFileIO, RegFileIO
+from .io.batch import ReadBatchIO
 from .logs import logger
 from .path import flatten_branches
-from .rel import HalfRelPattern
+from .rel.pattern import HalfRelPattern
 from .version import __version__
 from .write import need_write, write_mode
 
@@ -233,6 +233,8 @@ def iconv_int_keys(mapping: dict[Any, Any]):
 
 
 def iconv_array_int(nums: list[int]):
+    import numpy as np
+
     return np.asarray(nums, dtype=int)
 
 
@@ -438,7 +440,7 @@ MaskUF = OptionReportField(opt_mask_u)
 MaskPosF = ReportField(
     "mask_pos",
     "Mask additional positions from a list",
-    np.ndarray,
+    list,
     iconv=iconv_array_int,
     oconv=get_oconv_list(int),
 )
@@ -457,70 +459,70 @@ MaxFilterIterF = OptionReportField(opt_max_filter_iter)
 PosCutPolyAF = ReportField(
     "pos_polya",
     "Positions in stretches of consecutive A bases",
-    np.ndarray,
+    list,
     iconv=iconv_array_int,
     oconv=get_oconv_list(int),
 )
 PosCutAF = ReportField(
     "pos_a",
     "Positions masked for having base A",
-    np.ndarray,
+    list,
     iconv=iconv_array_int,
     oconv=get_oconv_list(int),
 )
 PosCutCF = ReportField(
     "pos_c",
     "Positions masked for having base C",
-    np.ndarray,
+    list,
     iconv=iconv_array_int,
     oconv=get_oconv_list(int),
 )
 PosCutGF = ReportField(
     "pos_g",
     "Positions masked for having base G",
-    np.ndarray,
+    list,
     iconv=iconv_array_int,
     oconv=get_oconv_list(int),
 )
 PosCutUF = ReportField(
     "pos_u",
     "Positions masked for having base U",
-    np.ndarray,
+    list,
     iconv=iconv_array_int,
     oconv=get_oconv_list(int),
 )
 PosCutNF = ReportField(
     "pos_n",
     "Positions masked for having base N",
-    np.ndarray,
+    list,
     iconv=iconv_array_int,
     oconv=get_oconv_list(int),
 )
 PosCutListF = ReportField(
     "pos_list",
     "Positions masked from a list",
-    np.ndarray,
+    list,
     iconv=iconv_array_int,
     oconv=get_oconv_list(int),
 )
 PosCutLoInfoF = ReportField(
     "pos_min_ninfo",
     "Positions with too few informative base calls",
-    np.ndarray,
+    list,
     iconv=iconv_array_int,
     oconv=get_oconv_list(int),
 )
 PosCutHiMutF = ReportField(
     "pos_max_fmut",
     "Positions with too many mutations",
-    np.ndarray,
+    list,
     iconv=iconv_array_int,
     oconv=get_oconv_list(int),
 )
 PosKeptF = ReportField(
     "pos_kept",
     "Positions kept after filtering",
-    np.ndarray,
+    list,
     iconv=iconv_array_int,
     oconv=get_oconv_list(int),
 )

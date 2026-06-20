@@ -3,7 +3,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 from .encode import encode_rel
-from ...core.rel import DELET, INS_5, INS_3, MATCH, SUB_N
+from ...core.rel.pattern import DELET, MATCH
+from ...core.rel.code import INS_5, INS_3, SUB_N
 
 
 def get_ins_rel(insert3: bool):

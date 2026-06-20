@@ -1,5 +1,6 @@
-from ...core.rel import MATCH, SUB_A, SUB_C, SUB_G, SUB_T, ANY_N
-from ...core.seq import BASEA, BASEC, BASEG, BASET
+from ...core.rel.pattern import MATCH, SUB_A, SUB_C, SUB_G, SUB_T
+from ...core.rel.code import ANY_N
+from ...core.seq.region import BASEA, BASEC, BASEG, BASET
 
 # Encode bases as substitutions and vice versa.
 SUBS_ENCODINGS = {BASEA: SUB_A, BASEC: SUB_C, BASEG: SUB_G, BASET: SUB_T}

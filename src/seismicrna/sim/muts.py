@@ -1,14 +1,13 @@
+from __future__ import annotations
 import os
 from itertools import chain
 from pathlib import Path
 from typing import Any, Iterable
 
-import numpy as np
-import pandas as pd
 from click import command
 
 from ..core import path
-from ..core.arg import (
+from ..core.arg.cli import (
     opt_ct_file,
     opt_region_coords,
     opt_region_primers,
@@ -29,38 +28,27 @@ from ..core.arg import (
 from ..core.error import NoDataError
 from ..core.logs import logger
 from ..core.header import RelClustHeader, list_clusts, make_header
-from ..core.rel import (
-    MATCH,
-    NOCOV,
-    DELET,
-    SUB_A,
-    SUB_C,
-    SUB_G,
-    SUB_T,
-    ANY_B,
-    ANY_D,
-    ANY_H,
-    ANY_V,
-    ANY_N,
-    REL_TYPE,
-)
-from ..core.rna import UNPAIRED, find_enclosing_pairs, from_ct
+from ..core.rel.pattern import MATCH, DELET, SUB_A, SUB_C, SUB_G, SUB_T
+from ..core.rel.code import NOCOV, ANY_B, ANY_D, ANY_H, ANY_V, ANY_N, REL_SIZE
+from ..core.rna.pair import UNPAIRED, find_enclosing_pairs
+from ..core.rna.io import from_ct
 from ..core.run import run_func
-from ..core.seq import (
+from ..core.seq.region import (
     BASE_NAME,
     BASEA,
     BASEC,
     BASEG,
     BASET,
     BASEN,
-    DNA,
     POS_NAME,
     RegionFinder,
     get_shared_index,
 )
+from ..core.seq.xna import DNA
 from ..core.random import get_random_integer_generator
 from ..core.stats import calc_beta_params, calc_dirichlet_params
 from ..core.task import as_list_of_tuples, dispatch
+from ..core.types import get_uint_type
 from ..core.write import need_write
 
 COMMAND = __name__.split(os.path.extsep)[-1]
@@ -78,6 +66,8 @@ def verify_proportions(p: Any):
         Proportions to verify; must be a NumPy array or convertable into
         a NumPy array.
     """
+    import numpy as np
+
     arr = np.asarray_chkfinite(p)
     if not np.isclose(sum_p := arr.sum(), 1.0):
         raise ValueError(f"Proportions must sum to 1, but got {sum_p}")
@@ -174,6 +164,8 @@ def make_pmut_means(
     pd.DataFrame
         Mean rate of each type of mutation (column) and each base (row).
     """
+    import pandas as pd
+
     if not 0.0 <= ploq <= 1.0:
         raise ValueError(f"ploq must be ≥ 0 and ≤ 1, but got {ploq}")
     # Probability that a base is high-quality.
@@ -471,6 +463,9 @@ def sim_pmut(
     pd.DataFrame
         Mutation rates, with the same index as
     """
+    import numpy as np
+    import pandas as pd
+
     rng = np.random.default_rng(seed)
     if not isinstance(positions, pd.MultiIndex):
         raise TypeError(
@@ -481,7 +476,7 @@ def sim_pmut(
     if mean.values.min(initial=1.0) < 0.0:
         raise ValueError(f"All mean mutation rates must be ≥ 0, but got {mean}")
     # Determine the types of relationships.
-    rels = mean.index.astype(REL_TYPE, copy=False)
+    rels = mean.index.astype(get_uint_type(REL_SIZE), copy=False)
     if MATCH not in rels:
         raise ValueError(f"Relationships omit matches ({MATCH}): {rels}")
     if NOCOV in rels:
@@ -583,6 +578,9 @@ def run_struct(
     Path
         Path of the written mutation-rate CSV file.
     """
+    import numpy as np
+    import pandas as pd
+
     pmut_file = ct_file.with_suffix(path.PARAM_MUTS_EXT)
     if need_write(pmut_file, force):
         # Calculate mean mutation rates.
@@ -673,6 +671,8 @@ def run_struct(
 
 def load_pmut(pmut_file: Path):
     """Load mutation rates from a file."""
+    import pandas as pd
+
     pmut = pd.read_csv(
         pmut_file,
         index_col=list(range(2)),

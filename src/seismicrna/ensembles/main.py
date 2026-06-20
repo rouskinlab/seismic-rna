@@ -6,8 +6,8 @@ from click import command
 from .write import ensembles
 from .. import filter as filter_mod, cluster as cluster_mod
 from ..core import path
-from ..core.arg import (
-    CMD_ENSEMBLES,
+from ..core.arg.cmd import CMD_ENSEMBLES
+from ..core.arg.cli import (
     merge_params,
     opt_tile_length,
     opt_tile_min_overlap,
@@ -20,7 +20,7 @@ from ..core.arg import (
     opt_gap_mode,
 )
 from ..core.run import run_func
-from ..core.seq import DNA
+from ..core.seq.xna import DNA
 from ..core.task import as_list_of_tuples, dispatch
 from ..idmut.dataset import load_idmut_dataset
 

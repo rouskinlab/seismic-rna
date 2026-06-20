@@ -8,19 +8,11 @@ from seismicrna.idmut.cx.idmut import (
     id_muts_lines as calc_rels_lines_cx,
 )
 
-from seismicrna.core.ngs import LO_QUAL, OK_QUAL, MAX_FLAG, SAM_DELIM
-from seismicrna.core.rel import (
-    DELET,
-    IRREC,
-    MATCH,
-    NOCOV,
-    SUB_A,
-    SUB_C,
-    SUB_G,
-    SUB_T,
-    ANY_N,
-)
-from seismicrna.core.seq import DNA
+from seismicrna.core.ngs.phred import LO_QUAL, OK_QUAL
+from seismicrna.core.ngs.xam import MAX_FLAG, SAM_DELIM
+from seismicrna.core.rel.pattern import DELET, MATCH, SUB_A, SUB_C, SUB_G, SUB_T
+from seismicrna.core.rel.code import IRREC, NOCOV, ANY_N
+from seismicrna.core.seq.xna import DNA
 from seismicrna.idmut.aux.iterread import iter_alignments
 from seismicrna.idmut.py.cigar import CIG_ALIGN, CIG_DELET, CIG_SCLIP
 from seismicrna.idmut.py.encode import encode_rel

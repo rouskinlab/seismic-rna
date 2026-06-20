@@ -1,22 +1,17 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from functools import cached_property
 from typing import Callable, Self
 
-import numpy as np
-import pandas as pd
 
-from ..core.arg import MUT_COLLISIONS_DROP, MUT_COLLISIONS_MERGE
+from ..core.arg.cli import MUT_COLLISIONS_DROP, MUT_COLLISIONS_MERGE
 from ..core.array import calc_inverse, check_naturals, get_length
-from ..core.batch import (
-    ReadBatch,
-    MutsBatch,
-    RegionMutsBatch,
-    simulate_muts,
-    simulate_segment_ends,
-)
+from ..core.batch.read import ReadBatch
+from ..core.batch.muts import MutsBatch, RegionMutsBatch, simulate_muts
+from ..core.batch.ends import simulate_segment_ends
 from ..core.random import get_random_integer_generator
-from ..core.rel import RelPattern
-from ..core.seq import Region, index_to_pos, index_to_seq
+from ..core.rel.pattern import RelPattern
+from ..core.seq.region import Region, index_to_pos, index_to_seq
 
 
 def format_read_name(batch_num: int, read_num: int):
@@ -32,6 +27,8 @@ class FullReadBatch(ReadBatch, ABC):
 
     @cached_property
     def read_nums(self):
+        import numpy as np
+
         return np.arange(self.num_reads, dtype=self.read_dtype)
 
     @cached_property
@@ -75,6 +72,8 @@ class ReadNamesBatch(FullReadBatch):
         )
 
     def __init__(self, *, names: list[str] | np.ndarray, **kwargs):
+        import numpy as np
+
         super().__init__(**kwargs)
         self.names = np.asarray(names, dtype=str)
 
@@ -151,6 +150,8 @@ class IDmutRegionMutsBatch(IDmutMutsBatch, RegionMutsBatch):
         seed: int | None
             Random seed for reproducibility; None for no fixed seed.
         """
+        import numpy as np
+
         seeds = get_random_integer_generator(seed)
         check_naturals(index_to_pos(pmut.index), "positions")
         region = Region(ref, index_to_seq(pmut.index))
@@ -176,9 +177,7 @@ class IDmutRegionMutsBatch(IDmutMutsBatch, RegionMutsBatch):
             return simulated
         if mut_collisions == MUT_COLLISIONS_DROP:
             # Remove reads with two mutations too close.
-            reads_noclose = simulated.reads_noclose_muts(
-                RelPattern.muts(), min_mut_gap
-            )
+            reads_noclose = simulated.reads_noclose_muts(RelPattern.muts(), min_mut_gap)
             reads_exclude = np.setdiff1d(
                 simulated.read_nums, reads_noclose, assume_unique=True
             )

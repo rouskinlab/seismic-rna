@@ -1,8 +1,6 @@
+from __future__ import annotations
 from pathlib import Path
 
-import numpy as np
-import pandas as pd
-import plotly.express as px
 
 from .emk import EMRunsK
 from .jackpot import calc_semi_g_anomaly
@@ -21,6 +19,8 @@ def format_exp_count_col(k: int):
 
 def assemble_log_obs_exp(uniq_reads: UniqReads, ks: list[EMRunsK]):
     """Assemble the expected and observed log counts of each read."""
+    import pandas as pd
+
     # For each number of clusters, compute the expected log counts.
     log_exp = [
         (
@@ -46,6 +46,9 @@ def table_log_obs_exp(log_obs_exp: pd.DataFrame, to_dir: Path):
 
 def graph_log_obs_exp(log_obs_exp: pd.DataFrame, ks: list[EMRunsK], to_dir: Path):
     """Graph the expected vs. observed log counts of unique reads."""
+    import numpy as np
+    import plotly.express as px
+
     log_obs = log_obs_exp[LOG_OBS_NAME]
     num_obs = np.exp(log_obs)
     max_log_obs = np.nanmax(log_obs) if log_obs.size > 0 else np.nan

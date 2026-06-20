@@ -1,3 +1,1 @@
-from .cmd import *  # noqa: F403
-from .cli import *  # noqa: F403
-from .default import *  # noqa: F403
+"""CLI arguments/options: import directly from submodules (e.g. ``from ..arg.<submodule> import <name>``)."""

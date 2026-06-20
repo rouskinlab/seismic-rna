@@ -1,11 +1,12 @@
+from __future__ import annotations
 from abc import ABC
 from functools import cached_property
 
-import numpy as np
 
 from ..core.array import calc_inverse, get_length
-from ..core.batch import ReadBatch, RegionMutsBatch
-from ..core.seq import Region
+from ..core.batch.read import ReadBatch
+from ..core.batch.muts import RegionMutsBatch
+from ..core.seq.region import Region
 from ..core.validate import require_isinstance
 
 
@@ -25,6 +26,8 @@ class PartialRegionMutsBatch(PartialReadBatch, RegionMutsBatch, ABC):
 
 class FilterReadBatch(PartialReadBatch):
     def __init__(self, *, read_nums: np.ndarray, **kwargs):
+        import numpy as np
+
         require_isinstance("read_nums", read_nums, np.ndarray)
         self._read_nums = read_nums
         super().__init__(**kwargs)
@@ -79,6 +82,8 @@ def apply_filters(
     FilterMutsBatch
         A new batch containing only the filtered reads and positions.
     """
+    import numpy as np
+
     require_isinstance("batch", batch, RegionMutsBatch)
     # Determine which reads to use.
     if read_nums is not None:

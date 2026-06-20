@@ -1,15 +1,20 @@
+from __future__ import annotations
 import os
 from pathlib import Path
 from typing import Iterable
 
-import numpy as np
-import pandas as pd
 from click import command
 
 from ..core import path
-from ..core.arg import opt_ct_file, opt_clust_conc, opt_force, opt_num_cpus, opt_seed
+from ..core.arg.cli import (
+    opt_ct_file,
+    opt_clust_conc,
+    opt_force,
+    opt_num_cpus,
+    opt_seed,
+)
 from ..core.header import ClustHeader
-from ..core.rna import from_ct
+from ..core.rna.io import from_ct
 from ..core.run import run_func
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.validate import require_atleast
@@ -43,6 +48,9 @@ def sim_pclust(
     pd.Series
         Simulated proportion of each cluster.
     """
+    import numpy as np
+    import pandas as pd
+
     require_atleast("num_clusters", num_clusters, 1)
     if num_clusters == 1:
         props = np.ones(num_clusters)
@@ -93,6 +101,8 @@ def sim_pclust_ct(
 
 def load_pclust(pclust_file: Path):
     """Load cluster proportions from a file."""
+    import pandas as pd
+
     return pd.read_csv(
         pclust_file, index_col=list(range(ClustHeader.get_num_levels()))
     )[PROPORTION]

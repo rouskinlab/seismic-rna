@@ -1,30 +1,28 @@
+from __future__ import annotations
 from datetime import datetime
 from itertools import chain
-from math import ceil
+from math import ceil, inf
 from pathlib import Path
 from typing import Iterable
 
-import numpy as np
-import pandas as pd
-from plotly import graph_objects as go
-from plotly.subplots import make_subplots
 
 from .. import filter as filter_mod, cluster as cluster_mod
 from ..core import path
-from ..core.arg import GAP_MODE_OMIT, GAP_MODE_INSERT, GAP_MODE_EXPAND
+from ..core.arg.cli import GAP_MODE_OMIT, GAP_MODE_INSERT, GAP_MODE_EXPAND
 from ..core.array import triangular
-from ..core.batch import (
+from ..core.batch.confusion import (
     POSITION_A,
     POSITION_B,
-    accumulate_confusion_matrices,
     calc_confusion_pvals,
     calc_confusion_phi,
     calc_bh_adjusted_pvals,
 )
+from ..core.batch.accum import accumulate_confusion_matrices
 from ..core.dataset import MutsDataset
 from ..core.error import IncompatibleValuesError, OutOfBoundsError
 from ..core.logs import logger
-from ..core.seq import DNA, unite
+from ..core.seq.xna import DNA
+from ..core.seq.region import unite
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.validate import require_atleast, require_greater
 from ..core.write import need_write
@@ -54,6 +52,8 @@ def _ends_arrays_to_tuples(end5s: Iterable, end3s: Iterable):
 
 
 def _tuples_to_ends_arrays(pairs: list[tuple[int, int]]):
+    import numpy as np
+
     if not pairs:
         return np.array([], dtype=int), np.array([], dtype=int)
     end5s, end3s = map(np.array, zip(*pairs))
@@ -61,6 +61,8 @@ def _tuples_to_ends_arrays(pairs: list[tuple[int, int]]):
 
 
 def _calc_midpoints_distances(end5s: np.ndarray, end3s: np.ndarray):
+    import numpy as np
+
     assert end5s.shape == end3s.shape
     assert np.all(end5s <= end3s)
     midpoints = (end5s + end3s) / 2
@@ -71,6 +73,8 @@ def _calc_midpoints_distances(end5s: np.ndarray, end3s: np.ndarray):
 def _calc_tiles(
     total_end5: int, total_end3: int, tile_length: int, tile_min_overlap: float
 ):
+    import numpy as np
+
     if not isinstance(total_end5, int):
         raise TypeError(total_end5)
     if not isinstance(total_end3, int):
@@ -121,6 +125,8 @@ def _calc_tile_coords(
     dataset, total_region, tile_length: int, tile_min_overlap: float, num_cpus: int
 ):
     """Calculate the tiled coordinates for one IDmut dataset."""
+    import numpy as np
+
     ref = dataset.ref
     with logger.debug.single_context("calculating tiles for reference {!r}", ref):
         if tile_length > 0:
@@ -158,6 +164,8 @@ def _calc_tile_coords(
 
 def _find_correlated_pairs(dataset: FilterMutsDataset, pair_fdr: float, num_cpus: int):
     # Calculate the confusion matrix for the region.
+    import pandas as pd
+
     n, a, b, ab = accumulate_confusion_matrices(
         dataset.get_batch,
         dataset.num_batches,
@@ -227,6 +235,8 @@ def _select_pairs(pairs: list[tuple[int, int]], end5: int, end3: int):
 
 
 def _calc_span_per_pos(pairs: list[tuple[int, int]], end5: int, end3: int):
+    import pandas as pd
+
     assert 1 <= end5 <= end3
     spans_per_pos = pd.Series(0, index=range(end5, end3 + 1))
     for pos5, pos3 in pairs:
@@ -238,6 +248,9 @@ def _calc_span_per_pos(pairs: list[tuple[int, int]], end5: int, end3: int):
 def _calc_null_span_per_pos_keep_dists(
     pairs: list[tuple[int, int]], end5: int, end3: int
 ):
+    import numpy as np
+    import pandas as pd
+
     assert 1 <= end5 <= end3
     null_spans_per_pos = pd.Series(0.0, index=range(end5, end3 + 1))
     num_pos = null_spans_per_pos.size
@@ -262,6 +275,9 @@ def _calc_null_span_per_pos_keep_dists(
 def _calc_null_span_per_pos_rand_dists(
     pairs: list[tuple[int, int]], end5: int, end3: int, min_mut_gap: int
 ):
+    import numpy as np
+    import pandas as pd
+
     assert 1 <= end5 <= end3
     assert min_mut_gap >= 0
     positions = np.arange(end5, end3 + 1)
@@ -298,6 +314,8 @@ def _calc_modules_from_pairs(
     preserve_null_pair_dists: bool = False,
     max_iter: int = 10000,
 ):
+    import numpy as np
+
     logger.debug("Began calculating modules")
     require_atleast("min_mut_gap", min_mut_gap, 0, classes=int)
     require_atleast("min_pairs", min_pairs, 1, classes=int)
@@ -367,6 +385,10 @@ def _graph_pairs_and_modules(
     end3: int,
     html_file: str | Path,
 ):
+    import numpy as np
+    from plotly import graph_objects as go
+    from plotly.subplots import make_subplots
+
     # Create a subplot with two rows: top for pair_fraction,
     # bottom for correlated pairs
     fig = make_subplots(rows=1, cols=1)
@@ -474,7 +496,7 @@ def _expand_modules_into_gaps(
 def _filter_modules_length(
     modules: list[tuple[int, int]],
     min_length: int | float = 1,
-    max_length: int | float = np.inf,
+    max_length: int | float = inf,
 ):
     """Remove modules that are too short or too long."""
     return [
@@ -486,6 +508,8 @@ def _filter_modules_length(
 
 def _write_pairs_to_csv(pairs: list[tuple[int, int]], csv_file: str | Path):
     """Write the pairs to a CSV file."""
+    import pandas as pd
+
     pos5s, pos3s = _tuples_to_ends_arrays(pairs)
     df = pd.DataFrame.from_dict(
         {POSITION_A: pos5s, POSITION_B: pos3s}, orient="columns"

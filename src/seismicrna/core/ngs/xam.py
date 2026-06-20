@@ -3,7 +3,7 @@ from pathlib import Path
 from subprocess import CompletedProcess
 
 from ..error import DuplicateValueError
-from ..extern import SAMTOOLS_CMD, args_to_cmd, cmds_to_redirect_out, ShellCommand
+from ..shell import SAMTOOLS_CMD, args_to_cmd, cmds_to_redirect_out, ShellCommand
 from ..logs import logger
 
 # SAM file format specifications

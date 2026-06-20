@@ -1,8 +1,13 @@
+from __future__ import annotations
+
 import os
 from functools import cached_property, partial
 
 from click import command
-from plotly import graph_objects as go
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from plotly import graph_objects as go
 
 from .rel import OneRelGraph
 from .roll import RollingGraph, RollingRunner
@@ -13,8 +18,8 @@ from .twotable import (
     TwoTableRelClusterGroupWriter,
     TwoTableRelClusterGroupRunner,
 )
-from ..core.arg import opt_metric
-from ..core.mu import compare_windows, get_comp_name
+from ..core.arg.cli import opt_metric
+from ..core.mu.compare import compare_windows, get_comp_name
 from ..core.run import log_command
 
 COMMAND = __name__.split(os.path.extsep)[-1]

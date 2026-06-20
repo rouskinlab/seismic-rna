@@ -4,10 +4,18 @@ from pathlib import Path
 from click import command
 
 from ..core import path
-from ..core.arg import opt_sim_dir, opt_ref, opt_refs, opt_reflen, opt_force, opt_seed
+from ..core.arg.cli import (
+    opt_sim_dir,
+    opt_ref,
+    opt_refs,
+    opt_reflen,
+    opt_force,
+    opt_seed,
+)
 from ..core.logs import logger
 from ..core.run import run_func
-from ..core.seq import DNA, write_fasta
+from ..core.seq.xna import DNA
+from ..core.seq.fasta import write_fasta
 from ..core.write import need_write
 
 COMMAND = __name__.split(os.path.extsep)[-1]

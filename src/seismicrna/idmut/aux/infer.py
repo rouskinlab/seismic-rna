@@ -3,22 +3,11 @@ from typing import Sequence
 from .cigarop import CigarOp
 from ..py.cigar import CIG_ALIGN, CIG_MATCH, CIG_SUBST, CIG_DELET, CIG_INSRT
 from ..py.encode import SUBS_DECODINGS
-from ...core.ngs import LO_QUAL, HI_QUAL
-from ...core.rel import (
-    MATCH,
-    DELET,
-    INS_5,
-    INS_3,
-    INSRT,
-    SUB_A,
-    SUB_C,
-    SUB_G,
-    SUB_T,
-    ANY_N,
-    IRREC,
-    NOCOV,
-)
-from ...core.seq import BASEN, DNA
+from ...core.ngs.phred import LO_QUAL, HI_QUAL
+from ...core.rel.pattern import MATCH, DELET, INSRT, SUB_A, SUB_C, SUB_G, SUB_T
+from ...core.rel.code import INS_5, INS_3, ANY_N, IRREC, NOCOV
+from ...core.seq.region import BASEN
+from ...core.seq.xna import DNA
 
 
 def infer_read(

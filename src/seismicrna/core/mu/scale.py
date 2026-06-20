@@ -1,5 +1,4 @@
-import numpy as np
-import pandas as pd
+from __future__ import annotations
 
 from .dim import count_pos
 from .frame import auto_reframe
@@ -24,6 +23,8 @@ def calc_quantile(mus: np.ndarray | pd.Series | pd.DataFrame, quantile: float):
     float | numpy.ndarray | pandas.Series
         Value of the quantile from the mutation rates.
     """
+    import numpy as np
+
     if not isinstance(quantile, float):
         # Although numpy.quantile supports array-like values for the
         # quantile argument, get_quantile does not because the result
@@ -80,6 +81,8 @@ def winsorize(mus: np.ndarray | pd.Series | pd.DataFrame, quantile: float):
     numpy.ndarray | pandas.Series | pandas.DataFrame
         Normalized and winsorized mutation rates.
     """
+    import numpy as np
+
     return np.clip(normalize(mus, quantile), 0.0, 1.0)
 
 
@@ -99,6 +102,8 @@ def calc_ranks(mus: np.ndarray | pd.Series | pd.DataFrame):
     numpy.ndarray | pandas.Series | pandas.DataFrame
         Ranks of the mutation rates.
     """
+    import numpy as np
+
     # Initialize all ranks to -1.
     ranks = np.full_like(mus, -1, dtype=int)
     # Make coordinate arrays to index every element of ranks in order.

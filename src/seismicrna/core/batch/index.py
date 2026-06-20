@@ -1,7 +1,6 @@
-import numpy as np
-import pandas as pd
+from __future__ import annotations
 
-from ..seq import BASE_NAME
+from ..seq.region import BASE_NAME
 
 # Indexes of read and batch numbers.
 READ_NUM = "Read Number"
@@ -17,6 +16,9 @@ def list_batch_nums(num_batches: int):
 def count_base_types(base_pos_index: pd.Index):
     """Return the number of each type of base in the index of positions
     and bases."""
+    import numpy as np
+    import pandas as pd
+
     base_types, counts = np.unique(
         base_pos_index.get_level_values(BASE_NAME), return_counts=True
     )
@@ -26,6 +28,8 @@ def count_base_types(base_pos_index: pd.Index):
 def iter_base_types(base_pos_index: pd.Index):
     """For each type of base in the index of positions and bases, yield
     the positions in the index with that type of base."""
+    import numpy as np
+
     bases, inverse = np.unique(
         base_pos_index.get_level_values(BASE_NAME), return_inverse=True
     )

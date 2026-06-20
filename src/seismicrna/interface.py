@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from .core.table import TableWriter
+from .core.table.write import TableWriter
 from .core.dataset import FailedToLoadDatasetError
 from .idmut.dataset import MutsDataset
 from .cluster.data import load_cluster_dataset

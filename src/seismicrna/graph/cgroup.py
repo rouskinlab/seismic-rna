@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 
 from .base import BaseGraph, BaseRunner
-from ..core.arg import NO_GROUP, GROUP_BY_K, GROUP_ALL, opt_cgroup
+from ..core.arg.cli import NO_GROUP, GROUP_BY_K, GROUP_ALL, opt_cgroup
 from ..core.dataset import Dataset
 from ..core.header import (
     NO_KS,
@@ -11,7 +11,7 @@ from ..core.header import (
     list_ks_clusts,
     K_CLUST_KEY,
 )
-from ..core.table import Table
+from ..core.table.base import Table
 
 
 def get_ks(source: Dataset | Table):

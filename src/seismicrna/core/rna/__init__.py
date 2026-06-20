@@ -1,10 +1,1 @@
-from .convert import *  # noqa: F403
-from .ct import *  # noqa: F403
-from .db import *  # noqa: F403
-from .io import *  # noqa: F403
-from .pair import *  # noqa: F403
-from .profile import *  # noqa: F403
-from .roc import *  # noqa: F403
-from .base import *  # noqa: F403
-from .state import *  # noqa: F403
-from .struct import *  # noqa: F403
+"""RNA structures: import directly from submodules (e.g. ``from ..rna.<submodule> import <name>``)."""

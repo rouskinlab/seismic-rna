@@ -53,8 +53,13 @@ from typing import Iterable
 
 from .fqunit import FastqUnit, format_phred_arg
 from ..core import path
-from ..core.arg import BOWTIE2_ORIENT, TRIM_POLY_G_AUTO, TRIM_POLY_G_NO, TRIM_POLY_G_YES
-from ..core.extern import (
+from ..core.arg.cli import (
+    BOWTIE2_ORIENT,
+    TRIM_POLY_G_AUTO,
+    TRIM_POLY_G_NO,
+    TRIM_POLY_G_YES,
+)
+from ..core.shell import (
     BOWTIE2_CMD,
     BOWTIE2_BUILD_CMD,
     ECHO_CMD,
@@ -65,7 +70,7 @@ from ..core.extern import (
     cmds_to_subshell,
 )
 from ..core.logs import logger
-from ..core.ngs import (
+from ..core.ngs.xam import (
     collate_xam_cmd,
     run_flagstat,
     sort_xam_cmd,

@@ -1,6 +1,6 @@
+from __future__ import annotations
 from functools import cache
 
-import numpy as np
 
 # Constants
 BITS_PER_BYTE = 8
@@ -12,6 +12,8 @@ UINT_NBYTES = 1, 2, 4, 8
 
 def get_dtype(code: str, size: int):
     """NumPy type with the given code and size."""
+    import numpy as np
+
     return np.dtype(f"{ENDIAN_TYP}{code}{size}")
 
 
@@ -48,6 +50,8 @@ def get_max_uint(uint_type: type):
 @cache
 def fit_uint_size(value: int):
     """Smallest number of bytes that will fit the value."""
+    import numpy as np
+
     if not isinstance(value, (int, np.integer)) or value < 0:
         raise ValueError(f"Expected an integer ≥ 0, but got {repr(value)}")
     for nbytes in UINT_NBYTES:

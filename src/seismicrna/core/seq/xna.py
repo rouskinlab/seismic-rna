@@ -7,7 +7,6 @@ from itertools import chain, product
 from string import printable
 from typing import Any, Self
 
-import numpy as np
 
 from ..types import BITS_PER_BYTE, get_uint_type
 
@@ -52,7 +51,6 @@ IUPAC_CODES = frozenset(
 )
 
 # Nucleic acid compression symbols.
-COMPRESS_TYPE = get_uint_type(1)
 BITS_PER_BASE = 2
 NUM_BASES = 2**BITS_PER_BASE
 BLOCK_SIZE = BITS_PER_BYTE // BITS_PER_BASE
@@ -170,6 +168,8 @@ class XNA(ABC):
         DNA | RNA
             A random sequence.
         """
+        import numpy as np
+
         # Calculate expected proportion of N.
         n = 1.0 - (a + c + g + t)
         if not 0.0 <= n <= 1.0:
@@ -204,6 +204,8 @@ class XNA(ABC):
     @cached_property
     def array(self):
         """NumPy array of Unicode characters for the sequence."""
+        import numpy as np
+
         return np.array(list(self))
 
     def compress(self):
@@ -393,7 +395,7 @@ def _decompress_block(byte: int, alph: tuple[str, str, str, str]):
     """Decompress one block of a sequence."""
     if len(alph) != NUM_BASES:
         raise ValueError(f"Expected {NUM_BASES} bases, but got {alph}")
-    byte = COMPRESS_TYPE(byte)
+    byte = get_uint_type(1)(byte)
     return "".join(
         alph[(byte >> (i * BITS_PER_BASE)) % len(alph)] for i in range(BLOCK_SIZE)
     )

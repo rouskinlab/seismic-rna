@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC
 
 from ..core import path
-from ..core.io import RegFileIO
+from ..core.io.file import RegFileIO
 from ..core.report import (
     RegReport,
     ProfileF,

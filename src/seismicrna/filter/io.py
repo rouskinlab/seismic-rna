@@ -1,11 +1,13 @@
+from __future__ import annotations
 from abc import ABC
 
-import numpy as np
 
 from .batch import FilterMutsBatch, FilterReadBatch
 from ..core import path
-from ..core.io import ReadBatchIO, RegFileIO, RegBrickleIO
-from ..core.seq import Region
+from ..core.io.batch import ReadBatchIO
+from ..core.io.file import RegFileIO
+from ..core.io.brickle import RegBrickleIO
+from ..core.seq.region import Region
 
 
 class FilterFile(path.HasRegFilePath, ABC):

@@ -1,11 +1,14 @@
+from __future__ import annotations
+
 import os
 from functools import cached_property
 from itertools import product
 
-import numpy as np
-import pandas as pd
 from click import command
-from plotly import graph_objects as go
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from plotly import graph_objects as go
 
 from .base import Annotation
 from .color import ColorMapGraph, SeqColorMap
@@ -18,8 +21,8 @@ from .twotable import (
     TwoTableRelClusterGroupWriter,
     TwoTableRelClusterGroupRunner,
 )
-from ..core.arg import opt_metric
-from ..core.mu import get_comp_method
+from ..core.arg.cli import opt_metric
+from ..core.mu.compare import get_comp_method
 from ..core.run import log_command
 
 COMMAND = __name__.split(os.path.extsep)[-1]
@@ -63,15 +66,22 @@ class ScatterGraph(TwoTableRelClusterGroupGraph, OneRelGraph, ColorMapGraph):
 
     @cached_property
     def xmax(self):
+        import numpy as np
+
         return float(np.nanmax(self.data1))
 
     @cached_property
     def ymax(self):
+        import numpy as np
+
         return float(np.nanmax(self.data2))
 
     @cached_property
     def data(self):
         # Join data tables 1 and 2 horizontally.
+        import numpy as np
+        import pandas as pd
+
         data = pd.concat([self.data1, self.data2], axis=1, join="inner")
         # Add the sample names as the first level of the columns.
         samples = np.hstack(

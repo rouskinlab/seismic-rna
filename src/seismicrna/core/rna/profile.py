@@ -1,12 +1,12 @@
+from __future__ import annotations
 from functools import cached_property
 from pathlib import Path
 
-import pandas as pd
 
 from .base import RNARegion
 from .. import path
 from ..logs import format_sample_reference_region
-from ..seq import write_fasta
+from ..seq.fasta import write_fasta
 
 
 class RNAProfile(RNARegion):
@@ -36,6 +36,8 @@ class RNAProfile(RNARegion):
         mus: pandas.Series
             Data for the mutational profile (i.e. mutation rates).
         """
+        import pandas as pd
+
         super().__init__(**kwargs)
         self.sample = sample
         self.branches = branches
@@ -64,6 +66,8 @@ class RNAProfile(RNARegion):
         )
 
     def _renumber_from_args(self, seq5: int):
+        import pandas as pd
+
         return super()._renumber_from_args(seq5) | dict(
             mus=pd.Series(self.mus.values, index=self.region.renumber_from(seq5).range)
         )

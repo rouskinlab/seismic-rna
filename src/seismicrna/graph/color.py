@@ -5,8 +5,8 @@ from sys import modules
 from typing import Any, Hashable
 
 from .base import BaseGraph
-from ..core.seq import BASEA, BASEC, BASEG, BASET, BASEN
-from ..core.table import REL_CODES
+from ..core.seq.region import BASEA, BASEC, BASEG, BASET, BASEN
+from ..core.table.base import REL_CODES
 
 DEFAULT_CODE = "x"
 DEFAULT_NAME = "Default"
@@ -208,7 +208,7 @@ DEFAULTS: dict[type[ColorMap], ColorMap] = {RelColorMap: safe, SeqColorMap: brig
 @cache
 def get_colormaps(cmap_class: type[ColorMap]):
     """Return a dict of all color maps of a given class."""
-    colormaps: dict[str, cmap_class] = dict()
+    colormaps: dict[str, type[ColorMap]] = dict()
     for _, cmap in getmembers(
         modules[__name__], lambda item: isinstance(item, cmap_class)
     ):

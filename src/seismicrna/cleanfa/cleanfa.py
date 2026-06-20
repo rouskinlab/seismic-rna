@@ -2,16 +2,9 @@ import re
 from functools import cached_property
 from pathlib import Path
 
-from ..core.seq import (
-    BASEN,
-    BASET,
-    BASEU,
-    DNA,
-    RNA,
-    XNA,
-    extract_fasta_seqname,
-    format_fasta_name_line,
-)
+from ..core.seq.region import BASEN, BASET
+from ..core.seq.xna import BASEU, DNA, RNA, XNA
+from ..core.seq.fasta import extract_fasta_seqname, format_fasta_name_line
 from ..core.write import need_write, write_mode
 
 

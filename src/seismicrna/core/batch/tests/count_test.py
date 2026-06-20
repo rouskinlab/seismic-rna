@@ -14,7 +14,7 @@ from seismicrna.core.batch.count import (
     calc_count_per_read,
 )
 from seismicrna.core.batch.ends import END5_COORD, END3_COORD
-from seismicrna.core.rel import HalfRelPattern, RelPattern
+from seismicrna.core.rel.pattern import HalfRelPattern, RelPattern
 from seismicrna.core.rel.code import MATCH, NOCOV
 from seismicrna.core.seq.region import SEQ_INDEX_NAMES, seq_pos_to_index
 from seismicrna.core.seq.xna import DNA

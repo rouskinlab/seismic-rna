@@ -1,9 +1,13 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from functools import cached_property
 from typing import Callable
 
-import pandas as pd
-from plotly import graph_objects as go
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from plotly import graph_objects as go
 
 from .table import TableWriter, PositionTableRunner
 from .onetable import (
@@ -15,7 +19,7 @@ from .rel import OneRelGraph
 from .roll import RollingGraph, RollingRunner
 from .trace import iter_line_traces
 from ..core.header import format_clust_name
-from ..core.seq import iter_windows
+from ..core.seq.region import iter_windows
 
 
 class RollingStatGraph(OneTableRelClusterGroupGraph, OneRelGraph, RollingGraph, ABC):
@@ -26,6 +30,8 @@ class RollingStatGraph(OneTableRelClusterGroupGraph, OneRelGraph, RollingGraph, 
 
     @cached_property
     def data(self):
+        import pandas as pd
+
         stat_func = self.stat_func()
         data = self._fetch_data(self.table, k=self.k, clust=self.clust)
         stat = pd.DataFrame(index=data.index, dtype=float)

@@ -5,8 +5,8 @@ from click import command
 
 from ..align.fqunit import FastqUnit
 from .write import demult_samples
-from ..core.arg import (
-    CMD_DEMULT,
+from ..core.arg.cmd import CMD_DEMULT
+from ..core.arg.cli import (
     arg_fasta,
     opt_fastqz,
     opt_fastqy,
@@ -30,7 +30,8 @@ from ..core.arg import (
     opt_keep_tmp,
     opt_num_cpus,
 )
-from ..core.extern import SEQKIT_CMD, require_dependency
+from ..core.shell import SEQKIT_CMD
+from ..core.depend import require_dependency
 from ..core.run import run_func
 from ..core.seq.xna import DNA
 

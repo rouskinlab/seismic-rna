@@ -5,9 +5,9 @@ from typing import Any, Generator, Iterable
 
 from .base import BaseGraph, BaseRunner, BaseWriter
 from .rel import RelGraph, RelRunner
+from ..core.arg.cli import opt_use_ratio, opt_verify_times, opt_graph_quantile
 from ..cluster.data import ClusterPositionTableLoader, ClusterAbundanceTableLoader
-from ..core.arg import opt_use_ratio, opt_verify_times, opt_graph_quantile
-from ..core.table import Table, PositionTable
+from ..core.table.base import Table, PositionTable
 from ..filter.table import FilterPositionTableLoader, FilterReadTableLoader
 from ..idmut.table import IDmutPositionTableLoader, IDmutReadTableLoader
 

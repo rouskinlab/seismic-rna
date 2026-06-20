@@ -1,3 +1,4 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from functools import cached_property
@@ -5,7 +6,6 @@ from itertools import chain, combinations, product
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
-import pandas as pd
 
 from .base import get_action_name, make_title_action_sample, make_path_subject
 from .cgroup import ClusterGroupGraph, ClusterGroupRunner, cgroup_table, make_tracks
@@ -17,11 +17,11 @@ from .table import (
     TableWriter,
     load_pos_tables,
 )
-from ..cluster.data import ClusterTable
-from ..core.arg import opt_comppair, opt_compself, opt_out_dir
+from ..core.arg.cli import opt_comppair, opt_compself, opt_out_dir
 from ..core.logs import logger
 from ..core.path import BRANCH_SEP, VERSUS_BRANCH, flatten_branches
-from ..core.table import PositionTable, Table
+from ..cluster.data import ClusterTable
+from ..core.table.base import PositionTable, Table
 from ..core.task import dispatch
 
 # Index level names.
@@ -258,6 +258,8 @@ class TwoTableMergedClusterGroupGraph(TwoTableRelClusterGroupGraph, ABC):
     @cached_property
     def data(self):
         # Merge each pair in the Cartesian product of datasets 1 and 2.
+        import pandas as pd
+
         data = pd.DataFrame.from_dict(
             {
                 (row, col): self._merge_data(vals1, vals2)

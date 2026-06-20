@@ -7,7 +7,8 @@ from typing import Iterable
 
 from .code import MATCH, DELET, INSRT, SUB_A, SUB_C, SUB_G, SUB_T
 from ..error import IncompatibleOptionsError
-from ..seq import BASEA, BASEC, BASEN, BASEG, BASET, DNA
+from ..seq.region import BASEA, BASEC, BASEN, BASEG, BASET
+from ..seq.xna import DNA
 
 READ_DEL = "D"
 READ_INS = "I"

@@ -6,7 +6,6 @@ from inspect import Parameter, signature
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
-import pandas as pd
 
 from .base import (
     DELET_REL,
@@ -26,11 +25,11 @@ from .base import (
     AbundanceTable,
     all_patterns,
 )
-from ..batch import accumulate_batches, accumulate_counts
+from ..batch.accum import accumulate_batches, accumulate_counts
 from ..dataset import MutsDataset
 from ..header import Header, make_header
 from ..logs import logger, format_sample_reference_region
-from ..seq import Region
+from ..seq.region import Region
 from ..write import need_write
 
 # These relationships are of all subtypes of mutations.
@@ -65,6 +64,8 @@ class Tabulator(ABC):
     @classmethod
     def _format_table(cls, counts: pd.DataFrame, header: Header):
         """Format the count data with the proper header."""
+        import pandas as pd
+
         # Initialize an empty table.
         table = pd.DataFrame(cls.get_null_value(), counts.index, header.index)
         # Count reads with each relationship at each position.

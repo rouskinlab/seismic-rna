@@ -1,14 +1,7 @@
+from __future__ import annotations
 import io
 import math
-import matplotlib
-
-import matplotlib.patches as patches
-import matplotlib.pyplot as plt
-import numpy as np
-
 from pathlib import Path
-
-matplotlib.use("Agg")
 
 
 def compute_arc_points(center, radius, theta1, theta2, n=100):
@@ -27,6 +20,8 @@ def compute_arc_points(center, radius, theta1, theta2, n=100):
     n: int
         Number of sample points along the arc.
     """
+    import numpy as np
+
     if theta2 < theta1:
         angles = np.linspace(theta1, theta2 + 360, n) % 360
     else:
@@ -53,6 +48,13 @@ def draw_seismic_logo(
     dpi: int
         Resolution in dots per inch used when saving the figure.
     """
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    import matplotlib.patches as patches
+    import numpy as np
+
     fig, ax = plt.subplots()
 
     R = 50

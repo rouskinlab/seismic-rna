@@ -1,42 +1,43 @@
+from __future__ import annotations
 from abc import ABC
 from functools import cache, cached_property
 from typing import Iterable
 
-import numpy as np
-import pandas as pd
 
 from .dataset import load_filter_dataset
 from .io import FilterFile
 from ..core import path
-from ..core.batch import END5_COORD, END3_COORD
+from ..core.batch.ends import END5_COORD, END3_COORD
 from ..core.header import NUM_CLUSTS_NAME, format_clust_name, validate_ks
 from ..core.logs import logger
-from ..core.rel import RelPattern
-from ..core.rna import RNAProfile
-from ..core.seq import DNA, Region
-from ..core.table import (
+from ..core.rel.pattern import RelPattern
+from ..core.rna.profile import RNAProfile
+from ..core.seq.xna import DNA
+from ..core.seq.region import Region
+from ..core.table.base import (
     COVER_REL,
     MATCH_REL,
     MUTAT_REL,
     INFOR_REL,
+    Table,
+    PositionTable,
+    ReadTable,
+)
+from ..core.table.write import (
     SUBMUTS,
     Tabulator,
     BatchTabulator,
     CountTabulator,
     DatasetTabulator,
-    Table,
-    PositionTable,
-    ReadTable,
-    PositionTableLoader,
-    ReadTableLoader,
     PositionTableWriter,
     ReadTableWriter,
 )
+from ..core.table.load import PositionTableLoader, ReadTableLoader
 from ..core.unbias import (
     calc_p_ends_observed,
+    calc_params,
     calc_p_noclose_given_clust,
     calc_p_noclose_given_ends_auto,
-    calc_params,
 )
 from ..idmut.table import AverageTable, AverageTabulator
 
@@ -119,6 +120,8 @@ class FilterReadTableLoader(ReadTableLoader, FilterReadTable):
 class PartialTabulator(Tabulator, ABC):
     @classmethod
     def get_null_value(cls):
+        import numpy as np
+
         return np.nan
 
     def __init__(
@@ -191,6 +194,8 @@ class PartialTabulator(Tabulator, ABC):
     @cached_property
     def p_ends_given_clust_noclose(self):
         """Probability of each end coordinate."""
+        import numpy as np
+
         if not self.correct_bias:
             return None
         # Ensure end_counts has 2 dimensions.
@@ -208,6 +213,8 @@ class PartialTabulator(Tabulator, ABC):
 
     @cached_property
     def _adjusted(self):
+        import numpy as np
+
         table_per_pos = super().data_per_pos
         if self.correct_bias:
             if self.region.length > np.sqrt(1_000_000_000):
@@ -287,6 +294,9 @@ def adjust_counts(
 ):
     """Adjust the given table of Filtered/Clustered counts per position
     to correct for observer bias."""
+    import numpy as np
+    import pandas as pd
+
     if not isinstance(table_per_pos, pd.DataFrame):
         raise TypeError(table_per_pos)
     if isinstance(n_reads_clust, pd.Series):

@@ -1,3 +1,4 @@
+from __future__ import annotations
 import ahocorasick
 from functools import cached_property
 
@@ -5,8 +6,6 @@ from collections import namedtuple, defaultdict
 from pathlib import Path
 from typing import Iterable
 
-import pandas as pd
-import numpy as np
 
 from ..core.seq.xna import DNA
 from ..core.seq.refs import RefSeqs
@@ -48,6 +47,7 @@ def get_ref_barcodes(ref_meta_file: Path):
     dict[str, tuple[DNA, int]]
         A mapping from name to barcode
     """
+    import pandas as pd
 
     # Initialize dictionaries mapping references to barcodes
     coords: dict[str, tuple[int, int, int]] = dict()
@@ -462,6 +462,8 @@ class RefBarcodes(object):
 
     @cached_property
     def name_map(self):
+        import numpy as np
+
         if self.rc:
             names = self.names + self.names
             num_refs = self.num_refs * 2
@@ -473,6 +475,8 @@ class RefBarcodes(object):
 
     @cached_property
     def valid_positions(self):
+        import numpy as np
+
         if self.rc:
             slice_positions = self.slice_position + self.rc_slice_position
             num_refs = self.num_refs * 2

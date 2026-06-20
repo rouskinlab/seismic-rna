@@ -1,6 +1,6 @@
 from functools import cached_property
 
-from ..seq import Region
+from ..seq.region import Region
 
 
 class RNARegion(object):

@@ -1,15 +1,16 @@
+from __future__ import annotations
 from abc import ABC
 from pathlib import Path
 
-import numpy as np
-import pandas as pd
 
 from .batch import ClusterMutsBatch, ClusterReadBatch
 from .emk import EMRunsK
 from ..core import path
 from ..core.header import ClustHeader
-from ..core.io import ReadBatchIO, RegFileIO, RegBrickleIO
-from ..core.seq import Region
+from ..core.io.batch import ReadBatchIO
+from ..core.io.file import RegFileIO
+from ..core.io.brickle import RegBrickleIO
+from ..core.seq.region import Region
 from ..filter.dataset import FilterMutsDataset
 
 
@@ -95,6 +96,8 @@ class ClusterBatchWriter(object):
 
     def write_batches(self):
         """Save the batches."""
+        import pandas as pd
+
         for filter_batch in self.dataset.iter_batches():
             resps = [runs.best.get_resps(filter_batch.batch) for runs in self.ks]
             if resps:

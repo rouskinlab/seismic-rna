@@ -11,8 +11,8 @@ from .rnastructure import require_data_path, run_rnastructure
 from .viennarna import run_rnafold
 from ..cluster.data import ClusterPositionTableLoader
 from ..core import path
-from ..core.arg import (
-    CMD_FOLD,
+from ..core.arg.cmd import CMD_FOLD
+from ..core.arg.cli import (
     FOLD_BACKEND_AUTO,
     FOLD_BACKEND_RNASTRUCTURE,
     FOLD_BACKEND_VIENNARNA,
@@ -52,18 +52,20 @@ from ..core.arg import (
     optional_path,
 )
 from ..core.error import IncompatibleOptionsError
-from ..core.extern import (
+from ..core.shell import (
     RNASTRUCTURE_FOLD_CMD,
     RNASTRUCTURE_SHAPEKNOTS_CMD,
     VIENNA_RNAFOLD_CMD,
     VIENNA_RNASUBOPT_CMD,
-    require_dependency,
 )
-from ..core.io import calc_sha512_path
+from ..core.depend import require_dependency
+from ..core.io.checksum import calc_sha512_path
 from ..core.logs import logger
-from ..core.rna import ct_to_db
+from ..core.rna.io import ct_to_db
 from ..core.run import run_func
-from ..core.seq import DNA, RefRegions, RefSeqs, Region
+from ..core.seq.xna import DNA
+from ..core.seq.region import RefRegions, Region
+from ..core.seq.refs import RefSeqs
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.tmp import with_tmp_dir
 from ..core.write import need_write

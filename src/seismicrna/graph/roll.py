@@ -2,8 +2,8 @@ from abc import ABC
 from functools import cached_property
 
 from .table import TableGraph, TableRunner
-from ..core.arg import opt_window, opt_winmin
-from ..core.seq import POS_NAME
+from ..core.arg.cli import opt_window, opt_winmin
+from ..core.seq.region import POS_NAME
 
 
 class RollingGraph(TableGraph, ABC):

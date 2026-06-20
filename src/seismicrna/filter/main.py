@@ -6,8 +6,8 @@ from typing import Iterable
 from click import command
 
 from .write import filter_region
-from ..core.arg import (
-    CMD_FILTER,
+from ..core.arg.cmd import CMD_FILTER
+from ..core.arg.cli import (
     PROBES,
     PROBE_DMS,
     PROBE_ETC,
@@ -59,7 +59,8 @@ from ..core.arg import (
 )
 from ..core.logs import logger
 from ..core.run import run_func
-from ..core.seq import DNA, RefRegions
+from ..core.seq.xna import DNA
+from ..core.seq.region import RefRegions
 from ..core.task import dispatch
 from ..idmut.dataset import load_idmut_dataset
 

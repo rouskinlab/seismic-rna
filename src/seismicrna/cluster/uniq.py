@@ -1,17 +1,17 @@
+from __future__ import annotations
 from collections import defaultdict
 from functools import cached_property
 from typing import Iterable
 
-import numpy as np
-import pandas as pd
 
 from .names import BIT_VECTOR_NAME
 from ..core import path
 from ..core.array import get_length
 from ..core.logs import format_sample_reference_region
-from ..core.batch import EndCoords, RegionMutsBatch
-from ..core.rel import RelPattern
-from ..core.seq import Region
+from ..core.batch.ends import EndCoords
+from ..core.batch.muts import RegionMutsBatch
+from ..core.rel.pattern import RelPattern
+from ..core.seq.region import Region
 from ..filter.dataset import FilterMutsDataset
 
 
@@ -153,6 +153,8 @@ class UniqReads(EndCoords):
 
     def get_mut_matrix(self):
         """Full boolean matrix of the mutations."""
+        import numpy as np
+
         # Initialize an all-False matrix with one row for each unique
         # read and one column for each position.
         muts = np.zeros((self.num_uniq, self.region.length), dtype=bool)
@@ -165,6 +167,8 @@ class UniqReads(EndCoords):
 
     def get_cov_matrix(self):
         """Full boolean matrix of the covered positions."""
+        import numpy as np
+
         # Initialize an all-False matrix with one row for each unique
         # read and one column for each position.
         covs = np.zeros((self.num_uniq, self.region.length), dtype=bool)
@@ -179,6 +183,9 @@ class UniqReads(EndCoords):
     @cached_property
     def uniq_names(self):
         """Unique read names as byte strings."""
+        import numpy as np
+        import pandas as pd
+
         # Get the full boolean matrices of the coverage and mutations of
         # the unique reads, cast the data from boolean to 8-bit integer
         # type, and merge them into one matrix via subtraction.
@@ -201,14 +208,20 @@ class UniqReads(EndCoords):
     @property
     def num_obs(self):
         """Number of times each read was observed."""
+        import pandas as pd
+
         return pd.Series(self.counts_per_uniq, self.uniq_names)
 
     @cached_property
     def log_obs(self):
         """Log number of times each read was observed."""
+        import numpy as np
+
         return np.log(self.num_obs)
 
     def __eq__(self, other):
+        import numpy as np
+
         if not isinstance(other, UniqReads):
             return NotImplemented
         return (
@@ -246,6 +259,8 @@ def _uniq_reads_to_ends_muts(
 ):
     """Map each position to the numbers of the unique reads that are
     mutated at the position."""
+    import numpy as np
+
     end5s = list()
     end3s = list()
     muts = defaultdict(list)
@@ -265,6 +280,8 @@ def _batch_to_uniq_read_num(
 ):
     """Map each read's number in its own batch to its unique number in
     the pool of all batches."""
+    import pandas as pd
+
     # For each batch, initialize a map from the read numbers of the batch.
     batch_to_uniq = [
         pd.Series(-1, index=read_nums) for read_nums in read_nums_per_batch
@@ -284,6 +301,8 @@ def _batch_to_uniq_read_num(
 
 def _count_uniq_reads(uniq_read_nums: Iterable[list]):
     """Count the occurrences of each unique read across all batches."""
+    import numpy as np
+
     return np.fromiter(map(len, uniq_read_nums), dtype=int)
 
 

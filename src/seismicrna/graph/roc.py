@@ -1,8 +1,7 @@
+from __future__ import annotations
 import os
 from functools import cached_property
 
-import numpy as np
-import pandas as pd
 from click import command
 
 from .table import PositionTableRunner, TableWriter
@@ -25,6 +24,8 @@ FPR = "False positive rate"
 
 def rename_columns(df: pd.DataFrame):
     """Rename the levels of the columns."""
+    import pandas as pd
+
     # The DataFrame's columns must be a MultiIndex with two levels named
     # "Profile" and "Structure".
     if df.size > 0:
@@ -41,6 +42,8 @@ def rename_columns(df: pd.DataFrame):
 def _consolidate_pr(pr: dict):
     """Consolidate a true or false positive rate (PR) forming half the
     ROC from a dict into a DataFrame."""
+    import pandas as pd
+
     return rename_columns(pd.DataFrame.from_dict(pr))
 
 
@@ -95,6 +98,9 @@ class ROCGraph(StructOneTableGraph):
     @cached_property
     def data(self):
         # Join the FPR and TPR data horizontally.
+        import numpy as np
+        import pandas as pd
+
         data = pd.concat([self.fpr, self.tpr], axis=1, join="inner")
         # Add the axis name as the first level of the columns.
         axes = np.hstack(

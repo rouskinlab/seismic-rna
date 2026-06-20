@@ -1,11 +1,27 @@
-import numpy as np
-import pandas as pd
-from plotly import graph_objects as go
+from __future__ import annotations
 
 from .color import ColorMap
 from ..core.header import REL_NAME
-from ..core.rna import compute_auc
-from ..core.seq import BASE_NAME, POS_NAME, DNA
+from ..core.rna.roc import compute_auc
+from ..core.seq.region import BASE_NAME, POS_NAME
+from ..core.seq.xna import DNA
+
+
+class _GraphObjects:
+    """Lazy proxy for ``plotly.graph_objects``.
+
+    Importing plotly is slow, and this module is imported whenever any graph
+    subcommand is loaded (e.g. for ``--help``).  Deferring the plotly import
+    until a trace is actually built keeps loading this module fast.
+    """
+
+    def __getattr__(self, name):
+        from plotly import graph_objects as go
+
+        return getattr(go, name)
+
+
+go = _GraphObjects()
 
 # Number of digits behind the decimal point to be kept.
 PRECISION = 6
@@ -34,6 +50,8 @@ def get_seq_base_scatter_trace(
     plotly.graph_objects.Scatter
         A scatter trace for the positions of the given base type.
     """
+    import pandas as pd
+
     # Validate the indexes.
     if not xdata.index.equals(ydata.index):
         raise ValueError(
@@ -210,6 +228,8 @@ def get_hist_trace(data: pd.Series, rel: str, cmap: ColorMap):
     plotly.graph_objects.Bar
         A bar trace representing the histogram for ``rel``.
     """
+    import pandas as pd
+
     # Get the edges of the bins.
     if isinstance(data.index, pd.MultiIndex):
         lower = data.index.get_level_values(HIST_LOWER_NAME)
@@ -387,6 +407,9 @@ def get_pairwise_position_trace(data: pd.Series, end5: int, end3: int):
         A symmetric heatmap trace covering positions ``end5`` to
         ``end3``.
     """
+    import numpy as np
+    import pandas as pd
+
     # The data must be a long-form Series with a two-level MultiIndex.
     # Convert the data to wide-form and make them symmetric.
     if not isinstance(data, pd.Series):

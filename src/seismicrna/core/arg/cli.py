@@ -8,8 +8,8 @@ from typing import Iterable
 from click import Argument, Choice, Option, Parameter, Path
 
 from .glob import GlobPath, expand_ct_pos_5, flatten_glob_results
-from ..io import DEFAULT_BROTLI_LEVEL
-from ..seq import DNA
+from ..io.file import DEFAULT_BROTLI_LEVEL
+from ..seq.xna import DNA
 
 # System information
 CWD = os.getcwd()
@@ -898,17 +898,6 @@ opt_min_mut_gap = Option(
     help="Filter out mutations separated by fewer than this many bases",
 )
 
-opt_min_mut_gap_weights = Option(
-    ("--min-mut-gap-weights",),
-    type=str,
-    default=None,
-    help=(
-        "Comma-separated gap:weight pairs defining a mixture of min_mut_gap "
-        "biases, e.g. '0:0.2,1:0.3,2:0.5'. Overrides --min-mut-gap. "
-        "Defaults are probe-specific; pass an empty string to disable."
-    ),
-)
-
 opt_mut_collisions = Option(
     ("--mut-collisions",),
     type=Choice(MUT_COLLISIONS, case_sensitive=False),
@@ -916,6 +905,17 @@ opt_mut_collisions = Option(
     help=(
         "If two mutations are closer than --min-mut-gap positions, MERGE "
         "the mutations, DROP the read, or AUTO-select based on the probe."
+    ),
+)
+
+opt_min_mut_gap_weights = Option(
+    ("--min-mut-gap-weights",),
+    type=str,
+    default=None,
+    help=(
+        "Comma-separated gap:weight pairs defining a mixture of min_mut_gap "
+        "biases, e.g. '0:0.2,1:0.3,2:0.5'. Defaults are probe-specific. "
+        "Pass an empty string to disable."
     ),
 )
 

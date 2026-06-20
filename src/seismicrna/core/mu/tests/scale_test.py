@@ -4,7 +4,7 @@ from itertools import product
 import numpy as np
 import pandas as pd
 
-from seismicrna.core.mu import calc_quantile, calc_ranks, normalize, winsorize
+from seismicrna.core.mu.scale import calc_quantile, calc_ranks, normalize, winsorize
 
 
 class TestCalcQuantile(ut.TestCase):

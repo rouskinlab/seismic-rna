@@ -1,9 +1,9 @@
+from __future__ import annotations
 import os
 from itertools import combinations
 from pathlib import Path
 from typing import Iterable
 
-import numpy as np
 from click import command
 
 from . import (
@@ -15,7 +15,7 @@ from . import (
 )
 from .muts import load_pmut
 from ..core import path
-from ..core.arg import (
+from ..core.arg.cli import (
     PROBE_NONE,
     arg_fasta,
     arg_input_path,
@@ -39,11 +39,12 @@ from ..core.arg import (
 from ..core.logs import logger
 from ..core.random import get_random_integer_generator
 from ..core.mu.compare import calc_mean_arcsine_distance, calc_pearson
-from ..core.rel import RelPattern
-from ..core.rna import from_ct
+from ..core.rel.pattern import RelPattern
+from ..core.rna.io import from_ct
 from ..core.run import run_func
-from ..core.seq import DNA, parse_fasta, RefRegions
-from .idmut import set_sim_mut_params
+from ..core.seq.xna import DNA
+from ..core.seq.fasta import parse_fasta
+from ..core.seq.region import RefRegions
 from ..filter.main import set_mask_acgu, set_mask_polya
 from ..idmut.sim import calc_pmut_pattern
 
@@ -65,6 +66,8 @@ def _clusters_distinct(
     min_marcd: float,
 ) -> bool:
     """Return True if all cluster pairs satisfy the similarity thresholds."""
+    import numpy as np
+
     try:
         region = next(from_ct(ct_file)).region
     except StopIteration:
@@ -169,6 +172,7 @@ def run(
     reverse_fraction: float,
     probe: str,
     min_mut_gap_weights: str | None,
+    mut_collisions: str,
     injected_mut_probs: str | None,
     fq_gzip: bool,
     num_reads: int,
@@ -183,9 +187,6 @@ def run(
         probe, mask_a, mask_c, mask_g, mask_u
     )
     mask_polya = set_mask_polya(probe, mask_polya)
-    min_mut_gap_weights, injected_mut_probs = set_sim_mut_params(
-        probe, min_mut_gap_weights, injected_mut_probs
-    )
     for attempt in range(1, max(max_tries, 1) + 1):
         logger.debug("Began simulation attempt {} of up to {}", attempt, max_tries)
         # Simulate the reference sequence.
@@ -307,6 +308,7 @@ def run(
         reverse_fraction=reverse_fraction,
         probe=probe,
         min_mut_gap_weights=min_mut_gap_weights,
+        mut_collisions=mut_collisions,
         injected_mut_probs=injected_mut_probs,
         fq_gzip=fq_gzip,
         num_reads=num_reads,

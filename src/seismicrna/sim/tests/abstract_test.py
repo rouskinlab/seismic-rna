@@ -8,10 +8,12 @@ import pandas as pd
 from seismicrna.core import path
 from seismicrna.core.header import format_clust_name
 from seismicrna.core.logs import Level, set_config
-from seismicrna.core.rna import RNAStructure, to_ct
+from seismicrna.core.rna.io import to_ct
+from seismicrna.core.rna.profile import RNAProfile
+from seismicrna.core.rna.struct import RNAStructure
 from seismicrna.core.seq.region import BASE_NAME, POS_NAME, Region
 from seismicrna.core.seq.xna import DNA
-from seismicrna.core.table import (
+from seismicrna.core.table.base import (
     COVER_REL,
     INFOR_REL,
     MUTAT_REL,
@@ -31,7 +33,7 @@ from seismicrna.sim.abstract import (
     abstract_table,
     new_parameter_dict,
 )
-from seismicrna.core.arg import (
+from seismicrna.core.arg.cli import (
     opt_pmut_paired,
     opt_pmut_unpaired,
     opt_vmut_paired,
@@ -153,7 +155,6 @@ class FakeFilterPositionTable:
         return self.region.name
 
     def iter_profiles(self, *, fold_table_region=True, regions=None, **kwargs):
-        from seismicrna.core.rna.profile import RNAProfile
 
         for hk, hc in self.header.clusts:
             mus_name = path.fill_whitespace(format_clust_name(hk, hc), fill="-")

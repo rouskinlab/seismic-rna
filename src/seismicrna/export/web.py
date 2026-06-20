@@ -1,23 +1,22 @@
+from __future__ import annotations
 import json
 from functools import cache, partial
 from pathlib import Path
 from typing import Any
 
-import numpy as np
-import pandas as pd
 
 from .meta import combine_metadata
 from ..core import path
 from ..core.header import format_clust_name
 from ..core.logs import logger
-from ..core.rna import parse_db_file_as_strings
+from ..core.rna.db import parse_db_file_as_strings
 from ..core.write import need_write, write_mode
 from ..fold.rnastructure import parse_energy
 from ..filter.dataset import FilterMutsDataset
 from ..filter.report import FilterReport
 from ..idmut.dataset import load_idmut_dataset
 from ..idmut.report import IDmutReport
-from ..core.table import (
+from ..core.table.base import (
     COVER_REL,
     INFOR_REL,
     SUBST_REL,
@@ -154,6 +153,8 @@ def get_reg_metadata(top: Path, sample: str, ref: str, reg: str, all_pos: bool):
 
 
 def conform_series(series: pd.Series | pd.DataFrame):
+    import pandas as pd
+
     if isinstance(series, pd.DataFrame):
         if series.columns.size != 1:
             raise TypeError(
@@ -329,6 +330,8 @@ def iter_read_table_data(table: ReadTable, k: int, clust: int):
         ``(SUBST_HIST, histogram)`` where the histogram is a list of
         read counts indexed by number of substitutions.
     """
+    import numpy as np
+
     read_counts = np.asarray(
         conform_series(table.fetch_count(rel=SUBST_REL, k=k, clust=clust)).values,
         dtype=int,
@@ -354,6 +357,8 @@ def iter_clust_table_data(table: AbundanceTable, k: int, clust: int):
         ``(CLUST_PROP, proportion)`` where proportion is the fraction of
         reads assigned to this cluster.
     """
+    import numpy as np
+
     clust_count = table.data[table.header.select(k=k, clust=clust)].squeeze()
     k_count = table.data[table.header.select(k=k)].sum().squeeze()
     proportion = round(clust_count / k_count, PRECISION) if k_count > 0 else np.nan

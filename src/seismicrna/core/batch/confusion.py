@@ -1,10 +1,7 @@
-import numpy as np
-import pandas as pd
-from numba import jit
+from __future__ import annotations
 
 from ..array import intersect1d_unique_sorted
-from ..logs import logger
-from ..seq import POS_NAME
+from ..seq.region import POS_NAME
 from ..validate import require_isinstance
 
 POSITION_A = "Position A"
@@ -27,6 +24,9 @@ def init_confusion_matrix(
 
     And return .., A., .B, AB in that order.
     """
+    import numpy as np
+    import pandas as pd
+
     positions = pos_index.get_level_values(POS_NAME)
     idx_a, idx_b = np.triu_indices(positions.size, k=1)
     pos_a = positions[idx_a]
@@ -51,30 +51,6 @@ def init_confusion_matrix(
     b = array_type(**kwargs)
     ab = array_type(**kwargs)
     return n, a, b, ab
-
-
-@jit
-def _count_intersection(x: np.ndarray, y: np.ndarray):
-    """Count how many elements are in both x and y, assuming x and y
-    are both NumPy arrays where all elements are unique and sorted from
-    smallest to largest."""
-    nx = x.size
-    ny = y.size
-    i = 0
-    j = 0
-    count = 0
-    while i < nx and j < ny:
-        xi = x[i]
-        yj = y[j]
-        if xi < yj:
-            i += 1
-        elif xi > yj:
-            j += 1
-        else:
-            count += 1
-            i += 1
-            j += 1
-    return count
 
 
 def _count_intersection_weighted(
@@ -103,6 +79,9 @@ def calc_confusion_matrix(
 
     And return .., A., .B, AB in that order.
     """
+    import numpy as np
+    import pandas as pd
+
     for pos in pos_index.get_level_values(POS_NAME):
         # Confirm all mutated reads are also covered. Use np.isin for a
         # true membership test (the previous searchsorted check passed
@@ -129,16 +108,20 @@ def calc_confusion_matrix(
     av = a.values
     bv = b.values
     abv = ab.values
+    if read_weights is None:
+        # count_intersection is numba-jitted; import it lazily so importing
+        # this module does not import numba.
+        from .confusion_jit import count_intersection
     # For each pair of positions, count the reads in each category.
     for i, (pos5, pos3) in enumerate(n.index):
         # This method of counting the intersection is faster than matrix
         # multiplication, even though it needs to loop over every pair.
         # For speed, use x.values[i] instead of x.at[(pos5, pos3)].
         if read_weights is None:
-            nv[i] = _count_intersection(covering_reads[pos5], covering_reads[pos3])
-            av[i] = _count_intersection(covering_reads[pos3], mutated_reads[pos5])
-            bv[i] = _count_intersection(covering_reads[pos5], mutated_reads[pos3])
-            abv[i] = _count_intersection(mutated_reads[pos5], mutated_reads[pos3])
+            nv[i] = count_intersection(covering_reads[pos5], covering_reads[pos3])
+            av[i] = count_intersection(covering_reads[pos3], mutated_reads[pos5])
+            bv[i] = count_intersection(covering_reads[pos5], mutated_reads[pos3])
+            abv[i] = count_intersection(mutated_reads[pos5], mutated_reads[pos3])
         else:
             nv[i] = _count_intersection_weighted(
                 covering_reads[pos5], covering_reads[pos3], rwv
@@ -161,6 +144,9 @@ def validate_confusion_matrix(
     b: pd.Series | pd.DataFrame,
     ab: pd.Series | pd.DataFrame,
 ):
+    import numpy as np
+    import pandas as pd
+
     if isinstance(n, pd.Series):
         require_isinstance("a", a, pd.Series)
         require_isinstance("b", b, pd.Series)
@@ -237,6 +223,8 @@ def calc_confusion_phi(
     float | np.ndarray | pd.Series | pd.DataFrame
         Phi correlation coefficient
     """
+    import numpy as np
+
     if validate:
         validate_confusion_matrix(n, a, b, ab)
     if min_cover < 0:
@@ -272,6 +260,8 @@ def calc_confusion_pvals(
 ):
     """Calculate the p-value of each element of the confusion matrix
     using a two-sided Fisher exact test."""
+    import numpy as np
+
     if validate:
         validate_confusion_matrix(n, a, b, ab)
     # Calculate the p-values of the overlap being ≤ (le) or ≥ (ge) the
@@ -293,6 +283,9 @@ def calc_bh_adjusted_pvals(pvals: np.ndarray | pd.Series | pd.DataFrame):
     Returns adjusted p-values (the minimum FDR at which each hypothesis would
     be rejected).  Compare ``adjusted_pvals <= fdr`` to label significant pairs.
     """
+    import numpy as np
+    import pandas as pd
+
     # Import scipy here because the import takes a long time.
     from scipy.stats import false_discovery_control
 

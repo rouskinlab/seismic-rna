@@ -14,7 +14,7 @@ from ..core.dataset import (
 )
 from ..core.header import NO_K, NO_KS
 from ..core.report import RefseqChecksumF
-from ..core.seq import FULL_NAME, Region
+from ..core.seq.region import FULL_NAME, Region
 
 
 class AverageDataset(Dataset, ABC):

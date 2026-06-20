@@ -3,15 +3,28 @@ from functools import cached_property
 from pathlib import Path
 from typing import Iterable
 
+try:
+    from .cx.idmut import (
+        IDmutError as _IDmutError_cx,
+        id_muts_lines as _id_muts_lines_cx,
+    )
+
+    _CX_IDMUT_OK = True
+except ImportError:
+    _CX_IDMUT_OK = False
+
 from .io import from_reads, ReadNamesBatchIO, IDmutBatchIO, RefseqIO
+from .py.idmut import IDmutError as _IDmutError_py, id_muts_lines as _id_muts_lines_py
 from .report import IDmutReport
 from .sam import SamFileViewer
 from .table import IDmutCountTabulator
 from ..core import path
 from ..core.logs import logger, format_sample_reference_region
-from ..core.ngs import encode_phred
-from ..core.seq import DNA, Region, get_fasta_seq
-from ..core.table import all_patterns
+from ..core.ngs.phred import encode_phred
+from ..core.seq.xna import DNA
+from ..core.seq.region import Region
+from ..core.seq.fasta import get_fasta_seq
+from ..core.table.base import all_patterns
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.tmp import get_release_working_dirs, release_to_out
 from ..core.write import need_write
@@ -66,20 +79,17 @@ def idmut_records(
     tuple[str, tuple]
         Read name and the result of `id_muts_lines` for that read.
     """
-    # Load the module.
-    if idmut_cx:
-        # Try to load the C extension module.
-        try:
-            from .cx.idmut import IDmutError, id_muts_lines
-        except ImportError:
+    if idmut_cx and _CX_IDMUT_OK:
+        IDmutError = _IDmutError_cx
+        id_muts_lines = _id_muts_lines_cx
+    else:
+        if idmut_cx:
             logger.warning(
                 "Failed to import the C extension for the idmut algorithm; "
                 "defaulting to the Python implementation, which is much slower"
             )
-            from .py.idmut import IDmutError, id_muts_lines
-    else:
-        # Load the Python module.
-        from .py.idmut import IDmutError, id_muts_lines
+        IDmutError = _IDmutError_py
+        id_muts_lines = _id_muts_lines_py
     # Process the records.
     for name, line1, line2 in records:
         try:
@@ -394,6 +404,7 @@ def idmut_xam(
     """Write the batches of relationships for one XAM file."""
     release_dir, working_dir = get_release_working_dirs(tmp_dir)
     writer = RelationWriter(
-        SamFileViewer(xam_file, working_dir, branch, batch_size, num_cpus=num_cpus), fasta
+        SamFileViewer(xam_file, working_dir, branch, batch_size, num_cpus=num_cpus),
+        fasta,
     )
     return writer.write(**kwargs, num_cpus=num_cpus, release_dir=release_dir)

@@ -12,11 +12,14 @@ from matplotlib.patches import Rectangle
 
 from seismicrna.core.array import find_dims
 from seismicrna.core.random import stochastic_round
-from seismicrna.core.rel import NOCOV, MATCH, DELET, SUB_A, SUB_C, SUB_G, SUB_T
-from seismicrna.core.rna import RNAStructure, parse_db_string
-from seismicrna.core.seq import DNA, Region, BASEA, BASEC, BASEG, BASET
+from seismicrna.core.rel.code import NOCOV
+from seismicrna.core.rel.pattern import MATCH, DELET, SUB_A, SUB_C, SUB_G, SUB_T
+from seismicrna.core.rna.struct import RNAStructure
+from seismicrna.core.rna.db import parse_db_string
+from seismicrna.core.seq.xna import DNA
+from seismicrna.core.seq.region import Region, BASEA, BASEC, BASEG, BASET
 from seismicrna.graph.color import get_cmap, RelColorMap, SeqColorMap
-from seismicrna.core.table import (
+from seismicrna.core.table.base import (
     COVER_REL,
     MATCH_REL,
     MUTAT_REL,

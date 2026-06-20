@@ -1,11 +1,11 @@
+from __future__ import annotations
 from typing import Iterable
 
-import numpy as np
 
 from .em import EMRun
 from ..core.error import NoDataError, InconsistentValueError
 from ..core.logs import logger
-from ..core.mu import (
+from ..core.mu.compare import (
     calc_sum_arcsine_distance,
     calc_mean_arcsine_distance,
     calc_pearson,
@@ -51,6 +51,8 @@ class EMRunsK(object):
         min_pearson_vs_best: float,
         max_marcd_vs_best: float,
     ):
+        import numpy as np
+
         if not runs:
             raise NoDataError("Got no EM runs")
         # Sort the runs from largest to smallest likelihood.
@@ -141,10 +143,14 @@ class EMRunsK(object):
 
     def n_runs_passing(self, **kwargs):
         """Number of runs passing the filters."""
+        import numpy as np
+
         return int(np.count_nonzero(self.run_passing(**kwargs)))
 
     def get_valid_index(self, i: int | list[int] | np.ndarray, **kwargs):
         """Index(es) of valid run number(s) `i`."""
+        import numpy as np
+
         return np.flatnonzero(self.run_passing(**kwargs))[i]
 
     def best_index(self, **kwargs) -> int:
@@ -158,6 +164,8 @@ class EMRunsK(object):
 
     def subopt_indexes(self, **kwargs):
         """Indexes of the valid suboptimal runs."""
+        import numpy as np
+
         return self.get_valid_index(
             np.arange(1, self.n_runs_passing(**kwargs)), **kwargs
         )
@@ -165,6 +173,8 @@ class EMRunsK(object):
     def loglike_vs_best(self, **kwargs):
         """Log likelihood difference between the best and second-best
         runs."""
+        import numpy as np
+
         try:
             index1, index2 = self.get_valid_index([0, 1], **kwargs)
             return float(self.log_likes[index1] - self.log_likes[index2])
@@ -174,6 +184,8 @@ class EMRunsK(object):
     def pearson_vs_best(self, **kwargs):
         """Maximum Pearson correlation between the best run and any
         other run."""
+        import numpy as np
+
         try:
             return float(np.max(self.pearsons_vs_best[self.subopt_indexes(**kwargs)]))
         except ValueError:
@@ -181,6 +193,8 @@ class EMRunsK(object):
 
     def marcd_vs_best(self, **kwargs):
         """Minimum MARCD between the best run and any other run."""
+        import numpy as np
+
         try:
             return float(np.min(self.marcds_vs_best[self.subopt_indexes(**kwargs)]))
         except ValueError:
@@ -325,6 +339,8 @@ def find_best_k(ks: Iterable[EMRunsK], **kwargs):
 
 def assign_clusterings(mus1: np.ndarray, mus2: np.ndarray):
     """Optimally assign clusters from two groups to each other."""
+    import numpy as np
+
     n1, k1 = mus1.shape
     n2, k2 = mus2.shape
     require_equal("mus1.shape[0]", n1, n2, "mus2.shape[0]")
@@ -354,6 +370,8 @@ def assign_clusterings(mus1: np.ndarray, mus2: np.ndarray):
 
 
 def _concat_clusters(mus: np.ndarray, clusters: np.ndarray):
+    import numpy as np
+
     n, k = mus.shape
     require_equal("clusters.shape", clusters.shape, (k,), "(mus.shape[1],)")
     require_atleast("mus.shape[1]", k, 1)

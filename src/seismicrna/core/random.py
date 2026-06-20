@@ -1,17 +1,18 @@
-import numpy as np
+from __future__ import annotations
 
 from .array import calc_inverse
 from .types import get_max_uint
 
-RAND_INT_DTYPE = np.uint32
-
 
 def get_random_integer_generator(seed: int | None):
     """Generate an infinite series of random integers."""
+    import numpy as np
+
+    rand_int_dtype = np.uint32
     rng = np.random.default_rng(seed)
-    max_integer = get_max_uint(RAND_INT_DTYPE)
+    max_integer = get_max_uint(rand_int_dtype)
     while True:
-        yield int(rng.integers(max_integer, dtype=RAND_INT_DTYPE))
+        yield int(rng.integers(max_integer, dtype=rand_int_dtype))
 
 
 def _stochastic_round(values: np.ndarray | list | float | int, seed: int | None):
@@ -28,6 +29,8 @@ def _stochastic_round(values: np.ndarray | list | float | int, seed: int | None)
     np.ndarray
         Values rounded to integers.
     """
+    import numpy as np
+
     rng = np.random.default_rng(seed)
     values = np.asarray_chkfinite(values)
     # Break each value into integer and fractional parts.
@@ -59,6 +62,8 @@ def _stochastic_round_sum(values: np.ndarray | list | float | int, seed: int | N
     np.ndarray
         Values rounded to integers, with the original sum preserved.
     """
+    import numpy as np
+
     rng = np.random.default_rng(seed)
     values = np.asarray_chkfinite(values)
     if values.size == 0:

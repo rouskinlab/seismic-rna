@@ -1,9 +1,8 @@
+from __future__ import annotations
 from functools import cached_property
 from itertools import combinations, filterfalse
 from typing import Callable
 
-import numpy as np
-import pandas as pd
 
 from .marginal import calc_marginal_resps
 from .jackpot import (
@@ -17,12 +16,12 @@ from .uniq import UniqReads
 from ..core.array import get_length
 from ..core.header import ClustHeader
 from ..core.logs import logger, format_sample_reference_region
-from ..core.mu import (
+from ..core.mu.compare import (
     calc_arcsine_distance,
     calc_mean_arcsine_distance,
     calc_pearson,
-    calc_gini,
 )
+from ..core.mu.measure import calc_gini
 from ..core.unbias import calc_params, calc_params_observed
 
 LOG_LIKE_PRECISION = 6  # number of digits to round the log likelihood
@@ -55,6 +54,8 @@ def _calc_bic(
     float
         Bayesian Information Criterion (BIC)
     """
+    import numpy as np
+
     if log_like > 0.0:
         raise ValueError(f"log_like must be ≤ 0, but got {log_like}")
     if n_params < 0:
@@ -101,6 +102,8 @@ def _calc_log_like(logp_marginal: np.ndarray, counts_per_uniq: np.ndarray):
     float
         Log likelihood: dot product of logp_marginal and counts_per_uniq.
     """
+    import numpy as np
+
     # Cast to a float explicitly to verify that the product is a scalar.
     return float(np.vdot(logp_marginal, counts_per_uniq))
 
@@ -156,6 +159,8 @@ class EMRun(object):
             Skip the jackpotting calculation if reads × positions exceeds
             this limit; returns nan instead.
         """
+        import numpy as np
+
         # Unique reads of mutations
         self.uniq_reads = uniq_reads
         # Number of clusters
@@ -262,6 +267,8 @@ class EMRun(object):
     def log_like(self):
         """Return the current log likelihood, which is the last item in
         the trajectory of log likelihood values."""
+        import numpy as np
+
         try:
             return self._log_likes[-1]
         except IndexError:
@@ -272,6 +279,8 @@ class EMRun(object):
     def _log_like_prev(self):
         """Return the previous log likelihood, which is the penultimate
         item in the trajectory of log likelihood values."""
+        import numpy as np
+
         try:
             return self._log_likes[-2]
         except IndexError:
@@ -287,6 +296,8 @@ class EMRun(object):
     @property
     def _n_params(self):
         """Number of parameters in the model."""
+        import numpy as np
+
         # The parameters estimated by the model are
         # - the mutation rates for each position in each cluster
         # - the proportion of each cluster
@@ -322,6 +333,8 @@ class EMRun(object):
 
     def _max_step(self):
         """Run the Maximization step of the EM algorithm."""
+        import numpy as np
+
         with logger.trace.single_context("M-step of {}, iteration {}", self, self.iter):
             # Estimate the parameters based on observed data.
             (p_mut_observed, p_ends_observed, p_clust_observed) = calc_params_observed(
@@ -393,6 +406,8 @@ class EMRun(object):
 
     def _run(self):
         """Run the EM clustering algorithm."""
+        import numpy as np
+
         with logger.info.single_context("Running {}", self):
             logger.debug(
                 "\n".join(
@@ -495,6 +510,8 @@ class EMRun(object):
     @cached_property
     def log_exp_values(self):
         """Expected log count of each unique read (values only)."""
+        import numpy as np
+
         if self.n_reads == 0:
             return np.array([])
         return np.log(self.n_reads) + self._logp_marginal
@@ -502,11 +519,16 @@ class EMRun(object):
     @property
     def log_exp(self):
         """Expected log count of each unique read (with names)."""
+        import pandas as pd
+
         return pd.Series(self.log_exp_values, self.uniq_reads.uniq_names)
 
     @cached_property
     def pis(self):
         """Proportion of each cluster, corrected for observer bias."""
+        import numpy as np
+        import pandas as pd
+
         logger.trace(f"Calculating cluster proportions of {self}")
         return pd.DataFrame(
             self._p_clust[:, np.newaxis],
@@ -518,6 +540,8 @@ class EMRun(object):
     def mus(self):
         """Mutation rate of each position in each cluster, corrected
         for observer bias."""
+        import pandas as pd
+
         logger.trace(f"Calculating cluster mutation rates of {self}")
         return pd.DataFrame(
             self._p_mut[self._unmasked],
@@ -548,6 +572,8 @@ class EMRun(object):
             DataFrame of shape (reads in batch x clusters) with the
             posterior probability that each read belongs to each cluster.
         """
+        import pandas as pd
+
         with logger.trace.single_context("Calculating cluster memberships of {}", self):
             batch_uniq_nums = self.uniq_reads.batch_to_uniq[batch_num]
             return pd.DataFrame(
@@ -595,6 +621,8 @@ class EMRun(object):
     def jackpot_quotient(self):
         """Jackpotting quotient: jackpotting score divided by the score
         of the median null model."""
+        import numpy as np
+
         with logger.debug.single_context(
             "Calculating jackpotting quotient of {}", self
         ):
@@ -648,6 +676,8 @@ class EMRun(object):
             Summary statistic across all cluster pairs, or nan if there
             are fewer than two clusters or all values are nan.
         """
+        import numpy as np
+
         stats = list(
             filterfalse(
                 np.isnan,
@@ -670,12 +700,16 @@ class EMRun(object):
     def max_arcd_vs_ens_avg(self):
         """Maximum arcsine distance between the mutation rates of the
         clusters and the ensemble average."""
+        import numpy as np
+
         arcd = calc_arcsine_distance(self.mus.values, self.mus_ens_avg.values)
         return np.max(arcd) if arcd.size > 0 else np.nan
 
     @cached_property
     def max_gini(self):
         """Maximum Gini coefficient among all clusters."""
+        import numpy as np
+
         gini = calc_gini(self.mus.values)
         return np.max(gini) if gini.size > 0 else np.nan
 

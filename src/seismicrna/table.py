@@ -9,8 +9,8 @@ from .cluster.data import (
     ClusterDatasetTabulator,
     load_cluster_dataset,
 )
-from .core.arg import (
-    CMD_TABLE,
+from .core.arg.cmd import CMD_TABLE
+from .core.arg.cli import (
     arg_input_path,
     opt_idmut_pos_table,
     opt_idmut_read_table,
@@ -24,7 +24,7 @@ from .core.arg import (
 )
 from .core.dataset import Dataset, MutsDataset
 from .core.run import run_func
-from .core.table import CountTabulator, DatasetTabulator
+from .core.table.write import CountTabulator, DatasetTabulator
 from .core.task import dispatch
 from .filter.dataset import load_filter_dataset
 from .filter.table import FilterCountTabulator, FilterDatasetTabulator

@@ -1,15 +1,15 @@
+from __future__ import annotations
 from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
 from typing import Iterable
 
-import pandas as pd
 from click import command
 
 from .cluster.data import ClusterDatasetTabulator, load_cluster_dataset
 from .core import path
-from .core.arg import (
-    CMD_JOIN,
+from .core.arg.cmd import CMD_JOIN
+from .core.arg.cli import (
     arg_joined_region,
     arg_input_path,
     opt_join_clusts,
@@ -77,6 +77,8 @@ def joined_filter_report_exists(
 
 def parse_join_clusts_file(file: str | Path):
     """Parse a file of joined clusters."""
+    import pandas as pd
+
     n_cols = len(ClustHeader.get_level_names())
     clusts_df = pd.read_csv(file, index_col=list(range(n_cols)))
     header = parse_header(clusts_df.index)

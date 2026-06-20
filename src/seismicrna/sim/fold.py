@@ -6,7 +6,7 @@ from click import command
 
 from .ref import get_fasta_path
 from ..core import path
-from ..core.arg import (
+from ..core.arg.cli import (
     FOLD_BACKEND_VIENNARNA,
     arg_fasta,
     opt_fold_backend,
@@ -31,10 +31,12 @@ from ..core.arg import (
     opt_num_cpus,
     optional_path,
 )
-from ..core.rna import from_ct
+from ..core.rna.io import from_ct
 from ..core.logs import logger
 from ..core.run import run_func
-from ..core.seq import DNA, RefRegions, Region, parse_fasta, write_fasta
+from ..core.seq.xna import DNA
+from ..core.seq.region import RefRegions, Region
+from ..core.seq.fasta import parse_fasta, write_fasta
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write
 from ..fold.main import check_fold_deps, resolve_fold_backend

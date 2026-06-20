@@ -2,8 +2,9 @@ import re
 from abc import ABC
 
 from .brickle import BrickleIO
-from ..batch import MutsBatch, ReadBatch
-from ..seq import Region
+from ..batch.muts import MutsBatch
+from ..batch.read import ReadBatch
+from ..seq.region import Region
 
 
 class ReadBatchIO(ReadBatch, BrickleIO, ABC):

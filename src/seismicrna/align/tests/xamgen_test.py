@@ -1,6 +1,6 @@
 import unittest as ut
 
-from ..xamops import (
+from seismicrna.align.xamops import (
     MATCH_BONUS,
     MISMATCH_PENALTY,
     N_PENALTY,

@@ -1,5 +1,4 @@
-import numpy as np
-import pandas as pd
+from __future__ import annotations
 
 
 def count_pos(mus: np.ndarray | pd.Series | pd.DataFrame):

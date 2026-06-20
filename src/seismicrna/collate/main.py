@@ -6,8 +6,8 @@ from typing import Iterable
 
 from .collate import collate_graphs
 from ..core import path
-from ..core.arg import (
-    CMD_COLLATE,
+from ..core.arg.cmd import CMD_COLLATE
+from ..core.arg.cli import (
     arg_input_path,
     opt_name,
     opt_verbose_name,

@@ -4,8 +4,8 @@ from typing import Iterable
 from click import command
 
 from .write import import_mm
-from ..core.arg import (
-    CMD_IMPORTMM,
+from ..core.arg.cmd import CMD_IMPORTMM
+from ..core.arg.cli import (
     arg_input_path,
     opt_out_dir,
     opt_tmp_pfx,

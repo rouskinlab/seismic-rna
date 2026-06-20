@@ -1,8 +1,6 @@
+from __future__ import annotations
 from typing import Any, Iterable, Sequence
 
-import numpy as np
-import pandas as pd
-from numba import jit
 
 from .types import UINT_NBYTES, fit_uint_type, get_uint_type
 from .validate import (
@@ -25,46 +23,28 @@ def _unpack_tuple(items: Any):
 
 def list_naturals(n: int):
     """List natural numbers up to and including `n`."""
+    import numpy as np
+
     return np.arange(1, n + 1)
 
 
 def check_naturals(values: np.ndarray, what: str = "values"):
     """Raise ValueError if the values are not monotonically increasing
     natural numbers."""
+    import numpy as np
+
     length = get_length(values, what)
     require_array_equal(what, values, np.arange(1, length + 1))
     return np.asarray(values, dtype=int)
 
 
 def get_length(array: np.ndarray, what: str = "array") -> int:
+    import numpy as np
+
     require_isinstance(what, array, np.ndarray)
     require_equal(f"{what}.ndim", array.ndim, 1)
     (length,) = array.shape
     return length
-
-
-@jit()
-def _fill_inverse_fwd(inverse: np.ndarray, default: int):
-    """Fill missing indexes in `inverse` in forward order."""
-    fill = default
-    for i in range(inverse.size):
-        inv = inverse[i]
-        if inv == MISSING:
-            inverse[i] = fill
-        else:
-            fill = inv
-
-
-@jit()
-def _fill_inverse_rev(inverse: np.ndarray, default: int):
-    """Fill missing indexes in `inverse` in reverse order."""
-    fill = default
-    for i in range(inverse.size - 1, -1, -1):
-        inv = inverse[i]
-        if inv == MISSING:
-            inverse[i] = fill
-        else:
-            fill = inv
 
 
 def calc_inverse(
@@ -116,6 +96,8 @@ def calc_inverse(
     np.ndarray
         Inverse of `target`.
     """
+    import numpy as np
+
     length = get_length(target, what)
     if length == 0:
         # If target is empty, then return an empty inverse.
@@ -138,13 +120,16 @@ def calc_inverse(
     # of inverse to i.
     inverse[target] = np.arange(length)
     if fill:
-        # Fill missing values in inverse.
+        # Fill missing values in inverse.  The helpers are numba-jitted, so
+        # import them lazily to avoid importing numba unless filling occurs.
+        from .array_jit import fill_inverse_fwd, fill_inverse_rev
+
         if fill_rev:
-            _fill_inverse_rev(
+            fill_inverse_rev(
                 inverse, (fill_default if fill_default is not None else length)
             )
         else:
-            _fill_inverse_fwd(
+            fill_inverse_fwd(
                 inverse, (fill_default if fill_default is not None else -1)
             )
     return inverse
@@ -182,6 +167,8 @@ def locate_elements(
     np.ndarray
         Index of each element of `elements` in `collections`.
     """
+    import numpy as np
+
     if verify:
         for e in elements:
             if get_length(extras := e[np.isin(e, collection, invert=True)]):
@@ -194,6 +181,8 @@ def intersect1d_unique_sorted(x: np.ndarray, y: np.ndarray):
     """Calculate np.intersect1d(x, y) assuming x and y are both unique
     and sorted, which enables a speedup over np.intersect1d (even with
     assume_unique=True)."""
+    import numpy as np
+
     # Calculating the intersection takes about O(y*ln(x)), so it runs
     # faster if x is larger than y.
     if x.size < y.size:
@@ -246,6 +235,9 @@ def ensure_order(
     int
         Shared length of `array1` and `array2`.
     """
+    import numpy as np
+    import pandas as pd
+
     length = ensure_same_length(array1, array2, what1, what2)
     if gt_eq:
         ineq_func = np.less
@@ -269,6 +261,8 @@ def sanitize_values(
     values: Iterable[int], lower_limit: int, upper_limit: int, whats: str = "values"
 ):
     """Validate and sort values, and return them as an array."""
+    import numpy as np
+
     # Convert the values to an array and ensure it is one-dimensional.
     if not isinstance(values, (np.ndarray, list)):
         values = list(values)
@@ -325,6 +319,8 @@ def find_dims(
     dict[str, int]
         Mapping from each named dimension to its size.
     """
+    import numpy as np
+
     # Ensure that nonzero is either True or a set of str.
     if nonzero is False:
         nonzero = set()
@@ -394,8 +390,6 @@ def find_dims(
     return sizes
 
 
-# Use @jit() because triangular is called by other jitted functions.
-@jit()
 def triangular(n: int):
     """The `n` th triangular number (`n` ≥ 0): number of items in an
     equilateral triangle with `n` items on each side.

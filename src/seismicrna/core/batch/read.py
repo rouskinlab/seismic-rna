@@ -1,8 +1,7 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from functools import cached_property
 
-import numpy as np
-import pandas as pd
 
 from .index import RB_INDEX_NAMES
 from ..array import get_length
@@ -45,6 +44,9 @@ class ReadBatch(ABC):
     @cached_property
     def batch_read_index(self):
         """MultiIndex of the batch number and read numbers."""
+        import numpy as np
+        import pandas as pd
+
         return pd.MultiIndex.from_arrays(
             [
                 np.broadcast_to(self.batch, get_length(self.read_nums, "read_nums")),
@@ -55,6 +57,8 @@ class ReadBatch(ABC):
 
     @property
     def masked_reads_bool(self):
+        import numpy as np
+
         masked_reads_bool = np.zeros_like(self.read_nums, dtype=bool)
         if self.masked_read_nums is not None:
             masked_reads_bool[self.read_indexes[self.masked_read_nums]] = 1

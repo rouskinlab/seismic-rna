@@ -8,8 +8,8 @@ from seismicrna.core.batch.confusion import (
     calc_confusion_matrix,
     calc_confusion_phi,
     calc_bh_adjusted_pvals,
-    _count_intersection,
 )
+from seismicrna.core.batch.confusion_jit import count_intersection
 from seismicrna.core.batch.count import calc_covered_reads_per_pos, calc_reads_per_pos
 from seismicrna.core.header import ClustHeader
 from seismicrna.core.rel.code import DELET, SUB_A, SUB_C, SUB_G, SUB_T
@@ -21,39 +21,39 @@ class TestCountIntersection(ut.TestCase):
     def test_empty(self):
         x = np.array([])
         y = np.array([])
-        self.assertEqual(_count_intersection(x, y), 0)
+        self.assertEqual(count_intersection(x, y), 0)
 
     def test_0_overlap(self):
         x = np.array([0, 2, 4, 6])
         y = np.array([1, 3, 5])
-        self.assertEqual(_count_intersection(x, y), 0)
-        self.assertEqual(_count_intersection(y, x), 0)
+        self.assertEqual(count_intersection(x, y), 0)
+        self.assertEqual(count_intersection(y, x), 0)
 
     def test_first_overlap(self):
         x = np.array([1, 2, 4, 6])
         y = np.array([1, 3, 5])
-        self.assertEqual(_count_intersection(x, y), 1)
-        self.assertEqual(_count_intersection(y, x), 1)
+        self.assertEqual(count_intersection(x, y), 1)
+        self.assertEqual(count_intersection(y, x), 1)
 
     def test_last_overlap(self):
         x = np.array([0, 2, 4, 6])
         y = np.array([1, 3, 6])
-        self.assertEqual(_count_intersection(x, y), 1)
-        self.assertEqual(_count_intersection(y, x), 1)
+        self.assertEqual(count_intersection(x, y), 1)
+        self.assertEqual(count_intersection(y, x), 1)
 
     def test_middle_overlap(self):
         x = np.array([0, 2, 4, 6, 7, 8, 9, 10, 12, 14])
         y = np.array([1, 3, 6, 7, 8, 9, 11, 13])
-        self.assertEqual(_count_intersection(x, y), 4)
-        self.assertEqual(_count_intersection(y, x), 4)
+        self.assertEqual(count_intersection(x, y), 4)
+        self.assertEqual(count_intersection(y, x), 4)
 
     def test_count_intersect(self):
         rng = np.random.default_rng(seed=0)
         x = np.unique(rng.integers(100, size=100))
         y = np.unique(rng.integers(100, size=100))
         count = np.intersect1d(x, y).size
-        self.assertEqual(_count_intersection(x, y), count)
-        self.assertEqual(_count_intersection(y, x), count)
+        self.assertEqual(count_intersection(x, y), count)
+        self.assertEqual(count_intersection(y, x), count)
 
 
 class TestInitConfusionMatrix(ut.TestCase):

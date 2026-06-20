@@ -1,16 +1,19 @@
+from __future__ import annotations
 from abc import ABC
 from collections import defaultdict
 from functools import cached_property
 from typing import Any, Iterable
 
-import numpy as np
 
 from .batch import ReadNamesBatch, IDmutMutsBatch, IDmutRegionMutsBatch
 from ..core import path
 from ..core.array import calc_inverse
-from ..core.io import MutsBatchIO, ReadBatchIO, RefBrickleIO, RefFileIO
+from ..core.io.batch import MutsBatchIO, ReadBatchIO
+from ..core.io.brickle import RefBrickleIO
+from ..core.io.file import RefFileIO
 from ..core.logs import logger
-from ..core.seq import DNA, Region
+from ..core.seq.xna import DNA
+from ..core.seq.region import Region
 from ..core.types import fit_uint_type
 from ..core.validate import require_isinstance
 
@@ -58,12 +61,16 @@ class ReadNamesBatchIO(ReadNamesBatch, ReadBatchIO, RefBrickleIO, IDmutIO):
         return path.ReadNamesBatSeg
 
     def __getstate__(self):
+        import numpy as np
+
         state = super().__getstate__()
         # Compress the names from unicode to bytes before pickling.
         state["names"] = np.char.encode(self.names)
         return state
 
     def __setstate__(self, state: dict[str, Any]):
+        import numpy as np
+
         super().__setstate__(state)
         # Decompress the names from bytes to unicode when unpickling.
         self.names = np.char.decode(state["names"])
@@ -126,6 +133,8 @@ def from_reads(
     drop_empty_reads: bool = True,
 ):
     """Gather reads into a batch of relationships."""
+    import numpy as np
+
     with logger.debug.single_context("gathering reads into batch {}", batch):
         max_segs = -1
         diff_segs = False

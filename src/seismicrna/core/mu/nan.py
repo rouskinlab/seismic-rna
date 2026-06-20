@@ -1,8 +1,7 @@
+from __future__ import annotations
 from functools import wraps
 from typing import Callable
 
-import numpy as np
-import pandas as pd
 
 from .dim import count_pos, counts_pos_consensus
 
@@ -21,6 +20,8 @@ def any_nan(mus: np.ndarray | pd.Series | pd.DataFrame):
     numpy.ndarray | pandas.Series
         Boolean array of positions where any mutation rate is NaN.
     """
+    import numpy as np
+
     # Reduce np.isnan over all axes but the first axis (i.e. axis 0),
     # which is -- by convention -- the position, and thus return an
     # array that has the same length as the first axis of mus.
@@ -48,6 +49,8 @@ def no_nan(mus: np.ndarray | pd.Series | pd.DataFrame):
     numpy.ndarray | pandas.Series
         Boolean array of positions where no mutation rate is NaN.
     """
+    import numpy as np
+
     return np.logical_not(any_nan(mus))
 
 
@@ -65,6 +68,8 @@ def remove_nan(mus: np.ndarray | pd.Series | pd.DataFrame):
     tuple[numpy.ndarray | pandas.Series | pandas.DataFrame, ...]
         Mutation rates without NaN values.
     """
+    import numpy as np
+
     # List the 0-indexed positions.
     positions = np.arange(count_pos(mus))
     # Find the positions with no NaN values.
@@ -87,6 +92,8 @@ def removes_nan(*mus: np.ndarray | pd.Series | pd.DataFrame):
     tuple[numpy.ndarray | pandas.Series | pandas.DataFrame, ...]
         Mutation rates without NaN values.
     """
+    import numpy as np
+
     # List the 0-indexed positions.
     positions = np.arange(counts_pos_consensus(*mus))
     # Find positions with no NaN values in any group of mutation rates.

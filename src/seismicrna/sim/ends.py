@@ -1,13 +1,12 @@
+from __future__ import annotations
 import os
 from pathlib import Path
 from typing import Iterable
 
-import numpy as np
-import pandas as pd
 from click import command
 
 from ..core import path
-from ..core.arg import (
+from ..core.arg.cli import (
     opt_ct_file,
     opt_center_fmean,
     opt_center_fvar,
@@ -16,9 +15,9 @@ from ..core.arg import (
     opt_force,
     opt_num_cpus,
 )
-from ..core.batch import END5_COORD, END3_COORD
+from ..core.batch.ends import END5_COORD, END3_COORD
 from ..core.logs import logger
-from ..core.rna import find_ct_region
+from ..core.rna.io import find_ct_region
 from ..core.run import run_func
 from ..core.stats import calc_beta_params
 from ..core.task import as_list_of_tuples, dispatch
@@ -42,6 +41,8 @@ def _calc_p_bins(nbins: int, mean: float, fvar: float):
     fvar: float
         Variance as a fraction of its maximum, from 0 to 1.
     """
+    import numpy as np
+
     require_atleast("nbins", nbins, 1, classes=int)
     if nbins == 1:
         # There is only one bin, which must have probability 1.
@@ -115,6 +116,8 @@ def sim_pends(
     tuple[np.ndarray, np.ndarray, np.ndarray]
         5' and 3' coordinates and their probabilities.
     """
+    import numpy as np
+
     # Length of the region.
     require_atleast("end5", end5, 1, classes=int)
     require_atleast("end3", end3, 0, classes=int)
@@ -205,6 +208,8 @@ def sim_pends_ct(
     Path
         Path of the written end-coordinate proportions CSV file.
     """
+    import pandas as pd
+
     pends_file = ct_file.with_suffix(path.PARAM_ENDS_EXT)
     if need_write(pends_file, force):
         region = find_ct_region(ct_file)
@@ -230,6 +235,8 @@ def sim_pends_ct(
 
 def load_pends(pends_file: Path):
     """Load end coordinate proportions from a file."""
+    import pandas as pd
+
     data = pd.read_csv(pends_file, index_col=list(range(2)))[PROPORTION]
     index = data.index
     num_segments, odd = divmod(index.nlevels, 2)

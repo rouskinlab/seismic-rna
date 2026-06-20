@@ -1,15 +1,16 @@
+from __future__ import annotations
 from collections import defaultdict
 from functools import partial
 
-import numpy as np
-import pandas as pd
 
 from .ends import END_COORDS, match_reads_segments, merge_read_ends, sort_segment_ends
 from .index import count_base_types, iter_base_types
 from ..array import find_dims, get_length
 from ..logs import logger
-from ..rel import MATCH, NOCOV, RelPattern
-from ..seq import DNA, POS_NAME
+from ..rel.pattern import MATCH, RelPattern
+from ..rel.code import NOCOV
+from ..seq.xna import DNA
+from ..seq.region import POS_NAME
 
 POSITIONS = "positions"
 READS = "reads"
@@ -20,6 +21,9 @@ PRECISION = 3
 
 def _count_end_coords(end5s: np.ndarray, end3s: np.ndarray):
     """Count each pair of 5' and 3' end coordinates."""
+    import numpy as np
+    import pandas as pd
+
     uniq_ends, counts = np.unique(
         merge_read_ends(end5s, end3s), return_counts=True, axis=0
     )
@@ -30,6 +34,8 @@ def _count_end_coords_weights(
     end5s: np.ndarray, end3s: np.ndarray, weights: pd.DataFrame
 ):
     """Count each pair of 5' and 3' end coordinates, with weights."""
+    import pandas as pd
+
     # Make a MultiIndex of all 5' and 3' coordinates.
     index = pd.MultiIndex.from_frame(
         pd.DataFrame(merge_read_ends(end5s, end3s), columns=END_COORDS, copy=False)
@@ -76,6 +82,8 @@ def _calc_coverage(
         Array ((positions + 1) x bases) of the cumulative count of this
         kind of base up to each position.
     """
+    import numpy as np
+
     num_reads, _ = ends_sorted.shape
     if isinstance(read_weights, np.ndarray):
         assert read_weights.ndim == 2
@@ -129,6 +137,9 @@ def calc_coverage(
     read_weights: pd.DataFrame | None = None,
 ):
     """Calculate the coverage per position and per read."""
+    import numpy as np
+    import pandas as pd
+
     with logger.debug.single_context("calculating coverage per position and per read"):
         match_reads_segments(seg_end5s, seg_end3s, seg_ends_mask)
         # Find the positions in use.
@@ -248,6 +259,9 @@ def calc_rels_per_pos(
     read_weights: pd.DataFrame | None = None,
 ):
     """For each relationship, the number of reads at each position."""
+    import numpy as np
+    import pandas as pd
+
     slice_type = type(num_reads)
     array_type = type(cover_per_pos)
     pos_index = cover_per_pos.index
@@ -372,6 +386,8 @@ def calc_rels_per_read(
     read_indexes: np.ndarray,
 ):
     """For each relationship, the number of positions in each read."""
+    import pandas as pd
+
     counts = defaultdict(
         partial(
             pd.DataFrame, 0, index=cover_per_read.index, columns=cover_per_read.columns
@@ -423,6 +439,8 @@ def calc_reads_per_pos(
     pos_index: pd.Index,
 ):
     """For each position, find all reads matching a pattern."""
+    import numpy as np
+
     reads = dict()
     for pos, base in pos_index:
         pos_reads = [
@@ -443,6 +461,8 @@ def calc_covered_reads_per_pos(
     seg_ends_mask: np.ndarray | None,
 ):
     """For each position, find all reads covering it."""
+    import numpy as np
+
     # Downstream merge-based set operations (e.g. the confusion matrix's
     # _count_intersection) require the covering reads to be sorted, which
     # holds only if read_nums is sorted. read_nums is always supposed to
@@ -465,6 +485,8 @@ def calc_count_per_pos(
     rels_per_pos: dict[int, pd.Series | pd.DataFrame],
 ):
     """Count the reads that fit a pattern at each position."""
+    import pandas as pd
+
     array_type = type(cover_per_pos)
     pos_index = cover_per_pos.index
     if array_type is pd.Series:
@@ -511,6 +533,8 @@ def calc_count_per_read(
     rels_per_read: dict[int, pd.DataFrame],
 ):
     """Count the positions that fit a pattern in each read."""
+    import pandas as pd
+
     read_nums = cover_per_read.index
     info = pd.Series(0, index=read_nums)
     fits = pd.Series(0, index=read_nums)

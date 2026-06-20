@@ -8,7 +8,7 @@ from .base import get_action_name
 from .cgroup import ClusterGroupRunner, cgroup_table, make_tracks
 from .onesource import OneSourceGraph, OneSourceClusterGroupGraph
 from .table import TableGraph, TableRunner, TableWriter, RelTableGraph, RelTableRunner
-from ..core.table import Table, PositionTable, AbundanceTable
+from ..core.table.base import Table, PositionTable, AbundanceTable
 from ..core.task import dispatch
 
 

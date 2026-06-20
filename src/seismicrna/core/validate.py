@@ -1,8 +1,7 @@
+from __future__ import annotations
+
 from operator import eq, ne, ge, gt, le, lt
 from typing import Any, Callable, Container, Type
-
-import numpy as np
-import pandas as pd
 
 
 def require_issubclass(
@@ -70,17 +69,17 @@ def _require_compare(
         compare_name if compare_name else default_compare_name, compare_value, classes
     )
     # Ensure the comparison function is valid.
-    comparison_signs = {
-        eq: "=",
-        ne: "≠",
-        ge: "≥",
-        gt: ">",
-        le: "≤",
-        lt: "<",
-        np.array_equal: "=",
-        np.allclose: "≈",
-        pd.Index.equals: "=",
-    }
+    comparison_signs = {eq: "=", ne: "≠", ge: "≥", gt: ">", le: "≤", lt: "<"}
+    if comparison not in comparison_signs:
+        # numpy/pandas array comparisons are imported lazily so this module
+        # (a widely imported validation hub) does not pull in numpy/pandas
+        # until an array/index comparison is actually performed.
+        import numpy as np
+        import pandas as pd
+
+        comparison_signs[np.array_equal] = "="
+        comparison_signs[np.allclose] = "≈"
+        comparison_signs[pd.Index.equals] = "="
     require_isin(
         "comparison",
         comparison,
@@ -126,6 +125,8 @@ def require_array_equal(
     error_type: Type[ValueError] = ValueError,
 ):
     """Require that array = other_array."""
+    import numpy as np
+
     _require_compare(
         name,
         array,
@@ -147,6 +148,8 @@ def require_allclose(
     error_type: Type[ValueError] = ValueError,
 ):
     """Require that array ≈ other_array."""
+    import numpy as np
+
     _require_compare(
         name, array, np.allclose, other_name, "other", other_array, classes, error_type
     )
@@ -157,10 +160,14 @@ def require_index_equals(
     index: pd.Index,
     other_index: pd.Index,
     other_name: str = "",
-    classes: type | tuple[type | tuple[Any, ...], ...] = pd.Index,
+    classes: type | tuple[type | tuple[Any, ...], ...] | None = None,
     error_type: Type[ValueError] = ValueError,
 ):
     """Require that index = other_index."""
+    import pandas as pd
+
+    if classes is None:
+        classes = pd.Index
     _require_compare(
         name,
         index,

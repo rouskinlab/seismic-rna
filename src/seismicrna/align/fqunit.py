@@ -1,6 +1,5 @@
+from __future__ import annotations
 import gzip
-
-import numpy as np
 
 from functools import cached_property
 from itertools import chain
@@ -9,16 +8,16 @@ from subprocess import CompletedProcess
 from typing import Iterable
 
 from ..core import path
-from ..core.extern import (
+from ..core.shell import (
     GUNZIP_CMD,
     WORD_COUNT_CMD,
     ShellCommand,
     args_to_cmd,
     cmds_to_pipe,
 )
-from ..core.io import calc_sha512_path
+from ..core.io.checksum import calc_sha512_path
 from ..core.logs import logger, format_sample_reference_region
-from ..core.ngs import DuplicateSampleReferenceError
+from ..core.ngs.xam import DuplicateSampleReferenceError
 
 FQ_LINES_PER_READ = 4
 PHRED_ENCS = {33, 64}
@@ -69,8 +68,8 @@ def count_fastq_reads(fastq_file: Path):
 def format_phred_arg(phred_enc: int):
     """Format a Phred score argument for Bowtie2."""
     if phred_enc not in PHRED_ENCS:
-        logger.warning(
-            "Expected phred_enc to be one of {}, but got {}, which may cause problems",
+        raise ValueError(
+            "phred_enc must be one of {}, but got {}",
             PHRED_ENCS,
             phred_enc,
         )
@@ -103,6 +102,8 @@ def safe_slice(s: str, start: int, end: int, pad_char: str = " ") -> str:
         Sliced (and possibly padded) string of length `end - start`,
         or an empty string if `end <= start`.
     """
+    import numpy as np
+
     length = end - start
 
     if length <= 0:

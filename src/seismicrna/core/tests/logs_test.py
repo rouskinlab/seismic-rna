@@ -236,7 +236,9 @@ class TestFormatBody(ut.TestCase):
 
     def test_multiline_message_aligned(self):
         formatted = format_body(Level.TRACE, "line1\nline2", 1)
-        prefix_len = len(f"{Level.TRACE.name.capitalize():<7} {str(os.getpid())[:7]:>7} ")
+        prefix_len = len(
+            f"{Level.TRACE.name.capitalize():<7} {str(os.getpid())[:7]:>7} "
+        )
         out_lines = formatted.splitlines()
         self.assertTrue(out_lines[0].endswith("line1"))
         self.assertEqual(out_lines[1], " " * prefix_len + INDENT + "line2")
@@ -347,8 +349,9 @@ class TestDepth(ut.TestCase):
         self.assertNotIn("hidden outer", out)
         lines = out.splitlines()
         # Both lines must end the same way (same indentation from outer context).
-        self.assertEqual(lines[0].split("baseline")[0],
-                         lines[1].split("visible message")[0])
+        self.assertEqual(
+            lines[0].split("baseline")[0], lines[1].split("visible message")[0]
+        )
 
     @restore_config
     def test_visible_context_indents_nested_message(self):

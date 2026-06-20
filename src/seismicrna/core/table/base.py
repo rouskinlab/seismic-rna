@@ -1,20 +1,20 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from functools import cache, cached_property
 from pathlib import Path
 from typing import Any, Generator, Iterable
 
-import numpy as np
-import pandas as pd
 
 from .. import path
-from ..batch import RB_INDEX_NAMES
+from ..batch.index import RB_INDEX_NAMES
 from ..dataset import LoadFunction
 from ..header import REL_NAME, Header, parse_header
 from ..logs import logger, format_sample_reference_region
-from ..mu import winsorize
-from ..rel import HalfRelPattern, RelPattern
-from ..rna import RNAProfile
-from ..seq import DNA, SEQ_INDEX_NAMES, Region, index_to_pos, index_to_seq
+from ..mu.scale import winsorize
+from ..rel.pattern import HalfRelPattern, RelPattern
+from ..rna.profile import RNAProfile
+from ..seq.xna import DNA
+from ..seq.region import SEQ_INDEX_NAMES, Region, index_to_pos, index_to_seq
 
 # General fields
 READ_TITLE = "Read Name"
@@ -120,6 +120,8 @@ def _get_denom_rel(rel: str):
 
 def _get_denom_cols(numer_cols: pd.Index):
     """Get the denominator columns based on the numerator columns."""
+    import pandas as pd
+
     if isinstance(numer_cols, pd.MultiIndex):
         return pd.MultiIndex.from_arrays(
             [
@@ -457,6 +459,9 @@ class PositionTable(RelTypeTable, ABC):
         tuple[pandas.DataFrame, pandas.DataFrame]
             Lower and upper bounds of the confidence interval.
         """
+        import numpy as np
+        import pandas as pd
+
         with logger.trace.single_context(
             r"Calculating {} % confidence intervals for {} of {}",
             confidence * 100,
@@ -556,6 +561,9 @@ class PositionTable(RelTypeTable, ABC):
         tol: float = 1.e-3
             Tolerance for floating-point rounding error.
         """
+        import numpy as np
+        import pandas as pd
+
         fetch_kwargs = dict(k=k, clust=clust, exclude_masked=True)
         rng = np.random.default_rng(seed)
         if n_cov.ndim != 1:
@@ -667,6 +675,9 @@ class PositionTable(RelTypeTable, ABC):
         max_seed: int = 2 ** 32
             Maximum seed to pass to the next random number generator.
         """
+        import numpy as np
+        import pandas as pd
+
         rng = np.random.default_rng(seed)
         # Initialize the resampled data.
         resampled = pd.DataFrame(

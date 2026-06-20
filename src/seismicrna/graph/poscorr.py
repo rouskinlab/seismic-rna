@@ -4,7 +4,7 @@ from abc import ABC
 from click import command
 
 from .pospair import PositionPairGraph, PositionPairWriter, PositionPairRunner
-from ..core.batch import calc_confusion_phi
+from ..core.batch.confusion import calc_confusion_phi
 from ..core.run import log_command
 
 COMMAND = __name__.split(os.path.extsep)[-1]

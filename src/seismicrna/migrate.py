@@ -1,4 +1,3 @@
-import brotli
 import json
 import os
 import pickle
@@ -9,8 +8,9 @@ from typing import Iterable
 from click import command
 
 from .core import path
-from .core.arg import (
-    CMD_MIGRATE,
+from .core.arg.cmd import CMD_MIGRATE
+from .core.seq.xna import decompress
+from .core.arg.cli import (
     DEFAULT_MUT_COLLISIONS,
     MUT_COLLISIONS_DROP,
     arg_input_path,
@@ -55,6 +55,8 @@ def _load_refseq_str(refseq_file: Path) -> str | None:
     if not refseq_file.is_file():
         return None
     try:
+        import brotli
+
         with open(refseq_file, "rb") as f:
             data = f.read()
         state = pickle.loads(brotli.decompress(data))
@@ -64,8 +66,6 @@ def _load_refseq_str(refseq_file: Path) -> str | None:
             compressed = getattr(state, "_s", None)
         if compressed is None:
             return None
-        from .core.seq.xna import decompress
-
         return str(decompress(compressed))
     except Exception as error:
         logger.warning(

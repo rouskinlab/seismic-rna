@@ -3,7 +3,8 @@ from pathlib import Path
 from typing import Iterable, TextIO
 
 from .. import path
-from ..seq import RNA, Region
+from ..seq.xna import RNA
+from ..seq.region import Region
 
 DB_NAME_MARK = ">"
 UNPAIRED_MARK = "."
