@@ -8,7 +8,6 @@ from .base import BaseGraph
 from ..core.seq.region import BASEA, BASEC, BASEG, BASET, BASEN
 from ..core.table.base import REL_CODES
 
-DEFAULT_CODE = "x"
 DEFAULT_NAME = "Default"
 
 
@@ -115,13 +114,36 @@ class RelColorMap(ColorMap):
             name, v=v, n=n, e=e, m=m, d=d, i=i, s=s, a=a, c=c, g=g, t=t, x=x
         )
 
-    def _set_colors(self, **kwargs):
-        colors = {DEFAULT_NAME: kwargs.pop(DEFAULT_CODE)}
-        for key, field in REL_CODES.items():
-            colors[field] = kwargs.pop(key)
-        if kwargs:
-            raise TypeError(f"Unexpected keyword arguments: {kwargs}")
-        return colors
+    def _set_colors(
+        self,
+        *,
+        v: str,
+        n: str,
+        e: str,
+        m: str,
+        d: str,
+        i: str,
+        s: str,
+        a: str,
+        c: str,
+        g: str,
+        t: str,
+        x: str,
+    ):
+        return {
+            DEFAULT_NAME: x,
+            REL_CODES["v"]: v,
+            REL_CODES["n"]: n,
+            REL_CODES["e"]: e,
+            REL_CODES["m"]: m,
+            REL_CODES["d"]: d,
+            REL_CODES["i"]: i,
+            REL_CODES["s"]: s,
+            REL_CODES["a"]: a,
+            REL_CODES["c"]: c,
+            REL_CODES["g"]: g,
+            REL_CODES["t"]: t,
+        }
 
     def get_default_color(self):
         return self._colors[DEFAULT_NAME]

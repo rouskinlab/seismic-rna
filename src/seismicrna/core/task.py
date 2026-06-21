@@ -109,14 +109,13 @@ def _dispatch(
     pass_num_cpus: bool,
     ordered: bool,
     raise_on_error: bool,
+    force_serial: bool = False,
     args: tuple | Iterable[tuple] = (),
     kwargs: dict[str, Any] | None = None,
 ):
     # Default to an empty dict if kwargs is not given.
     if kwargs is None:
         kwargs = dict()
-    force_serial = kwargs.pop("force_serial", False)
-    pass_force_serial = kwargs.pop("pass_force_serial", False)
     if callable(funcs):
         if isinstance(args, tuple):
             # If args is a tuple, make it the sole element of a list.
@@ -159,8 +158,6 @@ def _dispatch(
         # Add the number of processes as a keyword argument.
         kwargs = {**kwargs, "num_cpus": num_cpus_per_task}
     # Run the tasks.
-    if pass_force_serial:
-        kwargs = {**kwargs, "force_serial": force_serial}
     if pool_size > 1:
         # Run the tasks in parallel.
         with ProcessPoolExecutor(max_workers=pool_size) as pool:
@@ -200,6 +197,7 @@ def dispatch(
     as_list: bool,
     ordered: bool,
     raise_on_error: bool,
+    force_serial: bool = False,
     args: tuple | Iterable[tuple] = (),
     kwargs: dict[str, Any] | None = None,
 ):
@@ -227,6 +225,10 @@ def dispatch(
     raise_on_error: bool
         If any task fails, then raise the exception that it raises (if
         True) or log that exception as an error (if False).
+    force_serial: bool
+        Run the tasks in series even if multiple CPUs are available
+        (e.g. because each task parallelizes its own work and would
+        otherwise spawn a nested pool of processes).
     args: tuple | Iterable[tuple]
         Positional arguments to pass to each function in `funcs`. Can be
         a list of tuples of positional arguments or a single tuple that
@@ -243,6 +245,7 @@ def dispatch(
         pass_num_cpus=pass_num_cpus,
         ordered=ordered,
         raise_on_error=raise_on_error,
+        force_serial=force_serial,
         args=args,
         kwargs=kwargs,
     )

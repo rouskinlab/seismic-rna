@@ -67,6 +67,10 @@ def split_xam_file(
     phred_enc: int,
     force: bool,
     num_cpus: int,
+    keep_tmp: bool,
+    bt2_local: bool,
+    bt2_score_min_e2e: str,
+    bt2_score_min_loc: str,
     **kwargs,
 ):
     """
@@ -91,8 +95,19 @@ def split_xam_file(
         Whether to overwrite existing output files.
     num_cpus: int
         Number of CPU cores to use.
+    keep_tmp: bool
+        Whether to keep temporary files after the run finishes.
+    bt2_local: bool
+        Whether Bowtie2 ran in local- (True) or end-to-end (False) mode;
+        selects which of `bt2_score_min_loc`/`bt2_score_min_e2e` is the
+        minimum score for the report.
+    bt2_score_min_e2e: str
+        Minimum score function for Bowtie2 end-to-end mode.
+    bt2_score_min_loc: str
+        Minimum score function for Bowtie2 local mode.
     **kwargs
-        Additional keyword arguments forwarded to `split_references`.
+        Other Bowtie2/Samtools options, forwarded by the same names to
+        both `split_references` and `SplitReport`.
 
     Returns
     -------
@@ -133,6 +148,10 @@ def split_xam_file(
             top=release_dir,
             branches=branches,
             num_cpus=num_cpus,
+            keep_tmp=keep_tmp,
+            bt2_local=bt2_local,
+            bt2_score_min_e2e=bt2_score_min_e2e,
+            bt2_score_min_loc=bt2_score_min_loc,
             **kwargs,
         )
         release_to_out(
@@ -149,7 +168,6 @@ def split_xam_file(
             ),
         )
         ended = datetime.now()
-        bt2_local = kwargs.get("bt2_local")
         report_type = SplitReport
         report = report_type(
             sample=sample,
@@ -157,33 +175,14 @@ def split_xam_file(
             xam_checksum=calc_sha512_path(xam_file),
             ref_fasta_checksum=calc_sha512_path(fasta),
             bt2_local=bt2_local,
-            bt2_discordant=kwargs.get("bt2_discordant"),
-            bt2_mixed=kwargs.get("bt2_mixed"),
-            bt2_dovetail=kwargs.get("bt2_dovetail"),
-            bt2_contain=kwargs.get("bt2_contain"),
-            bt2_score_min=(
-                kwargs.get("bt2_score_min_loc")
-                if bt2_local
-                else kwargs.get("bt2_score_min_e2e")
-            ),
-            bt2_i=kwargs.get("bt2_i"),
-            bt2_x=kwargs.get("bt2_x"),
-            bt2_gbar=kwargs.get("bt2_gbar"),
-            bt2_l=kwargs.get("bt2_l"),
-            bt2_s=kwargs.get("bt2_s"),
-            bt2_d=kwargs.get("bt2_d"),
-            bt2_r=kwargs.get("bt2_r"),
-            bt2_dpad=kwargs.get("bt2_dpad"),
-            bt2_orient=kwargs.get("bt2_orient"),
-            bt2_un=kwargs.get("bt2_un"),
-            min_mapq=kwargs.get("min_mapq"),
-            sep_strands=kwargs.get("sep_strands"),
-            f1r2_fwd=kwargs.get("f1r2_fwd"),
-            rev_label=kwargs.get("rev_label"),
-            min_reads=kwargs.get("min_reads"),
+            bt2_score_min=bt2_score_min_loc if bt2_local else bt2_score_min_e2e,
+            # splitbam has no --bt2-un option: re-aligning a single
+            # reference's reads during splitting has no unaligned output.
+            bt2_un=None,
             reads_refs=reads_refs,
             began=began,
             ended=ended,
+            **kwargs,
         )
         report.save(out_dir, force=True)
     return report_file.parent

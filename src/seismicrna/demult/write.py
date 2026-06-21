@@ -271,8 +271,9 @@ def demult_fqs_pipeline(
             as_list=True,
             ordered=False,
             raise_on_error=False,
+            force_serial=True,
             args=iter_args,
-            kwargs=dict(tmp_dir=tmp_dir, force_serial=True, **kwargs),
+            kwargs=dict(tmp_dir=tmp_dir, **kwargs),
         )
     # Return the final demultiplexed FASTQ directories.
     return fq_dirs

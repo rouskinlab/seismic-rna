@@ -3,7 +3,6 @@ from functools import cached_property
 
 from .base import BaseGraph, make_path_subject, make_title_action_sample
 from .cgroup import ClusterGroupGraph
-from ..core.header import K_CLUST_KEY
 
 
 class OneSourceGraph(BaseGraph, ABC):
@@ -24,7 +23,14 @@ class OneSourceGraph(BaseGraph, ABC):
 
 
 class OneSourceClusterGroupGraph(OneSourceGraph, ClusterGroupGraph, ABC):
-    def __init__(self, *, k: int | None, clust: int | None, **kwargs):
+    def __init__(
+        self,
+        *,
+        k: int | None,
+        clust: int | None,
+        k_clust_list: list[tuple[int, int]] | None = None,
+        **kwargs,
+    ):
         """
         Parameters
         ----------
@@ -32,11 +38,12 @@ class OneSourceClusterGroupGraph(OneSourceGraph, ClusterGroupGraph, ABC):
             Number of clusters to select; None selects all.
         clust: int or None
             Cluster index to select; None selects all.
+        k_clust_list: list[tuple[int, int]] or None
+            Explicit list of (k, clust) combinations to select.
         **kwargs
-            Forwarded to the parent class.  A ``K_CLUST_KEY`` entry, if
-            present, is popped and stored for later use.
+            Forwarded to the parent class.
         """
-        self.k_clust_list = kwargs.pop(K_CLUST_KEY, None)
+        self.k_clust_list = k_clust_list
         super().__init__(**kwargs)
         self.k = k
         self.clust = clust

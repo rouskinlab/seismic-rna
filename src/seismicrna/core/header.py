@@ -24,9 +24,6 @@ CLUST_NAME = "Cluster"
 AVERAGE_PREFIX = "average"
 CLUSTER_PREFIX = "cluster"
 
-# Header selection keys
-K_CLUST_KEY = "k_clust_list"
-
 # No-cluster lists
 NO_K = 0
 NO_KS = [NO_K]
@@ -275,19 +272,19 @@ class Header(ABC):
         """Number of items in the Header."""
         return self.index.size
 
-    def select(self, **kwargs) -> pd.Index:
+    def select(self, *, k_clust_list: list | None = None, **kwargs) -> pd.Index:
         """Select and return items from the header as an Index."""
         import numpy as np
 
         index = self.index
         selected = np.ones(index.size, dtype=bool)
         # Handle combinations of k and clust in a list of tuples.
-        if value := kwargs.pop(K_CLUST_KEY, None):
-            require_isinstance(K_CLUST_KEY, value, list)
+        if k_clust_list:
+            require_isinstance("k_clust_list", k_clust_list, list)
             k_name = self.get_levels().get("k")
             clust_name = self.get_levels().get("clust")
             combo_selected = np.zeros(index.size, dtype=bool)
-            for k, clust in value:
+            for k, clust in k_clust_list:
                 # Find rows that match each specified combination.
                 k_match = index.get_level_values(k_name) == k
                 clust_match = index.get_level_values(clust_name) == clust

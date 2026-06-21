@@ -192,6 +192,7 @@ class SplitReport(Report, ABC):
     @classmethod
     def get_param_report_fields(cls):
         return [
+            SeedF,
             Bowtie2Local,
             Bowtie2Discord,
             Bowtie2Mixed,

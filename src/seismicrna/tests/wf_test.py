@@ -13,7 +13,7 @@ from seismicrna.align import run as run_align
 from seismicrna.cluster import run as run_cluster
 from seismicrna.core import path
 from seismicrna.core.arg.cli import GROUP_BY_K, GROUP_ALL, KEY_PEARSON, PROBE_DMS
-from seismicrna.core.header import list_ks_clusts, K_CLUST_KEY
+from seismicrna.core.header import list_ks_clusts
 from seismicrna.core.logs import Level, get_config, set_config
 from seismicrna.core.ngs.xam import DuplicateSampleReferenceError
 from seismicrna.fold import run as run_fold
@@ -160,7 +160,7 @@ class TestWorkflow(ut.TestCase):
         )
         clust_rel_graph_kwargs = rel_graph_kwargs | {
             "cgroup": GROUP_ALL,
-            K_CLUST_KEY: [(1, 1), (2, 2)],
+            "k_clust_list": [(1, 1), (2, 2)],
             "k": None,
             "clust": None,
         }
@@ -515,7 +515,7 @@ class TestWorkflow(ut.TestCase):
         )
         clust_rel_graph_kwargs = rel_graph_kwargs | {
             "cgroup": GROUP_ALL,
-            K_CLUST_KEY: [(1, 1), (2, 2)],
+            "k_clust_list": [(1, 1), (2, 2)],
             "k": None,
             "clust": None,
         }
