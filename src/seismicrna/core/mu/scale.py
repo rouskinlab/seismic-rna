@@ -4,6 +4,12 @@ from .dim import count_pos
 from .frame import auto_reframe
 from .nan import auto_remove_nan
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
+
 
 @auto_remove_nan
 @auto_reframe

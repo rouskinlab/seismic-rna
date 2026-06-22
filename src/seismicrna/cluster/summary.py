@@ -7,6 +7,11 @@ from .names import JACKPOT_QUOTIENT
 from ..core.header import NUM_CLUSTS_NAME
 from ..core.logs import logger
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pandas as pd
+
 EM_RUN_NAME = "Run"
 K_RUN_NAMES = [NUM_CLUSTS_NAME, EM_RUN_NAME]
 RUN_PASSING = "run_passing"

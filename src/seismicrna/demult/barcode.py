@@ -100,7 +100,9 @@ def get_ref_barcodes(ref_meta_file: Path):
         name = meta_dict.get(FIELD_NAME)
         bc = meta_dict.get(FIELD_BARCODE)
         read_pos = meta_dict.get(FIELD_READ_POS)
-        end5 -= 1
+        if not pd.isnull(end5):
+            assert end5 is not None
+            end5 -= 1
         if not pd.isnull(ref):
             if ref in refs:
                 raise ValueError(f"{ref} may only appear once as a reference or name")
@@ -143,6 +145,9 @@ def get_ref_barcodes(ref_meta_file: Path):
                     read_pos = 1
                 else:
                     read_pos = end5
+            # read_pos is never null past this point: it was either
+            # already non-null, or just defaulted to 1 or end5 above.
+            assert read_pos is not None
 
             # Check whether coordinates or primers were given.
             has_coords = not (pd.isnull(end5) or pd.isnull(end3))
@@ -170,6 +175,9 @@ def get_coords_by_name(coords: Iterable[tuple[str, int | DNA, int, int | None]])
     for coord in coords:
         if len(coord) == 4:
             ref, end5, end3, start_pos = coord
+            # 4-element coords always carry an int end5 (only 3-element
+            # barcode coords carry a DNA in the 2nd position).
+            assert isinstance(end5, int)
             coord_val = end5 - 1, end3
         elif len(coord) == 3:
             ref, bc, start_pos = coord
@@ -258,10 +266,10 @@ class RefBarcodes(object):
                 f"Duplicate demultiplexing names/references in {all_names}"
             )
 
-        coords = meta_coords | cli_coords
+        coords_by_ref = meta_coords | cli_coords
 
         bcs_from_coords = dict()
-        for ref, coord in coords.items():
+        for ref, coord in coords_by_ref.items():
             end5, end3, read_pos = coord
             bcs_from_coords[ref] = (
                 coords_to_seq(ref_seqs.get(ref), end5, end3),

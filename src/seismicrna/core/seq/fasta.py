@@ -173,15 +173,15 @@ def write_fasta(
 ):
     """Write an iterable of reference names and DNA sequences to a
     FASTA file."""
-    fasta = path.sanitize(fasta, strict=False)
-    path.check_file_extension(fasta, path.FastaExt)
-    if need_write(fasta, force):
-        with logger.debug.single_context("writing FASTA file {}", fasta):
+    fasta_obj = path.sanitize(fasta, strict=False)
+    path.check_file_extension(fasta_obj, path.FastaExt)
+    if need_write(fasta_obj, force):
+        with logger.debug.single_context("writing FASTA file {}", fasta_obj):
             with NamedTemporaryFile(
                 "w",
-                dir=fasta.parent,
-                prefix=fasta.stem,
-                suffix=fasta.suffix,
+                dir=fasta_obj.parent,
+                prefix=fasta_obj.stem,
+                suffix=fasta_obj.suffix,
                 delete=False,
             ) as f:
                 tmp_fasta = Path(f.file.name)
@@ -211,8 +211,10 @@ def write_fasta(
                         )
                         names.add(name)
                 # Release the FASTA file.
-                tmp_fasta.rename(fasta)
-                logger.debug("Released temporary FASTA file {} to {}", tmp_fasta, fasta)
+                tmp_fasta.rename(fasta_obj)
+                logger.debug(
+                    "Released temporary FASTA file {} to {}", tmp_fasta, fasta_obj
+                )
             finally:
                 # The temporary FASTA file would have been renamed already
                 # if the write operation had succeeded; if not, delete it.
@@ -222,6 +224,6 @@ def write_fasta(
                     pass
                 else:
                     logger.debug("Deleted temporary FASTA file {}", tmp_fasta)
-            logger.trace("Wrote {} sequence(s) to FASTA file {}", len(names), fasta)
+            logger.trace("Wrote {} sequence(s) to FASTA file {}", len(names), fasta_obj)
     else:
-        logger.trace("Skipped overwriting FASTA file {}", fasta)
+        logger.trace("Skipped overwriting FASTA file {}", fasta_obj)

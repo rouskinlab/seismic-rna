@@ -51,6 +51,11 @@ from ..idmut.dataset import ReadNamesDataset, IDmutMutsDataset, load_idmut_datas
 from ..idmut.report import IDmutReport
 from ..idmut.sim import simulate_batches
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 

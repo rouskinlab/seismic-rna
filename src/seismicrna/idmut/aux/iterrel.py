@@ -39,15 +39,15 @@ def iter_relvecs_q53(
     """
     if max_ins is not None and max_ins < 0:
         raise ValueError(f"max_ins must be ≥ 0, but got {max_ins}")
-    low_qual = set(low_qual)
+    low_qual_set = set(low_qual)
     # Determine the region of the reference sequence that is occupied
     # by the read.
     region = Region("", refseq, end5=end5, end3=end3)
     all_positions = set(region.range_int)
     all5_positions = set(region.range_int[:-1]) if region.length > 0 else set()
-    if low_qual - all_positions:
+    if low_qual_set - all_positions:
         raise ValueError(
-            f"Invalid positions in low_qual: {sorted(low_qual - set(region.range))}"
+            f"Invalid positions in low_qual: {sorted(low_qual_set - set(region.range))}"
         )
     # Find the possible relationships at each position in the region,
     # not including insertions.
@@ -55,7 +55,7 @@ def iter_relvecs_q53(
     for pos in region.range_int:
         # Find the base in the reference sequence (pos is 1-indexed).
         ref_base = refseq[pos - 1]
-        if pos in low_qual:
+        if pos in low_qual_set:
             # The only option is low-quality.
             opts = [encode_rel(ref_base, ref_base, LO_QUAL, OK_QUAL)]
         else:
@@ -74,7 +74,7 @@ def iter_relvecs_q53(
         # Generate one possible relationship.
         relvec = dict((pos, rel) for pos, rel in rels if rel != MATCH)
         yield region.end5, region.end3, relvec
-        if (max_ins is None or max_ins > 0) and not low_qual:
+        if (max_ins is None or max_ins > 0) and not low_qual_set:
             no_ins5_pos = {
                 pos
                 for del_pos, rel in relvec.items()

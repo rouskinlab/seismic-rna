@@ -32,6 +32,11 @@ from ..logs import logger, format_sample_reference_region
 from ..seq.region import Region
 from ..write import need_write
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pandas as pd
+
 # These relationships are of all subtypes of mutations.
 SUBMUTS = [SUBST_REL, SUB_A_REL, SUB_C_REL, SUB_G_REL, SUB_T_REL, DELET_REL, INSRT_REL]
 

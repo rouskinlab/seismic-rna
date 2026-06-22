@@ -149,40 +149,6 @@ class RNAFoldProfile(RNAProfile):
         """Mutation rates after normalizing and winsorizing."""
         return winsorize(self.mus, self.fold_quantile)
 
-    def _get_dir_fields(self, top: Path, branch: str):
-        """Get the path fields for the directory of this RNA.
-
-        Parameters
-        ----------
-        top: pathlib.Path
-            Top-level directory.
-        branch: str
-            Branch to add (optional, for folding).
-
-        Returns
-        -------
-        dict[str, str | pathlib.Path]
-            Path fields.
-        """
-        return {
-            path.TOP: top,
-            path.SAMPLE: self.sample,
-            path.STEP: path.FOLD_STEP,
-            path.BRANCHES: path.add_branch(path.FOLD_STEP, branch, self.branches),
-            path.REF: self.ref,
-            path.REG: self.reg,
-        }
-
-    def _get_dir(self, top: Path, branch: str):
-        """Get the directory in which to write files of this RNA."""
-        return path.builddir(path.REG_DIR_SEGS, self._get_dir_fields(top, branch))
-
-    def _get_file(
-        self, top: Path, branch: str, path_seg: path.PathSegment, path_fields
-    ):
-        """Get the path to a file of the RNA."""
-        return self._get_dir(top, branch).joinpath(path_seg.build(path_fields))
-
     def get_fasta(self, top: Path, branch: str):
         """Get the path to the FASTA file."""
         return self._get_file(
@@ -190,24 +156,6 @@ class RNAFoldProfile(RNAProfile):
             branch,
             path.FastaSeg,
             {path.REF: self.profile, path.EXT: path.FASTA_EXTS[0]},
-        )
-
-    def get_ct_file(self, top: Path, branch: str):
-        """Get the path to the connectivity table (CT) file."""
-        return self._get_file(
-            top,
-            branch,
-            path.ConnectTableSeg,
-            {path.PROFILE: self.profile, path.EXT: path.CT_EXT},
-        )
-
-    def get_db_file(self, top: Path, branch: str):
-        """Get the path to the dot-bracket (DB) file."""
-        return self._get_file(
-            top,
-            branch,
-            path.DotBracketSeg,
-            {path.PROFILE: self.profile, path.EXT: path.DOT_EXTS[0]},
         )
 
     def get_mus_file(self, top: Path, branch: str):

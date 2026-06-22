@@ -7,6 +7,12 @@ from .index import RB_INDEX_NAMES
 from ..array import get_length
 from ..types import fit_uint_type
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
+
 
 class ReadBatch(ABC):
     """Batch of reads."""

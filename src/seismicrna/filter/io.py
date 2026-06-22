@@ -9,6 +9,11 @@ from ..core.io.file import RegFileIO
 from ..core.io.brickle import RegBrickleIO
 from ..core.seq.region import Region
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+
 
 class FilterFile(path.HasRegFilePath, ABC):
     @classmethod

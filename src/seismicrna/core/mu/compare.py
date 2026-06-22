@@ -8,6 +8,12 @@ from ..arg.cli import KEY_PEARSON, KEY_SPEARMAN, KEY_DETERM, KEY_MARCD
 from ..logs import logger
 from ..seq.region import get_shared_index, iter_windows
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
+
 
 def calc_arcsine_distance(
     mus1: float | np.ndarray | pd.Series | pd.DataFrame,

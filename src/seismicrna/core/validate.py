@@ -3,6 +3,11 @@ from __future__ import annotations
 from operator import eq, ne, ge, gt, le, lt
 from typing import Any, Callable, Container, Type
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pandas as pd
+
 
 def require_issubclass(
     name: str,

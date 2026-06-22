@@ -13,6 +13,12 @@ from ..seq.region import seq_pos_to_index
 from ..task import as_list_of_tuples, dispatch
 from ..validate import require_isinstance, require_index_equals
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
+
 
 def accumulate_counts(
     batch_counts: Iterable[tuple[Any, Any, Any, Any]],

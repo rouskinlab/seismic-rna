@@ -4,7 +4,6 @@ from collections import Counter
 import numpy as np
 
 from seismicrna.cluster.marginal import calc_marginal, calc_marginal_resps
-from seismicrna.core.tests import unbias_test
 from seismicrna.core.tests.unbias_test import (
     label_no_close_muts,
     merge_mutations_right_to_left,
@@ -430,10 +429,8 @@ class TestCalcMarginalSimulated(ut.TestCase):
         z_threshold: float,
         seed: int,
     ):
-        # Seed the simulator's RNG for reproducibility.
-        unbias_test.rng = np.random.default_rng(seed=seed)
         n_pos = p_mut_1d.size
-        muts, _, end5s, end3s = simulate_reads(n_reads, p_mut_1d, p_ends)
+        muts, _, end5s, end3s = simulate_reads(n_reads, p_mut_1d, p_ends, seed=seed)
         # Process the simulated reads according to the collision policy.
         if mut_collisions == "drop":
             keep = label_no_close_muts(muts, min_mut_gap)

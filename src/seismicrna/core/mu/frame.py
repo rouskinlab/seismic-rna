@@ -3,6 +3,12 @@ from functools import wraps
 from numbers import Number
 from typing import Callable, Iterable
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
+
 
 def reframe(
     values: Number | np.ndarray | pd.Series | pd.DataFrame,

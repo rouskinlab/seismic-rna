@@ -4,6 +4,11 @@ from functools import cached_property
 
 from ..filter.batch import PartialRegionMutsBatch, PartialReadBatch
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pandas as pd
+
 
 class ClusterReadBatch(PartialReadBatch):
     def __init__(self, *, resps: pd.DataFrame, **kwargs):

@@ -5,6 +5,11 @@ from typing import Iterable
 from ..logs import logger
 from ..seq.region import FIELD_END5, FIELD_END3, POS_NAME, Region
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pandas as pd
+
 
 UNPAIRED = 0
 

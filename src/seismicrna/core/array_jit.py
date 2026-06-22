@@ -7,12 +7,12 @@ from this module only on code paths that actually need the jitted helpers
 """
 
 import numpy as np
-from numba import jit
+from numba import njit
 
 from .array import MISSING
 
 
-@jit()
+@njit()
 def fill_inverse_fwd(inverse: np.ndarray, default: int):
     """Fill missing indexes in `inverse` in forward order."""
     fill = default
@@ -24,7 +24,7 @@ def fill_inverse_fwd(inverse: np.ndarray, default: int):
             fill = inv
 
 
-@jit()
+@njit()
 def fill_inverse_rev(inverse: np.ndarray, default: int):
     """Fill missing indexes in `inverse` in reverse order."""
     fill = default

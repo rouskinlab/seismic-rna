@@ -321,7 +321,11 @@ def validate_branches_flat(branches_flat: list[str]):
             raise PathValueError("branch cannot be the empty string")
 
 
-VALIDATE = {int: validate_int, str: validate_str, pathlib.Path: validate_top}
+VALIDATE: dict[type, Callable[[Any], None]] = {
+    int: validate_int,
+    str: validate_str,
+    pathlib.Path: validate_top,
+}
 
 
 # Field class
@@ -917,17 +921,17 @@ class Path(object):
 
 def mkdir_if_needed(path: pathlib.Path | str):
     """Create a directory and log that event if it does not exist."""
-    path = sanitize(path, strict=False)
+    path_obj = sanitize(path, strict=False)
     try:
-        path.mkdir(parents=True)
+        path_obj.mkdir(parents=True)
     except FileExistsError:
-        if not path.is_dir():
+        if not path_obj.is_dir():
             # Raise an error if the existing path is not a directory,
             # e.g. if it is a file.
-            raise NotADirectoryError(path) from None
-        return path
-    logger.debug("Created directory {}", path)
-    return path
+            raise NotADirectoryError(path_obj) from None
+        return path_obj
+    logger.debug("Created directory {}", path_obj)
+    return path_obj
 
 
 def symlink_if_needed(link_path: pathlib.Path | str, target_path: pathlib.Path | str):
@@ -960,15 +964,15 @@ def rmdir_if_needed(
     raise_on_rmtree_error: bool = True,
 ):
     """Remove a directory and log that event if it exists."""
-    path = sanitize(path, strict=False)
+    path_obj = sanitize(path, strict=False)
     try:
-        path.rmdir()
+        path_obj.rmdir()
     except FileNotFoundError:
         # The path does not exist, so there is no need to delete it.
         # FileNotFoundError is a subclass of OSError, so need to handle
         # this exception before OSError.
-        logger.trace("Skipped removing directory {}: does not exist", path)
-        return path
+        logger.trace("Skipped removing directory {}: does not exist", path_obj)
+        return path_obj
     except NotADirectoryError:
         # Trying to rmdir() something that is not a directory should
         # always raise an error. NotADirectoryError is a subclass of
@@ -982,15 +986,15 @@ def rmdir_if_needed(
             # explicit permission to do so; if not, re-raise the error.
             raise
         try:
-            shutil.rmtree(path, ignore_errors=rmtree_ignore_errors)
+            shutil.rmtree(path_obj, ignore_errors=rmtree_ignore_errors)
         except Exception as error:
             if raise_on_rmtree_error:
                 raise
             # If not raising errors, then log a warning but return now
             # to avoid logging that the directory was removed.
             logger.warning(error)
-            return path
-    logger.debug("Deleted directory {}", path)
+            return path_obj
+    logger.debug("Deleted directory {}", path_obj)
 
 
 # Path creation routines
@@ -1291,13 +1295,13 @@ def transpath(
         Hypothetical path after moving `path` from `indir` to `outdir`.
     """
     # Ensure from_dir is sanitized.
-    from_dir = sanitize(from_dir, strict)
+    from_dir_obj = sanitize(from_dir, strict)
     # Find the part of the given path relative to from_dir.
-    relpath = sanitize(path, strict).relative_to(from_dir)
+    relpath = sanitize(path, strict).relative_to(from_dir_obj)
     if relpath == pathlib.Path():
         # If the relative path is empty, then use the parent directory
         # of from_dir instead.
-        return transpath(to_dir, from_dir.parent, path, strict)
+        return transpath(to_dir, from_dir_obj.parent, path, strict)
     # Append the relative part of the path to to_dir.
     return sanitize(to_dir, strict).joinpath(relpath)
 

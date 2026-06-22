@@ -5,10 +5,10 @@ Kept separate so that importing ``measure`` does not import numba (slow);
 """
 
 import numpy as np
-from numba import jit
+from numba import njit
 
 
-@jit()
+@njit()
 def calc_sum_abs_diff(x: np.ndarray):
     """Sum the absolute difference along axis 0."""
     n = x.shape[0]

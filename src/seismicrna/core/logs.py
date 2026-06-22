@@ -43,7 +43,7 @@ class FileStream(object):
 
     def __init__(self, file_path: str | Path):
         self.file_path = Path(file_path)
-        self._file = None
+        self._file: TextIO | None = None
 
     @property
     def stream(self) -> TextIO:

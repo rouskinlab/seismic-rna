@@ -14,6 +14,11 @@ from .table.base import READ_TITLE, INFOR_REL, MUTAT_REL, RelTypeTable
 from .table.load import PositionTableLoader, RelTypeTableLoader
 from .validate import require_isinstance, require_equal
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pandas as pd
+
 
 class List(RefFileIO, ABC):
     """List base class."""

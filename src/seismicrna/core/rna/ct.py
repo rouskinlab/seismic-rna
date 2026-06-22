@@ -171,11 +171,15 @@ def _parse_ct_structure(ct_file: TextIO, length: int):
         )
     # Assemble the list of bases into an RNA sequence.
     seq = RNA.from_any_seq("".join(bases))
+    # pos_offset is still None only if length == 0, in which case pairs
+    # is also empty and the offset is never actually used below.
+    safe_pos_offset = pos_offset if pos_offset is not None else 0
     # Map all the indexes to their corresponding positions.
     pairs_list = [
-        (index1 + pos_offset, index2 + pos_offset) for index1, index2 in pairs.items()
+        (index1 + safe_pos_offset, index2 + safe_pos_offset)
+        for index1, index2 in pairs.items()
     ]
-    return seq, pairs_list, (pos_offset if pos_offset is not None else 0)
+    return seq, pairs_list, safe_pos_offset
 
 
 def parse_ct_file(ct_path: str | Path):

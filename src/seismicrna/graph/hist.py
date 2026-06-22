@@ -14,6 +14,12 @@ from .trace import HIST_COUNT_NAME, HIST_LOWER_NAME, HIST_UPPER_NAME, iter_hist_
 from ..core.arg.cli import opt_hist_bins, opt_hist_margin
 from ..core.header import parse_header
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
+
 
 def get_edges_index(edges: np.ndarray, use_ratio: bool):
     """Generate an index for the edges of histogram bins.

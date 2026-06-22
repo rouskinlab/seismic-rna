@@ -2,7 +2,7 @@ import unittest as ut
 from itertools import product
 
 import numpy as np
-from numba import jit
+from numba import njit
 
 from seismicrna.core.unbias import (
     triu_dot,
@@ -59,7 +59,7 @@ def triu_sum(a: np.ndarray):
     return triu_sum_jit(a)
 
 
-@jit()
+@njit()
 def _triu_allclose(
     a: np.ndarray, b: np.ndarray, rtol: float = 1.0e-3, atol: float = 1.0e-6
 ):
@@ -190,10 +190,10 @@ def merge_mutations_right_to_left(muts: np.ndarray, min_gap: int):
     return merged
 
 
-def simulate_reads(n_reads: int, p_mut: np.ndarray, p_ends: np.ndarray):
+def simulate_reads(n_reads: int, p_mut: np.ndarray, p_ends: np.ndarray, seed: int = 0):
     """Simulate `n_reads` reads based on the mutation rates (`p_mut`)
     and the distributions of end coordinates (`p_ends`)."""
-    rng = np.random.default_rng(seed=0)
+    rng = np.random.default_rng(seed=seed)
     (n_pos,) = p_mut.shape
     if p_ends.shape != (n_pos, n_pos):
         raise ValueError(
@@ -1481,9 +1481,7 @@ class TestFindSplitPositions(ut.TestCase):
     def test_gap2_split0(self):
         p_mut = np.array([[0.2, 0.0, 0.1, 0.0, 0.1, 0.2]]).T
         self.assertTrue(
-            np.array_equal(
-                find_split_positions(p_mut, 2, 0.0), np.array([], dtype=int)
-            )
+            np.array_equal(find_split_positions(p_mut, 2, 0.0), np.array([], dtype=int))
         )
 
     def test_gap2_split1(self):
@@ -1495,9 +1493,7 @@ class TestFindSplitPositions(ut.TestCase):
     def test_gap4_split0(self):
         p_mut = np.array([[0.2, 0.1, 0.0, 0.0, 0.1, 0.2]]).T
         self.assertTrue(
-            np.array_equal(
-                find_split_positions(p_mut, 4, 0.0), np.array([], dtype=int)
-            )
+            np.array_equal(find_split_positions(p_mut, 4, 0.0), np.array([], dtype=int))
         )
 
     def test_gap4_split1(self):

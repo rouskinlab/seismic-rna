@@ -4,6 +4,12 @@ from ..array import get_length
 from ..seq.region import POS_NAME, iter_windows
 from ..validate import require_isinstance, require_equal
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
+
 
 def _sort_paired(profile: pd.Series, *structs: pd.Series | None):
     """Ensure the structure and mutation data have the same indexes,

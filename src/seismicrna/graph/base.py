@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Callable, Generator, Iterable
 from click import Argument, Option
 
 if TYPE_CHECKING:
+    import pandas as pd
     from plotly import graph_objects as go
 
 from ..cluster.data import ClusterDataset, ClusterTable, ClusterAbundanceTable

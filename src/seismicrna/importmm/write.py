@@ -16,6 +16,11 @@ from ..idmut.io import from_reads, ReadNamesBatchIO, IDmutBatchIO, RefseqIO
 from ..idmut.report import IDmutReport
 from ..idmut.table import IDmutCountTabulator
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+
 # All substitution codes except the one that would match the reference base.
 _SUB_FOR_BASE: dict[str, int] = {
     "A": SUB_C | SUB_G | SUB_T,

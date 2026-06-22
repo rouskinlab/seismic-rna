@@ -7,6 +7,7 @@ from typing import Callable
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    import pandas as pd
     from plotly import graph_objects as go
 
 from .table import TableWriter, PositionTableRunner

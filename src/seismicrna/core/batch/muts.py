@@ -27,6 +27,12 @@ from ..seq.xna import DNA
 from ..seq.region import Region, index_to_pos
 from ..types import fit_uint_type, get_uint_type
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
+
 NUM_READS = "reads"
 NUM_SEGMENTS = "segments"
 

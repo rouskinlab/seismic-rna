@@ -6,10 +6,10 @@ lazy ``_jit`` proxy (imported only when a simulation actually runs).
 """
 
 import numpy as np
-from numba import jit
+from numba import njit
 
 
-@jit()
+@njit()
 def assign_clusters_dropped(
     clusters: np.ndarray,
     p_clust_given_read: np.ndarray,
@@ -67,7 +67,7 @@ def assign_clusters_dropped(
     return clusters
 
 
-@jit()
+@njit()
 def sim_muts_dropped_jit(
     muts: np.ndarray,
     end5s: np.ndarray,
@@ -132,7 +132,7 @@ def sim_muts_dropped_jit(
     return error
 
 
-@jit()
+@njit()
 def sim_muts_merged_jit(
     muts: np.ndarray,
     end5s: np.ndarray,

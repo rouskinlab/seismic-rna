@@ -41,6 +41,12 @@ from ..core.unbias import (
 )
 from ..idmut.table import AverageTable, AverageTabulator
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
+
 
 class PartialTable(Table, path.HasRegFilePath, ABC):
     """Table of filtered reads over a region of the sequence."""

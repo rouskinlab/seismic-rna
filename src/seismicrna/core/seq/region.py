@@ -10,6 +10,12 @@ from .refs import RefSeqs
 from .xna import BASEA, BASEC, BASEG, BASET, BASEN, DNA, RNA
 from ..logs import logger
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
+
 # Names of the region index levels.
 POS_NAME = "Position"
 BASE_NAME = "Base"
@@ -387,8 +393,6 @@ class Region(object):
         name: str | None = None
             Name of the region. If None, defaults to `self.range`.
         """
-        import numpy as np
-
         self.ref = ref
         if seq5 < 1:
             raise ValueError(f"seq5 must be ≥ 1, but got {seq5}")
@@ -648,7 +652,7 @@ class Region(object):
         if min_length < 0:
             raise ValueError(f"min_length must be ≥ 0, but got {min_length}")
         # Initialize a list of 0-indexed positions in poly(A) sequences.
-        polya_pos = list()
+        polya_pos: list[int] = list()
         if min_length > 0:
             # Generate a pattern that matches stretches of consecutive
             # adenines that are at least as long as min_length.

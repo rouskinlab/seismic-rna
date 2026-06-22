@@ -14,6 +14,11 @@ from .seq.region import Region
 from .types import fit_uint_type
 from .validate import require_equal
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+
 BATCH_NUM = "batch"
 READ_NUMS = "read_nums"
 SEG_END5S = "seg_end5s"
@@ -32,19 +37,19 @@ def _join_position(
     if pos_muts := muts.get(position):
         if add_pos_muts := add_muts.get(position):
             joined_pos_muts = dict()
-            muts = set(pos_muts)
-            add_muts = set(add_pos_muts)
+            mut_keys = set(pos_muts)
+            add_mut_keys = set(add_pos_muts)
             # For types of mutations shared by both pos_muts and add_pos_muts,
             # take the union of read numbers and then remove duplicates.
-            for mut in muts & add_muts:
+            for mut in mut_keys & add_mut_keys:
                 joined_pos_muts[mut] = np.unique(
                     np.concatenate([pos_muts[mut], add_pos_muts[mut]])
                 )
             # For types of mutations unique to pos_muts or to add_pos_muts,
             # merely copy the read numbers into joined_pos_muts.
-            for mut in muts - add_muts:
+            for mut in mut_keys - add_mut_keys:
                 joined_pos_muts[mut] = pos_muts[mut]
-            for mut in add_muts - muts:
+            for mut in add_mut_keys - mut_keys:
                 joined_pos_muts[mut] = add_pos_muts[mut]
             # Verify that no read has more than one type of mutation.
             reads, counts = np.unique(

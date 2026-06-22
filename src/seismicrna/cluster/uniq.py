@@ -14,6 +14,12 @@ from ..core.rel.pattern import RelPattern
 from ..core.seq.region import Region
 from ..filter.dataset import FilterMutsDataset
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
+
 
 class UniqReads(EndCoords):
     """Collection of bit vectors of unique reads."""

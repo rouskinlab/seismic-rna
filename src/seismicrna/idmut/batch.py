@@ -13,6 +13,12 @@ from ..core.random import get_random_integer_generator
 from ..core.rel.pattern import RelPattern
 from ..core.seq.region import Region, index_to_pos, index_to_seq
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
+
 
 def format_read_name(batch_num: int, read_num: int):
     """Format a read name."""

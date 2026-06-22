@@ -48,7 +48,9 @@ def param_defaults(defaults: dict[str, Any], exclude_defaults: Iterable[str] = (
         ]
         # Update the help text (does not affect actual default values).
         try:
-            func.__signature__ = Signature(parameters=new_params)
+            func.__signature__ = Signature(  # type: ignore[attr-defined]
+                parameters=new_params
+            )
         except ValueError as error:
             raise ValueError(
                 f"Failed to set signature of {func.__name__} to "

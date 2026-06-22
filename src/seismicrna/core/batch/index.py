@@ -2,6 +2,11 @@ from __future__ import annotations
 
 from ..seq.region import BASE_NAME
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pandas as pd
+
 # Indexes of read and batch numbers.
 READ_NUM = "Read Number"
 BATCH_NUM = "Batch Number"

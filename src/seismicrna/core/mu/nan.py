@@ -5,6 +5,12 @@ from typing import Callable
 
 from .dim import count_pos, counts_pos_consensus
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
+
 
 def any_nan(mus: np.ndarray | pd.Series | pd.DataFrame):
     """Boolean array of positions where any mutation rate is NaN.

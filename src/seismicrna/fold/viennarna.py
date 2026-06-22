@@ -219,6 +219,9 @@ def get_subopt(subopt_out: Path, db_target: Path, force: bool = False):
                 if len(parts) != 2:
                     continue
                 struct, energy = parts
+                # The title and sequence lines always precede structure
+                # lines in RNAsubopt's output format (see docstring).
+                assert seq_title is not None and seq is not None
                 title_line = f">ENERGY = {energy} {seq_title.strip('>')}\n"
                 if first_struct:
                     lines.extend([title_line, seq + "\n", struct + "\n"])

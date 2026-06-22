@@ -12,6 +12,11 @@ from ..core.mu.compare import (
 )
 from ..core.validate import require_atleast, require_equal, require_array_equal
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+
 NOCONV = 0
 
 

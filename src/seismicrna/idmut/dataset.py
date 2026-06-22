@@ -78,6 +78,7 @@ class IDmutMutsDataset(IDmutDataset, LoadedDataset, MutsDataset):
     def get_batch(self, batch: int):
         # Load the saved batch, which is an IDmutBatchIO instance.
         idmut_batch = super().get_batch(batch)
+        assert isinstance(idmut_batch, IDmutBatchIO)
         # Generate an IDmutRegionMutsBatch from that batch.
         return idmut_batch.to_region_batch(self.region)
 

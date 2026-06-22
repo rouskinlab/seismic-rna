@@ -10,6 +10,11 @@ from ..header import parse_header
 from ..logs import logger
 from .base import Table, PositionTable, ReadTable, RelTypeTable
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pandas as pd
+
 
 class TableLoader(Table, ABC):
     """Load a table from a file."""

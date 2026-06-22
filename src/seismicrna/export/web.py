@@ -32,6 +32,11 @@ from ..core.table.base import (
     AbundanceTable,
 )
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pandas as pd
+
 META_SYMBOL = "#"
 SAMPLE = "sample"
 REF_SEQ = "sequence"

@@ -47,6 +47,12 @@ from ..core.validate import require_between
 from ..filter.table import FilterPositionTableLoader, PartialPositionTable
 from ..cluster.data import ClusterPositionTableLoader
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
+
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 

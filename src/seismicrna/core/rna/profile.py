@@ -6,7 +6,11 @@ from pathlib import Path
 from .base import RNARegion
 from .. import path
 from ..logs import format_sample_reference_region
-from ..seq.fasta import write_fasta
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 class RNAProfile(RNARegion):
@@ -111,15 +115,6 @@ class RNAProfile(RNARegion):
         """Get the path to a file of the RNA."""
         return self._get_dir(top, branch).joinpath(path_seg.build(path_fields))
 
-    def get_fasta(self, top: Path, branch: str):
-        """Get the path to the FASTA file."""
-        return self._get_file(
-            top,
-            branch,
-            path.FastaSeg,
-            {path.REF: self.profile, path.EXT: path.FASTA_EXTS[0]},
-        )
-
     def get_ct_file(self, top: Path, branch: str):
         """Get the path to the connectivity table (CT) file."""
         return self._get_file(
@@ -137,52 +132,3 @@ class RNAProfile(RNARegion):
             path.DotBracketSeg,
             {path.PROFILE: self.profile, path.EXT: path.DOT_EXTS[0]},
         )
-
-    def get_dms_file(self, top: Path, branch: str):
-        """Get the path to the DMS data file."""
-        return self._get_file(
-            top,
-            branch,
-            path.DmsReactsSeg,
-            {path.PROFILE: self.profile, path.EXT: path.DMS_EXT},
-        )
-
-    def get_varna_color_file(self, top: Path, branch: str):
-        """Get the path to the VARNA color file."""
-        return self._get_file(
-            top,
-            branch,
-            path.VarnaColorSeg,
-            {path.PROFILE: self.profile, path.EXT: path.TXT_EXT},
-        )
-
-    def to_fasta(self, top: Path, branch: str):
-        """Write the RNA sequence to a FASTA file."""
-        fasta = self.get_fasta(top, branch)
-        write_fasta(fasta, [self.seq_record])
-        return fasta
-
-    def to_dms(self, top: Path, branch: str):
-        """Write the DMS reactivities to a DMS file."""
-        # The DMS reactivities must be numbered starting from 1 at the
-        # beginning of the region, even if the region does not start
-        # at 1. Renumber the region from 1.
-        dms = self.mus.copy()
-        dms.index = self.region.range_one
-        # Drop bases with missing data to make RNAstructure ignore them.
-        dms.dropna(inplace=True)
-        # Write the DMS reactivities to the DMS file.
-        dms_file = self.get_dms_file(top, branch)
-        dms.to_csv(dms_file, sep="\t", header=False)
-        return dms_file
-
-    def to_varna_color_file(self, top: Path, branch: str):
-        """Write the VARNA colors to a file."""
-        # Fill missing reactivities with -1, to signify no data.
-        varna_color = self.mus.fillna(-1.0)
-        # Write the values to the VARNA color file.
-        varna_color_file = self.get_varna_color_file(top, branch)
-        varna_color.to_csv(
-            varna_color_file, float_format="%f", header=False, index=False
-        )
-        return varna_color_file

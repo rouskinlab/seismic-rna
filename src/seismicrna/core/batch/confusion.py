@@ -4,6 +4,12 @@ from ..array import intersect1d_unique_sorted
 from ..seq.region import POS_NAME
 from ..validate import require_isinstance
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
+
 POSITION_A = "Position A"
 POSITION_B = "Position B"
 

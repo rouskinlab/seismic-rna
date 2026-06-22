@@ -22,6 +22,12 @@ from ..core.unbias import (
 )
 from ..core.write import need_write
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
+
 
 def make_p_ends_2d(
     pends: np.ndarray, uniq_end5s: np.ndarray, uniq_end3s: np.ndarray, pmut_index

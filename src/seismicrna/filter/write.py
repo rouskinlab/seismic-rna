@@ -36,6 +36,11 @@ from ..core.tmp import release_to_out, with_tmp_dir
 from ..core.write import need_write
 from ..idmut.dataset import IDmutMutsDataset, PoolMutsDataset, load_read_names_dataset
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pandas as pd
+
 
 class Filterer(object):
     """Filter batches of relationships."""
@@ -350,12 +355,12 @@ class Filterer(object):
 
         # Collect the positions to mask from the list.
         dataset_ref = self.dataset.ref
-        mask_pos = np.array(
+        mask_pos_arr = np.array(
             [pos for ref, pos in mask_pos if ref == dataset_ref], dtype=int
         )
         logger.trace(
             "Got {} positions listed individually to pre-exclude for reference {!r}",
-            mask_pos.size,
+            mask_pos_arr.size,
             dataset_ref,
         )
         # List positions to exclude from file(s).
@@ -370,19 +375,21 @@ class Filterer(object):
                 dataset_ref,
             )
             if file_pos.size > 0:
-                mask_pos = np.concatenate([mask_pos, file_pos])
+                mask_pos_arr = np.concatenate([mask_pos_arr, file_pos])
         # Drop redundant positions and sort the remaining ones.
-        mask_pos = np.unique(np.asarray(mask_pos, dtype=int))
+        mask_pos_arr = np.unique(np.asarray(mask_pos_arr, dtype=int))
         # Keep only the positions in the region.
-        mask_pos = mask_pos[
-            np.logical_and(mask_pos >= self.region.end5, mask_pos <= self.region.end3)
+        mask_pos_arr = mask_pos_arr[
+            np.logical_and(
+                mask_pos_arr >= self.region.end5, mask_pos_arr <= self.region.end3
+            )
         ]
         logger.trace(
             "Got {} positions to pre-exclude for reference {!r}",
-            mask_pos.size,
+            mask_pos_arr.size,
             dataset_ref,
         )
-        return mask_pos
+        return mask_pos_arr
 
     @staticmethod
     def _get_drop_read(drop_read: Iterable[str], drop_read_file: Iterable[str | Path]):

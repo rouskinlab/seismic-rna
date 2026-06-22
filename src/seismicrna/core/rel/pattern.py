@@ -89,7 +89,11 @@ class HalfRelPattern(object):
         queries: dict[str, int] = {ref: 0 for ref in cls.ref_bases}
         # For each code given, get the ref and read bases by converting
         # the code to plain format, then to uppercase, then to a tuple.
-        for ref, read in map(str.upper, map(cls.as_plain, codes)):
+        # as_plain always returns a 2-character string (ref base, read
+        # base), so unpacking it into two variables here is deliberate.
+        for ref, read in map(  # type: ignore[str-unpack]
+            str.upper, map(cls.as_plain, codes)
+        ):
             # Update the query byte for the reference base. If the read
             # and reference bases are equal, then this code represents
             # a match, so update using the match byte, MATCH.

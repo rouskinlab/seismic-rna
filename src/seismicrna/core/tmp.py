@@ -125,8 +125,8 @@ def with_tmp_dir(pass_keep_tmp: bool):
         def wrapper(*args, tmp_pfx: str | Path, keep_tmp: bool, **kwargs):
             tmp_dir = None
             try:
-                tmp_pfx = sanitize(tmp_pfx)
-                tmp_dir = randdir(tmp_pfx.parent, prefix=tmp_pfx.name)
+                tmp_pfx_obj = sanitize(tmp_pfx)
+                tmp_dir = randdir(tmp_pfx_obj.parent, prefix=tmp_pfx_obj.name)
                 if pass_keep_tmp:
                     kwargs = dict(keep_tmp=keep_tmp, **kwargs)
                 return func(*args, tmp_dir=tmp_dir, **kwargs)
@@ -149,7 +149,9 @@ def with_tmp_dir(pass_keep_tmp: bool):
                 kwargs_name = name
         if kwargs_name is not None:
             params[kwargs_name] = params.pop(kwargs_name)
-        wrapper.__signature__ = Signature(parameters=list(params.values()))
+        wrapper.__signature__ = Signature(  # type: ignore[attr-defined]
+            parameters=list(params.values())
+        )
         return wrapper
 
     return decorator

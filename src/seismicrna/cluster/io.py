@@ -13,6 +13,11 @@ from ..core.io.brickle import RegBrickleIO
 from ..core.seq.region import Region
 from ..filter.dataset import FilterMutsDataset
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+
 
 class ClusterFile(path.HasRegFilePath, ABC):
     @classmethod

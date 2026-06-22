@@ -35,9 +35,9 @@ def run(
         output_files = input_files
     else:
         # Otherwise, determine the output paths using out_dir.
-        out_dir = path.sanitize(out_dir)
-        out_dir.mkdir(parents=True, exist_ok=True)
-        output_files = path.transpaths(out_dir, input_files, strict=True)
+        out_dir_obj = path.sanitize(out_dir)
+        out_dir_obj.mkdir(parents=True, exist_ok=True)
+        output_files = path.transpaths(out_dir_obj, input_files, strict=True)
     # Generate the positional arguments for clean_fasta.
     args = list(zip(input_files, output_files, strict=True))
     # Clean the files; if modifying in-place, force must be True.

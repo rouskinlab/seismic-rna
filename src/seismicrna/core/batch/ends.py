@@ -8,6 +8,11 @@ from ..seq.region import Region
 from ..types import fit_uint_type
 from ..validate import require_isinstance, require_equal, require_atleast
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+
 # Indexes of read end coordinates.
 END5_COORD = "5' End"
 END3_COORD = "3' End"

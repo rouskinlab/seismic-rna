@@ -69,9 +69,7 @@ def format_phred_arg(phred_enc: int):
     """Format a Phred score argument for Bowtie2."""
     if phred_enc not in PHRED_ENCS:
         raise ValueError(
-            "phred_enc must be one of {}, but got {}",
-            PHRED_ENCS,
-            phred_enc,
+            "phred_enc must be one of {}, but got {}", PHRED_ENCS, phred_enc
         )
     return f"--phred{phred_enc}"
 
@@ -209,16 +207,13 @@ class FastqUnit(object):
         elif fastqy:
             if fastq1 or fastq2:
                 raise TypeError("Got too many FASTQ files")
-            self.paths: dict[str, Path] = {self.KEY_INTER: fastqy}
+            self.paths = {self.KEY_INTER: fastqy}
             self.paired = True
             self.interleaved = True
         elif fastq1:
             if not fastq2:
                 raise TypeError("Got fastq1 but not fastq2")
-            self.paths: dict[str, Path] = {
-                self.KEY_MATE1: fastq1,
-                self.KEY_MATE2: fastq2,
-            }
+            self.paths = {self.KEY_MATE1: fastq1, self.KEY_MATE2: fastq2}
             self.paired = True
             self.interleaved = False
         elif fastq2:
@@ -340,7 +335,7 @@ class FastqUnit(object):
         segments. The header, plus, and quality lines are read to maintain
         proper file structure and are returned in the full record.
         """
-        if not self.exists:
+        if not self.exists():
             raise ValueError("Not all FASTQ paths in the FastqUnit exist.")
 
         def get_open_func(path):

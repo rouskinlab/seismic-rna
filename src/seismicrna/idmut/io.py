@@ -201,23 +201,23 @@ def from_reads(
         num_reads = len(names)
         assert len(seg_end5s) == len(seg_end3s) == num_reads
         if num_reads > 0:
-            seg_end5s = np.array(seg_end5s, dtype=pos_dtype)
-            seg_end3s = np.array(seg_end3s, dtype=pos_dtype)
+            seg_end5s_arr = np.array(seg_end5s, dtype=pos_dtype)
+            seg_end3s_arr = np.array(seg_end3s, dtype=pos_dtype)
         else:
-            seg_end5s = np.zeros((num_reads, max_segs), dtype=pos_dtype)
-            seg_end3s = np.zeros((num_reads, max_segs), dtype=pos_dtype)
-        assert seg_end5s.ndim == seg_end3s.ndim == 2
-        assert seg_end5s.shape == seg_end3s.shape == (num_reads, max_segs)
+            seg_end5s_arr = np.zeros((num_reads, max_segs), dtype=pos_dtype)
+            seg_end3s_arr = np.zeros((num_reads, max_segs), dtype=pos_dtype)
+        assert seg_end5s_arr.ndim == seg_end3s_arr.ndim == 2
+        assert seg_end5s_arr.shape == seg_end3s_arr.shape == (num_reads, max_segs)
         if drop_empty_reads:
             # Keep only reads that have at least 1 segment with length ≥ 1.
-            keep = np.any(seg_end3s >= seg_end5s, axis=1)
+            keep = np.any(seg_end3s_arr >= seg_end5s_arr, axis=1)
             if not keep.all():
                 # Calculate the numbers of the reads to keep.
                 keep_read_nums = np.flatnonzero(keep)
                 # Select the names and 5'/3' ends of the reads that are kept.
                 names = [names[i] for i in keep_read_nums]
-                seg_end5s = seg_end5s[keep_read_nums]
-                seg_end3s = seg_end3s[keep_read_nums]
+                seg_end5s_arr = seg_end5s_arr[keep_read_nums]
+                seg_end3s_arr = seg_end3s_arr[keep_read_nums]
                 # Map the read numbers in muts to the new read numbers; drop
                 # the numbers of reads that were not kept.
                 keep_read_inverse = calc_inverse(keep_read_nums, verify=False)
@@ -240,8 +240,8 @@ def from_reads(
             branches=branches,
             batch=batch,
             region=Region(ref, refseq),
-            seg_end5s=seg_end5s,
-            seg_end3s=seg_end3s,
+            seg_end5s=seg_end5s_arr,
+            seg_end3s=seg_end3s_arr,
             muts=muts,
         )
         if write_read_names:

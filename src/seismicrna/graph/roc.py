@@ -9,6 +9,11 @@ from .onestruct import StructOneTableGraph, StructOneTableRunner, StructOneTable
 from .trace import iter_roc_traces
 from ..core.run import log_command
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pandas as pd
+
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 # Index level names.

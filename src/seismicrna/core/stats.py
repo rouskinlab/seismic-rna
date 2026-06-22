@@ -4,6 +4,11 @@ from .array import ensure_same_length, get_length
 
 from .validate import require_greater, require_between
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+
 
 def _validate_alpha(alpha: np.ndarray):
     if (length := get_length(alpha, "alpha")) < 2:
@@ -103,7 +108,7 @@ def calc_beta_mv(alpha: float, beta: float):
     return float(mean), float(variance)
 
 
-def calc_beta_params(mean: float, variance: float):
+def calc_beta_params(mean: float, variance: float) -> tuple[float, float]:
     """Find the alpha and beta parameters of a beta distribution from
     its mean and variance.
 

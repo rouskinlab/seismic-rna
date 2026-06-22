@@ -49,6 +49,13 @@ seismic = "seismicrna.main:cli"
 [tool.mesonpy]
 build-dir = "build"
 
+[tool.mypy]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "numba.*"
+follow_imports = "skip"
+
 [tool.ruff]
 line-length = 88
 

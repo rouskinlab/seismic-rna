@@ -81,7 +81,8 @@ def iter_tables(input_path: Iterable[str | Path], **kwargs):
         # Make sure input_path is not an iterator that will be exhausted
         # on the first run-through.
         input_path = list(input_path)
-    for list_type in [IDmutPositionList, FilterPositionList]:
+    list_types: list[type[PositionList]] = [IDmutPositionList, FilterPositionList]
+    for list_type in list_types:
         for table in list_type.get_table_type().load_tables(input_path, **kwargs):
             yield table, list_type
 

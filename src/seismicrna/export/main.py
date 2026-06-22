@@ -18,6 +18,7 @@ from ..core.arg.cli import (
     opt_verify_times,
 )
 from ..core.run import run_func
+from ..core.table.load import TableLoader
 from ..core.task import dispatch
 from ..filter.table import FilterPositionTableLoader, FilterReadTableLoader
 
@@ -39,12 +40,13 @@ def run(
         parse_samples_metadata(Path(samples_meta)) if samples_meta else dict()
     )
     refs_metadata = parse_refs_metadata(Path(refs_meta)) if refs_meta else dict()
-    for table_type in [
+    loader_types: list[type[TableLoader]] = [
         FilterPositionTableLoader,
         FilterReadTableLoader,
         ClusterPositionTableLoader,
         ClusterAbundanceTableLoader,
-    ]:
+    ]
+    for table_type in loader_types:
         for table in table_type.load_tables(input_path, verify_times=verify_times):
             tables[(table.top, table.sample)].append(table)
     return dispatch(

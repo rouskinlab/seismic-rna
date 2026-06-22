@@ -34,6 +34,11 @@ from ..filter.main import load_regions, set_mut_gap_params
 from ..filter.report import FilterReport
 from .report import EnsemblesReport
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+
 PAIRS_CSV = "pairs.csv"
 MODULES_CSV = "modules.csv"
 PAIRS_MODULES_HTML = "pairs_and_modules.html"

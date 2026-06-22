@@ -56,9 +56,9 @@ def run(
         out_path = file_start
     else:
         # Otherwise, determine the output paths using out_dir.
-        out_dir = path.sanitize(out_dir)
-        out_dir.mkdir(parents=True, exist_ok=True)
-        out_path = path.transpaths(out_dir, file_start, strict=True)
+        out_dir_obj = path.sanitize(out_dir)
+        out_dir_obj.mkdir(parents=True, exist_ok=True)
+        out_path = path.transpaths(out_dir_obj, file_start, strict=True)
     file_out = dict(zip(file_start, out_path, strict=True))
     # Generate the positional arguments for renumber_ct.
     args = [(file, file_out[file], file_start[file]) for file in file_start]

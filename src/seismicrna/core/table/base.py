@@ -16,6 +16,12 @@ from ..rna.profile import RNAProfile
 from ..seq.xna import DNA
 from ..seq.region import SEQ_INDEX_NAMES, Region, index_to_pos, index_to_seq
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
+
 # General fields
 READ_TITLE = "Read Name"
 

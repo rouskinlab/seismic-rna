@@ -58,6 +58,11 @@ from ..filter.table import (
     PartialDatasetTabulator,
 )
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pandas as pd
+
 
 class ClusterDataset(Dataset, ABC):
     """Dataset of clustered data."""
@@ -249,6 +254,8 @@ def get_clust_params(dataset: ClusterMutsDataset, num_cpus: int = 1):
         else:
             logger.trace("Tabulating is not needed because all tables exist")
         # Calculate the parameters from the tables.
+        assert pos_table is not None
+        assert abundance_table is not None
         mus = pos_table.fetch_ratio(rel=MUTAT_REL).loc[:, MUTAT_REL]
         pis = abundance_table.proportions
         # Merge the parameters into one DataFrame with the proportions as

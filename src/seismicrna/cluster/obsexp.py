@@ -10,6 +10,11 @@ from ..core import path
 from ..core.header import NUM_CLUSTS_NAME
 from ..core.logs import logger
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pandas as pd
+
 PRECISION = 3
 
 

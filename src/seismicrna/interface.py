@@ -72,12 +72,12 @@ def table_from_dataset(dataset: MutsDataset, table: str = "pos") -> TableWriter:
         clust_table = True
     else:
         raise Exception('table kwarg must be "pos", "read" or "abundance"')
-    table = next(
+    result_table = next(
         tabulator_type(
             dataset=dataset, count_pos=pos_table, count_read=read_table
         ).generate_tables(pos=pos_table, read=read_table, clust=clust_table)
     )
-    return table
+    return result_table
 
 
 def table_from_report(

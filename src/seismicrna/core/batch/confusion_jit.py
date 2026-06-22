@@ -5,17 +5,17 @@ stay numba-free at import time. It imports this module *lazily* -- inside the
 functions that use them -- so that merely importing the confusion module does
 not import numba, which is slow (~0.3 s).
 
-Importing this module *does* import numba (the ``@jit`` decorators run at
+Importing this module *does* import numba (the ``@njit`` decorators run at
 import time), so import it only on code paths that actually run the jitted
 helpers. The decorated functions are module-level, so each is compiled at
 most once per process and reused on subsequent calls.
 """
 
 import numpy as np
-from numba import jit
+from numba import njit
 
 
-@jit()
+@njit()
 def count_intersection(x: np.ndarray, y: np.ndarray):
     """Count how many elements are in both x and y, assuming x and y are
     both NumPy arrays where all elements are unique and sorted from

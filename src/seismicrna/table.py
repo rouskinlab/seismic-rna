@@ -1,6 +1,6 @@
 from itertools import chain
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Literal, overload
 
 from click import command
 
@@ -79,6 +79,14 @@ def load_all_datasets(input_path: Iterable[str | Path], **kwargs):
         yield from load_func.iterate(input_path, **kwargs)
 
 
+@overload
+def get_tabulator_type(
+    dataset_type: type[Dataset], count: Literal[False] = False
+) -> type[DatasetTabulator]: ...
+@overload
+def get_tabulator_type(
+    dataset_type: type[Dataset], count: Literal[True]
+) -> type[CountTabulator]: ...
 def get_tabulator_type(
     dataset_type: type[Dataset], count: bool = False
 ) -> type[DatasetTabulator] | type[CountTabulator]:

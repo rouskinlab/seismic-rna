@@ -15,6 +15,11 @@ from .validate import (
     require_isinstance,
 )
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pandas as pd
+
 # Index level names
 REL_NAME = "Relationship"
 NUM_CLUSTS_NAME = "K"

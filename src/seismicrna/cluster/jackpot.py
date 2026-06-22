@@ -20,6 +20,11 @@ from ..core.unbias import (
 )
 from ..core.validate import require_atleast
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+
 SUM_EXP_PRECISION = 3
 
 

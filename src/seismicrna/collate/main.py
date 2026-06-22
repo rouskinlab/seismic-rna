@@ -145,7 +145,7 @@ def run(
 
     if len(input_files) == 0:
         logger.warning("No files found to collate.")
-        return None
+        return []
 
     out_path = get_out_path(
         name, verbose_name, input_files, collate_out_dir=collate_out_dir

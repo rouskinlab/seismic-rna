@@ -4,12 +4,7 @@ from functools import cached_property
 from .base import BaseGraph, BaseRunner
 from ..core.arg.cli import NO_GROUP, GROUP_BY_K, GROUP_ALL, opt_cgroup
 from ..core.dataset import Dataset
-from ..core.header import (
-    NO_KS,
-    NO_CLUSTS,
-    format_clust_names,
-    list_ks_clusts,
-)
+from ..core.header import NO_KS, NO_CLUSTS, format_clust_names, list_ks_clusts
 from ..core.table.base import Table
 
 
@@ -49,9 +44,7 @@ def make_tracks(
             if ((k is None or k_ == k) and (clust is None or clust_ == clust))
         ]
     if k_clust_list:
-        assert isinstance(
-            k_clust_list, list
-        ), "k_clust_list must be a list of tuples."
+        assert isinstance(k_clust_list, list), "k_clust_list must be a list of tuples."
         selected = set(tracks)
         combo_selected = set(k_clust_list)
         if tracks == clusts:

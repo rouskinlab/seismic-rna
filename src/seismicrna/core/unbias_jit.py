@@ -8,7 +8,7 @@ proxy; see ``unbias._jit``. Importing this module imports numba.
 import warnings
 
 import numpy as np
-from numba import jit, NumbaPerformanceWarning
+from numba import njit, NumbaPerformanceWarning
 
 # Disable performance warnings from Numba.
 warnings.filterwarnings("ignore", category=NumbaPerformanceWarning)
@@ -18,7 +18,7 @@ warnings.filterwarnings("ignore", category=NumbaPerformanceWarning)
 MAX_MU = 0.999999
 
 
-@jit()
+@njit()
 def clip_jit(x: np.ndarray):
     """Fill NaN with 0, infinity with 1, and restrict all values to the
     interval [0, 1].
@@ -36,7 +36,7 @@ def clip_jit(x: np.ndarray):
     return np.clip(np.nan_to_num(x), 0.0, MAX_MU)
 
 
-@jit()
+@njit()
 def normalize_jit(x: np.ndarray):
     """Normalize the values to sum to 1, or if they sum to 0, then
     return an array with the same value for each element."""
@@ -55,7 +55,7 @@ def normalize_jit(x: np.ndarray):
     return x / x_sum
 
 
-@jit()
+@njit()
 def triu_sum_jit(a: np.ndarray):
     """Calculate the sum over the upper triangle(s) of array `a`.
 
@@ -83,7 +83,7 @@ def triu_sum_jit(a: np.ndarray):
     return a_sum
 
 
-@jit()
+@njit()
 def triu_cumsum_jit(a: np.ndarray):
     """Calculate the cumulative sum from the upper right corner of `a`
     to every other element in the upper right triangle.
@@ -124,7 +124,7 @@ def triu_cumsum_jit(a: np.ndarray):
     return a_cumsum
 
 
-@jit()
+@njit()
 def triu_div_jit(numer: np.ndarray, denom: np.ndarray):
     """Divide the upper triangles of `numer` and `denom`.
 
@@ -156,7 +156,7 @@ def triu_div_jit(numer: np.ndarray, denom: np.ndarray):
     return quotient
 
 
-@jit()
+@njit()
 def triu_mul_jit(factor1: np.ndarray, factor2: np.ndarray):
     """Multiply the upper triangles of `numer` and `denom`.
 
@@ -187,7 +187,7 @@ def triu_mul_jit(factor1: np.ndarray, factor2: np.ndarray):
     return product
 
 
-@jit()
+@njit()
 def triu_dot_jit(a: np.ndarray, b: np.ndarray):
     """Dot product of `a` and `b` over their first 2 dimensions.
 
@@ -217,7 +217,7 @@ def triu_dot_jit(a: np.ndarray, b: np.ndarray):
     return dot
 
 
-@jit()
+@njit()
 def adjust_min_gap_jit(num_pos: int, min_gap: int):
     """Given the number of positions (`npos`) and the desired minimum
     gap between mutations (`min_gap`), find the minimum gap between
@@ -239,7 +239,7 @@ def adjust_min_gap_jit(num_pos: int, min_gap: int):
     return max(min(min_gap, num_pos - 1), 0)
 
 
-@jit()
+@njit()
 def calc_p_nomut_window_jit(p_mut_given_span: np.ndarray, min_gap: int):
     """Given underlying mutation rates (`p_mut_given_span`), find the
     probability of no mutations in each window of size 0 to `min_gap`.
@@ -290,7 +290,7 @@ def calc_p_nomut_window_jit(p_mut_given_span: np.ndarray, min_gap: int):
     return p_nomut_window
 
 
-@jit()
+@njit()
 def calc_p_noclose_given_ends_jit(
     p_mut_given_span: np.ndarray, p_nomut_window: np.ndarray
 ):
@@ -362,7 +362,7 @@ def calc_p_noclose_given_ends_jit(
     return p_noclose_given_ends
 
 
-@jit()
+@njit()
 def calc_rectangular_sum_jit(array: np.ndarray):
     """For each element of the main diagonal, calculate the sum over
     the rectangular array from that element to the upper right corner.
@@ -409,7 +409,7 @@ def calc_rectangular_sum_jit(array: np.ndarray):
     return rows_area - cols_area
 
 
-@jit()
+@njit()
 def calc_rectangular_sum_weighted_jit(array: np.ndarray, weights: np.ndarray):
     """Like `_calc_rectangular_sum`, but multiplies each element of
     `array` by the corresponding scalar in `weights` on the fly, avoiding
@@ -442,7 +442,7 @@ def calc_rectangular_sum_weighted_jit(array: np.ndarray, weights: np.ndarray):
     return rows_area - cols_area
 
 
-@jit()
+@njit()
 def calc_p_mut_given_span_dropped_jit(
     p_mut_given_span: np.ndarray,
     p_ends: np.ndarray,
@@ -486,7 +486,9 @@ def calc_p_mut_given_span_dropped_jit(
         return p_mut_given_span
     # Calculate the probability that a read spanning each position would
     # have no two mutations too close.
-    p_noclose_given_span = calc_rectangular_sum_weighted_jit(p_noclose_given_ends, p_ends)
+    p_noclose_given_span = calc_rectangular_sum_weighted_jit(
+        p_noclose_given_ends, p_ends
+    )
     p_mut_given_span_noclose = np.nan_to_num(p_mut_given_span / p_noclose_given_span)
     # Preallocate work buffers (clusters x positions) at maximum size to
     # avoid per-iteration heap allocation. Row-leading layout [(cls, pos)]
@@ -548,7 +550,7 @@ def calc_p_mut_given_span_dropped_jit(
     return p_mut_given_span_noclose
 
 
-@jit()
+@njit()
 def calc_p_mut_given_span_merged_jit(
     p_mut_given_span: np.ndarray, p_ends: np.ndarray, min_gap: int
 ) -> np.ndarray:
@@ -648,7 +650,7 @@ def calc_p_mut_given_span_merged_jit(
     return np.nan_to_num(p_joint_mut_span_merged / p_span[:, np.newaxis])
 
 
-@jit()
+@njit()
 def calc_p_ends_observed_jit(
     npos: int, end5s: np.ndarray, end3s: np.ndarray, weights: np.ndarray
 ):

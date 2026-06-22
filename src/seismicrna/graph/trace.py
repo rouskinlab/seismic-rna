@@ -6,6 +6,11 @@ from ..core.rna.roc import compute_auc
 from ..core.seq.region import BASE_NAME, POS_NAME
 from ..core.seq.xna import DNA
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pandas as pd
+
 
 class _GraphObjects:
     """Lazy proxy for ``plotly.graph_objects``.

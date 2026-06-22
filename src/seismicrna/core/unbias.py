@@ -13,6 +13,11 @@ from .validate import (
     require_between,
 )
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+
 
 # Define dimensions
 READS = "reads"
@@ -67,6 +72,7 @@ def triu_norm(a: np.ndarray):
     """
     import numpy as np
     from .unbias_jit import triu_sum_jit, triu_div_jit
+
     # Calculate the sum over axes 0 and 1.
     a_sum = triu_sum_jit(a)
     # Normalize by dividing by that sum, ignoring division by zero,
@@ -108,6 +114,7 @@ def triu_dot(a: np.ndarray, b: np.ndarray):
         Dot product of `a` and `b` over their first 2 dimensions.
     """
     from .unbias_jit import triu_dot_jit
+
     require_same_square_atleast2d(a, b)
     return triu_dot_jit(a, b)
 
@@ -134,6 +141,7 @@ def calc_p_nomut_window(p_mut_given_span: np.ndarray, min_gap: int):
     """
     import numpy as np
     from .unbias_jit import calc_p_nomut_window_jit
+
     require_isinstance("p_mut_given_span", p_mut_given_span, np.ndarray)
     require_equal("p_mut_given_span.ndim", p_mut_given_span.ndim, 2)
     require_atleast("min_gap", min_gap, 0, classes=int)
@@ -166,6 +174,7 @@ def calc_p_noclose_given_ends(p_mut_given_span: np.ndarray, p_nomut_window: np.n
         position (b) (column) would have no two mutations too close.
     """
     from .unbias_jit import calc_p_noclose_given_ends_jit
+
     dims = find_dims(
         [(POSITIONS, CLUSTERS), (WINDOW, POSITIONS_PLUS_1, CLUSTERS)],
         [p_mut_given_span, p_nomut_window],
@@ -211,6 +220,7 @@ def calc_p_noclose_given_ends_auto(p_mut_given_span: np.ndarray, min_gap: int):
         calc_p_noclose_given_ends_jit,
         calc_p_nomut_window_jit,
     )
+
     require_isinstance("p_mut_given_span", p_mut_given_span, np.ndarray)
     require_atleast("min_gap", min_gap, 0, classes=int)
     if p_mut_given_span.ndim == 2:
@@ -251,6 +261,7 @@ def calc_rectangular_sum(array: np.ndarray):
         upper right corner of `array`.
     """
     from .unbias_jit import calc_rectangular_sum_jit
+
     require_square_atleast2d("array", array)
     return calc_rectangular_sum_jit(array)
 
@@ -290,6 +301,7 @@ def calc_p_mut_given_span_dropped(
         with no two mutations too close per position per cluster.
     """
     from .unbias_jit import calc_p_mut_given_span_dropped_jit
+
     dims = find_dims(
         [
             (POSITIONS, CLUSTERS),
@@ -341,6 +353,7 @@ def _calc_p_mut_given_span_biased(
         calc_p_mut_given_span_dropped_jit,
         calc_p_mut_given_span_merged_jit,
     )
+
     if mut_collisions == MUT_COLLISIONS_DROP:
         # Use the read-dropping method.
         p_nomut_window = calc_p_nomut_window_jit(p_mut_given_span, min_gap)
@@ -412,6 +425,7 @@ def find_split_positions(p_mut: np.ndarray, min_gap: int, threshold: float):
     """
     import numpy as np
     from .unbias_jit import adjust_min_gap_jit
+
     npos, ncls = p_mut.shape
     min_gap = adjust_min_gap_jit(npos, min_gap)
     if min_gap == 0 or ncls == 0:
@@ -459,6 +473,7 @@ def _split_positions(
     """
     import numpy as np
     from .unbias_jit import triu_cumsum_jit
+
     dims = find_dims(
         [(POSITIONS, CLUSTERS), (POSITIONS, CLUSTERS), (POSITIONS, POSITIONS)],
         [p_mut, p_mut_init, p_ends],
@@ -493,7 +508,6 @@ def _calc_p_mut_given_span(
     two mutations too close based on the observed mutation rates.
     Do not validate the argument types or values, since it is assumed
     that calc_p_mut_given_span has already done so."""
-    import numpy as np
     from .unbias_jit import clip_jit
     # Use the Newton-Krylov method to solve for the total mutation rates
     # (including reads with two mutations too close) that result in zero
@@ -582,6 +596,7 @@ def calc_p_mut_given_span(
     """
     import numpy as np
     from .unbias_jit import adjust_min_gap_jit
+
     # Validate the argument types, values, and dimensions (of arrays).
     require_isinstance(
         "p_mut_given_span_observed", p_mut_given_span_observed, np.ndarray
@@ -707,6 +722,7 @@ def calc_p_ends(
     """
     import numpy as np
     from .unbias_jit import triu_div_jit
+
     # Validate the dimensionality of the arguments.
     require_isinstance("p_ends_observed", p_ends_observed, np.ndarray)
     if p_ends_observed.ndim == 2:
@@ -760,6 +776,7 @@ def calc_p_noclose_given_clust(p_ends: np.ndarray, p_noclose_given_ends: np.ndar
     """
     import numpy as np
     from .unbias_jit import triu_dot_jit
+
     # Validate the dimensionality of the arguments.
     find_dims(
         [(POSITIONS, POSITIONS), (POSITIONS, POSITIONS, CLUSTERS)],
@@ -793,6 +810,7 @@ def calc_p_clust(p_clust_observed: np.ndarray, p_noclose_given_clust: np.ndarray
         1D (clusters)
     """
     from .unbias_jit import normalize_jit
+
     # Validate the dimensions.
     find_dims(
         [(CLUSTERS,), (CLUSTERS,)],
@@ -828,6 +846,7 @@ def calc_p_clust_given_noclose(p_clust: np.ndarray, p_noclose_given_clust: np.nd
         1D (clusters)
     """
     from .unbias_jit import normalize_jit
+
     # Validate the dimensions.
     find_dims(
         [(CLUSTERS,), (CLUSTERS,)],
@@ -861,6 +880,7 @@ def calc_p_noclose(p_clust: np.ndarray, p_noclose_given_clust: np.ndarray):
         Probability that any read would have no two mutations too close.
     """
     import numpy as np
+
     find_dims(
         [(CLUSTERS,), (CLUSTERS,)],
         [p_clust, p_noclose_given_clust],
@@ -939,6 +959,7 @@ def calc_params(
         calc_p_noclose_given_ends_jit,
         calc_p_nomut_window_jit,
     )
+
     # Validate the dimensions.
     dims = find_dims(
         [(POSITIONS, CLUSTERS), (POSITIONS, POSITIONS, CLUSTERS), (CLUSTERS,)],
@@ -1101,6 +1122,7 @@ def calc_p_ends_given_clust_noclose(
     """
     import numpy as np
     from .unbias_jit import triu_mul_jit
+
     # Validate the dimensions of the arguments.
     find_dims(
         [(POSITIONS, POSITIONS), (POSITIONS, POSITIONS, CLUSTERS)],
@@ -1171,6 +1193,7 @@ def calc_p_clust_given_ends_noclose(
     """
     import numpy as np
     from .unbias_jit import triu_div_jit
+
     # Validate the dimensions of the arguments.
     find_dims(
         [(POSITIONS, POSITIONS, CLUSTERS), (CLUSTERS,)],
@@ -1220,6 +1243,7 @@ def calc_p_ends_observed(
     """
     import numpy as np
     from .unbias_jit import calc_p_ends_observed_jit
+
     require_atleast("npos", npos, 1, classes=int)
     # Validate the dimensions.
     if weights is None:
@@ -1315,6 +1339,7 @@ def calc_params_observed(
     tuple[np.ndarray, np.ndarray, np.ndarray]
     """
     import numpy as np
+
     dims = find_dims(
         [(READS,), (READS,), (READS,), (READS, CLUSTERS)],
         [end5s, end3s, counts_per_uniq, resps],

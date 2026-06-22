@@ -12,6 +12,12 @@ from ..rel.code import NOCOV
 from ..seq.xna import DNA
 from ..seq.region import POS_NAME
 
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
+
 POSITIONS = "positions"
 READS = "reads"
 CLUSTERS = "clusters"
@@ -277,6 +283,7 @@ def calc_rels_per_pos(
             raise TypeError(
                 f"Expected num_reads to be {pd.Series}, but got {slice_type}"
             )
+        num_reads = cast(pd.Series, num_reads)
         slice_indexes = dict(index=clusters)
         if array_type is not pd.DataFrame:
             raise TypeError(
@@ -362,6 +369,7 @@ def calc_rels_per_pos(
             )
     counts[MATCH].loc[nocov_indices] = 0
     if isinstance(cover_per_pos, pd.DataFrame):
+        num_reads = cast(pd.Series, num_reads)
         tot_reads = pd.DataFrame(
             np.repeat(num_reads.values[np.newaxis, :], len(nocov_indices), axis=0),
             index=nocov_indices,

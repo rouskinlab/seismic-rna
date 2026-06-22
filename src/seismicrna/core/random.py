@@ -3,6 +3,11 @@ from __future__ import annotations
 from .array import calc_inverse
 from .types import get_max_uint
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+
 
 def get_random_integer_generator(seed: int | None):
     """Generate an infinite series of random integers."""

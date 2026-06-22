@@ -317,6 +317,7 @@ def make_rnastructure_cmd(
     if fold_temp_k is not None:
         # Temperature of folding (Kelvin).
         if pseudoknots:
+            assert isinstance(opt_fold_temp.default, (int, float))
             default_temp_k = opt_fold_temp.default + ZERO_CELSIUS
             if abs(fold_temp_k - default_temp_k) > 0.01:
                 logger.warning(

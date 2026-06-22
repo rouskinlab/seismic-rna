@@ -51,6 +51,11 @@ from ..core.task import as_list_of_tuples, dispatch
 from ..core.types import get_uint_type
 from ..core.write import need_write
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pandas as pd
+
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 

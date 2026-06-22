@@ -24,6 +24,11 @@ from ..core.mu.compare import (
 from ..core.mu.measure import calc_gini
 from ..core.unbias import calc_params, calc_params_observed
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+
 LOG_LIKE_PRECISION = 6  # number of digits to round the log likelihood
 
 

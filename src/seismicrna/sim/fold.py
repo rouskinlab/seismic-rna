@@ -186,6 +186,8 @@ def fold_region(
             if not keep_tmp:
                 fasta_tmp.unlink(missing_ok=True)
                 if vienna_tmp is not None:
+                    # db_tmp is set under the same condition as vienna_tmp.
+                    assert db_tmp is not None
                     vienna_tmp.unlink(missing_ok=True)
                     db_tmp.unlink(missing_ok=True)
                 if ct_tmp != ct_sim:

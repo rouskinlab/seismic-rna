@@ -12,6 +12,11 @@ from ..core.unbias import (
     calc_p_clust_given_noclose,
 )
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+
 
 def _zero_masked(p_mut: np.ndarray, unmasked: np.ndarray):
     """Set mutation rates of masked positions to zero."""

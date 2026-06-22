@@ -346,14 +346,14 @@ def run(input_path: Iterable[str | Path], *, out_dir: str | Path, num_cpus: int)
             f"but got {len(input_path)}"
         )
     input_dir = path.sanitize(input_path[0], strict=True)
-    out_dir = path.sanitize(out_dir, strict=False)
-    if out_dir.exists():
-        if os.path.samefile(input_dir, out_dir):
+    out_dir_obj = path.sanitize(out_dir, strict=False)
+    if out_dir_obj.exists():
+        if os.path.samefile(input_dir, out_dir_obj):
             message = (
                 "For safety, seismic migrate refuses to overwrite "
                 "existing directories, so the output directory must "
                 "be different from the input directory, but got "
-                f"input_dir={input_dir}, out_dir={out_dir}. Please "
+                f"input_dir={input_dir}, out_dir={out_dir_obj}. Please "
                 "specify a different output directory that does not "
                 "yet exist with -o"
             )
@@ -361,17 +361,17 @@ def run(input_path: Iterable[str | Path], *, out_dir: str | Path, num_cpus: int)
             message = (
                 "For safety, seismic migrate refuses to overwrite "
                 "existing directories, so the output directory must "
-                f"not exist, but got out_dir={out_dir}, which exists. "
+                f"not exist, but got out_dir={out_dir_obj}, which exists. "
                 "Please specify a different output directory that "
                 "does not yet exist with -o"
             )
         raise FileExistsError(message)
     try:
-        shutil.copytree(input_dir, out_dir)
-        migrate_out_dir(out_dir, num_cpus=num_cpus)
+        shutil.copytree(input_dir, out_dir_obj)
+        migrate_out_dir(out_dir_obj, num_cpus=num_cpus)
     except Exception as error:
-        if out_dir.exists():
-            shutil.rmtree(out_dir, ignore_errors=True)
+        if out_dir_obj.exists():
+            shutil.rmtree(out_dir_obj, ignore_errors=True)
         raise error
 
 

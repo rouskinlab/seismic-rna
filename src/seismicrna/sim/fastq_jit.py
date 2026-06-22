@@ -5,13 +5,13 @@ numba, which is slow.  ``fastq.generate_fastq_record`` imports these lazily.
 """
 
 import numpy as np
-from numba import jit
+from numba import njit
 
 from ..core.rel.pattern import MATCH, SUB_A, SUB_C, SUB_G, SUB_T, DELET
 from ..core.seq.region import BASEA, BASEC, BASEG, BASET, BASEN
 
 
-@jit()
+@njit()
 def _complement(base: str):
     """JIT-compiled function to get the complement of a base."""
     if base == BASEA:
@@ -25,7 +25,7 @@ def _complement(base: str):
     return BASEN
 
 
-@jit()
+@njit()
 def generate_fastq_read_qual(
     rels: np.ndarray,
     refseq: str,

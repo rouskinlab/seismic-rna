@@ -10,6 +10,11 @@ from .validate import (
     require_array_equal,
 )
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+
 MISSING = -1
 
 

@@ -9,6 +9,11 @@ from ..core.batch.muts import RegionMutsBatch
 from ..core.seq.region import Region
 from ..core.validate import require_isinstance
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+
 
 class PartialReadBatch(ReadBatch, ABC):
     @cached_property

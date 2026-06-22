@@ -1,5 +1,11 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
+
 
 def count_pos(mus: np.ndarray | pd.Series | pd.DataFrame):
     """Count the positions in an array of mutation rates.
