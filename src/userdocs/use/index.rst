@@ -24,7 +24,8 @@ multiple commands.
     workflow/filter
     workflow/cluster
     workflow/join
-    workflow/ensembles
+    workflow/filterscan
+    workflow/clusterscan
     workflow/table
     workflow/fold
     workflow/graph

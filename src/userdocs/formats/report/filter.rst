@@ -21,7 +21,7 @@ Mask positions with base A                                                      
 Mask positions with base C                                                                                                       bool                
 Mask positions with base G                                                                                                       bool                
 Mask positions with base U                                                                                                       bool                
-Mask stretches of at least this many consecutive A bases (0 disables)                                                            int                 
+Mask stretches of at least this many consecutive A bases (0 disables); defaults to 5 for chemical probes, 0 for none             int                 
 Mask additional positions from a list                                                                                            list[int]           
 Mask positions with fewer than this many informative base calls                                                                  int                 
 Mask positions with more than this fraction of mutated base calls                                                                float               
@@ -125,7 +125,7 @@ Filter Report: Example
         "Mask positions with base C": false,
         "Mask positions with base G": true,
         "Mask positions with base U": true,
-        "Mask stretches of at least this many consecutive A bases (0 disables)": 5,
+        "Mask stretches of at least this many consecutive A bases (0 disables); defaults to 5 for chemical probes, 0 for none": 5,
         "Mask additional positions from a list": [],
         "Mask positions with fewer than this many informative base calls": 1000,
         "Mask positions with more than this fraction of mutated base calls": 1.0,

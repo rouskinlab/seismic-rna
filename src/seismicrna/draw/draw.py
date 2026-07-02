@@ -236,7 +236,7 @@ def parse_color_file(file_path):
 
 
 def build_jinja_data(
-    struct: str,
+    struct: dict,
     color_dict: dict,
     name: str,
     out_dir: Path,
@@ -646,7 +646,7 @@ class RNArtistRun(object):
     def process_struct(
         self,
         struct_name: str,
-        struct: str,
+        struct: dict,
         svg_path: Path,
         png_path: Path,
         script_file: Path,

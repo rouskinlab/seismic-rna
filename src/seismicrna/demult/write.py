@@ -544,7 +544,9 @@ def get_open_func(fq_path: Path):
     return gzip.open if fastq_gz(fq_path) else open
 
 
-def check_matches(matches: Iterable[tuple[tuple[int, str, set]]], barcodes):
+def check_matches(
+    matches: Iterable[tuple[tuple[int, int] | None, tuple[int, int] | None]], barcodes
+):
     samples = set()
     for match in matches:
         for read in match:

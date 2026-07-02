@@ -1,15 +1,15 @@
 from __future__ import annotations
 from datetime import datetime
 from itertools import chain
+from collections import defaultdict
 from math import ceil, inf
 from pathlib import Path
 from typing import Iterable
 
 
-from .. import filter as filter_mod, cluster as cluster_mod
+from .. import filter as filter_mod
 from ..core import path
 from ..core.arg.cli import GAP_MODE_OMIT, GAP_MODE_INSERT, GAP_MODE_EXPAND
-from ..core.array import triangular
 from ..core.batch.confusion import (
     POSITION_A,
     POSITION_B,
@@ -24,15 +24,12 @@ from ..core.logs import logger
 from ..core.seq.xna import DNA
 from ..core.seq.region import unite
 from ..core.task import as_list_of_tuples, dispatch
-from ..core.validate import require_atleast, require_greater
 from ..core.write import need_write
-from ..cluster.report import ClusterReport
-from ..core.report import BestKF
 from ..filter.dataset import FilterMutsDataset, load_filter_dataset
 from ..filter.io import FilterBatchIO
 from ..filter.main import load_regions, set_mut_gap_params
 from ..filter.report import FilterReport
-from .report import EnsemblesReport
+from .report import FilterScanReport
 
 from typing import TYPE_CHECKING
 
@@ -40,8 +37,8 @@ if TYPE_CHECKING:
     import numpy as np
 
 PAIRS_CSV = "pairs.csv"
-MODULES_CSV = "modules.csv"
-PAIRS_MODULES_HTML = "pairs_and_modules.html"
+DOMAINS_CSV = "domains.csv"
+PAIRS_DOMAINS_HTML = "pairs_and_domains.html"
 CONFUSION_MATRIX_CSV = "confusion-matrix.csv"
 
 
@@ -215,23 +212,35 @@ def _find_correlated_pairs(dataset: FilterMutsDataset, pair_fdr: float, num_cpus
 
 def _aggregate_pairs(pairs: list[tuple[int, int]]) -> list[tuple[int, int]]:
     """Aggregate pairs that overlap."""
-    if not pairs:
-        return list()
-    assert len(pairs[0]) == 2
-    aggregates = [pairs[0]]
-    for pos5, pos3 in pairs[1:]:
-        assert 1 <= pos5 <= pos3
-        assert pos5 >= aggregates[-1][0]
-        if pos5 <= aggregates[-1][1]:
-            # This pair overlaps with the previous aggregate.
-            if pos3 > aggregates[-1][1]:
-                # This pair extends the previous aggregate.
-                aggregates[-1] = (aggregates[-1][0], pos3)
-        else:
-            # This pair does not overlap with the previous aggregate.
-            # Create a new aggregate.
-            aggregates.append((pos5, pos3))
-    return aggregates
+    with logger.debug.single_context(
+        "Generating initial domains by aggregating {} correlated pair(s)", len(pairs)
+    ):
+        if not pairs:
+            return list()
+        assert len(pairs[0]) == 2
+        aggregates = [pairs[0]]
+        for pair in pairs[1:]:
+            pos5, pos3 = pair
+            assert 1 <= pos5 <= pos3
+            assert pos5 >= aggregates[-1][0]
+            if pos5 <= aggregates[-1][1]:
+                # This pair overlaps with the previous aggregate.
+                if pos3 > aggregates[-1][1]:
+                    # This pair extends the previous aggregate.
+                    aggregates[-1] = (aggregates[-1][0], pos3)
+            else:
+                # This pair does not overlap with the previous aggregate.
+                # Create a new aggregate.
+                aggregates.append(pair)
+            logger.trace(
+                "After aggregating pair {}, the last domain is {}", pair, aggregates[-1]
+            )
+        logger.debug(
+            "Generated {} initial domain(s) by aggregating {} correlated pair(s)",
+            len(aggregates),
+            len(pairs),
+        )
+        return aggregates
 
 
 def _select_pairs(pairs: list[tuple[int, int]], end5: int, end3: int):
@@ -239,153 +248,249 @@ def _select_pairs(pairs: list[tuple[int, int]], end5: int, end3: int):
     return [(pos5, pos3) for pos5, pos3 in pairs if end5 <= pos5 and pos3 <= end3]
 
 
-def _calc_span_per_pos(pairs: list[tuple[int, int]], end5: int, end3: int):
-    import pandas as pd
-
-    assert 1 <= end5 <= end3
-    spans_per_pos = pd.Series(0, index=range(end5, end3 + 1))
-    for pos5, pos3 in pairs:
-        assert end5 <= pos5 <= pos3 <= end3
-        spans_per_pos.loc[pos5:pos3] += 1
-    return spans_per_pos
-
-
-def _calc_null_span_per_pos_keep_dists(
-    pairs: list[tuple[int, int]], end5: int, end3: int
+def _compute_keep_dists_null(
+    valid_pairs: list[tuple[int, int]], total_end5: int, total_end3: int
 ):
+    """Expected starts/ends count per position under a null that keeps
+    each pair's own length fixed and randomizes only its position.
+
+    For a pair of length L, there are ``num_loc = num_pos_total - L``
+    positions at which it could validly start (and, symmetrically,
+    end) within the region.  Each contributes probability
+    ``1 / num_loc`` of landing at any one of them; summing over all
+    valid pairs (grouped by length, for efficiency) gives the Poisson
+    rate at each position.
+
+    Returns ``(null_expect_pos5s, null_expect_pos3s)``, each a numpy
+    array indexed by position (index 0 == total_end5).
+    """
     import numpy as np
-    import pandas as pd
 
-    assert 1 <= end5 <= end3
-    null_spans_per_pos = pd.Series(0.0, index=range(end5, end3 + 1))
-    num_pos = null_spans_per_pos.size
-    assert num_pos >= 1
-    ramp = np.minimum(np.arange(1, num_pos + 1), np.arange(num_pos, 0, -1))
-    fraction_overlap_cache = dict()
-    for pos5, pos3 in pairs:
-        assert end5 <= pos5 <= pos3 <= end3
-        length = pos3 - pos5 + 1
-        fraction_overlap = fraction_overlap_cache.get(length)
-        if fraction_overlap is None:
-            # Number of locations to which the pair could be moved.
-            num_loc = num_pos - length + 1
-            assert num_loc >= 1
-            max_overlap = np.minimum(ramp, min(length, num_loc))
-            fraction_overlap = max_overlap / num_loc
-            fraction_overlap_cache[length] = fraction_overlap
-        null_spans_per_pos += fraction_overlap
-    return null_spans_per_pos
+    # Count the pairs with each length (defined as pos3 - pos5).
+    length_counts: defaultdict[int, int] = defaultdict(int)
+    for pos5, pos3 in valid_pairs:
+        length_counts[pos3 - pos5] += 1
+    # Count the pairs expected to have their 5'/3' ends at each position
+    # under the null model where pairs are moved randomly while keeping
+    # their lengths unchanged.
+    num_pos_total = total_end3 - total_end5 + 1
+    null_expect_pos5s = np.zeros(num_pos_total)
+    null_expect_pos3s = np.zeros(num_pos_total)
+    for length, count in length_counts.items():
+        # Number of locations at which a pair of this length could exist.
+        num_loc = num_pos_total - length
+        assert num_loc >= 1
+        prob_per_loc = count / num_loc
+        null_expect_pos5s[:num_loc] += prob_per_loc
+        null_expect_pos3s[length:] += prob_per_loc
+    return null_expect_pos5s, null_expect_pos3s
 
 
-def _calc_null_span_per_pos_rand_dists(
-    pairs: list[tuple[int, int]], end5: int, end3: int, min_mut_gap: int
+def _compute_endpoint_significance(
+    valid_pairs: list[tuple[int, int]],
+    total_end5: int,
+    total_end3: int,
+    window: int = 2,
 ):
+    """Per-position BH-adjusted p-values for endpoint over-representation,
+    under the length-preserving ("keep_dists") null.
+
+    For each position p, counts are aggregated over a window of
+    ``window`` adjacent positions to boost statistical power when
+    pairs cluster near -- but not always exactly at -- the same
+    start or end position.  For 5' ends, the window is forward:
+    pairs with pos5 in [p, p+window] are counted at position p.
+    For 3' ends, the window is backward: pairs with pos3 in
+    [p-window, p] are counted at position p.  The null expectations
+    are windowed identically (summing independent Poisson means over
+    the same window).
+
+    Returns ``(positions, padj_pos5s, padj_pos3s)``, or ``None`` if
+    there are no valid pairs.
+    """
     import numpy as np
-    import pandas as pd
+    from scipy.stats import binom
 
-    assert 1 <= end5 <= end3
-    assert min_mut_gap >= 0
-    positions = np.arange(end5, end3 + 1)
-    num_pos = positions.size
-    assert num_pos >= 1
-    # Count all intervals (a, b) such that end5 ≤ a ≤ k ≤ b ≤ end3 and
-    # b - a > min_mut_gap.
-    num_intervals = triangular(num_pos - (min_mut_gap + 1))
-    # Only count pairs that satisfy min_mut_gap; short pairs have zero
-    # expected count under this null model and must not inflate num_pairs.
-    num_valid_pairs = sum(1 for p5, p3 in pairs if p3 - p5 > min_mut_gap)
-    if num_intervals == 0 or num_valid_pairs == 0:
-        return pd.Series(0.0, index=positions)
-    # For each position, count all possible intervals (a, b) such that
-    # end5 ≤ a ≤ k ≤ b ≤ end3.
-    counts = (positions - (end5 - 1)) * ((end3 + 1) - positions)
-    # Remove intervals for which b - a ≤ min_mut_gap.
-    ramp = np.minimum(np.arange(1, num_pos + 1), np.arange(num_pos, 0, -1))
-    for length in range(1, min(min_mut_gap + 1, num_pos) + 1):
-        # Number of possible locations of the interval.
-        num_loc = num_pos - length + 1
-        counts -= np.minimum(ramp, min(length, num_loc))
-    assert np.all(counts >= 0)
-    # Calculate the expected number of pairs that overlap each position.
-    return pd.Series((num_valid_pairs / num_intervals) * counts, index=positions)
+    if not valid_pairs:
+        return None
+
+    num_pos = total_end3 - total_end5 + 1
+    r_valid = len(valid_pairs)
+    positions = np.arange(total_end5, total_end3 + 1)
+    null_expect_pos5s, null_expect_pos3s = _compute_keep_dists_null(
+        valid_pairs, total_end5, total_end3
+    )
+
+    pos5s = np.zeros(num_pos, dtype=int)
+    pos3s = np.zeros(num_pos, dtype=int)
+    for pos5, pos3 in valid_pairs:
+        pos5s[pos5 - total_end5] += 1
+        pos3s[pos3 - total_end5] += 1
+
+    def forward_window_sum(arr: np.ndarray, w: int) -> np.ndarray:
+        """Sum arr[i:i+w+1] for each i (forward window, clamped at end)."""
+        cs = np.concatenate([[0], np.cumsum(arr)])
+        end_idx = np.minimum(np.arange(1, num_pos + 1) + w, num_pos)
+        return cs[end_idx] - cs[np.arange(num_pos)]
+
+    def backward_window_sum(arr: np.ndarray, w: int) -> np.ndarray:
+        """Sum arr[i-w:i+1] for each i (backward window, clamped at start)."""
+        cs = np.concatenate([[0], np.cumsum(arr)])
+        start_idx = np.maximum(np.arange(num_pos) - w, 0)
+        return cs[np.arange(1, num_pos + 1)] - cs[start_idx]
+
+    win_pos5s = forward_window_sum(pos5s, window)
+    win_pos3s = backward_window_sum(pos3s, window)
+    win_null_pos5s = forward_window_sum(null_expect_pos5s, window)
+    win_null_pos3s = backward_window_sum(null_expect_pos3s, window)
+
+    # Each valid pair independently places its start (or end) in the
+    # window around p with probability win_null[p] / r_valid, so the
+    # windowed count follows Binomial(r_valid, win_null[p] / r_valid)
+    # under the keep_dists null (sums of independent Binomials with the
+    # same n remain Binomial with the same n and summed p).
+    pvals_pos5s = binom.sf(win_pos5s - 1, r_valid, win_null_pos5s / r_valid)
+    pvals_pos3s = binom.sf(win_pos3s - 1, r_valid, win_null_pos3s / r_valid)
+    # Starts and ends are independent hypotheses; each gets its own
+    # BH correction rather than one correction over both combined.
+    padj_pos5s = calc_bh_adjusted_pvals(pvals_pos5s)
+    padj_pos3s = calc_bh_adjusted_pvals(pvals_pos3s)
+    return positions, padj_pos5s, padj_pos3s
 
 
-def _calc_modules_from_pairs(
+def _filter_by_l1_distance(
+    pairs: list[tuple[int, int]], percentile: float = 95.0, min_nearby_pairs: int = 1
+):
+    """Keep only pairs that have at least ``min_nearby_pairs`` other
+    surviving pairs within the ``percentile``-th percentile of the L1
+    (Manhattan) nearest-neighbor distances among ``pairs``.
+
+    Uses the L1-norm ``|Δpos5| + |Δpos3|``, so pairs that are close
+    in both coordinates (e.g. a helix with adjacent registers) or
+    share one coordinate exactly (e.g. identical start or end) all
+    contribute naturally to the minimum distance, with no requirement
+    to group by a shared coordinate.
+
+    Setting ``min_nearby_pairs`` above 1 removes coincidental small
+    clusters of noise pairs ("buddy noise") at the cost of potentially
+    clipping pairs at domain edges.
+
+    Because the endpoint-peak stage already filters out pairs at
+    non-significant hub positions, stage-1 survivors are enriched for
+    real pairs and depleted for false positives relative to the raw
+    input pairs (which start at ~5% FDR).  Calibrating the threshold
+    from this already-filtered population therefore reflects a lower
+    effective noise rate, making the percentile a self-calibrated and
+    dataset-adaptive threshold requiring no manual tuning.
+
+    The filter is applied iteratively until no more pairs are dropped.
+    The threshold is computed once from the initial population and held
+    fixed; subsequent rounds recompute only the NN-distances within the
+    shrinking survivor set, so pairs that lose their dense neighbours
+    across rounds are eventually caught.  Convergence is guaranteed
+    because ``surviving ⊆ pairs`` after every round.
+    """
+    import numpy as np
+    from scipy.spatial import cKDTree
+
+    if len(pairs) <= min_nearby_pairs:
+        return []
+
+    def get_nn_dist(ps: list[tuple[int, int]], n: int):
+        # index 0 is the point itself (distance 0); k=(n + 1) selects the
+        # n-th nearest neighbor; p=1 gives L1 distance.
+        assert len(ps) > 0
+        points = np.asarray(ps, dtype=float)
+        return cKDTree(points).query(points, k=(n + 1), p=1)[0][:, -1]
+
+    # Calculate the distances to the min_nearby_pairs-th nearest
+    # neighbor (n=min_nearby_pairs).
+    nn_dist = get_nn_dist(pairs, min_nearby_pairs)
+    # Compute threshold once from the initial population.
+    threshold = float(np.percentile(nn_dist, percentile))
+    # Iterate with the fixed threshold until convergence.
+    surviving = pairs
+    while True:
+        next_surviving = [pair for pair, d in zip(surviving, nn_dist) if d <= threshold]
+        if next_surviving == surviving:
+            return surviving
+        surviving = next_surviving
+        if len(surviving) <= min_nearby_pairs:
+            return []
+        # Calculate the distances to the min_nearby_pairs-th nearest
+        # neighbor (n=min_nearby_pairs).
+        nn_dist = get_nn_dist(surviving, min_nearby_pairs)
+
+
+def _calc_domains_from_pairs(
     pairs: list[tuple[int, int]],
     pair_fdr: float,
     min_mut_gap: int,
-    min_pairs: int = 1,
-    threshold_divisor: float = 1.0,
-    preserve_null_pair_dists: bool = False,
-    max_iter: int = 10000,
-):
-    import numpy as np
+    min_pairs: int,
+    total_end5: int,
+    total_end3: int,
+    pair_distance_percentile: float,
+    endpoint_window: int,
+    min_nearby_pairs: int = 1,
+) -> list[tuple[int, int]]:
+    """Detect domains by finding significant concentrations of pair
+    endpoints, rather than testing pairs crossing each interior
+    boundary.
 
-    logger.debug("Began calculating modules")
-    require_atleast("min_mut_gap", min_mut_gap, 0, classes=int)
-    require_atleast("min_pairs", min_pairs, 1, classes=int)
-    require_greater("threshold_divisor", threshold_divisor, 0.0, classes=(float, int))
-    finished = set()
-    # First, naively aggregate all pairs that overlap.
-    modules = _aggregate_pairs(pairs)
-    for i in range(max_iter):
-        logger.trace("Modules at iteration {}: {}", i, modules)
-        new_modules = list()
-        for module in modules:
-            if module in finished:
-                new_modules.append(module)
-                continue
-            end5, end3 = module
-            # For each module, count the pairs contained by the module
-            # and how many span each position.
-            module_pairs = _select_pairs(pairs, end5, end3)
-            if len(module_pairs) < min_pairs:
-                # Skip modules with insufficient pairs.
-                finished.add(module)
-                continue
-            spans_per_pos = _calc_span_per_pos(module_pairs, end5, end3)
-            # Calculate how many pairs expected to span each position
-            if preserve_null_pair_dists:
-                null_spans_per_pos = _calc_null_span_per_pos_keep_dists(
-                    module_pairs, end5, end3
-                )
-            else:
-                null_spans_per_pos = _calc_null_span_per_pos_rand_dists(
-                    module_pairs, end5, end3, min_mut_gap
-                )
-            threshold = pair_fdr * null_spans_per_pos / threshold_divisor
-            sufficient_spans_per_pos = spans_per_pos > threshold
-            if sufficient_spans_per_pos.all():
-                # All positions have enough pairs spanning them: keep
-                # the module as is.
-                new_modules.append((end5, end3))
-            elif sufficient_spans_per_pos.any():
-                # Some but not all positions have enough pairs spanning
-                # them: split the module where the number of spanning
-                # pairs minus the threshold is most negative.
-                spans_diff = spans_per_pos - threshold
-                split_pos = int(spans_diff.index[np.argmin(spans_diff)])
-                if split_pos > end5:
-                    new_modules.append((end5, split_pos - 1))
-                if split_pos < end3:
-                    new_modules.append((split_pos + 1, end3))
-            else:
-                # No positions have enough pairs spanning them: omit
-                # this module.
-                pass
-            finished.add(module)
-        if new_modules == modules:
-            break
-        modules = new_modules
-    else:
-        logger.warning("Modules did not converge in {} iterations", max_iter)
-    logger.debug("Ended calculating modules: {}", modules)
-    return modules
+    Stage 1 (endpoint peaks): retain a pair if at least one of its
+    5' or 3' position is significantly over-represented (``pair_fdr``)
+    under the length-preserving null.
+
+    Stage 2 (L1 isolation filter): drop any stage-1 survivor whose
+    nearest other survivor (L1 distance in (pos5, pos3) space) exceeds
+    the ``pair_distance_percentile``-th percentile of the observed L1
+    nearest-neighbor distances among stage-1 survivors.  This adapts
+    automatically to each dataset.
+
+    Retained pairs are merged into domains by interval overlap.
+    """
+    with logger.debug.single_context(
+        "Identifying domains from {} correlated pair(s)", len(pairs)
+    ):
+        if not pairs:
+            return []
+        valid_pairs = [(p5, p3) for p5, p3 in pairs if p3 - p5 > min_mut_gap]
+        if not valid_pairs:
+            return []
+
+        significance = _compute_endpoint_significance(
+            valid_pairs, total_end5, total_end3, endpoint_window
+        )
+        if significance is None:
+            return []
+        positions, padj_starts, padj_ends = significance
+
+        sig_starts = set(positions[padj_starts <= pair_fdr].tolist())
+        sig_ends = set(positions[padj_ends <= pair_fdr].tolist())
+        surviving = sorted(
+            (p5, p3) for p5, p3 in valid_pairs if p5 in sig_starts or p3 in sig_ends
+        )
+        surviving = _filter_by_l1_distance(
+            surviving,
+            percentile=pair_distance_percentile,
+            min_nearby_pairs=min_nearby_pairs,
+        )
+        if not surviving:
+            return []
+
+        domains = _aggregate_pairs(surviving)
+        domains = [
+            (e5, e3)
+            for e5, e3 in domains
+            if len(_select_pairs(surviving, e5, e3)) >= min_pairs
+        ]
+        logger.debug("Calculated domains: {}", domains)
+        return domains
 
 
-def _graph_pairs_and_modules(
+def _graph_pairs_and_domains(
     pairs: list[tuple[int, int]],
-    modules: list[tuple[int, int]],
+    domains: list[tuple[int, int]],
     end5: int,
     end3: int,
     html_file: str | Path,
@@ -397,10 +502,10 @@ def _graph_pairs_and_modules(
     # Create a subplot with two rows: top for pair_fraction,
     # bottom for correlated pairs
     fig = make_subplots(rows=1, cols=1)
-    # Graph the modules as triangles.
-    end5s, end3s = _tuples_to_ends_arrays(modules)
-    modules_midpoints, modules_distances = _calc_midpoints_distances(end5s, end3s)
-    for (a, b), x, y in zip(modules, modules_midpoints, modules_distances, strict=True):
+    # Graph the domains as triangles.
+    end5s, end3s = _tuples_to_ends_arrays(domains)
+    domains_midpoints, domains_distances = _calc_midpoints_distances(end5s, end3s)
+    for (a, b), x, y in zip(domains, domains_midpoints, domains_distances, strict=True):
         fig.add_trace(
             go.Scatter(
                 x=[a, b, x, a],
@@ -411,7 +516,7 @@ def _graph_pairs_and_modules(
                 showlegend=False,
                 name=None,
                 hoverinfo="text",
-                text=f"Module {a, b}",
+                text=f"Domain {a, b}",
                 hovertemplate="%{text}<extra></extra>",
             )
         )
@@ -435,10 +540,10 @@ def _graph_pairs_and_modules(
     assert end5 <= end3
     x_range = [end5 - 0.5, end3 + 0.5]
     fig.update_xaxes(title_text="Midpoint Position", showgrid=True, range=x_range)
-    if modules_distances.size > 0 or pairs_distances.size > 0:
+    if domains_distances.size > 0 or pairs_distances.size > 0:
         y_range = [
             0.0,
-            1.05 * np.max(np.concatenate([modules_distances, pairs_distances])),
+            1.05 * np.max(np.concatenate([domains_distances, pairs_distances])),
         ]
     else:
         y_range = [0.0, 1.0]
@@ -447,46 +552,46 @@ def _graph_pairs_and_modules(
     fig.write_html(html_file)
 
 
-def _insert_modules_into_gaps(
-    modules: list[tuple[int, int]], global_end5: int, global_end3: int
+def _insert_domains_into_gaps(
+    domains: list[tuple[int, int]], global_end5: int, global_end3: int
 ):
-    """Turn every gap between modules into a new module."""
+    """Turn every gap between domains into a new domain."""
     assert 1 <= global_end5 <= global_end3
-    new_modules = list()
+    new_domains = list()
     prev_pos3 = global_end5 - 1
-    # modules is assumed to be sorted.
-    for end5, end3 in modules:
+    # domains is assumed to be sorted.
+    for end5, end3 in domains:
         assert global_end5 <= end5 <= end3 <= global_end3
         # Here, no two regions are allowed to overlap.
         assert end5 > prev_pos3
         if end5 > prev_pos3 + 1:
             # There is a gap between this region and the previous.
             # Create a new region to fill the gap.
-            new_modules.append(((prev_pos3 + 1), (end5 - 1)))
-        new_modules.append((end5, end3))
+            new_domains.append(((prev_pos3 + 1), (end5 - 1)))
+        new_domains.append((end5, end3))
         prev_pos3 = end3
     if prev_pos3 < global_end3:
         # There is a gap between the last region and total_end3.
         # Create a new region to fill the gap.
-        new_modules.append(((prev_pos3 + 1), global_end3))
-    return new_modules
+        new_domains.append(((prev_pos3 + 1), global_end3))
+    return new_domains
 
 
-def _expand_modules_into_gaps(
-    modules: list[tuple[int, int]], global_end5: int, global_end3: int
+def _expand_domains_into_gaps(
+    domains: list[tuple[int, int]], global_end5: int, global_end3: int
 ):
-    """Expand every module to fill gaps on either side."""
+    """Expand every domain to fill gaps on either side."""
     assert 1 <= global_end5 <= global_end3
-    if not modules:
+    if not domains:
         return list()
     # Make mutable end5s/end3s arrays.
-    end5s, end3s = map(list, zip(*modules))
-    assert 1 <= len(modules) == len(end5s) == len(end3s)
+    end5s, end3s = map(list, zip(*domains))
+    assert 1 <= len(domains) == len(end5s) == len(end3s)
     # Expand to cover the global ends.
     end5s[0] = global_end5
     end3s[-1] = global_end3
     # Split each internal gap: left gets floor, right gets ceil
-    for i in range(len(modules) - 1):
+    for i in range(len(domains) - 1):
         left_end3 = end3s[i]
         right_end5 = end5s[i + 1]
         gap = right_end5 - left_end3 - 1
@@ -498,15 +603,15 @@ def _expand_modules_into_gaps(
     return _ends_arrays_to_tuples(end5s, end3s)
 
 
-def _filter_modules_length(
-    modules: list[tuple[int, int]],
+def _filter_domains_length(
+    domains: list[tuple[int, int]],
     min_length: int | float = 1,
     max_length: int | float = inf,
 ):
-    """Remove modules that are too short or too long."""
+    """Remove domains that are too short or too long."""
     return [
         (end5, end3)
-        for end5, end3 in modules
+        for end5, end3 in domains
         if min_length <= (end3 - end5 + 1) <= max_length
     ]
 
@@ -522,7 +627,7 @@ def _write_pairs_to_csv(pairs: list[tuple[int, int]], csv_file: str | Path):
     df.to_csv(csv_file, index=False)
 
 
-def _calc_cluster_modules(
+def _calc_cluster_domains(
     filter_dirs: list[Path],
     report_dir: Path,
     num_cpus: int,
@@ -530,7 +635,9 @@ def _calc_cluster_modules(
     probe: str,
     min_mut_gap: int | None,
     min_pairs: int,
-    threshold_divisor: float,
+    pair_distance_percentile: float,
+    endpoint_window: int,
+    min_nearby_pairs: int,
     min_length: int,
     max_length: int,
     gap_mode: str,
@@ -582,46 +689,54 @@ def _calc_cluster_modules(
             )
         )
     )
-    # Find modules of correlated pairs.
+    # Find domains of correlated pairs.
     min_mut_gap, _ = set_mut_gap_params(probe, min_mut_gap)
-    modules = _calc_modules_from_pairs(
-        pairs, pair_fdr, min_mut_gap, min_pairs, threshold_divisor=threshold_divisor
+    domains = _calc_domains_from_pairs(
+        pairs,
+        pair_fdr,
+        min_mut_gap,
+        min_pairs,
+        total_end5=region.end5,
+        total_end3=region.end3,
+        pair_distance_percentile=pair_distance_percentile,
+        endpoint_window=endpoint_window,
+        min_nearby_pairs=min_nearby_pairs,
     )
-    n_modules_before_filter = len(modules)
+    n_domains_before_filter = len(domains)
     # Determine what to do with gaps between regions.
     if gap_mode == GAP_MODE_INSERT:
-        modules = _filter_modules_length(modules, min_length=min_length)
-        modules = _insert_modules_into_gaps(modules, region.end5, region.end3)
-        modules = _filter_modules_length(modules, max_length=max_length)
+        domains = _filter_domains_length(domains, min_length=min_length)
+        domains = _insert_domains_into_gaps(domains, region.end5, region.end3)
+        domains = _filter_domains_length(domains, max_length=max_length)
     elif gap_mode == GAP_MODE_EXPAND:
-        modules = _expand_modules_into_gaps(modules, region.end5, region.end3)
-        modules = _filter_modules_length(modules, max_length=max_length)
+        domains = _expand_domains_into_gaps(domains, region.end5, region.end3)
+        domains = _filter_domains_length(domains, max_length=max_length)
     elif gap_mode == GAP_MODE_OMIT:
-        modules = _filter_modules_length(modules, min_length, max_length)
+        domains = _filter_domains_length(domains, min_length, max_length)
     else:
         raise ValueError(gap_mode)
-    logger.debug("Ended adjusting modules: {}", modules)
-    if n_modules_before_filter > 0 and not modules:
+    logger.debug("Ended adjusting domains: {}", domains)
+    if n_domains_before_filter > 0 and not domains:
         logger.warning(
-            "All {} module(s) were removed by length filter (min={}, max={})",
-            n_modules_before_filter,
+            "All {} domain(s) were removed by length filter (min={}, max={})",
+            n_domains_before_filter,
             min_length,
             max_length,
         )
-    # Write the pairs and modules to CSV files.
+    # Write the pairs and domains to CSV files.
     report_dir.mkdir(parents=True, exist_ok=True)
     _write_pairs_to_csv(pairs, report_dir.joinpath(PAIRS_CSV))
-    _write_pairs_to_csv(modules, report_dir.joinpath(MODULES_CSV))
-    # Graph the correlated pairs and modules.
-    html_file = report_dir.joinpath(PAIRS_MODULES_HTML)
+    _write_pairs_to_csv(domains, report_dir.joinpath(DOMAINS_CSV))
+    # Graph the correlated pairs and domains.
+    html_file = report_dir.joinpath(PAIRS_DOMAINS_HTML)
     try:
-        _graph_pairs_and_modules(pairs, modules, region.end5, region.end3, html_file)
+        _graph_pairs_and_domains(pairs, domains, region.end5, region.end3, html_file)
     except Exception as error:
         logger.error(error)
-    return [(ref, end5, end3) for end5, end3 in modules], len(pairs)
+    return [(ref, end5, end3) for end5, end3 in domains], len(pairs)
 
 
-def ensembles(
+def filterscan(
     idmut_report_file: Path,
     *,
     # General options
@@ -631,13 +746,15 @@ def ensembles(
     brotli_level: int,
     force: bool,
     num_cpus: int,
-    # Ensembles options
+    # Domain-detection options
     tile_length: int,
     tile_min_overlap: float,
     erase_tiles: bool,
     pair_fdr: float,
     min_pairs: int,
-    threshold_divisor: float,
+    pair_distance_percentile: float,
+    endpoint_window: int,
+    min_nearby_pairs: int,
     min_cluster_length: int,
     max_cluster_length: int,
     gap_mode: str,
@@ -645,7 +762,7 @@ def ensembles(
     region_coords: Iterable[tuple[str, int, int]],
     region_primers: Iterable[tuple[str, DNA, DNA]],
     primer_gap: int,
-    regions_file: str | None,
+    regions_file: Path | None,
     count_del: bool,
     count_ins: bool,
     no_mut: Iterable[str],
@@ -674,35 +791,16 @@ def ensembles(
     max_filter_iter: int,
     filter_pos_table: bool,
     filter_read_table: bool,
-    # Cluster options
-    min_clusters: int,
-    max_clusters: int,
-    min_em_runs: int,
-    max_em_runs: int,
-    jackpot: bool,
-    jackpot_conf_level: float,
-    max_jackpot_quotient: float,
-    max_jackpot_sims: int,
-    jackpot_max_data: int,
-    min_em_iter: int,
-    max_em_iter: int,
-    em_thresh: float,
-    min_marcd_run: float,
-    max_pearson_run: float,
-    max_arcd_vs_ens_avg: float,
-    max_gini_run: float,
-    max_loglike_vs_best: float,
-    min_pearson_vs_best: float,
-    max_marcd_vs_best: float,
-    try_all_ks: bool,
-    write_all_ks: bool,
-    cluster_pos_table: bool,
-    cluster_abundance_table: bool,
-    verify_times: bool,
     self_contained: bool,
-    seed: int | None,
 ):
-    """Run one IDmut report through the full ensembles pipeline."""
+    """Scan one IDmut dataset for domains of correlated base pairs.
+
+    Run the filter step over overlapping tiles spanning the RNA, detect
+    domains of correlated base pairs, filter the reads over each domain,
+    and write a FilterScanReport recording the domain coordinates. The
+    tiles are then deleted, leaving the domain filter results for
+    clusterscan to cluster.
+    """
     # Load region info cheaply (reads JSON only, no batch I/O).
     datasets, total_regions = load_regions(
         [idmut_report_file], region_coords, region_primers, primer_gap, regions_file
@@ -716,11 +814,11 @@ def ensembles(
     assert list(datasets.keys()) == [ref]
     assert len(datasets[ref]) == 1
     idmut_dataset = datasets[ref][0]
-    # Check if the EnsemblesReport already exists.
+    # Check if the FilterScanReport already exists.
     report_branches = path.add_branch(
-        path.ENSEMBLES_STEP, branch, idmut_dataset.branches
+        path.FILTERSCAN_STEP, branch, idmut_dataset.branches
     )
-    report_file = EnsemblesReport.build_path(
+    report_file = FilterScanReport.build_path(
         {
             path.TOP: idmut_dataset.top,
             path.SAMPLE: idmut_dataset.sample,
@@ -779,27 +877,30 @@ def ensembles(
         )
         # Find regions spanned by correlated base pairs.
         report_dir = report_file.parent
-        module_coords, n_signif_pairs = _calc_cluster_modules(
+        domain_coords, n_signif_pairs = _calc_cluster_domains(
             tiled_dirs,
             report_dir=report_dir,
             pair_fdr=pair_fdr,
             probe=probe,
             min_mut_gap=min_mut_gap,
             min_pairs=min_pairs,
-            threshold_divisor=threshold_divisor,
+            pair_distance_percentile=pair_distance_percentile,
+            endpoint_window=endpoint_window,
+            min_nearby_pairs=min_nearby_pairs,
             min_length=min_cluster_length,
             max_length=max_cluster_length,
             gap_mode=gap_mode,
             num_cpus=num_cpus,
         )
-        if module_coords:
-            # Generate the regions spanned by correlated base pairs.
-            module_dirs = filter_mod.run(
+        if domain_coords:
+            # Filter the reads over each domain so that clusterscan can
+            # cluster them without re-running the filter step.
+            filter_mod.run(
                 input_path=[idmut_report_file],
                 branch=branch,
                 tmp_pfx=tmp_pfx,
                 keep_tmp=keep_tmp,
-                region_coords=tuple(module_coords),
+                region_coords=tuple(domain_coords),
                 region_primers=(),
                 primer_gap=0,
                 regions_file=None,
@@ -836,87 +937,47 @@ def ensembles(
                 num_cpus=num_cpus,
                 force=force,
             )
-            # Cluster the regions spanned by correlated base pairs.
-            cluster_dirs = cluster_mod.run(
-                input_path=module_dirs,
-                tmp_pfx=tmp_pfx,
-                keep_tmp=keep_tmp,
-                min_clusters=min_clusters,
-                max_clusters=max_clusters,
-                min_em_runs=min_em_runs,
-                max_em_runs=max_em_runs,
-                jackpot=jackpot,
-                jackpot_conf_level=jackpot_conf_level,
-                max_jackpot_quotient=max_jackpot_quotient,
-                max_jackpot_sims=max_jackpot_sims,
-                jackpot_max_data=jackpot_max_data,
-                min_em_iter=min_em_iter,
-                max_em_iter=max_em_iter,
-                em_thresh=em_thresh,
-                min_marcd_run=min_marcd_run,
-                max_pearson_run=max_pearson_run,
-                max_arcd_vs_ens_avg=max_arcd_vs_ens_avg,
-                max_gini_run=max_gini_run,
-                max_loglike_vs_best=max_loglike_vs_best,
-                min_pearson_vs_best=min_pearson_vs_best,
-                max_marcd_vs_best=max_marcd_vs_best,
-                try_all_ks=try_all_ks,
-                write_all_ks=write_all_ks,
-                cluster_pos_table=cluster_pos_table,
-                cluster_abundance_table=cluster_abundance_table,
-                verify_times=verify_times,
-                self_contained=self_contained,
-                brotli_level=brotli_level,
-                num_cpus=num_cpus,
-                force=force,
-                seed=seed,
-            )
-            best_ks = [
-                ClusterReport.load(f).get_field(BestKF)
-                for f in path.find_files_chain(
-                    cluster_dirs, ClusterReport.get_path_seg_types()
-                )
-            ]
         else:
-            # Skip clustering if no modules were found.
             logger.warning(
-                "No modules of correlated pairs found in {}", idmut_report_file
+                "No domains of correlated pairs found in {}", idmut_report_file
             )
-            cluster_dirs = list()
-            best_ks = list()
-        EnsemblesReport(
+        FilterScanReport(
             sample=idmut_dataset.sample,
             ref=idmut_dataset.ref,
             reg=total_region.name,
             branches=report_branches,
+            # Domain-detection parameters.
             tile_length=tile_length,
             tile_min_overlap=tile_min_overlap,
             erase_tiles=erase_tiles,
             pair_fdr=pair_fdr,
             min_pairs=min_pairs,
-            threshold_divisor=threshold_divisor,
+            pair_distance_percentile=pair_distance_percentile,
+            endpoint_window=endpoint_window,
+            min_nearby_pairs=min_nearby_pairs,
             min_cluster_length=min_cluster_length,
             max_cluster_length=max_cluster_length,
             gap_mode=gap_mode,
-            tile_coords=tile_coords,
+            # Results (store coordinates without the reference, which is
+            # already recorded in the report).
+            tile_coords=[(end5, end3) for _, end5, end3 in tile_coords],
             n_signif_pairs=n_signif_pairs,
-            n_modules=len(module_coords),
-            module_coords=module_coords,
-            cluster_dirs=list(map(str, cluster_dirs)),
-            best_ks=best_ks,
+            n_domains=len(domain_coords),
+            domain_coords=[(end5, end3) for _, end5, end3 in domain_coords],
             began=began,
             ended=datetime.now(),
         ).save(idmut_dataset.top, force=force)
-        # Erase the tiles at the
         if erase_tiles:
             # Delete the filter reports and batches of the tiles.
-            with logger.debug.single_context("deleting tiled reports and batches"):
+            with logger.debug.single_context("Erasing tiles"):
                 for file in path.find_files_chain(
                     tiled_dirs, FilterReport.get_path_seg_types()
                 ):
                     file.unlink(missing_ok=True)
+                    logger.trace("Erased {}", file)
                 for file in path.find_files_chain(
                     tiled_dirs, FilterBatchIO.get_path_seg_types()
                 ):
                     file.unlink(missing_ok=True)
+                    logger.trace("Erased {}", file)
     return report_file.parent

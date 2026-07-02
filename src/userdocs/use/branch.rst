@@ -34,13 +34,20 @@ Which steps support ``--branch``
 - :doc:`workflow/filter`
 - :doc:`workflow/cluster`
 - :doc:`workflow/fold`
-- :doc:`workflow/ensembles`
+- :doc:`workflow/filterscan`
+- :doc:`workflow/clusterscan`
 - :doc:`utility/splitbam`
 - :doc:`utility/importmm`
 - :doc:`utility/lists`
 
-``seismic wf`` does not accept ``--branch``; run individual steps when you need
-branched analyses.
+``seismic wf`` does not accept ``--branch`` directly, because it runs many steps
+at once.  Instead, to branch one or more steps within the workflow, use
+``--wf-branch STEP NAME``, giving the name of the step followed by the branch
+name.  Repeat the option to branch several steps in one run, e.g.
+``--wf-branch filter strict --wf-branch cluster strict``.  The step name must be
+one of ``demult``, ``align``, ``idmut``, ``filter``, ``filterscan``, ``cluster``,
+``clusterscan``, or ``fold``; any other name raises an error.  See
+:doc:`workflow/wf`.
 
 
 See also

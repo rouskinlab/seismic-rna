@@ -42,6 +42,41 @@ if TYPE_CHECKING:
     import pandas as pd
 
 
+def list_mask_pos(
+    ref: str,
+    mask_pos: Iterable[tuple[str, int]],
+    mask_pos_file: Iterable[str | Path],
+    end5: int | None = None,
+    end3: int | None = None,
+):
+    """List the positions to mask for one reference.
+
+    Combine the positions given directly with those loaded from files,
+    keeping only the positions for the given reference. If ``end5`` and
+    ``end3`` are given, keep only positions within ``[end5, end3]``.
+    Return a sorted array of unique positions.
+    """
+    import numpy as np
+
+    # Collect the positions to mask from the list.
+    mask_pos_arr = np.array([pos for r, pos in mask_pos if r == ref], dtype=int)
+    # List positions to exclude from file(s).
+    for file in path.find_files_chain(mask_pos_file, [path.PositionListSeg]):
+        file_data = PositionList.load_data(file)
+        ref_rows = file_data[FIELD_REF] == ref
+        file_pos = file_data.loc[ref_rows, POS_NAME].values
+        if file_pos.size > 0:
+            mask_pos_arr = np.concatenate([mask_pos_arr, file_pos])
+    # Drop redundant positions and sort the remaining ones.
+    mask_pos_arr = np.unique(np.asarray(mask_pos_arr, dtype=int))
+    # Keep only the positions in the region.
+    if end5 is not None:
+        mask_pos_arr = mask_pos_arr[mask_pos_arr >= end5]
+    if end3 is not None:
+        mask_pos_arr = mask_pos_arr[mask_pos_arr <= end3]
+    return mask_pos_arr
+
+
 class Filterer(object):
     """Filter batches of relationships."""
 
@@ -351,43 +386,17 @@ class Filterer(object):
         self, mask_pos: Iterable[tuple[str, int]], mask_pos_file: Iterable[str | Path]
     ):
         """List all positions to mask."""
-        import numpy as np
-
-        # Collect the positions to mask from the list.
-        dataset_ref = self.dataset.ref
-        mask_pos_arr = np.array(
-            [pos for ref, pos in mask_pos if ref == dataset_ref], dtype=int
+        mask_pos_arr = list_mask_pos(
+            self.dataset.ref,
+            mask_pos,
+            mask_pos_file,
+            end5=self.region.end5,
+            end3=self.region.end3,
         )
-        logger.trace(
-            "Got {} positions listed individually to pre-exclude for reference {!r}",
-            mask_pos_arr.size,
-            dataset_ref,
-        )
-        # List positions to exclude from file(s).
-        for file in path.find_files_chain(mask_pos_file, [path.PositionListSeg]):
-            file_data = PositionList.load_data(file)
-            ref_rows = file_data[FIELD_REF] == dataset_ref
-            file_pos = file_data.loc[ref_rows, POS_NAME].values
-            logger.trace(
-                "Got {} positions in {} to pre-exclude for reference {!r}",
-                file_pos.size,
-                file,
-                dataset_ref,
-            )
-            if file_pos.size > 0:
-                mask_pos_arr = np.concatenate([mask_pos_arr, file_pos])
-        # Drop redundant positions and sort the remaining ones.
-        mask_pos_arr = np.unique(np.asarray(mask_pos_arr, dtype=int))
-        # Keep only the positions in the region.
-        mask_pos_arr = mask_pos_arr[
-            np.logical_and(
-                mask_pos_arr >= self.region.end5, mask_pos_arr <= self.region.end3
-            )
-        ]
         logger.trace(
             "Got {} positions to pre-exclude for reference {!r}",
             mask_pos_arr.size,
-            dataset_ref,
+            self.dataset.ref,
         )
         return mask_pos_arr
 

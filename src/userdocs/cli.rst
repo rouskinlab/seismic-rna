@@ -60,10 +60,15 @@ Run individual steps of the workflow
 .. click:: seismicrna.join:cli
     :prog: seismic join
 
-.. _cli_ensembles:
+.. _cli_filterscan:
 
-.. click:: seismicrna.ensembles.main:cli
-    :prog: seismic ensembles
+.. click:: seismicrna.filterscan.main:cli
+    :prog: seismic filterscan
+
+.. _cli_clusterscan:
+
+.. click:: seismicrna.clusterscan.main:cli
+    :prog: seismic clusterscan
 
 .. _cli_table:
 

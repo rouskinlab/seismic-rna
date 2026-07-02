@@ -48,7 +48,8 @@ IDMUT_STEP = "idmut"
 NAMES_BATCH = "names"
 FILTER_STEP = "filter"
 CLUSTER_STEP = "cluster"
-ENSEMBLES_STEP = "ensembles"
+FILTERSCAN_STEP = "filterscan"
+CLUSTERSCAN_STEP = "clusterscan"
 FOLD_STEP = "fold"
 GRAPH_STEP = "graph"
 LIST_STEP = "list"
@@ -434,7 +435,8 @@ StepField = PathField(
         IDMUT_STEP,
         FILTER_STEP,
         CLUSTER_STEP,
-        ENSEMBLES_STEP,
+        FILTERSCAN_STEP,
+        CLUSTERSCAN_STEP,
         FOLD_STEP,
         GRAPH_STEP,
     ],
@@ -729,9 +731,12 @@ ClustRepSeg = PathSegment(
     "cluster-rep", {EXT: ReportExt}, frmt=CLUSTER_STEP + "-report{ext}"
 )
 
-# Ensembles
-EnsemblesRepSeg = PathSegment(
-    "ensembles-rep", {EXT: ReportExt}, frmt=ENSEMBLES_STEP + "-report{ext}"
+# Filterscan / Clusterscan
+FilterScanRepSeg = PathSegment(
+    "filterscan-rep", {EXT: ReportExt}, frmt=FILTERSCAN_STEP + "-report{ext}"
+)
+ClusterScanRepSeg = PathSegment(
+    "clusterscan-rep", {EXT: ReportExt}, frmt=CLUSTERSCAN_STEP + "-report{ext}"
 )
 
 # Table
@@ -1382,7 +1387,7 @@ class HasFilePath(ABC):
         return {EXT: cls.get_ext()}
 
     @classmethod
-    def parse_path(cls, file: str | Path, exclude_auto: bool = False):
+    def parse_path(cls, file: str | pathlib.Path, exclude_auto: bool = False):
         """Parse a file path to determine the field values."""
         top, field_values = parse_top_separate(file, cls.get_path_seg_types())
         if exclude_auto:

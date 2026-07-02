@@ -2,7 +2,7 @@ from __future__ import annotations
 import json
 from functools import cache, partial
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 
 from .meta import combine_metadata
@@ -84,7 +84,25 @@ def get_sample_metadata(sample: str, samples_metadata: dict[str, dict]):
     )
 
 
-def get_ref_metadata(top: Path, sample: str, ref: str, refs_metadata: dict[str, dict]):
+def branches_through(branches: Iterable[tuple[str, str]], step: str) -> dict[str, str]:
+    """Trim a branches dict down to its items up to and including `step`,
+    dropping any later steps (e.g. Cluster branches when locating an
+    IDmut or Filter report)."""
+    trimmed = dict()
+    for s, branch in branches:
+        trimmed[s] = branch
+        if s == step:
+            break
+    return trimmed
+
+
+def get_ref_metadata(
+    top: Path,
+    sample: str,
+    ref: str,
+    branches: Iterable[tuple[str, str]],
+    refs_metadata: dict[str, dict],
+):
     """Build metadata dict for a reference sequence.
 
     Parameters
@@ -95,6 +113,8 @@ def get_ref_metadata(top: Path, sample: str, ref: str, refs_metadata: dict[str, 
         Sample name.
     ref: str
         Reference sequence name.
+    branches: Iterable[tuple[str, str]]
+        Branches of the table whose reference is being described.
     refs_metadata: dict[str, dict]
         Parsed per-reference metadata from a CSV file.
 
@@ -104,9 +124,15 @@ def get_ref_metadata(top: Path, sample: str, ref: str, refs_metadata: dict[str, 
         Metadata including the reference sequence and number of aligned
         reads, merged with any additional parsed metadata.
     """
+    idmut_branches = branches_through(branches, path.IDMUT_STEP)
     dataset = load_idmut_dataset(
         IDmutReport.build_path(
-            {path.TOP: top, path.SAMPLE: sample, path.BRANCHES: dict(), path.REF: ref}
+            {
+                path.TOP: top,
+                path.SAMPLE: sample,
+                path.BRANCHES: idmut_branches,
+                path.REF: ref,
+            }
         )
     )
     ref_metadata = {REF_SEQ: str(dataset.refseq), REF_NUM_ALIGN: dataset.num_reads}
@@ -115,7 +141,14 @@ def get_ref_metadata(top: Path, sample: str, ref: str, refs_metadata: dict[str, 
     )
 
 
-def get_reg_metadata(top: Path, sample: str, ref: str, reg: str, all_pos: bool):
+def get_reg_metadata(
+    top: Path,
+    sample: str,
+    ref: str,
+    reg: str,
+    branches: Iterable[tuple[str, str]],
+    all_pos: bool,
+):
     """Build metadata dict for a region.
 
     Parameters
@@ -128,6 +161,8 @@ def get_reg_metadata(top: Path, sample: str, ref: str, reg: str, all_pos: bool):
         Reference sequence name.
     reg: str
         Region name.
+    branches: Iterable[tuple[str, str]]
+        Branches of the table whose region is being described.
     all_pos: bool
         If True, include all positions in the region; if False, include
         only unmasked positions.
@@ -137,12 +172,13 @@ def get_reg_metadata(top: Path, sample: str, ref: str, reg: str, all_pos: bool):
     dict[str, Any]
         Metadata including 5'/3' end coordinates and included positions.
     """
+    filter_branches = branches_through(branches, path.FILTER_STEP)
     dataset = FilterMutsDataset(
         FilterReport.build_path(
             {
                 path.TOP: top,
                 path.SAMPLE: sample,
-                path.BRANCHES: dict(),
+                path.BRANCHES: filter_branches,
                 path.REF: ref,
                 path.REG: reg,
             }
@@ -456,11 +492,14 @@ def get_sample_data(
         table = tables.pop()
         ref = table.ref
         reg = table.reg
+        # Convert branches to a tuple of items (hashable, and preserves
+        # step order) so that ref_metadata/reg_metadata can be cached.
+        branches = tuple(table.branches.items())
         # Add the metadata for the reference and region.
         if ref not in data:
-            data[ref] = ref_metadata(top, sample, ref)
+            data[ref] = ref_metadata(top, sample, ref, branches)
         if reg not in data[ref]:
-            data[ref][reg] = reg_metadata(top, sample, ref, reg, all_pos)
+            data[ref][reg] = reg_metadata(top, sample, ref, reg, branches, all_pos)
         for clust, clust_data in get_table_data(table, all_pos).items():
             if clust not in data[ref][reg]:
                 data[ref][reg][clust] = dict()

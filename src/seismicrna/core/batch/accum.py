@@ -159,20 +159,6 @@ def accumulate_counts(
         else:
             count_per_read = None
         logger.trace("num_reads={}", num_reads)
-        if count_per_pos is not None:
-            logger.trace(
-                "count_per_pos={}({}, {})",
-                type(count_per_pos).__name__,
-                count_per_pos.shape,
-                count_per_pos.dtypes,
-            )
-        if count_per_read is not None:
-            logger.trace(
-                "count_per_read={}({}, {})",
-                type(count_per_read).__name__,
-                count_per_read.shape,
-                count_per_read.dtypes,
-            )
     return num_reads, end_counts, count_per_pos, count_per_read
 
 

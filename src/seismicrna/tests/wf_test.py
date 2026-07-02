@@ -71,6 +71,63 @@ def list_profiles(num_structs: int):
     return profiles
 
 
+# Branch names for exercising --wf-branch in the workflow test: one per
+# step that `seismic wf` can branch. Branches accumulate along each step's
+# ancestry, so a step's output directory is named
+# "{step}_{branch1}_{branch2}...".
+WF_BRANCHES = {
+    path.ALIGN_STEP: "ba",
+    path.IDMUT_STEP: "bi",
+    path.FILTER_STEP: "bf",
+    path.CLUSTER_STEP: "bc",
+    path.FOLD_STEP: "bd",
+}
+
+
+def wf_cmd_dir(step: str, *branch_steps: str):
+    """Name of a command directory (e.g. "filter_ba_bi_bf") for `step`,
+    branched by the given ordered steps (using WF_BRANCHES)."""
+    branches = {branch_step: WF_BRANCHES[branch_step] for branch_step in branch_steps}
+    return step + path.BranchesField.build(branches)
+
+
+def action_branch_steps(action: str):
+    """Steps whose branches apply to the table underlying a graph action."""
+    if action == ACTION_IDMUT:
+        return (path.ALIGN_STEP, path.IDMUT_STEP)
+    if action.startswith("clustered"):
+        return (path.ALIGN_STEP, path.IDMUT_STEP, path.FILTER_STEP, path.CLUSTER_STEP)
+    # Any other action (e.g. "filtered") is derived from the Filter step.
+    return (path.ALIGN_STEP, path.IDMUT_STEP, path.FILTER_STEP)
+
+
+def fold_branch_steps(profile_or_action: str):
+    """Steps whose branches apply to a folded profile / ROC graph, given the
+    profile ("average"/"cluster-...") or action ("filtered"/"clustered-...")."""
+    steps = [path.ALIGN_STEP, path.IDMUT_STEP, path.FILTER_STEP]
+    if profile_or_action.startswith("cluster"):
+        steps.append(path.CLUSTER_STEP)
+    steps.append(path.FOLD_STEP)
+    return tuple(steps)
+
+
+def cmp_cmd_dir(step: str, steps1, steps2):
+    """Name of a comparison command directory, mirroring the branch logic of
+    TwoTableGraph.branches for two operands branched by steps1/steps2."""
+    branches1 = {branch_step: WF_BRANCHES[branch_step] for branch_step in steps1}
+    branches2 = {branch_step: WF_BRANCHES[branch_step] for branch_step in steps2}
+    union = branches1 | branches2
+    if all(branches1.get(s, "") == branches2.get(s, "") for s in union):
+        branches = union
+    else:
+        branches = {
+            **{f"{s}1": branch for s, branch in branches1.items()},
+            path.VERSUS_BRANCH: path.VERSUS_BRANCH,
+            **{f"{s}2": branch for s, branch in branches2.items()},
+        }
+    return step + path.BranchesField.build(branches)
+
+
 class TestWorkflow(ut.TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -177,6 +234,7 @@ class TestWorkflow(ut.TestCase):
             input_path=[],
             out_dir=self.out_dir,
             dmfastqx=[samples_dir],
+            wf_branch=list(WF_BRANCHES.items()),
             seed=0,
             batch_size=batch_size,
             brotli_level=0,
@@ -220,16 +278,34 @@ class TestWorkflow(ut.TestCase):
         DeltaProfileRunner.run([self.out_dir], **pair_graph_kwargs)
         ScatterRunner.run([self.out_dir], metric=KEY_PEARSON, **pair_graph_kwargs)
         # Re-run profile graph for clusters with arbitray (k, clust) list.
+        cluster_cmd_dir = wf_cmd_dir(
+            path.CLUSTER_STEP,
+            path.ALIGN_STEP,
+            path.IDMUT_STEP,
+            path.FILTER_STEP,
+            path.CLUSTER_STEP,
+        )
         ProfileRunner.run(
-            [self.out_dir.joinpath(sample).joinpath("cluster") for sample in samples],
+            [
+                self.out_dir.joinpath(sample).joinpath(cluster_cmd_dir)
+                for sample in samples
+            ],
             **clust_rel_graph_kwargs,
         )
-        # Confirm that all expected output files exist.
+        # Confirm that all expected output files exist. Every step was run
+        # under a branch (WF_BRANCHES), so each step's output directory is
+        # named "{step}_{branch1}_{branch2}..." with the branches accumulated
+        # along that step's ancestry, and graphs inherit the branches of the
+        # data they visualize.
         graph_formats = [".csv", ".html", ".svg", ".pdf", ".png"]
+        A = path.ALIGN_STEP
+        I = path.IDMUT_STEP  # noqa: E741
+        F = path.FILTER_STEP
+        C = path.CLUSTER_STEP
         for sample in samples:
             self.assertTrue(self.out_dir.joinpath(f"{sample}__webapp.json").is_file())
             sample_dir = self.out_dir.joinpath(sample)
-            align_dir = sample_dir.joinpath("align")
+            align_dir = sample_dir.joinpath(wf_cmd_dir(A, A))
             self.assertListEqual(
                 sorted(align_dir.iterdir()),
                 sorted(
@@ -245,13 +321,16 @@ class TestWorkflow(ut.TestCase):
                     ]
                 ),
             )
-            for ref, ref_coords in refs_coords.items():
-                idmut_dir = sample_dir.joinpath("idmut", ref)
+            for ref in refs_coords:
+                idmut_dir = sample_dir.joinpath(wf_cmd_dir(I, A, I), ref)
                 self.assertListEqual(
                     sorted(idmut_dir.iterdir()),
                     sorted(list_step_dir_contents(idmut_dir, "idmut", num_batches)),
                 )
-                graph_full_dir = sample_dir.joinpath("graph", ref, "full")
+                # IDmut-action graphs are branched by the Align and IDmut steps.
+                graph_idmut_full = sample_dir.joinpath(
+                    wf_cmd_dir("graph", *action_branch_steps(ACTION_IDMUT)), ref, "full"
+                )
                 for ext in graph_formats:
                     for name in [
                         f"giniroll_{ACTION_IDMUT}_45-9_m-ratio-q0",
@@ -263,40 +342,60 @@ class TestWorkflow(ut.TestCase):
                         f"profile_{ACTION_IDMUT}_n-count",
                         f"snrroll_{ACTION_IDMUT}_21-7_m-ratio-q0",
                     ]:
-                        file = graph_full_dir.joinpath(f"{name}{ext}")
+                        file = graph_idmut_full.joinpath(f"{name}{ext}")
                         with self.subTest(file=file):
                             self.assertTrue(file.is_file())
+                    # ROC / AUC-ROC graphs are branched by the folded profile:
+                    # the "filtered" action off Filter, "clustered" off Cluster.
                     for reg in refs_regions[ref]:
                         for action in list_actions(num_structs):
+                            graph_fold_full = sample_dir.joinpath(
+                                wf_cmd_dir("graph", *fold_branch_steps(action)),
+                                ref,
+                                "full",
+                            )
                             for name in [
                                 f"aucroll_{reg}__{action}_45-9_m-ratio-q0_incl-term",
                                 f"roc_{reg}__{action}_m-ratio-q0_incl-term",
                             ]:
-                                file = graph_full_dir.joinpath(f"{name}{ext}")
+                                file = graph_fold_full.joinpath(f"{name}{ext}")
                                 with self.subTest(file=file):
                                     self.assertTrue(file.is_file())
                 for reg in refs_regions[ref]:
-                    filter_dir = sample_dir.joinpath("filter", ref, reg)
+                    filter_dir = sample_dir.joinpath(wf_cmd_dir(F, A, I, F), ref, reg)
                     self.assertListEqual(
                         sorted(filter_dir.iterdir()),
                         sorted(
                             list_step_dir_contents(filter_dir, "filter", num_batches)
                         ),
                     )
-                    cluster_dir = sample_dir.joinpath("cluster", ref, reg)
+                    cluster_dir = sample_dir.joinpath(
+                        wf_cmd_dir(C, A, I, F, C), ref, reg
+                    )
                     self.assertListEqual(
                         sorted(cluster_dir.iterdir()),
                         sorted(
                             list_step_dir_contents(cluster_dir, "cluster", num_batches)
                         ),
                     )
-                    graph_reg_dir = sample_dir.joinpath("graph", ref, reg)
+                    # Region graphs are branched by their data source.
+                    graph_filter_reg = sample_dir.joinpath(
+                        wf_cmd_dir("graph", A, I, F), ref, reg
+                    )
+                    graph_cluster_reg = sample_dir.joinpath(
+                        wf_cmd_dir("graph", A, I, F, C), ref, reg
+                    )
                     for ext in graph_formats:
                         for name in ["histread_filtered_m-count"]:
-                            file = graph_reg_dir.joinpath(f"{name}{ext}")
+                            file = graph_filter_reg.joinpath(f"{name}{ext}")
                             with self.subTest(file=file):
                                 self.assertTrue(file.is_file())
                         for action in list_actions(num_structs):
+                            graph_action_reg = sample_dir.joinpath(
+                                wf_cmd_dir("graph", *action_branch_steps(action)),
+                                ref,
+                                reg,
+                            )
                             for name in [
                                 f"giniroll_{action}_45-9_m-ratio-q0",
                                 f"histpos_{action}_m-ratio-q0",
@@ -307,33 +406,39 @@ class TestWorkflow(ut.TestCase):
                                 f"profile_{action}_n-count",
                                 f"snrroll_{action}_21-7_m-ratio-q0",
                             ]:
-                                file = graph_reg_dir.joinpath(f"{name}{ext}")
+                                file = graph_action_reg.joinpath(f"{name}{ext}")
                                 with self.subTest(file=file):
                                     self.assertTrue(file.is_file())
                         for name in [
                             "profile_clustered-x-x_m-ratio-q0",
                             "abundance_clustered",
                         ]:
-                            file = graph_reg_dir.joinpath(f"{name}{ext}")
+                            file = graph_cluster_reg.joinpath(f"{name}{ext}")
                             with self.subTest(file=file):
                                 self.assertTrue(file.is_file())
-                fold_dir = sample_dir.joinpath("fold", ref, "full")
-                self.assertListEqual(
-                    sorted(fold_dir.iterdir()),
-                    sorted(
-                        [
-                            fold_dir.joinpath(file)
-                            for reg in refs_regions[ref]
-                            for profile in list_profiles(num_structs)
-                            for file in [
-                                f"{reg}__{profile}.ct",
-                                f"{reg}__{profile}.db",
-                                f"{reg}__{profile}__fold-report.json",
-                                f"{reg}__{profile}__varna-color.txt",
-                            ]
-                        ]
-                    ),
+                # Fold outputs: the "average" profile is branched off Filter,
+                # each "cluster-*" profile is branched off Cluster.
+                fold_avg_dir = sample_dir.joinpath(
+                    wf_cmd_dir("fold", *fold_branch_steps("average")), ref, "full"
                 )
+                fold_clust_dir = sample_dir.joinpath(
+                    wf_cmd_dir("fold", *fold_branch_steps("cluster")), ref, "full"
+                )
+                fold_expected = {fold_avg_dir: [], fold_clust_dir: []}
+                for reg in refs_regions[ref]:
+                    for profile in list_profiles(num_structs):
+                        fold_dir = (
+                            fold_avg_dir if profile == "average" else fold_clust_dir
+                        )
+                        for file in [
+                            f"{reg}__{profile}.ct",
+                            f"{reg}__{profile}.db",
+                            f"{reg}__{profile}__fold-report.json",
+                            f"{reg}__{profile}__varna-color.txt",
+                        ]:
+                            fold_expected[fold_dir].append(fold_dir.joinpath(file))
+                for fold_dir, expected in fold_expected.items():
+                    self.assertListEqual(sorted(fold_dir.iterdir()), sorted(expected))
         cluster_report = cluster_dir.joinpath("cluster-report.json")
         cluster_dataset = ClusterMutsDataset(cluster_report)
         target_tracks = [(1, 1), (2, 2)]
@@ -353,18 +458,26 @@ class TestWorkflow(ut.TestCase):
             sample = f"{sample1}_VS_{sample2}"
             sample_dir = self.out_dir.joinpath(sample)
             for ref, ref_regions in refs_regions.items():
-                graph_full_dir = sample_dir.joinpath("graph", ref, "full")
+                # IDmut comparison graphs: both operands branched Align+IDmut.
+                graph_cmp_full = sample_dir.joinpath(
+                    cmp_cmd_dir(
+                        "graph",
+                        action_branch_steps(ACTION_IDMUT),
+                        action_branch_steps(ACTION_IDMUT),
+                    ),
+                    ref,
+                    "full",
+                )
                 for ext in graph_formats:
                     for name in [
                         f"corroll_{ACTION_IDMUT}_21-7_m-ratio-q0_pcc",
                         f"delprof_{ACTION_IDMUT}_m-ratio-q0",
                         f"scatter_{ACTION_IDMUT}_m-ratio-q0",
                     ]:
-                        file = graph_full_dir.joinpath(f"{name}{ext}")
+                        file = graph_cmp_full.joinpath(f"{name}{ext}")
                         with self.subTest(file=file):
                             self.assertTrue(file.is_file())
                 for reg in ref_regions:
-                    graph_reg_dir = sample_dir.joinpath("graph", ref, reg)
                     for ext in graph_formats:
                         for action1, action2 in product(
                             list_actions(num_structs), repeat=2
@@ -373,12 +486,23 @@ class TestWorkflow(ut.TestCase):
                                 action = action1
                             else:
                                 action = f"{action1}_VS_{action2}"
+                            # The comparison graph is branched by both operands'
+                            # data sources (a "versus" branch if they differ).
+                            graph_cmp_reg = sample_dir.joinpath(
+                                cmp_cmd_dir(
+                                    "graph",
+                                    action_branch_steps(action1),
+                                    action_branch_steps(action2),
+                                ),
+                                ref,
+                                reg,
+                            )
                             for name in [
                                 f"corroll_{action}_21-7_m-ratio-q0_pcc",
                                 f"delprof_{action}_m-ratio-q0",
                                 f"scatter_{action}_m-ratio-q0",
                             ]:
-                                file = graph_reg_dir.joinpath(f"{name}{ext}")
+                                file = graph_cmp_reg.joinpath(f"{name}{ext}")
                                 with self.subTest(file=file):
                                     self.assertTrue(file.is_file())
 

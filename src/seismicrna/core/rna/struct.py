@@ -217,7 +217,7 @@ class RNAStructure(RNARegion):
             ),
         )
 
-    def iter_root_modules(self):
+    def iter_root_domains(self):
         for end5, end3 in self.roots:
             yield self.subregion(end5, end3)
 

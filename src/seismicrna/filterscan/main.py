@@ -3,10 +3,10 @@ from typing import Iterable
 
 from click import command
 
-from .write import ensembles
-from .. import filter as filter_mod, cluster as cluster_mod
+from .write import filterscan
+from .. import filter as filter_mod
 from ..core import path
-from ..core.arg.cmd import CMD_ENSEMBLES
+from ..core.arg.cmd import CMD_FILTERSCAN
 from ..core.arg.cli import (
     merge_params,
     opt_tile_length,
@@ -14,7 +14,9 @@ from ..core.arg.cli import (
     opt_erase_tiles,
     opt_pair_fdr,
     opt_min_pairs,
-    opt_threshold_divisor,
+    opt_pair_distance_percentile,
+    opt_endpoint_window,
+    opt_min_nearby_pairs,
     opt_min_cluster_length,
     opt_max_cluster_length,
     opt_gap_mode,
@@ -25,7 +27,7 @@ from ..core.task import as_list_of_tuples, dispatch
 from ..idmut.dataset import load_idmut_dataset
 
 
-@run_func(CMD_ENSEMBLES)
+@run_func(CMD_FILTERSCAN)
 def run(
     input_path: Iterable[str | Path],
     *,
@@ -36,13 +38,15 @@ def run(
     brotli_level: int,
     force: bool,
     num_cpus: int,
-    # Ensembles options
+    # Domain-detection options
     tile_length: int,
     tile_min_overlap: float,
     erase_tiles: bool,
     pair_fdr: float,
     min_pairs: int,
-    threshold_divisor: float,
+    pair_distance_percentile: float,
+    endpoint_window: int,
+    min_nearby_pairs: int,
     min_cluster_length: int,
     max_cluster_length: int,
     gap_mode: str,
@@ -79,35 +83,9 @@ def run(
     max_filter_iter: int,
     filter_pos_table: bool,
     filter_read_table: bool,
-    # Cluster options
-    min_clusters: int,
-    max_clusters: int,
-    min_em_runs: int,
-    max_em_runs: int,
-    jackpot: bool,
-    jackpot_conf_level: float,
-    max_jackpot_quotient: float,
-    max_jackpot_sims: int,
-    jackpot_max_data: int,
-    min_em_iter: int,
-    max_em_iter: int,
-    em_thresh: float,
-    min_marcd_run: float,
-    max_pearson_run: float,
-    max_arcd_vs_ens_avg: float,
-    max_gini_run: float,
-    max_loglike_vs_best: float,
-    min_pearson_vs_best: float,
-    max_marcd_vs_best: float,
-    try_all_ks: bool,
-    write_all_ks: bool,
-    cluster_pos_table: bool,
-    cluster_abundance_table: bool,
-    verify_times: bool,
     self_contained: bool,
-    seed: int | None,
 ):
-    """Infer independent structure ensembles along an entire RNA."""
+    """Scan an RNA for domains of correlated base pairs."""
     seg_types = load_idmut_dataset.report_path_seg_types
     idmut_report_files = list(path.find_files_chain(input_path, seg_types))
     kwargs = dict(
@@ -116,14 +94,15 @@ def run(
         keep_tmp=keep_tmp,
         brotli_level=brotli_level,
         force=force,
-        num_cpus=num_cpus,
-        # Ensembles options
+        # Domain-detection options
         tile_length=tile_length,
         tile_min_overlap=tile_min_overlap,
         erase_tiles=erase_tiles,
         pair_fdr=pair_fdr,
         min_pairs=min_pairs,
-        threshold_divisor=threshold_divisor,
+        pair_distance_percentile=pair_distance_percentile,
+        endpoint_window=endpoint_window,
+        min_nearby_pairs=min_nearby_pairs,
         min_cluster_length=min_cluster_length,
         max_cluster_length=max_cluster_length,
         gap_mode=gap_mode,
@@ -160,36 +139,10 @@ def run(
         max_filter_iter=max_filter_iter,
         filter_pos_table=filter_pos_table,
         filter_read_table=filter_read_table,
-        # Cluster options
-        min_clusters=min_clusters,
-        max_clusters=max_clusters,
-        min_em_runs=min_em_runs,
-        max_em_runs=max_em_runs,
-        jackpot=jackpot,
-        jackpot_conf_level=jackpot_conf_level,
-        max_jackpot_quotient=max_jackpot_quotient,
-        max_jackpot_sims=max_jackpot_sims,
-        jackpot_max_data=jackpot_max_data,
-        min_em_iter=min_em_iter,
-        max_em_iter=max_em_iter,
-        em_thresh=em_thresh,
-        min_marcd_run=min_marcd_run,
-        max_pearson_run=max_pearson_run,
-        max_arcd_vs_ens_avg=max_arcd_vs_ens_avg,
-        max_gini_run=max_gini_run,
-        max_loglike_vs_best=max_loglike_vs_best,
-        min_pearson_vs_best=min_pearson_vs_best,
-        max_marcd_vs_best=max_marcd_vs_best,
-        try_all_ks=try_all_ks,
-        write_all_ks=write_all_ks,
-        cluster_pos_table=cluster_pos_table,
-        cluster_abundance_table=cluster_abundance_table,
-        verify_times=verify_times,
         self_contained=self_contained,
-        seed=seed,
     )
     return dispatch(
-        ensembles,
+        filterscan,
         num_cpus=num_cpus,
         pass_num_cpus=True,
         as_list=True,
@@ -202,14 +155,15 @@ def run(
 
 params = merge_params(
     filter_mod.params,
-    cluster_mod.params,
     [
         opt_tile_length,
         opt_tile_min_overlap,
         opt_erase_tiles,
         opt_pair_fdr,
         opt_min_pairs,
-        opt_threshold_divisor,
+        opt_pair_distance_percentile,
+        opt_endpoint_window,
+        opt_min_nearby_pairs,
         opt_min_cluster_length,
         opt_max_cluster_length,
         opt_gap_mode,
@@ -217,7 +171,7 @@ params = merge_params(
 )
 
 
-@command(CMD_ENSEMBLES, params=params)
+@command(CMD_FILTERSCAN, params=params)
 def cli(*args, **kwargs):
-    """Infer independent structure ensembles along an entire RNA."""
+    """Scan an RNA for domains of correlated base pairs."""
     return run(*args, **kwargs)

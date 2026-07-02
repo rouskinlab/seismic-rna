@@ -1,29 +1,31 @@
 from ..core import path
 from ..core.report import (
     RegReport,
+    # Domain-detection parameters.
     TileLengthF,
     TileMinOverlapF,
     EraseTilesF,
     PairFdrF,
     MinPairsF,
-    ThresholdDivisorF,
+    PairDistancePercentileF,
+    EndpointWindowF,
+    MinNearbyPairsF,
     MinClusterLengthF,
     MaxClusterLengthF,
     GapModeF,
+    # Results.
     TileCoordsF,
     NumSignifPairsF,
-    NumModulesF,
-    ModuleCoordsF,
-    ClusterDirsF,
-    BestKsF,
+    NumDomainsF,
+    DomainCoordsF,
 )
-from .io import EnsemblesIO
+from .io import FilterScanIO
 
 
-class EnsemblesReport(RegReport, EnsemblesIO):
+class FilterScanReport(RegReport, FilterScanIO):
     @classmethod
     def get_file_seg_type(cls):
-        return path.EnsemblesRepSeg
+        return path.FilterScanRepSeg
 
     @classmethod
     def get_param_report_fields(cls):
@@ -33,7 +35,9 @@ class EnsemblesReport(RegReport, EnsemblesIO):
             EraseTilesF,
             PairFdrF,
             MinPairsF,
-            ThresholdDivisorF,
+            PairDistancePercentileF,
+            EndpointWindowF,
+            MinNearbyPairsF,
             MinClusterLengthF,
             MaxClusterLengthF,
             GapModeF,
@@ -45,9 +49,7 @@ class EnsemblesReport(RegReport, EnsemblesIO):
         return [
             TileCoordsF,
             NumSignifPairsF,
-            NumModulesF,
-            ModuleCoordsF,
-            BestKsF,
-            ClusterDirsF,
+            NumDomainsF,
+            DomainCoordsF,
             *super().get_result_report_fields(),
         ]

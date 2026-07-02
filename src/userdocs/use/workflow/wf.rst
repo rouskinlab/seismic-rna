@@ -93,11 +93,24 @@ Optional steps
 
 Per-step options
     Every option accepted by any individual pipeline command can be given
-    to ``seismic wf``, except for ``--branch``.
+    to ``seismic wf``, except for ``--branch`` (use ``--wf-branch`` instead;
+    see Branches below).
     For the complete list of options and what each does, see the per-step
     pages (:doc:`align`, :doc:`idmut`, :doc:`filter`, :doc:`cluster`,
     :doc:`table`, :doc:`fold`, :doc:`graph`, :doc:`draw`, :doc:`collate`,
     :doc:`export`) and the auto-generated :doc:`/cli`.
+
+Branches
+    ``--wf-branch STEP NAME``
+        Run one step of the workflow under a branch, writing its outputs to
+        ``{out}/{sample}/{STEP}_{NAME}/`` instead of the default directory.
+        Give the step name followed by the branch name, and repeat the option
+        to branch several steps, e.g.
+        ``--wf-branch filter strict --wf-branch cluster strict``.
+        ``STEP`` must be one of ``demult``, ``align``, ``idmut``, ``filter``,
+        ``filterscan``, ``cluster``, ``clusterscan``, or ``fold``; any other
+        name raises an error.
+        See :doc:`/use/branch`.
 
 Global options
     - ``--out-dir`` — output directory (default ``./out``).

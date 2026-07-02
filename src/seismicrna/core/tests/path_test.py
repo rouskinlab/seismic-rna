@@ -261,7 +261,7 @@ class TestCmdSeg(ut.TestCase):
             PathValueError,
             (
                 r"option must be in \['demult', 'align', 'idmut', 'filter', 'cluster', "
-                r"'ensembles', 'fold', 'graph'\], but got 'malign'"
+                r"'filterscan', 'clusterscan', 'fold', 'graph'\], but got 'malign'"
             ),
             StepSeg.build,
             {STEP: "malign", BRANCHES: ["branch1"]},
@@ -290,7 +290,7 @@ class TestCmdSeg(ut.TestCase):
             PathValueError,
             (
                 r"option must be in \['demult', 'align', 'idmut', 'filter', 'cluster', "
-                r"'ensembles', 'fold', 'graph'\], but got 'malign'"
+                r"'filterscan', 'clusterscan', 'fold', 'graph'\], but got 'malign'"
             ),
             StepSeg.build,
             {STEP: "malign", BRANCHES: {"step1": "branch1"}},
@@ -332,7 +332,7 @@ class TestCmdSeg(ut.TestCase):
             PathValueError,
             (
                 r"option must be in \['demult', 'align', 'idmut', 'filter', 'cluster', "
-                r"'ensembles', 'fold', 'graph'\], but got 'alight'"
+                r"'filterscan', 'clusterscan', 'fold', 'graph'\], but got 'alight'"
             ),
             StepSeg.parse,
             "alight",

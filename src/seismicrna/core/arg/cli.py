@@ -188,6 +188,15 @@ opt_branch = Option(
     help="Create a new branch of the workflow with this name",
 )
 
+opt_wf_branch = Option(
+    ("--wf-branch",),
+    type=(str, str),
+    multiple=True,
+    default=(),
+    help="Run a step under a new branch: give the step name then the branch name "
+    "(may be used multiple times to branch different steps)",
+)
+
 # Resource usage options
 
 opt_num_cpus = Option(
@@ -997,6 +1006,13 @@ opt_cluster = Option(
     help="Cluster reads to find alternative structures",
 )
 
+opt_scan = Option(
+    ("--scan/--no-scan",),
+    type=bool,
+    default=False,
+    help="Scan the RNA for domains (filterscan) and cluster them (clusterscan)",
+)
+
 opt_min_clusters = Option(
     ("--min-clusters",), type=int, default=1, help="Start at this many clusters"
 )
@@ -1169,7 +1185,7 @@ opt_join_clusts = Option(
     help="Specify which clusters to join clusters using this CSV file",
 )
 
-# Ensembles options
+# Scan (filterscan / clusterscan) options
 
 opt_tile_length = Option(
     ("--tile-length", "-L"),
@@ -1229,14 +1245,42 @@ opt_gap_mode = Option(
     "regions to fill the gaps",
 )
 
-opt_threshold_divisor = Option(
-    ("--threshold-divisor",),
+opt_pair_distance_percentile = Option(
+    ("--pair-distance-percentile",),
     type=float,
-    default=1.0,
+    default=95.0,
     help=(
-        "Divide the threshold for detecting modules by this value. "
-        "Increasing this value produces larger modules (more sensitivity, "
-        "less specificity), and vice versa."
+        "Among pairs that survive the endpoint-peak filter, drop any pair "
+        "whose L1 (Manhattan) distance to its nearest surviving neighbor "
+        "exceeds this percentile of all such distances. Pairs more isolated "
+        "than this threshold are treated as noise."
+    ),
+)
+
+opt_endpoint_window = Option(
+    ("--endpoint-window",),
+    type=int,
+    default=2,
+    help=(
+        "When testing whether a position is a significant hub of correlated "
+        "pair endpoints, aggregate counts over a window of this many adjacent "
+        "positions: forward (pos5, pos5+1, ..., pos5+window) for 5' ends, "
+        "backward (pos3-window, ..., pos3) for 3' ends. Larger values boost "
+        "statistical power for helices whose endpoints are not always at "
+        "exactly the same position."
+    ),
+)
+
+opt_min_nearby_pairs = Option(
+    ("--min-nearby-pairs",),
+    type=int,
+    default=2,
+    help=(
+        "Minimum number of other surviving pairs that must lie within the "
+        "pair-distance-percentile L1 threshold for a pair to be kept. "
+        "Setting this above 1 filters out small coincidental clusters of "
+        "noise pairs ('buddy noise') at the cost of potentially clipping "
+        "domain edges."
     ),
 )
 

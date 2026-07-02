@@ -20,7 +20,8 @@ the only command most users need to invoke.
     filter
     cluster
     join
-    ensembles
+    filterscan
+    clusterscan
     table
     fold
     graph

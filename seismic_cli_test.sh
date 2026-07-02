@@ -741,6 +741,16 @@ seismic --log "" --exit-on-error wf \
     --force
 ok "wf (cluster, wildcard --dmfastqx)"
 
+substep "12c-scan. wf - with scan (filterscan + clusterscan)"
+seismic --log "" --exit-on-error wf \
+    "$FASTA" \
+    --dmfastqx "$SAMPLES_DIR/$SAMPLE1" \
+    --out-dir  "$WF_OUT/scan" \
+    --probe DMS \
+    --scan \
+    --max-clusters 2
+ok "wf (scan)"
+
 substep "12d. wf - with fold"
 seismic --log "" --exit-on-error wf \
     "$FASTA" \
@@ -883,40 +893,45 @@ seismic --log "" --exit-on-error join \
     "$FILTER1_70"
 ok "join"
 
-substep "13d. ensembles - idmut output"
-seismic --log "" --exit-on-error ensembles \
+substep "13d. filterscan - idmut output"
+seismic --log "" --exit-on-error filterscan \
     "$IDMUT1"
-ok "ensembles"
+ok "filterscan"
 
-substep "13e. sim abstract - from filter output"
+substep "13e. clusterscan - filterscan output"
+seismic --log "" --exit-on-error clusterscan \
+    "$OUT_DIR/$SAMPLE1/filterscan/$REF"
+ok "clusterscan"
+
+substep "13f. sim abstract - from filter output"
 seismic --log "" --exit-on-error sim abstract \
     "$FILTER1"
 ok "sim abstract"
 
-substep "13f. cleanfa - clean FASTA"
+substep "13g. cleanfa - clean FASTA"
 seismic --log "" --exit-on-error cleanfa \
     "$FASTA" \
     --out-dir "$WORKDIR/cleanfa"
 ok "cleanfa"
 
-substep "13g. ct2db - convert CT to dot-bracket"
+substep "13h. ct2db - convert CT to dot-bracket"
 seismic --log "" --exit-on-error ct2db \
     "$SIM_DIR/params/$REF/full"
 ok "ct2db"
 
-substep "13h. db2ct - convert dot-bracket back to CT"
+substep "13i. db2ct - convert dot-bracket back to CT"
 seismic --log "" --exit-on-error db2ct \
     "$SIM_DIR/params/$REF/full" \
     --force
 ok "db2ct"
 
-substep "13i. renumct - renumber CT file"
+substep "13j. renumct - renumber CT file"
 seismic --log "" --exit-on-error renumct \
     --ct-pos-5 "$CT_FILE" 1 \
     --out-dir "$WORKDIR/renumct"
 ok "renumct"
 
-substep "13i-glob. renumct - renumber CT file (wildcard --ct-pos-5)"
+substep "13j-glob. renumct - renumber CT file (wildcard --ct-pos-5)"
 seismic --log "" --exit-on-error renumct \
     --ct-pos-5 "$CT_FILE_GLOB" 1 \
     --out-dir "$WORKDIR/renumct" \

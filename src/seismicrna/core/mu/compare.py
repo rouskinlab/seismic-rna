@@ -259,7 +259,4 @@ def compare_windows(
             mus1, mus2, size=size, min_count=min_count
         ):
             values.at[center] = method(win1, win2)
-        logger.trace(
-            "values={}({}, {})", type(values).__name__, values.shape, values.dtype
-        )
     return values

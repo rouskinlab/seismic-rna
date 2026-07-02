@@ -161,20 +161,6 @@ def calc_coverage(
             cover_per_read = pd.DataFrame.from_dict(
                 {base: pd.Series(0, read_nums) for base in DNA.alph()}
             )
-            logger.trace(
-                "cover_per_pos={}({}, {})",
-                type(cover_per_pos).__name__,
-                cover_per_pos.shape,
-                cover_per_pos.dtypes
-                if read_weights is not None
-                else cover_per_pos.dtype,
-            )
-            logger.trace(
-                "cover_per_read={}({}, {})",
-                type(cover_per_read).__name__,
-                cover_per_read.shape,
-                cover_per_read.dtypes,
-            )
             return cover_per_pos, cover_per_read
         if positions.size > 1 and np.diff(positions).min() <= 0:
             raise ValueError(
@@ -241,18 +227,6 @@ def calc_coverage(
                 )
                 for base in DNA.alph()
             }
-        )
-        logger.trace(
-            "cover_per_pos={}({}, {})",
-            type(cover_per_pos).__name__,
-            cover_per_pos.shape,
-            cover_per_pos.dtypes if read_weights is not None else cover_per_pos.dtype,
-        )
-        logger.trace(
-            "cover_per_read={}({}, {})",
-            type(cover_per_read).__name__,
-            cover_per_read.shape,
-            cover_per_read.dtypes,
         )
         return cover_per_pos, cover_per_read
 
@@ -520,18 +494,6 @@ def calc_count_per_pos(
                 info.loc[index] += pos_counts
                 if is_fits:
                     fits.loc[index] += pos_counts
-    logger.trace(
-        "info={}({}, {})",
-        type(info).__name__,
-        info.shape,
-        info.dtypes if isinstance(info, pd.DataFrame) else info.dtype,
-    )
-    logger.trace(
-        "fits={}({}, {})",
-        type(fits).__name__,
-        fits.shape,
-        fits.dtypes if isinstance(fits, pd.DataFrame) else fits.dtype,
-    )
     return info, fits
 
 
@@ -554,6 +516,4 @@ def calc_count_per_read(
                 info += read_counts
                 if is_fits:
                     fits += read_counts
-    logger.trace("info={}({}, {})", type(info).__name__, info.shape, info.dtype)
-    logger.trace("fits={}({}, {})", type(fits).__name__, fits.shape, fits.dtype)
     return info, fits

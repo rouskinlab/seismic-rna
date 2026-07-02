@@ -7,6 +7,8 @@ from . import (
     idmut as idmut_mod,
     filter as filter_mod,
     cluster as cluster_mod,
+    filterscan as filterscan_mod,
+    clusterscan as clusterscan_mod,
     fold as fold_mod,
     draw as draw_mod,
     collate as collate_mod,
@@ -16,10 +18,10 @@ from .core.arg.cmd import CMD_WORKFLOW
 from .core.arg.cli import (
     merge_params,
     opt_branch,
+    opt_wf_branch,
     opt_demultiplex,
     opt_cluster,
-    opt_min_clusters,
-    opt_max_clusters,
+    opt_scan,
     opt_fold,
     opt_export,
     opt_cgroup,
@@ -71,6 +73,8 @@ from .graph.mutdist import MutationDistanceRunner
 from .graph.poscorr import PositionCorrelationRunner
 from .graph.profile import ProfileRunner
 from .graph.roc import ROCRunner
+from .core import path
+from .filterscan.report import FilterScanReport
 
 MUTAT_RELS = "".join(
     REL_NAMES[code]
@@ -98,6 +102,8 @@ def run(
     brotli_level: int,
     force: bool,
     num_cpus: int,
+    # Branch options
+    wf_branch: Iterable[tuple[str, str]],
     # FASTQ options
     fastqz: Iterable[str | Path],
     fastqy: Iterable[str | Path],
@@ -198,6 +204,19 @@ def run(
     max_filter_iter: int,
     filter_pos_table: bool,
     filter_read_table: bool,
+    # Scan (filterscan / clusterscan) options
+    scan: bool,
+    tile_length: int,
+    tile_min_overlap: float,
+    erase_tiles: bool,
+    pair_fdr: float,
+    min_pairs: int,
+    pair_distance_percentile: float,
+    endpoint_window: int,
+    min_nearby_pairs: int,
+    min_cluster_length: int,
+    max_cluster_length: int,
+    gap_mode: str,
     # Cluster options
     cluster: bool,
     min_clusters: int,
@@ -316,9 +335,34 @@ def run(
     fold_primers = list(fold_primers)
     struct_num = list(struct_num)
     struct_file = list(struct_file)
+    # Map each step to the branch name under which it should run, given
+    # by --wf-branch. Validate every step name against the steps that the
+    # workflow can branch, so that a typo (or an unbranchable step) raises
+    # an error before the pipeline starts rather than being ignored.
+    wf_branch_steps = (
+        path.DEMULT_STEP,
+        path.ALIGN_STEP,
+        path.IDMUT_STEP,
+        path.FILTER_STEP,
+        path.FILTERSCAN_STEP,
+        path.CLUSTER_STEP,
+        path.CLUSTERSCAN_STEP,
+        path.FOLD_STEP,
+    )
+    wf_branches = dict()
+    for step, branch in wf_branch:
+        if step not in wf_branch_steps:
+            raise ValueError(
+                f"--wf-branch got unknown step {repr(step)}; "
+                f"must be one of {wf_branch_steps}"
+            )
+        if step in wf_branches:
+            raise ValueError(f"--wf-branch got multiple branches for step {repr(step)}")
+        wf_branches[step] = branch
     if demult:
         for dmz, dmy, dmx in demultiplex_mod.run(
             fasta=fasta,
+            branch=wf_branches.get(path.DEMULT_STEP, ""),
             refs_meta=refs_meta,
             out_dir=out_dir,
             tmp_pfx=tmp_pfx,
@@ -344,6 +388,7 @@ def run(
         flatten(
             align_mod.run(
                 out_dir=out_dir,
+                branch=wf_branches.get(path.ALIGN_STEP, ""),
                 tmp_pfx=tmp_pfx,
                 keep_tmp=keep_tmp,
                 force=force,
@@ -400,6 +445,7 @@ def run(
         flatten(
             idmut_mod.run(
                 fasta=fasta,
+                branch=wf_branches.get(path.IDMUT_STEP, ""),
                 input_path=input_path,
                 out_dir=out_dir,
                 tmp_pfx=tmp_pfx,
@@ -426,60 +472,163 @@ def run(
             )
         )
     )
-    input_path.extend(
-        flatten(
-            filter_mod.run(
-                input_path=input_path,
-                tmp_pfx=tmp_pfx,
-                keep_tmp=keep_tmp,
-                region_coords=region_coords,
-                region_primers=region_primers,
-                primer_gap=primer_gap,
-                regions_file=regions_file,
-                count_del=count_del,
-                count_ins=count_ins,
-                no_mut=no_mut,
-                only_mut=only_mut,
-                probe=probe,
-                mask_a=mask_a,
-                mask_c=mask_c,
-                mask_g=mask_g,
-                mask_u=mask_u,
-                mask_polya=mask_polya,
-                mask_pos=mask_pos,
-                mask_pos_file=mask_pos_file,
-                drop_read=drop_read,
-                drop_read_file=drop_read_file,
-                drop_discontig=drop_discontig,
-                min_ncov_read=min_ncov_read,
-                min_fcov_read=min_fcov_read,
-                min_finfo_read=min_finfo_read,
-                max_fmut_read=max_fmut_read,
-                min_mut_gap=min_mut_gap,
-                mut_collisions=mut_collisions,
-                min_ninfo_pos=min_ninfo_pos,
-                max_fmut_pos=max_fmut_pos,
-                quick_unbias=quick_unbias,
-                quick_unbias_thresh=quick_unbias_thresh,
-                max_filter_iter=max_filter_iter,
-                filter_pos_table=filter_pos_table,
-                filter_read_table=filter_read_table,
-                brotli_level=brotli_level,
-                self_contained=self_contained,
-                num_cpus=num_cpus,
-                force=force,
+    if scan:
+        # filterscan replaces the filter step: it runs the filter step
+        # over tiles to detect domains. The two are mutually exclusive.
+        input_path.extend(
+            flatten(
+                filterscan_mod.run(
+                    input_path=input_path,
+                    branch=wf_branches.get(path.FILTERSCAN_STEP, ""),
+                    tmp_pfx=tmp_pfx,
+                    keep_tmp=keep_tmp,
+                    region_coords=region_coords,
+                    region_primers=region_primers,
+                    primer_gap=primer_gap,
+                    regions_file=regions_file,
+                    count_del=count_del,
+                    count_ins=count_ins,
+                    no_mut=no_mut,
+                    only_mut=only_mut,
+                    probe=probe,
+                    mask_a=mask_a,
+                    mask_c=mask_c,
+                    mask_g=mask_g,
+                    mask_u=mask_u,
+                    mask_polya=mask_polya,
+                    mask_pos=mask_pos,
+                    mask_pos_file=mask_pos_file,
+                    drop_read=drop_read,
+                    drop_read_file=drop_read_file,
+                    drop_discontig=drop_discontig,
+                    min_ncov_read=min_ncov_read,
+                    min_fcov_read=min_fcov_read,
+                    min_finfo_read=min_finfo_read,
+                    max_fmut_read=max_fmut_read,
+                    min_mut_gap=min_mut_gap,
+                    mut_collisions=mut_collisions,
+                    min_ninfo_pos=min_ninfo_pos,
+                    max_fmut_pos=max_fmut_pos,
+                    quick_unbias=quick_unbias,
+                    quick_unbias_thresh=quick_unbias_thresh,
+                    max_filter_iter=max_filter_iter,
+                    tile_length=tile_length,
+                    tile_min_overlap=tile_min_overlap,
+                    erase_tiles=erase_tiles,
+                    pair_fdr=pair_fdr,
+                    min_pairs=min_pairs,
+                    pair_distance_percentile=pair_distance_percentile,
+                    endpoint_window=endpoint_window,
+                    min_nearby_pairs=min_nearby_pairs,
+                    min_cluster_length=min_cluster_length,
+                    max_cluster_length=max_cluster_length,
+                    gap_mode=gap_mode,
+                    filter_pos_table=filter_pos_table,
+                    filter_read_table=filter_read_table,
+                    self_contained=self_contained,
+                    brotli_level=brotli_level,
+                    num_cpus=num_cpus,
+                    force=force,
+                )
             )
         )
-    )
-    if (
-        cluster
-        or min_clusters != opt_min_clusters.default
-        or max_clusters != opt_max_clusters.default
+    else:
+        input_path.extend(
+            flatten(
+                filter_mod.run(
+                    input_path=input_path,
+                    branch=wf_branches.get(path.FILTER_STEP, ""),
+                    tmp_pfx=tmp_pfx,
+                    keep_tmp=keep_tmp,
+                    region_coords=region_coords,
+                    region_primers=region_primers,
+                    primer_gap=primer_gap,
+                    regions_file=regions_file,
+                    count_del=count_del,
+                    count_ins=count_ins,
+                    no_mut=no_mut,
+                    only_mut=only_mut,
+                    probe=probe,
+                    mask_a=mask_a,
+                    mask_c=mask_c,
+                    mask_g=mask_g,
+                    mask_u=mask_u,
+                    mask_polya=mask_polya,
+                    mask_pos=mask_pos,
+                    mask_pos_file=mask_pos_file,
+                    drop_read=drop_read,
+                    drop_read_file=drop_read_file,
+                    drop_discontig=drop_discontig,
+                    min_ncov_read=min_ncov_read,
+                    min_fcov_read=min_fcov_read,
+                    min_finfo_read=min_finfo_read,
+                    max_fmut_read=max_fmut_read,
+                    min_mut_gap=min_mut_gap,
+                    mut_collisions=mut_collisions,
+                    min_ninfo_pos=min_ninfo_pos,
+                    max_fmut_pos=max_fmut_pos,
+                    quick_unbias=quick_unbias,
+                    quick_unbias_thresh=quick_unbias_thresh,
+                    max_filter_iter=max_filter_iter,
+                    filter_pos_table=filter_pos_table,
+                    filter_read_table=filter_read_table,
+                    brotli_level=brotli_level,
+                    self_contained=self_contained,
+                    num_cpus=num_cpus,
+                    force=force,
+                )
+            )
+        )
+    # clusterscan runs whenever any FilterScanReports are present (from
+    # the filterscan step above or passed in directly).
+    if cluster and list(
+        path.find_files_chain(input_path, FilterScanReport.get_path_seg_types())
     ):
+        input_path.extend(
+            flatten(
+                clusterscan_mod.run(
+                    input_path=input_path,
+                    branch=wf_branches.get(path.CLUSTERSCAN_STEP, ""),
+                    tmp_pfx=tmp_pfx,
+                    keep_tmp=keep_tmp,
+                    min_clusters=min_clusters,
+                    max_clusters=max_clusters,
+                    min_em_runs=min_em_runs,
+                    max_em_runs=max_em_runs,
+                    jackpot=jackpot,
+                    jackpot_conf_level=jackpot_conf_level,
+                    max_jackpot_quotient=max_jackpot_quotient,
+                    max_jackpot_sims=max_jackpot_sims,
+                    jackpot_max_data=jackpot_max_data,
+                    min_em_iter=min_em_iter,
+                    max_em_iter=max_em_iter,
+                    em_thresh=em_thresh,
+                    min_marcd_run=min_marcd_run,
+                    max_pearson_run=max_pearson_run,
+                    max_arcd_vs_ens_avg=max_arcd_vs_ens_avg,
+                    max_gini_run=max_gini_run,
+                    max_loglike_vs_best=max_loglike_vs_best,
+                    min_pearson_vs_best=min_pearson_vs_best,
+                    max_marcd_vs_best=max_marcd_vs_best,
+                    try_all_ks=try_all_ks,
+                    write_all_ks=write_all_ks,
+                    cluster_pos_table=cluster_pos_table,
+                    cluster_abundance_table=cluster_abundance_table,
+                    verify_times=verify_times,
+                    brotli_level=brotli_level,
+                    self_contained=self_contained,
+                    num_cpus=num_cpus,
+                    force=force,
+                    seed=seed,
+                )
+            )
+        )
+    if cluster:
         input_path.extend(
             flatten(
                 cluster_mod.run(
                     input_path=input_path,
+                    branch=wf_branches.get(path.CLUSTER_STEP, ""),
                     tmp_pfx=tmp_pfx,
                     keep_tmp=keep_tmp,
                     min_clusters=min_clusters,
@@ -519,7 +668,7 @@ def run(
             flatten(
                 fold_mod.run(
                     input_path=input_path,
-                    branch="",
+                    branch=wf_branches.get(path.FOLD_STEP, ""),
                     fold_regions_file=fold_regions_file,
                     fold_coords=fold_coords,
                     fold_primers=fold_primers,
@@ -554,7 +703,7 @@ def run(
                 flatten(
                     ROCRunner.run(
                         input_path=input_path,
-                        branch="",
+                        branch=wf_branches.get(path.FOLD_STEP, ""),
                         rels=[REL_NAMES[MUTAT_REL]],
                         use_ratio=True,
                         struct_file=struct_file,
@@ -581,6 +730,7 @@ def run(
                 flatten(
                     RollingAUCRunner.run(
                         input_path=input_path,
+                        branch=wf_branches.get(path.FOLD_STEP, ""),
                         rels=[REL_NAMES[MUTAT_REL]],
                         use_ratio=True,
                         struct_file=struct_file,
@@ -818,11 +968,15 @@ graph_options = [
 ]
 
 params = merge_params(
+    [opt_wf_branch],
     [opt_demultiplex],
     demultiplex_mod.params,
     align_mod.params,
     idmut_mod.params,
     filter_mod.params,
+    [opt_scan],
+    filterscan_mod.params,
+    clusterscan_mod.params,
     [opt_cluster],
     cluster_mod.params,
     [opt_fold],

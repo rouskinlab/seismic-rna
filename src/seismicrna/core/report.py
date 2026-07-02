@@ -115,7 +115,9 @@ from .arg.cli import (
     opt_erase_tiles,
     opt_pair_fdr,
     opt_min_pairs,
-    opt_threshold_divisor,
+    opt_pair_distance_percentile,
+    opt_endpoint_window,
+    opt_min_nearby_pairs,
     opt_min_cluster_length,
     opt_max_cluster_length,
     opt_gap_mode,
@@ -627,27 +629,29 @@ EMKPassingF = ReportField(
 KsWrittenF = ReportField("ks_written", "Numbers of clusters written to batches", list)
 BestKF = ReportField("best_k", "Best number of clusters", int)
 
-# Ensembles fields
+# Filterscan / Clusterscan fields
 
 TileLengthF = OptionReportField(opt_tile_length)
 TileMinOverlapF = OptionReportField(opt_tile_min_overlap)
 EraseTilesF = OptionReportField(opt_erase_tiles)
 PairFdrF = OptionReportField(opt_pair_fdr)
 MinPairsF = OptionReportField(opt_min_pairs)
-ThresholdDivisorF = OptionReportField(opt_threshold_divisor)
+PairDistancePercentileF = OptionReportField(opt_pair_distance_percentile)
+EndpointWindowF = OptionReportField(opt_endpoint_window)
+MinNearbyPairsF = OptionReportField(opt_min_nearby_pairs)
 MinClusterLengthF = OptionReportField(opt_min_cluster_length)
 MaxClusterLengthF = OptionReportField(opt_max_cluster_length)
 GapModeF = OptionReportField(opt_gap_mode)
-TileCoordsF = ReportField("tile_coords", "Coordinates of tiles (ref, end5, end3)", list)
+TileCoordsF = ReportField("tile_coords", "Coordinates of tiles (end5, end3)", list)
 NumSignifPairsF = ReportField(
     "n_signif_pairs", "Number of significant pairs detected", int
 )
-NumModulesF = ReportField("n_modules", "Number of modules detected", int)
-ModuleCoordsF = ReportField(
-    "module_coords", "Coordinates of modules (ref, end5, end3)", list
+NumDomainsF = ReportField("n_domains", "Number of domains detected", int)
+DomainCoordsF = ReportField(
+    "domain_coords", "Coordinates of domains (end5, end3)", list
 )
 ClusterDirsF = ReportField("cluster_dirs", "Directories of cluster results", list)
-BestKsF = ReportField("best_ks", "Best number of clusters for each module", list)
+BestKsF = ReportField("best_ks", "Best number of clusters for each domain", list)
 
 # Join fields
 
