@@ -8,10 +8,11 @@ from seismicrna.core import path
 from seismicrna.core.logs import Level, set_config
 from seismicrna.core.report import ClusterDirsF
 from seismicrna.main import cli as seismic_cli
-from seismicrna.clusterscan.main import run as run_clusterscan
 from seismicrna.clusterscan.report import ClusterScanReport
+from seismicrna.core.seq.region import FULL_NAME
 from seismicrna.filterscan.main import run as run_filterscan
 from seismicrna.filterscan.tests.filterscan_test import ScanTestBase
+from seismicrna.wf import run as run_wf
 
 
 class TestClusterScan(ScanTestBase):
@@ -23,11 +24,17 @@ class TestClusterScan(ScanTestBase):
         expect_regions: dict[tuple[int, int], int],
         **kwargs,
     ):
-        filterscan_dirs = run_filterscan(
-            idmut_dirs, brotli_level=0, filter_pos_table=False, filter_read_table=False
-        )
-        clusterscan_dirs = run_clusterscan(
-            filterscan_dirs,
+        fasta = self.sim_dir.joinpath("refs", f"{self.REFS}.fa")
+        run_wf(
+            fasta=fasta,
+            input_path=idmut_dirs,
+            out_dir=self.sim_dir,
+            demult=False,
+            scan=True,
+            wf_branch=[(path.FILTERSCAN_STEP, "scan")],
+            cluster=True,
+            filter_pos_table=False,
+            filter_read_table=False,
             # Optimize for speed.
             min_em_runs=1,
             max_em_runs=1,
@@ -37,18 +44,29 @@ class TestClusterScan(ScanTestBase):
             cluster_abundance_table=False,
             **kwargs,
         )
+        # Construct the expected path of the ClusterScanReport explicitly
+        # (rather than searching for it) so that this test also verifies
+        # clusterscan writes to the branch-qualified path we expect.
+        top = self.sim_dir.joinpath(path.SIM_SAMPLES_DIR)
+        filterscan_branches = path.add_branch(path.FILTERSCAN_STEP, "scan", {})
+        clusterscan_branches = path.add_branch(
+            path.CLUSTERSCAN_STEP, "", filterscan_branches
+        )
+        report_file = ClusterScanReport.build_path(
+            {
+                path.TOP: top,
+                path.SAMPLE: self.SAMPLE,
+                path.BRANCHES: clusterscan_branches,
+                path.REF: self.REF,
+                path.REG: FULL_NAME,
+            }
+        )
+        report = ClusterScanReport.load(report_file)
         cluster_dirs = {}
-        for clusterscan_dir in clusterscan_dirs:
-            for report_file in path.find_files_chain(
-                [clusterscan_dir], ClusterScanReport.get_path_seg_types()
-            ):
-                # cluster_dirs are stored relative to the output directory.
-                top, _ = ClusterScanReport.parse_path(report_file)
-                report = ClusterScanReport.load(report_file)
-                for rel in report.get_field(ClusterDirsF):
-                    d = top.joinpath(rel)
-                    reg5, reg3 = map(int, d.name.split("-"))
-                    cluster_dirs[(reg5, reg3)] = d
+        for rel in report.get_field(ClusterDirsF):
+            d = top.joinpath(rel)
+            reg5, reg3 = map(int, d.name.split("-"))
+            cluster_dirs[(reg5, reg3)] = d
         for (exp5, exp3), expect_k in expect_regions.items():
             expect_length = exp3 - exp5 + 1
             for (reg5, reg3), cluster_dir in cluster_dirs.items():
@@ -84,7 +102,11 @@ class TestClusterScan(ScanTestBase):
     def test_domains012_read180_cli(self):
         idmut_dirs = self.sim_data([0, 1, 2], 180, seed=0)
         filterscan_dirs = run_filterscan(
-            idmut_dirs, brotli_level=0, filter_pos_table=False, filter_read_table=False
+            idmut_dirs,
+            branch="scan",
+            brotli_level=0,
+            filter_pos_table=False,
+            filter_read_table=False,
         )
         runner = CliRunner()
         args = (

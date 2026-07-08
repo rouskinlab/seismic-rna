@@ -70,15 +70,8 @@ def clusterscan(
     # Recover the filterscan branch and the branches of the domain filter
     # results that filterscan produced.
     branches = report.get_field(BranchesF)
-    filterscan_branch = branches[path.FILTERSCAN_STEP]
-    idmut_branches = {
-        step: name for step, name in branches.items() if step != path.FILTERSCAN_STEP
-    }
-    filter_branches = path.add_branch(
-        path.FILTER_STEP, filterscan_branch, idmut_branches
-    )
     # Build the path of the ClusterScanReport.
-    report_branches = path.add_branch(path.CLUSTERSCAN_STEP, branch, idmut_branches)
+    report_branches = path.add_branch(path.CLUSTERSCAN_STEP, branch, branches)
     report_file = ClusterScanReport.build_path(
         {
             path.TOP: top,
@@ -95,7 +88,7 @@ def clusterscan(
                 {
                     path.TOP: top,
                     path.SAMPLE: sample,
-                    path.BRANCHES: filter_branches,
+                    path.BRANCHES: branches,
                     path.REF: ref,
                     path.REG: hyphenate_ends(end5, end3),
                 }
