@@ -8,10 +8,8 @@ from ..core.report import (
     PairFdrF,
     MinPairsF,
     PairDistancePercentileF,
-    EndpointWindowF,
     MinNearbyPairsF,
     MinClusterLengthF,
-    MaxClusterLengthF,
     GapModeF,
     # Results.
     TileCoordsF,
@@ -36,10 +34,8 @@ class FilterScanReport(RegReport, FilterScanIO):
             PairFdrF,
             MinPairsF,
             PairDistancePercentileF,
-            EndpointWindowF,
             MinNearbyPairsF,
             MinClusterLengthF,
-            MaxClusterLengthF,
             GapModeF,
             *super().get_param_report_fields(),
         ]

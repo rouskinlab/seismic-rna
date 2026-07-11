@@ -76,11 +76,6 @@ Correlated-pair detection
     ``--pair-fdr F``
         False discovery rate for calling a pair of positions correlated
         (default 0.05).
-    ``--endpoint-window N``
-        Aggregate pair-endpoint counts over this many adjacent positions when
-        testing whether a position is a hub of correlated pairs (default 2).
-        Larger values help when a helix does not always start or end at exactly
-        the same position.
     ``--pair-distance-percentile F``
         Drop a correlated pair if its nearest surviving neighbor is farther than
         this percentile of all nearest-neighbor distances (default 95.0).
@@ -95,8 +90,6 @@ Domain length filters
         Keep only domains with at least this many correlated pairs (default 2).
     ``--min-cluster-length N``
         Keep only domains with at least this many positions (default 20).
-    ``--max-cluster-length N``
-        Keep only domains with no more than this many positions (default 1200).
 
 Gap handling
     ``--gap-mode {omit|insert|expand}``

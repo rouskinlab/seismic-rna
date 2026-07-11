@@ -116,10 +116,8 @@ from .arg.cli import (
     opt_pair_fdr,
     opt_min_pairs,
     opt_pair_distance_percentile,
-    opt_endpoint_window,
     opt_min_nearby_pairs,
     opt_min_cluster_length,
-    opt_max_cluster_length,
     opt_gap_mode,
     opt_probe,
     opt_min_pearson_pool,
@@ -637,10 +635,8 @@ EraseTilesF = OptionReportField(opt_erase_tiles)
 PairFdrF = OptionReportField(opt_pair_fdr)
 MinPairsF = OptionReportField(opt_min_pairs)
 PairDistancePercentileF = OptionReportField(opt_pair_distance_percentile)
-EndpointWindowF = OptionReportField(opt_endpoint_window)
 MinNearbyPairsF = OptionReportField(opt_min_nearby_pairs)
 MinClusterLengthF = OptionReportField(opt_min_cluster_length)
-MaxClusterLengthF = OptionReportField(opt_max_cluster_length)
 GapModeF = OptionReportField(opt_gap_mode)
 TileCoordsF = ReportField("tile_coords", "Coordinates of tiles (end5, end3)", list)
 NumSignifPairsF = ReportField(

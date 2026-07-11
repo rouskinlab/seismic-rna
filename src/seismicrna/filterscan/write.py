@@ -249,40 +249,56 @@ def _select_pairs(pairs: list[tuple[int, int]], end5: int, end3: int):
 
 
 def _compute_keep_dists_null(
-    valid_pairs: list[tuple[int, int]], total_end5: int, total_end3: int
+    valid_pairs: list[tuple[int, int]],
+    total_end5: int,
+    total_end3: int,
+    unmasked: np.ndarray,
 ):
     """Expected starts/ends count per position under a null that keeps
     each pair's own length fixed and randomizes only its position.
 
-    For a pair of length L, there are ``num_loc = num_pos_total - L``
-    positions at which it could validly start (and, symmetrically,
-    end) within the region.  Each contributes probability
-    ``1 / num_loc`` of landing at any one of them; summing over all
-    valid pairs (grouped by length, for efficiency) gives the Poisson
-    rate at each position.
+    A pair may be placed at start ``x`` only if both its 5' end ``x`` and
+    its 3' end ``x + L`` fall on **unmasked** positions, since masked
+    positions can never be a pair's endpoint.  For a pair of length L,
+    the number of valid locations is therefore
+    ``num_loc = sum_x u[x] u[x+L]`` over the unmasked indicator ``u``;
+    each valid location contributes probability ``1 / num_loc`` of the
+    pair landing there.  Summing over all valid pairs (grouped by length,
+    for efficiency) gives the Poisson rate at each position.  When no
+    positions are masked this reduces to ``num_loc = num_pos_total - L``.
 
     Returns ``(null_expect_pos5s, null_expect_pos3s)``, each a numpy
     array indexed by position (index 0 == total_end5).
     """
     import numpy as np
 
+    num_pos_total = total_end3 - total_end5 + 1
+    # Indicator of unmasked positions over [total_end5, total_end3].
+    u = np.zeros(num_pos_total)
+    idx = np.asarray(unmasked, dtype=int) - total_end5
+    idx = idx[(idx >= 0) & (idx < num_pos_total)]
+    u[idx] = 1.0
     # Count the pairs with each length (defined as pos3 - pos5).
     length_counts: defaultdict[int, int] = defaultdict(int)
     for pos5, pos3 in valid_pairs:
         length_counts[pos3 - pos5] += 1
     # Count the pairs expected to have their 5'/3' ends at each position
     # under the null model where pairs are moved randomly while keeping
-    # their lengths unchanged.
-    num_pos_total = total_end3 - total_end5 + 1
+    # their lengths unchanged, restricted to unmasked positions.
     null_expect_pos5s = np.zeros(num_pos_total)
     null_expect_pos3s = np.zeros(num_pos_total)
     for length, count in length_counts.items():
-        # Number of locations at which a pair of this length could exist.
-        num_loc = num_pos_total - length
-        assert num_loc >= 1
+        if length >= num_pos_total:
+            continue
+        # A pair of this length can start at x only if x and x + length
+        # are both unmasked.
+        valid_starts = u[: num_pos_total - length] * u[length:]
+        num_loc = valid_starts.sum()
+        if num_loc <= 0.0:
+            continue
         prob_per_loc = count / num_loc
-        null_expect_pos5s[:num_loc] += prob_per_loc
-        null_expect_pos3s[length:] += prob_per_loc
+        null_expect_pos5s[: num_pos_total - length] += prob_per_loc * valid_starts
+        null_expect_pos3s[length:] += prob_per_loc * valid_starts
     return null_expect_pos5s, null_expect_pos3s
 
 
@@ -290,20 +306,16 @@ def _compute_endpoint_significance(
     valid_pairs: list[tuple[int, int]],
     total_end5: int,
     total_end3: int,
-    window: int = 2,
+    unmasked: np.ndarray,
 ):
     """Per-position BH-adjusted p-values for endpoint over-representation,
-    under the length-preserving ("keep_dists") null.
+    under the length-preserving ("keep_dists") null restricted to the
+    unmasked positions.
 
-    For each position p, counts are aggregated over a window of
-    ``window`` adjacent positions to boost statistical power when
-    pairs cluster near -- but not always exactly at -- the same
-    start or end position.  For 5' ends, the window is forward:
-    pairs with pos5 in [p, p+window] are counted at position p.
-    For 3' ends, the window is backward: pairs with pos3 in
-    [p-window, p] are counted at position p.  The null expectations
-    are windowed identically (summing independent Poisson means over
-    the same window).
+    Each position p is tested on its own count of pair 5' (or 3') ends
+    against the null expectation at p: a valid pair independently places
+    its start (or end) at p with probability ``null_expect[p] / r_valid``,
+    so the count follows ``Binomial(r_valid, null_expect[p] / r_valid)``.
 
     Returns ``(positions, padj_pos5s, padj_pos3s)``, or ``None`` if
     there are no valid pairs.
@@ -318,7 +330,7 @@ def _compute_endpoint_significance(
     r_valid = len(valid_pairs)
     positions = np.arange(total_end5, total_end3 + 1)
     null_expect_pos5s, null_expect_pos3s = _compute_keep_dists_null(
-        valid_pairs, total_end5, total_end3
+        valid_pairs, total_end5, total_end3, unmasked
     )
 
     pos5s = np.zeros(num_pos, dtype=int)
@@ -327,30 +339,8 @@ def _compute_endpoint_significance(
         pos5s[pos5 - total_end5] += 1
         pos3s[pos3 - total_end5] += 1
 
-    def forward_window_sum(arr: np.ndarray, w: int) -> np.ndarray:
-        """Sum arr[i:i+w+1] for each i (forward window, clamped at end)."""
-        cs = np.concatenate([[0], np.cumsum(arr)])
-        end_idx = np.minimum(np.arange(1, num_pos + 1) + w, num_pos)
-        return cs[end_idx] - cs[np.arange(num_pos)]
-
-    def backward_window_sum(arr: np.ndarray, w: int) -> np.ndarray:
-        """Sum arr[i-w:i+1] for each i (backward window, clamped at start)."""
-        cs = np.concatenate([[0], np.cumsum(arr)])
-        start_idx = np.maximum(np.arange(num_pos) - w, 0)
-        return cs[np.arange(1, num_pos + 1)] - cs[start_idx]
-
-    win_pos5s = forward_window_sum(pos5s, window)
-    win_pos3s = backward_window_sum(pos3s, window)
-    win_null_pos5s = forward_window_sum(null_expect_pos5s, window)
-    win_null_pos3s = backward_window_sum(null_expect_pos3s, window)
-
-    # Each valid pair independently places its start (or end) in the
-    # window around p with probability win_null[p] / r_valid, so the
-    # windowed count follows Binomial(r_valid, win_null[p] / r_valid)
-    # under the keep_dists null (sums of independent Binomials with the
-    # same n remain Binomial with the same n and summed p).
-    pvals_pos5s = binom.sf(win_pos5s - 1, r_valid, win_null_pos5s / r_valid)
-    pvals_pos3s = binom.sf(win_pos3s - 1, r_valid, win_null_pos3s / r_valid)
+    pvals_pos5s = binom.sf(pos5s - 1, r_valid, null_expect_pos5s / r_valid)
+    pvals_pos3s = binom.sf(pos3s - 1, r_valid, null_expect_pos3s / r_valid)
     # Starts and ends are independent hypotheses; each gets its own
     # BH correction rather than one correction over both combined.
     padj_pos5s = calc_bh_adjusted_pvals(pvals_pos5s)
@@ -430,8 +420,8 @@ def _calc_domains_from_pairs(
     total_end5: int,
     total_end3: int,
     pair_distance_percentile: float,
-    endpoint_window: int,
-    min_nearby_pairs: int = 1,
+    min_nearby_pairs: int,
+    unmasked: np.ndarray,
 ) -> list[tuple[int, int]]:
     """Detect domains by finding significant concentrations of pair
     endpoints, rather than testing pairs crossing each interior
@@ -439,7 +429,9 @@ def _calc_domains_from_pairs(
 
     Stage 1 (endpoint peaks): retain a pair if at least one of its
     5' or 3' position is significantly over-represented (``pair_fdr``)
-    under the length-preserving null.
+    under the length-preserving null, whose placement space is
+    restricted to the ``unmasked`` positions (masked positions can
+    never be a pair endpoint).
 
     Stage 2 (L1 isolation filter): drop any stage-1 survivor whose
     nearest other survivor (L1 distance in (pos5, pos3) space) exceeds
@@ -459,7 +451,7 @@ def _calc_domains_from_pairs(
             return []
 
         significance = _compute_endpoint_significance(
-            valid_pairs, total_end5, total_end3, endpoint_window
+            valid_pairs, total_end5, total_end3, unmasked
         )
         if significance is None:
             return []
@@ -636,10 +628,8 @@ def _calc_cluster_domains(
     min_mut_gap: int | None,
     min_pairs: int,
     pair_distance_percentile: float,
-    endpoint_window: int,
     min_nearby_pairs: int,
     min_length: int,
-    max_length: int,
     gap_mode: str,
 ):
     """Calculate the cluster regions for all tiles of one reference."""
@@ -699,29 +689,26 @@ def _calc_cluster_domains(
         total_end5=region.end5,
         total_end3=region.end3,
         pair_distance_percentile=pair_distance_percentile,
-        endpoint_window=endpoint_window,
         min_nearby_pairs=min_nearby_pairs,
+        unmasked=region.unmasked_int,
     )
     n_domains_before_filter = len(domains)
     # Determine what to do with gaps between regions.
     if gap_mode == GAP_MODE_INSERT:
         domains = _filter_domains_length(domains, min_length=min_length)
         domains = _insert_domains_into_gaps(domains, region.end5, region.end3)
-        domains = _filter_domains_length(domains, max_length=max_length)
     elif gap_mode == GAP_MODE_EXPAND:
         domains = _expand_domains_into_gaps(domains, region.end5, region.end3)
-        domains = _filter_domains_length(domains, max_length=max_length)
     elif gap_mode == GAP_MODE_OMIT:
-        domains = _filter_domains_length(domains, min_length, max_length)
+        domains = _filter_domains_length(domains, min_length=min_length)
     else:
         raise ValueError(gap_mode)
     logger.debug("Ended adjusting domains: {}", domains)
     if n_domains_before_filter > 0 and not domains:
         logger.warning(
-            "All {} domain(s) were removed by length filter (min={}, max={})",
+            "All {} domain(s) were removed by the minimum-length filter (min={})",
             n_domains_before_filter,
             min_length,
-            max_length,
         )
     # Write the pairs and domains to CSV files.
     report_dir.mkdir(parents=True, exist_ok=True)
@@ -753,10 +740,8 @@ def filterscan(
     pair_fdr: float,
     min_pairs: int,
     pair_distance_percentile: float,
-    endpoint_window: int,
     min_nearby_pairs: int,
     min_cluster_length: int,
-    max_cluster_length: int,
     gap_mode: str,
     # Filter options
     region_coords: Iterable[tuple[str, int, int]],
@@ -885,10 +870,8 @@ def filterscan(
             min_mut_gap=min_mut_gap,
             min_pairs=min_pairs,
             pair_distance_percentile=pair_distance_percentile,
-            endpoint_window=endpoint_window,
             min_nearby_pairs=min_nearby_pairs,
             min_length=min_cluster_length,
-            max_length=max_cluster_length,
             gap_mode=gap_mode,
             num_cpus=num_cpus,
         )
@@ -953,10 +936,8 @@ def filterscan(
             pair_fdr=pair_fdr,
             min_pairs=min_pairs,
             pair_distance_percentile=pair_distance_percentile,
-            endpoint_window=endpoint_window,
             min_nearby_pairs=min_nearby_pairs,
             min_cluster_length=min_cluster_length,
-            max_cluster_length=max_cluster_length,
             gap_mode=gap_mode,
             # Results (store coordinates without the reference, which is
             # already recorded in the report).

@@ -15,10 +15,8 @@ from ..core.arg.cli import (
     opt_pair_fdr,
     opt_min_pairs,
     opt_pair_distance_percentile,
-    opt_endpoint_window,
     opt_min_nearby_pairs,
     opt_min_cluster_length,
-    opt_max_cluster_length,
     opt_gap_mode,
 )
 from ..core.run import run_func
@@ -45,10 +43,8 @@ def run(
     pair_fdr: float,
     min_pairs: int,
     pair_distance_percentile: float,
-    endpoint_window: int,
     min_nearby_pairs: int,
     min_cluster_length: int,
-    max_cluster_length: int,
     gap_mode: str,
     # Filter options
     region_coords: Iterable[tuple[str, int, int]],
@@ -101,10 +97,8 @@ def run(
         pair_fdr=pair_fdr,
         min_pairs=min_pairs,
         pair_distance_percentile=pair_distance_percentile,
-        endpoint_window=endpoint_window,
         min_nearby_pairs=min_nearby_pairs,
         min_cluster_length=min_cluster_length,
-        max_cluster_length=max_cluster_length,
         gap_mode=gap_mode,
         # Filter options
         region_coords=region_coords,
@@ -162,10 +156,8 @@ params = merge_params(
         opt_pair_fdr,
         opt_min_pairs,
         opt_pair_distance_percentile,
-        opt_endpoint_window,
         opt_min_nearby_pairs,
         opt_min_cluster_length,
-        opt_max_cluster_length,
         opt_gap_mode,
     ],
 )

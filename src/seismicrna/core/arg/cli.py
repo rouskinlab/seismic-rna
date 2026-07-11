@@ -1229,13 +1229,6 @@ opt_min_cluster_length = Option(
     help="Cluster only the regions with at least this many positions",
 )
 
-opt_max_cluster_length = Option(
-    ("--max-cluster-length",),
-    type=int,
-    default=1200,
-    help="Cluster only the regions with no more than this many positions",
-)
-
 opt_gap_mode = Option(
     ("--gap-mode",),
     type=Choice(GAP_MODE, case_sensitive=False),
@@ -1254,20 +1247,6 @@ opt_pair_distance_percentile = Option(
         "whose L1 (Manhattan) distance to its nearest surviving neighbor "
         "exceeds this percentile of all such distances. Pairs more isolated "
         "than this threshold are treated as noise."
-    ),
-)
-
-opt_endpoint_window = Option(
-    ("--endpoint-window",),
-    type=int,
-    default=2,
-    help=(
-        "When testing whether a position is a significant hub of correlated "
-        "pair endpoints, aggregate counts over a window of this many adjacent "
-        "positions: forward (pos5, pos5+1, ..., pos5+window) for 5' ends, "
-        "backward (pos3-window, ..., pos3) for 3' ends. Larger values boost "
-        "statistical power for helices whose endpoints are not always at "
-        "exactly the same position."
     ),
 )
 

@@ -20,6 +20,7 @@ from seismicrna.filterscan.write import (
     _aggregate_pairs,
     _select_pairs,
     _calc_domains_from_pairs,
+    _compute_keep_dists_null,
     _insert_domains_into_gaps,
     _expand_domains_into_gaps,
     _filter_domains_length,
@@ -320,6 +321,40 @@ class ScanTestBase(ut.TestCase):
         return idmut_dirs
 
 
+class TestKeepDistsNullMasking(ut.TestCase):
+    """The length-preserving null must place pairs only on unmasked
+    positions (masked positions can never be a pair endpoint)."""
+
+    def test_unmasked_reduces_to_uniform(self):
+        import numpy as np
+
+        pairs = [(1, 4), (2, 5), (3, 6)]  # three pairs, all length 3
+        total_end5, total_end3 = 1, 8
+        unmasked = np.arange(total_end5, total_end3 + 1)
+        p5, p3 = _compute_keep_dists_null(pairs, total_end5, total_end3, unmasked)
+        # Each pair distributes total probability 1 across positions.
+        self.assertAlmostEqual(p5.sum(), 3.0)
+        self.assertAlmostEqual(p3.sum(), 3.0)
+        # Length 3 over 8 positions -> num_loc = 5 valid starts, each 3 * (1/5).
+        np.testing.assert_allclose(p5[:5], 3 / 5)
+        np.testing.assert_allclose(p5[5:], 0.0)
+
+    def test_masked_positions_get_zero_expectation(self):
+        import numpy as np
+
+        pairs = [(1, 4), (2, 5), (3, 6)]
+        total_end5, total_end3 = 1, 8
+        # Mask position 4: no pair may start or end there.
+        unmasked = np.array([p for p in range(1, 9) if p != 4])
+        p5, p3 = _compute_keep_dists_null(pairs, total_end5, total_end3, unmasked)
+        # Probability is still conserved (each pair lands on some valid spot).
+        self.assertAlmostEqual(p5.sum(), 3.0)
+        self.assertAlmostEqual(p3.sum(), 3.0)
+        # Masked position 4 carries no expected 5' or 3' end.
+        self.assertEqual(p5[4 - total_end5], 0.0)
+        self.assertEqual(p3[4 - total_end5], 0.0)
+
+
 class TestCalcDomainsFromPairsSimulatedData(ut.TestCase):
     """Regression test using simulated DMS-MaPseq data of a 1200-nt RNA
     with a complex, multi-domain structure. Key expectations:
@@ -335,7 +370,6 @@ class TestCalcDomainsFromPairsSimulatedData(ut.TestCase):
     MIN_MUT_GAP = 4
     MIN_PAIRS = 2
     PAIR_DISTANCE_PERCENTILE = 95.0
-    ENDPOINT_WINDOW = 2
     MIN_NEARBY_PAIRS = 1
     TOTAL_END5 = 1
     TOTAL_END3 = 1200
@@ -353,6 +387,8 @@ class TestCalcDomainsFromPairsSimulatedData(ut.TestCase):
         cls._pairs = sorted(set(pairs))
 
     def _run(self):
+        import numpy as np
+
         return _calc_domains_from_pairs(
             self._pairs,
             self.PAIR_FDR,
@@ -361,13 +397,13 @@ class TestCalcDomainsFromPairsSimulatedData(ut.TestCase):
             self.TOTAL_END5,
             self.TOTAL_END3,
             self.PAIR_DISTANCE_PERCENTILE,
-            self.ENDPOINT_WINDOW,
             self.MIN_NEARBY_PAIRS,
+            np.arange(self.TOTAL_END5, self.TOTAL_END3 + 1),
         )
 
     def test_expected_domains(self):
         result = self._run()
-        self.assertListEqual(result, [(273, 591), (663, 796), (802, 896), (903, 992)])
+        self.assertListEqual(result, [(273, 591), (655, 796), (802, 894), (903, 992)])
 
     def test_spurious_pair_not_in_any_domain(self):
         # Pair (148, 196) lies in a sparse, weakly-supported transition
