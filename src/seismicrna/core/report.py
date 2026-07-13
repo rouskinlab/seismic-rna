@@ -114,9 +114,8 @@ from .arg.cli import (
     opt_tile_min_overlap,
     opt_erase_tiles,
     opt_pair_fdr,
-    opt_min_pairs,
-    opt_pair_distance_percentile,
-    opt_min_nearby_pairs,
+    opt_band_width,
+    opt_bic_multiplier,
     opt_min_cluster_length,
     opt_gap_mode,
     opt_probe,
@@ -633,9 +632,8 @@ TileLengthF = OptionReportField(opt_tile_length)
 TileMinOverlapF = OptionReportField(opt_tile_min_overlap)
 EraseTilesF = OptionReportField(opt_erase_tiles)
 PairFdrF = OptionReportField(opt_pair_fdr)
-MinPairsF = OptionReportField(opt_min_pairs)
-PairDistancePercentileF = OptionReportField(opt_pair_distance_percentile)
-MinNearbyPairsF = OptionReportField(opt_min_nearby_pairs)
+BandWidthF = OptionReportField(opt_band_width)
+BicMultiplierF = OptionReportField(opt_bic_multiplier)
 MinClusterLengthF = OptionReportField(opt_min_cluster_length)
 GapModeF = OptionReportField(opt_gap_mode)
 TileCoordsF = ReportField("tile_coords", "Coordinates of tiles (end5, end3)", list)

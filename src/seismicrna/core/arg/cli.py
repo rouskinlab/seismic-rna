@@ -1215,13 +1215,6 @@ opt_pair_fdr = Option(
     help="Find correlated pairs at this false discovery rate (FDR)",
 )
 
-opt_min_pairs = Option(
-    ("--min-pairs",),
-    type=int,
-    default=2,
-    help="Cluster only the regions with at least this many correlated pairs",
-)
-
 opt_min_cluster_length = Option(
     ("--min-cluster-length",),
     type=int,
@@ -1238,28 +1231,29 @@ opt_gap_mode = Option(
     "regions to fill the gaps",
 )
 
-opt_pair_distance_percentile = Option(
-    ("--pair-distance-percentile",),
-    type=float,
-    default=95.0,
+opt_band_width = Option(
+    ("--band-width",),
+    type=int,
+    default=0,
     help=(
-        "Among pairs that survive the endpoint-peak filter, drop any pair "
-        "whose L1 (Manhattan) distance to its nearest surviving neighbor "
-        "exceeds this percentile of all such distances. Pairs more isolated "
-        "than this threshold are treated as noise."
+        "Consider only pairs of positions no more than this far apart when "
+        "finding domains (if 0, do not restrict pairs beyond what the tile "
+        "length already bounds)"
     ),
 )
 
-opt_min_nearby_pairs = Option(
-    ("--min-nearby-pairs",),
-    type=int,
-    default=2,
+opt_bic_multiplier = Option(
+    ("--bic-multiplier",),
+    type=float,
+    default=1.0,
     help=(
-        "Minimum number of other surviving pairs that must lie within the "
-        "pair-distance-percentile L1 threshold for a pair to be kept. "
-        "Setting this above 1 filters out small coincidental clusters of "
-        "noise pairs ('buddy noise') at the cost of potentially clipping "
-        "domain edges."
+        "Scale the per-domain Bayesian information criterion (BIC) "
+        "penalty used to segment the correlated-pair contact map into "
+        "domains: a candidate domain is kept only if its own density of "
+        "significant pairs is dense enough to outweigh this penalty "
+        "against the background rate. Higher values require stronger "
+        "evidence and yield fewer, larger domains; lower values yield "
+        "more, smaller domains"
     ),
 )
 

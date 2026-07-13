@@ -7,6 +7,7 @@ from seismicrna.core.batch.confusion import (
     init_confusion_matrix,
     calc_confusion_matrix,
     calc_confusion_phi,
+    calc_confusion_chi_square,
     calc_bh_adjusted_pvals,
 )
 from seismicrna.core.batch.confusion_jit import count_intersection
@@ -79,6 +80,39 @@ class TestInitConfusionMatrix(ut.TestCase):
             [[2, 2, 4, 4], [7, 9, 7, 9]], names=["Position A", "Position B"]
         )
         n, a, b, ab = init_confusion_matrix(pos_index, min_gap=2)
+        for entry in [n, a, b, ab]:
+            self.assertIsInstance(entry, pd.Series)
+            self.assertTrue(entry.index.equals(expect_index))
+            self.assertTrue(entry.index.equal_levels(expect_index))
+            self.assertTrue(np.all(entry == 0))
+
+    def test_no_clusters_max_gap(self):
+        pos_index = pd.MultiIndex.from_arrays(
+            [[2, 4, 7, 9], ["C", "C", "A", "A"]], names=[POS_NAME, BASE_NAME]
+        )
+        # Keep only pairs with a gap <= 3: (2,4) gap=2, (4,7) gap=3,
+        # (7,9) gap=2 survive; (2,7) gap=5, (2,9) gap=7, (4,9) gap=5 do not.
+        expect_index = pd.MultiIndex.from_arrays(
+            [[2, 4, 7], [4, 7, 9]], names=["Position A", "Position B"]
+        )
+        n, a, b, ab = init_confusion_matrix(pos_index, max_gap=3)
+        for entry in [n, a, b, ab]:
+            self.assertIsInstance(entry, pd.Series)
+            self.assertTrue(entry.index.equals(expect_index))
+            self.assertTrue(entry.index.equal_levels(expect_index))
+            self.assertTrue(np.all(entry == 0))
+
+    def test_no_clusters_min_and_max_gap(self):
+        pos_index = pd.MultiIndex.from_arrays(
+            [[2, 4, 7, 9], ["C", "C", "A", "A"]], names=[POS_NAME, BASE_NAME]
+        )
+        # Gaps: (2,4)=2, (2,7)=5, (2,9)=7, (4,7)=3, (4,9)=5, (7,9)=2.
+        # min_gap=2 excludes (2,4) and (7,9) (gap not > 2); max_gap=5
+        # additionally excludes (2,9) (gap=7); leaves (2,7), (4,7), (4,9).
+        expect_index = pd.MultiIndex.from_arrays(
+            [[2, 4, 4], [7, 7, 9]], names=["Position A", "Position B"]
+        )
+        n, a, b, ab = init_confusion_matrix(pos_index, min_gap=2, max_gap=5)
         for entry in [n, a, b, ab]:
             self.assertIsInstance(entry, pd.Series)
             self.assertTrue(entry.index.equals(expect_index))
@@ -283,6 +317,53 @@ class TestCalcConfusionPhi(ut.TestCase):
         expect = pd.DataFrame([[-0.022385334, -1 / 12, np.nan], [np.nan, 1.0, -1.0]])
         result = calc_confusion_phi(n, a, b, ab, min_cover=100)
         self.assertTrue(np.allclose(result, expect, equal_nan=True))
+
+
+class TestCalcConfusionChiSquare(ut.TestCase):
+    def test_matches_pearson_chi_square(self):
+        """n * phi ** 2 must equal the Pearson chi-square statistic
+        (no continuity correction) for a 2x2 contingency table."""
+        from scipy.stats import chi2_contingency
+
+        rng = np.random.default_rng(0)
+        n_vals, a_vals, b_vals, ab_vals, expect = [], [], [], [], []
+        for _ in range(30):
+            n = int(rng.integers(20, 200))
+            a = int(rng.integers(1, n))
+            b = int(rng.integers(1, n))
+            lo = max(0, a + b - n)
+            hi = min(a, b)
+            if lo > hi:
+                continue
+            ab = int(rng.integers(lo, hi + 1))
+            table = np.array([[ab, a - ab], [b - ab, n - a - b + ab]], dtype=float)
+            if np.any(table.sum(axis=0) == 0) or np.any(table.sum(axis=1) == 0):
+                # A degenerate table has undefined chi-square (n < min_cover
+                # territory); skip it here since calc_confusion_phi already
+                # masks such cases to NaN, tested elsewhere.
+                continue
+            stat, _, _, _ = chi2_contingency(table, correction=False)
+            n_vals.append(n)
+            a_vals.append(a)
+            b_vals.append(b)
+            ab_vals.append(ab)
+            expect.append(stat)
+        n_s = pd.Series(n_vals, dtype=float)
+        a_s = pd.Series(a_vals, dtype=float)
+        b_s = pd.Series(b_vals, dtype=float)
+        ab_s = pd.Series(ab_vals, dtype=float)
+        phi = calc_confusion_phi(n_s, a_s, b_s, ab_s)
+        chi_square = calc_confusion_chi_square(n_s, phi)
+        np.testing.assert_allclose(chi_square, expect, atol=1e-6)
+
+    def test_nan_propagates(self):
+        n = pd.Series([100, 100])
+        a = pd.Series([50, 50])
+        b = pd.Series([50, 50])
+        ab = pd.Series([25, 20])
+        phi = calc_confusion_phi(n, a, b, ab, min_cover=1000)
+        chi_square = calc_confusion_chi_square(n, phi)
+        self.assertTrue(np.all(np.isnan(chi_square)))
 
 
 def bh_ref_adjusted(p):

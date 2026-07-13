@@ -1,7 +1,5 @@
 from __future__ import annotations
 from datetime import datetime
-from itertools import chain
-from collections import defaultdict
 from math import ceil, inf
 from pathlib import Path
 from typing import Iterable
@@ -15,6 +13,7 @@ from ..core.batch.confusion import (
     POSITION_B,
     calc_confusion_pvals,
     calc_confusion_phi,
+    calc_confusion_chi_square,
     calc_bh_adjusted_pvals,
 )
 from ..core.batch.accum import accumulate_confusion_matrices
@@ -27,7 +26,7 @@ from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write
 from ..filter.dataset import FilterMutsDataset, load_filter_dataset
 from ..filter.io import FilterBatchIO
-from ..filter.main import load_regions, set_mut_gap_params
+from ..filter.main import load_regions
 from ..filter.report import FilterReport
 from .report import FilterScanReport
 
@@ -35,11 +34,17 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     import numpy as np
+    import pandas as pd
 
 PAIRS_CSV = "pairs.csv"
 DOMAINS_CSV = "domains.csv"
 PAIRS_DOMAINS_HTML = "pairs_and_domains.html"
 CONFUSION_MATRIX_CSV = "confusion-matrix.csv"
+
+N_COL = "N"
+PHI_COL = "Phi"
+CHI_SQUARE_COL = "Chi-Square"
+SIGNIFICANT_COL = "Significant"
 
 
 def _get_batch_read_lengths(batch_num: int, dataset: MutsDataset):
@@ -164,8 +169,21 @@ def _calc_tile_coords(
     return [(ref, end5, end3) for end5, end3 in tiles]
 
 
-def _find_correlated_pairs(dataset: FilterMutsDataset, pair_fdr: float, num_cpus: int):
-    # Calculate the confusion matrix for the region.
+def _find_correlated_pairs(
+    dataset: FilterMutsDataset, pair_fdr: float, band_width: int, num_cpus: int
+):
+    """Calculate the confusion matrix for the region, restricted to
+    pairs of positions no more than ``band_width`` apart (0 means no
+    additional restriction beyond the tile itself, which already
+    bounds every pair's separation to less than the tile length).
+
+    Returns a table indexed by every in-band pair of positions, with
+    columns for its coverage (N), phi correlation, chi-square score
+    (``N * phi ** 2``), and whether it is significant at the given
+    false discovery rate (by the same hypergeometric + BH test as
+    before; the chi-square score is used only downstream, to find
+    domains, not to flag individual pairs).
+    """
     import pandas as pd
 
     n, a, b, ab = accumulate_confusion_matrices(
@@ -175,6 +193,7 @@ def _find_correlated_pairs(dataset: FilterMutsDataset, pair_fdr: float, num_cpus
         dataset.region.unmasked,
         None,
         min_gap=dataset.min_mut_gap,
+        max_gap=(band_width if band_width > 0 else None),
         num_cpus=num_cpus,
     )
     # Determine which pairs of positions correlate significantly at a
@@ -182,9 +201,10 @@ def _find_correlated_pairs(dataset: FilterMutsDataset, pair_fdr: float, num_cpus
     pvals = calc_confusion_pvals(n, a, b, ab)
     pvals_bh_adjusted = calc_bh_adjusted_pvals(pvals)
     is_significant = pvals_bh_adjusted <= pair_fdr
+    phi = calc_confusion_phi(n, a, b, ab)
+    chi_square = calc_confusion_chi_square(n, phi)
     # Save the confusion matrix as a CSV file.
     csv_file = dataset.report_file.with_name(CONFUSION_MATRIX_CSV)
-    phi = calc_confusion_phi(n, a, b, ab)
     confusion_matrix = pd.DataFrame.from_dict(
         {
             "Neither Mutated": n - (a + b - ab),
@@ -192,290 +212,516 @@ def _find_correlated_pairs(dataset: FilterMutsDataset, pair_fdr: float, num_cpus
             "Only B Mutated": b - ab,
             "Both Mutated": ab,
             "Phi Correlation": phi,
+            CHI_SQUARE_COL: chi_square,
             "Raw P-Value": pvals,
             "Adjusted P-Value": pvals_bh_adjusted,
             f"Significant at FDR={pair_fdr}": is_significant,
         }
     )
     confusion_matrix.to_csv(csv_file)
-    # Return the significantly correlated pairs.
-    pairs = n.index
-    pairs_significant = pairs[is_significant].to_list()
+    table = pd.DataFrame(
+        {
+            N_COL: n,
+            PHI_COL: phi,
+            CHI_SQUARE_COL: chi_square,
+            SIGNIFICANT_COL: is_significant,
+        }
+    )
     logger.trace(
-        "{} has {} pairs with significant correlations out of {} total pairs",
+        "{} has {} pair(s) within the band, of which {} are significant",
         dataset,
-        len(pairs_significant),
-        len(pairs),
+        len(table.index),
+        int(is_significant.sum()),
     )
-    return pairs_significant
+    return table
 
 
-def _aggregate_pairs(pairs: list[tuple[int, int]]) -> list[tuple[int, int]]:
-    """Aggregate pairs that overlap."""
-    with logger.debug.single_context(
-        "Generating initial domains by aggregating {} correlated pair(s)", len(pairs)
-    ):
-        if not pairs:
-            return list()
-        assert len(pairs[0]) == 2
-        aggregates = [pairs[0]]
-        for pair in pairs[1:]:
-            pos5, pos3 = pair
-            assert 1 <= pos5 <= pos3
-            assert pos5 >= aggregates[-1][0]
-            if pos5 <= aggregates[-1][1]:
-                # This pair overlaps with the previous aggregate.
-                if pos3 > aggregates[-1][1]:
-                    # This pair extends the previous aggregate.
-                    aggregates[-1] = (aggregates[-1][0], pos3)
-            else:
-                # This pair does not overlap with the previous aggregate.
-                # Create a new aggregate.
-                aggregates.append(pair)
-            logger.trace(
-                "After aggregating pair {}, the last domain is {}", pair, aggregates[-1]
-            )
-        logger.debug(
-            "Generated {} initial domain(s) by aggregating {} correlated pair(s)",
-            len(aggregates),
-            len(pairs),
+def _build_banded_table(
+    per_tile_tables: list[pd.DataFrame], band_width: int
+) -> pd.DataFrame:
+    """Merge per-tile pair tables into one table with one row per
+    unique in-band pair of positions, keeping the tile observation
+    with the greatest coverage (N) for any pair seen in more than one
+    overlapping tile (the highest-power estimate, and avoids double-
+    counting the same reads under two different tilings).
+
+    ``band_width`` caps the separation ``j - i`` of every row (0 means
+    no additional cap beyond what the tiles already impose, since
+    every pair's separation is already less than the tile length).
+    """
+    import pandas as pd
+
+    if not per_tile_tables:
+        return pd.DataFrame(
+            {col: pd.Series(dtype=float) for col in (N_COL, PHI_COL, CHI_SQUARE_COL)}
+            | {SIGNIFICANT_COL: pd.Series(dtype=bool)},
+            index=pd.MultiIndex.from_arrays([[], []], names=[POSITION_A, POSITION_B]),
         )
-        return aggregates
+    combined = pd.concat(per_tile_tables, axis=0)
+    combined = combined[combined[CHI_SQUARE_COL].notna()]
+    # For pairs seen in more than one tile, keep only the observation
+    # with the greatest coverage (N).
+    combined = combined.sort_values(N_COL, ascending=False)
+    combined = combined[~combined.index.duplicated(keep="first")]
+    if band_width > 0:
+        gaps = combined.index.get_level_values(
+            POSITION_B
+        ) - combined.index.get_level_values(POSITION_A)
+        combined = combined[gaps <= band_width]
+    return combined.sort_index()
 
 
-def _select_pairs(pairs: list[tuple[int, int]], end5: int, end3: int):
-    assert 1 <= end5 <= end3
-    return [(pos5, pos3) for pos5, pos3 in pairs if end5 <= pos5 and pos3 <= end3]
+def _pair_band_row_cumsum(
+    table: pd.DataFrame, total_end5: int, total_end3: int
+) -> tuple[np.ndarray, np.ndarray, int, int]:
+    """Build banded row-cumulative sums of the observable-pair and
+    significant-pair grids over positions [total_end5, total_end3],
+    0-indexed, so that the number of observable/significant pairs
+    whose triangle lies within any interval [s, e] (both endpoints in
+    [s, e]) can be read off via ``_triangle_sum_banded`` -- see
+    ``_calc_domains_by_dp_segmentation`` for how this drives the exact
+    dynamic-program segmentation.
 
+    Every pair (a, b) that reaches this function has already passed
+    through ``_build_banded_table``'s ``band_width`` cap (and, before
+    that, ``_calc_domains_by_dp_segmentation``'s own coverage filter),
+    so ``b - a`` is bounded by some ``max_gap`` read directly off the
+    table's own data. Representing the grid banded, as an
+    ``(n_positions, max_gap + 1)`` array of gaps rather than a dense
+    ``(n_positions, n_positions)`` array of positions, cuts memory
+    from O(L^2) to O(L * max_gap) -- for a reference tens of thousands
+    of positions long with a band a few hundred wide, the difference
+    between tens of gigabytes and tens of megabytes.
 
-def _compute_keep_dists_null(
-    valid_pairs: list[tuple[int, int]],
-    total_end5: int,
-    total_end3: int,
-    unmasked: np.ndarray,
-):
-    """Expected starts/ends count per position under a null that keeps
-    each pair's own length fixed and randomizes only its position.
+    ``table`` is assumed already restricted to observable pairs (see
+    ``_calc_domains_by_dp_segmentation``): a pair filtered out there
+    (including every pair touching a fully masked position) never
+    reaches this function, so it is scattered into neither returned
+    array and cannot contribute to any downstream count, rate, or
+    likelihood.
 
-    A pair may be placed at start ``x`` only if both its 5' end ``x`` and
-    its 3' end ``x + L`` fall on **unmasked** positions, since masked
-    positions can never be a pair's endpoint.  For a pair of length L,
-    the number of valid locations is therefore
-    ``num_loc = sum_x u[x] u[x+L]`` over the unmasked indicator ``u``;
-    each valid location contributes probability ``1 / num_loc`` of the
-    pair landing there.  Summing over all valid pairs (grouped by length,
-    for efficiency) gives the Poisson rate at each position.  When no
-    positions are masked this reduces to ``num_loc = num_pos_total - L``.
-
-    Returns ``(null_expect_pos5s, null_expect_pos3s)``, each a numpy
-    array indexed by position (index 0 == total_end5).
+    Returns ``(obs_row_cum, sig_row_cum, n_positions, max_gap)``, where
+    ``row_cum[a, d]`` (for ``d`` in ``0..max_gap+1``) is the number of
+    observable/significant pairs ``(a, a+d')`` for ``d' = 0..d-1``
+    (``row_cum[a, 0] == 0``; ``row_cum[a, max_gap+1]`` is position
+    ``a``'s full row total within the band).
     """
     import numpy as np
 
-    num_pos_total = total_end3 - total_end5 + 1
-    # Indicator of unmasked positions over [total_end5, total_end3].
-    u = np.zeros(num_pos_total)
-    idx = np.asarray(unmasked, dtype=int) - total_end5
-    idx = idx[(idx >= 0) & (idx < num_pos_total)]
-    u[idx] = 1.0
-    # Count the pairs with each length (defined as pos3 - pos5).
-    length_counts: defaultdict[int, int] = defaultdict(int)
-    for pos5, pos3 in valid_pairs:
-        length_counts[pos3 - pos5] += 1
-    # Count the pairs expected to have their 5'/3' ends at each position
-    # under the null model where pairs are moved randomly while keeping
-    # their lengths unchanged, restricted to unmasked positions.
-    null_expect_pos5s = np.zeros(num_pos_total)
-    null_expect_pos3s = np.zeros(num_pos_total)
-    for length, count in length_counts.items():
-        if length >= num_pos_total:
-            continue
-        # A pair of this length can start at x only if x and x + length
-        # are both unmasked.
-        valid_starts = u[: num_pos_total - length] * u[length:]
-        num_loc = valid_starts.sum()
-        if num_loc <= 0.0:
-            continue
-        prob_per_loc = count / num_loc
-        null_expect_pos5s[: num_pos_total - length] += prob_per_loc * valid_starts
-        null_expect_pos3s[length:] += prob_per_loc * valid_starts
-    return null_expect_pos5s, null_expect_pos3s
+    n_positions = total_end3 - total_end5 + 1
+    pos_a = table.index.get_level_values(POSITION_A).to_numpy() - total_end5
+    pos_b = table.index.get_level_values(POSITION_B).to_numpy() - total_end5
+    sig = table[SIGNIFICANT_COL].to_numpy()
+    gaps = pos_b - pos_a
+    max_gap = int(gaps.max()) if len(gaps) else 0
+
+    obs_grid = np.zeros((n_positions, max_gap + 1), dtype=np.int64)
+    sig_grid = np.zeros((n_positions, max_gap + 1), dtype=np.int64)
+    np.add.at(obs_grid, (pos_a, gaps), 1)
+    np.add.at(sig_grid, (pos_a[sig], gaps[sig]), 1)
+
+    obs_row_cum = np.zeros((n_positions, max_gap + 2), dtype=np.int64)
+    sig_row_cum = np.zeros((n_positions, max_gap + 2), dtype=np.int64)
+    obs_row_cum[:, 1:] = np.cumsum(obs_grid, axis=1)
+    sig_row_cum[:, 1:] = np.cumsum(sig_grid, axis=1)
+    return obs_row_cum, sig_row_cum, n_positions, max_gap
 
 
-def _compute_endpoint_significance(
-    valid_pairs: list[tuple[int, int]],
-    total_end5: int,
-    total_end3: int,
-    unmasked: np.ndarray,
-):
-    """Per-position BH-adjusted p-values for endpoint over-representation,
-    under the length-preserving ("keep_dists") null restricted to the
-    unmasked positions.
+def _triangle_sum_banded(row_cum: np.ndarray, e: int, max_gap: int) -> np.ndarray:
+    """Return an array of length e+1: the triangle sum n(s, e) (or
+    k(s, e), depending on which row-cumulative array is passed) for
+    every candidate block start s = 0..e (0-indexed), given a banded
+    row-cumulative array from ``_pair_band_row_cumsum``.
 
-    Each position p is tested on its own count of pair 5' (or 3') ends
-    against the null expectation at p: a valid pair independently places
-    its start (or end) at p with probability ``null_expect[p] / r_valid``,
-    so the count follows ``Binomial(r_valid, null_expect[p] / r_valid)``.
-
-    Returns ``(positions, padj_pos5s, padj_pos3s)``, or ``None`` if
-    there are no valid pairs.
+    Splits each candidate start's contribution into two parts to
+    avoid ever touching an O(L) x O(L) array: positions
+    ``a <= e - max_gap`` contribute their *full* row (every pair they
+    have is within [a, e] automatically, since gap <= max_gap <=
+    e - a) -- a single O(1) range-sum via a precomputed 1-D prefix of
+    row totals; positions within ``max_gap`` of ``e`` contribute a
+    *partial* row up to distance ``e - a`` -- at most ``max_gap + 1``
+    positions, gathered directly. Both parts are then broadcast across
+    all s in one pass, so building the length-(e+1) output array
+    (needed regardless, for the DP step at this e) is the only O(e)
+    work; the rest is O(max_gap).
     """
     import numpy as np
-    from scipy.stats import binom
 
-    if not valid_pairs:
-        return None
+    boundary = max(
+        0, e - max_gap + 1
+    )  # first position in the "near" (partial-row) window
+    full_row = row_cum[:, max_gap + 1]
+    cum_full = np.concatenate(([0], np.cumsum(full_row)))
 
-    num_pos = total_end3 - total_end5 + 1
-    r_valid = len(valid_pairs)
-    positions = np.arange(total_end5, total_end3 + 1)
-    null_expect_pos5s, null_expect_pos3s = _compute_keep_dists_null(
-        valid_pairs, total_end5, total_end3, unmasked
-    )
+    near_a = np.arange(boundary, e + 1)
+    near_d = e - near_a
+    near_vals = row_cum[near_a, near_d + 1]
+    near_suffix = np.cumsum(near_vals[::-1])[
+        ::-1
+    ]  # near_suffix[i] = sum(near_vals[i:])
+    near_total = near_suffix[0] if len(near_suffix) else 0
 
-    pos5s = np.zeros(num_pos, dtype=int)
-    pos3s = np.zeros(num_pos, dtype=int)
-    for pos5, pos3 in valid_pairs:
-        pos5s[pos5 - total_end5] += 1
-        pos3s[pos3 - total_end5] += 1
-
-    pvals_pos5s = binom.sf(pos5s - 1, r_valid, null_expect_pos5s / r_valid)
-    pvals_pos3s = binom.sf(pos3s - 1, r_valid, null_expect_pos3s / r_valid)
-    # Starts and ends are independent hypotheses; each gets its own
-    # BH correction rather than one correction over both combined.
-    padj_pos5s = calc_bh_adjusted_pvals(pvals_pos5s)
-    padj_pos3s = calc_bh_adjusted_pvals(pvals_pos3s)
-    return positions, padj_pos5s, padj_pos3s
+    result = np.zeros(e + 1, dtype=np.int64)
+    if boundary > 0:
+        s_far = np.arange(0, boundary)
+        result[s_far] = (cum_full[boundary] - cum_full[s_far]) + near_total
+    if len(near_a):
+        result[boundary : e + 1] = near_suffix
+    return result
 
 
-def _filter_by_l1_distance(
-    pairs: list[tuple[int, int]], percentile: float = 95.0, min_nearby_pairs: int = 1
-):
-    """Keep only pairs that have at least ``min_nearby_pairs`` other
-    surviving pairs within the ``percentile``-th percentile of the L1
-    (Manhattan) nearest-neighbor distances among ``pairs``.
-
-    Uses the L1-norm ``|Δpos5| + |Δpos3|``, so pairs that are close
-    in both coordinates (e.g. a helix with adjacent registers) or
-    share one coordinate exactly (e.g. identical start or end) all
-    contribute naturally to the minimum distance, with no requirement
-    to group by a shared coordinate.
-
-    Setting ``min_nearby_pairs`` above 1 removes coincidental small
-    clusters of noise pairs ("buddy noise") at the cost of potentially
-    clipping pairs at domain edges.
-
-    Because the endpoint-peak stage already filters out pairs at
-    non-significant hub positions, stage-1 survivors are enriched for
-    real pairs and depleted for false positives relative to the raw
-    input pairs (which start at ~5% FDR).  Calibrating the threshold
-    from this already-filtered population therefore reflects a lower
-    effective noise rate, making the percentile a self-calibrated and
-    dataset-adaptive threshold requiring no manual tuning.
-
-    The filter is applied iteratively until no more pairs are dropped.
-    The threshold is computed once from the initial population and held
-    fixed; subsequent rounds recompute only the NN-distances within the
-    shrinking survivor set, so pairs that lose their dense neighbours
-    across rounds are eventually caught.  Convergence is guaranteed
-    because ``surviving ⊆ pairs`` after every round.
-    """
+def _block_gain(n, k, theta0: float):
+    """Log-likelihood-ratio gain of modeling a block's ``n``
+    observable pairs (``k`` of them significant) at their own rate
+    ``theta_hat = k / n`` instead of the shared background rate
+    ``theta0``: ``n * KL(theta_hat || theta0)``, i.e.
+    ``k * log(theta_hat / theta0) + (n - k) * log((1 - theta_hat) /
+    (1 - theta0))``. Zero unless ``theta_hat > theta0`` (a block only
+    "wins" by being *denser* than background, never sparser) and zero
+    wherever ``n == 0`` (an empty candidate carries no evidence)."""
     import numpy as np
-    from scipy.spatial import cKDTree
 
-    if len(pairs) <= min_nearby_pairs:
-        return []
-
-    def get_nn_dist(ps: list[tuple[int, int]], n: int):
-        # index 0 is the point itself (distance 0); k=(n + 1) selects the
-        # n-th nearest neighbor; p=1 gives L1 distance.
-        assert len(ps) > 0
-        points = np.asarray(ps, dtype=float)
-        return cKDTree(points).query(points, k=(n + 1), p=1)[0][:, -1]
-
-    # Calculate the distances to the min_nearby_pairs-th nearest
-    # neighbor (n=min_nearby_pairs).
-    nn_dist = get_nn_dist(pairs, min_nearby_pairs)
-    # Compute threshold once from the initial population.
-    threshold = float(np.percentile(nn_dist, percentile))
-    # Iterate with the fixed threshold until convergence.
-    surviving = pairs
-    while True:
-        next_surviving = [pair for pair, d in zip(surviving, nn_dist) if d <= threshold]
-        if next_surviving == surviving:
-            return surviving
-        surviving = next_surviving
-        if len(surviving) <= min_nearby_pairs:
-            return []
-        # Calculate the distances to the min_nearby_pairs-th nearest
-        # neighbor (n=min_nearby_pairs).
-        nn_dist = get_nn_dist(surviving, min_nearby_pairs)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        theta_hat = np.where(n > 0, k / np.maximum(n, 1), 0.0)
+        denser = (n > 0) & (theta_hat > theta0)
+        term1 = np.where(
+            k > 0,
+            k * np.log(np.where(theta_hat > 0, theta_hat, 1.0) / max(theta0, 1e-300)),
+            0.0,
+        )
+        n_minus_k = n - k
+        complement = np.maximum(1.0 - theta_hat, 1e-300)
+        term2 = np.where(
+            n_minus_k > 0,
+            n_minus_k * np.log(complement / max(1.0 - theta0, 1e-300)),
+            0.0,
+        )
+    return np.where(denser, term1 + term2, 0.0)
 
 
-def _calc_domains_from_pairs(
-    pairs: list[tuple[int, int]],
-    pair_fdr: float,
-    min_mut_gap: int,
-    min_pairs: int,
-    total_end5: int,
-    total_end3: int,
-    pair_distance_percentile: float,
-    min_nearby_pairs: int,
-    unmasked: np.ndarray,
+def _dp_segment_blocks(
+    obs_row_cum: np.ndarray,
+    sig_row_cum: np.ndarray,
+    n_positions: int,
+    max_gap: int,
+    theta0: float,
+    penalty: float,
 ) -> list[tuple[int, int]]:
-    """Detect domains by finding significant concentrations of pair
-    endpoints, rather than testing pairs crossing each interior
-    boundary.
-
-    Stage 1 (endpoint peaks): retain a pair if at least one of its
-    5' or 3' position is significantly over-represented (``pair_fdr``)
-    under the length-preserving null, whose placement space is
-    restricted to the ``unmasked`` positions (masked positions can
-    never be a pair endpoint).
-
-    Stage 2 (L1 isolation filter): drop any stage-1 survivor whose
-    nearest other survivor (L1 distance in (pos5, pos3) space) exceeds
-    the ``pair_distance_percentile``-th percentile of the observed L1
-    nearest-neighbor distances among stage-1 survivors.  This adapts
-    automatically to each dataset.
-
-    Retained pairs are merged into domains by interval overlap.
+    """Find the partition of [0, n_positions) into background and
+    domain blocks that maximizes the total block-model log-likelihood
+    ratio (sum of ``_block_gain`` over the chosen blocks, minus
+    ``penalty`` per block), via exact dynamic programming:
+    ``dp[t] = max(dp[t-1], max_s dp[s] + gain(s, t-1) - penalty)``,
+    where ``dp[t]`` is the best score using positions [0, t) and
+    ``gain(s, t-1)`` scores a candidate block [s, t-1]. Every interval
+    length at every position is considered (a block may be far longer
+    than ``max_gap`` even though the band restricts any single pair's
+    span, so this loop is still O(n_positions^2), unchanged from a
+    dense grid -- only the O(n_positions * max_gap) memory improves),
+    so no window scale is ever chosen; splitting a real domain costs
+    the positive evidence of every pair that would have to move to the
+    background (see ``_calc_domains_by_dp_segmentation`` for why this
+    discourages over-splitting a domain bridged by many crossing
+    pairs). Returns the chosen blocks as sorted, non-overlapping
+    0-indexed (start, end) pairs, inclusive.
     """
+    import numpy as np
+
+    dp = np.zeros(n_positions + 1)
+    backtrack = np.full(n_positions + 1, -1, dtype=np.int64)
+    for t in range(1, n_positions + 1):
+        e = t - 1
+        s_vals = np.arange(t)
+        n_se = _triangle_sum_banded(obs_row_cum, e, max_gap)
+        k_se = _triangle_sum_banded(sig_row_cum, e, max_gap)
+        gain = _block_gain(n_se, k_se, theta0)
+        candidate_vals = np.where(n_se > 0, dp[s_vals] + gain - penalty, -np.inf)
+        best_idx = int(np.argmax(candidate_vals))
+        best_val = candidate_vals[best_idx]
+        if best_val > dp[e]:
+            dp[t] = best_val
+            backtrack[t] = best_idx
+        else:
+            dp[t] = dp[e]
+            backtrack[t] = -1
+    blocks = []
+    t = n_positions
+    while t > 0:
+        s = int(backtrack[t])
+        if s == -1:
+            t -= 1
+        else:
+            blocks.append((s, t - 1))
+            t = s
+    blocks.reverse()
+    return blocks
+
+
+def _estimate_background_rate(
+    obs_row_cum: np.ndarray,
+    sig_row_cum: np.ndarray,
+    max_gap: int,
+    blocks: list[tuple[int, int]],
+    fallback: float,
+) -> float:
+    """Estimate the background significant-pair rate ``theta0`` from
+    every observable pair *not* inside any of ``blocks`` -- i.e. every
+    background and inter-block pair, which is inter-domain by
+    construction and so uncontaminated by any called domain's own
+    interior density (unlike a global average over the whole scanned
+    region, which any real domain inflates). Falls back to
+    ``fallback`` if there are no such pairs (e.g. one block covers the
+    entire region)."""
+    total_obs = int(obs_row_cum[:, max_gap + 1].sum())
+    total_sig = int(sig_row_cum[:, max_gap + 1].sum())
+    block_obs = sum(
+        int(_triangle_sum_banded(obs_row_cum, e, max_gap)[s]) for s, e in blocks
+    )
+    block_sig = sum(
+        int(_triangle_sum_banded(sig_row_cum, e, max_gap)[s]) for s, e in blocks
+    )
+    background_obs = total_obs - block_obs
+    background_sig = total_sig - block_sig
+    if background_obs <= 0:
+        return fallback
+    return background_sig / background_obs
+
+
+def _merge_adjacent_blocks(
+    obs_row_cum: np.ndarray,
+    sig_row_cum: np.ndarray,
+    max_gap: int,
+    blocks: list[tuple[int, int]],
+    theta0: float,
+) -> list[tuple[int, int]]:
+    """Greedily merge adjacent DP blocks, strongest bridge first,
+    whenever the *bridge* between them -- everything in their union
+    except their own two triangles, i.e. any gap between them plus
+    every pair crossing from one into the other -- is itself denser
+    than background (``_block_gain(bridge_n, bridge_k, theta0) > 0``),
+    regardless of whether the DP's exact optimum happened to split
+    them there.
+
+    The DP in ``_dp_segment_blocks`` finds the globally optimal
+    partition, so it never leaves a *beneficial* merge on the table:
+    if joining two of its blocks scored higher, the DP would already
+    have chosen that partition (it considers every candidate block,
+    including their union, at every step). So a plain "does the union
+    still look like a domain on its own" check is useless here -- by
+    construction it can never fire when the DP declined a merge, and
+    proved too permissive besides: it stayed true across a genuinely
+    sparse bridge between two otherwise very dense sub-domains, purely
+    because both sub-domains alone were dense enough to carry the
+    union (see ``TestDpSegmentationAntiOverSplit``'s sparse-bridge
+    case; that test still requires this pass to leave the split
+    alone).
+
+    What the DP's "sum of block gains" optimum discards, that a human
+    eye doesn't, is a bridge that is real but *weaker* than either
+    neighbor: a region with genuine internal density variation (one
+    stretch at 3%, an adjacent one at 7%, both well above a background
+    of 0.3%) is optimally split into purer pieces, because two own-
+    rate fits beat one diluted shared rate -- even with zero gap
+    between them. Testing the bridge alone, instead of the whole
+    union, targets exactly that case without the sparse-bridge test's
+    false positive: a truly silent gap or crossing region (bridge rate
+    <= background) is left split, while a bridge that is merely
+    weaker than its neighbors but still above background is merged.
+
+    Merges are applied strongest-bridge-first (by ``_block_gain``,
+    the same n-weighted evidence statistic used to decide whether a
+    bridge qualifies at all -- not raw density, so a small, noisy
+    high-ratio bridge can't jump ahead of a larger, more reliable
+    one) rather than left to right, via a max-heap of candidate
+    adjacent pairs. Every merge can change the bridges on either side
+    of the absorbing block (its end position moves), so both
+    neighboring pairs are recomputed and re-queued after each merge;
+    stale heap entries (referring to a block that has since been
+    absorbed, or whose end has since moved) are detected by an
+    end-position version counter per block and discarded lazily
+    rather than eagerly purged from the heap. This still lets 3+
+    consecutive blocks with real bridges cascade into one, but the
+    order in which ambiguous, weaker bridges get resolved no longer
+    depends on which end of the region they happen to sit at.
+
+    Uses the same ``obs_row_cum``/``sig_row_cum`` arrays as the DP, so
+    a bridge's ``n``/``k`` are built only from pairs that already
+    survived ``_calc_domains_by_dp_segmentation``'s coverage filter --
+    a masked/excluded pair cannot contribute to a merge decision any
+    more than it could to the DP itself.
+    """
+    import heapq
+
+    if not blocks:
+        return blocks
+
+    n_blocks = len(blocks)
+    starts = [s for s, _ in blocks]
+    ends = [e for _, e in blocks]
+    prev_idx: list[int | None] = [i - 1 if i > 0 else None for i in range(n_blocks)]
+    next_idx: list[int | None] = [
+        i + 1 if i < n_blocks - 1 else None for i in range(n_blocks)
+    ]
+    alive = [True] * n_blocks
+    end_version = [0] * n_blocks
+
+    def bridge_gain(left: int, right: int) -> float:
+        prev_s, prev_e = starts[left], ends[left]
+        s, e = starts[right], ends[right]
+        union_obs_row = _triangle_sum_banded(obs_row_cum, e, max_gap)
+        union_sig_row = _triangle_sum_banded(sig_row_cum, e, max_gap)
+        union_n = int(union_obs_row[prev_s])
+        union_k = int(union_sig_row[prev_s])
+        next_n = int(union_obs_row[s])
+        next_k = int(union_sig_row[s])
+        prev_n = int(_triangle_sum_banded(obs_row_cum, prev_e, max_gap)[prev_s])
+        prev_k = int(_triangle_sum_banded(sig_row_cum, prev_e, max_gap)[prev_s])
+        bridge_n = union_n - prev_n - next_n
+        bridge_k = union_k - prev_k - next_k
+        return float(_block_gain(bridge_n, bridge_k, theta0))
+
+    heap: list[tuple[float, int, int, int, int]] = []
+
+    def push(left: int, right: int) -> None:
+        gain = bridge_gain(left, right)
+        if gain > 0:
+            heapq.heappush(
+                heap, (-gain, left, right, end_version[left], end_version[right])
+            )
+
+    for i in range(n_blocks - 1):
+        push(i, i + 1)
+
+    while heap:
+        _, left, right, v_left, v_right = heapq.heappop(heap)
+        if not (alive[left] and alive[right]):
+            continue
+        if next_idx[left] != right:
+            continue
+        if end_version[left] != v_left or end_version[right] != v_right:
+            continue
+        ends[left] = ends[right]
+        end_version[left] += 1
+        alive[right] = False
+        next_idx[left] = next_idx[right]
+        if next_idx[left] is not None:
+            prev_idx[next_idx[left]] = left
+            push(left, next_idx[left])
+        if prev_idx[left] is not None:
+            push(prev_idx[left], left)
+
+    return [(starts[i], ends[i]) for i in range(n_blocks) if alive[i]]
+
+
+N_BACKGROUND_RATE_ITERS = 3
+
+
+def _calc_domains_by_dp_segmentation(
+    table: pd.DataFrame,
+    total_end5: int,
+    total_end3: int,
+    bic_multiplier: float,
+    min_pair_coverage: int = 1000,
+) -> list[tuple[int, int]]:
+    """Call domains by exact dynamic-program segmentation of the
+    significant-pair contact map into background/domain blocks (see
+    ``_dp_segment_blocks``): partition [total_end5, total_end3] into
+    consecutive intervals, each either background (rate ``theta0``) or
+    a domain with its own rate, maximizing the total block-model
+    log-likelihood ratio against an all-background null, penalized by
+    ``bic_multiplier`` per block (Bayesian information criterion:
+    ``0.5 * log(N observable pairs)`` per extra block, scaled by the
+    multiplier).
+
+    This replaces an earlier insulation-score boundary caller, which
+    projected the 2-D contact map to a 1-D crossing-density track and
+    so needed one fixed window scale that could not fit domains of
+    very different sizes in the same reference (over-fragmenting
+    some, under-resolving others). Scoring each candidate block
+    directly by its own 2-D triangle density -- exactly what a person
+    sees by eye in the pairs-vs-domains plot -- removes the window
+    entirely: the DP considers every possible interval length at every
+    position.
+
+    Splitting a real domain into pieces is discouraged even before the
+    per-block penalty: every pair crossing the split point is a
+    significant pair that would have to be re-classified as
+    background (rate ``theta0``, much lower than a domain's own rate),
+    forfeiting its positive evidence. A split therefore only wins when
+    the crossing pairs are genuinely sparse and/or the two halves have
+    sharply different densities -- i.e. it really is two domains, not
+    a single domain bridged by many crossing pairs.
+
+    ``theta0`` is estimated from the pairs outside all called blocks
+    (see ``_estimate_background_rate``), re-estimated for a few
+    passes (EM-style) after each DP run so it stays uncontaminated by
+    domain interiors: initialized to the global observable rate, then
+    re-fit from the off-block pairs after each pass.
+
+    Only pairs whose total coverage (``N``, the sum of the 2x2
+    confusion matrix) is at least ``min_pair_coverage`` are used. This
+    is the *only* place masking is applied, and it is applied before
+    anything else: a pair below the threshold -- including every pair
+    touching a fully masked position, which has none above it -- is
+    dropped from ``obs_table`` here and so never reaches
+    ``_pair_band_row_cumsum``. It is therefore scattered into neither
+    the observable nor the significant grid, and cannot contribute to
+    any triangle count, background rate, or block gain computed
+    downstream; it is not merely down-weighted or diluted, it simply
+    does not exist for the rest of this function.
+
+    Represents the grid banded (see ``_pair_band_row_cumsum``), using
+    O(L * max_gap) memory where L is the scanned region's length and
+    max_gap is the largest separation of any observable pair -- for a
+    reference tens of thousands of positions long with a band a few
+    hundred wide, tens of megabytes instead of the tens of gigabytes a
+    dense O(L^2) grid would need. The DP itself is still O(L^2) time
+    (a domain may be far longer than the band), unchanged from a dense
+    grid.
+
+    After the DP converges, adjacent blocks are greedily merged,
+    strongest bridge first (see ``_merge_adjacent_blocks``), whenever
+    the material bridging them is itself denser than background, even
+    though the DP's exact optimum kept them split: real regions with
+    substantial internal density variation are otherwise reported as
+    several small, tightly-adjacent (often zero-gap) domains, which is
+    a true statistical result but a finer partition than most
+    downstream, flat (non-hierarchical) uses want.
+    """
+    import numpy as np
+
+    if min_pair_coverage < 1:
+        raise OutOfBoundsError(
+            f"min_pair_coverage must be >= 1, but got {min_pair_coverage}"
+        )
+    if bic_multiplier < 0:
+        raise OutOfBoundsError(f"bic_multiplier must be >= 0, but got {bic_multiplier}")
+    obs_table = table[table[N_COL] >= min_pair_coverage]
     with logger.debug.single_context(
-        "Identifying domains from {} correlated pair(s)", len(pairs)
+        "Identifying domains from {} observable pair(s) (of {} in-band) "
+        "by DP block-diagonal segmentation",
+        len(obs_table.index),
+        len(table.index),
     ):
-        if not pairs:
-            return []
-        valid_pairs = [(p5, p3) for p5, p3 in pairs if p3 - p5 > min_mut_gap]
-        if not valid_pairs:
-            return []
-
-        significance = _compute_endpoint_significance(
-            valid_pairs, total_end5, total_end3, unmasked
+        obs_row_cum, sig_row_cum, n_positions, max_gap = _pair_band_row_cumsum(
+            obs_table, total_end5, total_end3
         )
-        if significance is None:
-            return []
-        positions, padj_starts, padj_ends = significance
-
-        sig_starts = set(positions[padj_starts <= pair_fdr].tolist())
-        sig_ends = set(positions[padj_ends <= pair_fdr].tolist())
-        surviving = sorted(
-            (p5, p3) for p5, p3 in valid_pairs if p5 in sig_starts or p3 in sig_ends
+        total_obs = int(obs_row_cum[:, max_gap + 1].sum())
+        total_sig = int(sig_row_cum[:, max_gap + 1].sum())
+        theta0 = total_sig / total_obs if total_obs > 0 else 0.5
+        penalty = 0.5 * float(np.log(max(total_obs, 2))) * bic_multiplier
+        blocks: list[tuple[int, int]] = []
+        for _ in range(N_BACKGROUND_RATE_ITERS):
+            blocks = _dp_segment_blocks(
+                obs_row_cum, sig_row_cum, n_positions, max_gap, theta0, penalty
+            )
+            theta0 = _estimate_background_rate(
+                obs_row_cum, sig_row_cum, max_gap, blocks, theta0
+            )
+        blocks = _merge_adjacent_blocks(
+            obs_row_cum, sig_row_cum, max_gap, blocks, theta0
         )
-        surviving = _filter_by_l1_distance(
-            surviving,
-            percentile=pair_distance_percentile,
-            min_nearby_pairs=min_nearby_pairs,
-        )
-        if not surviving:
-            return []
-
-        domains = _aggregate_pairs(surviving)
-        domains = [
-            (e5, e3)
-            for e5, e3 in domains
-            if len(_select_pairs(surviving, e5, e3)) >= min_pairs
-        ]
+        domains = sorted((total_end5 + s, total_end5 + e) for s, e in blocks)
         logger.debug("Calculated domains: {}", domains)
         return domains
 
@@ -489,11 +735,8 @@ def _graph_pairs_and_domains(
 ):
     import numpy as np
     from plotly import graph_objects as go
-    from plotly.subplots import make_subplots
 
-    # Create a subplot with two rows: top for pair_fraction,
-    # bottom for correlated pairs
-    fig = make_subplots(rows=1, cols=1)
+    fig = go.Figure()
     # Graph the domains as triangles.
     end5s, end3s = _tuples_to_ends_arrays(domains)
     domains_midpoints, domains_distances = _calc_midpoints_distances(end5s, end3s)
@@ -531,7 +774,7 @@ def _graph_pairs_and_domains(
     # Finish the layout.
     assert end5 <= end3
     x_range = [end5 - 0.5, end3 + 0.5]
-    fig.update_xaxes(title_text="Midpoint Position", showgrid=True, range=x_range)
+    fig.update_xaxes(title_text="Position", showgrid=True, range=x_range)
     if domains_distances.size > 0 or pairs_distances.size > 0:
         y_range = [
             0.0,
@@ -624,13 +867,11 @@ def _calc_cluster_domains(
     report_dir: Path,
     num_cpus: int,
     pair_fdr: float,
-    probe: str,
-    min_mut_gap: int | None,
-    min_pairs: int,
-    pair_distance_percentile: float,
-    min_nearby_pairs: int,
+    band_width: int,
+    bic_multiplier: float,
     min_length: int,
     gap_mode: str,
+    min_pair_coverage: int = 1000,
 ):
     """Calculate the cluster regions for all tiles of one reference."""
     # Each dataset corresponds to one tile.
@@ -661,36 +902,26 @@ def _calc_cluster_domains(
             )
     # The region is the union of all tiles' regions.
     region = unite([dataset.region for dataset in datasets], refseq=refseq)
-    # Find pairs of bases that correlate significantly in any region.
-    # Use sorted(set()) to ensure pairs are unique and sorted.
-    pairs = sorted(
-        set(
-            chain(
-                *dispatch(
-                    _find_correlated_pairs,
-                    num_cpus=num_cpus,
-                    pass_num_cpus=True,
-                    as_list=False,
-                    ordered=False,
-                    raise_on_error=True,
-                    args=as_list_of_tuples(datasets),
-                    kwargs=dict(pair_fdr=pair_fdr),
-                )
-            )
-        )
+    # Build the banded per-pair chi-square table across all tiles.
+    per_tile_tables = dispatch(
+        _find_correlated_pairs,
+        num_cpus=num_cpus,
+        pass_num_cpus=True,
+        as_list=True,
+        ordered=False,
+        raise_on_error=True,
+        args=as_list_of_tuples(datasets),
+        kwargs=dict(pair_fdr=pair_fdr, band_width=band_width),
     )
-    # Find domains of correlated pairs.
-    min_mut_gap, _ = set_mut_gap_params(probe, min_mut_gap)
-    domains = _calc_domains_from_pairs(
-        pairs,
-        pair_fdr,
-        min_mut_gap,
-        min_pairs,
+    table = _build_banded_table(per_tile_tables, band_width)
+    pairs = table.index[table[SIGNIFICANT_COL]].to_list()
+    # Find domains via DP block-diagonal segmentation.
+    domains = _calc_domains_by_dp_segmentation(
+        table,
         total_end5=region.end5,
         total_end3=region.end3,
-        pair_distance_percentile=pair_distance_percentile,
-        min_nearby_pairs=min_nearby_pairs,
-        unmasked=region.unmasked_int,
+        bic_multiplier=bic_multiplier,
+        min_pair_coverage=min_pair_coverage,
     )
     n_domains_before_filter = len(domains)
     # Determine what to do with gaps between regions.
@@ -738,9 +969,8 @@ def filterscan(
     tile_min_overlap: float,
     erase_tiles: bool,
     pair_fdr: float,
-    min_pairs: int,
-    pair_distance_percentile: float,
-    min_nearby_pairs: int,
+    band_width: int,
+    bic_multiplier: float,
     min_cluster_length: int,
     gap_mode: str,
     # Filter options
@@ -866,11 +1096,8 @@ def filterscan(
             tiled_dirs,
             report_dir=report_dir,
             pair_fdr=pair_fdr,
-            probe=probe,
-            min_mut_gap=min_mut_gap,
-            min_pairs=min_pairs,
-            pair_distance_percentile=pair_distance_percentile,
-            min_nearby_pairs=min_nearby_pairs,
+            band_width=band_width,
+            bic_multiplier=bic_multiplier,
             min_length=min_cluster_length,
             gap_mode=gap_mode,
             num_cpus=num_cpus,
@@ -934,9 +1161,8 @@ def filterscan(
             tile_min_overlap=tile_min_overlap,
             erase_tiles=erase_tiles,
             pair_fdr=pair_fdr,
-            min_pairs=min_pairs,
-            pair_distance_percentile=pair_distance_percentile,
-            min_nearby_pairs=min_nearby_pairs,
+            band_width=band_width,
+            bic_multiplier=bic_multiplier,
             min_cluster_length=min_cluster_length,
             gap_mode=gap_mode,
             # Results (store coordinates without the reference, which is

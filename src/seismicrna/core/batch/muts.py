@@ -741,7 +741,9 @@ class RegionMutsBatch(MutsBatch, ABC):
             result = {pos: new_muts[pos] for pos in self.muts.keys()}
             return result
 
-    def calc_confusion_matrix(self, pattern: RelPattern, min_gap: int = 0):
+    def calc_confusion_matrix(
+        self, pattern: RelPattern, min_gap: int = 0, max_gap: int | None = None
+    ):
         """Calculate the confusion matrix of mutations."""
         with logger.trace.single_context(
             (
@@ -758,6 +760,7 @@ class RegionMutsBatch(MutsBatch, ABC):
                 self.reads_per_pos(pattern),
                 self.read_weights,
                 min_gap=min_gap,
+                max_gap=max_gap,
             )
 
     def iter_reads(

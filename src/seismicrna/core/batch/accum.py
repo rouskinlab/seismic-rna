@@ -249,9 +249,10 @@ def _calc_batch_confusion_matrix(
     get_batch: Callable[[int], RegionMutsBatch],
     pattern: RelPattern,
     min_gap: int,
+    max_gap: int | None,
 ):
     batch = get_batch(batch_num)
-    return batch.calc_confusion_matrix(pattern, min_gap)
+    return batch.calc_confusion_matrix(pattern, min_gap, max_gap)
 
 
 def accumulate_confusion_matrices(
@@ -261,6 +262,7 @@ def accumulate_confusion_matrices(
     pos_index: pd.Index,
     clusters: pd.Index | None,
     min_gap: int = 0,
+    max_gap: int | None = None,
     num_cpus: int = 1,
 ):
     """Accumulate confusion matrices from all batches.
@@ -280,6 +282,9 @@ def accumulate_confusion_matrices(
         clustered.
     min_gap: int = 0
         Minimum gap between positions to include in position pairs.
+    max_gap: int | None = None
+        Maximum gap between positions to include in position pairs
+        (bands the pair index); None means no upper bound.
     num_cpus: int = 1
         Number of CPUs to use for parallel processing.
 
@@ -291,7 +296,7 @@ def accumulate_confusion_matrices(
     with logger.debug.single_context(
         "Accumulating confusion matrices of {} batches", num_batches
     ):
-        n, a, b, ab = init_confusion_matrix(pos_index, clusters, min_gap)
+        n, a, b, ab = init_confusion_matrix(pos_index, clusters, min_gap, max_gap)
         for n_batch, a_batch, b_batch, ab_batch in dispatch(
             _calc_batch_confusion_matrix,
             num_cpus=num_cpus,
@@ -300,7 +305,9 @@ def accumulate_confusion_matrices(
             ordered=False,
             raise_on_error=True,
             args=as_list_of_tuples(range(num_batches)),
-            kwargs=dict(get_batch=get_batch, pattern=pattern, min_gap=min_gap),
+            kwargs=dict(
+                get_batch=get_batch, pattern=pattern, min_gap=min_gap, max_gap=max_gap
+            ),
         ):
             n += n_batch
             a += a_batch

@@ -15,7 +15,10 @@ POSITION_B = "Position B"
 
 
 def init_confusion_matrix(
-    pos_index: pd.Index, clusters: pd.Index | None = None, min_gap: int = 0
+    pos_index: pd.Index,
+    clusters: pd.Index | None = None,
+    min_gap: int = 0,
+    max_gap: int | None = None,
 ):
     """For every pair of positions, initialize the confusion matrix:
 
@@ -29,6 +32,14 @@ def init_confusion_matrix(
           .B   .O   ..
 
     And return .., A., .B, AB in that order.
+
+    Parameters
+    ----------
+    max_gap: int | None
+        If given, exclude pairs of positions farther apart than this
+        (i.e. keep only pairs with ``pos_b - pos_a <= max_gap``). This
+        bands the pair index, which is needed to keep the number of
+        pairs linear (rather than quadratic) in the number of positions.
     """
     import numpy as np
     import pandas as pd
@@ -37,7 +48,10 @@ def init_confusion_matrix(
     idx_a, idx_b = np.triu_indices(positions.size, k=1)
     pos_a = positions[idx_a]
     pos_b = positions[idx_b]
-    select = pos_b - pos_a > min_gap
+    gaps = pos_b - pos_a
+    select = gaps > min_gap
+    if max_gap is not None:
+        select &= gaps <= max_gap
     pos_pairs = pd.MultiIndex.from_arrays(
         (pos_a[select], pos_b[select]), names=[POSITION_A, POSITION_B]
     )
@@ -71,6 +85,7 @@ def calc_confusion_matrix(
     mutated_reads: dict[int, np.ndarray],
     read_weights: pd.DataFrame | None = None,
     min_gap: int = 0,
+    max_gap: int | None = None,
 ):
     """For every pair of positions, calculate the confusion matrix:
 
@@ -108,6 +123,7 @@ def calc_confusion_matrix(
         pos_index,
         (read_weights.columns if read_weights is not None else None),
         min_gap=min_gap,
+        max_gap=max_gap,
     )
     # Cache the values for faster access.
     nv = n.values
@@ -259,6 +275,21 @@ def calc_confusion_phi(
             raise ValueError("phi > 1")
         phi.mask(phi_hi, other=1.0, inplace=True)
     return phi
+
+
+def calc_confusion_chi_square(
+    n: pd.Series | pd.DataFrame, phi: pd.Series | pd.DataFrame
+):
+    """Calculate the chi-square statistic for a 2x2 matrix from its
+    coverage ``n`` and phi correlation coefficient ``phi``.
+
+    For a 2x2 contingency table, ``chi_square = n * phi ** 2`` is the
+    exact Pearson chi-square statistic. Under independence between A
+    and B, this is asymptotically chi2(1) distributed, so
+    ``E[chi_square] = 1``. NaN values in ``phi`` (e.g. from coverage
+    below ``min_cover`` in :func:`calc_confusion_phi`) propagate to NaN.
+    """
+    return n * phi**2
 
 
 def calc_confusion_pvals(
