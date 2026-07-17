@@ -83,7 +83,7 @@ def _calc_hists(
         )
     else:
         batch_counts = None
-    return batch.read_lengths.max(initial=0), hists, batch_counts
+    return int(batch.read_lengths.max(initial=0)), hists, batch_counts
 
 
 class MutationDistanceGraph(DatasetGraph, ColorMapGraph):

@@ -509,7 +509,7 @@ class EndCoords(object):
         """Number of contiguous reads."""
         import numpy as np
 
-        return np.count_nonzero(self.contiguous)
+        return int(np.count_nonzero(self.contiguous))
 
     @cached_property
     def num_discontiguous(self):

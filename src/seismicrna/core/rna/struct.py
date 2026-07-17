@@ -304,8 +304,8 @@ def calc_wfmi(
         # There are no positions with structural information.
         return np.nan
     # Calculate the Fowlkes-Mallows index (FMI).
-    n_paired1 = np.count_nonzero(is_paired1)
-    n_paired2 = np.count_nonzero(is_paired2)
+    n_paired1 = int(np.count_nonzero(is_paired1))
+    n_paired2 = int(np.count_nonzero(is_paired2))
     if n_paired1 > 0 and n_paired2 > 0:
         # FMI = TP / √(TP+FP)*(TP+FN)
         both_paired = is_paired1 & is_paired2

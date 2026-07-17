@@ -155,7 +155,7 @@ class UniqReads(EndCoords):
     @cached_property
     def num_nonuniq(self) -> int:
         """Number of total reads (including non-unique reads)."""
-        return self.counts_per_uniq.sum()
+        return int(self.counts_per_uniq.sum())
 
     def get_mut_matrix(self):
         """Full boolean matrix of the mutations."""

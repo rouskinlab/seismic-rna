@@ -634,7 +634,7 @@ class EMRun(object):
             if not self._jackpot:
                 # Skip calculating the jackpotting quotient.
                 return np.nan
-            if self.n_reads * self._n_pos_total > self._jackpot_max_data:
+            if int(self.n_reads) * self._n_pos_total > self._jackpot_max_data:
                 logger.warning(
                     "Skipping the jackpotting calculation for {} "
                     "because number of reads ({}) times "
@@ -708,7 +708,7 @@ class EMRun(object):
         import numpy as np
 
         arcd = calc_arcsine_distance(self.mus.values, self.mus_ens_avg.values)
-        return np.max(arcd) if arcd.size > 0 else np.nan
+        return float(np.max(arcd) if arcd.size > 0 else np.nan)
 
     @cached_property
     def max_gini(self):
@@ -716,7 +716,7 @@ class EMRun(object):
         import numpy as np
 
         gini = calc_gini(self.mus.values)
-        return np.max(gini) if gini.size > 0 else np.nan
+        return float(np.max(gini) if gini.size > 0 else np.nan)
 
     def __str__(self):
         srr = format_sample_reference_region(

@@ -680,7 +680,7 @@ def calc_jackpot_score(semi_g_anomalies: np.ndarray, n_reads: int):
                 f"length 0, but got {semi_g_anomalies.size}"
             )
         return 0.0
-    return semi_g_anomalies.sum() / n_reads
+    return float(semi_g_anomalies.sum() / n_reads)
 
 
 def calc_jackpot_score_ci(jackpot_scores: Iterable[float], confidence_level: float):
@@ -725,7 +725,7 @@ def calc_jackpot_score_ci(jackpot_scores: Iterable[float], confidence_level: flo
     else:
         ci_lo = np.nan
         ci_up = np.nan
-    return ci_lo, ci_up
+    return float(ci_lo), float(ci_up)
 
 
 def calc_jackpot_quotient(real_jackpot_score: float, null_jackpot_score: float):
@@ -761,7 +761,7 @@ def calc_jackpot_quotient(real_jackpot_score: float, null_jackpot_score: float):
     """
     import numpy as np
 
-    return np.exp(real_jackpot_score - null_jackpot_score)
+    return float(np.exp(real_jackpot_score - null_jackpot_score))
 
 
 def bootstrap_jackpot_scores(

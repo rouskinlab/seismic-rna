@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 class PartialReadBatch(ReadBatch, ABC):
     @cached_property
     def max_read(self):
-        return self.read_nums.max(initial=0)
+        return int(self.read_nums.max(initial=0))
 
     @cached_property
     def read_indexes(self):

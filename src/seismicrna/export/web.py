@@ -402,7 +402,9 @@ def iter_clust_table_data(table: AbundanceTable, k: int, clust: int):
 
     clust_count = table.data[table.header.select(k=k, clust=clust)].squeeze()
     k_count = table.data[table.header.select(k=k)].sum().squeeze()
-    proportion = round(clust_count / k_count, PRECISION) if k_count > 0 else np.nan
+    proportion = (
+        float(round(clust_count / k_count, PRECISION)) if k_count > 0 else np.nan
+    )
     yield CLUST_PROP, proportion
 
 

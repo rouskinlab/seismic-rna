@@ -162,7 +162,7 @@ class EMRunsK(object):
         """Index of the best valid run."""
         try:
             # The best run is the valid run with the largest likelihood.
-            return self.get_valid_index(0, **kwargs)
+            return int(self.get_valid_index(0, **kwargs))
         except IndexError:
             # If no runs are valid, then use the best invalid run.
             return 0
