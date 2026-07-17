@@ -11,15 +11,14 @@ from ..core.arg.cli import GAP_MODE_OMIT, GAP_MODE_INSERT, GAP_MODE_EXPAND
 from ..core.batch.confusion import (
     POSITION_A,
     POSITION_B,
-    calc_confusion_pvals,
-    calc_confusion_phi,
+    calc_confusion_matrix,
     calc_confusion_chi_square,
-    calc_bh_adjusted_pvals,
+    resample_mutated_reads,
 )
-from ..core.batch.accum import accumulate_confusion_matrices
 from ..core.dataset import MutsDataset
 from ..core.error import IncompatibleValuesError, OutOfBoundsError
 from ..core.logs import logger
+from ..core.random import get_random_integer_generator
 from ..core.seq.xna import DNA
 from ..core.seq.region import unite
 from ..core.task import as_list_of_tuples, dispatch
@@ -42,9 +41,29 @@ PAIRS_DOMAINS_HTML = "pairs_and_domains.html"
 CONFUSION_MATRIX_CSV = "confusion-matrix.csv"
 
 N_COL = "N"
-PHI_COL = "Phi"
 CHI_SQUARE_COL = "Chi-Square"
-SIGNIFICANT_COL = "Significant"
+# Per-pair block-scoring currency (see _calc_pair_scores): the null-
+# referenced, coverage-normalized correlation excess g_ij that the DP
+# accumulates over a block's triangle in place of the old significant-pair
+# count.
+SCORE_COL = "Score"
+
+# The four cells of each pair's 2x2 confusion matrix. These are the raw
+# counts from which every derived quantity (N and chi-square) can be
+# recomputed, so only these are written to pairs.csv.
+
+# Floor for the estimated domain variance-inflation shape r (see
+# _calc_pair_scores): keeps r strictly positive so the score stays defined
+# even when the observed data carries essentially no correlation signal
+# (mean chi-square at or below the null's 1), in which case the penalty/FDR
+# calibration is what declines to call any domain.
+_SCORE_MIN_SHAPE = 1e-9
+
+NEITHER_COL = "Neither Mutated"
+ONLY_A_COL = "Only A Mutated"
+ONLY_B_COL = "Only B Mutated"
+BOTH_COL = "Both Mutated"
+CONFUSION_COLS = (NEITHER_COL, ONLY_A_COL, ONLY_B_COL, BOTH_COL)
 
 
 def _get_batch_read_lengths(batch_num: int, dataset: MutsDataset):
@@ -169,71 +188,257 @@ def _calc_tile_coords(
     return [(ref, end5, end3) for end5, end3 in tiles]
 
 
-def _find_correlated_pairs(
-    dataset: FilterMutsDataset, pair_fdr: float, band_width: int, num_cpus: int
-):
-    """Calculate the confusion matrix for the region, restricted to
-    pairs of positions no more than ``band_width`` apart (0 means no
-    additional restriction beyond the tile itself, which already
-    bounds every pair's separation to less than the tile length).
+def _gather_pooled_reads(dataset: FilterMutsDataset):
+    """Read all of one tile's batches exactly once, pooling each
+    position's covered and mutated read-index sets across every batch.
 
-    Returns a table indexed by every in-band pair of positions, with
-    columns for its coverage (N), phi correlation, chi-square score
-    (``N * phi ** 2``), and whether it is significant at the given
-    false discovery rate (by the same hypergeometric + BH test as
-    before; the chi-square score is used only downstream, to find
-    domains, not to flag individual pairs).
+    Read numbers are batch-local (a read's identity is the (batch, read)
+    pair), so each batch's read numbers are offset by a running stride
+    (``max_read + 1``) to make them unique -- and, since batches are
+    concatenated in order with a monotonically increasing offset, still
+    sorted -- across the pooled tile before the set operations in
+    ``calc_confusion_matrix``.
+
+    Pooling first and computing the confusion matrix once over the pooled
+    sets gives the identical *observed* matrix as summing one matrix per
+    batch (see ``accumulate_confusion_matrices``): every pair's
+    intersection count is computed over read numbers that are disjoint
+    across batches, so a cross-batch pair contributes nothing and the
+    pooled count equals the per-batch sum. This lets one read of the
+    tile's batches serve both the observed matrix and every null
+    replicate (see ``_find_correlated_pairs_with_nulls``), instead of
+    re-reading the batches once per replicate.
+    """
+    import numpy as np
+
+    pooled_covered: dict[int, list] = dict()
+    pooled_mutated: dict[int, list] = dict()
+    offset = 0
+    with logger.debug.single_context(
+        "Reading {} batch(es) of {}", dataset.num_batches, dataset
+    ):
+        for batch_num in range(dataset.num_batches):
+            batch = dataset.get_batch(batch_num)
+            if batch.read_weights is not None:
+                raise NotImplementedError(
+                    "The confusion-matrix null does not support weighted reads"
+                )
+            covered = batch.covered_reads_per_pos
+            mutated = batch.reads_per_pos(dataset.pattern)
+            # Cast to int64 before offsetting: batch read numbers are a small
+            # uint type (e.g. uint16) that the running offset would overflow.
+            for pos, reads in covered.items():
+                pooled_covered.setdefault(pos, []).append(
+                    np.asarray(reads, dtype=np.int64) + offset
+                )
+            for pos, reads in mutated.items():
+                pooled_mutated.setdefault(pos, []).append(
+                    np.asarray(reads, dtype=np.int64) + offset
+                )
+            # Offset by max_read + 1 (>= any read number in the batch) so the
+            # pooled read numbers stay unique and globally sorted across
+            # batches.
+            offset += int(batch.max_read) + 1
+            logger.trace(
+                "{} read batch {}/{} ({} read(s))",
+                dataset,
+                batch_num + 1,
+                dataset.num_batches,
+                int(batch.max_read) + 1,
+            )
+    covered_pooled = {
+        pos: np.concatenate(arrs) for pos, arrs in pooled_covered.items()
+    }
+    mutated_pooled = {
+        pos: (
+            np.concatenate(pooled_mutated[pos])
+            if pos in pooled_mutated
+            else np.array([], dtype=int)
+        )
+        for pos in covered_pooled
+    }
+    logger.debug(
+        "Pooled {} read(s) across {} position(s) for {}",
+        offset,
+        len(covered_pooled),
+        dataset,
+    )
+    return covered_pooled, mutated_pooled
+
+
+def _confusion_to_table(
+    n: pd.Series,
+    a: pd.Series,
+    b: pd.Series,
+    ab: pd.Series,
+    *,
+    dataset: FilterMutsDataset,
+    write_csv: bool,
+):
+    """Turn one tile's raw 2x2 confusion-matrix components into the pair
+    table used downstream: chi-square and the four raw cells (kept so
+    ``pairs.csv`` can record them per positive-score pair; chi-square is
+    used only by the domain caller, not written to ``pairs.csv``, being
+    recomputable from the cells).
+
+    ``write_csv`` saves ``confusion-matrix.csv`` for the observed data;
+    it must be ``False`` for a null replicate, to avoid clobbering the
+    real one.
     """
     import pandas as pd
 
-    n, a, b, ab = accumulate_confusion_matrices(
-        dataset.get_batch,
-        dataset.num_batches,
-        dataset.pattern,
-        dataset.region.unmasked,
-        None,
-        min_gap=dataset.min_mut_gap,
-        max_gap=(band_width if band_width > 0 else None),
-        num_cpus=num_cpus,
-    )
-    # Determine which pairs of positions correlate significantly at a
-    # false discovery rate of pair_fdr.
-    pvals = calc_confusion_pvals(n, a, b, ab)
-    pvals_bh_adjusted = calc_bh_adjusted_pvals(pvals)
-    is_significant = pvals_bh_adjusted <= pair_fdr
-    phi = calc_confusion_phi(n, a, b, ab)
-    chi_square = calc_confusion_chi_square(n, phi)
-    # Save the confusion matrix as a CSV file.
-    csv_file = dataset.report_file.with_name(CONFUSION_MATRIX_CSV)
-    confusion_matrix = pd.DataFrame.from_dict(
-        {
-            "Neither Mutated": n - (a + b - ab),
-            "Only A Mutated": a - ab,
-            "Only B Mutated": b - ab,
-            "Both Mutated": ab,
-            "Phi Correlation": phi,
-            CHI_SQUARE_COL: chi_square,
-            "Raw P-Value": pvals,
-            "Adjusted P-Value": pvals_bh_adjusted,
-            f"Significant at FDR={pair_fdr}": is_significant,
-        }
-    )
-    confusion_matrix.to_csv(csv_file)
+    chi_square = calc_confusion_chi_square(n, a, b, ab)
+    neither = n - (a + b - ab)
+    only_a = a - ab
+    only_b = b - ab
+    both = ab
+    if write_csv:
+        csv_file = dataset.report_file.with_name(CONFUSION_MATRIX_CSV)
+        confusion_matrix = pd.DataFrame.from_dict(
+            {
+                NEITHER_COL: neither,
+                ONLY_A_COL: only_a,
+                ONLY_B_COL: only_b,
+                BOTH_COL: both,
+                CHI_SQUARE_COL: chi_square,
+            }
+        )
+        confusion_matrix.to_csv(csv_file)
     table = pd.DataFrame(
         {
             N_COL: n,
-            PHI_COL: phi,
             CHI_SQUARE_COL: chi_square,
-            SIGNIFICANT_COL: is_significant,
+            NEITHER_COL: neither,
+            ONLY_A_COL: only_a,
+            ONLY_B_COL: only_b,
+            BOTH_COL: both,
         }
     )
     logger.trace(
-        "{} has {} pair(s) within the band, of which {} are significant",
+        "{} has {} pair(s) within the band",
         dataset,
         len(table.index),
-        int(is_significant.sum()),
     )
     return table
+
+
+def _compute_null_confusion_table(
+    replicate_seed: int,
+    *,
+    pos_index,
+    covered_pooled: dict,
+    mutated_pooled: dict,
+    dataset: FilterMutsDataset,
+    min_gap: int,
+    max_gap: int | None,
+) -> pd.DataFrame:
+    """Compute one null-replicate confusion-matrix table for a tile from
+    its already-pooled reads (see ``_find_correlated_pairs_with_nulls``).
+
+    Factored out of ``_find_correlated_pairs_with_nulls`` so the null
+    replicates can be dispatched in parallel. ``replicate_seed`` fully
+    determines this replicate's pseudo-random draws; the caller draws one
+    such seed per replicate from a per-tile stream so the seeds are
+    distinct and reproducible.
+    """
+    mutated_null = resample_mutated_reads(
+        covered_pooled, mutated_pooled, replicate_seed
+    )
+    n_null, a_null, b_null, ab_null = calc_confusion_matrix(
+        pos_index,
+        covered_pooled,
+        mutated_null,
+        None,
+        min_gap=min_gap,
+        max_gap=max_gap,
+    )
+    null_table = _confusion_to_table(
+        n_null, a_null, b_null, ab_null, dataset=dataset, write_csv=False
+    )
+    logger.debug(
+        "Computed a null-replicate confusion matrix (seed {}) for {}",
+        replicate_seed,
+        dataset,
+    )
+    return null_table
+
+
+def _find_correlated_pairs_with_nulls(
+    dataset: FilterMutsDataset,
+    tile_index: int,
+    tile_seed: int,
+    *,
+    band_width: int,
+    n_null_replicates: int,
+    n_tiles: int,
+    num_cpus: int,
+):
+    """Read one tile's batches exactly once (``_gather_pooled_reads``)
+    and compute both its observed pair table and every null-replicate
+    pair table from that single pooled read.
+
+    Returns ``(real_table, null_tables)``, where ``null_tables`` is a
+    list of length ``n_null_replicates`` (empty if 0). The null
+    replicates are computed in parallel over ``num_cpus`` processors
+    (``_compute_null_confusion_table`` via ``dispatch``); ``ordered=True``
+    keeps ``null_tables`` in replicate order. Each replicate's seed is
+    drawn from a random-integer stream initialized with this tile's own
+    seed ``tile_seed`` (itself drawn by the caller from a stream seeded
+    with the run's seed), so every replicate gets its own reproducible
+    seed without ever computing one by offsetting another.
+    """
+    with logger.debug.single_context(
+        "Finding correlated pairs for tile {}/{} ({})",
+        tile_index + 1,
+        n_tiles,
+        dataset,
+    ):
+        pos_index = dataset.region.unmasked
+        max_gap = band_width if band_width > 0 else None
+        min_gap = dataset.min_mut_gap
+        covered_pooled, mutated_pooled = _gather_pooled_reads(dataset)
+        n, a, b, ab = calc_confusion_matrix(
+            pos_index,
+            covered_pooled,
+            mutated_pooled,
+            None,
+            min_gap=min_gap,
+            max_gap=max_gap,
+        )
+        real_table = _confusion_to_table(
+            n, a, b, ab, dataset=dataset, write_csv=True
+        )
+        logger.debug(
+            "Computed the observed confusion matrix for {}", dataset
+        )
+        if n_null_replicates > 0:
+            # Draw one seed per replicate from a stream initialized with
+            # this tile's own seed, and pass each as the positional argument
+            # so every replicate gets its own distinct, reproducible seed.
+            seed_stream = get_random_integer_generator(tile_seed)
+            replicate_seeds = [
+                next(seed_stream) for _ in range(n_null_replicates)
+            ]
+            null_tables = dispatch(
+                _compute_null_confusion_table,
+                num_cpus=num_cpus,
+                pass_num_cpus=False,
+                as_list=True,
+                ordered=True,
+                raise_on_error=True,
+                args=as_list_of_tuples(replicate_seeds),
+                kwargs=dict(
+                    pos_index=pos_index,
+                    covered_pooled=covered_pooled,
+                    mutated_pooled=mutated_pooled,
+                    dataset=dataset,
+                    min_gap=min_gap,
+                    max_gap=max_gap,
+                ),
+            )
+        else:
+            null_tables = []
+        return real_table, null_tables
 
 
 def _build_banded_table(
@@ -253,8 +458,8 @@ def _build_banded_table(
 
     if not per_tile_tables:
         return pd.DataFrame(
-            {col: pd.Series(dtype=float) for col in (N_COL, PHI_COL, CHI_SQUARE_COL)}
-            | {SIGNIFICANT_COL: pd.Series(dtype=bool)},
+            {col: pd.Series(dtype=float) for col in (N_COL, CHI_SQUARE_COL)}
+            | {col: pd.Series(dtype=int) for col in CONFUSION_COLS},
             index=pd.MultiIndex.from_arrays([[], []], names=[POSITION_A, POSITION_B]),
         )
     combined = pd.concat(per_tile_tables, axis=0)
@@ -271,15 +476,87 @@ def _build_banded_table(
     return combined.sort_index()
 
 
+def _calc_pair_scores(
+    table: pd.DataFrame,
+    null_tables_per_replicate: list[pd.DataFrame],
+    min_pair_coverage: int,
+) -> tuple[pd.DataFrame, list[pd.DataFrame]]:
+    """Attach the per-pair block-scoring currency ``SCORE_COL`` (``g_ij``)
+    to the observed ``table`` and to each null replicate table.
+
+    The score tests, per block, whether the *distribution* of the pairs'
+    correlations is drawn from a wider-than-null distribution. Work in
+    chi-square space, where the null is coverage-invariant: under the
+    per-position-independence null a pair's ``chi^2 = N * phi^2`` is
+    ``chi^2(1)`` regardless of coverage. Model a domain as inflating that
+    variance by a factor ``1 + r`` (the pair's phi is drawn from a wider
+    spread), and score each pair by the log-likelihood ratio of the inflated
+    model against the null::
+
+        g_ij = log f_alt(chi2_ij) - log f_null(chi2_ij)
+             = -0.5 * log(1 + r) + 0.5 * chi2_ij * r / (1 + r)
+
+    which the DP sums over a block's triangle (see ``_dp_segment_blocks``).
+    ``g`` is *signed*: a null-like pair (``chi^2`` near 1) is dominated by
+    the ``-0.5 * log(1 + r)`` intercept and contributes a small *negative*
+    value, so widening a block across dead space costs -- the pressure that
+    keeps distinct domains apart without any tuned threshold -- while a
+    genuinely correlated pair (large ``chi^2``) contributes a large positive
+    value. A strongly-connected hub is absorbed by the *accumulation* of its
+    many individually-modest edges, not by up-weighting any single one.
+
+    ``r`` (how much wider a domain's correlation distribution is than the
+    null) is estimated from the data, not tuned: under the model
+    ``E[chi^2] = 1 + r``, so ``r = mean(chi^2) - 1`` over the analyzed
+    (``N >= min_pair_coverage``) pairs, floored above 0 (``_SCORE_MIN_SHAPE``).
+    The null replicates are scored with the *same* ``r`` and transform (each
+    is a chi-square draw under the null, so it scores ~0 or negative), and
+    they calibrate the block-level penalty in ``_calc_null_penalty`` -- which
+    is where the joint, cross-pair (transitivity) structure of the null
+    enters, since each replicate is one full joint draw.
+
+    Returns ``(scored_table, scored_null_tables)`` (copies with
+    ``SCORE_COL`` added). Works with no null replicates too (``r`` needs only
+    the observed data; the penalty then falls back to the analytical BIC).
+    """
+    with logger.debug.single_context("Scoring {} pairs", table.index.size):
+        import numpy as np
+
+        chi2 = table[CHI_SQUARE_COL].astype(float)
+        analyzed = chi2[table[N_COL] >= min_pair_coverage]
+        r = (float(np.nanmean(analyzed)) - 1.0) if len(analyzed.index) else 0.0
+        r = max(r, _SCORE_MIN_SHAPE)
+        logger.debug(
+            "Estimated domain variance-inflation shape r={} from {} analyzed pair(s)",
+            r,
+            len(analyzed.index),
+        )
+        intercept = -np.log1p(r) / 2.0
+        slope = r / (2.0 * (1.0 + r))
+
+        def score(col: pd.Series) -> np.ndarray:
+            c = col.to_numpy(dtype=float)
+            return np.where(np.isfinite(c), intercept + slope * c, 0.0)
+        
+        scored_table = table.copy()
+        scored_table[SCORE_COL] = score(chi2)
+        scored_null_tables = []
+        for nt in null_tables_per_replicate:
+            scored_nt = nt.copy()
+            scored_nt[SCORE_COL] = score(nt[CHI_SQUARE_COL])
+            scored_null_tables.append(scored_nt)
+        return scored_table, scored_null_tables
+
+
 def _pair_band_row_cumsum(
     table: pd.DataFrame, total_end5: int, total_end3: int
 ) -> tuple[np.ndarray, np.ndarray, int, int]:
-    """Build banded row-cumulative sums of the observable-pair and
-    significant-pair grids over positions [total_end5, total_end3],
-    0-indexed, so that the number of observable/significant pairs
-    whose triangle lies within any interval [s, e] (both endpoints in
-    [s, e]) can be read off via ``_triangle_sum_banded`` -- see
-    ``_calc_domains_by_dp_segmentation`` for how this drives the exact
+    """Build banded row-cumulative sums of the observable-pair count and
+    the per-pair score (``SCORE_COL``) grids over positions
+    [total_end5, total_end3], 0-indexed, so that the pair count and the
+    summed score whose triangle lies within any interval [s, e] (both
+    endpoints in [s, e]) can be read off via ``_triangle_sum_banded`` --
+    see ``_calc_domains_by_dp_segmentation`` for how this drives the exact
     dynamic-program segmentation.
 
     Every pair (a, b) that reaches this function has already passed
@@ -294,37 +571,49 @@ def _pair_band_row_cumsum(
     between tens of gigabytes and tens of megabytes.
 
     ``table`` is assumed already restricted to observable pairs (see
-    ``_calc_domains_by_dp_segmentation``): a pair filtered out there
-    (including every pair touching a fully masked position) never
-    reaches this function, so it is scattered into neither returned
-    array and cannot contribute to any downstream count, rate, or
-    likelihood.
+    ``_calc_domains_by_dp_segmentation``) and to carry ``SCORE_COL`` (see
+    ``_calc_pair_scores``): a pair filtered out there (including every pair
+    touching a fully masked position) never reaches this function, so it is
+    scattered into neither returned array and cannot contribute to any
+    downstream count or block score.
 
-    Returns ``(obs_row_cum, sig_row_cum, n_positions, max_gap)``, where
-    ``row_cum[a, d]`` (for ``d`` in ``0..max_gap+1``) is the number of
-    observable/significant pairs ``(a, a+d')`` for ``d' = 0..d-1``
-    (``row_cum[a, 0] == 0``; ``row_cum[a, max_gap+1]`` is position
-    ``a``'s full row total within the band).
+    Returns ``(obs_row_cum, score_row_cum, n_positions, max_gap)``, where
+    ``obs_row_cum[a, d]`` (for ``d`` in ``0..max_gap+1``) is the number of
+    observable pairs ``(a, a+d')`` for ``d' = 0..d-1`` and
+    ``score_row_cum[a, d]`` is the sum of their ``SCORE_COL`` values
+    (``row_cum[a, 0] == 0``; ``row_cum[a, max_gap+1]`` is position ``a``'s
+    full row total within the band).
     """
     import numpy as np
 
     n_positions = total_end3 - total_end5 + 1
     pos_a = table.index.get_level_values(POSITION_A).to_numpy() - total_end5
     pos_b = table.index.get_level_values(POSITION_B).to_numpy() - total_end5
-    sig = table[SIGNIFICANT_COL].to_numpy()
+    # Every pair must lie within [total_end5, total_end3]; otherwise the
+    # scatter below would silently wrap a negative index or raise an
+    # IndexError, corrupting the counts. Fail explicitly instead.
+    if len(pos_a) and (
+        pos_a.min() < 0 or pos_b.max() >= n_positions or (pos_b < pos_a).any()
+    ):
+        raise OutOfBoundsError(
+            "All pairs must satisfy total_end5 ≤ a ≤ b ≤ total_end3 "
+            f"(0 ≤ a ≤ b < {n_positions} after offsetting by "
+            f"total_end5={total_end5})"
+        )
+    score = table[SCORE_COL].to_numpy(dtype=float)
     gaps = pos_b - pos_a
     max_gap = int(gaps.max()) if len(gaps) else 0
 
     obs_grid = np.zeros((n_positions, max_gap + 1), dtype=np.int64)
-    sig_grid = np.zeros((n_positions, max_gap + 1), dtype=np.int64)
+    score_grid = np.zeros((n_positions, max_gap + 1), dtype=float)
     np.add.at(obs_grid, (pos_a, gaps), 1)
-    np.add.at(sig_grid, (pos_a[sig], gaps[sig]), 1)
+    np.add.at(score_grid, (pos_a, gaps), score)
 
     obs_row_cum = np.zeros((n_positions, max_gap + 2), dtype=np.int64)
-    sig_row_cum = np.zeros((n_positions, max_gap + 2), dtype=np.int64)
+    score_row_cum = np.zeros((n_positions, max_gap + 2), dtype=float)
     obs_row_cum[:, 1:] = np.cumsum(obs_grid, axis=1)
-    sig_row_cum[:, 1:] = np.cumsum(sig_grid, axis=1)
-    return obs_row_cum, sig_row_cum, n_positions, max_gap
+    score_row_cum[:, 1:] = np.cumsum(score_grid, axis=1)
+    return obs_row_cum, score_row_cum, n_positions, max_gap
 
 
 def _triangle_sum_banded(row_cum: np.ndarray, e: int, max_gap: int) -> np.ndarray:
@@ -361,7 +650,11 @@ def _triangle_sum_banded(row_cum: np.ndarray, e: int, max_gap: int) -> np.ndarra
     ]  # near_suffix[i] = sum(near_vals[i:])
     near_total = near_suffix[0] if len(near_suffix) else 0
 
-    result = np.zeros(e + 1, dtype=np.int64)
+    # Preserve the row-cumulative array's dtype: this helper sums the
+    # integer observable-pair count grid (int64) *and* the float per-pair
+    # score grid (see _pair_band_row_cumsum), so a hardcoded int64 output
+    # would silently truncate the float block scores.
+    result = np.zeros(e + 1, dtype=row_cum.dtype)
     if boundary > 0:
         s_far = np.arange(0, boundary)
         result[s_far] = (cum_full[boundary] - cum_full[s_far]) + near_total
@@ -370,60 +663,35 @@ def _triangle_sum_banded(row_cum: np.ndarray, e: int, max_gap: int) -> np.ndarra
     return result
 
 
-def _block_gain(n, k, theta0: float):
-    """Log-likelihood-ratio gain of modeling a block's ``n``
-    observable pairs (``k`` of them significant) at their own rate
-    ``theta_hat = k / n`` instead of the shared background rate
-    ``theta0``: ``n * KL(theta_hat || theta0)``, i.e.
-    ``k * log(theta_hat / theta0) + (n - k) * log((1 - theta_hat) /
-    (1 - theta0))``. Zero unless ``theta_hat > theta0`` (a block only
-    "wins" by being *denser* than background, never sparser) and zero
-    wherever ``n == 0`` (an empty candidate carries no evidence)."""
-    import numpy as np
-
-    with np.errstate(divide="ignore", invalid="ignore"):
-        theta_hat = np.where(n > 0, k / np.maximum(n, 1), 0.0)
-        denser = (n > 0) & (theta_hat > theta0)
-        term1 = np.where(
-            k > 0,
-            k * np.log(np.where(theta_hat > 0, theta_hat, 1.0) / max(theta0, 1e-300)),
-            0.0,
-        )
-        n_minus_k = n - k
-        complement = np.maximum(1.0 - theta_hat, 1e-300)
-        term2 = np.where(
-            n_minus_k > 0,
-            n_minus_k * np.log(complement / max(1.0 - theta0, 1e-300)),
-            0.0,
-        )
-    return np.where(denser, term1 + term2, 0.0)
-
-
 def _dp_segment_blocks(
     obs_row_cum: np.ndarray,
-    sig_row_cum: np.ndarray,
+    score_row_cum: np.ndarray,
     n_positions: int,
     max_gap: int,
-    theta0: float,
     penalty: float,
-) -> list[tuple[int, int]]:
+) -> tuple[list[tuple[int, int]], float]:
     """Find the partition of [0, n_positions) into background and
-    domain blocks that maximizes the total block-model log-likelihood
-    ratio (sum of ``_block_gain`` over the chosen blocks, minus
-    ``penalty`` per block), via exact dynamic programming:
+    domain blocks that maximizes the total block score (the sum of each
+    chosen block's summed per-pair score ``Sum s_ij`` over its triangle,
+    minus ``penalty`` per block), via exact dynamic programming:
     ``dp[t] = max(dp[t-1], max_s dp[s] + gain(s, t-1) - penalty)``,
     where ``dp[t]`` is the best score using positions [0, t) and
-    ``gain(s, t-1)`` scores a candidate block [s, t-1]. Every interval
-    length at every position is considered (a block may be far longer
-    than ``max_gap`` even though the band restricts any single pair's
-    span, so this loop is still O(n_positions^2), unchanged from a
-    dense grid -- only the O(n_positions * max_gap) memory improves),
-    so no window scale is ever chosen; splitting a real domain costs
-    the positive evidence of every pair that would have to move to the
-    background (see ``_calc_domains_by_dp_segmentation`` for why this
-    discourages over-splitting a domain bridged by many crossing
-    pairs). Returns the chosen blocks as sorted, non-overlapping
-    0-indexed (start, end) pairs, inclusive.
+    ``gain(s, t-1)`` is the summed score of a candidate block [s, t-1].
+    Every interval length at every position is considered (a block may be
+    far longer than ``max_gap`` even though the band restricts any single
+    pair's span, so this loop is still O(n_positions^2), unchanged from a
+    dense grid -- only the O(n_positions * max_gap) memory improves), so no
+    window scale is ever chosen.
+
+    The per-pair score ``s_ij`` (see ``_calc_pair_scores``) is signed: a
+    genuinely correlated pair contributes a positive value and a null-like
+    pair a small negative one, so extending a block across dead space costs
+    -- the pressure that keeps distinct domains apart and that a strongly-
+    connected hub's positive edges must overcome to be pulled in. Returns
+    ``(blocks, objective)``: the chosen blocks as sorted, non-overlapping
+    0-indexed (start, end) pairs, inclusive, and the maximized objective
+    ``dp[n_positions]`` (the total summed score, already net of ``penalty``
+    per block).
     """
     import numpy as np
 
@@ -433,8 +701,7 @@ def _dp_segment_blocks(
         e = t - 1
         s_vals = np.arange(t)
         n_se = _triangle_sum_banded(obs_row_cum, e, max_gap)
-        k_se = _triangle_sum_banded(sig_row_cum, e, max_gap)
-        gain = _block_gain(n_se, k_se, theta0)
+        gain = _triangle_sum_banded(score_row_cum, e, max_gap)
         candidate_vals = np.where(n_se > 0, dp[s_vals] + gain - penalty, -np.inf)
         best_idx = int(np.argmax(candidate_vals))
         best_val = candidate_vals[best_idx]
@@ -454,248 +721,348 @@ def _dp_segment_blocks(
             blocks.append((s, t - 1))
             t = s
     blocks.reverse()
-    return blocks
+    return blocks, float(dp[n_positions])
 
 
-def _estimate_background_rate(
-    obs_row_cum: np.ndarray,
-    sig_row_cum: np.ndarray,
-    max_gap: int,
-    blocks: list[tuple[int, int]],
-    fallback: float,
+def _scan_block_gains(
+    table: pd.DataFrame,
+    total_end5: int,
+    total_end3: int,
+    min_pair_coverage: int,
+) -> np.ndarray:
+    """Scan a scored ``table`` (carrying ``SCORE_COL``; see
+    ``_calc_pair_scores``) for the summed scores of the positive-score
+    blocks a penalty-free DP carves out, returning their gains.
+
+    A penalty-free segmentation carves out every block whose pairs' scores
+    sum to a positive value -- i.e. every stretch whose correlations exceed
+    the null on balance. On the observed table these are the candidate
+    domains; on a null replicate (scored leave-one-out, so its pairs are ~0
+    on average) they are the chance blocks used to calibrate the per-block
+    penalty (see ``_calc_null_penalty``)."""
+    import numpy as np
+
+    obs_table = table[table[N_COL] >= min_pair_coverage]
+    obs_row_cum, score_row_cum, n_positions, max_gap = _pair_band_row_cumsum(
+        obs_table, total_end5, total_end3
+    )
+    if int(obs_row_cum[:, max_gap + 1].sum()) == 0:
+        return np.zeros(0, dtype=float)
+    blocks, _ = _dp_segment_blocks(
+        obs_row_cum, score_row_cum, n_positions, max_gap, 0.0
+    )
+    gains = np.empty(len(blocks), dtype=float)
+    for i, (s, e) in enumerate(blocks):
+        gains[i] = float(_triangle_sum_banded(score_row_cum, e, max_gap)[s])
+    return gains
+
+
+def _calibrate_penalty_from_null(
+    real_gains: np.ndarray,
+    null_gains: np.ndarray,
+    n_replicates: int,
+    domain_fdr: float,
 ) -> float:
-    """Estimate the background significant-pair rate ``theta0`` from
-    every observable pair *not* inside any of ``blocks`` -- i.e. every
-    background and inter-block pair, which is inter-domain by
-    construction and so uncontaminated by any called domain's own
-    interior density (unlike a global average over the whole scanned
-    region, which any real domain inflates). Falls back to
-    ``fallback`` if there are no such pairs (e.g. one block covers the
-    entire region)."""
-    total_obs = int(obs_row_cum[:, max_gap + 1].sum())
-    total_sig = int(sig_row_cum[:, max_gap + 1].sum())
-    block_obs = sum(
-        int(_triangle_sum_banded(obs_row_cum, e, max_gap)[s]) for s, e in blocks
-    )
-    block_sig = sum(
-        int(_triangle_sum_banded(sig_row_cum, e, max_gap)[s]) for s, e in blocks
-    )
-    background_obs = total_obs - block_obs
-    background_sig = total_sig - block_sig
-    if background_obs <= 0:
-        return fallback
-    return background_sig / background_obs
+    """Per-block penalty from a Benjamini-Hochberg-style FDR comparison of
+    the real candidate-block gains to the pooled null block gains.
+
+    For a threshold ``T``, the expected number of *false* domains is
+    ``V(T) = (# null blocks with gain > T) / n_replicates`` and the number
+    of *called* domains is ``R(T) = # real blocks with gain > T``, so the
+    false-discovery proportion is ``V(T) / R(T)``. Scanning ``T`` over the
+    real gains (each admits one more real block), take the lowest ``T``
+    (most domains) whose FDR is still ``<= domain_fdr``, and return a
+    penalty just below it so the DP admits exactly those blocks. Returns
+    ``+inf`` if no threshold satisfies the FDR (call nothing)."""
+    import numpy as np
+
+    if real_gains.size == 0:
+        return inf
+    real_descending = np.sort(real_gains)[::-1]
+    null_ascending = np.sort(null_gains)
+    n_rep = max(int(n_replicates), 1)
+    best_i = 0
+    for i in range(1, real_descending.size + 1):
+        threshold = real_descending[i - 1]
+        n_null_above = null_gains.size - int(
+            np.searchsorted(null_ascending, threshold, side="right")
+        )
+        fdr = (n_null_above / n_rep) / i
+        if fdr <= domain_fdr:
+            best_i = i  # largest i satisfying the FDR (BH step-up)
+    if best_i == 0:
+        # Even the single strongest real block fails the FDR: call none.
+        return inf
+    # Place the penalty between the weakest admitted block and the next
+    # (rejected) one, so the DP keeps exactly the top best_i blocks.
+    admitted = float(real_descending[best_i - 1])
+    below = float(real_descending[best_i]) if best_i < real_descending.size else 0.0
+    return (admitted + below) / 2.0
 
 
-def _merge_adjacent_blocks(
-    obs_row_cum: np.ndarray,
-    sig_row_cum: np.ndarray,
+def _calc_null_penalty(
+    table: pd.DataFrame,
+    null_tables_per_replicate: list[pd.DataFrame],
+    region,
+    min_pair_coverage: int,
+    domain_fdr: float,
+) -> float:
+    """Calibrate the DP's per-block penalty from a simulated null.
+
+    Scan the observed ``table`` for its real candidate-domain gains (summed
+    per-pair scores), then scan each of ``null_tables_per_replicate`` (one
+    already-banded table per null replicate, scored with the *same*
+    variance-inflation transform as the observed data and built by the caller
+    from tables gathered while reading each tile's batches -- see
+    ``_find_correlated_pairs_with_nulls`` and ``_calc_pair_scores``) for its
+    chance block gains (``_scan_block_gains``). Each replicate is one joint
+    draw under the null, so this is where the cross-pair (transitivity)
+    dependence of the block-level null enters; a replicate's pairs are
+    chi-square draws under the null, so its blocks score near 0. Return the
+    FDR-controlled penalty comparing the two at ``domain_fdr``
+    (``_calibrate_penalty_from_null``). Requires at least one null replicate,
+    since the block-level null distribution (which captures the cross-pair
+    transitivity structure) has no analytical substitute."""
+    import numpy as np
+
+    n_null_replicates = len(null_tables_per_replicate)
+    if n_null_replicates < 1:
+        raise OutOfBoundsError(
+            f"n_null_replicates must be >= 1, but got {n_null_replicates}"
+        )
+    real_gains = _scan_block_gains(
+        table, region.end5, region.end3, min_pair_coverage
+    )
+    pooled = []
+    for r, null_table in enumerate(null_tables_per_replicate):
+        gains = _scan_block_gains(
+            null_table, region.end5, region.end3, min_pair_coverage
+        )
+        pooled.append(gains)
+        logger.trace(
+            "Null replicate {}/{} has {} spurious block(s)",
+            r + 1,
+            n_null_replicates,
+            gains.size,
+        )
+    pooled_gains = np.concatenate(pooled) if pooled else np.zeros(0)
+    penalty = _calibrate_penalty_from_null(
+        real_gains, pooled_gains, n_null_replicates, domain_fdr
+    )
+    logger.debug(
+        "Null-calibrated DP penalty {} from {} real candidate block(s) vs "
+        "{} pooled null block(s) over {} replicate(s) (target FDR {})",
+        penalty,
+        real_gains.size,
+        pooled_gains.size,
+        n_null_replicates,
+        domain_fdr,
+    )
+    return penalty
+
+
+def _crossing_gain(
+    score_row_cum: np.ndarray,
     max_gap: int,
+    block_left: tuple[int, int],
+    block_right: tuple[int, int],
+) -> float:
+    """Sum of ``SCORE_COL`` for exactly the pairs with one endpoint in
+    ``block_left`` and the other in ``block_right`` -- excluding every
+    pair that touches the gap between them (gap-to-gap or block-to-gap).
+
+    Summed directly, one row at a time, from the banded row-cumulative
+    score grid (``score_row_cum``; see ``_pair_band_row_cumsum``): for each
+    position ``a`` in ``block_left``, the pairs ``(a, b)`` with ``b`` in
+    ``block_right`` occupy a contiguous gap range in ``a``'s row, read off
+    with two lookups. This is deliberately *not* computed as a difference
+    of larger triangle sums (e.g. via inclusion-exclusion on
+    ``_triangle_sum_banded``): when the true crossing gain is exactly zero
+    (no pair of ``block_left`` and ``block_right`` is even within
+    ``max_gap`` of each other), subtracting several ``O(block size)``
+    triangle sums that are each individually nonzero can leave a
+    floating-point residue of the wrong sign, spuriously triggering a join
+    in ``_join_bridged_blocks`` on numerical noise alone. Summing only the
+    pairs that actually exist avoids that cancellation entirely: with no
+    such pairs, every row's contribution is exactly ``0.0``.
+
+    This is what actually decides whether two DP-chosen blocks separated
+    by dead space should be reported as one domain (see
+    ``_join_bridged_blocks``): the crossing pairs are the only direct
+    evidence connecting the two blocks, and testing them alone -- rather
+    than summing in every pair that merely touches the gap -- avoids the
+    gap's own (expectedly null) pairs, which can vastly outnumber the
+    crossing pairs, diluting real evidence into a net negative."""
+    import numpy as np
+
+    s1, e1 = block_left
+    s2, e2 = block_right
+    a_vals = np.arange(s1, e1 + 1)
+    gap_lo = s2 - a_vals
+    gap_hi = np.minimum(e2 - a_vals, max_gap)
+    in_band = gap_lo <= max_gap
+    gap_lo_idx = np.clip(gap_lo, 0, max_gap + 1)
+    gap_hi_idx = np.clip(gap_hi + 1, 0, max_gap + 1)
+    row_hi = score_row_cum[a_vals, gap_hi_idx]
+    row_lo = score_row_cum[a_vals, gap_lo_idx]
+    return float(np.where(in_band, row_hi - row_lo, 0.0).sum())
+
+
+def _join_bridged_blocks(
+    table: pd.DataFrame,
+    null_tables_per_replicate: list[pd.DataFrame],
     blocks: list[tuple[int, int]],
-    theta0: float,
+    total_end5: int,
+    total_end3: int,
+    min_pair_coverage: int,
+    domain_fdr: float,
 ) -> list[tuple[int, int]]:
-    """Greedily merge adjacent DP blocks, strongest bridge first,
-    whenever the *bridge* between them -- everything in their union
-    except their own two triangles, i.e. any gap between them plus
-    every pair crossing from one into the other -- is itself denser
-    than background (``_block_gain(bridge_n, bridge_k, theta0) > 0``),
-    regardless of whether the DP's exact optimum happened to split
-    them there.
+    """Join adjacent DP-chosen blocks whose *direct crossing pairs*
+    (``_crossing_gain``) -- not the whole bridge between them, which is
+    dominated by however much (expectedly null) dead space happens to sit
+    in between -- clear the same null-calibrated FDR standard used to call
+    a domain in the first place (``_calc_null_penalty``).
 
-    The DP in ``_dp_segment_blocks`` finds the globally optimal
-    partition, so it never leaves a *beneficial* merge on the table:
-    if joining two of its blocks scored higher, the DP would already
-    have chosen that partition (it considers every candidate block,
-    including their union, at every step). So a plain "does the union
-    still look like a domain on its own" check is useless here -- by
-    construction it can never fire when the DP declined a merge, and
-    proved too permissive besides: it stayed true across a genuinely
-    sparse bridge between two otherwise very dense sub-domains, purely
-    because both sub-domains alone were dense enough to carry the
-    union (see ``TestDpSegmentationAntiOverSplit``'s sparse-bridge
-    case; that test still requires this pass to leave the split
-    alone).
+    The DP's own optimum is exact under the additive per-pair score (see
+    ``_dp_segment_blocks``): whenever it leaves two blocks split, the
+    *whole* bridge between them (their union's score minus each block's
+    own) is necessarily <= -penalty, by construction of the DP recurrence
+    -- so a post-hoc pass re-testing that same whole-bridge quantity could
+    never find anything to join, and is not what this function does. A
+    real gap can still sit between two blocks that are nonetheless
+    directly connected by real long-range correlations (e.g. a helix with
+    an unpaired linker or internal loop in between): the gap's own pairs
+    are correctly null, yet summing them in with the real crossing pairs
+    swamps the latter, masking a genuine relationship that a block -- a
+    contiguous position range with no way to isolate "just the crossing
+    pairs" from what merely surrounds them -- has no way to see on its
+    own. This function is the direct, targeted test for that case.
 
-    What the DP's "sum of block gains" optimum discards, that a human
-    eye doesn't, is a bridge that is real but *weaker* than either
-    neighbor: a region with genuine internal density variation (one
-    stretch at 3%, an adjacent one at 7%, both well above a background
-    of 0.3%) is optimally split into purer pieces, because two own-
-    rate fits beat one diluted shared rate -- even with zero gap
-    between them. Testing the bridge alone, instead of the whole
-    union, targets exactly that case without the sparse-bridge test's
-    false positive: a truly silent gap or crossing region (bridge rate
-    <= background) is left split, while a bridge that is merely
-    weaker than its neighbors but still above background is merged.
+    Requires at least one null replicate: the real crossing gains for
+    every adjacent pair of DP blocks are compared against the crossing
+    gains of the *same* block boundaries reapplied to each null
+    replicate's scored table (one joint draw of the null each), and
+    calibrated via the identical BH-style FDR logic used for the main
+    domain-calling penalty (``_calibrate_penalty_from_null``) -- so
+    joining two blocks is held to the same ``domain_fdr`` standard as
+    calling one, with no separate tuned threshold. A single static pass
+    over the original DP block boundaries suffices (no re-scoring after
+    each join): each edge's crossing gain depends only on the two fixed
+    original blocks it connects, so joins that fuse 3+ consecutive
+    blocks fall out of chaining consecutive admitted edges together."""
+    import numpy as np
 
-    Merges are applied strongest-bridge-first (by ``_block_gain``,
-    the same n-weighted evidence statistic used to decide whether a
-    bridge qualifies at all -- not raw density, so a small, noisy
-    high-ratio bridge can't jump ahead of a larger, more reliable
-    one) rather than left to right, via a max-heap of candidate
-    adjacent pairs. Every merge can change the bridges on either side
-    of the absorbing block (its end position moves), so both
-    neighboring pairs are recomputed and re-queued after each merge;
-    stale heap entries (referring to a block that has since been
-    absorbed, or whose end has since moved) are detected by an
-    end-position version counter per block and discarded lazily
-    rather than eagerly purged from the heap. This still lets 3+
-    consecutive blocks with real bridges cascade into one, but the
-    order in which ambiguous, weaker bridges get resolved no longer
-    depends on which end of the region they happen to sit at.
-
-    Uses the same ``obs_row_cum``/``sig_row_cum`` arrays as the DP, so
-    a bridge's ``n``/``k`` are built only from pairs that already
-    survived ``_calc_domains_by_dp_segmentation``'s coverage filter --
-    a masked/excluded pair cannot contribute to a merge decision any
-    more than it could to the DP itself.
-    """
-    import heapq
-
-    if not blocks:
+    if len(blocks) < 2:
         return blocks
+    n_null_replicates = len(null_tables_per_replicate)
+    if n_null_replicates < 1:
+        raise OutOfBoundsError(
+            f"n_null_replicates must be >= 1, but got {n_null_replicates}"
+        )
 
-    n_blocks = len(blocks)
-    starts = [s for s, _ in blocks]
-    ends = [e for _, e in blocks]
-    prev_idx: list[int | None] = [i - 1 if i > 0 else None for i in range(n_blocks)]
-    next_idx: list[int | None] = [
-        i + 1 if i < n_blocks - 1 else None for i in range(n_blocks)
-    ]
-    alive = [True] * n_blocks
-    end_version = [0] * n_blocks
+    def crossing_gains(scored_table: pd.DataFrame) -> np.ndarray:
+        obs = scored_table[scored_table[N_COL] >= min_pair_coverage]
+        _, score_row_cum, _, max_gap = _pair_band_row_cumsum(
+            obs, total_end5, total_end3
+        )
+        return np.array(
+            [
+                _crossing_gain(score_row_cum, max_gap, blocks[i], blocks[i + 1])
+                for i in range(len(blocks) - 1)
+            ]
+        )
 
-    def bridge_gain(left: int, right: int) -> float:
-        prev_s, prev_e = starts[left], ends[left]
-        s, e = starts[right], ends[right]
-        union_obs_row = _triangle_sum_banded(obs_row_cum, e, max_gap)
-        union_sig_row = _triangle_sum_banded(sig_row_cum, e, max_gap)
-        union_n = int(union_obs_row[prev_s])
-        union_k = int(union_sig_row[prev_s])
-        next_n = int(union_obs_row[s])
-        next_k = int(union_sig_row[s])
-        prev_n = int(_triangle_sum_banded(obs_row_cum, prev_e, max_gap)[prev_s])
-        prev_k = int(_triangle_sum_banded(sig_row_cum, prev_e, max_gap)[prev_s])
-        bridge_n = union_n - prev_n - next_n
-        bridge_k = union_k - prev_k - next_k
-        return float(_block_gain(bridge_n, bridge_k, theta0))
-
-    heap: list[tuple[float, int, int, int, int]] = []
-
-    def push(left: int, right: int) -> None:
-        gain = bridge_gain(left, right)
-        if gain > 0:
-            heapq.heappush(
-                heap, (-gain, left, right, end_version[left], end_version[right])
-            )
-
-    for i in range(n_blocks - 1):
-        push(i, i + 1)
-
-    while heap:
-        _, left, right, v_left, v_right = heapq.heappop(heap)
-        if not (alive[left] and alive[right]):
-            continue
-        if next_idx[left] != right:
-            continue
-        if end_version[left] != v_left or end_version[right] != v_right:
-            continue
-        ends[left] = ends[right]
-        end_version[left] += 1
-        alive[right] = False
-        next_idx[left] = next_idx[right]
-        if next_idx[left] is not None:
-            prev_idx[next_idx[left]] = left
-            push(left, next_idx[left])
-        if prev_idx[left] is not None:
-            push(prev_idx[left], left)
-
-    return [(starts[i], ends[i]) for i in range(n_blocks) if alive[i]]
-
-
-N_BACKGROUND_RATE_ITERS = 3
+    real_gains = crossing_gains(table)
+    pooled = [crossing_gains(nt) for nt in null_tables_per_replicate]
+    pooled_gains = np.concatenate(pooled) if pooled else np.zeros(0)
+    threshold = _calibrate_penalty_from_null(
+        real_gains, pooled_gains, n_null_replicates, domain_fdr
+    )
+    logger.debug(
+        "Crossing-pair join threshold {} from {} adjacent block pair(s) vs "
+        "{} pooled null crossing gain(s) over {} replicate(s) (target FDR {})",
+        threshold,
+        real_gains.size,
+        pooled_gains.size,
+        n_null_replicates,
+        domain_fdr,
+    )
+    joined: list[tuple[int, int]] = [blocks[0]]
+    for i in range(1, len(blocks)):
+        if real_gains[i - 1] > threshold:
+            s0, _ = joined[-1]
+            _, e1 = blocks[i]
+            joined[-1] = (s0, e1)
+        else:
+            joined.append(blocks[i])
+    return joined
 
 
 def _calc_domains_by_dp_segmentation(
     table: pd.DataFrame,
+    null_tables_per_replicate: list[pd.DataFrame],
     total_end5: int,
     total_end3: int,
-    bic_multiplier: float,
+    penalty: float,
+    domain_fdr: float,
     min_pair_coverage: int = 1000,
 ) -> list[tuple[int, int]]:
     """Call domains by exact dynamic-program segmentation of the
-    significant-pair contact map into background/domain blocks (see
-    ``_dp_segment_blocks``): partition [total_end5, total_end3] into
-    consecutive intervals, each either background (rate ``theta0``) or
-    a domain with its own rate, maximizing the total block-model
-    log-likelihood ratio against an all-background null, penalized by
-    ``bic_multiplier`` per block (Bayesian information criterion:
-    ``0.5 * log(N observable pairs)`` per extra block, scaled by the
-    multiplier).
+    per-pair correlation-score contact map into background/domain blocks
+    (see ``_dp_segment_blocks``): partition [total_end5, total_end3] into
+    consecutive intervals and keep as a domain each interval whose pairs'
+    null-referenced scores (``SCORE_COL``; see ``_calc_pair_scores``) sum
+    to more than ``penalty``, maximizing the total summed score net of one
+    ``penalty`` per block.
 
-    This replaces an earlier insulation-score boundary caller, which
-    projected the 2-D contact map to a 1-D crossing-density track and
-    so needed one fixed window scale that could not fit domains of
-    very different sizes in the same reference (over-fragmenting
-    some, under-resolving others). Scoring each candidate block
-    directly by its own 2-D triangle density -- exactly what a person
-    sees by eye in the pairs-vs-domains plot -- removes the window
-    entirely: the DP considers every possible interval length at every
-    position.
+    This scores each candidate block by the *summed null-referenced
+    correlation excess* over its 2-D triangle, replacing an earlier
+    significant-pair *density* (a rate ``k / n``). Density collapsed every
+    pair to one significant/not bit and, being a ratio, was diluted by the
+    empty span around a strongly-correlated but isolated hub position, so
+    such a hub was excluded from its domain. The summed signed score fixes
+    both: it keeps each pair's coverage-normalized correlation magnitude,
+    and because a null-like pair contributes a small *negative* value while
+    a hub's genuine edges contribute large positive ones, widening a block
+    to absorb a hub across a short dead span is favorable, while widening it
+    across a long genuine gap is not (that is what keeps distinct domains
+    apart). No window scale is ever chosen: the DP considers every possible
+    interval length at every position.
 
-    Splitting a real domain into pieces is discouraged even before the
-    per-block penalty: every pair crossing the split point is a
-    significant pair that would have to be re-classified as
-    background (rate ``theta0``, much lower than a domain's own rate),
-    forfeiting its positive evidence. A split therefore only wins when
-    the crossing pairs are genuinely sparse and/or the two halves have
-    sharply different densities -- i.e. it really is two domains, not
-    a single domain bridged by many crossing pairs.
+    Only pairs whose total coverage (``N``, the sum of the 2x2 confusion
+    matrix) is at least ``min_pair_coverage`` are used. This is the *only*
+    place masking is applied, and it is applied before anything else: a pair
+    below the threshold -- including every pair touching a fully masked
+    position, which has none above it -- is dropped from ``obs_table`` here
+    and so never reaches ``_pair_band_row_cumsum``. It cannot contribute to
+    any triangle count or block score downstream; it is not merely
+    down-weighted, it simply does not exist for the rest of this function.
 
-    ``theta0`` is estimated from the pairs outside all called blocks
-    (see ``_estimate_background_rate``), re-estimated for a few
-    passes (EM-style) after each DP run so it stays uncontaminated by
-    domain interiors: initialized to the global observable rate, then
-    re-fit from the off-block pairs after each pass.
-
-    Only pairs whose total coverage (``N``, the sum of the 2x2
-    confusion matrix) is at least ``min_pair_coverage`` are used. This
-    is the *only* place masking is applied, and it is applied before
-    anything else: a pair below the threshold -- including every pair
-    touching a fully masked position, which has none above it -- is
-    dropped from ``obs_table`` here and so never reaches
-    ``_pair_band_row_cumsum``. It is therefore scattered into neither
-    the observable nor the significant grid, and cannot contribute to
-    any triangle count, background rate, or block gain computed
-    downstream; it is not merely down-weighted or diluted, it simply
-    does not exist for the rest of this function.
+    ``penalty`` is calibrated from a simulated null (``_calc_null_penalty``).
 
     Represents the grid banded (see ``_pair_band_row_cumsum``), using
     O(L * max_gap) memory where L is the scanned region's length and
-    max_gap is the largest separation of any observable pair -- for a
-    reference tens of thousands of positions long with a band a few
-    hundred wide, tens of megabytes instead of the tens of gigabytes a
-    dense O(L^2) grid would need. The DP itself is still O(L^2) time
-    (a domain may be far longer than the band), unchanged from a dense
-    grid.
+    max_gap is the largest separation of any observable pair -- tens of
+    megabytes instead of the tens of gigabytes a dense O(L^2) grid would
+    need. The DP itself is still O(L^2) time (a domain may be far longer
+    than the band), unchanged from a dense grid.
 
-    After the DP converges, adjacent blocks are greedily merged,
-    strongest bridge first (see ``_merge_adjacent_blocks``), whenever
-    the material bridging them is itself denser than background, even
-    though the DP's exact optimum kept them split: real regions with
-    substantial internal density variation are otherwise reported as
-    several small, tightly-adjacent (often zero-gap) domains, which is
-    a true statistical result but a finer partition than most
-    downstream, flat (non-hierarchical) uses want.
+    After the DP, adjacent blocks are joined when their *direct crossing
+    pairs* alone clear the null-calibrated FDR bar (``_join_bridged_blocks``,
+    at the same ``domain_fdr``) -- not a post-hoc re-test of the DP's own
+    whole-bridge objective, which the DP's exactness already makes
+    unwinnable, but a targeted test for a real gap that nonetheless has
+    real long-range correlations crossing it.
     """
-    import numpy as np
-
     if min_pair_coverage < 1:
         raise OutOfBoundsError(
             f"min_pair_coverage must be >= 1, but got {min_pair_coverage}"
         )
-    if bic_multiplier < 0:
-        raise OutOfBoundsError(f"bic_multiplier must be >= 0, but got {bic_multiplier}")
+    if not 1 <= total_end5 <= total_end3:
+        raise IncompatibleValuesError(
+            "Must have 1 ≤ total_end5 ≤ total_end3, "
+            f"but got total_end5={total_end5} and total_end3={total_end3}"
+        )
     obs_table = table[table[N_COL] >= min_pair_coverage]
     with logger.debug.single_context(
         "Identifying domains from {} observable pair(s) (of {} in-band) "
@@ -703,23 +1070,20 @@ def _calc_domains_by_dp_segmentation(
         len(obs_table.index),
         len(table.index),
     ):
-        obs_row_cum, sig_row_cum, n_positions, max_gap = _pair_band_row_cumsum(
+        obs_row_cum, score_row_cum, n_positions, max_gap = _pair_band_row_cumsum(
             obs_table, total_end5, total_end3
         )
-        total_obs = int(obs_row_cum[:, max_gap + 1].sum())
-        total_sig = int(sig_row_cum[:, max_gap + 1].sum())
-        theta0 = total_sig / total_obs if total_obs > 0 else 0.5
-        penalty = 0.5 * float(np.log(max(total_obs, 2))) * bic_multiplier
-        blocks: list[tuple[int, int]] = []
-        for _ in range(N_BACKGROUND_RATE_ITERS):
-            blocks = _dp_segment_blocks(
-                obs_row_cum, sig_row_cum, n_positions, max_gap, theta0, penalty
-            )
-            theta0 = _estimate_background_rate(
-                obs_row_cum, sig_row_cum, max_gap, blocks, theta0
-            )
-        blocks = _merge_adjacent_blocks(
-            obs_row_cum, sig_row_cum, max_gap, blocks, theta0
+        blocks, _ = _dp_segment_blocks(
+            obs_row_cum, score_row_cum, n_positions, max_gap, penalty
+        )
+        blocks = _join_bridged_blocks(
+            table,
+            null_tables_per_replicate,
+            blocks,
+            total_end5,
+            total_end3,
+            min_pair_coverage,
+            domain_fdr,
         )
         domains = sorted((total_end5 + s, total_end5 + e) for s, e in blocks)
         logger.debug("Calculated domains: {}", domains)
@@ -728,6 +1092,7 @@ def _calc_domains_by_dp_segmentation(
 
 def _graph_pairs_and_domains(
     pairs: list[tuple[int, int]],
+    scores: list[float],
     domains: list[tuple[int, int]],
     end5: int,
     end3: int,
@@ -737,10 +1102,15 @@ def _graph_pairs_and_domains(
     from plotly import graph_objects as go
 
     fig = go.Figure()
-    # Graph the domains as triangles.
+    # Graph the domains as triangles. All domain traces share a legend
+    # group so that clicking the single "Domains" legend entry toggles
+    # every domain triangle on/off together (groupclick="togglegroup",
+    # set below), acting as a switch for the whole layer.
     end5s, end3s = _tuples_to_ends_arrays(domains)
     domains_midpoints, domains_distances = _calc_midpoints_distances(end5s, end3s)
-    for (a, b), x, y in zip(domains, domains_midpoints, domains_distances, strict=True):
+    for i, ((a, b), x, y) in enumerate(
+        zip(domains, domains_midpoints, domains_distances, strict=True)
+    ):
         fig.add_trace(
             go.Scatter(
                 x=[a, b, x, a],
@@ -748,29 +1118,121 @@ def _graph_pairs_and_domains(
                 mode="none",
                 fill="toself",
                 fillcolor="rgba(230,159,0,0.5)",
-                showlegend=False,
-                name=None,
+                legendgroup="domains",
+                showlegend=(i == 0),
+                name="Domains",
                 hoverinfo="text",
                 text=f"Domain {a, b}",
                 hovertemplate="%{text}<extra></extra>",
             )
         )
-    # Plot the correlated pairs as points.
+    # Plot the correlated pairs as points in the original pairs color
+    # (#D55E00), with opacity set by their score on a square-root scale
+    # anchored at zero (0% opacity at score 0, regardless of the minimum
+    # score actually present, 100% opacity at the maximum score in the
+    # data). A square-root scale sits between linear (too many low
+    # scores crowded near 0% opacity) and log (too many points pulled up
+    # toward 100%). Plotly ties a colorbar to marker.color + colorscale,
+    # not marker.opacity, so the opacity ramp is expressed as a two-stop
+    # colorscale in that same color (0% to 100% alpha) applied to
+    # sqrt(score), which renders identically to varying opacity while
+    # keeping the colorbar legend; the colorbar ticks are relabeled back
+    # to score units since the underlying values are sqrt-scaled.
     pos5s, pos3s = _tuples_to_ends_arrays(pairs)
     pairs_midpoints, pairs_distances = _calc_midpoints_distances(pos5s, pos3s)
+    scores_arr = np.asarray(scores, dtype=float)
+    finite_scores = scores_arr[np.isfinite(scores_arr)]
+    pairs_color = "rgb(213,94,0)"  # #D55E00
+    if finite_scores.size and finite_scores.max() > 0:
+        max_score = float(finite_scores.max())
+        sqrt_scores = np.sqrt(np.clip(scores_arr, 0.0, None))
+        sqrt_max = float(np.sqrt(max_score))
+        tick_vals = np.linspace(0.0, sqrt_max, num=6)
+        marker = dict(
+            color=sqrt_scores.tolist(),
+            colorscale=[
+                [0.0, "rgba(213,94,0,0)"],
+                [1.0, "rgba(213,94,0,1)"],
+            ],
+            cmin=0.0,
+            cmax=sqrt_max,
+            showscale=True,
+            colorbar=dict(
+                title="Score",
+                tickvals=tick_vals.tolist(),
+                ticktext=[f"{v:.2g}" for v in (tick_vals**2)],
+            ),
+        )
+    else:
+        marker = dict(color=pairs_color)
+    pairs_trace_index = len(domains)
+    pairs_text = [
+        f"Pair {pair}, score={score:.2f}"
+        for pair, score in zip(pairs, scores, strict=True)
+    ]
     fig.add_trace(
         go.Scatter(
             x=pairs_midpoints,
             y=pairs_distances,
             mode="markers",
-            showlegend=False,
-            marker=dict(color="#D55E00"),
-            name=None,
+            legendgroup="pairs",
+            showlegend=True,
+            marker=marker,
+            name="Correlated pairs",
             hoverinfo="text",
-            text=[f"Pair {pair}" for pair in pairs],
+            text=pairs_text,
             hovertemplate="%{text}<extra></extra>",
         )
     )
+    # Clicking a legend entry toggles every trace in its group, turning
+    # the legend into an on/off switch for the domains and the pairs.
+    # Placed above the plot (horizontal orientation) so it doesn't
+    # overlap the score colorbar, which sits to the right of the plot.
+    fig.update_layout(
+        legend=dict(
+            groupclick="togglegroup",
+            orientation="h",
+            x=0.0,
+            y=1.08,
+            xanchor="left",
+            yanchor="bottom",
+        )
+    )
+    # Add a slider that hides pairs scoring below a chosen minimum, by
+    # restyling the pairs trace's x/y/text/marker.color to the subset at
+    # or above each threshold (cmin/cmax stay fixed at the full-data
+    # range so the color/opacity scale doesn't shift as points drop out).
+    if finite_scores.size:
+        thresholds = np.square(np.linspace(0.0, np.sqrt(finite_scores.max()), 31))
+        steps = []
+        for t in thresholds:
+            keep = scores_arr >= t
+            step_args = {
+                "x": [pairs_midpoints[keep].tolist()],
+                "y": [pairs_distances[keep].tolist()],
+                "text": [[txt for txt, k in zip(pairs_text, keep) if k]],
+            }
+            if "color" in marker and isinstance(marker["color"], list):
+                step_args["marker.color"] = [
+                    [c for c, k in zip(marker["color"], keep) if k]
+                ]
+            steps.append(
+                dict(
+                    method="restyle",
+                    args=[step_args, [pairs_trace_index]],
+                    label=f"{t:.2g}",
+                )
+            )
+        fig.update_layout(
+            sliders=[
+                dict(
+                    active=0,
+                    currentvalue=dict(prefix="Min score: "),
+                    pad=dict(t=50),
+                    steps=steps,
+                )
+            ]
+        )
     # Finish the layout.
     assert end5 <= end3
     x_range = [end5 - 0.5, end3 + 0.5]
@@ -862,18 +1324,63 @@ def _write_pairs_to_csv(pairs: list[tuple[int, int]], csv_file: str | Path):
     df.to_csv(csv_file, index=False)
 
 
+def _write_pairs_with_confusion(pos_table: pd.DataFrame, csv_file: str | Path):
+    """Write the positive-score pairs (``SCORE_COL > 0``) to a CSV file,
+    with their 2x2 confusion-matrix counts and null-referenced score
+    (``SCORE_COL``; see ``_calc_pair_scores``). The four raw counts are
+    kept because chi-square is recomputable from them (writing it too
+    would be redundant); the score is kept anyway, since it also depends
+    on the table-wide variance-inflation shape ``r`` and so cannot be
+    recomputed from a single pair's counts alone."""
+    import pandas as pd
+
+    df = pd.DataFrame(
+        {
+            POSITION_A: pos_table.index.get_level_values(POSITION_A).to_numpy(),
+            POSITION_B: pos_table.index.get_level_values(POSITION_B).to_numpy(),
+        }
+        | {col: pos_table[col].to_numpy() for col in CONFUSION_COLS}
+        | {SCORE_COL: pos_table[SCORE_COL].to_numpy()}
+    )
+    df.to_csv(csv_file, index=False)
+
+
 def _calc_cluster_domains(
     filter_dirs: list[Path],
     report_dir: Path,
     num_cpus: int,
-    pair_fdr: float,
     band_width: int,
-    bic_multiplier: float,
     min_length: int,
     gap_mode: str,
     min_pair_coverage: int = 1000,
+    n_null_replicates: int = 10,
+    domain_fdr: float = 0.1,
+    seed: int | None = None,
 ):
-    """Calculate the cluster regions for all tiles of one reference."""
+    """Calculate the cluster regions for all tiles of one reference.
+
+    Domains are called by calibrating the DP's per-block penalty from
+    ``n_null_replicates`` simulated per-position independence-null
+    replicates at false-discovery rate ``domain_fdr`` (see
+    ``_calc_null_penalty``); the block-level null distribution captures
+    the cross-pair transitivity structure that has no analytical
+    substitute, so at least one replicate is required."""
+    # The FDR estimate has resolution 1 / n_null_replicates for the
+    # strongest candidate domain (where the number of admitted real
+    # domains is 1), so domain_fdr cannot be resolved below that: with
+    # too few replicates, calling the strongest domain degenerates into
+    # requiring zero null exceedances (much stricter than the target FDR).
+    if domain_fdr > 0 and n_null_replicates < 1 / domain_fdr:
+        logger.warning(
+            "n_null_replicates ({}) is less than 1 / domain_fdr ({}); the "
+            "target FDR {} cannot be resolved for the strongest domain, so "
+            "domain calling will be overly conservative. Increase "
+            "--n-null-replicates to at least {} or raise --domain-fdr.",
+            n_null_replicates,
+            ceil(1 / domain_fdr),
+            domain_fdr,
+            ceil(1 / domain_fdr),
+        )
     # Each dataset corresponds to one tile.
     datasets = list(load_filter_dataset.iterate(filter_dirs))
     if not datasets:
@@ -902,26 +1409,87 @@ def _calc_cluster_domains(
             )
     # The region is the union of all tiles' regions.
     region = unite([dataset.region for dataset in datasets], refseq=refseq)
-    # Build the banded per-pair chi-square table across all tiles.
-    per_tile_tables = dispatch(
-        _find_correlated_pairs,
-        num_cpus=num_cpus,
-        pass_num_cpus=True,
-        as_list=True,
-        ordered=False,
-        raise_on_error=True,
-        args=as_list_of_tuples(datasets),
-        kwargs=dict(pair_fdr=pair_fdr, band_width=band_width),
-    )
+    # Build the banded per-pair chi-square table across all tiles, and (if
+    # n_null_replicates > 0) every null replicate's table, from a single
+    # read of each tile's batches (see _find_correlated_pairs_with_nulls;
+    # this is what previously required re-reading each tile's batches once
+    # per null replicate in addition to once for the observed data).
+    n_tiles = len(datasets)
+    # Draw one seed per tile from a stream initialized with the run's seed,
+    # so each tile gets its own reproducible seed without offsetting the
+    # base seed by an index (if seed is None, the stream is nondeterministic
+    # but every drawn tile seed is still a concrete integer).
+    tile_seed_stream = get_random_integer_generator(seed)
+    tile_seeds = [next(tile_seed_stream) for _ in range(n_tiles)]
+    with logger.debug.single_context(
+        "Finding correlated pairs across {} tile(s) of {} "
+        "(with {} null replicate(s) each)",
+        n_tiles,
+        ref,
+        n_null_replicates,
+    ):
+        per_tile_results = dispatch(
+            _find_correlated_pairs_with_nulls,
+            num_cpus=num_cpus,
+            pass_num_cpus=True,
+            as_list=True,
+            ordered=True,
+            raise_on_error=True,
+            args=list(zip(datasets, range(n_tiles), tile_seeds)),
+            kwargs=dict(
+                band_width=band_width,
+                n_null_replicates=n_null_replicates,
+                n_tiles=n_tiles,
+            ),
+        )
+    per_tile_tables = [real_table for real_table, _ in per_tile_results]
     table = _build_banded_table(per_tile_tables, band_width)
-    pairs = table.index[table[SIGNIFICANT_COL]].to_list()
-    # Find domains via DP block-diagonal segmentation.
+    # Rebuild each null replicate's banded table across all tiles (ordered
+    # dispatch above guarantees per_tile_results[t][1][r] is tile t's r-th
+    # replicate).
+    null_tables_per_replicate = [
+        _build_banded_table(
+            [null_tables[r] for _, null_tables in per_tile_results], band_width
+        )
+        for r in range(n_null_replicates)
+    ]
+    # Attach the per-pair block-scoring currency (SCORE_COL) to the observed
+    # table and to each null replicate: the variance-inflation log-likelihood
+    # ratio of each pair's chi-square under a wider-than-null (domain) model,
+    # with the shape r estimated from the data (see _calc_pair_scores).
+    table, null_tables_per_replicate = _calc_pair_scores(
+        table, null_tables_per_replicate, min_pair_coverage
+    )
+    # Restrict to the same observable pairs the domain caller uses, so the
+    # displayed/saved pairs and n_positive_pairs match what was actually
+    # analyzed (a pair below min_pair_coverage is invisible to the DP and can
+    # never lie inside a called domain). A pair is "positive" when its score
+    # (the same null-referenced currency the DP itself sums) is > 0, i.e. it
+    # looks more like the domain model than the null -- the one criterion for
+    # what counts as a correlated pair anywhere in this pipeline.
+    obs_table = table[table[N_COL] >= min_pair_coverage]
+    pos_table = obs_table[obs_table[SCORE_COL] > 0]
+    pairs = pos_table.index.to_list()
+    pair_scores = pos_table[SCORE_COL].to_list()
+    logger.debug("Began calibrating the domain-calling penalty for {}", ref)
+    penalty = _calc_null_penalty(
+        table,
+        null_tables_per_replicate,
+        region,
+        min_pair_coverage=min_pair_coverage,
+        domain_fdr=domain_fdr,
+    )
+    logger.debug("Ended calibrating the domain-calling penalty for {}", ref)
+    # Find domains via DP block-diagonal segmentation of the per-pair score
+    # contact map, using the null-calibrated penalty.
     domains = _calc_domains_by_dp_segmentation(
         table,
+        null_tables_per_replicate,
         total_end5=region.end5,
         total_end3=region.end3,
-        bic_multiplier=bic_multiplier,
         min_pair_coverage=min_pair_coverage,
+        penalty=penalty,
+        domain_fdr=domain_fdr,
     )
     n_domains_before_filter = len(domains)
     # Determine what to do with gaps between regions.
@@ -943,12 +1511,17 @@ def _calc_cluster_domains(
         )
     # Write the pairs and domains to CSV files.
     report_dir.mkdir(parents=True, exist_ok=True)
-    _write_pairs_to_csv(pairs, report_dir.joinpath(PAIRS_CSV))
+    _write_pairs_with_confusion(pos_table, report_dir.joinpath(PAIRS_CSV))
     _write_pairs_to_csv(domains, report_dir.joinpath(DOMAINS_CSV))
+    logger.debug(
+        "Wrote {} pair(s) and {} domain(s) to {}", len(pairs), len(domains), report_dir
+    )
     # Graph the correlated pairs and domains.
     html_file = report_dir.joinpath(PAIRS_DOMAINS_HTML)
     try:
-        _graph_pairs_and_domains(pairs, domains, region.end5, region.end3, html_file)
+        _graph_pairs_and_domains(
+            pairs, pair_scores, domains, region.end5, region.end3, html_file
+        )
     except Exception as error:
         logger.error(error)
     return [(ref, end5, end3) for end5, end3 in domains], len(pairs)
@@ -968,9 +1541,11 @@ def filterscan(
     tile_length: int,
     tile_min_overlap: float,
     erase_tiles: bool,
-    pair_fdr: float,
     band_width: int,
-    bic_multiplier: float,
+    domain_fdr: float,
+    n_null_replicates: int,
+    min_pair_coverage: int,
+    seed: int | None,
     min_cluster_length: int,
     gap_mode: str,
     # Filter options
@@ -1048,6 +1623,9 @@ def filterscan(
         tile_coords = _calc_tile_coords(
             idmut_dataset, total_region, tile_length, tile_min_overlap, num_cpus
         )
+        logger.debug(
+            "Began filtering {} tile(s) of {}", len(tile_coords), idmut_report_file
+        )
         tiled_dirs = filter_mod.run(
             input_path=[idmut_report_file],
             branch=branch,
@@ -1090,21 +1668,37 @@ def filterscan(
             num_cpus=num_cpus,
             force=force,
         )
+        logger.debug(
+            "Ended filtering {} tile(s) of {}", len(tile_coords), idmut_report_file
+        )
         # Find regions spanned by correlated base pairs.
         report_dir = report_file.parent
-        domain_coords, n_signif_pairs = _calc_cluster_domains(
+        domain_coords, n_positive_pairs = _calc_cluster_domains(
             tiled_dirs,
             report_dir=report_dir,
-            pair_fdr=pair_fdr,
             band_width=band_width,
-            bic_multiplier=bic_multiplier,
+            domain_fdr=domain_fdr,
+            n_null_replicates=n_null_replicates,
+            min_pair_coverage=min_pair_coverage,
+            seed=seed,
             min_length=min_cluster_length,
             gap_mode=gap_mode,
             num_cpus=num_cpus,
         )
+        logger.debug(
+            "Found {} domain(s) and {} positive-score pair(s) in {}",
+            len(domain_coords),
+            n_positive_pairs,
+            idmut_report_file,
+        )
         if domain_coords:
             # Filter the reads over each domain so that clusterscan can
             # cluster them without re-running the filter step.
+            logger.debug(
+                "Began filtering {} domain(s) of {}",
+                len(domain_coords),
+                idmut_report_file,
+            )
             filter_mod.run(
                 input_path=[idmut_report_file],
                 branch=branch,
@@ -1147,6 +1741,11 @@ def filterscan(
                 num_cpus=num_cpus,
                 force=force,
             )
+            logger.debug(
+                "Ended filtering {} domain(s) of {}",
+                len(domain_coords),
+                idmut_report_file,
+            )
         else:
             logger.warning(
                 "No domains of correlated pairs found in {}", idmut_report_file
@@ -1160,15 +1759,17 @@ def filterscan(
             tile_length=tile_length,
             tile_min_overlap=tile_min_overlap,
             erase_tiles=erase_tiles,
-            pair_fdr=pair_fdr,
             band_width=band_width,
-            bic_multiplier=bic_multiplier,
+            min_pair_coverage=min_pair_coverage,
+            domain_fdr=domain_fdr,
+            n_null_replicates=n_null_replicates,
+            seed=seed,
             min_cluster_length=min_cluster_length,
             gap_mode=gap_mode,
             # Results (store coordinates without the reference, which is
             # already recorded in the report).
             tile_coords=[(end5, end3) for _, end5, end3 in tile_coords],
-            n_signif_pairs=n_signif_pairs,
+            n_positive_pairs=n_positive_pairs,
             n_domains=len(domain_coords),
             domain_coords=[(end5, end3) for _, end5, end3 in domain_coords],
             began=began,

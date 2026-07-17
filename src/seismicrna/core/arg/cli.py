@@ -1208,13 +1208,6 @@ opt_erase_tiles = Option(
     help="Erase the filter reports/batches from the tiling step",
 )
 
-opt_pair_fdr = Option(
-    ("--pair-fdr",),
-    type=float,
-    default=0.05,
-    help="Find correlated pairs at this false discovery rate (FDR)",
-)
-
 opt_min_cluster_length = Option(
     ("--min-cluster-length",),
     type=int,
@@ -1242,18 +1235,38 @@ opt_band_width = Option(
     ),
 )
 
-opt_bic_multiplier = Option(
-    ("--bic-multiplier",),
+opt_domain_fdr = Option(
+    ("--domain-fdr",),
     type=float,
-    default=1.0,
+    default=0.1,
     help=(
-        "Scale the per-domain Bayesian information criterion (BIC) "
-        "penalty used to segment the correlated-pair contact map into "
-        "domains: a candidate domain is kept only if its own density of "
-        "significant pairs is dense enough to outweigh this penalty "
-        "against the background rate. Higher values require stronger "
-        "evidence and yield fewer, larger domains; lower values yield "
-        "more, smaller domains"
+        "Call domains at this false discovery rate (FDR), calibrated by "
+        "comparing each candidate domain's summed correlation score "
+        "against chance blocks found in simulated null replicates: "
+        "higher values call more (and weaker) domains; lower values "
+        "call fewer, more conservative domains"
+    ),
+)
+
+opt_n_null_replicates = Option(
+    ("--n-null-replicates",),
+    type=int,
+    default=10,
+    help=(
+        "Simulate this many per-position independence-null replicates "
+        "to calibrate the domain-calling penalty at --domain-fdr "
+        "(at least 1)"
+    ),
+)
+
+opt_min_pair_coverage = Option(
+    ("--min-pair-coverage",),
+    type=int,
+    default=1000,
+    help=(
+        "Analyze only pairs of positions whose number of jointly covering "
+        "reads is at least this value when finding domains (pairs with less "
+        "coverage are too noisy to score reliably)"
     ),
 )
 

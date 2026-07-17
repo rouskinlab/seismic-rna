@@ -73,6 +73,44 @@ def init_confusion_matrix(
     return n, a, b, ab
 
 
+def resample_mutated_reads(
+    covered_reads: dict[int, np.ndarray],
+    mutated_reads: dict[int, np.ndarray],
+    seed: int | None,
+):
+    """Generate a per-position independence null of the mutated reads.
+
+    For each position, keep its covering reads and its number of mutated
+    reads fixed, but re-draw *which* of the covered reads are mutated,
+    uniformly at random and independently across positions. This
+    preserves each position's coverage and marginal mutation rate (and
+    hence its 5'/3'-end structure, which is encoded by exactly which
+    reads cover it) while making the positions mutually independent, so
+    pairwise co-mutation follows the same hypergeometric independence
+    null that :func:`calc_confusion_pvals` uses per pair. Returned arrays
+    are sorted, as the intersection counting in :func:`calc_confusion_matrix`
+    requires. ``seed`` fully determines the redraw (constructing the
+    generator here, rather than accepting one, keeps the call reproducible
+    across processes).
+    """
+    import numpy as np
+
+    rng = np.random.default_rng(seed)
+    resampled = dict()
+    for pos, mutated in mutated_reads.items():
+        covered = covered_reads[pos]
+        n_mut = mutated.size
+        if n_mut == 0:
+            resampled[pos] = np.array([], dtype=covered.dtype)
+        elif n_mut >= covered.size:
+            # Every covered read is mutated: nothing left to resample.
+            resampled[pos] = np.sort(covered)
+        else:
+            chosen = rng.choice(covered.size, size=n_mut, replace=False)
+            resampled[pos] = np.sort(covered[chosen])
+    return resampled
+
+
 def _count_intersection_weighted(
     x: np.ndarray, y: np.ndarray, read_weights: np.ndarray
 ):
@@ -278,18 +316,67 @@ def calc_confusion_phi(
 
 
 def calc_confusion_chi_square(
-    n: pd.Series | pd.DataFrame, phi: pd.Series | pd.DataFrame
+    n: pd.Series | pd.DataFrame,
+    a: pd.Series | pd.DataFrame,
+    b: pd.Series | pd.DataFrame,
+    ab: pd.Series | pd.DataFrame,
+    *,
+    min_cover: int | float = 1,
+    validate: bool = True,
 ):
-    """Calculate the chi-square statistic for a 2x2 matrix from its
-    coverage ``n`` and phi correlation coefficient ``phi``.
+    """Calculate the chi-square statistic for a 2x2 matrix directly from
+    its marginals, without going through the phi correlation coefficient.
 
-    For a 2x2 contingency table, ``chi_square = n * phi ** 2`` is the
-    exact Pearson chi-square statistic. Under independence between A
-    and B, this is asymptotically chi2(1) distributed, so
-    ``E[chi_square] = 1``. NaN values in ``phi`` (e.g. from coverage
-    below ``min_cover`` in :func:`calc_confusion_phi`) propagate to NaN.
+    For a 2x2 contingency table, this is the exact Pearson chi-square
+    statistic (no continuity correction), algebraically equal to
+    ``n * calc_confusion_phi(n, a, b, ab) ** 2``. Written in terms of the
+    marginal counts directly, that identity is
+
+    .. code-block:: none
+
+        chi_square = n * (n * ab - a * b) ** 2 / (a * (n - a) * b * (n - b))
+
+    but evaluating it this way forms a numerator that scales as the 5th
+    power of the read count and a denominator that scales as the 4th
+    power (e.g. ``a * (n - a) * b * (n - b)`` alone), which loses
+    precision (or, in an integer dtype, overflows) long before the ratio
+    itself -- which is ``O(n)`` -- is large enough to be interesting.
+    Rewriting in terms of the marginal *fractions* ``p_a = a/n``,
+    ``p_b = b/n``, ``p_ab = ab/n`` cancels every factor of ``n`` out of
+    the numerator and denominator first, leaving both ``O(1)``::
+
+        chi_square = n * (p_ab - p_a * p_b) ** 2
+                     / (p_a * (1 - p_a) * p_b * (1 - p_b))
+
+    which is the same identity divided through by ``n ** 4`` top and
+    bottom. This also sidesteps :func:`calc_confusion_phi`'s log-space
+    construction, which forms phi as a difference of two exponentials
+    that are nearly equal whenever the true correlation is near zero --
+    i.e. almost everywhere under the null -- so squaring that difference
+    would amplify whatever cancellation error crept into it.
+
+    Under independence between A and B, this statistic is
+    asymptotically chi2(1) distributed, so ``E[chi_square] = 1``.
+    Coverage below ``min_cover`` is set to NaN, matching
+    :func:`calc_confusion_phi`'s masking.
     """
-    return n * phi**2
+    import numpy as np
+
+    if validate:
+        validate_confusion_matrix(n, a, b, ab)
+    if min_cover < 0:
+        raise ValueError("min_cover < 0")
+    n = n.astype(float)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        p_a = a / n
+        p_b = b / n
+        p_ab = ab / n
+        chi_square = (
+            n
+            * (p_ab - p_a * p_b) ** 2
+            / (p_a * (1.0 - p_a) * p_b * (1.0 - p_b))
+        )
+    return chi_square.mask(np.asarray(n < min_cover))
 
 
 def calc_confusion_pvals(

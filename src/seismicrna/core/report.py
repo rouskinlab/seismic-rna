@@ -113,9 +113,10 @@ from .arg.cli import (
     opt_tile_length,
     opt_tile_min_overlap,
     opt_erase_tiles,
-    opt_pair_fdr,
     opt_band_width,
-    opt_bic_multiplier,
+    opt_domain_fdr,
+    opt_n_null_replicates,
+    opt_min_pair_coverage,
     opt_min_cluster_length,
     opt_gap_mode,
     opt_probe,
@@ -631,14 +632,15 @@ BestKF = ReportField("best_k", "Best number of clusters", int)
 TileLengthF = OptionReportField(opt_tile_length)
 TileMinOverlapF = OptionReportField(opt_tile_min_overlap)
 EraseTilesF = OptionReportField(opt_erase_tiles)
-PairFdrF = OptionReportField(opt_pair_fdr)
 BandWidthF = OptionReportField(opt_band_width)
-BicMultiplierF = OptionReportField(opt_bic_multiplier)
+DomainFdrF = OptionReportField(opt_domain_fdr)
+NNullReplicatesF = OptionReportField(opt_n_null_replicates)
+MinPairCoverageF = OptionReportField(opt_min_pair_coverage)
 MinClusterLengthF = OptionReportField(opt_min_cluster_length)
 GapModeF = OptionReportField(opt_gap_mode)
 TileCoordsF = ReportField("tile_coords", "Coordinates of tiles (end5, end3)", list)
-NumSignifPairsF = ReportField(
-    "n_signif_pairs", "Number of significant pairs detected", int
+NumPositivePairsF = ReportField(
+    "n_positive_pairs", "Number of pairs with a positive domain-model score", int
 )
 NumDomainsF = ReportField("n_domains", "Number of domains detected", int)
 DomainCoordsF = ReportField(

@@ -204,14 +204,15 @@ def run(
     max_filter_iter: int,
     filter_pos_table: bool,
     filter_read_table: bool,
-    # Scan (filterscan / clusterscan) options
+    # FilterScan options
     scan: bool,
     tile_length: int,
     tile_min_overlap: float,
     erase_tiles: bool,
-    pair_fdr: float,
     band_width: int,
-    bic_multiplier: float,
+    domain_fdr: float,
+    n_null_replicates: int,
+    min_pair_coverage: int,
     min_cluster_length: int,
     gap_mode: str,
     # Cluster options
@@ -512,14 +513,20 @@ def run(
                     tile_length=tile_length,
                     tile_min_overlap=tile_min_overlap,
                     erase_tiles=erase_tiles,
-                    pair_fdr=pair_fdr,
                     band_width=band_width,
-                    bic_multiplier=bic_multiplier,
+                    domain_fdr=domain_fdr,
+                    n_null_replicates=n_null_replicates,
+                    min_pair_coverage=min_pair_coverage,
+                    seed=seed,
                     min_cluster_length=min_cluster_length,
                     gap_mode=gap_mode,
                     filter_pos_table=filter_pos_table,
                     filter_read_table=filter_read_table,
-                    self_contained=self_contained,
+                    # self_contained should always be True for filterscan
+                    # because it slices a long transcript with deep coverage
+                    # into short slices with fewer reads, which is where
+                    # self_contained yields the largest speedup. 
+                    self_contained=True,
                     brotli_level=brotli_level,
                     num_cpus=num_cpus,
                     force=force,

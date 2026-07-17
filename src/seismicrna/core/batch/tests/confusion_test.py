@@ -9,6 +9,7 @@ from seismicrna.core.batch.confusion import (
     calc_confusion_phi,
     calc_confusion_chi_square,
     calc_bh_adjusted_pvals,
+    resample_mutated_reads,
 )
 from seismicrna.core.batch.confusion_jit import count_intersection
 from seismicrna.core.batch.count import calc_covered_reads_per_pos, calc_reads_per_pos
@@ -352,17 +353,18 @@ class TestCalcConfusionChiSquare(ut.TestCase):
         a_s = pd.Series(a_vals, dtype=float)
         b_s = pd.Series(b_vals, dtype=float)
         ab_s = pd.Series(ab_vals, dtype=float)
-        phi = calc_confusion_phi(n_s, a_s, b_s, ab_s)
-        chi_square = calc_confusion_chi_square(n_s, phi)
+        chi_square = calc_confusion_chi_square(n_s, a_s, b_s, ab_s)
         np.testing.assert_allclose(chi_square, expect, atol=1e-6)
+        # Must also match n * phi ** 2, the identity it replaces.
+        phi = calc_confusion_phi(n_s, a_s, b_s, ab_s)
+        np.testing.assert_allclose(chi_square, n_s * phi**2, atol=1e-6)
 
     def test_nan_propagates(self):
         n = pd.Series([100, 100])
         a = pd.Series([50, 50])
         b = pd.Series([50, 50])
         ab = pd.Series([25, 20])
-        phi = calc_confusion_phi(n, a, b, ab, min_cover=1000)
-        chi_square = calc_confusion_chi_square(n, phi)
+        chi_square = calc_confusion_chi_square(n, a, b, ab, min_cover=1000)
         self.assertTrue(np.all(np.isnan(chi_square)))
 
 
@@ -479,6 +481,63 @@ class TestCalcBhAdjustedPvals(ut.TestCase):
             calc_bh_adjusted_pvals(np.array([0.1, 2.0, 0.3]))
         with self.assertRaises(ValueError):
             calc_bh_adjusted_pvals(np.array([-0.1, 0.5]))
+
+
+class TestResampleMutatedReads(ut.TestCase):
+    """The per-position independence null of the mutated reads."""
+
+    def _covered_mutated(self):
+        covered = {
+            10: np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
+            20: np.array([2, 3, 4, 5, 6, 7]),
+            30: np.array([0, 1, 2, 3, 4]),
+        }
+        mutated = {
+            10: np.array([1, 4, 7]),  # 3 of 10
+            20: np.array([3, 5]),  # 2 of 6
+            30: np.array([0, 1, 2, 3, 4]),  # all 5 covered
+        }
+        return covered, mutated
+
+    def test_preserves_marginal_count_and_subset_and_sorted(self):
+        covered, mutated = self._covered_mutated()
+        out = resample_mutated_reads(covered, mutated, 0)
+        self.assertEqual(set(out), set(mutated))
+        for pos in mutated:
+            # Same number of mutated reads (marginal rate) preserved.
+            self.assertEqual(out[pos].size, mutated[pos].size)
+            # Every resampled read actually covers the position.
+            self.assertTrue(np.all(np.isin(out[pos], covered[pos])))
+            # Sorted, as the intersection counting requires.
+            self.assertTrue(np.all(np.diff(out[pos]) > 0) or out[pos].size <= 1)
+
+    def test_fully_mutated_position_unchanged(self):
+        covered, mutated = self._covered_mutated()
+        out = resample_mutated_reads(covered, mutated, 0)
+        # Position 30 has every covered read mutated: nothing to resample.
+        self.assertTrue(np.array_equal(out[30], np.sort(covered[30])))
+
+    def test_reproducible_and_actually_permutes(self):
+        covered, mutated = self._covered_mutated()
+        a = resample_mutated_reads(covered, mutated, 7)
+        b = resample_mutated_reads(covered, mutated, 7)
+        for pos in mutated:
+            self.assertTrue(np.array_equal(a[pos], b[pos]))  # deterministic
+        # Over many draws, position 10 (3 of 10) should not always equal
+        # the observed mutated set: the null really moves mutations around.
+        observed = set(mutated[10].tolist())
+        differ = 0
+        for s in range(50):
+            out = resample_mutated_reads(covered, mutated, s)
+            if set(out[10].tolist()) != observed:
+                differ += 1
+        self.assertGreater(differ, 0)
+
+    def test_empty_mutated(self):
+        covered = {5: np.array([0, 1, 2, 3])}
+        mutated = {5: np.array([], dtype=int)}
+        out = resample_mutated_reads(covered, mutated, 0)
+        self.assertEqual(out[5].size, 0)
 
 
 if __name__ == "__main__":

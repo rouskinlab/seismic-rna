@@ -73,21 +73,30 @@ Tiling
         Delete the intermediate filter files from the tiling step (default: erase).
 
 Correlated-pair detection
-    ``--pair-fdr F``
-        False discovery rate for calling a pair of positions correlated
-        (default 0.05).
-    ``--pair-distance-percentile F``
-        Drop a correlated pair if its nearest surviving neighbor is farther than
-        this percentile of all nearest-neighbor distances (default 95.0).
-        Isolated pairs are treated as noise.
-    ``--min-nearby-pairs N``
-        Minimum number of other surviving pairs that must lie within the
-        distance threshold for a pair to be kept (default 2).
-        Values above 1 filter out small coincidental clusters of noise pairs.
+    ``--band-width N``
+        Consider only pairs of positions no farther apart than this many
+        bases when looking for domains (default 0 = no extra limit beyond
+        the tile length).
+    ``--min-pair-coverage N``
+        Analyze only pairs of positions with at least this many jointly
+        covering reads (default 1000): pairs with less coverage are too
+        noisy to score reliably.
+    ``--domain-fdr F``
+        How willing to be to call a region a domain, expressed as a false
+        discovery rate (default 0.1): SEISMIC-RNA simulates data with no
+        real structure and compares it with the real data to judge how
+        much correlation could arise by chance alone. Higher values call
+        more (and weaker) domains; lower values call fewer, more
+        conservative domains.
+    ``--n-null-replicates N``
+        Number of simulated no-structure datasets to use for calibrating
+        ``--domain-fdr`` (default 10).
+    ``--seed N``
+        Seed for the random number generator used to simulate the
+        no-structure datasets (default: none, i.e. nondeterministic). Set
+        a value to make domain calling reproducible.
 
 Domain length filters
-    ``--min-pairs N``
-        Keep only domains with at least this many correlated pairs (default 2).
     ``--min-cluster-length N``
         Keep only domains with at least this many positions (default 20).
 
