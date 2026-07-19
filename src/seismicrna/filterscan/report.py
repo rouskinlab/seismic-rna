@@ -8,8 +8,9 @@ from ..core.report import (
     BandWidthF,
     MinPairCoverageF,
     MinExpectBothF,
-    DomainFdrF,
-    MinClusterLengthF,
+    DetectFdrF,
+    MergeFdrF,
+    MinDomainLengthF,
     GapModeF,
     # Results.
     TileCoordsF,
@@ -34,8 +35,9 @@ class FilterScanReport(RegReport, FilterScanIO):
             BandWidthF,
             MinPairCoverageF,
             MinExpectBothF,
-            DomainFdrF,
-            MinClusterLengthF,
+            DetectFdrF,
+            MergeFdrF,
+            MinDomainLengthF,
             GapModeF,
             *super().get_param_report_fields(),
         ]

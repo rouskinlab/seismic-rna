@@ -74,7 +74,7 @@ def _expected_both_mutated(table: pd.DataFrame) -> pd.Series:
 
 
 def _analyzed_pairs_mask(
-    table: pd.DataFrame, min_pair_coverage: int, min_expect_both: int
+    table: pd.DataFrame, min_pair_coverage: int, min_expect_both: float
 ) -> pd.Series:
     """Pairs usable for chi-square-based analysis: enough joint coverage
     (``min_pair_coverage``) and a large enough independence-expected
@@ -563,7 +563,7 @@ def _calc_block_pvalue_cutoff(
     chi2_row_cum: np.ndarray,
     n_positions: int,
     max_gap: int,
-    domain_fdr: float,
+    detect_fdr: float,
 ) -> float:
     """Benjamini-Hochberg p-value cutoff over *every* candidate block the DP
     could ever consider, computed analytically with no null replicates.
@@ -589,7 +589,7 @@ def _calc_block_pvalue_cutoff(
     factor of a scan, not its asymptotic cost.
 
     Returns the largest raw p-value whose BH-adjusted q-value is
-    ``<= domain_fdr``, or ``-1.0`` if none survive (so that no p-value,
+    ``<= detect_fdr``, or ``-1.0`` if none survive (so that no p-value,
     always ``>= 0``, can ever be admitted -- i.e. "admit nothing")."""
     import numpy as np
     from scipy.stats import chi2 as chi2dist
@@ -609,7 +609,7 @@ def _calc_block_pvalue_cutoff(
         return -1.0
     pvals = chi2dist.sf(chi2_all, df=n_all)
     qvals = calc_bh_adjusted_pvals(pvals)
-    significant = pvals[qvals <= domain_fdr]
+    significant = pvals[qvals <= detect_fdr]
     if significant.size == 0:
         return -1.0
     return float(significant.max())
@@ -766,7 +766,7 @@ def _merge_connected_blocks(
     blocks: list[tuple[int, int]],
     n_cross: np.ndarray,
     chi2_cross: np.ndarray,
-    domain_fdr: float,
+    merge_fdr: float,
 ) -> list[tuple[int, int]]:
     """Merge adjacent DP-chosen blocks whose intervening gap is, at *every*
     cut within it, directly connected by real long-range correlations --
@@ -783,7 +783,7 @@ def _merge_connected_blocks(
     the first place: ``_block_score(n_cross, chi2_cross) >= 0`` (effect
     size) *and* an exact chi-square p-value (``chi2.sf(chi2_cross,
     df=n_cross)``) that survives Benjamini-Hochberg correction across every
-    cut in the scanned region, at ``domain_fdr``. Both gates are required:
+    cut in the scanned region, at ``merge_fdr``. Both gates are required:
     a cut's crossing pair count can be in the thousands (every pair that
     reaches across it, not just those touching the two specific blocks
     being tested), so BH-significance alone flags biologically-trivial
@@ -811,7 +811,7 @@ def _merge_connected_blocks(
     qvals = np.ones_like(pvals)
     if valid.any():
         qvals[valid] = calc_bh_adjusted_pvals(pvals[valid])
-    connected_cut = valid & (gains >= 0.0) & (qvals <= domain_fdr)
+    connected_cut = valid & (gains >= 0.0) & (qvals <= merge_fdr)
     gap_connected = [
         bool(connected_cut[blocks[i][1] : blocks[i + 1][0]].all())
         for i in range(len(blocks) - 1)
@@ -821,7 +821,7 @@ def _merge_connected_blocks(
         "(target FDR {})",
         sum(gap_connected),
         len(gap_connected),
-        domain_fdr,
+        merge_fdr,
     )
     merged: list[tuple[int, int]] = [blocks[0]]
     for i, connected in enumerate(gap_connected):
@@ -838,9 +838,10 @@ def _calc_domains_by_dp_segmentation(
     table: pd.DataFrame,
     total_end5: int,
     total_end3: int,
-    domain_fdr: float,
-    min_pair_coverage: int = 1000,
-    min_expect_both: int = 5,
+    detect_fdr: float,
+    merge_fdr: float,
+    min_pair_coverage: int,
+    min_expect_both: float,
 ) -> list[tuple[int, int]]:
     """Call domains by exact dynamic-program segmentation of the per-pair
     chi-square contact map into background/domain blocks (see
@@ -885,7 +886,7 @@ def _calc_domains_by_dp_segmentation(
 
     After the DP, adjacent blocks are merged when every cut in the gap
     between them is directly connected by crossing pairs alone
-    (``_merge_connected_blocks``, at the same ``domain_fdr``) -- not a
+    (``_merge_connected_blocks``, at ``merge_fdr``) -- not a
     post-hoc re-test of the DP's own whole-bridge objective, which the DP's
     exactness already makes unwinnable, but a targeted test for a real gap
     that nonetheless has real long-range correlations crossing it (a single
@@ -914,13 +915,13 @@ def _calc_domains_by_dp_segmentation(
             obs_table, total_end5, total_end3, value_col=CHI_SQUARE_COL
         )
         p_cutoff = _calc_block_pvalue_cutoff(
-            obs_row_cum, chi2_row_cum, n_positions, max_gap, domain_fdr
+            obs_row_cum, chi2_row_cum, n_positions, max_gap, detect_fdr
         )
         blocks, _ = _dp_segment_blocks(
             obs_row_cum, chi2_row_cum, n_positions, max_gap, p_cutoff
         )
         n_cross, chi2_cross = _cut_crossing_scores(obs_table, total_end5, total_end3)
-        blocks = _merge_connected_blocks(blocks, n_cross, chi2_cross, domain_fdr)
+        blocks = _merge_connected_blocks(blocks, n_cross, chi2_cross, merge_fdr)
         domains = sorted((total_end5 + s, total_end5 + e) for s, e in blocks)
         logger.debug("Calculated domains: {}", domains)
         return domains
@@ -1180,15 +1181,17 @@ def _calc_cluster_domains(
     band_width: int,
     min_length: int,
     gap_mode: str,
-    min_pair_coverage: int = 1000,
-    min_expect_both: int = 5,
-    domain_fdr: float = 0.1,
+    min_pair_coverage: int,
+    min_expect_both: float,
+    detect_fdr: float,
+    merge_fdr: float,
 ):
     """Calculate the cluster regions for all tiles of one reference.
 
     Domains are called by an exact chi-square p-value per candidate block
     (``_calc_block_pvalue_cutoff``), Benjamini-Hochberg-adjusted at false-
-    discovery rate ``domain_fdr`` -- no null-replicate simulation needed."""
+    discovery rate ``detect_fdr``, then merged across gaps at false-
+    discovery rate ``merge_fdr`` -- no null-replicate simulation needed."""
     # Each dataset corresponds to one tile.
     datasets = list(load_filter_dataset.iterate(filter_dirs))
     if not datasets:
@@ -1253,7 +1256,8 @@ def _calc_cluster_domains(
         total_end3=region.end3,
         min_pair_coverage=min_pair_coverage,
         min_expect_both=min_expect_both,
-        domain_fdr=domain_fdr,
+        detect_fdr=detect_fdr,
+        merge_fdr=merge_fdr,
     )
     n_domains_before_filter = len(domains)
     # Determine what to do with gaps between regions.
@@ -1306,10 +1310,11 @@ def filterscan(
     tile_min_overlap: float,
     erase_tiles: bool,
     band_width: int,
-    domain_fdr: float,
+    detect_fdr: float,
+    merge_fdr: float,
     min_pair_coverage: int,
-    min_expect_both: int,
-    min_cluster_length: int,
+    min_expect_both: float,
+    min_domain_length: int,
     gap_mode: str,
     # Filter options
     region_coords: Iterable[tuple[str, int, int]],
@@ -1440,10 +1445,11 @@ def filterscan(
             tiled_dirs,
             report_dir=report_dir,
             band_width=band_width,
-            domain_fdr=domain_fdr,
+            detect_fdr=detect_fdr,
+            merge_fdr=merge_fdr,
             min_pair_coverage=min_pair_coverage,
             min_expect_both=min_expect_both,
-            min_length=min_cluster_length,
+            min_length=min_domain_length,
             gap_mode=gap_mode,
             num_cpus=num_cpus,
         )
@@ -1524,8 +1530,9 @@ def filterscan(
             band_width=band_width,
             min_pair_coverage=min_pair_coverage,
             min_expect_both=min_expect_both,
-            domain_fdr=domain_fdr,
-            min_cluster_length=min_cluster_length,
+            detect_fdr=detect_fdr,
+            merge_fdr=merge_fdr,
+            min_domain_length=min_domain_length,
             gap_mode=gap_mode,
             # Results (store coordinates without the reference, which is
             # already recorded in the report).

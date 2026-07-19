@@ -52,33 +52,33 @@ Telling real domains from chance
     candidate mutated independently, and corrects for the fact that it is
     testing a great many overlapping candidate domains at once (so that a
     domain is called only when it is a genuinely unusual result, not merely
-    the best of many chance draws). ``--domain-fdr`` sets the target false
-    discovery rate (FDR): how willing SEISMIC-RNA is to call a domain.
-    It intentionally has an unusually high default for an FDR (0.1) to make
-    it more sensitive because here, false negatives are worse than false
-    positives. A false positive (a detected domain that really forms only
-    one structure) merely slows down the workflow: ClusterScan needs to
-    spend time clustering it, but a false positive domain would likely
-    yield 1 cluster due to the Cluster step's stringent filters, so the
-    final result will likely be correct. A false negative (failing to
-    detect where the RNA really forms multiple structures) would not be
-    passed into the Cluster step at all and hence the final result would
-    incorrectly be 1 cluster.
+    the best of many chance draws). ``--detect-fdr`` sets the target false
+    discovery rate (FDR) for this initial call: how willing SEISMIC-RNA is
+    to call a domain. It intentionally has an unusually high default for an
+    FDR (0.1) to make it more sensitive because here, false negatives are
+    worse than false positives. A false positive (a detected domain that
+    really forms only one structure) merely slows down the workflow:
+    ClusterScan needs to spend time clustering it, but a false positive
+    domain would likely yield 1 cluster due to the Cluster step's stringent
+    filters, so the final result will likely be correct. A false negative
+    (failing to detect where the RNA really forms multiple structures)
+    would not be passed into the Cluster step at all and hence the final
+    result would incorrectly be 1 cluster.
 
-Joining domains across gaps
+Merging domains across gaps
     Sometimes two domains are separated by a short, unstructured stretch
     (for example, an unpaired linker) that shows no correlation of its own,
     yet the two domains are nonetheless connected by real, direct
     long-range pairs (for example, a helix whose two strands lie on either
     side of the gap). SEISMIC-RNA checks, at every point within the gap,
     whether pairs of positions spanning that specific point still show a
-    real, direct correlation; if the connection holds all the way across
-    the gap, it joins the two domains into one. This keeps a single,
-    genuinely long-range structure from being cut into pieces just because
-    an unstructured stretch happens to separate the two ends where its
-    correlated pairs anchor, while still splitting apart two domains that
-    are truly independent, with nothing but coincidental noise between
-    them.
+    real, direct correlation, judged at its own target false discovery rate,
+    ``--merge-fdr``; if the connection holds all the way across the gap, it
+    merges the two domains into one. This keeps a single, genuinely long-range
+    structure from being cut into pieces just because an unstructured stretch
+    happens to separate the two ends where its correlated pairs anchor, while
+    still splitting apart two domains that are truly independent, with nothing
+    but coincidental noise between them.
 
 
 Inputs
@@ -149,16 +149,22 @@ Correlated-pair detection
         least this value (default 5): standard practice for the
         statistical test SEISMIC-RNA uses, which becomes unreliable when
         this expected count drops too low.
-    ``--domain-fdr F``
+    ``--detect-fdr F``
         How willing to be to call a region a domain, expressed as a false
         discovery rate (default 0.1): SEISMIC-RNA corrects for the fact
         that it tests a great many overlapping candidate domains for
         correlation exceeding chance. Higher values call more (and weaker)
         domains; lower values call fewer, more conservative domains.
+    ``--merge-fdr F``
+        How willing to be to join two domains separated by a gap, expressed
+        as a false discovery rate (default 0.1): SEISMIC-RNA corrects for
+        the fact that it tests every point within the gap for a direct
+        correlation crossing it. Higher values merge more (and weaker)
+        connections; lower values merge fewer, more conservative ones.
 
 Domain length filters
-    ``--min-cluster-length N``
-        Keep only domains with at least this many positions (default 20).
+    ``--min-domain-length N``
+        Keep only the domains with at least this many positions (default 20).
 
 Gap handling
     ``--gap-mode {omit|insert|expand}``

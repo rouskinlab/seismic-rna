@@ -1208,11 +1208,11 @@ opt_erase_tiles = Option(
     help="Erase the filter reports/batches from the tiling step",
 )
 
-opt_min_cluster_length = Option(
-    ("--min-cluster-length",),
+opt_min_domain_length = Option(
+    ("--min-domain-length",),
     type=int,
     default=20,
-    help="Cluster only the regions with at least this many positions",
+    help="Keep only the domains with at least this many positions",
 )
 
 opt_gap_mode = Option(
@@ -1235,15 +1235,27 @@ opt_band_width = Option(
     ),
 )
 
-opt_domain_fdr = Option(
-    ("--domain-fdr",),
+opt_detect_fdr = Option(
+    ("--detect-fdr",),
     type=float,
-    default=0.1,
+    default=0.10,
     help=(
-        "Call domains at this false discovery rate (FDR), Benjamini-"
+        "Detect domains at this false discovery rate (FDR), Benjamini-"
         "Hochberg-adjusted over every candidate block's exact chi-square "
         "p-value: higher values call more (and weaker) domains; lower "
         "values call fewer, more conservative domains"
+    ),
+)
+
+opt_merge_fdr = Option(
+    ("--merge-fdr",),
+    type=float,
+    default=0.05,
+    help=(
+        "Merge adjacent domains separated by a gap whose crossing pairs "
+        "clear this false discovery rate (FDR), Benjamini-Hochberg-adjusted "
+        "over every cut in the gap: higher values merge more (and weaker) "
+        "connections; lower values merge fewer, more conservative ones"
     ),
 )
 
@@ -1260,8 +1272,8 @@ opt_min_pair_coverage = Option(
 
 opt_min_expect_both = Option(
     ("--min-expect-both",),
-    type=int,
-    default=5,
+    type=float,
+    default=5.0,
     help=(
         "Analyze only pairs of positions whose expected number of reads "
         "mutated at both positions (under the assumption that the "

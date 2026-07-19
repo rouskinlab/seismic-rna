@@ -174,7 +174,7 @@ class TestCalcBlockPvalueCutoff(ut.TestCase):
         obs_row_cum = np.zeros((n_positions, max_gap + 2), dtype=np.int64)
         chi2_row_cum = np.zeros((n_positions, max_gap + 2), dtype=float)
         cutoff = _calc_block_pvalue_cutoff(
-            obs_row_cum, chi2_row_cum, n_positions, max_gap, domain_fdr=0.1
+            obs_row_cum, chi2_row_cum, n_positions, max_gap, detect_fdr=0.1
         )
         self.assertEqual(cutoff, -1.0)
 
@@ -182,7 +182,7 @@ class TestCalcBlockPvalueCutoff(ut.TestCase):
         rows = _rows_over_region(1, 60, 10, lambda i, j: False)
         obs_row_cum, chi2_row_cum, n_positions, max_gap = self._row_cums(rows, 1, 60)
         cutoff = _calc_block_pvalue_cutoff(
-            obs_row_cum, chi2_row_cum, n_positions, max_gap, domain_fdr=0.1
+            obs_row_cum, chi2_row_cum, n_positions, max_gap, detect_fdr=0.1
         )
         self.assertEqual(cutoff, -1.0)
 
@@ -193,7 +193,7 @@ class TestCalcBlockPvalueCutoff(ut.TestCase):
         rows = _rows_over_region(1, 300, 10, lambda i, j: 20 <= i and j <= 40)
         obs_row_cum, chi2_row_cum, n_positions, max_gap = self._row_cums(rows, 1, 300)
         cutoff = _calc_block_pvalue_cutoff(
-            obs_row_cum, chi2_row_cum, n_positions, max_gap, domain_fdr=0.1
+            obs_row_cum, chi2_row_cum, n_positions, max_gap, detect_fdr=0.1
         )
         self.assertGreater(cutoff, -1.0)
         # The domain's own exact block (0-indexed [19, 39]) must itself be
@@ -518,7 +518,8 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
             self.TOTAL_END3,
             min_pair_coverage=1,
             min_expect_both=0,
-            domain_fdr=self.DOMAIN_FDR,
+            detect_fdr=self.DOMAIN_FDR,
+            merge_fdr=self.DOMAIN_FDR,
         )
         self.assertTrue(domains, "Expected at least one domain to be called")
         for start, end in domains:
@@ -552,7 +553,8 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
             self.TOTAL_END3,
             min_pair_coverage=1,
             min_expect_both=0,
-            domain_fdr=self.DOMAIN_FDR,
+            detect_fdr=self.DOMAIN_FDR,
+            merge_fdr=self.DOMAIN_FDR,
         )
         self.assertEqual(domains, [(self.TOTAL_END5, self.TOTAL_END3)])
 
@@ -567,7 +569,8 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
             self.TOTAL_END3,
             min_pair_coverage=1,
             min_expect_both=0,
-            domain_fdr=self.DOMAIN_FDR,
+            detect_fdr=self.DOMAIN_FDR,
+            merge_fdr=self.DOMAIN_FDR,
         )
         self.assertEqual(domains, [])
 
@@ -581,7 +584,8 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
             self.TOTAL_END3,
             min_pair_coverage=1,
             min_expect_both=0,
-            domain_fdr=self.DOMAIN_FDR,
+            detect_fdr=self.DOMAIN_FDR,
+            merge_fdr=self.DOMAIN_FDR,
         )
         self.assertTrue(domains)
         # Above the pairs' actual coverage: every pair is filtered out,
@@ -592,7 +596,8 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
             self.TOTAL_END3,
             min_pair_coverage=int(self.N_COV) + 1,
             min_expect_both=0,
-            domain_fdr=self.DOMAIN_FDR,
+            detect_fdr=self.DOMAIN_FDR,
+            merge_fdr=self.DOMAIN_FDR,
         )
         self.assertEqual(domains, [])
 
@@ -646,7 +651,8 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
             self.TOTAL_END3,
             min_pair_coverage=1,
             min_expect_both=5,
-            domain_fdr=self.DOMAIN_FDR,
+            detect_fdr=self.DOMAIN_FDR,
+            merge_fdr=self.DOMAIN_FDR,
         )
         self.assertEqual(domains, [], "Pairs with expected-both < 5 must be excluded")
         # The same chi-squares with ample expected-both: recovered as usual.
@@ -657,7 +663,8 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
             self.TOTAL_END3,
             min_pair_coverage=1,
             min_expect_both=5,
-            domain_fdr=self.DOMAIN_FDR,
+            detect_fdr=self.DOMAIN_FDR,
+            merge_fdr=self.DOMAIN_FDR,
         )
         self.assertTrue(domains)
 
@@ -670,7 +677,8 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
                 self.TOTAL_END3,
                 min_pair_coverage=0,
                 min_expect_both=0,
-                domain_fdr=self.DOMAIN_FDR,
+                detect_fdr=self.DOMAIN_FDR,
+                merge_fdr=self.DOMAIN_FDR,
             )
 
     def test_masked_pairs_never_contribute(self):
@@ -705,7 +713,8 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
             self.TOTAL_END3,
             min_pair_coverage=min_pair_coverage,
             min_expect_both=0,
-            domain_fdr=self.DOMAIN_FDR,
+            detect_fdr=self.DOMAIN_FDR,
+            merge_fdr=self.DOMAIN_FDR,
         )
         domains_with_masked = _calc_domains_by_dp_segmentation(
             table_with_masked,
@@ -713,7 +722,8 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
             self.TOTAL_END3,
             min_pair_coverage=min_pair_coverage,
             min_expect_both=0,
-            domain_fdr=self.DOMAIN_FDR,
+            detect_fdr=self.DOMAIN_FDR,
+            merge_fdr=self.DOMAIN_FDR,
         )
         self.assertTrue(domains_baseline, "Expected at least one domain to be called")
         self.assertEqual(domains_baseline, domains_with_masked)
@@ -740,7 +750,8 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
             total_end3,
             min_pair_coverage=1,
             min_expect_both=0,
-            domain_fdr=self.DOMAIN_FDR,
+            detect_fdr=self.DOMAIN_FDR,
+            merge_fdr=self.DOMAIN_FDR,
         )
         expect_length = domain[1] - domain[0] + 1
         self.assertTrue(
@@ -761,7 +772,8 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
                 self.TOTAL_END5,
                 min_pair_coverage=1,
                 min_expect_both=0,
-                domain_fdr=self.DOMAIN_FDR,
+                detect_fdr=self.DOMAIN_FDR,
+                merge_fdr=self.DOMAIN_FDR,
             )
 
     def test_pair_outside_region_raises(self):
@@ -780,7 +792,8 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
                 self.TOTAL_END3,
                 min_pair_coverage=1,
                 min_expect_both=0,
-                domain_fdr=self.DOMAIN_FDR,
+                detect_fdr=self.DOMAIN_FDR,
+                merge_fdr=self.DOMAIN_FDR,
             )
 
     def test_realistic_noise_does_not_fragment_the_domain(self):
@@ -811,7 +824,8 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
             total_end3,
             min_pair_coverage=1,
             min_expect_both=0,
-            domain_fdr=self.DOMAIN_FDR,
+            detect_fdr=self.DOMAIN_FDR,
+            merge_fdr=self.DOMAIN_FDR,
         )
         self.assertTrue(domains, "Expected the domain to be recovered")
         expect_length = total_end3 - total_end5 + 1
@@ -875,7 +889,8 @@ class TestDpSegmentationAntiOverSplit(ut.TestCase):
             self.TOTAL_END3,
             min_pair_coverage=1,
             min_expect_both=0,
-            domain_fdr=self.DOMAIN_FDR,
+            detect_fdr=self.DOMAIN_FDR,
+            merge_fdr=self.DOMAIN_FDR,
         )
         self.assertTrue(
             any(
@@ -893,7 +908,8 @@ class TestDpSegmentationAntiOverSplit(ut.TestCase):
             self.TOTAL_END3,
             min_pair_coverage=1,
             min_expect_both=0,
-            domain_fdr=self.DOMAIN_FDR,
+            detect_fdr=self.DOMAIN_FDR,
+            merge_fdr=self.DOMAIN_FDR,
         )
         self.assertFalse(
             any(
@@ -970,7 +986,7 @@ class TestMergeConnectedBlocks(ut.TestCase):
         blocks = [(0, 9), (20, 29), (40, 49)]
         n_cross = np.full(49, 100.0)
         chi2_cross = np.full(49, 100.0 * 4.0)  # mean chi2 = 4: strong signal
-        merged = _merge_connected_blocks(blocks, n_cross, chi2_cross, domain_fdr=0.1)
+        merged = _merge_connected_blocks(blocks, n_cross, chi2_cross, merge_fdr=0.1)
         self.assertEqual(merged, [(0, 49)])
 
     def test_one_null_cut_in_a_gap_keeps_that_gap_split(self):
@@ -982,7 +998,7 @@ class TestMergeConnectedBlocks(ut.TestCase):
         chi2_cross = np.full(49, 100.0 * 4.0)
         n_cross[14] = 100.0
         chi2_cross[14] = 100.0  # mean chi2 = 1: null
-        merged = _merge_connected_blocks(blocks, n_cross, chi2_cross, domain_fdr=0.1)
+        merged = _merge_connected_blocks(blocks, n_cross, chi2_cross, merge_fdr=0.1)
         self.assertEqual(merged, [(0, 9), (20, 49)])
 
     def test_effect_size_gate_rejects_a_faint_but_bh_significant_crossing(self):
@@ -999,14 +1015,14 @@ class TestMergeConnectedBlocks(ut.TestCase):
         blocks = [(0, 9), (20, 29)]
         n_cross = np.full(19, n)
         chi2_cross = np.full(19, n * mean)
-        merged = _merge_connected_blocks(blocks, n_cross, chi2_cross, domain_fdr=0.1)
+        merged = _merge_connected_blocks(blocks, n_cross, chi2_cross, merge_fdr=0.1)
         self.assertEqual(merged, blocks)
 
     def test_merge_never_extends_past_the_given_blocks(self):
         blocks = [(0, 9), (20, 29)]
         n_cross = np.full(19, 100.0)
         chi2_cross = np.full(19, 100.0 * 4.0)
-        merged = _merge_connected_blocks(blocks, n_cross, chi2_cross, domain_fdr=0.1)
+        merged = _merge_connected_blocks(blocks, n_cross, chi2_cross, merge_fdr=0.1)
         self.assertEqual(merged, [(0, 29)])
 
     def test_grouping_is_independent_of_sweep_direction(self):
@@ -1022,7 +1038,7 @@ class TestMergeConnectedBlocks(ut.TestCase):
         n_cross[29:40] = 100.0
         chi2_cross[29:40] = 100.0  # gap 2 (cuts 29..39) is null
 
-        def merge_right_to_left(blocks, n_cross, chi2_cross, domain_fdr):
+        def merge_right_to_left(blocks, n_cross, chi2_cross, merge_fdr):
             from scipy.stats import chi2 as chi2dist
 
             valid = n_cross > 0
@@ -1036,7 +1052,7 @@ class TestMergeConnectedBlocks(ut.TestCase):
             qvals = np.ones_like(pvals)
             if valid.any():
                 qvals[valid] = calc_bh_adjusted_pvals(pvals[valid])
-            connected = valid & (gains >= 0.0) & (qvals <= domain_fdr)
+            connected = valid & (gains >= 0.0) & (qvals <= merge_fdr)
             gap_connected = [
                 bool(connected[blocks[i][1] : blocks[i + 1][0]].all())
                 for i in range(len(blocks) - 1)
@@ -1051,17 +1067,17 @@ class TestMergeConnectedBlocks(ut.TestCase):
                     merged.insert(0, blocks[i])
             return merged
 
-        forward = _merge_connected_blocks(blocks, n_cross, chi2_cross, domain_fdr=0.1)
-        backward = merge_right_to_left(blocks, n_cross, chi2_cross, domain_fdr=0.1)
+        forward = _merge_connected_blocks(blocks, n_cross, chi2_cross, merge_fdr=0.1)
+        backward = merge_right_to_left(blocks, n_cross, chi2_cross, merge_fdr=0.1)
         self.assertEqual(forward, backward)
         self.assertEqual(forward, [(0, 29), (40, 69)])
 
     def test_fewer_than_two_blocks_returned_unchanged(self):
         self.assertEqual(
-            _merge_connected_blocks([], np.zeros(0), np.zeros(0), domain_fdr=0.1), []
+            _merge_connected_blocks([], np.zeros(0), np.zeros(0), merge_fdr=0.1), []
         )
         self.assertEqual(
-            _merge_connected_blocks([(0, 9)], np.zeros(0), np.zeros(0), domain_fdr=0.1),
+            _merge_connected_blocks([(0, 9)], np.zeros(0), np.zeros(0), merge_fdr=0.1),
             [(0, 9)],
         )
 
@@ -1124,7 +1140,8 @@ class TestMergeConnectedBlocksIntegration(ut.TestCase):
             self.TOTAL_END3,
             min_pair_coverage=1,
             min_expect_both=0,
-            domain_fdr=self.DOMAIN_FDR,
+            detect_fdr=self.DOMAIN_FDR,
+            merge_fdr=self.DOMAIN_FDR,
         )
 
     def test_dp_alone_splits_across_the_null_gap(self):

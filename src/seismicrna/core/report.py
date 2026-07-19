@@ -114,10 +114,11 @@ from .arg.cli import (
     opt_tile_min_overlap,
     opt_erase_tiles,
     opt_band_width,
-    opt_domain_fdr,
+    opt_detect_fdr,
+    opt_merge_fdr,
     opt_min_pair_coverage,
     opt_min_expect_both,
-    opt_min_cluster_length,
+    opt_min_domain_length,
     opt_gap_mode,
     opt_probe,
     opt_min_pearson_pool,
@@ -633,10 +634,11 @@ TileLengthF = OptionReportField(opt_tile_length)
 TileMinOverlapF = OptionReportField(opt_tile_min_overlap)
 EraseTilesF = OptionReportField(opt_erase_tiles)
 BandWidthF = OptionReportField(opt_band_width)
-DomainFdrF = OptionReportField(opt_domain_fdr)
+DetectFdrF = OptionReportField(opt_detect_fdr)
+MergeFdrF = OptionReportField(opt_merge_fdr)
 MinPairCoverageF = OptionReportField(opt_min_pair_coverage)
 MinExpectBothF = OptionReportField(opt_min_expect_both)
-MinClusterLengthF = OptionReportField(opt_min_cluster_length)
+MinDomainLengthF = OptionReportField(opt_min_domain_length)
 GapModeF = OptionReportField(opt_gap_mode)
 TileCoordsF = ReportField("tile_coords", "Coordinates of tiles (end5, end3)", list)
 NumPositivePairsF = ReportField(
