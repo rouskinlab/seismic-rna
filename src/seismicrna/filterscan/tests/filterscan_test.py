@@ -3,10 +3,15 @@ import unittest as ut
 from itertools import product
 from pathlib import Path
 
+import numpy as np
 from click.testing import CliRunner
 
 from seismicrna.core import path
-from seismicrna.core.batch.confusion import POSITION_A, POSITION_B
+from seismicrna.core.batch.confusion import (
+    POSITION_A,
+    POSITION_B,
+    calc_bh_adjusted_pvals,
+)
 from seismicrna.core.error import IncompatibleValuesError, OutOfBoundsError
 from seismicrna.core.logs import Level, get_config, set_config
 from seismicrna.core.report import DomainCoordsF
@@ -28,8 +33,11 @@ from seismicrna.filterscan.write import (
     _calc_tiles,
     _build_banded_table,
     _write_pairs_with_confusion,
+    _block_score,
     _calc_block_pvalue_cutoff,
     _calc_domains_by_dp_segmentation,
+    _cut_crossing_scores,
+    _merge_connected_blocks,
     _pair_band_row_cumsum,
     _triangle_sum_banded,
     _insert_domains_into_gaps,
@@ -59,9 +67,7 @@ def _make_table(rows: list[tuple[int, int, float, float]]):
     only_a = [n / 2 for n in ns]
     only_b = [n / 2 for n in ns]
     both = [n / 4 for n in ns]
-    neither = [
-        n - (a + b - ab) for n, a, b, ab in zip(ns, only_a, only_b, both)
-    ]
+    neither = [n - (a + b - ab) for n, a, b, ab in zip(ns, only_a, only_b, both)]
     return pd.DataFrame(
         {
             N_COL: ns,
@@ -114,8 +120,7 @@ class TestBuildBandedTable(ut.TestCase):
         result = _build_banded_table([], band_width=0)
         self.assertEqual(len(result.index), 0)
         self.assertListEqual(
-            list(result.columns),
-            [N_COL, CHI_SQUARE_COL, *CONFUSION_COLS],
+            list(result.columns), [N_COL, CHI_SQUARE_COL, *CONFUSION_COLS]
         )
 
     def test_dedup_keeps_max_n(self):
@@ -175,9 +180,7 @@ class TestCalcBlockPvalueCutoff(ut.TestCase):
 
     def test_all_null_like_has_no_survivor(self):
         rows = _rows_over_region(1, 60, 10, lambda i, j: False)
-        obs_row_cum, chi2_row_cum, n_positions, max_gap = self._row_cums(
-            rows, 1, 60
-        )
+        obs_row_cum, chi2_row_cum, n_positions, max_gap = self._row_cums(rows, 1, 60)
         cutoff = _calc_block_pvalue_cutoff(
             obs_row_cum, chi2_row_cum, n_positions, max_gap, domain_fdr=0.1
         )
@@ -188,9 +191,7 @@ class TestCalcBlockPvalueCutoff(ut.TestCase):
         # own candidate block must clear BH correction against every other
         # (mostly null) candidate the scan considers.
         rows = _rows_over_region(1, 300, 10, lambda i, j: 20 <= i and j <= 40)
-        obs_row_cum, chi2_row_cum, n_positions, max_gap = self._row_cums(
-            rows, 1, 300
-        )
+        obs_row_cum, chi2_row_cum, n_positions, max_gap = self._row_cums(rows, 1, 300)
         cutoff = _calc_block_pvalue_cutoff(
             obs_row_cum, chi2_row_cum, n_positions, max_gap, domain_fdr=0.1
         )
@@ -230,12 +231,7 @@ class TestWritePairsWithConfusion(ut.TestCase):
     def test_writes_confusion_counts(self):
         import pandas as pd
 
-        pos_table = self._table(
-            [
-                (1, 5, 900, 30, 20, 50),
-                (2, 9, 800, 60, 40, 100),
-            ]
-        )
+        pos_table = self._table([(1, 5, 900, 30, 20, 50), (2, 9, 800, 60, 40, 100)])
         with tempfile.TemporaryDirectory() as tmp:
             csv_file = Path(tmp) / "pairs.csv"
             _write_pairs_with_confusion(pos_table, csv_file)
@@ -652,9 +648,7 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
             min_expect_both=5,
             domain_fdr=self.DOMAIN_FDR,
         )
-        self.assertEqual(
-            domains, [], "Pairs with expected-both < 5 must be excluded"
-        )
+        self.assertEqual(domains, [], "Pairs with expected-both < 5 must be excluded")
         # The same chi-squares with ample expected-both: recovered as usual.
         table = build_table(low_expected=False)
         domains = _calc_domains_by_dp_segmentation(
@@ -822,10 +816,7 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
         self.assertTrue(domains, "Expected the domain to be recovered")
         expect_length = total_end3 - total_end5 + 1
         self.assertTrue(
-            any(
-                (end - start + 1) >= expect_length / 2
-                for start, end in domains
-            ),
+            any((end - start + 1) >= expect_length / 2 for start, end in domains),
             f"Domain was fragmented into pieces far smaller than its true "
             f"extent instead of reported (near-)whole: {domains}",
         )
@@ -922,23 +913,175 @@ class TestDpSegmentationAntiOverSplit(ut.TestCase):
             )
 
 
-class TestJoinBridgedBlocks(ut.TestCase):
-    """The scenario that motivated ``_join_bridged_blocks``: two dense
+class TestCutCrossingScores(ut.TestCase):
+    """``_cut_crossing_scores`` sums, at every cut ``m``, exactly the
+    observable pairs ``(a, b)`` with ``a <= m < b`` -- the pairs that
+    straddle that specific cut."""
+
+    def test_no_pairs_straddle_any_cut(self):
+        # A pair entirely on one side of every cut (or, trivially, an
+        # empty table) contributes to no cut at all.
+        table = _make_table([])
+        n_cross, chi2_cross = _cut_crossing_scores(table, 1, 10)
+        self.assertEqual(n_cross.shape, (9,))
+        self.assertTrue((n_cross == 0).all())
+        self.assertTrue((chi2_cross == 0).all())
+
+    def test_single_pair_straddles_exactly_the_cuts_between_its_ends(self):
+        # Pair (3, 7) straddles cuts 3, 4, 5, 6 (between position m and
+        # m + 1, for m = 3..6) and no others.
+        table = _make_table([(3, 7, 2000.0, 12.0)])
+        n_cross, chi2_cross = _cut_crossing_scores(table, 1, 10)
+        expect_n = [0, 0, 1, 1, 1, 1, 0, 0, 0]
+        expect_chi2 = [0, 0, 12.0, 12.0, 12.0, 12.0, 0, 0, 0]
+        self.assertEqual(n_cross.tolist(), expect_n)
+        self.assertEqual(chi2_cross.tolist(), expect_chi2)
+
+    def test_multiple_pairs_accumulate_at_a_shared_cut(self):
+        table = _make_table(
+            [(1, 5, 2000.0, 10.0), (2, 6, 2000.0, 20.0), (4, 5, 2000.0, 5.0)]
+        )
+        n_cross, chi2_cross = _cut_crossing_scores(table, 1, 6)
+        # Cut m=4 (between positions 4 and 5) is straddled by all three
+        # pairs: (1,5), (2,6), (4,5).
+        self.assertEqual(n_cross[3], 3)
+        self.assertEqual(chi2_cross[3], 35.0)
+
+
+class TestMergeConnectedBlocks(ut.TestCase):
+    """``_merge_connected_blocks`` merges adjacent blocks whenever *every*
+    cut in the gap between them (including the block-edge cut itself) is
+    connected: its crossing pairs clear both the effect-size bar
+    (``_block_score >= 0``) and Benjamini-Hochberg significance. Both gates
+    are required -- a cut's crossing-pair count can be in the thousands (see
+    ``_cut_crossing_scores``), so significance alone flags a
+    biologically-trivial elevation as "real" (verified below)."""
+
+    def _score_and_pvalue(self, n: float, chi2_sum: float):
+        from scipy.stats import chi2 as chi2dist
+
+        gain = float(_block_score(np.array([n]), np.array([chi2_sum]))[0])
+        pval = float(chi2dist.sf(chi2_sum, df=n))
+        return gain, pval
+
+    def test_transitive_merge_across_a_bridged_gap(self):
+        # Three blocks; every cut in both gaps is strongly connected, so
+        # all three should merge transitively into one domain.
+        blocks = [(0, 9), (20, 29), (40, 49)]
+        n_cross = np.full(49, 100.0)
+        chi2_cross = np.full(49, 100.0 * 4.0)  # mean chi2 = 4: strong signal
+        merged = _merge_connected_blocks(blocks, n_cross, chi2_cross, domain_fdr=0.1)
+        self.assertEqual(merged, [(0, 49)])
+
+    def test_one_null_cut_in_a_gap_keeps_that_gap_split(self):
+        # Gap 1 (cuts 9..19) is strong everywhere except cut 14, which is
+        # null; gap 2 (cuts 29..39) is strong everywhere. Only gap 2 should
+        # merge.
+        blocks = [(0, 9), (20, 29), (40, 49)]
+        n_cross = np.full(49, 100.0)
+        chi2_cross = np.full(49, 100.0 * 4.0)
+        n_cross[14] = 100.0
+        chi2_cross[14] = 100.0  # mean chi2 = 1: null
+        merged = _merge_connected_blocks(blocks, n_cross, chi2_cross, domain_fdr=0.1)
+        self.assertEqual(merged, [(0, 9), (20, 49)])
+
+    def test_effect_size_gate_rejects_a_faint_but_bh_significant_crossing(self):
+        # A gap whose crossing pairs are elevated only trivially above the
+        # null (mean chi2 = 1.05) but with a huge n (5000, the scale of an
+        # actual cut's crossing-pair count): BH-significance alone would
+        # call this "connected" (p ~ 7e-3), but the exact block score is
+        # negative (BIC-charged effect size below the bar), so the gap
+        # must stay split.
+        n, mean = 5000.0, 1.05
+        gain, pval = self._score_and_pvalue(n, n * mean)
+        self.assertLess(gain, 0.0)
+        self.assertLess(pval, 0.1)  # BH-significant on its own
+        blocks = [(0, 9), (20, 29)]
+        n_cross = np.full(19, n)
+        chi2_cross = np.full(19, n * mean)
+        merged = _merge_connected_blocks(blocks, n_cross, chi2_cross, domain_fdr=0.1)
+        self.assertEqual(merged, blocks)
+
+    def test_merge_never_extends_past_the_given_blocks(self):
+        blocks = [(0, 9), (20, 29)]
+        n_cross = np.full(19, 100.0)
+        chi2_cross = np.full(19, 100.0 * 4.0)
+        merged = _merge_connected_blocks(blocks, n_cross, chi2_cross, domain_fdr=0.1)
+        self.assertEqual(merged, [(0, 29)])
+
+    def test_grouping_is_independent_of_sweep_direction(self):
+        # Four blocks, three gaps: gap 1 and gap 3 strongly connected,
+        # gap 2 null. Whether grouped left-to-right (as implemented) or
+        # right-to-left, the connectivity of each gap is fixed in advance
+        # (it depends only on that gap's own cut scores, never on merge
+        # decisions elsewhere), so both sweep directions must produce the
+        # identical partition.
+        blocks = [(0, 9), (20, 29), (40, 49), (60, 69)]
+        n_cross = np.full(69, 100.0)
+        chi2_cross = np.full(69, 100.0 * 4.0)
+        n_cross[29:40] = 100.0
+        chi2_cross[29:40] = 100.0  # gap 2 (cuts 29..39) is null
+
+        def merge_right_to_left(blocks, n_cross, chi2_cross, domain_fdr):
+            from scipy.stats import chi2 as chi2dist
+
+            valid = n_cross > 0
+            gains = np.where(
+                valid, _block_score(np.maximum(n_cross, 1), chi2_cross), -1.0
+            )
+            with np.errstate(divide="ignore", invalid="ignore"):
+                pvals = np.where(
+                    valid, chi2dist.sf(chi2_cross, df=np.maximum(n_cross, 1)), 1.0
+                )
+            qvals = np.ones_like(pvals)
+            if valid.any():
+                qvals[valid] = calc_bh_adjusted_pvals(pvals[valid])
+            connected = valid & (gains >= 0.0) & (qvals <= domain_fdr)
+            gap_connected = [
+                bool(connected[blocks[i][1] : blocks[i + 1][0]].all())
+                for i in range(len(blocks) - 1)
+            ]
+            merged = [blocks[-1]]
+            for i in range(len(blocks) - 2, -1, -1):
+                if gap_connected[i]:
+                    _, e1 = merged[0]
+                    s0, _ = blocks[i]
+                    merged[0] = (s0, e1)
+                else:
+                    merged.insert(0, blocks[i])
+            return merged
+
+        forward = _merge_connected_blocks(blocks, n_cross, chi2_cross, domain_fdr=0.1)
+        backward = merge_right_to_left(blocks, n_cross, chi2_cross, domain_fdr=0.1)
+        self.assertEqual(forward, backward)
+        self.assertEqual(forward, [(0, 29), (40, 69)])
+
+    def test_fewer_than_two_blocks_returned_unchanged(self):
+        self.assertEqual(
+            _merge_connected_blocks([], np.zeros(0), np.zeros(0), domain_fdr=0.1), []
+        )
+        self.assertEqual(
+            _merge_connected_blocks([(0, 9)], np.zeros(0), np.zeros(0), domain_fdr=0.1),
+            [(0, 9)],
+        )
+
+
+class TestMergeConnectedBlocksIntegration(ut.TestCase):
+    """The scenario that motivated ``_merge_connected_blocks``: two dense
     blocks (DOMAIN_A, DOMAIN_B) separated by a genuinely null gap --
     every gap-internal and block-to-gap pair is pure null, so the DP's
     own whole-bridge objective (union minus each block's own triangle)
     is necessarily very negative and the DP splits them (see
-    ``_join_bridged_blocks``'s docstring for why a post-hoc re-test of
+    ``_merge_connected_blocks``'s docstring for why a post-hoc re-test of
     that same whole-bridge quantity could never find anything to join).
     But when there is real, direct evidence connecting the two blocks
     -- pairs with one endpoint in each, independent of the gap between
-    them -- ``_join_bridged_blocks`` should still report one domain
-    spanning both; when that direct evidence is absent, it should
-    correctly leave them split. This is the real-world case discovered
-    in a 1M-read dataset: two pieces of what was structurally one
-    long-range-paired domain, separated by an unpaired linker with no
-    correlations of its own, wrongly reported as two domains until this
-    mechanism was added."""
+    them -- the merge should still report one domain spanning both; when
+    that direct evidence is absent, it should correctly leave them split.
+    This is the real-world case discovered in a 1M-read dataset: two
+    pieces of what was structurally one long-range-paired domain,
+    separated by an unpaired linker with no correlations of its own,
+    wrongly reported as two domains until this mechanism was added."""
 
     DOMAIN_A = (1, 10)
     GAP = (11, 30)
@@ -986,7 +1129,7 @@ class TestJoinBridgedBlocks(ut.TestCase):
 
     def test_dp_alone_splits_across_the_null_gap(self):
         # With no direct crossing evidence at all, the DP itself must
-        # split -- the gap is genuinely null -- and the join must not
+        # split -- the gap is genuinely null -- and the merge must not
         # manufacture a connection that isn't there.
         domains = self._call(n_cross_elevated=0)
         self.assertFalse(
@@ -1005,7 +1148,7 @@ class TestJoinBridgedBlocks(ut.TestCase):
     def test_real_crossing_evidence_joins_across_the_null_gap(self):
         # The DP still splits them (the gap alone makes the whole-bridge
         # objective very negative), but the direct A-to-B crossing pairs
-        # alone are real signal against the null, so the join fires.
+        # alone are real signal against the null, so the merge fires.
         domains = self._call(n_cross_elevated=self.N_CROSS_ELEVATED_JOINS)
         self.assertTrue(
             any(

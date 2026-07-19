@@ -640,7 +640,9 @@ MinClusterLengthF = OptionReportField(opt_min_cluster_length)
 GapModeF = OptionReportField(opt_gap_mode)
 TileCoordsF = ReportField("tile_coords", "Coordinates of tiles (end5, end3)", list)
 NumPositivePairsF = ReportField(
-    "n_positive_pairs", "Number of pairs with chi-square above the null expectation", int
+    "n_positive_pairs",
+    "Number of pairs with chi-square above the null expectation",
+    int,
 )
 NumDomainsF = ReportField("n_domains", "Number of domains detected", int)
 DomainCoordsF = ReportField(

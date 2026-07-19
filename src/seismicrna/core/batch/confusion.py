@@ -334,9 +334,7 @@ def calc_confusion_chi_square(
         p_b = b / n
         p_ab = ab / n
         chi_square = (
-            n
-            * (p_ab - p_a * p_b) ** 2
-            / (p_a * (1.0 - p_a) * p_b * (1.0 - p_b))
+            n * (p_ab - p_a * p_b) ** 2 / (p_a * (1.0 - p_a) * p_b * (1.0 - p_b))
         )
     return chi_square.mask(np.asarray(n < min_cover))
 

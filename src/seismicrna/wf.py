@@ -524,7 +524,7 @@ def run(
                     # self_contained should always be True for filterscan
                     # because it slices a long transcript with deep coverage
                     # into short slices with fewer reads, which is where
-                    # self_contained yields the largest speedup. 
+                    # self_contained yields the largest speedup.
                     self_contained=True,
                     brotli_level=brotli_level,
                     num_cpus=num_cpus,

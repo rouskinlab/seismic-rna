@@ -262,9 +262,7 @@ def _gather_pooled_reads(dataset: FilterMutsDataset):
                 dataset.num_batches,
                 int(batch.max_read) + 1,
             )
-    covered_pooled = {
-        pos: np.concatenate(arrs) for pos, arrs in pooled_covered.items()
-    }
+    covered_pooled = {pos: np.concatenate(arrs) for pos, arrs in pooled_covered.items()}
     mutated_pooled = {
         pos: (
             np.concatenate(pooled_mutated[pos])
@@ -330,28 +328,17 @@ def _confusion_to_table(
             BOTH_COL: both,
         }
     )
-    logger.trace(
-        "{} has {} pair(s) within the band",
-        dataset,
-        len(table.index),
-    )
+    logger.trace("{} has {} pair(s) within the band", dataset, len(table.index))
     return table
 
 
 def _find_correlated_pairs(
-    dataset: FilterMutsDataset,
-    tile_index: int,
-    *,
-    band_width: int,
-    n_tiles: int,
+    dataset: FilterMutsDataset, tile_index: int, *, band_width: int, n_tiles: int
 ) -> pd.DataFrame:
     """Read one tile's batches (``_gather_pooled_reads``) and compute its
     observed pair table."""
     with logger.debug.single_context(
-        "Finding correlated pairs for tile {}/{} ({})",
-        tile_index + 1,
-        n_tiles,
-        dataset,
+        "Finding correlated pairs for tile {}/{} ({})", tile_index + 1, n_tiles, dataset
     ):
         pos_index = dataset.region.unmasked
         max_gap = band_width if band_width > 0 else None
@@ -372,12 +359,8 @@ def _find_correlated_pairs(
             min_gap=min_gap,
             max_gap=max_gap,
         )
-        real_table = _confusion_to_table(
-            n, a, b, ab, dataset=dataset, write_csv=True
-        )
-        logger.debug(
-            "Computed the observed confusion matrix for {}", dataset
-        )
+        real_table = _confusion_to_table(n, a, b, ab, dataset=dataset, write_csv=True)
+        logger.debug("Computed the observed confusion matrix for {}", dataset)
         return real_table
 
 
@@ -723,142 +706,132 @@ def _dp_segment_blocks(
     return blocks, float(dp[n_positions])
 
 
-def _crossing_gain(
-    obs_row_cum: np.ndarray,
-    chi2_row_cum: np.ndarray,
-    max_gap: int,
-    block_left: tuple[int, int],
-    block_right: tuple[int, int],
-) -> tuple[float, float]:
-    """The raw ``(n, chi2_sum)`` of exactly the pairs with one endpoint in
-    ``block_left`` and the other in ``block_right`` -- excluding every
-    pair that touches the gap between them (gap-to-gap or block-to-gap).
+def _cut_crossing_scores(
+    obs_table: pd.DataFrame, total_end5: int, total_end3: int
+) -> tuple[np.ndarray, np.ndarray]:
+    """For every cut -- the boundary between position ``m`` and ``m + 1``,
+    for ``m`` in ``[total_end5, total_end3)`` -- return the raw
+    ``(n_cross, chi2_cross)`` of every observable pair ``(a, b)`` with
+    ``a <= m < b``: the pairs whose two endpoints straddle that specific
+    cut.
 
-    Summed directly, one row at a time, from the banded row-cumulative
-    pair-count and chi-square grids (``obs_row_cum``, ``chi2_row_cum``; see
-    ``_pair_band_row_cumsum``): for each position ``a`` in ``block_left``,
-    the pairs ``(a, b)`` with ``b`` in ``block_right`` occupy a contiguous
-    gap range in ``a``'s row, read off with two lookups. This is
-    deliberately *not* computed as a difference of larger triangle sums
-    (e.g. via inclusion-exclusion on ``_triangle_sum_banded``): when the
-    true crossing sum is exactly zero (no pair of ``block_left`` and
-    ``block_right`` is even within ``max_gap`` of each other), subtracting
-    several ``O(block size)`` triangle sums that are each individually
-    nonzero can leave a floating-point residue of the wrong sign,
-    spuriously triggering a join in ``_join_bridged_blocks`` on numerical
-    noise alone. Summing only the pairs that actually exist avoids that
-    cancellation entirely: with no such pairs, every row's contribution is
-    exactly ``0.0``.
+    Computed as an ``O(n_pairs + L)`` difference-array sweep: each pair
+    ``(a, b)`` straddles every cut ``m = a .. b - 1``, so it contributes
+    ``+1``/``+chi_square`` at cut ``a`` and ``-1``/``-chi_square`` at cut
+    ``b``, before a single cumulative sum -- not via inclusion-exclusion on
+    ``_triangle_sum_banded`` triangle sums, for the same floating-point-
+    cancellation reason this function's predecessor, ``_crossing_gain``,
+    avoided that: a cut with truly zero crossing pairs must read back as
+    exactly zero, not a rounding residue of the wrong sign.
 
-    This is what actually decides whether two DP-chosen blocks separated
-    by dead space should be reported as one domain (see
-    ``_join_bridged_blocks``): the crossing pairs are the only direct
-    evidence connecting the two blocks, and testing them alone -- rather
-    than summing in every pair that merely touches the gap -- avoids the
-    gap's own (expectedly null) pairs, which can vastly outnumber the
-    crossing pairs, diluting real evidence into a net negative."""
+    This is what ``_merge_connected_blocks`` uses to decide whether two
+    DP-chosen blocks separated by dead space are still directly connected:
+    unlike a block-to-block-only crossing test, every cut this function
+    scores sees *every* pair that spans it, including one that reaches from
+    deep inside one block, past an intervening block, into another --
+    exactly the long-range evidence a block (which can only test its own
+    contiguous span) cannot see on its own.
+
+    Returns ``(n_cross, chi2_cross)``, each of length
+    ``total_end3 - total_end5`` (one entry per cut, 0-indexed by
+    ``m - total_end5`` for ``m`` in ``[total_end5, total_end3)``)."""
     import numpy as np
 
-    def _row_sum(row_cum: np.ndarray) -> float:
-        s1, e1 = block_left
-        s2, e2 = block_right
-        a_vals = np.arange(s1, e1 + 1)
-        gap_lo = s2 - a_vals
-        gap_hi = np.minimum(e2 - a_vals, max_gap)
-        in_band = gap_lo <= max_gap
-        gap_lo_idx = np.clip(gap_lo, 0, max_gap + 1)
-        gap_hi_idx = np.clip(gap_hi + 1, 0, max_gap + 1)
-        row_hi = row_cum[a_vals, gap_hi_idx]
-        row_lo = row_cum[a_vals, gap_lo_idx]
-        return float(np.where(in_band, row_hi - row_lo, 0.0).sum())
+    n_positions = total_end3 - total_end5 + 1
+    n_cuts = max(n_positions - 1, 0)
+    # An empty table's index has no dtype to infer integer positions from
+    # (it defaults to float), which np.add.at rejects as an indexer -- cast
+    # explicitly so the empty case (as well as the normal one) works.
+    pos_a = (
+        obs_table.index.get_level_values(POSITION_A).to_numpy(dtype=np.int64)
+        - total_end5
+    )
+    pos_b = (
+        obs_table.index.get_level_values(POSITION_B).to_numpy(dtype=np.int64)
+        - total_end5
+    )
+    value = obs_table[CHI_SQUARE_COL].to_numpy(dtype=float)
+    diff_n = np.zeros(n_positions + 1)
+    diff_chi2 = np.zeros(n_positions + 1)
+    np.add.at(diff_n, pos_a, 1)
+    np.add.at(diff_n, pos_b, -1)
+    np.add.at(diff_chi2, pos_a, value)
+    np.add.at(diff_chi2, pos_b, -value)
+    n_cross = np.cumsum(diff_n)[:n_cuts]
+    chi2_cross = np.cumsum(diff_chi2)[:n_cuts]
+    return n_cross, chi2_cross
 
-    n = _row_sum(obs_row_cum)
-    chi2_sum = _row_sum(chi2_row_cum)
-    return n, chi2_sum
 
-
-def _join_bridged_blocks(
-    table: pd.DataFrame,
+def _merge_connected_blocks(
     blocks: list[tuple[int, int]],
-    total_end5: int,
-    total_end3: int,
-    min_pair_coverage: int,
-    min_expect_both: int,
+    n_cross: np.ndarray,
+    chi2_cross: np.ndarray,
     domain_fdr: float,
 ) -> list[tuple[int, int]]:
-    """Join adjacent DP-chosen blocks whose *direct crossing pairs*
-    (``_crossing_gain``) -- not the whole bridge between them, which is
-    dominated by however much (expectedly null) dead space happens to sit
-    in between -- clear the same analytic significance standard used to
-    call a domain in the first place: ``_block_score(n, chi2_sum) >= 0``
-    *and* an exact chi-square p-value (``chi2.sf(chi2_sum, df=n)``) that
-    survives Benjamini-Hochberg correction across this scan's own edges, at
-    ``domain_fdr`` -- mirroring ``_dp_segment_blocks``'s two-gate admission
-    exactly, just applied to the crossing-only pairs instead of a
-    contiguous block. No null replicates: a crossing edge's chi-square sum
-    is, like any block's, a sum over pairs independent under this null
-    (established this session), so its exact null distribution needs no
-    simulation.
+    """Merge adjacent DP-chosen blocks whose intervening gap is, at *every*
+    cut within it, directly connected by real long-range correlations --
+    not a re-test of the DP's own whole-bridge objective (which the DP's
+    exactness already makes unwinnable: whenever it leaves two blocks
+    split, no single block spanning their whole union could have cleared
+    the admission bar, or the DP would already have chosen it), but a
+    targeted test for a real gap that nonetheless has real correlations
+    crossing it (e.g. a helix with an unpaired linker or internal loop in
+    the middle).
 
-    The DP's own optimum is exact (see ``_dp_segment_blocks``): whenever it
-    leaves two blocks split, no single block spanning their whole union
-    (gap included) could have cleared the admission bar -- otherwise the DP
-    would already have chosen it -- so a post-hoc pass re-testing that same
-    whole-bridge quantity could never find anything to join, and is not
-    what this function does. A real gap can still sit between two blocks
-    that are nonetheless directly connected by real long-range correlations
-    (e.g. a helix with an unpaired linker or internal loop in between): the
-    gap's own pairs are correctly null, yet summing them in with the real
-    crossing pairs swamps the latter, masking a genuine relationship that a
-    block -- a contiguous position range with no way to isolate "just the
-    crossing pairs" from what merely surrounds them -- has no way to see on
-    its own. This function is the direct, targeted test for that case.
+    A cut is connected iff its crossing pairs (``_cut_crossing_scores``)
+    clear the same two-gate admission standard used to call a domain in
+    the first place: ``_block_score(n_cross, chi2_cross) >= 0`` (effect
+    size) *and* an exact chi-square p-value (``chi2.sf(chi2_cross,
+    df=n_cross)``) that survives Benjamini-Hochberg correction across every
+    cut in the scanned region, at ``domain_fdr``. Both gates are required:
+    a cut's crossing pair count can be in the thousands (every pair that
+    reaches across it, not just those touching the two specific blocks
+    being tested), so BH-significance alone flags biologically-trivial
+    elevations (mean chi-square barely above 1) as "significant" --
+    verified this session to over-merge a real domain deep into adjacent
+    structureless dead space. The effect-size floor is what keeps a
+    genuinely null cut (chi-square averaging ~1) below zero and holds the
+    boundary there.
 
-    BH-adjusted over this scan's own ``len(blocks) - 1`` edges -- its own
-    small, separate candidate family from the main scan's block candidates,
-    at the same ``domain_fdr`` target, mirroring how this was already a
-    separately-calibrated statistic from the main threshold even before
-    this analytic rewrite. A single static pass over the original DP block
-    boundaries suffices (no re-scoring after each join): each edge's
-    crossing sum depends only on the two fixed original blocks it connects,
-    so joins that fuse 3+ consecutive blocks fall out of chaining
-    consecutive admitted edges together."""
+    Because whether two blocks are joined depends only on the cuts *within
+    their own gap* -- fixed values that merging never changes -- marking
+    each of the ``len(blocks) - 1`` inter-block gaps connected/not and then
+    grouping maximal runs of connected gaps is equivalent to a transitive,
+    order-independent merge: sweeping left-to-right, right-to-left, or via
+    union-find all yield the identical partition."""
     import numpy as np
     from scipy.stats import chi2 as chi2dist
 
     if len(blocks) < 2:
         return blocks
-    obs = table[_analyzed_pairs_mask(table, min_pair_coverage, min_expect_both)]
-    obs_row_cum, chi2_row_cum, _, max_gap = _pair_band_row_cumsum(
-        obs, total_end5, total_end3, value_col=CHI_SQUARE_COL
-    )
-    crossings = [
-        _crossing_gain(obs_row_cum, chi2_row_cum, max_gap, blocks[i], blocks[i + 1])
+    valid = n_cross > 0
+    gains = np.where(valid, _block_score(np.maximum(n_cross, 1), chi2_cross), -1.0)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        pvals = np.where(valid, chi2dist.sf(chi2_cross, df=np.maximum(n_cross, 1)), 1.0)
+    qvals = np.ones_like(pvals)
+    if valid.any():
+        qvals[valid] = calc_bh_adjusted_pvals(pvals[valid])
+    connected_cut = valid & (gains >= 0.0) & (qvals <= domain_fdr)
+    gap_connected = [
+        bool(connected_cut[blocks[i][1] : blocks[i + 1][0]].all())
         for i in range(len(blocks) - 1)
     ]
-    n_edges = np.array([n for n, _ in crossings])
-    chi2_edges = np.array([c for _, c in crossings])
-    gains = _block_score(np.maximum(n_edges, 1), chi2_edges)
-    with np.errstate(divide="ignore", invalid="ignore"):
-        pvals = chi2dist.sf(chi2_edges, df=np.maximum(n_edges, 1))
-    qvals = calc_bh_adjusted_pvals(pvals) if pvals.size else np.zeros(0)
-    eligible = (n_edges > 0) & (gains >= 0.0) & (qvals <= domain_fdr)
     logger.debug(
-        "Crossing-pair join: {}/{} adjacent block pair(s) admitted (target "
-        "FDR {})",
-        int(eligible.sum()),
-        len(crossings),
+        "Cut-crossing merge: {}/{} adjacent block pair(s) fully connected "
+        "(target FDR {})",
+        sum(gap_connected),
+        len(gap_connected),
         domain_fdr,
     )
-    joined: list[tuple[int, int]] = [blocks[0]]
-    for i in range(1, len(blocks)):
-        if eligible[i - 1]:
-            s0, _ = joined[-1]
-            _, e1 = blocks[i]
-            joined[-1] = (s0, e1)
+    merged: list[tuple[int, int]] = [blocks[0]]
+    for i, connected in enumerate(gap_connected):
+        if connected:
+            s0, _ = merged[-1]
+            _, e1 = blocks[i + 1]
+            merged[-1] = (s0, e1)
         else:
-            joined.append(blocks[i])
-    return joined
+            merged.append(blocks[i + 1])
+    return merged
 
 
 def _calc_domains_by_dp_segmentation(
@@ -910,12 +883,16 @@ def _calc_domains_by_dp_segmentation(
     need. The DP itself is still O(L^2) time (a domain may be far longer
     than the band), unchanged from a dense grid.
 
-    After the DP, adjacent blocks are joined when their *direct crossing
-    pairs* alone clear the same analytic significance standard
-    (``_join_bridged_blocks``, at the same ``domain_fdr``) -- not a
+    After the DP, adjacent blocks are merged when every cut in the gap
+    between them is directly connected by crossing pairs alone
+    (``_merge_connected_blocks``, at the same ``domain_fdr``) -- not a
     post-hoc re-test of the DP's own whole-bridge objective, which the DP's
     exactness already makes unwinnable, but a targeted test for a real gap
-    that nonetheless has real long-range correlations crossing it.
+    that nonetheless has real long-range correlations crossing it (a single
+    per-block score, fit from only that block's own contained pairs, cannot
+    see this: it is always cheaper to carve out the densest sub-interval of
+    a heterogeneous domain than to fit the whole thing, so the fix for
+    fragmentation has to live at the cuts, not in the block score).
     """
     if min_pair_coverage < 1:
         raise OutOfBoundsError(
@@ -942,15 +919,8 @@ def _calc_domains_by_dp_segmentation(
         blocks, _ = _dp_segment_blocks(
             obs_row_cum, chi2_row_cum, n_positions, max_gap, p_cutoff
         )
-        blocks = _join_bridged_blocks(
-            table,
-            blocks,
-            total_end5,
-            total_end3,
-            min_pair_coverage,
-            min_expect_both,
-            domain_fdr,
-        )
+        n_cross, chi2_cross = _cut_crossing_scores(obs_table, total_end5, total_end3)
+        blocks = _merge_connected_blocks(blocks, n_cross, chi2_cross, domain_fdr)
         domains = sorted((total_end5 + s, total_end5 + e) for s, e in blocks)
         logger.debug("Calculated domains: {}", domains)
         return domains
@@ -1016,10 +986,7 @@ def _graph_pairs_and_domains(
         tick_vals = np.linspace(0.0, sqrt_max, num=6)
         marker = dict(
             color=sqrt_chi2.tolist(),
-            colorscale=[
-                [0.0, "rgba(213,94,0,0)"],
-                [1.0, "rgba(213,94,0,1)"],
-            ],
+            colorscale=[[0.0, "rgba(213,94,0,0)"], [1.0, "rgba(213,94,0,1)"]],
             cmin=0.0,
             cmax=sqrt_max,
             showscale=True,

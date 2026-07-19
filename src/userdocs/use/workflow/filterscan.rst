@@ -46,25 +46,21 @@ Grouping pairs into domains
 Telling real domains from chance
     Any dataset shows some correlation between positions purely by chance,
     even with no real structure, so SEISMIC-RNA needs a way to judge how
-    much correlation is too much to be coincidence. It simulates several
-    synthetic datasets that keep each position's coverage and overall
-    mutation rate the same as the real data but make every position mutate
-    independently of every other -- in effect, "what this RNA would look
-    like with no real structure." It then compares the correlation found in
-    a candidate domain to how much correlation appears by chance alone in
-    these simulated datasets, and reports a domain only when its evidence
-    clearly exceeds chance. ``--domain-fdr`` sets the target false discovery
-    rate (FDR, how willing SEISMIC-RNA is to call a domain), and
-    ``--n-null-replicates`` sets how many simulated datasets it compares
-    against; too few replicates makes the comparison overly conservative
-    (SEISMIC-RNA logs a warning if this happens).
-    ``--domain-fdr`` intentionally has an unusually high default for an FDR
-    (0.1) to make it more sensitive because here, false negatives are worse
-    than false positives. A false positive (a detected domain that really
-    forms only one structure) merely slows down the workflow: ClusterScan
-    needs to spend time clustering it, but a false positive domain would
-    likely yield 1 cluster due to the Cluster step's stringent filters, so
-    the final result will likely be correct. A false negative (failing to
+    much correlation is too much to be coincidence. For every candidate
+    domain, it computes an exact statistical test of whether the observed
+    correlation could plausibly have arisen if every position in the
+    candidate mutated independently, and corrects for the fact that it is
+    testing a great many overlapping candidate domains at once (so that a
+    domain is called only when it is a genuinely unusual result, not merely
+    the best of many chance draws). ``--domain-fdr`` sets the target false
+    discovery rate (FDR): how willing SEISMIC-RNA is to call a domain.
+    It intentionally has an unusually high default for an FDR (0.1) to make
+    it more sensitive because here, false negatives are worse than false
+    positives. A false positive (a detected domain that really forms only
+    one structure) merely slows down the workflow: ClusterScan needs to
+    spend time clustering it, but a false positive domain would likely
+    yield 1 cluster due to the Cluster step's stringent filters, so the
+    final result will likely be correct. A false negative (failing to
     detect where the RNA really forms multiple structures) would not be
     passed into the Cluster step at all and hence the final result would
     incorrectly be 1 cluster.
@@ -74,11 +70,15 @@ Joining domains across gaps
     (for example, an unpaired linker) that shows no correlation of its own,
     yet the two domains are nonetheless connected by real, direct
     long-range pairs (for example, a helix whose two strands lie on either
-    side of the gap). SEISMIC-RNA checks specifically for that direct
-    connecting evidence, independent of the uninformative gap between the
-    domains, and joins the two domains into one whenever the evidence for a
-    real long-range connection clears the same chance-based standard used
-    to call a domain in the first place.
+    side of the gap). SEISMIC-RNA checks, at every point within the gap,
+    whether pairs of positions spanning that specific point still show a
+    real, direct correlation; if the connection holds all the way across
+    the gap, it joins the two domains into one. This keeps a single,
+    genuinely long-range structure from being cut into pieces just because
+    an unstructured stretch happens to separate the two ends where its
+    correlated pairs anchor, while still splitting apart two domains that
+    are truly independent, with nothing but coincidental noise between
+    them.
 
 
 Inputs
@@ -143,20 +143,18 @@ Correlated-pair detection
         Analyze only pairs of positions with at least this many jointly
         covering reads (default 1000): pairs with less coverage are too
         noisy to score reliably.
+    ``--min-expect-both N``
+        Analyze only pairs of positions whose expected number of jointly
+        mutated reads, if the two positions mutated independently, is at
+        least this value (default 5): standard practice for the
+        statistical test SEISMIC-RNA uses, which becomes unreliable when
+        this expected count drops too low.
     ``--domain-fdr F``
         How willing to be to call a region a domain, expressed as a false
-        discovery rate (default 0.1): SEISMIC-RNA simulates data with no
-        real structure and compares it with the real data to judge how
-        much correlation could arise by chance alone. Higher values call
-        more (and weaker) domains; lower values call fewer, more
-        conservative domains.
-    ``--n-null-replicates N``
-        Number of simulated no-structure datasets to use for calibrating
-        ``--domain-fdr`` (default 10).
-    ``--seed N``
-        Seed for the random number generator used to simulate the
-        no-structure datasets (default: none, i.e. nondeterministic). Set
-        a value to make domain calling reproducible.
+        discovery rate (default 0.1): SEISMIC-RNA corrects for the fact
+        that it tests a great many overlapping candidate domains for
+        correlation exceeding chance. Higher values call more (and weaker)
+        domains; lower values call fewer, more conservative domains.
 
 Domain length filters
     ``--min-cluster-length N``
