@@ -14,11 +14,10 @@ from ..core.arg.cli import (
     opt_erase_tiles,
     opt_band_width,
     opt_domain_fdr,
-    opt_n_null_replicates,
     opt_min_pair_coverage,
+    opt_min_expect_both,
     opt_min_cluster_length,
     opt_gap_mode,
-    opt_seed,
 )
 from ..core.run import run_func
 from ..core.seq.xna import DNA
@@ -43,9 +42,8 @@ def run(
     erase_tiles: bool,
     band_width: int,
     domain_fdr: float,
-    n_null_replicates: int,
     min_pair_coverage: int,
-    seed: int | None,
+    min_expect_both: int,
     min_cluster_length: int,
     gap_mode: str,
     # Filter options
@@ -98,9 +96,8 @@ def run(
         erase_tiles=erase_tiles,
         band_width=band_width,
         domain_fdr=domain_fdr,
-        n_null_replicates=n_null_replicates,
         min_pair_coverage=min_pair_coverage,
-        seed=seed,
+        min_expect_both=min_expect_both,
         min_cluster_length=min_cluster_length,
         gap_mode=gap_mode,
         # Filter options
@@ -158,9 +155,8 @@ params = merge_params(
         opt_erase_tiles,
         opt_band_width,
         opt_domain_fdr,
-        opt_n_null_replicates,
         opt_min_pair_coverage,
-        opt_seed,
+        opt_min_expect_both,
         opt_min_cluster_length,
         opt_gap_mode,
     ],

@@ -23,7 +23,7 @@ Seed for the random number generator                                            
 Cluster only the regions with at least this many positions                                                                                                                                                                                                                           int
 If there are gaps between regions to cluster, OMIT (do not cluster) the gaps, INSERT a new region into each gap, or EXPAND the existing regions to fill the gaps                                                                                                                     str
 Coordinates of tiles (end5, end3)                                                                                                                                                                                                                                                    list[list[int]]
-Number of pairs with a positive domain-model score                                                                                                                                                                                                                                   int
+Number of pairs with chi-square above the null expectation                                                                                                                                                                                                                                   int
 Number of domains detected                                                                                                                                                                                                                                                           int
 Coordinates of domains (end5, end3)                                                                                                                                                                                                                                                  list[list[int]]
 Time began                                                                                                                                                                                                                                                                           str
@@ -61,7 +61,7 @@ Filterscan Report: Example
                 120
             ]
         ],
-        "Number of pairs with a positive domain-model score": 270,
+        "Number of pairs with chi-square above the null expectation": 270,
         "Number of domains detected": 1,
         "Coordinates of domains (end5, end3)": [
             [

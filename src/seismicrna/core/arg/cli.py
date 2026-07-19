@@ -1240,22 +1240,10 @@ opt_domain_fdr = Option(
     type=float,
     default=0.1,
     help=(
-        "Call domains at this false discovery rate (FDR), calibrated by "
-        "comparing each candidate domain's summed correlation score "
-        "against chance blocks found in simulated null replicates: "
-        "higher values call more (and weaker) domains; lower values "
-        "call fewer, more conservative domains"
-    ),
-)
-
-opt_n_null_replicates = Option(
-    ("--n-null-replicates",),
-    type=int,
-    default=10,
-    help=(
-        "Simulate this many per-position independence-null replicates "
-        "to calibrate the domain-calling penalty at --domain-fdr "
-        "(at least 1)"
+        "Call domains at this false discovery rate (FDR), Benjamini-"
+        "Hochberg-adjusted over every candidate block's exact chi-square "
+        "p-value: higher values call more (and weaker) domains; lower "
+        "values call fewer, more conservative domains"
     ),
 )
 
@@ -1267,6 +1255,19 @@ opt_min_pair_coverage = Option(
         "Analyze only pairs of positions whose number of jointly covering "
         "reads is at least this value when finding domains (pairs with less "
         "coverage are too noisy to score reliably)"
+    ),
+)
+
+opt_min_expect_both = Option(
+    ("--min-expect-both",),
+    type=int,
+    default=5,
+    help=(
+        "Analyze only pairs of positions whose expected number of reads "
+        "mutated at both positions (under the assumption that the "
+        "positions mutate independently) is at least this value when "
+        "finding domains (standard practice for a chi-square test, which "
+        "becomes unreliable when an expected count drops below about 5)"
     ),
 )
 

@@ -115,8 +115,8 @@ from .arg.cli import (
     opt_erase_tiles,
     opt_band_width,
     opt_domain_fdr,
-    opt_n_null_replicates,
     opt_min_pair_coverage,
+    opt_min_expect_both,
     opt_min_cluster_length,
     opt_gap_mode,
     opt_probe,
@@ -634,13 +634,13 @@ TileMinOverlapF = OptionReportField(opt_tile_min_overlap)
 EraseTilesF = OptionReportField(opt_erase_tiles)
 BandWidthF = OptionReportField(opt_band_width)
 DomainFdrF = OptionReportField(opt_domain_fdr)
-NNullReplicatesF = OptionReportField(opt_n_null_replicates)
 MinPairCoverageF = OptionReportField(opt_min_pair_coverage)
+MinExpectBothF = OptionReportField(opt_min_expect_both)
 MinClusterLengthF = OptionReportField(opt_min_cluster_length)
 GapModeF = OptionReportField(opt_gap_mode)
 TileCoordsF = ReportField("tile_coords", "Coordinates of tiles (end5, end3)", list)
 NumPositivePairsF = ReportField(
-    "n_positive_pairs", "Number of pairs with a positive domain-model score", int
+    "n_positive_pairs", "Number of pairs with chi-square above the null expectation", int
 )
 NumDomainsF = ReportField("n_domains", "Number of domains detected", int)
 DomainCoordsF = ReportField(

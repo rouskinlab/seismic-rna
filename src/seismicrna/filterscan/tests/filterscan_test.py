@@ -20,7 +20,6 @@ from seismicrna.filterscan.report import FilterScanReport
 from seismicrna.filterscan.write import (
     N_COL,
     CHI_SQUARE_COL,
-    SCORE_COL,
     CONFUSION_COLS,
     NEITHER_COL,
     ONLY_A_COL,
@@ -29,12 +28,10 @@ from seismicrna.filterscan.write import (
     _calc_tiles,
     _build_banded_table,
     _write_pairs_with_confusion,
-    _calc_pair_scores,
-    _scan_block_gains,
-    _calibrate_penalty_from_null,
-    _calc_null_penalty,
+    _calc_block_pvalue_cutoff,
     _calc_domains_by_dp_segmentation,
     _pair_band_row_cumsum,
+    _triangle_sum_banded,
     _insert_domains_into_gaps,
     _expand_domains_into_gaps,
     _filter_domains_length,
@@ -45,7 +42,13 @@ from seismicrna.sim.idmut import run as sim_idmut
 
 def _make_table(rows: list[tuple[int, int, float, float]]):
     """Build a per-pair table like ``_confusion_to_table`` returns, from an
-    iterable of (pos_a, pos_b, n, chi_square)."""
+    iterable of (pos_a, pos_b, n, chi_square).
+
+    The four confusion cells are synthesized as a simple, fixed split of
+    ``n`` (not tied to ``chi_square``) purely so ``_analyzed_pairs_mask``
+    (which needs them to compute the independence-expected both-mutated
+    count) has columns to read; tests that care about the exact confusion
+    counts (e.g. ``min_expect_both`` filtering) build their own table."""
     import pandas as pd
 
     if not rows:
@@ -53,40 +56,23 @@ def _make_table(rows: list[tuple[int, int, float, float]]):
     else:
         pos_a, pos_b, ns, chi_square = zip(*rows)
     index = pd.MultiIndex.from_arrays([pos_a, pos_b], names=[POSITION_A, POSITION_B])
+    only_a = [n / 2 for n in ns]
+    only_b = [n / 2 for n in ns]
+    both = [n / 4 for n in ns]
+    neither = [
+        n - (a + b - ab) for n, a, b, ab in zip(ns, only_a, only_b, both)
+    ]
     return pd.DataFrame(
-        {N_COL: ns, CHI_SQUARE_COL: chi_square},
+        {
+            N_COL: ns,
+            CHI_SQUARE_COL: chi_square,
+            NEITHER_COL: neither,
+            ONLY_A_COL: only_a,
+            ONLY_B_COL: only_b,
+            BOTH_COL: both,
+        },
         index=index,
     )
-
-
-def _scored(table, min_pair_coverage: int = 1):
-    """Attach the per-pair block score (``SCORE_COL``) the DP consumes, the
-    way ``_calc_cluster_domains`` does before segmentation (no null replicates:
-    the variance-inflation shape ``r`` is estimated from the observed data)."""
-    scored, _ = _calc_pair_scores(table, [], min_pair_coverage)
-    return scored
-
-
-def _null_tables(table, n_replicates: int = 10):
-    """Build ``n_replicates`` synthetic null-replicate tables (unscored) for
-    a real ``table``: same index/N, chi-square fixed at 1.0 (the chi^2(1)
-    null's mean) everywhere -- a deterministic stand-in for 'no real
-    structure' null replicates, for tests exercising the null-requiring
-    paths (``_calc_null_penalty``, ``_join_bridged_blocks``) without going
-    through the actual per-position-independence resampling."""
-    import pandas as pd
-
-    null = pd.DataFrame({N_COL: table[N_COL], CHI_SQUARE_COL: 1.0}, index=table.index)
-    return [null.copy() for _ in range(n_replicates)]
-
-
-def _scored_with_nulls(table, min_pair_coverage: int = 1, n_null_replicates: int = 10):
-    """Like ``_scored``, but also returns ``n_null_replicates`` scored null
-    tables (see ``_null_tables``), scored with the same real-table-derived
-    shape ``r`` via ``_calc_pair_scores``, matching production."""
-    nulls = _null_tables(table, n_null_replicates)
-    scored, scored_nulls = _calc_pair_scores(table, nulls, min_pair_coverage)
-    return scored, scored_nulls
 
 
 class TestCalcTiles(ut.TestCase):
@@ -160,98 +146,79 @@ class TestBuildBandedTable(ut.TestCase):
         self.assertEqual(len(result.index), 0)
 
 
-class TestCalibratePenaltyFromNull(ut.TestCase):
-    """BH-style FDR comparison of real candidate gains to the pooled null."""
+class TestCalcBlockPvalueCutoff(ut.TestCase):
+    """The analytic Benjamini-Hochberg p-value cutoff (``chi2.sf(chi2_sum,
+    df=n)`` per candidate block, no null replicates needed) that gates
+    ``_dp_segment_blocks`` alongside ``_block_score``."""
 
-    def test_no_real_gains_calls_none(self):
-        import numpy as np
-
-        self.assertEqual(
-            _calibrate_penalty_from_null(np.array([]), np.array([1.0]), 10, 0.05),
-            float("inf"),
+    @staticmethod
+    def _row_cums(rows, total_end5, total_end3):
+        table = _make_table(rows)
+        return _pair_band_row_cumsum(
+            table, total_end5, total_end3, value_col=CHI_SQUARE_COL
         )
 
-    def test_clear_signal_admitted_below_its_gain(self):
+    def test_empty_table_returns_no_survivor(self):
         import numpy as np
 
-        real = np.array([100.0])
-        null = np.arange(1.0, 11.0)  # all far below the real block
-        penalty = _calibrate_penalty_from_null(real, null, 10, 0.05)
-        self.assertTrue(0.0 < penalty < 100.0)  # admits the block
-
-    def test_signal_buried_in_null_calls_none(self):
-        import numpy as np
-
-        real = np.array([5.0])
-        null = np.array([6.0, 7.0, 8.0])  # 3 null blocks above 5 over R=10
-        # FDR = (3/10)/1 = 0.3 > 0.05 -> reject.
-        self.assertEqual(
-            _calibrate_penalty_from_null(real, null, 10, 0.05), float("inf")
+        # No observable pairs at all: an all-zero grid of the shape
+        # _pair_band_row_cumsum would produce (an empty table's index has no
+        # dtype to infer a real max_gap from, so build the zero grid
+        # directly rather than route an empty table through it).
+        n_positions, max_gap = 60, 0
+        obs_row_cum = np.zeros((n_positions, max_gap + 2), dtype=np.int64)
+        chi2_row_cum = np.zeros((n_positions, max_gap + 2), dtype=float)
+        cutoff = _calc_block_pvalue_cutoff(
+            obs_row_cum, chi2_row_cum, n_positions, max_gap, domain_fdr=0.1
         )
+        self.assertEqual(cutoff, -1.0)
 
-    def test_fdr_step_up_selects_expected_cutoff(self):
-        import numpy as np
-
-        real = np.array([10.0, 9.0, 8.0, 7.0, 6.0])
-        null = np.array([9.0, 7.5, 6.5, 6.2])
-        # k=4 at T=7: (2/10)/4 = 0.05 <= 0.05; k=5 at T=6: (4/10)/5 = 0.08 > 0.05.
-        # best_k=4 -> penalty between real[3]=7 and real[4]=6 -> 6.5.
-        self.assertEqual(_calibrate_penalty_from_null(real, null, 10, 0.05), 6.5)
-
-
-class TestCalcNullPenalty(ut.TestCase):
-    """The block-level null distribution (which captures the cross-pair
-    transitivity structure) has no analytical substitute, so at least one
-    null replicate is required -- there is no BIC-style fallback."""
-
-    def test_requires_at_least_one_null_replicate(self):
-        with self.assertRaises(OutOfBoundsError):
-            _calc_null_penalty(
-                _make_table([]),
-                [],
-                None,
-                min_pair_coverage=1,
-                domain_fdr=0.05,
-            )
-
-
-class TestScanBlockGains(ut.TestCase):
-    """The penalty-free block-gain scan (summed per-pair score) used for both
-    the observed and the null tables."""
-
-    def test_planted_domain_has_positive_gain(self):
-        rows = _rows_over_region(1, 60, 10, lambda i, j: 20 <= i and j <= 40)
-        gains = _scan_block_gains(_scored(_make_table(rows)), 1, 60, min_pair_coverage=1)
-        self.assertGreater(gains.size, 0)
-        self.assertGreater(gains.max(), 0.0)
-
-    def test_no_correlated_pairs_has_no_blocks(self):
-        # Every pair null-like (chi^2 ~ 1): the variance-inflation shape r is
-        # floored, every score is ~<= 0, so the penalty-free scan carves out
-        # no positive-score block.
+    def test_all_null_like_has_no_survivor(self):
         rows = _rows_over_region(1, 60, 10, lambda i, j: False)
-        gains = _scan_block_gains(_scored(_make_table(rows)), 1, 60, min_pair_coverage=1)
-        self.assertEqual(gains.size, 0)
+        obs_row_cum, chi2_row_cum, n_positions, max_gap = self._row_cums(
+            rows, 1, 60
+        )
+        cutoff = _calc_block_pvalue_cutoff(
+            obs_row_cum, chi2_row_cum, n_positions, max_gap, domain_fdr=0.1
+        )
+        self.assertEqual(cutoff, -1.0)
+
+    def test_strong_domain_survives_against_a_mostly_null_pool(self):
+        # A real domain amid a much larger null-like background: the domain's
+        # own candidate block must clear BH correction against every other
+        # (mostly null) candidate the scan considers.
+        rows = _rows_over_region(1, 300, 10, lambda i, j: 20 <= i and j <= 40)
+        obs_row_cum, chi2_row_cum, n_positions, max_gap = self._row_cums(
+            rows, 1, 300
+        )
+        cutoff = _calc_block_pvalue_cutoff(
+            obs_row_cum, chi2_row_cum, n_positions, max_gap, domain_fdr=0.1
+        )
+        self.assertGreater(cutoff, -1.0)
+        # The domain's own exact block (0-indexed [19, 39]) must itself be
+        # at or below the returned cutoff.
+        n_se = float(_triangle_sum_banded(obs_row_cum, 39, max_gap)[19])
+        chi2_se = float(_triangle_sum_banded(chi2_row_cum, 39, max_gap)[19])
+        from scipy.stats import chi2 as chi2dist
+
+        domain_pvalue = chi2dist.sf(chi2_se, df=n_se)
+        self.assertLessEqual(domain_pvalue, cutoff)
 
 
 class TestWritePairsWithConfusion(ut.TestCase):
-    """pairs.csv must carry each positive-score pair's 2x2 confusion-matrix
-    counts and its score (chi-square is omitted since it is recomputable
-    from the counts, but the score also depends on the table-wide shape
-    r, so it is written explicitly)."""
+    """pairs.csv must carry each written pair's 2x2 confusion-matrix counts
+    (chi-square, and every other derived quantity, is omitted since it is
+    recomputable from the counts alone)."""
 
     @staticmethod
     def _table(rows):
-        # rows: (pos_a, pos_b, neither, only_a, only_b, both, chi_square)
+        # rows: (pos_a, pos_b, neither, only_a, only_b, both)
         import pandas as pd
 
-        pa, pb, ne, oa, ob, bo, chi2 = zip(*rows)
-        n = [ne_ + oa_ + ob_ + bo_ for ne_, oa_, ob_, bo_ in zip(ne, oa, ob, bo)]
+        pa, pb, ne, oa, ob, bo = zip(*rows)
         index = pd.MultiIndex.from_arrays([pa, pb], names=[POSITION_A, POSITION_B])
         return pd.DataFrame(
             {
-                N_COL: n,
-                CHI_SQUARE_COL: list(chi2),
                 NEITHER_COL: list(ne),
                 ONLY_A_COL: list(oa),
                 ONLY_B_COL: list(ob),
@@ -260,35 +227,30 @@ class TestWritePairsWithConfusion(ut.TestCase):
             index=index,
         )
 
-    def test_writes_counts_for_positive_score_pairs_only(self):
+    def test_writes_confusion_counts(self):
         import pandas as pd
 
-        table = self._table(
+        pos_table = self._table(
             [
-                (1, 5, 900, 30, 20, 50, 30.0),
-                (1, 8, 995, 3, 2, 0, 1.0),  # null-like -> excluded (score <= 0)
-                (2, 9, 800, 60, 40, 100, 30.0),
+                (1, 5, 900, 30, 20, 50),
+                (2, 9, 800, 60, 40, 100),
             ]
         )
-        pos_table = _scored(table)
-        pos_table = pos_table[pos_table[SCORE_COL] > 0]
         with tempfile.TemporaryDirectory() as tmp:
             csv_file = Path(tmp) / "pairs.csv"
             _write_pairs_with_confusion(pos_table, csv_file)
             out = pd.read_csv(csv_file)
-        # Exactly the position columns, the four confusion cells, and the
-        # score; chi-square (recomputable from the counts) is omitted.
+        # Exactly the position columns and the four confusion cells;
+        # chi-square (recomputable from the counts) is omitted.
         self.assertListEqual(
-            list(out.columns), [POSITION_A, POSITION_B, *CONFUSION_COLS, SCORE_COL]
+            list(out.columns), [POSITION_A, POSITION_B, *CONFUSION_COLS]
         )
         self.assertNotIn(CHI_SQUARE_COL, out.columns)
-        # Only the two positive-score pairs, with their exact counts.
         self.assertListEqual(
             list(zip(out[POSITION_A], out[POSITION_B])), [(1, 5), (2, 9)]
         )
         self.assertListEqual(list(out[BOTH_COL]), [50, 100])
         self.assertListEqual(list(out[ONLY_A_COL]), [30, 60])
-        self.assertTrue((out[SCORE_COL] > 0).all())
         # N is recoverable from the written cells.
         recovered_n = (
             out[NEITHER_COL] + out[ONLY_A_COL] + out[ONLY_B_COL] + out[BOTH_COL]
@@ -534,11 +496,6 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
     DOMAIN_B = (36, 50)
     BAND = 10
     N_COV = 2000.0
-    # An explicit per-block penalty on the score scale, in the regime that
-    # admits a real domain's block gain but rejects null-like background and
-    # keeps two separate domains from merging across their gap (in production
-    # this is calibrated from the null; see _calc_null_penalty).
-    PENALTY = 10.0
     DOMAIN_FDR = 0.1
 
     @classmethod
@@ -555,17 +512,16 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
             self._in_domain,
             n_cov=self.N_COV,
         )
-        return _scored_with_nulls(_make_table(rows))
+        return _make_table(rows)
 
     def test_domains_recovered_and_not_merged(self):
-        table, nulls = self._build_table()
+        table = self._build_table()
         domains = _calc_domains_by_dp_segmentation(
             table,
-            nulls,
             self.TOTAL_END5,
             self.TOTAL_END3,
             min_pair_coverage=1,
-            penalty=self.PENALTY,
+            min_expect_both=0,
             domain_fdr=self.DOMAIN_FDR,
         )
         self.assertTrue(domains, "Expected at least one domain to be called")
@@ -584,31 +540,6 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
                 f"Domain {(lo, hi)} not recovered in {domains}",
             )
 
-    def test_explicit_penalty(self):
-        # The null-calibrated path supplies an explicit per-block penalty.
-        table, nulls = self._build_table()
-        domains = _calc_domains_by_dp_segmentation(
-            table,
-            nulls,
-            self.TOTAL_END5,
-            self.TOTAL_END3,
-            min_pair_coverage=1,
-            penalty=self.PENALTY,
-            domain_fdr=self.DOMAIN_FDR,
-        )
-        self.assertTrue(domains, "A moderate penalty should recover the domains")
-        # A penalty larger than any block's gain rejects everything.
-        none = _calc_domains_by_dp_segmentation(
-            table,
-            nulls,
-            self.TOTAL_END5,
-            self.TOTAL_END3,
-            min_pair_coverage=1,
-            penalty=1e12,
-            domain_fdr=self.DOMAIN_FDR,
-        )
-        self.assertEqual(none, [])
-
     def test_uniform_correlation_is_one_domain(self):
         # Every pair in the whole scanned region is strongly correlated:
         # unlike the old density caller (which needed a sparser background to
@@ -618,14 +549,13 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
         rows = _rows_over_region(
             self.TOTAL_END5, self.TOTAL_END3, self.BAND, lambda i, j: True
         )
-        table, nulls = _scored_with_nulls(_make_table(rows))
+        table = _make_table(rows)
         domains = _calc_domains_by_dp_segmentation(
             table,
-            nulls,
             self.TOTAL_END5,
             self.TOTAL_END3,
             min_pair_coverage=1,
-            penalty=self.PENALTY,
+            min_expect_both=0,
             domain_fdr=self.DOMAIN_FDR,
         )
         self.assertEqual(domains, [(self.TOTAL_END5, self.TOTAL_END3)])
@@ -634,29 +564,27 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
         rows = _rows_over_region(
             self.TOTAL_END5, self.TOTAL_END3, self.BAND, lambda i, j: False
         )
-        table, nulls = _scored_with_nulls(_make_table(rows))
+        table = _make_table(rows)
         domains = _calc_domains_by_dp_segmentation(
             table,
-            nulls,
             self.TOTAL_END5,
             self.TOTAL_END3,
             min_pair_coverage=1,
-            penalty=self.PENALTY,
+            min_expect_both=0,
             domain_fdr=self.DOMAIN_FDR,
         )
         self.assertEqual(domains, [])
 
     def test_min_pair_coverage_excludes_low_coverage_pairs(self):
-        table, nulls = self._build_table()
+        table = self._build_table()
         # Below the pairs' actual coverage (N_COV): pairs pass through
         # unfiltered, and the domains are detected as usual.
         domains = _calc_domains_by_dp_segmentation(
             table,
-            nulls,
             self.TOTAL_END5,
             self.TOTAL_END3,
             min_pair_coverage=1,
-            penalty=self.PENALTY,
+            min_expect_both=0,
             domain_fdr=self.DOMAIN_FDR,
         )
         self.assertTrue(domains)
@@ -664,25 +592,90 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
         # so no domain can be detected.
         domains = _calc_domains_by_dp_segmentation(
             table,
-            nulls,
             self.TOTAL_END5,
             self.TOTAL_END3,
             min_pair_coverage=int(self.N_COV) + 1,
-            penalty=self.PENALTY,
+            min_expect_both=0,
             domain_fdr=self.DOMAIN_FDR,
         )
         self.assertEqual(domains, [])
 
+    def test_min_expect_both_excludes_pairs_with_low_expected_count(self):
+        # Same domain/background chi-squares as _build_table, but with the
+        # confusion cells built so the independence-expected both-mutated
+        # count (a * b / N) is far below 5 despite ample coverage (N_COV):
+        # standard chi-square practice requires expected cell counts >= ~5.
+        import pandas as pd
+
+        def build_table(low_expected: bool):
+            rows = _rows_over_region(
+                self.TOTAL_END5,
+                self.TOTAL_END3,
+                self.BAND,
+                self._in_domain,
+                n_cov=self.N_COV,
+            )
+            pos_a, pos_b, ns, chi2 = zip(*rows)
+            if low_expected:
+                only_a = [2.0] * len(rows)
+                only_b = [2.0] * len(rows)
+                both = [1.0] * len(rows)
+            else:
+                only_a = [n / 2 for n in ns]
+                only_b = [n / 2 for n in ns]
+                both = [n / 4 for n in ns]
+            neither = [
+                n - (a + b - ab) for n, a, b, ab in zip(ns, only_a, only_b, both)
+            ]
+            index = pd.MultiIndex.from_arrays(
+                [pos_a, pos_b], names=[POSITION_A, POSITION_B]
+            )
+            return pd.DataFrame(
+                {
+                    N_COL: ns,
+                    CHI_SQUARE_COL: chi2,
+                    NEITHER_COL: neither,
+                    ONLY_A_COL: only_a,
+                    ONLY_B_COL: only_b,
+                    BOTH_COL: both,
+                },
+                index=index,
+            )
+
+        # Low expected-both: every pair is excluded, so no domain is called.
+        table = build_table(low_expected=True)
+        domains = _calc_domains_by_dp_segmentation(
+            table,
+            self.TOTAL_END5,
+            self.TOTAL_END3,
+            min_pair_coverage=1,
+            min_expect_both=5,
+            domain_fdr=self.DOMAIN_FDR,
+        )
+        self.assertEqual(
+            domains, [], "Pairs with expected-both < 5 must be excluded"
+        )
+        # The same chi-squares with ample expected-both: recovered as usual.
+        table = build_table(low_expected=False)
+        domains = _calc_domains_by_dp_segmentation(
+            table,
+            self.TOTAL_END5,
+            self.TOTAL_END3,
+            min_pair_coverage=1,
+            min_expect_both=5,
+            domain_fdr=self.DOMAIN_FDR,
+        )
+        self.assertTrue(domains)
+
     def test_min_pair_coverage_must_be_at_least_one(self):
-        table, nulls = self._build_table()
+        table = self._build_table()
         with self.assertRaises(OutOfBoundsError):
             _calc_domains_by_dp_segmentation(
                 table,
-                nulls,
                 self.TOTAL_END5,
                 self.TOTAL_END3,
                 min_pair_coverage=0,
-                penalty=self.PENALTY,
+                min_expect_both=0,
                 domain_fdr=self.DOMAIN_FDR,
             )
 
@@ -694,8 +687,8 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
         # like a spurious third domain). The filter must make them
         # invisible, not merely down-weighted: calling with and without
         # the pocket present must give byte-identical results -- including
-        # the estimated variance-inflation shape r, so the pocket is
-        # excluded from scoring too (score at min_pair_coverage).
+        # every candidate block's own locally-fit variance-inflation shape
+        # r, so the pocket is excluded from scoring too (at min_pair_coverage).
         min_pair_coverage = 100
 
         def build_rows(masked_pocket: bool):
@@ -710,28 +703,22 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
                         rows.append((i, j, self.N_COV, chi2))
             return rows
 
-        table_baseline, nulls_baseline = _scored_with_nulls(
-            _make_table(build_rows(masked_pocket=False)), min_pair_coverage
-        )
-        table_with_masked, nulls_with_masked = _scored_with_nulls(
-            _make_table(build_rows(masked_pocket=True)), min_pair_coverage
-        )
+        table_baseline = _make_table(build_rows(masked_pocket=False))
+        table_with_masked = _make_table(build_rows(masked_pocket=True))
         domains_baseline = _calc_domains_by_dp_segmentation(
             table_baseline,
-            nulls_baseline,
             self.TOTAL_END5,
             self.TOTAL_END3,
             min_pair_coverage=min_pair_coverage,
-            penalty=self.PENALTY,
+            min_expect_both=0,
             domain_fdr=self.DOMAIN_FDR,
         )
         domains_with_masked = _calc_domains_by_dp_segmentation(
             table_with_masked,
-            nulls_with_masked,
             self.TOTAL_END5,
             self.TOTAL_END3,
             min_pair_coverage=min_pair_coverage,
-            penalty=self.PENALTY,
+            min_expect_both=0,
             domain_fdr=self.DOMAIN_FDR,
         )
         self.assertTrue(domains_baseline, "Expected at least one domain to be called")
@@ -752,14 +739,13 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
         rows = _rows_over_region(
             total_end5, total_end3, band, is_significant, n_cov=self.N_COV
         )
-        table, nulls = _scored_with_nulls(_make_table(rows))
+        table = _make_table(rows)
         domains = _calc_domains_by_dp_segmentation(
             table,
-            nulls,
             total_end5,
             total_end3,
             min_pair_coverage=1,
-            penalty=self.PENALTY,
+            min_expect_both=0,
             domain_fdr=self.DOMAIN_FDR,
         )
         expect_length = domain[1] - domain[0] + 1
@@ -773,15 +759,14 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
         )
 
     def test_out_of_order_ends_raise(self):
-        table, nulls = self._build_table()
+        table = self._build_table()
         with self.assertRaises(IncompatibleValuesError):
             _calc_domains_by_dp_segmentation(
                 table,
-                nulls,
                 self.TOTAL_END3,
                 self.TOTAL_END5,
                 min_pair_coverage=1,
-                penalty=self.PENALTY,
+                min_expect_both=0,
                 domain_fdr=self.DOMAIN_FDR,
             )
 
@@ -793,17 +778,57 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
             self.TOTAL_END5, self.TOTAL_END3, self.BAND, self._in_domain
         )
         rows.append((self.TOTAL_END3, self.TOTAL_END3 + 5, self.N_COV, 0.0))
-        table, nulls = _scored_with_nulls(_make_table(rows))
+        table = _make_table(rows)
         with self.assertRaises(OutOfBoundsError):
             _calc_domains_by_dp_segmentation(
                 table,
-                nulls,
                 self.TOTAL_END5,
                 self.TOTAL_END3,
                 min_pair_coverage=1,
-                penalty=self.PENALTY,
+                min_expect_both=0,
                 domain_fdr=self.DOMAIN_FDR,
             )
+
+    def test_realistic_noise_does_not_fragment_the_domain(self):
+        # _block_score alone (no p-value gate) can prefer atomizing a real
+        # domain into single-pair fragments over reporting it whole, once
+        # per-pair chi-square carries realistic sampling noise rather than
+        # an idealized constant (verified this session: ~3.6% margin for a
+        # 150-pair domain). The Benjamini-Hochberg p-value gate closes this
+        # gap by rejecting most such "lucky" fragments against the full
+        # candidate pool. Build one real domain (every pair elevated, but
+        # each pair's own chi-square independently noisy) and confirm it
+        # comes back as one contiguous domain, not shattered into pieces
+        # far smaller than its true extent.
+        import numpy as np
+
+        total_end5, total_end3, band = 1, 30, 10
+        rng = np.random.default_rng(0)
+        true_r = 29.0
+        rows = []
+        for i in range(total_end5, total_end3 + 1):
+            for j in range(i + 1, min(i + band, total_end3) + 1):
+                chi2 = float((1 + true_r) * rng.chisquare(df=1))
+                rows.append((i, j, self.N_COV, chi2))
+        table = _make_table(rows)
+        domains = _calc_domains_by_dp_segmentation(
+            table,
+            total_end5,
+            total_end3,
+            min_pair_coverage=1,
+            min_expect_both=0,
+            domain_fdr=self.DOMAIN_FDR,
+        )
+        self.assertTrue(domains, "Expected the domain to be recovered")
+        expect_length = total_end3 - total_end5 + 1
+        self.assertTrue(
+            any(
+                (end - start + 1) >= expect_length / 2
+                for start, end in domains
+            ),
+            f"Domain was fragmented into pieces far smaller than its true "
+            f"extent instead of reported (near-)whole: {domains}",
+        )
 
 
 class TestDpSegmentationAntiOverSplit(ut.TestCase):
@@ -823,7 +848,6 @@ class TestDpSegmentationAntiOverSplit(ut.TestCase):
     SUB_B = (51, 100)
     BAND = 149
     N_COV = 2000.0
-    PENALTY = 10.0
     DOMAIN_FDR = 0.1
 
     @classmethod
@@ -850,17 +874,16 @@ class TestDpSegmentationAntiOverSplit(ut.TestCase):
             is_significant,
             n_cov=self.N_COV,
         )
-        return _scored_with_nulls(_make_table(rows))
+        return _make_table(rows)
 
     def test_dense_bridge_keeps_domain_whole(self):
-        table, nulls = self._build_table(dense_bridge=True)
+        table = self._build_table(dense_bridge=True)
         domains = _calc_domains_by_dp_segmentation(
             table,
-            nulls,
             self.TOTAL_END5,
             self.TOTAL_END3,
             min_pair_coverage=1,
-            penalty=self.PENALTY,
+            min_expect_both=0,
             domain_fdr=self.DOMAIN_FDR,
         )
         self.assertTrue(
@@ -872,14 +895,13 @@ class TestDpSegmentationAntiOverSplit(ut.TestCase):
         )
 
     def test_sparse_bridge_splits_domain(self):
-        table, nulls = self._build_table(dense_bridge=False)
+        table = self._build_table(dense_bridge=False)
         domains = _calc_domains_by_dp_segmentation(
             table,
-            nulls,
             self.TOTAL_END5,
             self.TOTAL_END3,
             min_pair_coverage=1,
-            penalty=self.PENALTY,
+            min_expect_both=0,
             domain_fdr=self.DOMAIN_FDR,
         )
         self.assertFalse(
@@ -924,7 +946,6 @@ class TestJoinBridgedBlocks(ut.TestCase):
     TOTAL_END5, TOTAL_END3 = DOMAIN_A[0], DOMAIN_B[1]
     BAND = TOTAL_END3 - TOTAL_END5
     N_COV = 2000.0
-    PENALTY = 10.0
     DOMAIN_FDR = 0.1
     # Below this many elevated direct A-to-B crossing pairs (out of the
     # 10*10=100 possible), the crossing evidence itself nets negative;
@@ -950,17 +971,16 @@ class TestJoinBridgedBlocks(ut.TestCase):
                 else:
                     chi2 = 1.0
                 rows.append((i, j, self.N_COV, chi2))
-        return _scored_with_nulls(_make_table(rows))
+        return _make_table(rows)
 
     def _call(self, n_cross_elevated: int):
-        table, nulls = self._build_table(n_cross_elevated)
+        table = self._build_table(n_cross_elevated)
         return _calc_domains_by_dp_segmentation(
             table,
-            nulls,
             self.TOTAL_END5,
             self.TOTAL_END3,
             min_pair_coverage=1,
-            penalty=self.PENALTY,
+            min_expect_both=0,
             domain_fdr=self.DOMAIN_FDR,
         )
 
@@ -1007,7 +1027,6 @@ class TestFilterScan(ScanTestBase):
             brotli_level=0,
             filter_pos_table=False,
             filter_read_table=False,
-            seed=0,
             **kwargs,
         )
         domains = list()

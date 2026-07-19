@@ -73,44 +73,6 @@ def init_confusion_matrix(
     return n, a, b, ab
 
 
-def resample_mutated_reads(
-    covered_reads: dict[int, np.ndarray],
-    mutated_reads: dict[int, np.ndarray],
-    seed: int | None,
-):
-    """Generate a per-position independence null of the mutated reads.
-
-    For each position, keep its covering reads and its number of mutated
-    reads fixed, but re-draw *which* of the covered reads are mutated,
-    uniformly at random and independently across positions. This
-    preserves each position's coverage and marginal mutation rate (and
-    hence its 5'/3'-end structure, which is encoded by exactly which
-    reads cover it) while making the positions mutually independent, so
-    pairwise co-mutation follows the same hypergeometric independence
-    null that :func:`calc_confusion_pvals` uses per pair. Returned arrays
-    are sorted, as the intersection counting in :func:`calc_confusion_matrix`
-    requires. ``seed`` fully determines the redraw (constructing the
-    generator here, rather than accepting one, keeps the call reproducible
-    across processes).
-    """
-    import numpy as np
-
-    rng = np.random.default_rng(seed)
-    resampled = dict()
-    for pos, mutated in mutated_reads.items():
-        covered = covered_reads[pos]
-        n_mut = mutated.size
-        if n_mut == 0:
-            resampled[pos] = np.array([], dtype=covered.dtype)
-        elif n_mut >= covered.size:
-            # Every covered read is mutated: nothing left to resample.
-            resampled[pos] = np.sort(covered)
-        else:
-            chosen = rng.choice(covered.size, size=n_mut, replace=False)
-            resampled[pos] = np.sort(covered[chosen])
-    return resampled
-
-
 def _count_intersection_weighted(
     x: np.ndarray, y: np.ndarray, read_weights: np.ndarray
 ):
