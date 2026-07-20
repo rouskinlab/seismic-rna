@@ -11,6 +11,7 @@ from seismicrna.core.batch.confusion import (
     POSITION_A,
     POSITION_B,
     calc_bh_adjusted_pvals,
+    calc_confusion_phi,
 )
 from seismicrna.core.error import IncompatibleValuesError, OutOfBoundsError
 from seismicrna.core.logs import Level, get_config, set_config
@@ -37,6 +38,7 @@ from seismicrna.filterscan.write import (
     _calc_block_pvalue_cutoff,
     _calc_domains_by_dp_segmentation,
     _cut_crossing_scores,
+    _is_negative_correlation,
     _merge_connected_blocks,
     _pair_band_row_cumsum,
     _triangle_sum_banded,
@@ -56,7 +58,13 @@ def _make_table(rows: list[tuple[int, int, float, float]]):
     ``n`` (not tied to ``chi_square``) purely so ``_analyzed_pairs_mask``
     (which needs them to compute the independence-expected both-mutated
     count) has columns to read; tests that care about the exact confusion
-    counts (e.g. ``min_expect_both`` filtering) build their own table."""
+    counts (e.g. ``min_expect_both`` filtering) build their own table. This
+    particular split (``only_a = only_b = n/2``, ``both = n/4``) always
+    comes out negatively correlated (``_is_negative_correlation`` is always
+    ``True``), so every test that uses this helper and wants to exercise the
+    pre-``anticorr_only`` (sign-blind) code paths unaffected must pass
+    ``anticorr_only=False`` explicitly; see ``_make_signed_table`` for tests
+    that need to control the sign."""
     import pandas as pd
 
     if not rows:
@@ -79,6 +87,88 @@ def _make_table(rows: list[tuple[int, int, float, float]]):
         },
         index=index,
     )
+
+
+def _make_signed_table(rows: list[tuple[int, int, float, float]], negative: bool):
+    """Like ``_make_table``, but the confusion cells are built to have a
+    definite correlation sign: ``negative=True`` gives the same mutually-
+    exclusive split ``_make_table`` always uses (``only_a = only_b = n/2``,
+    ``both = n/4``); ``negative=False`` gives a co-occurring split
+    (``only_a = only_b = n/8``, ``both = 3n/8``, so ``a = b = n/2`` as
+    before but ``ab`` is enriched instead of depleted relative to
+    independence)."""
+    import pandas as pd
+
+    if not rows:
+        pos_a, pos_b, ns, chi_square = (), (), (), ()
+    else:
+        pos_a, pos_b, ns, chi_square = zip(*rows)
+    index = pd.MultiIndex.from_arrays([pos_a, pos_b], names=[POSITION_A, POSITION_B])
+    if negative:
+        only_a = [n / 2 for n in ns]
+        only_b = [n / 2 for n in ns]
+        both = [n / 4 for n in ns]
+    else:
+        only_a = [n / 8 for n in ns]
+        only_b = [n / 8 for n in ns]
+        both = [3 * n / 8 for n in ns]
+    neither = [n - (a + b - ab) for n, a, b, ab in zip(ns, only_a, only_b, both)]
+    return pd.DataFrame(
+        {
+            N_COL: ns,
+            CHI_SQUARE_COL: chi_square,
+            NEITHER_COL: neither,
+            ONLY_A_COL: only_a,
+            ONLY_B_COL: only_b,
+            BOTH_COL: both,
+        },
+        index=index,
+    )
+
+
+class TestIsNegativeCorrelation(ut.TestCase):
+    """Unit tests of the correlation-sign gate behind ``anticorr_only``."""
+
+    def test_negative_split_is_negative(self):
+        table = _make_signed_table([(1, 2, 1000.0, 5.0)], negative=True)
+        self.assertListEqual(list(_is_negative_correlation(table)), [True])
+
+    def test_positive_split_is_not_negative(self):
+        table = _make_signed_table([(1, 2, 1000.0, 5.0)], negative=False)
+        self.assertListEqual(list(_is_negative_correlation(table)), [False])
+
+    def test_matches_phi_sign(self):
+        # Cross-check against calc_confusion_phi (a different, log-space
+        # formulation) over a range of confusion matrices, including some
+        # not built by _make_signed_table.
+        rng = np.random.default_rng(0)
+        rows = []
+        for _ in range(50):
+            n = float(rng.integers(100, 10000))
+            a = float(rng.integers(1, n))
+            b = float(rng.integers(1, n))
+            lo = max(0.0, a + b - n)
+            hi = min(a, b)
+            ab = float(rng.integers(int(lo), int(hi) + 1))
+            rows.append((n, a, b, ab))
+        import pandas as pd
+
+        n_s, a_s, b_s, ab_s = (pd.Series(v) for v in zip(*rows))
+        table = pd.DataFrame(
+            {
+                N_COL: n_s,
+                CHI_SQUARE_COL: 0.0,
+                NEITHER_COL: n_s - (a_s + b_s - ab_s),
+                ONLY_A_COL: a_s - ab_s,
+                ONLY_B_COL: b_s - ab_s,
+                BOTH_COL: ab_s,
+            }
+        )
+        phi = calc_confusion_phi(n_s, a_s, b_s, ab_s)
+        expect_negative = phi < 0
+        np.testing.assert_array_equal(
+            _is_negative_correlation(table).to_numpy(), expect_negative.to_numpy()
+        )
 
 
 class TestCalcTiles(ut.TestCase):
@@ -518,6 +608,7 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
             self.TOTAL_END3,
             min_pair_coverage=1,
             min_expect_both=0,
+            anticorr_only=False,
             detect_fdr=self.DOMAIN_FDR,
             merge_fdr=self.DOMAIN_FDR,
         )
@@ -553,6 +644,7 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
             self.TOTAL_END3,
             min_pair_coverage=1,
             min_expect_both=0,
+            anticorr_only=False,
             detect_fdr=self.DOMAIN_FDR,
             merge_fdr=self.DOMAIN_FDR,
         )
@@ -569,6 +661,7 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
             self.TOTAL_END3,
             min_pair_coverage=1,
             min_expect_both=0,
+            anticorr_only=False,
             detect_fdr=self.DOMAIN_FDR,
             merge_fdr=self.DOMAIN_FDR,
         )
@@ -584,6 +677,7 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
             self.TOTAL_END3,
             min_pair_coverage=1,
             min_expect_both=0,
+            anticorr_only=False,
             detect_fdr=self.DOMAIN_FDR,
             merge_fdr=self.DOMAIN_FDR,
         )
@@ -596,6 +690,7 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
             self.TOTAL_END3,
             min_pair_coverage=int(self.N_COV) + 1,
             min_expect_both=0,
+            anticorr_only=False,
             detect_fdr=self.DOMAIN_FDR,
             merge_fdr=self.DOMAIN_FDR,
         )
@@ -651,6 +746,7 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
             self.TOTAL_END3,
             min_pair_coverage=1,
             min_expect_both=5,
+            anticorr_only=False,
             detect_fdr=self.DOMAIN_FDR,
             merge_fdr=self.DOMAIN_FDR,
         )
@@ -663,6 +759,7 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
             self.TOTAL_END3,
             min_pair_coverage=1,
             min_expect_both=5,
+            anticorr_only=False,
             detect_fdr=self.DOMAIN_FDR,
             merge_fdr=self.DOMAIN_FDR,
         )
@@ -677,8 +774,68 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
                 self.TOTAL_END3,
                 min_pair_coverage=0,
                 min_expect_both=0,
+                anticorr_only=False,
                 detect_fdr=self.DOMAIN_FDR,
                 merge_fdr=self.DOMAIN_FDR,
+            )
+
+    def test_anticorr_only_excludes_positive_correlation_domain(self):
+        # DOMAIN_A is built with mutually-exclusive (negative-correlation)
+        # confusion cells; DOMAIN_B, equally strong in chi-square, is built
+        # with co-occurring (positive-correlation) cells instead. Only the
+        # correlation sign distinguishes them.
+        import pandas as pd
+
+        a_rows = _rows_over_region(
+            *self.DOMAIN_A, self.BAND, lambda i, j: True, n_cov=self.N_COV
+        )
+        b_rows = _rows_over_region(
+            *self.DOMAIN_B, self.BAND, lambda i, j: True, n_cov=self.N_COV
+        )
+        table = pd.concat(
+            [
+                _make_signed_table(a_rows, negative=True),
+                _make_signed_table(b_rows, negative=False),
+            ]
+        ).sort_index()
+
+        def call(anticorr_only: bool):
+            return _calc_domains_by_dp_segmentation(
+                table,
+                self.TOTAL_END5,
+                self.TOTAL_END3,
+                min_pair_coverage=1,
+                min_expect_both=0,
+                anticorr_only=anticorr_only,
+                detect_fdr=self.DOMAIN_FDR,
+                merge_fdr=self.DOMAIN_FDR,
+            )
+
+        domains_restricted = call(anticorr_only=True)
+        self.assertTrue(
+            any(
+                s <= self.DOMAIN_A[0] and self.DOMAIN_A[1] <= e
+                for s, e in domains_restricted
+            ),
+            f"Negatively-correlated DOMAIN_A not recovered in {domains_restricted}",
+        )
+        self.assertFalse(
+            any(
+                s <= self.DOMAIN_B[1] and self.DOMAIN_B[0] <= e
+                for s, e in domains_restricted
+            ),
+            f"Positively-correlated DOMAIN_B must be invisible under "
+            f"anticorr_only=True, got {domains_restricted}",
+        )
+
+        # With anticorr_only off (the old sign-blind behavior), both
+        # domains are recovered regardless of sign.
+        domains_all = call(anticorr_only=False)
+        for lo, hi in (self.DOMAIN_A, self.DOMAIN_B):
+            self.assertTrue(
+                any(s <= lo and hi <= e for s, e in domains_all),
+                f"Domain {(lo, hi)} not recovered with anticorr_only=False, "
+                f"got {domains_all}",
             )
 
     def test_masked_pairs_never_contribute(self):
@@ -713,6 +870,7 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
             self.TOTAL_END3,
             min_pair_coverage=min_pair_coverage,
             min_expect_both=0,
+            anticorr_only=False,
             detect_fdr=self.DOMAIN_FDR,
             merge_fdr=self.DOMAIN_FDR,
         )
@@ -722,6 +880,7 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
             self.TOTAL_END3,
             min_pair_coverage=min_pair_coverage,
             min_expect_both=0,
+            anticorr_only=False,
             detect_fdr=self.DOMAIN_FDR,
             merge_fdr=self.DOMAIN_FDR,
         )
@@ -750,6 +909,7 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
             total_end3,
             min_pair_coverage=1,
             min_expect_both=0,
+            anticorr_only=False,
             detect_fdr=self.DOMAIN_FDR,
             merge_fdr=self.DOMAIN_FDR,
         )
@@ -772,6 +932,7 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
                 self.TOTAL_END5,
                 min_pair_coverage=1,
                 min_expect_both=0,
+                anticorr_only=False,
                 detect_fdr=self.DOMAIN_FDR,
                 merge_fdr=self.DOMAIN_FDR,
             )
@@ -792,6 +953,7 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
                 self.TOTAL_END3,
                 min_pair_coverage=1,
                 min_expect_both=0,
+                anticorr_only=False,
                 detect_fdr=self.DOMAIN_FDR,
                 merge_fdr=self.DOMAIN_FDR,
             )
@@ -824,6 +986,7 @@ class TestCalcDomainsByDpSegmentation(ut.TestCase):
             total_end3,
             min_pair_coverage=1,
             min_expect_both=0,
+            anticorr_only=False,
             detect_fdr=self.DOMAIN_FDR,
             merge_fdr=self.DOMAIN_FDR,
         )
@@ -889,6 +1052,7 @@ class TestDpSegmentationAntiOverSplit(ut.TestCase):
             self.TOTAL_END3,
             min_pair_coverage=1,
             min_expect_both=0,
+            anticorr_only=False,
             detect_fdr=self.DOMAIN_FDR,
             merge_fdr=self.DOMAIN_FDR,
         )
@@ -908,6 +1072,7 @@ class TestDpSegmentationAntiOverSplit(ut.TestCase):
             self.TOTAL_END3,
             min_pair_coverage=1,
             min_expect_both=0,
+            anticorr_only=False,
             detect_fdr=self.DOMAIN_FDR,
             merge_fdr=self.DOMAIN_FDR,
         )
@@ -1140,6 +1305,7 @@ class TestMergeConnectedBlocksIntegration(ut.TestCase):
             self.TOTAL_END3,
             min_pair_coverage=1,
             min_expect_both=0,
+            anticorr_only=False,
             detect_fdr=self.DOMAIN_FDR,
             merge_fdr=self.DOMAIN_FDR,
         )

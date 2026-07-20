@@ -1283,6 +1283,16 @@ opt_min_expect_both = Option(
     ),
 )
 
+opt_anticorr_only = Option(
+    ("--anticorr-only/--no-anticorr-only",),
+    type=bool,
+    default=True,
+    help=(
+        "When finding domains, count only pairs of positions whose "
+        "mutations are negatively correlated"
+    ),
+)
+
 # Fold
 
 opt_fold = Option(

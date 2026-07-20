@@ -149,6 +149,18 @@ Correlated-pair detection
         least this value (default 5): standard practice for the
         statistical test SEISMIC-RNA uses, which becomes unreliable when
         this expected count drops too low.
+    ``--anticorr-only/--no-anticorr-only``
+        Count only pairs of positions that are negatively correlated, i.e.
+        mutated less often together than expected by chance (default: only
+        negatively correlated pairs). Two positions are negatively
+        correlated when they belong to different alternative structures: a
+        read that has one modified rarely has the other modified too, since
+        each read reflects only one structure at a time. Positively
+        correlated pairs (mutated together more often than chance) can
+        arise from other sources, such as local structural or chemical
+        effects unrelated to alternative structures, so they are excluded
+        by default. Disable this option to consider both kinds of
+        correlation, as SEISMIC-RNA did in earlier versions.
     ``--detect-fdr F``
         How willing to be to call a region a domain, expressed as a false
         discovery rate (default 0.1): SEISMIC-RNA corrects for the fact

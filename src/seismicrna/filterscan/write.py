@@ -73,16 +73,46 @@ def _expected_both_mutated(table: pd.DataFrame) -> pd.Series:
     return a * b / table[N_COL]
 
 
+def _is_negative_correlation(table: pd.DataFrame) -> pd.Series:
+    """Pairs whose mutations are anti-correlated -- observed together
+    less than chance predicts (mutually exclusive, the signature of two
+    positions in different alternative-structure clusters) -- as opposed
+    to co-occurring more than chance. Sign of ``p_ab - p_a * p_b``,
+    computed via the exact cross-multiplication ``n * ab < a * b``: this
+    unsquared comparison stays well within float64's exact-integer range
+    for realistic read counts, unlike calc_confusion_chi_square's squared
+    identity, so it needs none of that function's fraction-based rewrite.
+    """
+    a = table[ONLY_A_COL] + table[BOTH_COL]
+    b = table[ONLY_B_COL] + table[BOTH_COL]
+    ab = table[BOTH_COL]
+    n = table[N_COL]
+    return n * ab < a * b
+
+
 def _analyzed_pairs_mask(
-    table: pd.DataFrame, min_pair_coverage: int, min_expect_both: float
+    table: pd.DataFrame,
+    min_pair_coverage: int,
+    min_expect_both: float,
+    anticorr_only: bool,
 ) -> pd.Series:
     """Pairs usable for chi-square-based analysis: enough joint coverage
     (``min_pair_coverage``) and a large enough independence-expected
     both-mutated count (``min_expect_both``) for the chi-square
-    approximation to be reliable."""
-    return (table[N_COL] >= min_pair_coverage) & (
+    approximation to be reliable. If ``anticorr_only``, also require
+    negative correlation (``_is_negative_correlation``): a
+    positively-correlated pair is excluded from both the chi-square sum
+    and its degrees of freedom, not merely zeroed while still counted --
+    zeroing while still counting would shift the null's mean chi-square
+    from 1 to 0.5 and break every downstream calculation that assumes
+    the standard chi2(1)-per-pair null (``_block_score``'s ``r_hat``,
+    the exact ``chi2.sf`` p-values)."""
+    mask = (table[N_COL] >= min_pair_coverage) & (
         _expected_both_mutated(table) >= min_expect_both
     )
+    if anticorr_only:
+        mask &= _is_negative_correlation(table)
+    return mask
 
 
 def _get_batch_read_lengths(batch_num: int, dataset: MutsDataset):
@@ -842,6 +872,7 @@ def _calc_domains_by_dp_segmentation(
     merge_fdr: float,
     min_pair_coverage: int,
     min_expect_both: float,
+    anticorr_only: bool,
 ) -> list[tuple[int, int]]:
     """Call domains by exact dynamic-program segmentation of the per-pair
     chi-square contact map into background/domain blocks (see
@@ -867,15 +898,16 @@ def _calc_domains_by_dp_segmentation(
     considers every possible interval length at every position.
 
     Only pairs that pass ``_analyzed_pairs_mask`` (enough joint coverage,
-    ``min_pair_coverage``, and a large enough independence-expected
+    ``min_pair_coverage``; a large enough independence-expected
     both-mutated count, ``min_expect_both``, for the chi-square
-    approximation to be reliable) are used. This is the *only* place
-    masking is applied, and it is applied before anything else: a pair that
-    fails either check -- including every pair touching a fully masked
-    position, which has none above it -- is dropped from ``obs_table`` here
-    and so never reaches ``_pair_band_row_cumsum``. It cannot contribute to
-    any triangle count or block score downstream; it is not merely
-    down-weighted, it simply does not exist for the rest of this function.
+    approximation to be reliable; and, if ``anticorr_only``, negative
+    correlation only) are used. This is the *only* place masking is
+    applied, and it is applied before anything else: a pair that fails any
+    check -- including every pair touching a fully masked position, which
+    has none above it -- is dropped from ``obs_table`` here and so never
+    reaches ``_pair_band_row_cumsum``. It cannot contribute to any triangle
+    count or block score downstream; it is not merely down-weighted, it
+    simply does not exist for the rest of this function.
 
     Represents the grid banded (see ``_pair_band_row_cumsum``), using
     O(L * max_gap) memory where L is the scanned region's length and
@@ -904,7 +936,11 @@ def _calc_domains_by_dp_segmentation(
             "Must have 1 ≤ total_end5 ≤ total_end3, "
             f"but got total_end5={total_end5} and total_end3={total_end3}"
         )
-    obs_table = table[_analyzed_pairs_mask(table, min_pair_coverage, min_expect_both)]
+    obs_table = table[
+        _analyzed_pairs_mask(
+            table, min_pair_coverage, min_expect_both, anticorr_only
+        )
+    ]
     with logger.debug.single_context(
         "Identifying domains from {} observable pair(s) (of {} in-band) "
         "by DP block-diagonal segmentation",
@@ -1183,6 +1219,7 @@ def _calc_cluster_domains(
     gap_mode: str,
     min_pair_coverage: int,
     min_expect_both: float,
+    anticorr_only: bool,
     detect_fdr: float,
     merge_fdr: float,
 ):
@@ -1244,7 +1281,9 @@ def _calc_cluster_domains(
     # its chi-square exceeds the chi^2(1) null's expectation of 1 -- the one
     # criterion for what counts as a correlated pair anywhere in this
     # pipeline's reporting.
-    obs_table = table[_analyzed_pairs_mask(table, min_pair_coverage, min_expect_both)]
+    obs_table = table[
+        _analyzed_pairs_mask(table, min_pair_coverage, min_expect_both, anticorr_only)
+    ]
     pos_table = obs_table[obs_table[CHI_SQUARE_COL] > 1]
     pairs = pos_table.index.to_list()
     pair_chi2 = pos_table[CHI_SQUARE_COL].to_list()
@@ -1256,6 +1295,7 @@ def _calc_cluster_domains(
         total_end3=region.end3,
         min_pair_coverage=min_pair_coverage,
         min_expect_both=min_expect_both,
+        anticorr_only=anticorr_only,
         detect_fdr=detect_fdr,
         merge_fdr=merge_fdr,
     )
@@ -1314,6 +1354,7 @@ def filterscan(
     merge_fdr: float,
     min_pair_coverage: int,
     min_expect_both: float,
+    anticorr_only: bool,
     min_domain_length: int,
     gap_mode: str,
     # Filter options
@@ -1449,6 +1490,7 @@ def filterscan(
             merge_fdr=merge_fdr,
             min_pair_coverage=min_pair_coverage,
             min_expect_both=min_expect_both,
+            anticorr_only=anticorr_only,
             min_length=min_domain_length,
             gap_mode=gap_mode,
             num_cpus=num_cpus,
@@ -1530,6 +1572,7 @@ def filterscan(
             band_width=band_width,
             min_pair_coverage=min_pair_coverage,
             min_expect_both=min_expect_both,
+            anticorr_only=anticorr_only,
             detect_fdr=detect_fdr,
             merge_fdr=merge_fdr,
             min_domain_length=min_domain_length,

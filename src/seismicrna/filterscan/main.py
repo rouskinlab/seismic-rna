@@ -17,6 +17,7 @@ from ..core.arg.cli import (
     opt_merge_fdr,
     opt_min_pair_coverage,
     opt_min_expect_both,
+    opt_anticorr_only,
     opt_min_domain_length,
     opt_gap_mode,
 )
@@ -46,6 +47,7 @@ def run(
     merge_fdr: float,
     min_pair_coverage: int,
     min_expect_both: float,
+    anticorr_only: bool,
     min_domain_length: int,
     gap_mode: str,
     # Filter options
@@ -101,6 +103,7 @@ def run(
         merge_fdr=merge_fdr,
         min_pair_coverage=min_pair_coverage,
         min_expect_both=min_expect_both,
+        anticorr_only=anticorr_only,
         min_domain_length=min_domain_length,
         gap_mode=gap_mode,
         # Filter options
@@ -161,6 +164,7 @@ params = merge_params(
         opt_merge_fdr,
         opt_min_pair_coverage,
         opt_min_expect_both,
+        opt_anticorr_only,
         opt_min_domain_length,
         opt_gap_mode,
     ],

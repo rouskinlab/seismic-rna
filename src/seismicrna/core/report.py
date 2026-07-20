@@ -118,6 +118,7 @@ from .arg.cli import (
     opt_merge_fdr,
     opt_min_pair_coverage,
     opt_min_expect_both,
+    opt_anticorr_only,
     opt_min_domain_length,
     opt_gap_mode,
     opt_probe,
@@ -638,6 +639,7 @@ DetectFdrF = OptionReportField(opt_detect_fdr)
 MergeFdrF = OptionReportField(opt_merge_fdr)
 MinPairCoverageF = OptionReportField(opt_min_pair_coverage)
 MinExpectBothF = OptionReportField(opt_min_expect_both)
+AnticorrOnlyF = OptionReportField(opt_anticorr_only)
 MinDomainLengthF = OptionReportField(opt_min_domain_length)
 GapModeF = OptionReportField(opt_gap_mode)
 TileCoordsF = ReportField("tile_coords", "Coordinates of tiles (end5, end3)", list)

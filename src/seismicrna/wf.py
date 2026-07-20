@@ -214,6 +214,7 @@ def run(
     merge_fdr: float,
     min_pair_coverage: int,
     min_expect_both: float,
+    anticorr_only: bool,
     min_domain_length: int,
     gap_mode: str,
     # Cluster options
@@ -519,6 +520,7 @@ def run(
                     merge_fdr=merge_fdr,
                     min_pair_coverage=min_pair_coverage,
                     min_expect_both=min_expect_both,
+                    anticorr_only=anticorr_only,
                     min_domain_length=min_domain_length,
                     gap_mode=gap_mode,
                     filter_pos_table=filter_pos_table,
