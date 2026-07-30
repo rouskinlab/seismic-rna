@@ -190,7 +190,7 @@ opt_wf_branch = Option(
     multiple=True,
     default=(),
     help="Run a step under a new branch: give the step name then the branch name "
-    "(may be used multiple times to branch different steps)",
+    "(used multiple times to branch several steps)",
 )
 
 # Resource usage options
@@ -280,9 +280,8 @@ opt_mismatch_tolerance = Option(
     type=int,
     default=0,
     help=(
-        "Consider patterns to match if they have up to this many mismatches. "
-        "Will increase non-parallel computation at a factorial rate. Use caution "
-        "Going above 2 mismatches. Does not apply to clipped sequences."
+        "Match patterns with up to this many mismatches (grows factorially; "
+        "caution above 2; not applied to clipped sequences)"
     ),
 )
 
@@ -635,9 +634,8 @@ opt_self_contained = Option(
     ("--self-contained/--no-self-contained",),
     type=bool,
     default=False,
-    help="Write self-contained batch files that do not require loading "
-    "predecessor batches (Filter and Cluster steps), at the cost of "
-    "larger files on disk",
+    help="Write self-contained batch files that skip loading predecessor "
+    "batches (Filter/Cluster steps); costs more disk space",
 )
 
 opt_overhangs = Option(
@@ -712,9 +710,8 @@ opt_idmut_cx = Option(
     type=bool,
     default=True,
     help=(
-        "Use a fast (C extension module) version of the idmut algorithm; "
-        "the slow (Python) version is still avilable as a fallback if the "
-        "C extension cannot be loaded, and for debugging/benchmarking"
+        "Use the fast C-extension idmut algorithm; the slow Python version "
+        "is a fallback if the C extension fails to load"
     ),
 )
 
@@ -909,7 +906,7 @@ opt_mut_collisions = Option(
     default=MUT_COLLISIONS_AUTO,
     help=(
         "If two mutations are closer than --min-mut-gap positions, MERGE "
-        "the mutations, DROP the read, or AUTO-select based on the probe."
+        "them, DROP the read, or AUTO-select based on the probe."
     ),
 )
 
@@ -918,9 +915,8 @@ opt_min_mut_gap_weights = Option(
     type=str,
     default=None,
     help=(
-        "Comma-separated gap:weight pairs defining a mixture of min_mut_gap "
-        "biases, e.g. '0:0.2,1:0.3,2:0.5'. Defaults are probe-specific. "
-        "Pass an empty string to disable."
+        "Comma-separated gap:weight pairs for a mixture of min_mut_gap "
+        "biases, e.g. '0:0.2,1:0.3,2:0.5' (empty string disables)"
     ),
 )
 
@@ -929,11 +925,8 @@ opt_injected_mut_probs = Option(
     type=str,
     default=None,
     help=(
-        "Comma-separated offset:prob pairs (offset ≥ 1) defining the "
-        "probability of injecting a mutation that many positions 5' of "
-        "an existing mutation, e.g. '1:0.1,2:0.01' (used with "
-        "--mut-collisions merge). Defaults are probe-specific; pass an "
-        "empty string to disable."
+        "Comma-separated offset:prob pairs (offset ≥ 1): odds of a "
+        "mutation offset positions 5' of one, e.g. '1:0.1,2:0.01'"
     ),
 )
 
@@ -1204,15 +1197,13 @@ opt_erase_tiles = Option(
     help="Erase the filter reports/batches from the tiling step",
 )
 
-opt_min_block_length = Option(
-    ("--min-block-length",),
+opt_min_domain_length = Option(
+    ("--min-domain-length",),
     type=int,
     default=20,
     help=(
-        "Keep only domains with at least this many positions (drops the "
-        "shortest called blocks; skipped when --widen is set, since "
-        "widening grows short domains into neighboring space instead of "
-        "dropping them)"
+        "Keep only domains with at least this many positions (skipped "
+        "with --widen, which grows short domains instead)"
     ),
 )
 
@@ -1221,11 +1212,8 @@ opt_validate_gaps = Option(
     type=bool,
     default=False,
     help=(
-        "In clusterscan, validate every gap between adjacent filterscan "
-        "domains: test on the reads spanning each gap whether the two "
-        "domains' clusters are independent, and merge domains whose gap "
-        "fails (see --gap-min-assoc). Off by default because it re-filters "
-        "and re-clusters merged regions, which is expensive"
+        "In clusterscan, test each gap between domains for independence "
+        "and merge failing gaps; off by default (expensive)"
     ),
 )
 
@@ -1234,15 +1222,8 @@ opt_gap_min_assoc = Option(
     type=float,
     default=0.1,
     help=(
-        "When validating a gap between two filterscan domains in "
-        "clusterscan, keep the gap only if the two domains' clusters are "
-        "independent on the reads spanning it. A gap fails (and the "
-        "domains are merged) when the free-association model beats the "
-        "independent (product) model by Bayesian information criterion "
-        "AND the fitted joint cluster proportions deviate from the outer "
-        "product of the marginals by more than this fraction: higher "
-        "values merge fewer (only strongly coupled) gaps; lower values "
-        "merge more"
+        "Minimum deviation of fitted joint cluster proportions from "
+        "independence to keep a gap unmerged; higher merges fewer gaps"
     ),
 )
 
@@ -1251,9 +1232,8 @@ opt_max_domain_length = Option(
     type=int,
     default=0,
     help=(
-        "Bound every candidate domain to at most this many positions when "
-        "finding domains, so no domain exceeds the length that clustering "
-        "can use (if 0, use 2x the median read length)"
+        "Bound every candidate domain to at most this many positions "
+        "(0 = 2x median read length)"
     ),
 )
 
@@ -1262,9 +1242,8 @@ opt_band_width = Option(
     type=int,
     default=0,
     help=(
-        "Consider only pairs of positions no more than this far apart when "
-        "finding domains (if 0, do not restrict pairs beyond what the tile "
-        "length already bounds)"
+        "Consider only position pairs no more than this far apart when "
+        "finding domains (0 = bounded only by tile length)"
     ),
 )
 
@@ -1273,13 +1252,8 @@ opt_pair_fdr = Option(
     type=float,
     default=0.05,
     help=(
-        "Count a pair of positions as a domain-boundary-crossing bridge "
-        "only if its anti-correlation clears this false discovery rate "
-        "(FDR), Benjamini-Hochberg-adjusted over every analyzed pair's "
-        "exact hypergeometric p-value: higher values call more (and "
-        "weaker) bridges; lower values call fewer, more conservative ones "
-        "(this value also seeds the initial background bridge rate before it "
-        "is re-estimated from the pairs outside the first-pass domains)"
+        "FDR (Benjamini-Hochberg) for calling a pair a domain-boundary "
+        "bridge; higher calls more bridges"
     ),
 )
 
@@ -1288,11 +1262,8 @@ opt_min_fold_change = Option(
     type=float,
     default=2.0,
     help=(
-        "Count a pair of positions as a domain-boundary-crossing bridge "
-        "only if its expected-to-observed both-mutated fold change is at "
-        "least this value (reflects the underlying cluster split, e.g. a "
-        "50/50 split depletes joint mutations differently than a 90/10 "
-        "split): higher values require a larger effect to call a bridge"
+        "Minimum expected-to-observed both-mutated fold change to call a "
+        "pair a bridge; higher requires a larger effect"
     ),
 )
 
@@ -1301,11 +1272,8 @@ opt_detect_fdr = Option(
     type=float,
     default=0.05,
     help=(
-        "Call a region a domain only if its enrichment in bridge pairs "
-        "clears this false discovery rate (FDR), Benjamini-Hochberg-adjusted "
-        "over every candidate region's exact binomial p-value against the "
-        "background bridge rate: higher values call more (and weaker) "
-        "domains; lower values call fewer, more conservative ones"
+        "FDR (Benjamini-Hochberg) for calling a region a domain by "
+        "bridge-pair enrichment; higher calls more (weaker) domains"
     ),
 )
 
@@ -1314,12 +1282,8 @@ opt_merge_fdr = Option(
     type=float,
     default=0.05,
     help=(
-        "Merge two adjacent domains only if the bridge pairs crossing every "
-        "position between them are enriched at this false discovery rate "
-        "(FDR), Benjamini-Hochberg-adjusted over every candidate crossing "
-        "point's exact binomial p-value against the background bridge rate: "
-        "higher values merge more (joining domains connected by weaker "
-        "long-range pairs); lower values merge fewer"
+        "FDR (Benjamini-Hochberg) for merging adjacent domains by "
+        "bridge-pair enrichment; higher merges more, lower merges fewer"
     ),
 )
 
@@ -1328,9 +1292,8 @@ opt_min_pair_coverage = Option(
     type=int,
     default=1000,
     help=(
-        "Analyze only pairs of positions whose number of jointly covering "
-        "reads is at least this value when finding domains (pairs with less "
-        "coverage are too noisy to score reliably)"
+        "Analyze only position pairs with at least this many jointly "
+        "covering reads (fewer reads are too noisy to score reliably)"
     ),
 )
 
@@ -1339,11 +1302,8 @@ opt_min_expect_both = Option(
     type=float,
     default=5.0,
     help=(
-        "Analyze only pairs of positions whose expected number of reads "
-        "mutated at both positions (under the assumption that the "
-        "positions mutate independently) is at least this value when "
-        "finding domains (standard practice for a chi-square test, which "
-        "becomes unreliable when an expected count drops below about 5)"
+        "Analyze only position pairs whose expected both-mutated read "
+        "count (under independence) is at least this value"
     ),
 )
 
@@ -1352,13 +1312,8 @@ opt_widen = Option(
     type=bool,
     default=False,
     help=(
-        "Grow each called domain into the gaps on either side of it, up to "
-        "max-domain-length in total length (runs before --fill): if the gap "
-        "between two domains is smaller than their combined remaining "
-        "budget, it closes entirely; otherwise each domain grows as much as "
-        "its own budget allows and any leftover space stays a gap (which "
-        "--fill can then fill). Domains that grew are recorded as 'widened' "
-        "and unchanged ones as 'original' in the report"
+        "Grow each domain into its flanking gaps up to max-domain-length "
+        "(runs before --fill); closes small gaps entirely"
     ),
 )
 
@@ -1367,13 +1322,8 @@ opt_fill = Option(
     type=bool,
     default=False,
     help=(
-        "Insert additional domains into every gap -- leading, interior, and "
-        "trailing (after --widen has run, if set) -- so every position in "
-        "the scanned region ends up in exactly one domain: a gap no longer "
-        "than max-domain-length becomes a single domain; a longer gap is "
-        "split into the minimum number of domains of as equal length as "
-        "possible, none exceeding max-domain-length. Inserted domains are "
-        "recorded as 'filled' in the report"
+        "Insert domains into every remaining gap (after --widen) so each "
+        "position is in exactly one domain"
     ),
 )
 
@@ -1569,8 +1519,8 @@ opt_fold_edelta = Option(
     ("--fold-edelta",),
     type=float,
     default=1.0,
-    help="Maximum absolute energy difference (kcal/mol) from the MFE for "
-    "suboptimal structures output by RNAsubopt (overriden by --fold-mfe)",
+    help="Maximum energy difference (kcal/mol) from the MFE for suboptimal "
+    "structures from RNAsubopt (overriden by --fold-mfe)",
 )
 
 # Draw
@@ -1588,8 +1538,8 @@ opt_struct_num = Option(
     multiple=True,
     default=(),
     help=(
-        "Draw the specified structure (zero-indexed) or -1 for all structures."
-        " By default, draw the structure with the best AUROC."
+        "Draw the specified structure (zero-indexed) or -1 for all; by "
+        "default, draws the structure with the best AUROC."
     ),
 )
 

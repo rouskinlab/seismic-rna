@@ -60,13 +60,17 @@ _MIN_RATE = 1e-9
 
 # The four cells of each pair's 2x2 confusion matrix. These are the raw
 # counts from which every derived quantity (N and, e.g., fold change) can be
-# recomputed, so only these are written to pairs.csv.
+# recomputed; they are written to pairs.csv along with the p-value and fold
+# change for convenience.
 
 NEITHER_COL = "Neither Mutated"
 ONLY_A_COL = "Only A Mutated"
 ONLY_B_COL = "Only B Mutated"
 BOTH_COL = "Both Mutated"
 CONFUSION_COLS = (NEITHER_COL, ONLY_A_COL, ONLY_B_COL, BOTH_COL)
+P_VALUE_COL = "P-value"
+Q_VALUE_COL = "Q-value"
+FOLD_CHANGE_COL = "Fold Change"
 
 
 def _expected_both_mutated(table: pd.DataFrame) -> pd.Series:
@@ -82,44 +86,24 @@ def _expected_both_mutated(table: pd.DataFrame) -> pd.Series:
     return a * b / table[N_COL]
 
 
-def _is_negative_correlation(table: pd.DataFrame) -> pd.Series:
-    """Pairs whose mutations are anti-correlated -- observed together
-    less than chance predicts (mutually exclusive, the signature of two
-    positions in different alternative-structure clusters) -- as opposed
-    to co-occurring more than chance. Sign of ``p_ab - p_a * p_b``,
-    computed via the exact cross-multiplication ``n * ab < a * b``: this
-    unsquared comparison stays well within float64's exact-integer range
-    for realistic read counts, unlike calc_confusion_chi_square's squared
-    identity, so it needs none of that function's fraction-based rewrite.
-    """
-    a = table[ONLY_A_COL] + table[BOTH_COL]
-    b = table[ONLY_B_COL] + table[BOTH_COL]
-    ab = table[BOTH_COL]
-    n = table[N_COL]
-    return n * ab < a * b
-
-
 def _analyzed_pairs_mask(
     table: pd.DataFrame,
     min_pair_coverage: int,
     min_expect_both: float,
-    anticorr_only: bool,
 ) -> pd.Series:
     """Pairs usable for statistical analysis: enough joint coverage
     (``min_pair_coverage``) and a large enough independence-expected
-    both-mutated count (``min_expect_both``) for a chi-square approximation
-    to be reliable (used by other consumers of this mask, e.g. ``paircls.py``
-    and ``spectral.py``; this module's own domain caller instead uses the
-    exact hypergeometric null, which needs no such approximation). If
-    ``anticorr_only``, also require negative correlation
-    (``_is_negative_correlation``): a positively-correlated pair is excluded
-    entirely, not merely zeroed while still counted."""
-    mask = (table[N_COL] >= min_pair_coverage) & (
+    both-mutated count (``min_expect_both``) for the exact hypergeometric
+    null to be well-defined. This says nothing about the *direction* of
+    correlation: both anti-correlated and co-occurring pairs are eligible,
+    which is exactly what keeps the one-sided p-values in ``_bridge_mask``
+    honestly uniform under the null (dropping the co-occurring half would
+    select the small-p tail and inflate the false-discovery rate). Whether a
+    pair is anti-correlated enough to be a *bridge* is decided in
+    ``_bridge_mask`` by its p-value and effect size."""
+    return (table[N_COL] >= min_pair_coverage) & (
         _expected_both_mutated(table) >= min_expect_both
     )
-    if anticorr_only:
-        mask &= _is_negative_correlation(table)
-    return mask
 
 
 def _get_batch_read_lengths(batch_num: int, dataset: MutsDataset):
@@ -416,18 +400,20 @@ def _bridge_mask(
     min_expect_both: float,
     pair_fdr: float,
     min_fold_change: float,
-) -> tuple[pd.Series, pd.Series]:
-    """Boolean masks ``(eligible, bridge)`` over the pairs of ``table``.
+) -> tuple[pd.Series, pd.Series, pd.Series, pd.Series]:
+    """``(eligible, bridge, pvalue, qvalue)`` over the pairs of ``table``:
+    two boolean masks, and the raw and Benjamini-Hochberg-adjusted p-values
+    (NaN where not eligible, since ineligible pairs are excluded from the
+    family).
 
-    An **eligible** pair is anti-correlated and analyzable
-    (``_analyzed_pairs_mask`` with ``anticorr_only=True``: enough joint
+    An **eligible** pair is analyzable (``_analyzed_pairs_mask``: enough joint
     coverage, ``min_pair_coverage``, and expected-both count,
-    ``min_expect_both``). Only anti-correlated pairs are used because a
-    per-molecule modification-loading factor scales every position together
-    and so can create only positive correlation (its contribution to the
-    covariance is ``μ_i·μ_j·Var(loading) ≥ 0``); mutual exclusivity (negative
-    correlation) is the signature of genuine alternative structure, immune to
-    that confound.
+    ``min_expect_both``), regardless of the direction of its correlation.
+    Both anti-correlated and co-occurring pairs are eligible on purpose: the
+    left-tail p-value below is one-sided, so under the null its values are
+    uniform only when *every* analyzable pair is in the family. Restricting
+    the family to anti-correlated pairs would select the small-p half and
+    inflate the realized false-discovery rate roughly twofold.
 
     A **bridge** is an eligible pair that is both statistically significant
     and large in effect:
@@ -438,25 +424,40 @@ def _bridge_mask(
       and ``b`` at position B independently, at most ``ab`` are mutated at
       both. This is the coverage-preserving permutation null evaluated
       exactly, needing no chi-square approximation. Benjamini-Hochberg-
-      adjusted over the eligible pairs, kept when ``q < pair_fdr``.
-    - *effect size*: the fold change by which the observed joint-mutation
-      count falls below independence, ``expected/observed = (a·b)/(n·ab)``,
-      is at least ``min_fold_change`` (``ab = 0`` ⇒ infinite fold change ⇒
-      always passes). The fold change reflects the cluster mixing (a 50/50
-      split depletes joint mutations differently than a 90/10 split), so a
-      floor on it removes the trivially-significant, biologically-negligible
-      pairs that a raw p-value admits at high read depth.
+      adjusted over the eligible pairs, kept when ``q < pair_fdr``. Because it
+      is a left-tail test, only depleted (anti-correlated) pairs can reach
+      small p-values, so significance alone already enforces the direction
+      that matters: a per-molecule modification-loading factor scales every
+      position together and so can create only positive correlation (its
+      contribution to the covariance is ``μ_i·μ_j·Var(loading) ≥ 0``), while
+      mutual exclusivity (negative correlation) is the signature of genuine
+      alternative structure, immune to that confound.
+    - *effect size*: the observed joint-mutation count is at most the
+      independence expectation reduced by ``min_fold_change``, i.e.
+      ``ab ≤ (a·b)/n / min_fold_change`` (``ab = 0`` always passes). This is
+      the fold change ``expected/observed = (a·b)/(n·ab) ≥ min_fold_change``
+      rearranged to avoid the division by ``ab``. The fold change reflects the
+      cluster mixing (a 50/50 split depletes joint mutations differently than
+      a 90/10 split), so a floor on it removes the trivially-significant,
+      biologically-negligible pairs that a raw p-value admits at high read
+      depth.
     """
     import numpy as np
     import pandas as pd
     from scipy.stats import hypergeom
 
+    if min_fold_change < 1:
+        raise OutOfBoundsError(
+            f"min_fold_change must be ≥ 1, but got {min_fold_change}"
+        )
     eligible = _analyzed_pairs_mask(
-        table, min_pair_coverage, min_expect_both, anticorr_only=True
+        table, min_pair_coverage, min_expect_both
     )
     bridge = pd.Series(False, index=table.index)
+    pvalue = pd.Series(np.nan, index=table.index)
+    qvalue = pd.Series(np.nan, index=table.index)
     if not eligible.any():
-        return eligible, bridge
+        return eligible, bridge, pvalue, qvalue
     sub = table[eligible]
     n = sub[N_COL].to_numpy(dtype=np.int64)
     ab = sub[BOTH_COL].to_numpy(dtype=np.int64)
@@ -464,15 +465,18 @@ def _bridge_mask(
     b = (sub[ONLY_B_COL] + sub[BOTH_COL]).to_numpy(dtype=np.int64)
     pvals = hypergeom.cdf(ab, n, a, b)
     qvals = calc_bh_adjusted_pvals(pvals)
-    # Fold change expected/observed = (a*b)/(n*ab); compute in float to avoid
-    # integer overflow, and give ab == 0 an infinite (always-passing) value.
-    with np.errstate(divide="ignore"):
-        fold_change = np.where(
-            ab > 0, (a.astype(float) * b) / (n.astype(float) * ab), np.inf
-        )
-    is_bridge = (qvals < pair_fdr) & (fold_change >= min_fold_change)
+    pvalue.loc[sub.index] = pvals
+    qvalue.loc[sub.index] = qvals
+    # Effect size: observed at most the independence expectation reduced by
+    # min_fold_change, i.e. ab <= (a*b)/n / min_fold_change. Compare the
+    # observed count against this threshold (in float, to avoid integer
+    # overflow) rather than forming the fold change, so ab == 0 needs no
+    # special-casing -- it is <= any non-negative threshold and always passes.
+    expected = (a.astype(float) * b) / n
+    effect = ab <= expected / min_fold_change
+    is_bridge = (qvals < pair_fdr) & effect
     bridge.loc[sub.index[is_bridge]] = True
-    return eligible, bridge
+    return eligible, bridge, pvalue, qvalue
 
 
 def _block_score(n_elig: np.ndarray, n_bridge: np.ndarray, pi0: float) -> np.ndarray:
@@ -1316,18 +1320,38 @@ def _write_domains_to_csv(
     df.to_csv(csv_file, index=False)
 
 
-def _write_pairs_with_confusion(pos_table: pd.DataFrame, csv_file: str | Path):
-    """Write the given pairs' 2x2 confusion-matrix counts to a CSV file.
-    Chi-square (and every other derived quantity) is recomputable from
-    the four raw counts, so only these are written."""
+def _write_pairs_with_confusion(
+    pos_table: pd.DataFrame,
+    pvalue: pd.Series,
+    qvalue: pd.Series,
+    csv_file: str | Path,
+):
+    """Write the given pairs' 2x2 confusion-matrix counts to a CSV file,
+    along with the exact hypergeometric (Fisher) left-tail p-value
+    (``pvalue``) and its Benjamini-Hochberg-adjusted q-value (``qvalue``),
+    both aligned to ``pos_table``'s index and passed in rather than
+    recomputed here -- ``_bridge_mask`` already computed them once, and the
+    BH adjustment in particular depends on the full eligible family, not
+    just the written pairs -- plus the fold change (independence
+    expectation over the observed both-mutated count)."""
+    import numpy as np
     import pandas as pd
 
+    with np.errstate(divide="ignore", invalid="ignore"):
+        fold_changes = (
+            _expected_both_mutated(pos_table) / pos_table[BOTH_COL]
+        ).to_numpy()
     df = pd.DataFrame(
         {
             POSITION_A: pos_table.index.get_level_values(POSITION_A).to_numpy(),
             POSITION_B: pos_table.index.get_level_values(POSITION_B).to_numpy(),
         }
         | {col: pos_table[col].to_numpy() for col in CONFUSION_COLS}
+        | {
+            P_VALUE_COL: pvalue.loc[pos_table.index].to_numpy(),
+            Q_VALUE_COL: qvalue.loc[pos_table.index].to_numpy(),
+            FOLD_CHANGE_COL: fold_changes,
+        }
     )
     df.to_csv(csv_file, index=False)
 
@@ -1346,7 +1370,7 @@ def _calc_cluster_domains(
     widen: bool,
     fill: bool,
     max_domain_length: int,
-    min_block_length: int,
+    min_domain_length: int,
 ):
     """Calculate the cluster regions for all tiles of one reference.
 
@@ -1411,7 +1435,7 @@ def _calc_cluster_domains(
     # (displayed/saved/counted in n_positive_pairs) when it is a bridge -- the
     # same criterion the domain caller itself uses -- so the reported pairs
     # match what actually drove the called domains.
-    eligible, bridge = _bridge_mask(
+    eligible, bridge, pvalue, qvalue = _bridge_mask(
         table, min_pair_coverage, min_expect_both, pair_fdr, min_fold_change
     )
     pos_table = table[bridge]
@@ -1441,7 +1465,7 @@ def _calc_cluster_domains(
         pre_fill_actions = _label_widened(raw_domains, working_domains)
     else:
         working_domains = _filter_domains_length(
-            raw_domains, min_length=min_block_length
+            raw_domains, min_length=min_domain_length
         )
         pre_fill_actions = {d: ACTION_ORIGINAL for d in working_domains}
     final_domains = (
@@ -1454,7 +1478,9 @@ def _calc_cluster_domains(
     domain_actions = {d: pre_fill_actions.get(d, ACTION_FILLED) for d in final_domains}
     # Write the pairs and domains to CSV files.
     report_dir.mkdir(parents=True, exist_ok=True)
-    _write_pairs_with_confusion(pos_table, report_dir.joinpath(PAIRS_CSV))
+    _write_pairs_with_confusion(
+        pos_table, pvalue, qvalue, report_dir.joinpath(PAIRS_CSV)
+    )
     _write_domains_to_csv(domain_actions, report_dir.joinpath(DOMAINS_CSV))
     logger.debug(
         "Wrote {} pair(s) and {} domain(s) to {}",
@@ -1502,7 +1528,7 @@ def filterscan(
     widen: bool,
     fill: bool,
     max_domain_length: int,
-    min_block_length: int,
+    min_domain_length: int,
     # Filter options
     region_coords: Iterable[tuple[str, int, int]],
     region_primers: Iterable[tuple[str, DNA, DNA]],
@@ -1657,7 +1683,7 @@ def filterscan(
                 widen=widen,
                 fill=fill,
                 max_domain_length=max_domain_length,
-                min_block_length=min_block_length,
+                min_domain_length=min_domain_length,
                 num_cpus=num_cpus,
             )
         )
@@ -1745,7 +1771,7 @@ def filterscan(
             widen=widen,
             fill=fill,
             max_domain_length=max_domain_length,
-            min_block_length=min_block_length,
+            min_domain_length=min_domain_length,
             # Results (store coordinates without the reference, which is
             # already recorded in the report).
             tile_coords=[(end5, end3) for _, end5, end3 in tile_coords],

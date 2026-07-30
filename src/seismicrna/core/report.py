@@ -123,7 +123,7 @@ from .arg.cli import (
     opt_widen,
     opt_fill,
     opt_max_domain_length,
-    opt_min_block_length,
+    opt_min_domain_length,
     opt_probe,
     opt_min_pearson_pool,
     opt_max_marcd_pool,
@@ -659,7 +659,7 @@ MergeFdrF = OptionReportField(opt_merge_fdr)
 WidenF = OptionReportField(opt_widen)
 FillF = OptionReportField(opt_fill)
 MaxDomainLengthF = OptionReportField(opt_max_domain_length)
-MinBlockLengthF = OptionReportField(opt_min_block_length)
+MinDomainLengthF = OptionReportField(opt_min_domain_length)
 TileCoordsF = ReportField("tile_coords", "Coordinates of tiles (end5, end3)", list)
 NumPositivePairsF = ReportField(
     "n_positive_pairs",

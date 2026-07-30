@@ -22,7 +22,7 @@ from ..core.arg.cli import (
     opt_widen,
     opt_fill,
     opt_max_domain_length,
-    opt_min_block_length,
+    opt_min_domain_length,
 )
 from ..core.run import run_func
 from ..core.seq.xna import DNA
@@ -55,7 +55,7 @@ def run(
     widen: bool,
     fill: bool,
     max_domain_length: int,
-    min_block_length: int,
+    min_domain_length: int,
     # Filter options
     region_coords: Iterable[tuple[str, int, int]],
     region_primers: Iterable[tuple[str, DNA, DNA]],
@@ -114,7 +114,7 @@ def run(
         widen=widen,
         fill=fill,
         max_domain_length=max_domain_length,
-        min_block_length=min_block_length,
+        min_domain_length=min_domain_length,
         # Filter options
         region_coords=region_coords,
         region_primers=region_primers,
@@ -178,7 +178,7 @@ params = merge_params(
         opt_widen,
         opt_fill,
         opt_max_domain_length,
-        opt_min_block_length,
+        opt_min_domain_length,
     ],
 )
 

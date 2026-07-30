@@ -8,7 +8,11 @@ import pandas as pd
 from click.testing import CliRunner
 
 from seismicrna.core import path
-from seismicrna.core.batch.confusion import POSITION_A, POSITION_B, calc_confusion_phi
+from seismicrna.core.batch.confusion import (
+    POSITION_A,
+    POSITION_B,
+    calc_bh_adjusted_pvals,
+)
 from seismicrna.cluster.data import ClusterMutsDataset, get_clust_params
 from seismicrna.cluster.main import run as run_cluster
 from seismicrna.core.error import IncompatibleValuesError, OutOfBoundsError
@@ -30,10 +34,12 @@ from seismicrna.filterscan.write import (
     ONLY_B_COL,
     BOTH_COL,
     BRIDGE_COL,
+    P_VALUE_COL,
+    Q_VALUE_COL,
+    FOLD_CHANGE_COL,
     _calc_tiles,
     _build_banded_table,
     _write_pairs_with_confusion,
-    _is_negative_correlation,
     _bridge_mask,
     _block_score,
     _pair_band_row_cumsum,
@@ -63,13 +69,7 @@ def _make_table(rows: list[tuple[int, int, float]]):
     ``n`` purely so ``_analyzed_pairs_mask`` (which needs them to compute the
     independence-expected both-mutated count) has columns to read; tests
     that care about the exact confusion counts (e.g. ``min_expect_both``
-    filtering) build their own table. This particular split
-    (``only_a = only_b = n/2``, ``both = n/4``) always comes out negatively
-    correlated (``_is_negative_correlation`` is always ``True``), so every
-    test that uses this helper and wants to exercise the pre-
-    ``anticorr_only`` (sign-blind) code paths unaffected must pass
-    ``anticorr_only=False`` explicitly; see ``_make_signed_table`` for tests
-    that need to control the sign."""
+    filtering) build their own table."""
     import pandas as pd
 
     if not rows:
@@ -91,86 +91,6 @@ def _make_table(rows: list[tuple[int, int, float]]):
         },
         index=index,
     )
-
-
-def _make_signed_table(rows: list[tuple[int, int, float]], negative: bool):
-    """Like ``_make_table``, but the confusion cells are built to have a
-    definite correlation sign: ``negative=True`` gives the same mutually-
-    exclusive split ``_make_table`` always uses (``only_a = only_b = n/2``,
-    ``both = n/4``); ``negative=False`` gives a co-occurring split
-    (``only_a = only_b = n/8``, ``both = 3n/8``, so ``a = b = n/2`` as
-    before but ``ab`` is enriched instead of depleted relative to
-    independence)."""
-    import pandas as pd
-
-    if not rows:
-        pos_a, pos_b, ns = (), (), ()
-    else:
-        pos_a, pos_b, ns = zip(*rows)
-    index = pd.MultiIndex.from_arrays([pos_a, pos_b], names=[POSITION_A, POSITION_B])
-    if negative:
-        only_a = [n / 2 for n in ns]
-        only_b = [n / 2 for n in ns]
-        both = [n / 4 for n in ns]
-    else:
-        only_a = [n / 8 for n in ns]
-        only_b = [n / 8 for n in ns]
-        both = [3 * n / 8 for n in ns]
-    neither = [n - (a + b - ab) for n, a, b, ab in zip(ns, only_a, only_b, both)]
-    return pd.DataFrame(
-        {
-            N_COL: ns,
-            NEITHER_COL: neither,
-            ONLY_A_COL: only_a,
-            ONLY_B_COL: only_b,
-            BOTH_COL: both,
-        },
-        index=index,
-    )
-
-
-class TestIsNegativeCorrelation(ut.TestCase):
-    """Unit tests of the correlation-sign gate behind ``anticorr_only``."""
-
-    def test_negative_split_is_negative(self):
-        table = _make_signed_table([(1, 2, 1000.0)], negative=True)
-        self.assertListEqual(list(_is_negative_correlation(table)), [True])
-
-    def test_positive_split_is_not_negative(self):
-        table = _make_signed_table([(1, 2, 1000.0)], negative=False)
-        self.assertListEqual(list(_is_negative_correlation(table)), [False])
-
-    def test_matches_phi_sign(self):
-        # Cross-check against calc_confusion_phi (a different, log-space
-        # formulation) over a range of confusion matrices, including some
-        # not built by _make_signed_table.
-        rng = np.random.default_rng(0)
-        rows = []
-        for _ in range(50):
-            n = float(rng.integers(100, 10000))
-            a = float(rng.integers(1, n))
-            b = float(rng.integers(1, n))
-            lo = max(0.0, a + b - n)
-            hi = min(a, b)
-            ab = float(rng.integers(int(lo), int(hi) + 1))
-            rows.append((n, a, b, ab))
-        import pandas as pd
-
-        n_s, a_s, b_s, ab_s = (pd.Series(v) for v in zip(*rows))
-        table = pd.DataFrame(
-            {
-                N_COL: n_s,
-                NEITHER_COL: n_s - (a_s + b_s - ab_s),
-                ONLY_A_COL: a_s - ab_s,
-                ONLY_B_COL: b_s - ab_s,
-                BOTH_COL: ab_s,
-            }
-        )
-        phi = calc_confusion_phi(n_s, a_s, b_s, ab_s)
-        expect_negative = phi < 0
-        np.testing.assert_array_equal(
-            _is_negative_correlation(table).to_numpy(), expect_negative.to_numpy()
-        )
 
 
 class TestCalcTiles(ut.TestCase):
@@ -238,9 +158,8 @@ class TestBuildBandedTable(ut.TestCase):
 
 
 class TestWritePairsWithConfusion(ut.TestCase):
-    """pairs.csv must carry each written pair's 2x2 confusion-matrix counts
-    (every derived quantity, e.g. fold change, is omitted since it is
-    recomputable from the counts alone)."""
+    """pairs.csv must carry each written pair's 2x2 confusion-matrix counts,
+    plus the p-value and fold change derived from them."""
 
     @staticmethod
     def _table(rows):
@@ -249,8 +168,10 @@ class TestWritePairsWithConfusion(ut.TestCase):
 
         pa, pb, ne, oa, ob, bo = zip(*rows)
         index = pd.MultiIndex.from_arrays([pa, pb], names=[POSITION_A, POSITION_B])
+        n = [a + b + c + d for a, b, c, d in zip(ne, oa, ob, bo)]
         return pd.DataFrame(
             {
+                N_COL: n,
                 NEITHER_COL: list(ne),
                 ONLY_A_COL: list(oa),
                 ONLY_B_COL: list(ob),
@@ -261,16 +182,34 @@ class TestWritePairsWithConfusion(ut.TestCase):
 
     def test_writes_confusion_counts(self):
         import pandas as pd
+        from scipy.stats import hypergeom
 
         pos_table = self._table([(1, 5, 900, 30, 20, 50), (2, 9, 800, 60, 40, 100)])
+        # pvalue and qvalue are passed in, as they would be from
+        # _bridge_mask, rather than recomputed here.
+        expected_pvals = [
+            hypergeom.cdf(50, 1000, 80, 70),
+            hypergeom.cdf(100, 1000, 160, 140),
+        ]
+        expected_qvals = calc_bh_adjusted_pvals(np.array(expected_pvals))
+        pvalue = pd.Series(expected_pvals, index=pos_table.index)
+        qvalue = pd.Series(expected_qvals, index=pos_table.index)
         with tempfile.TemporaryDirectory() as tmp:
             csv_file = Path(tmp) / "pairs.csv"
-            _write_pairs_with_confusion(pos_table, csv_file)
+            _write_pairs_with_confusion(pos_table, pvalue, qvalue, csv_file)
             out = pd.read_csv(csv_file)
-        # Exactly the position columns and the four confusion cells; every
-        # derived quantity (recomputable from the counts) is omitted.
+        # The position columns, the four confusion cells, and the p-value,
+        # q-value, and fold change derived from them.
         self.assertListEqual(
-            list(out.columns), [POSITION_A, POSITION_B, *CONFUSION_COLS]
+            list(out.columns),
+            [
+                POSITION_A,
+                POSITION_B,
+                *CONFUSION_COLS,
+                P_VALUE_COL,
+                Q_VALUE_COL,
+                FOLD_CHANGE_COL,
+            ],
         )
         self.assertListEqual(
             list(zip(out[POSITION_A], out[POSITION_B])), [(1, 5), (2, 9)]
@@ -282,14 +221,20 @@ class TestWritePairsWithConfusion(ut.TestCase):
             out[NEITHER_COL] + out[ONLY_A_COL] + out[ONLY_B_COL] + out[BOTH_COL]
         )
         self.assertListEqual(list(recovered_n), [1000, 1000])
+        # P-value: exact hypergeometric left-tail P(X <= both).
+        np.testing.assert_allclose(out[P_VALUE_COL], expected_pvals)
+        # Q-value: the BH-adjusted p-value passed in.
+        np.testing.assert_allclose(out[Q_VALUE_COL], expected_qvals)
+        # Fold change: independence expectation over the observed count.
+        expected_fcs = [(80 * 70 / 1000) / 50, (160 * 140 / 1000) / 100]
+        np.testing.assert_allclose(out[FOLD_CHANGE_COL], expected_fcs)
 
 
 def _make_confusion_table(rows: list[tuple[int, int, float, float, float, float]]):
     """Build a per-pair table directly from (pos_a, pos_b, n, only_a, only_b,
     both), for tests that need precise control over the confusion cells (and
     so the exact fold change/hypergeometric significance) rather than the
-    fixed ``n``-proportional split ``_make_table``/``_make_signed_table``
-    use."""
+    fixed ``n``-proportional split ``_make_table`` uses."""
     import pandas as pd
 
     pos_a: tuple[int, ...]
@@ -317,16 +262,16 @@ def _make_confusion_table(rows: list[tuple[int, int, float, float, float, float]
 
 
 class TestBridgeMask(ut.TestCase):
-    """``_bridge_mask`` marks a pair ELIGIBLE (anti-correlated, enough
-    coverage and expected-both) and, among those, a BRIDGE if it is also
-    exact-hypergeometric-significant (``pair_fdr``) and depleted by at least
-    ``min_fold_change`` relative to independence."""
+    """``_bridge_mask`` marks a pair ELIGIBLE (enough coverage and
+    expected-both, regardless of correlation direction) and, among those, a
+    BRIDGE if it is also exact-hypergeometric-significant (``pair_fdr``) and
+    depleted by at least ``min_fold_change`` relative to independence."""
 
     def test_strong_depletion_is_a_bridge(self):
         # n=100000, a=b=5000 (independence expects ab=250); observed ab=100
         # is a 2.5x depletion, and hugely significant at this scale.
         table = _make_confusion_table([(1, 2, 100000.0, 4900.0, 4900.0, 100.0)])
-        eligible, bridge = _bridge_mask(
+        eligible, bridge, _, _ = _bridge_mask(
             table,
             min_pair_coverage=1000,
             min_expect_both=5.0,
@@ -341,7 +286,7 @@ class TestBridgeMask(ut.TestCase):
         # anti-correlated and mildly depleted (fold change 1.25), below the
         # default 2.0 floor.
         table = _make_confusion_table([(1, 2, 10000.0, 480.0, 480.0, 20.0)])
-        eligible, bridge = _bridge_mask(
+        eligible, bridge, _, _ = _bridge_mask(
             table,
             min_pair_coverage=1000,
             min_expect_both=5.0,
@@ -351,24 +296,26 @@ class TestBridgeMask(ut.TestCase):
         self.assertListEqual(list(eligible), [True])
         self.assertListEqual(list(bridge), [False])
 
-    def test_positive_correlation_is_not_eligible(self):
-        # observed ab=30 exceeds the independence expectation of 25: not
-        # anti-correlated at all, so excluded before significance/effect are
-        # ever considered.
+    def test_positive_correlation_is_eligible_but_not_bridge(self):
+        # observed ab=30 exceeds the independence expectation of 25: enough
+        # coverage and expected-both to be eligible (and so to count in the
+        # one-sided p-value family), but co-occurring rather than depleted, so
+        # it fails both the left-tail significance and the effect-size floor
+        # and is never a bridge.
         table = _make_confusion_table([(1, 2, 10000.0, 470.0, 470.0, 30.0)])
-        eligible, bridge = _bridge_mask(
+        eligible, bridge, _, _ = _bridge_mask(
             table,
             min_pair_coverage=1000,
             min_expect_both=5.0,
             pair_fdr=0.05,
             min_fold_change=2.0,
         )
-        self.assertListEqual(list(eligible), [False])
+        self.assertListEqual(list(eligible), [True])
         self.assertListEqual(list(bridge), [False])
 
     def test_low_coverage_excluded_regardless_of_effect(self):
         table = _make_confusion_table([(1, 2, 500.0, 245.0, 245.0, 5.0)])
-        eligible, bridge = _bridge_mask(
+        eligible, bridge, _, _ = _bridge_mask(
             table,
             min_pair_coverage=1000,
             min_expect_both=5.0,
@@ -383,7 +330,7 @@ class TestBridgeMask(ut.TestCase):
         # co-occurrences is an infinite fold change and, at this scale,
         # extremely significant.
         table = _make_confusion_table([(1, 2, 10000.0, 300.0, 300.0, 0.0)])
-        eligible, bridge = _bridge_mask(
+        eligible, bridge, _, _ = _bridge_mask(
             table,
             min_pair_coverage=1000,
             min_expect_both=5.0,
@@ -395,7 +342,7 @@ class TestBridgeMask(ut.TestCase):
 
     def test_empty_table(self):
         table = _make_confusion_table([])
-        eligible, bridge = _bridge_mask(
+        eligible, bridge, _, _ = _bridge_mask(
             table,
             min_pair_coverage=1000,
             min_expect_both=5.0,
