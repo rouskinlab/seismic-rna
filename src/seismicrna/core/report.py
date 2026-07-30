@@ -8,7 +8,7 @@ from functools import cache
 from inspect import getmembers
 from itertools import chain
 from pathlib import Path
-from typing import Any, Callable, Hashable, Iterable
+from typing import Any, Callable, Hashable, Iterable, Self
 
 from click import Option
 
@@ -114,13 +114,16 @@ from .arg.cli import (
     opt_tile_min_overlap,
     opt_erase_tiles,
     opt_band_width,
-    opt_detect_fdr,
-    opt_merge_fdr,
     opt_min_pair_coverage,
     opt_min_expect_both,
-    opt_anticorr_only,
-    opt_min_domain_length,
-    opt_gap_mode,
+    opt_pair_fdr,
+    opt_min_fold_change,
+    opt_detect_fdr,
+    opt_merge_fdr,
+    opt_widen,
+    opt_fill,
+    opt_max_domain_length,
+    opt_min_block_length,
     opt_probe,
     opt_min_pearson_pool,
     opt_max_marcd_pool,
@@ -242,6 +245,18 @@ def iconv_array_int(nums: list[int]):
 
 def iconv_dict_str_int(mapping: dict[Any, Any]) -> dict[str, int]:
     return {str(key): int(value) for key, value in mapping.items()}
+
+
+def iconv_domain_coords_actions(mapping: dict[str, str]) -> dict[tuple[int, int], str]:
+    result = {}
+    for key, action in mapping.items():
+        end5_str, end3_str = key.split(",")
+        result[(int(end5_str), int(end3_str))] = action
+    return result
+
+
+def oconv_domain_coords_actions(mapping: dict[tuple[int, int], str]) -> dict[str, str]:
+    return {f"{end5},{end3}": action for (end5, end3), action in mapping.items()}
 
 
 def iconv_dict_str_dict_int_dict_int_int(
@@ -635,25 +650,43 @@ TileLengthF = OptionReportField(opt_tile_length)
 TileMinOverlapF = OptionReportField(opt_tile_min_overlap)
 EraseTilesF = OptionReportField(opt_erase_tiles)
 BandWidthF = OptionReportField(opt_band_width)
-DetectFdrF = OptionReportField(opt_detect_fdr)
-MergeFdrF = OptionReportField(opt_merge_fdr)
 MinPairCoverageF = OptionReportField(opt_min_pair_coverage)
 MinExpectBothF = OptionReportField(opt_min_expect_both)
-AnticorrOnlyF = OptionReportField(opt_anticorr_only)
-MinDomainLengthF = OptionReportField(opt_min_domain_length)
-GapModeF = OptionReportField(opt_gap_mode)
+PairFdrF = OptionReportField(opt_pair_fdr)
+MinFoldChangeF = OptionReportField(opt_min_fold_change)
+DetectFdrF = OptionReportField(opt_detect_fdr)
+MergeFdrF = OptionReportField(opt_merge_fdr)
+WidenF = OptionReportField(opt_widen)
+FillF = OptionReportField(opt_fill)
+MaxDomainLengthF = OptionReportField(opt_max_domain_length)
+MinBlockLengthF = OptionReportField(opt_min_block_length)
 TileCoordsF = ReportField("tile_coords", "Coordinates of tiles (end5, end3)", list)
 NumPositivePairsF = ReportField(
     "n_positive_pairs",
-    "Number of pairs with chi-square above the null expectation",
+    "Number of bridge pairs (anti-correlated, significant, large-effect)",
     int,
+)
+NullBridgeRateF = ReportField(
+    "null_bridge_rate",
+    "Estimated background (null) rate of bridge pairs among eligible pairs",
+    float,
 )
 NumDomainsF = ReportField("n_domains", "Number of domains detected", int)
 DomainCoordsF = ReportField(
-    "domain_coords", "Coordinates of domains (end5, end3)", list
+    "domain_coords",
+    "Domains found, mapped from (end5, end3) to how each was produced: "
+    "'original' (called/determined as detected), 'widened' (--widen grew "
+    "it into a gap), or 'filled' (--fill inserted it into a gap)",
+    dict,
+    iconv=iconv_domain_coords_actions,
+    oconv=oconv_domain_coords_actions,
 )
-ClusterDirsF = ReportField("cluster_dirs", "Directories of cluster results", list)
 BestKsF = ReportField("best_ks", "Best number of clusters for each domain", list)
+MergedDomainsF = ReportField(
+    "merged_domains",
+    "Original filterscan domains (end5, end3) comprising each final domain",
+    list,
+)
 
 # Join fields
 
@@ -890,7 +923,7 @@ class Report(SampleFileIO, ABC):
         return cls(**idata)
 
     @classmethod
-    def load(cls, file: str | Path) -> Report:
+    def load(cls, file: str | Path) -> Self:
         with logger.debug.single_context("loading {} from {}", cls.__name__, file):
             with open(file) as f:
                 report = cls.from_dict(json.load(f))

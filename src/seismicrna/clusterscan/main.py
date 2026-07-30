@@ -7,7 +7,7 @@ from .write import clusterscan
 from .. import cluster as cluster_mod
 from ..core import path
 from ..core.arg.cmd import CMD_CLUSTERSCAN
-from ..core.arg.cli import merge_params
+from ..core.arg.cli import merge_params, opt_validate_gaps, opt_gap_min_assoc
 from ..core.run import run_func
 from ..core.task import as_list_of_tuples, dispatch
 from ..filterscan.report import FilterScanReport
@@ -20,6 +20,9 @@ def run(
     branch: str,
     tmp_pfx: str | Path,
     keep_tmp: bool,
+    # Gap-validation options
+    validate_gaps: bool,
+    gap_min_assoc: float,
     # Cluster options
     min_clusters: int,
     max_clusters: int,
@@ -60,6 +63,8 @@ def run(
         keep_tmp=keep_tmp,
         brotli_level=brotli_level,
         force=force,
+        validate_gaps=validate_gaps,
+        gap_min_assoc=gap_min_assoc,
         min_clusters=min_clusters,
         max_clusters=max_clusters,
         min_em_runs=min_em_runs,
@@ -99,7 +104,7 @@ def run(
     )
 
 
-params = merge_params(cluster_mod.params)
+params = merge_params(cluster_mod.params, [opt_validate_gaps, opt_gap_min_assoc])
 
 
 @command(CMD_CLUSTERSCAN, params=params)

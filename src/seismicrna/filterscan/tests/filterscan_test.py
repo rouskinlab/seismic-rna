@@ -4,18 +4,17 @@ from itertools import product
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 from click.testing import CliRunner
 
 from seismicrna.core import path
-from seismicrna.core.batch.confusion import (
-    POSITION_A,
-    POSITION_B,
-    calc_bh_adjusted_pvals,
-    calc_confusion_phi,
-)
+from seismicrna.core.batch.confusion import POSITION_A, POSITION_B, calc_confusion_phi
+from seismicrna.cluster.data import ClusterMutsDataset, get_clust_params
+from seismicrna.cluster.main import run as run_cluster
 from seismicrna.core.error import IncompatibleValuesError, OutOfBoundsError
 from seismicrna.core.logs import Level, get_config, set_config
 from seismicrna.core.report import DomainCoordsF
+from seismicrna.filter.main import run as run_filter
 from seismicrna.main import cli as seismic_cli
 from seismicrna.core.rna.convert import db_to_ct
 from seismicrna.core.seq.fasta import write_fasta
@@ -25,52 +24,58 @@ from seismicrna.filterscan.main import run as run_filterscan
 from seismicrna.filterscan.report import FilterScanReport
 from seismicrna.filterscan.write import (
     N_COL,
-    CHI_SQUARE_COL,
     CONFUSION_COLS,
     NEITHER_COL,
     ONLY_A_COL,
     ONLY_B_COL,
     BOTH_COL,
+    BRIDGE_COL,
     _calc_tiles,
     _build_banded_table,
     _write_pairs_with_confusion,
-    _block_score,
-    _calc_block_pvalue_cutoff,
-    _calc_domains_by_dp_segmentation,
-    _cut_crossing_scores,
     _is_negative_correlation,
-    _merge_connected_blocks,
+    _bridge_mask,
+    _block_score,
     _pair_band_row_cumsum,
     _triangle_sum_banded,
-    _insert_domains_into_gaps,
-    _expand_domains_into_gaps,
+    _calc_block_pvalue_cutoff,
+    _dp_segment_blocks,
+    _cut_crossing_scores,
+    _merge_connected_blocks,
+    _extend_domains_by_bridges,
+    _estimate_null_bridge_rate,
+    _calc_domains_by_dp_segmentation,
     _filter_domains_length,
+    _split_gap_evenly,
+    _fill_domains_into_gaps,
+    _widen_domains_into_gaps,
+    _label_widened,
 )
 from seismicrna.sim.params import run as sim_params
 from seismicrna.sim.idmut import run as sim_idmut
 
 
-def _make_table(rows: list[tuple[int, int, float, float]]):
+def _make_table(rows: list[tuple[int, int, float]]):
     """Build a per-pair table like ``_confusion_to_table`` returns, from an
-    iterable of (pos_a, pos_b, n, chi_square).
+    iterable of (pos_a, pos_b, n).
 
     The four confusion cells are synthesized as a simple, fixed split of
-    ``n`` (not tied to ``chi_square``) purely so ``_analyzed_pairs_mask``
-    (which needs them to compute the independence-expected both-mutated
-    count) has columns to read; tests that care about the exact confusion
-    counts (e.g. ``min_expect_both`` filtering) build their own table. This
-    particular split (``only_a = only_b = n/2``, ``both = n/4``) always
-    comes out negatively correlated (``_is_negative_correlation`` is always
-    ``True``), so every test that uses this helper and wants to exercise the
-    pre-``anticorr_only`` (sign-blind) code paths unaffected must pass
+    ``n`` purely so ``_analyzed_pairs_mask`` (which needs them to compute the
+    independence-expected both-mutated count) has columns to read; tests
+    that care about the exact confusion counts (e.g. ``min_expect_both``
+    filtering) build their own table. This particular split
+    (``only_a = only_b = n/2``, ``both = n/4``) always comes out negatively
+    correlated (``_is_negative_correlation`` is always ``True``), so every
+    test that uses this helper and wants to exercise the pre-
+    ``anticorr_only`` (sign-blind) code paths unaffected must pass
     ``anticorr_only=False`` explicitly; see ``_make_signed_table`` for tests
     that need to control the sign."""
     import pandas as pd
 
     if not rows:
-        pos_a, pos_b, ns, chi_square = (), (), (), ()
+        pos_a, pos_b, ns = (), (), ()
     else:
-        pos_a, pos_b, ns, chi_square = zip(*rows)
+        pos_a, pos_b, ns = zip(*rows)
     index = pd.MultiIndex.from_arrays([pos_a, pos_b], names=[POSITION_A, POSITION_B])
     only_a = [n / 2 for n in ns]
     only_b = [n / 2 for n in ns]
@@ -79,7 +84,6 @@ def _make_table(rows: list[tuple[int, int, float, float]]):
     return pd.DataFrame(
         {
             N_COL: ns,
-            CHI_SQUARE_COL: chi_square,
             NEITHER_COL: neither,
             ONLY_A_COL: only_a,
             ONLY_B_COL: only_b,
@@ -89,7 +93,7 @@ def _make_table(rows: list[tuple[int, int, float, float]]):
     )
 
 
-def _make_signed_table(rows: list[tuple[int, int, float, float]], negative: bool):
+def _make_signed_table(rows: list[tuple[int, int, float]], negative: bool):
     """Like ``_make_table``, but the confusion cells are built to have a
     definite correlation sign: ``negative=True`` gives the same mutually-
     exclusive split ``_make_table`` always uses (``only_a = only_b = n/2``,
@@ -100,9 +104,9 @@ def _make_signed_table(rows: list[tuple[int, int, float, float]], negative: bool
     import pandas as pd
 
     if not rows:
-        pos_a, pos_b, ns, chi_square = (), (), (), ()
+        pos_a, pos_b, ns = (), (), ()
     else:
-        pos_a, pos_b, ns, chi_square = zip(*rows)
+        pos_a, pos_b, ns = zip(*rows)
     index = pd.MultiIndex.from_arrays([pos_a, pos_b], names=[POSITION_A, POSITION_B])
     if negative:
         only_a = [n / 2 for n in ns]
@@ -116,7 +120,6 @@ def _make_signed_table(rows: list[tuple[int, int, float, float]], negative: bool
     return pd.DataFrame(
         {
             N_COL: ns,
-            CHI_SQUARE_COL: chi_square,
             NEITHER_COL: neither,
             ONLY_A_COL: only_a,
             ONLY_B_COL: only_b,
@@ -130,11 +133,11 @@ class TestIsNegativeCorrelation(ut.TestCase):
     """Unit tests of the correlation-sign gate behind ``anticorr_only``."""
 
     def test_negative_split_is_negative(self):
-        table = _make_signed_table([(1, 2, 1000.0, 5.0)], negative=True)
+        table = _make_signed_table([(1, 2, 1000.0)], negative=True)
         self.assertListEqual(list(_is_negative_correlation(table)), [True])
 
     def test_positive_split_is_not_negative(self):
-        table = _make_signed_table([(1, 2, 1000.0, 5.0)], negative=False)
+        table = _make_signed_table([(1, 2, 1000.0)], negative=False)
         self.assertListEqual(list(_is_negative_correlation(table)), [False])
 
     def test_matches_phi_sign(self):
@@ -157,7 +160,6 @@ class TestIsNegativeCorrelation(ut.TestCase):
         table = pd.DataFrame(
             {
                 N_COL: n_s,
-                CHI_SQUARE_COL: 0.0,
                 NEITHER_COL: n_s - (a_s + b_s - ab_s),
                 ONLY_A_COL: a_s - ab_s,
                 ONLY_B_COL: b_s - ab_s,
@@ -209,96 +211,35 @@ class TestBuildBandedTable(ut.TestCase):
     def test_empty(self):
         result = _build_banded_table([], band_width=0)
         self.assertEqual(len(result.index), 0)
-        self.assertListEqual(
-            list(result.columns), [N_COL, CHI_SQUARE_COL, *CONFUSION_COLS]
-        )
+        self.assertListEqual(list(result.columns), [N_COL, *CONFUSION_COLS])
 
     def test_dedup_keeps_max_n(self):
         # The same pair observed in two overlapping tiles: keep the
-        # observation with the greater coverage (N).
-        table1 = _make_table([(1, 5, 10.0, 2.5)])
-        table2 = _make_table([(1, 5, 50.0, 2.0)])
+        # observation with the greater coverage (N), and its whole row
+        # (not merely N) -- only_a = n/2 distinguishes the two tiles' rows.
+        table1 = _make_table([(1, 5, 10.0)])
+        table2 = _make_table([(1, 5, 50.0)])
         result = _build_banded_table([table1, table2], band_width=0)
         self.assertEqual(len(result.index), 1)
         self.assertEqual(result[N_COL].iloc[0], 50.0)
-        self.assertEqual(result[CHI_SQUARE_COL].iloc[0], 2.0)
+        self.assertEqual(result[ONLY_A_COL].iloc[0], 25.0)
 
     def test_band_filter(self):
-        rows = [(1, 5, 10.0, 2.5), (1, 50, 10.0, 2.5)]
+        rows = [(1, 5, 10.0), (1, 50, 10.0)]
         table = _make_table(rows)
         result = _build_banded_table([table], band_width=10)
         self.assertListEqual(result.index.to_list(), [(1, 5)])
 
     def test_band_width_zero_applies_no_extra_cap(self):
-        rows = [(1, 5, 10.0, 2.5), (1, 50, 10.0, 2.5)]
+        rows = [(1, 5, 10.0), (1, 50, 10.0)]
         table = _make_table(rows)
         result = _build_banded_table([table], band_width=0)
         self.assertListEqual(result.index.to_list(), [(1, 5), (1, 50)])
 
-    def test_nan_chi_square_dropped(self):
-        table = _make_table([(1, 5, 0.0, float("nan"))])
-        result = _build_banded_table([table], band_width=0)
-        self.assertEqual(len(result.index), 0)
-
-
-class TestCalcBlockPvalueCutoff(ut.TestCase):
-    """The analytic Benjamini-Hochberg p-value cutoff (``chi2.sf(chi2_sum,
-    df=n)`` per candidate block, no null replicates needed) that gates
-    ``_dp_segment_blocks`` alongside ``_block_score``."""
-
-    @staticmethod
-    def _row_cums(rows, total_end5, total_end3):
-        table = _make_table(rows)
-        return _pair_band_row_cumsum(
-            table, total_end5, total_end3, value_col=CHI_SQUARE_COL
-        )
-
-    def test_empty_table_returns_no_survivor(self):
-        import numpy as np
-
-        # No observable pairs at all: an all-zero grid of the shape
-        # _pair_band_row_cumsum would produce (an empty table's index has no
-        # dtype to infer a real max_gap from, so build the zero grid
-        # directly rather than route an empty table through it).
-        n_positions, max_gap = 60, 0
-        obs_row_cum = np.zeros((n_positions, max_gap + 2), dtype=np.int64)
-        chi2_row_cum = np.zeros((n_positions, max_gap + 2), dtype=float)
-        cutoff = _calc_block_pvalue_cutoff(
-            obs_row_cum, chi2_row_cum, n_positions, max_gap, detect_fdr=0.1
-        )
-        self.assertEqual(cutoff, -1.0)
-
-    def test_all_null_like_has_no_survivor(self):
-        rows = _rows_over_region(1, 60, 10, lambda i, j: False)
-        obs_row_cum, chi2_row_cum, n_positions, max_gap = self._row_cums(rows, 1, 60)
-        cutoff = _calc_block_pvalue_cutoff(
-            obs_row_cum, chi2_row_cum, n_positions, max_gap, detect_fdr=0.1
-        )
-        self.assertEqual(cutoff, -1.0)
-
-    def test_strong_domain_survives_against_a_mostly_null_pool(self):
-        # A real domain amid a much larger null-like background: the domain's
-        # own candidate block must clear BH correction against every other
-        # (mostly null) candidate the scan considers.
-        rows = _rows_over_region(1, 300, 10, lambda i, j: 20 <= i and j <= 40)
-        obs_row_cum, chi2_row_cum, n_positions, max_gap = self._row_cums(rows, 1, 300)
-        cutoff = _calc_block_pvalue_cutoff(
-            obs_row_cum, chi2_row_cum, n_positions, max_gap, detect_fdr=0.1
-        )
-        self.assertGreater(cutoff, -1.0)
-        # The domain's own exact block (0-indexed [19, 39]) must itself be
-        # at or below the returned cutoff.
-        n_se = float(_triangle_sum_banded(obs_row_cum, 39, max_gap)[19])
-        chi2_se = float(_triangle_sum_banded(chi2_row_cum, 39, max_gap)[19])
-        from scipy.stats import chi2 as chi2dist
-
-        domain_pvalue = chi2dist.sf(chi2_se, df=n_se)
-        self.assertLessEqual(domain_pvalue, cutoff)
-
 
 class TestWritePairsWithConfusion(ut.TestCase):
     """pairs.csv must carry each written pair's 2x2 confusion-matrix counts
-    (chi-square, and every other derived quantity, is omitted since it is
+    (every derived quantity, e.g. fold change, is omitted since it is
     recomputable from the counts alone)."""
 
     @staticmethod
@@ -326,12 +267,11 @@ class TestWritePairsWithConfusion(ut.TestCase):
             csv_file = Path(tmp) / "pairs.csv"
             _write_pairs_with_confusion(pos_table, csv_file)
             out = pd.read_csv(csv_file)
-        # Exactly the position columns and the four confusion cells;
-        # chi-square (recomputable from the counts) is omitted.
+        # Exactly the position columns and the four confusion cells; every
+        # derived quantity (recomputable from the counts) is omitted.
         self.assertListEqual(
             list(out.columns), [POSITION_A, POSITION_B, *CONFUSION_COLS]
         )
-        self.assertNotIn(CHI_SQUARE_COL, out.columns)
         self.assertListEqual(
             list(zip(out[POSITION_A], out[POSITION_B])), [(1, 5), (2, 9)]
         )
@@ -344,135 +284,764 @@ class TestWritePairsWithConfusion(ut.TestCase):
         self.assertListEqual(list(recovered_n), [1000, 1000])
 
 
-def _rows_over_region(
-    total_end5: int,
-    total_end3: int,
-    band: int,
-    is_domain,
-    n_cov: float = 2000.0,
-    chi2_domain: float = 30.0,
-    chi2_bg: float = 1.0,
-) -> list[tuple[int, int, float, float]]:
-    """Generate (i, j, N, chi_square) rows for every pair in
-    [total_end5, total_end3] with ``j - i <= band``. A pair inside a domain
-    (``is_domain(i, j)`` true) gets a strongly correlated chi-square
-    (``chi2_domain``); the rest get a null-like chi-square (``chi2_bg``, the
-    ~1 mean of ``chi^2(1)``), so the domain caller's variance-inflation
-    score sees real, coverage-scaled correlation signal."""
-    rows = []
-    for i in range(total_end5, total_end3 + 1):
-        for j in range(i + 1, min(i + band, total_end3) + 1):
-            chi2 = chi2_domain if is_domain(i, j) else chi2_bg
-            rows.append((i, j, n_cov, chi2))
-    return rows
+def _make_confusion_table(rows: list[tuple[int, int, float, float, float, float]]):
+    """Build a per-pair table directly from (pos_a, pos_b, n, only_a, only_b,
+    both), for tests that need precise control over the confusion cells (and
+    so the exact fold change/hypergeometric significance) rather than the
+    fixed ``n``-proportional split ``_make_table``/``_make_signed_table``
+    use."""
+    import pandas as pd
+
+    pos_a: tuple[int, ...]
+    pos_b: tuple[int, ...]
+    ns: tuple[float, ...]
+    only_a: tuple[float, ...]
+    only_b: tuple[float, ...]
+    both: tuple[float, ...]
+    if not rows:
+        pos_a, pos_b, ns, only_a, only_b, both = (), (), (), (), (), ()
+    else:
+        pos_a, pos_b, ns, only_a, only_b, both = zip(*rows)
+    index = pd.MultiIndex.from_arrays([pos_a, pos_b], names=[POSITION_A, POSITION_B])
+    neither = [n - (a + b - ab) for n, a, b, ab in zip(ns, only_a, only_b, both)]
+    return pd.DataFrame(
+        {
+            N_COL: ns,
+            NEITHER_COL: neither,
+            ONLY_A_COL: only_a,
+            ONLY_B_COL: only_b,
+            BOTH_COL: both,
+        },
+        index=index,
+    )
 
 
-class TestFilterDomainsLength(ut.TestCase):
-    def test_filter_default_length(self):
-        domains = [(5, 20), (25, 30)]
-        result = _filter_domains_length(domains)
-        expect = domains
-        self.assertListEqual(result, expect)
+class TestBridgeMask(ut.TestCase):
+    """``_bridge_mask`` marks a pair ELIGIBLE (anti-correlated, enough
+    coverage and expected-both) and, among those, a BRIDGE if it is also
+    exact-hypergeometric-significant (``pair_fdr``) and depleted by at least
+    ``min_fold_change`` relative to independence."""
 
-    def test_filter_min_length(self):
-        domains = [(5, 20), (25, 30)]
-        result = _filter_domains_length(domains, min_length=6)
-        expect = domains
-        self.assertListEqual(result, expect)
-        result = _filter_domains_length(domains, min_length=7)
-        expect = [(5, 20)]
-        self.assertListEqual(result, expect)
-        result = _filter_domains_length(domains, min_length=16)
-        expect = [(5, 20)]
-        self.assertListEqual(result, expect)
-        result = _filter_domains_length(domains, min_length=17)
-        expect = []
-        self.assertListEqual(result, expect)
+    def test_strong_depletion_is_a_bridge(self):
+        # n=100000, a=b=5000 (independence expects ab=250); observed ab=100
+        # is a 2.5x depletion, and hugely significant at this scale.
+        table = _make_confusion_table([(1, 2, 100000.0, 4900.0, 4900.0, 100.0)])
+        eligible, bridge = _bridge_mask(
+            table,
+            min_pair_coverage=1000,
+            min_expect_both=5.0,
+            pair_fdr=0.05,
+            min_fold_change=2.0,
+        )
+        self.assertListEqual(list(eligible), [True])
+        self.assertListEqual(list(bridge), [True])
 
-    def test_filter_max_length(self):
-        domains = [(5, 20), (25, 30)]
-        result = _filter_domains_length(domains, max_length=5)
-        expect = []
-        self.assertListEqual(result, expect)
-        result = _filter_domains_length(domains, max_length=6)
-        expect = [(25, 30)]
-        self.assertListEqual(result, expect)
-        result = _filter_domains_length(domains, max_length=15)
-        expect = [(25, 30)]
-        self.assertListEqual(result, expect)
-        result = _filter_domains_length(domains, max_length=16)
-        expect = domains
-        self.assertListEqual(result, expect)
+    def test_below_fold_change_floor_is_eligible_not_bridge(self):
+        # n=10000, a=b=500 (independence expects ab=25); observed ab=20 is
+        # anti-correlated and mildly depleted (fold change 1.25), below the
+        # default 2.0 floor.
+        table = _make_confusion_table([(1, 2, 10000.0, 480.0, 480.0, 20.0)])
+        eligible, bridge = _bridge_mask(
+            table,
+            min_pair_coverage=1000,
+            min_expect_both=5.0,
+            pair_fdr=0.05,
+            min_fold_change=2.0,
+        )
+        self.assertListEqual(list(eligible), [True])
+        self.assertListEqual(list(bridge), [False])
+
+    def test_positive_correlation_is_not_eligible(self):
+        # observed ab=30 exceeds the independence expectation of 25: not
+        # anti-correlated at all, so excluded before significance/effect are
+        # ever considered.
+        table = _make_confusion_table([(1, 2, 10000.0, 470.0, 470.0, 30.0)])
+        eligible, bridge = _bridge_mask(
+            table,
+            min_pair_coverage=1000,
+            min_expect_both=5.0,
+            pair_fdr=0.05,
+            min_fold_change=2.0,
+        )
+        self.assertListEqual(list(eligible), [False])
+        self.assertListEqual(list(bridge), [False])
+
+    def test_low_coverage_excluded_regardless_of_effect(self):
+        table = _make_confusion_table([(1, 2, 500.0, 245.0, 245.0, 5.0)])
+        eligible, bridge = _bridge_mask(
+            table,
+            min_pair_coverage=1000,
+            min_expect_both=5.0,
+            pair_fdr=0.05,
+            min_fold_change=2.0,
+        )
+        self.assertListEqual(list(eligible), [False])
+        self.assertListEqual(list(bridge), [False])
+
+    def test_zero_both_mutated_is_an_infinite_fold_change_bridge(self):
+        # Independence expects ab=9 (>= min_expect_both); observing zero
+        # co-occurrences is an infinite fold change and, at this scale,
+        # extremely significant.
+        table = _make_confusion_table([(1, 2, 10000.0, 300.0, 300.0, 0.0)])
+        eligible, bridge = _bridge_mask(
+            table,
+            min_pair_coverage=1000,
+            min_expect_both=5.0,
+            pair_fdr=0.05,
+            min_fold_change=2.0,
+        )
+        self.assertListEqual(list(eligible), [True])
+        self.assertListEqual(list(bridge), [True])
+
+    def test_empty_table(self):
+        table = _make_confusion_table([])
+        eligible, bridge = _bridge_mask(
+            table,
+            min_pair_coverage=1000,
+            min_expect_both=5.0,
+            pair_fdr=0.05,
+            min_fold_change=2.0,
+        )
+        self.assertEqual(len(eligible), 0)
+        self.assertEqual(len(bridge), 0)
 
 
-class TestInsertRegionsIntoGaps(ut.TestCase):
-    def test_zero(self):
-        result = _insert_domains_into_gaps([], 3, 9)
-        expect = [(3, 9)]
-        self.assertListEqual(result, expect)
-
-    def test_one(self):
-        result = _insert_domains_into_gaps([(3, 9)], 3, 9)
-        expect = [(3, 9)]
-        self.assertListEqual(result, expect)
-        result = _insert_domains_into_gaps([(4, 9)], 3, 9)
-        expect = [(3, 3), (4, 9)]
-        self.assertListEqual(result, expect)
-        result = _insert_domains_into_gaps([(3, 8)], 3, 9)
-        expect = [(3, 8), (9, 9)]
-        self.assertListEqual(result, expect)
-        result = _insert_domains_into_gaps([(4, 8)], 3, 9)
-        expect = [(3, 3), (4, 8), (9, 9)]
-        self.assertListEqual(result, expect)
-
-    def test_two(self):
-        result = _insert_domains_into_gaps([(2, 10), (11, 20)], 2, 20)
-        expect = [(2, 10), (11, 20)]
-        self.assertListEqual(result, expect)
-        result = _insert_domains_into_gaps([(3, 10), (11, 20)], 2, 20)
-        expect = [(2, 2), (3, 10), (11, 20)]
-        self.assertListEqual(result, expect)
-        result = _insert_domains_into_gaps([(2, 10), (12, 20)], 2, 20)
-        expect = [(2, 10), (11, 11), (12, 20)]
-        self.assertListEqual(result, expect)
-        result = _insert_domains_into_gaps([(2, 10), (11, 19)], 2, 20)
-        expect = [(2, 10), (11, 19), (20, 20)]
-        self.assertListEqual(result, expect)
-        result = _insert_domains_into_gaps([(3, 9), (11, 19)], 2, 20)
-        expect = [(2, 2), (3, 9), (10, 10), (11, 19), (20, 20)]
-        self.assertListEqual(result, expect)
+def _eb(pairs):
+    """Build ``(table, eligible, bridge)`` from ``pairs`` -- a list of
+    ``(a, b, is_bridge)`` -- treating every listed pair as eligible."""
+    index = pd.MultiIndex.from_tuples(
+        [(a, b) for a, b, _ in pairs], names=[POSITION_A, POSITION_B]
+    )
+    table = pd.DataFrame(index=index)
+    eligible = pd.Series(True, index=index)
+    bridge = pd.Series([bool(x) for *_, x in pairs], index=index)
+    return table, eligible, bridge
 
 
-class TestExpandRegionsIntoGaps(ut.TestCase):
-    def test_zero(self):
-        result = _expand_domains_into_gaps([], 3, 9)
-        expect = []
-        self.assertListEqual(result, expect)
+def _dense_block(lo, hi, band, rng, p_in, p_bg, total, cross=None, p_cross=0.0):
+    """Yield ``(a, b, is_bridge)`` for every in-band pair of [1, total], with
+    bridge probability ``p_in`` inside [lo, hi], ``p_bg`` in the background, and
+    ``p_cross`` for pairs straddling the ``cross`` region ``(clo, chi)``."""
+    for a in range(1, total + 1):
+        for b in range(a + 1, min(a + band, total) + 1):
+            if lo <= a <= b <= hi:
+                p = p_in
+            else:
+                p = p_bg
+            if cross is not None and a <= cross[0] and b >= cross[1]:
+                p = p_cross
+            yield (a, b, rng.random() < p)
 
-    def test_one(self):
-        expect = [(3, 9)]
-        result = _expand_domains_into_gaps([(3, 9)], 3, 9)
-        self.assertListEqual(result, expect)
-        result = _expand_domains_into_gaps([(4, 9)], 3, 9)
-        self.assertListEqual(result, expect)
-        result = _expand_domains_into_gaps([(3, 8)], 3, 9)
-        self.assertListEqual(result, expect)
-        result = _expand_domains_into_gaps([(5, 7)], 3, 9)
-        self.assertListEqual(result, expect)
 
-    def test_two(self):
-        result = _expand_domains_into_gaps([(2, 10), (11, 20)], 2, 20)
-        expect = [(2, 10), (11, 20)]
-        self.assertListEqual(result, expect)
-        result = _expand_domains_into_gaps([(4, 9), (11, 18)], 2, 20)
-        expect = [(2, 9), (10, 20)]
-        self.assertListEqual(result, expect)
-        result = _expand_domains_into_gaps([(5, 9), (12, 17)], 2, 20)
-        expect = [(2, 10), (11, 20)]
-        self.assertListEqual(result, expect)
-        result = _expand_domains_into_gaps([(6, 6), (10, 10)], 2, 20)
-        expect = [(2, 7), (8, 20)]
-        self.assertListEqual(result, expect)
+class TestBlockScore(ut.TestCase):
+    """``_block_score`` is the BIC-corrected binomial log-likelihood ratio of a
+    block's own bridge rate against the null rate ``pi0``."""
+
+    def test_matches_hand_computed_llr_minus_bic(self):
+        pi0 = 0.01
+        ne, nb = 1000, 50
+        pi_hat = nb / ne
+        llr = nb * np.log(pi_hat / pi0) + (ne - nb) * np.log((1 - pi_hat) / (1 - pi0))
+        expected = llr - np.log(ne) / 2
+        got = _block_score(np.array([ne]), np.array([nb]), pi0)[0]
+        self.assertAlmostEqual(got, expected, places=6)
+
+    def test_block_at_or_below_null_scores_negative(self):
+        pi0 = 0.02
+        # pi_hat = pi0 exactly -> llr 0 -> gain = -bic < 0.
+        at_null = _block_score(np.array([500]), np.array([10]), pi0)[0]
+        self.assertLess(at_null, 0.0)
+        # pi_hat below pi0 -> clamped to pi0 -> still negative.
+        below = _block_score(np.array([500]), np.array([2]), pi0)[0]
+        self.assertLess(below, 0.0)
+
+    def test_enrichment_increases_gain(self):
+        pi0 = 0.01
+        low = _block_score(np.array([1000]), np.array([20]), pi0)[0]
+        high = _block_score(np.array([1000]), np.array([80]), pi0)[0]
+        self.assertGreater(high, low)
+
+    def test_empty_block_is_minus_inf(self):
+        self.assertEqual(_block_score(np.array([0]), np.array([0]), 0.01)[0], -np.inf)
+
+    def test_locality_independent_of_other_blocks(self):
+        # The score of a block depends only on its own (n_elig, n_bridge) and
+        # pi0 -- a fixed constant -- never on any other block. Directly
+        # regression-tests failure #1 (global-rate contamination).
+        pi0 = 0.01
+        s1 = _block_score(np.array([800]), np.array([12]), pi0)[0]
+        s2 = _block_score(np.array([800]), np.array([12]), pi0)[0]
+        self.assertEqual(s1, s2)
+
+
+class TestTriangleSumBanded(ut.TestCase):
+    """``_triangle_sum_banded`` reads triangle (contained-pair) sums off the
+    banded row-cumulative arrays; the ``s_min`` bound matches the unbounded
+    result on the overlapping range."""
+
+    def _grids(self, total=40, band=15, seed=0):
+        rng = np.random.default_rng(seed)
+        pairs = [
+            (a, b, rng.random() < 0.25)
+            for a in range(1, total + 1)
+            for b in range(a + 1, min(a + band, total) + 1)
+        ]
+        table, _, bridge = _eb(pairs)
+        table[BRIDGE_COL] = bridge.to_numpy(dtype=float)
+        return _pair_band_row_cumsum(table, 1, total, value_col=BRIDGE_COL), pairs
+
+    def test_matches_brute_force_contained_counts(self):
+        (count_rc, value_rc, npos, mg), pairs = self._grids()
+        pa = np.array([a for a, _, _ in pairs])
+        pb = np.array([b for _, b, _ in pairs])
+        bv = np.array([float(x) for *_, x in pairs])
+        for s, e in [(1, 10), (5, 25), (12, 40)]:
+            m = (pa >= s) & (pb <= e)
+            ne_bf, nb_bf = int(m.sum()), float(bv[m].sum())
+            ne_ts = _triangle_sum_banded(count_rc, e - 1, mg, s_min=s - 1)[s - 1]
+            nb_ts = _triangle_sum_banded(value_rc, e - 1, mg, s_min=s - 1)[s - 1]
+            self.assertEqual(ne_bf, int(ne_ts))
+            self.assertTrue(np.isclose(nb_bf, nb_ts))
+
+    def test_s_min_equals_unbounded_on_overlap(self):
+        (count_rc, _, npos, mg), _ = self._grids()
+        for e in [4, 18, 39]:
+            full = _triangle_sum_banded(count_rc, e, mg, s_min=0)
+            for s_min in [0, max(0, e - 8), max(0, e - 2)]:
+                bounded = _triangle_sum_banded(count_rc, e, mg, s_min=s_min)
+                self.assertTrue(
+                    np.array_equal(full[s_min : e + 1], bounded[s_min : e + 1])
+                )
+
+
+class TestCutCrossingScores(ut.TestCase):
+    """``_cut_crossing_scores`` counts, per cut, the eligible pairs straddling
+    it and how many are bridges (difference-array sweep)."""
+
+    def test_matches_brute_force(self):
+        pairs = [(1, 4, True), (2, 6, False), (3, 5, True), (5, 8, True)]
+        table, _, bridge = _eb(pairs)
+        table[BRIDGE_COL] = bridge.to_numpy(dtype=float)
+        ne_cross, nb_cross = _cut_crossing_scores(table, 1, 8)
+        # cut m (index m-1) is between positions m and m+1.
+        for m in range(1, 8):
+            elig_bf = sum(1 for a, b, _ in pairs if a <= m < b)
+            brid_bf = sum(1 for a, b, x in pairs if a <= m < b and x)
+            self.assertEqual(int(ne_cross[m - 1]), elig_bf)
+            self.assertEqual(int(round(nb_cross[m - 1])), brid_bf)
+
+    def test_zero_crossing_reads_exactly_zero(self):
+        pairs = [(1, 3, True), (5, 8, True)]  # nothing crosses cut 4 (3|4)
+        table, _, bridge = _eb(pairs)
+        table[BRIDGE_COL] = bridge.to_numpy(dtype=float)
+        ne_cross, nb_cross = _cut_crossing_scores(table, 1, 8)
+        self.assertEqual(int(ne_cross[3]), 0)  # cut between 4 and 5
+        self.assertEqual(nb_cross[3], 0.0)
+
+
+class TestCalcBlockPvalueCutoff(ut.TestCase):
+    """``_calc_block_pvalue_cutoff`` returns the BH cutoff over every candidate
+    block; -1 (admit nothing) when no block is significant."""
+
+    def _grids(self, pairs, total):
+        table, _, bridge = _eb(pairs)
+        table[BRIDGE_COL] = bridge.to_numpy(dtype=float)
+        return _pair_band_row_cumsum(table, 1, total, value_col=BRIDGE_COL)
+
+    def test_admit_nothing_on_pure_background(self):
+        rng = np.random.default_rng(0)
+        total, band = 60, 20
+        pairs = list(_dense_block(0, 0, band, rng, 0.0, 0.0, total))  # no bridges
+        count_rc, value_rc, npos, mg = self._grids(pairs, total)
+        cutoff = _calc_block_pvalue_cutoff(
+            count_rc, value_rc, npos, mg, 0.01, 0.05, 200
+        )
+        self.assertEqual(cutoff, -1.0)
+
+    def test_dense_block_admitted(self):
+        rng = np.random.default_rng(1)
+        total, band = 60, 20
+        pairs = list(_dense_block(20, 40, band, rng, 0.4, 0.0, total))
+        count_rc, value_rc, npos, mg = self._grids(pairs, total)
+        cutoff = _calc_block_pvalue_cutoff(
+            count_rc, value_rc, npos, mg, 0.01, 0.05, 200
+        )
+        self.assertGreater(cutoff, 0.0)
+
+
+class TestDpSegmentBlocks(ut.TestCase):
+    """``_dp_segment_blocks`` finds the globally-optimal admitted partition and
+    honours ``max_domain_length``."""
+
+    def _grids(self, pairs, total):
+        table, _, bridge = _eb(pairs)
+        table[BRIDGE_COL] = bridge.to_numpy(dtype=float)
+        return _pair_band_row_cumsum(table, 1, total, value_col=BRIDGE_COL)
+
+    def test_finds_dense_block(self):
+        rng = np.random.default_rng(2)
+        total, band = 80, 20
+        pairs = list(_dense_block(30, 55, band, rng, 0.4, 0.002, total))
+        count_rc, value_rc, npos, mg = self._grids(pairs, total)
+        cutoff = _calc_block_pvalue_cutoff(
+            count_rc, value_rc, npos, mg, 0.005, 0.05, 200
+        )
+        blocks, _ = _dp_segment_blocks(count_rc, value_rc, npos, mg, 0.005, cutoff, 200)
+        # exactly one block, overlapping the dense region [30,55] (0-indexed
+        # 29..54).
+        self.assertEqual(len(blocks), 1)
+        s, e = blocks[0]
+        self.assertLessEqual(s, 29)
+        self.assertGreaterEqual(e, 54)
+
+    def test_respects_max_domain_length(self):
+        rng = np.random.default_rng(3)
+        total, band = 80, 30
+        pairs = list(_dense_block(10, 70, band, rng, 0.4, 0.002, total))
+        count_rc, value_rc, npos, mg = self._grids(pairs, total)
+        cutoff = _calc_block_pvalue_cutoff(
+            count_rc, value_rc, npos, mg, 0.005, 0.05, 25
+        )
+        blocks, _ = _dp_segment_blocks(count_rc, value_rc, npos, mg, 0.005, cutoff, 25)
+        self.assertTrue(blocks)
+        for s, e in blocks:
+            self.assertLessEqual(e - s + 1, 25)
+
+
+class TestMergeConnectedBlocks(ut.TestCase):
+    """``_merge_connected_blocks`` joins adjacent blocks whose gap is crossed by
+    enriched bridges at every cut, subject to ``max_domain_length``."""
+
+    def _cross(self, total, per_cut_bridge, per_cut_elig, gap):
+        # Build crossing arrays where every cut in ``gap`` (inclusive range of
+        # cut indices) has (per_cut_elig, per_cut_bridge), others are null.
+        n_cuts = total - 1
+        ne = np.zeros(n_cuts, dtype=np.int64)
+        nb = np.zeros(n_cuts, dtype=float)
+        for c in range(gap[0], gap[1] + 1):
+            ne[c] = per_cut_elig
+            nb[c] = per_cut_bridge
+        return ne, nb
+
+    def test_merges_when_every_gap_cut_connected(self):
+        blocks = [(0, 20), (30, 50)]  # gap cuts 20..29
+        ne, nb = self._cross(60, per_cut_bridge=40, per_cut_elig=100, gap=(20, 29))
+        merged = _merge_connected_blocks(blocks, ne, nb, 0.01, 0.05, 200)
+        self.assertEqual(merged, [(0, 50)])
+
+    def test_keeps_split_when_a_cut_is_disconnected(self):
+        blocks = [(0, 20), (30, 50)]
+        ne, nb = self._cross(60, per_cut_bridge=40, per_cut_elig=100, gap=(20, 29))
+        # blank out one interior cut -> not connected everywhere.
+        nb[25] = 0.0
+        merged = _merge_connected_blocks(blocks, ne, nb, 0.01, 0.05, 200)
+        self.assertEqual(merged, [(0, 20), (30, 50)])
+
+    def test_max_domain_length_guard_blocks_merge(self):
+        blocks = [(0, 20), (30, 50)]
+        ne, nb = self._cross(60, per_cut_bridge=40, per_cut_elig=100, gap=(20, 29))
+        merged = _merge_connected_blocks(blocks, ne, nb, 0.01, 0.05, 40)
+        self.assertEqual(merged, [(0, 20), (30, 50)])
+
+    def test_faint_uniform_gap_does_not_merge(self):
+        # Crossing rate barely above pi0 but not significantly enriched -> the
+        # effect-size/BH gate holds the boundary (no over-merge).
+        blocks = [(0, 20), (30, 50)]
+        ne, nb = self._cross(60, per_cut_bridge=1, per_cut_elig=100, gap=(20, 29))
+        merged = _merge_connected_blocks(blocks, ne, nb, 0.01, 0.05, 200)
+        self.assertEqual(merged, [(0, 20), (30, 50)])
+
+
+class TestExtendDomainsByBridges(ut.TestCase):
+    """``_extend_domains_by_bridges`` grows a domain outward to absorb a thin
+    line of edge bridges, but ignores a lone distant stray bridge."""
+
+    def _table(self, pairs):
+        table, _, bridge = _eb(pairs)
+        table[BRIDGE_COL] = bridge.to_numpy(dtype=float)
+        return table
+
+    def _core(self):
+        # Dense core [50, 80], all pairs bridges (band 20).
+        return [
+            (a, b, True) for a in range(50, 81) for b in range(a + 1, min(a + 20, 81))
+        ]
+
+    def _sparse_bg(self, lo, hi, exclude):
+        # A sparse eligible (non-bridge) background between lo and hi: every 7th
+        # in-band pair, mimicking real data where few pairs clear eligibility.
+        out = []
+        k = 0
+        for a in range(lo, hi + 1):
+            for b in range(a + 1, min(a + 20, 90) + 1):
+                k += 1
+                if k % 7 == 0 and (a, b) not in exclude:
+                    out.append((a, b, False))
+        return out
+
+    def test_absorbs_thin_line_of_edge_bridges(self):
+        # A thin line of 8 bridges reaches into the core from positions 10-13,
+        # across sparse empty space 14-49.
+        thin = [
+            (10, 55),
+            (11, 56),
+            (12, 57),
+            (13, 58),
+            (10, 60),
+            (11, 61),
+            (12, 62),
+            (13, 63),
+        ]
+        pairs = (
+            self._core()
+            + self._sparse_bg(1, 49, {(a, b) for a, b in thin})
+            + [(a, b, True) for a, b in thin]
+        )
+        got = _extend_domains_by_bridges(
+            [(50, 80)],
+            self._table(pairs),
+            pi0=0.01,
+            extend_fdr=0.05,
+            max_domain_length=200,
+            total_end5=1,
+            total_end3=90,
+        )
+        ((s, e),) = got
+        self.assertLessEqual(s, 13, f"did not absorb the thin line: {got}")
+        self.assertGreaterEqual(s, 10)
+
+    def test_ignores_lone_distant_bridge(self):
+        pairs = (
+            self._core()
+            + self._sparse_bg(1, 49, {(12, 60)})
+            + [(12, 60, True)]  # a single stray bridge into the core
+        )
+        got = _extend_domains_by_bridges(
+            [(50, 80)],
+            self._table(pairs),
+            pi0=0.01,
+            extend_fdr=0.05,
+            max_domain_length=200,
+            total_end5=1,
+            total_end3=90,
+        )
+        ((s, e),) = got
+        self.assertGreater(s, 13, f"a lone stray bridge should not extend: {got}")
+
+    def test_extension_respects_max_domain_length(self):
+        thin = [
+            (10, 55),
+            (11, 56),
+            (12, 57),
+            (13, 58),
+            (10, 60),
+            (11, 61),
+            (12, 62),
+            (13, 63),
+        ]
+        pairs = (
+            [(a, b, True) for a in range(50, 71) for b in range(a + 1, min(a + 20, 71))]
+            + self._sparse_bg(1, 49, {(a, b) for a, b in thin})
+            + [(a, b, True) for a, b in thin]
+        )
+        got = _extend_domains_by_bridges(
+            [(50, 70)],
+            self._table(pairs),
+            pi0=0.01,
+            extend_fdr=0.05,
+            max_domain_length=25,
+            total_end5=1,
+            total_end3=90,
+        )
+        ((s, e),) = got
+        self.assertLessEqual(e - s + 1, 25)  # capped, never longer
+
+
+class TestEstimateNullBridgeRate(ut.TestCase):
+    """``_estimate_null_bridge_rate`` estimates pi0 as the out-of-domain bridge
+    rate, floored."""
+
+    def test_out_of_domain_rate(self):
+        # 100 background eligible pairs, 4 bridges; all in-domain bridges
+        # excluded.
+        pairs = []
+        # domain [10,20]: many bridges (should be excluded)
+        for k in range(20):
+            pairs.append((10 + (k % 5), 16 + (k % 5), True))
+        # background: 100 pairs, 4 bridges
+        for k in range(100):
+            pairs.append((30 + k % 20, 55 + k % 20, k < 4))
+        table, _, bridge = _eb(pairs)
+        table[BRIDGE_COL] = bridge.to_numpy(dtype=float)
+        rate = _estimate_null_bridge_rate(table, [(10, 20)], floor=1e-6)
+        self.assertAlmostEqual(rate, 4 / 100, places=6)
+
+    def test_floor_applied_when_background_clean(self):
+        pairs = [(30, 40, False), (31, 41, False)]
+        table, _, bridge = _eb(pairs)
+        table[BRIDGE_COL] = bridge.to_numpy(dtype=float)
+        rate = _estimate_null_bridge_rate(table, [], floor=0.003)
+        self.assertEqual(rate, 0.003)
+
+
+class TestGapUtilities(ut.TestCase):
+    """The gap-handling helpers (``_split``/``_fill``/``_widen``/``_label``/
+    ``_filter``)."""
+
+    def test_filter_drops_short_domains(self):
+        got = _filter_domains_length([(1, 5), (10, 40), (45, 46)], min_length=10)
+        self.assertEqual(got, [(10, 40)])
+
+    def test_split_gap_evenly_divides_exactly(self):
+        got = _split_gap_evenly(1, 20, 10)
+        self.assertEqual(got, [(1, 10), (11, 20)])
+
+    def test_split_gap_evenly_minimum_count_as_equal_as_possible(self):
+        got = _split_gap_evenly(1, 25, 10)
+        # ceil(25 / 10) == 3 pieces; sizes differ by at most 1 (9, 8, 8).
+        self.assertEqual(got, [(1, 9), (10, 17), (18, 25)])
+        # No piece exceeds the cap, and the pieces exactly reconstitute the
+        # input range with no gaps or overlaps.
+        self.assertTrue(all(e3 - e5 + 1 <= 10 for e5, e3 in got))
+        self.assertEqual(got[0][0], 1)
+        self.assertEqual(got[-1][1], 25)
+        for (_, e3), (e5, _) in zip(got, got[1:]):
+            self.assertEqual(e3 + 1, e5)
+
+    def test_fill_matches_old_insert_behavior_when_cap_is_non_binding(self):
+        got = _fill_domains_into_gaps([(10, 20), (31, 40)], 1, 50, 100)
+        self.assertEqual(got, [(1, 9), (10, 20), (21, 30), (31, 40), (41, 50)])
+
+    def test_fill_splits_oversized_leading_gap(self):
+        got = _fill_domains_into_gaps([(21, 30)], 1, 30, 10)
+        self.assertEqual(got, [(1, 10), (11, 20), (21, 30)])
+
+    def test_fill_splits_oversized_interior_gap(self):
+        got = _fill_domains_into_gaps([(1, 10), (41, 50)], 1, 50, 15)
+        self.assertEqual(got, [(1, 10), (11, 25), (26, 40), (41, 50)])
+
+    def test_fill_leaves_adjacent_domains_untouched(self):
+        got = _fill_domains_into_gaps([(1, 10), (11, 20)], 1, 20, 5)
+        self.assertEqual(got, [(1, 10), (11, 20)])
+
+    def test_fill_covers_whole_region_when_no_domains(self):
+        got = _fill_domains_into_gaps([], 1, 25, 10)
+        self.assertEqual(got, [(1, 9), (10, 17), (18, 25)])
+
+    def test_widen_matches_old_expand_behavior_when_cap_is_non_binding(self):
+        got = _widen_domains_into_gaps([(10, 20), (31, 40)], 1, 50, 100)
+        self.assertEqual(got, [(1, 25), (26, 50)])
+
+    def test_widen_binding_cap_leaves_leading_leftover(self):
+        got = _widen_domains_into_gaps([(10, 20)], 1, 100, 15)
+        # Budget is only 15 - 11 = 4, so the domain can absorb only 4 of the
+        # 9 positions in the leading gap, and has nothing left for the
+        # (much larger) trailing gap.
+        self.assertEqual(got, [(6, 20)])
+
+    def test_widen_binding_cap_leaves_interior_leftover(self):
+        got = _widen_domains_into_gaps([(1, 10), (41, 50)], 1, 50, 15)
+        # Each domain's budget (5) covers only half of its half of the gap,
+        # leaving a residual gap of (16, 35) between the widened domains.
+        self.assertEqual(got, [(1, 15), (36, 50)])
+
+    def test_widen_then_fill_mops_up_residual_gap(self):
+        widened = _widen_domains_into_gaps([(1, 10), (41, 50)], 1, 50, 15)
+        got = _fill_domains_into_gaps(widened, 1, 50, 15)
+        self.assertEqual(got, [(1, 15), (16, 25), (26, 35), (36, 50)])
+
+    def test_label_widened_marks_unchanged_and_grown(self):
+        raw = [(1, 10), (20, 30)]
+        widened = [(1, 10), (15, 30)]
+        got = _label_widened(raw, widened)
+        self.assertEqual(got, {(1, 10): "original", (15, 30): "widened"})
+
+
+class TestCalcDomainsByDpSegmentation(ut.TestCase):
+    """End-to-end DP domain calling on constructed bridge tables."""
+
+    def test_two_domains_recovered_and_not_merged(self):
+        rng = np.random.default_rng(10)
+        total, band = 90, 20
+        pairs = []
+        for a in range(1, total + 1):
+            for b in range(a + 1, min(a + band, total) + 1):
+                if 10 <= a <= b <= 30 or 51 <= a <= b <= 70:
+                    p = 0.3
+                else:
+                    p = 0.003
+                pairs.append((a, b, rng.random() < p))
+        table, eligible, bridge = _eb(pairs)
+        domains, pi0 = _calc_domains_by_dp_segmentation(
+            table,
+            eligible,
+            bridge,
+            1,
+            total,
+            pair_fdr=0.05,
+            detect_fdr=0.05,
+            merge_fdr=0.05,
+            max_domain_length=200,
+        )
+        big = [(s, e) for s, e in domains if e - s + 1 >= 10]
+        self.assertTrue(any(s <= 10 and e >= 30 for s, e in big), big)
+        self.assertTrue(any(s <= 51 and e >= 70 for s, e in big), big)
+        self.assertFalse(any(s <= 10 and e >= 70 for s, e in big), big)
+
+    def test_over_fragmentation_merge_across_spanned_void(self):
+        # Two dense blocks separated by a void that long-range bridges span at
+        # every cut -> the cut-crossing merge rejoins them into one domain.
+        rng = np.random.default_rng(11)
+        total, band = 90, 40
+        pairs = []
+        A, B = (10, 30), (46, 66)
+        for a in range(1, total + 1):
+            for b in range(a + 1, min(a + band, total) + 1):
+                if A[0] <= a <= b <= A[1] or B[0] <= a <= b <= B[1]:
+                    p = 0.3
+                elif a <= A[1] and b >= B[0]:  # long-range crossing bridges
+                    p = 0.5
+                else:
+                    p = 0.003
+                pairs.append((a, b, rng.random() < p))
+        table, eligible, bridge = _eb(pairs)
+        domains, _ = _calc_domains_by_dp_segmentation(
+            table,
+            eligible,
+            bridge,
+            1,
+            total,
+            pair_fdr=0.05,
+            detect_fdr=0.05,
+            merge_fdr=0.05,
+            max_domain_length=200,
+        )
+        big = [(s, e) for s, e in domains if e - s + 1 >= 10]
+        self.assertEqual(len(big), 1, f"expected one merged domain, got {big}")
+        s, e = big[0]
+        self.assertLessEqual(s, A[0])
+        self.assertGreaterEqual(e, B[1])
+
+    def test_separate_domains_stay_split_without_crossing(self):
+        rng = np.random.default_rng(11)
+        total, band = 90, 40
+        pairs = []
+        A, B = (10, 30), (46, 66)
+        for a in range(1, total + 1):
+            for b in range(a + 1, min(a + band, total) + 1):
+                if A[0] <= a <= b <= A[1] or B[0] <= a <= b <= B[1]:
+                    p = 0.3
+                else:
+                    p = 0.003  # no crossing bridges
+                pairs.append((a, b, rng.random() < p))
+        table, eligible, bridge = _eb(pairs)
+        domains, _ = _calc_domains_by_dp_segmentation(
+            table,
+            eligible,
+            bridge,
+            1,
+            total,
+            pair_fdr=0.05,
+            detect_fdr=0.05,
+            merge_fdr=0.05,
+            max_domain_length=200,
+        )
+        big = [(s, e) for s, e in domains if e - s + 1 >= 10]
+        self.assertEqual(len(big), 2, f"expected two domains, got {big}")
+
+    def test_block_locality_distant_dense_block_does_not_change_call(self):
+        # A near real domain must still be called (with the same dense core)
+        # whether or not a distant dense block is present -- regression for
+        # failure #1 (a distant domain cannot corrupt an unrelated region's
+        # call). The exact extended boundary may shift slightly because pi0 is a
+        # global background estimate, so assert the core is robustly recovered
+        # rather than byte-identical coordinates.
+        def run(with_distant):
+            rng = np.random.default_rng(12)
+            total, band = 120, 20
+            pairs = []
+            for a in range(1, total + 1):
+                for b in range(a + 1, min(a + band, total) + 1):
+                    if 10 <= a <= b <= 30:  # the near real domain
+                        p = 0.3
+                    elif with_distant and 90 <= a <= b <= 115:  # distant dense
+                        p = 0.5
+                    else:
+                        p = 0.003
+                    pairs.append((a, b, rng.random() < p))
+            table, eligible, bridge = _eb(pairs)
+            domains, _ = _calc_domains_by_dp_segmentation(
+                table,
+                eligible,
+                bridge,
+                1,
+                total,
+                pair_fdr=0.05,
+                detect_fdr=0.05,
+                merge_fdr=0.05,
+                max_domain_length=200,
+            )
+            # the near domain (overlapping [10,30]), restricted below position 80
+            return [(s, e) for s, e in domains if e < 80 and e - s + 1 >= 10]
+
+        for res in (run(False), run(True)):
+            self.assertEqual(len(res), 1, res)
+            s, e = res[0]
+            self.assertLessEqual(s, 12, res)  # core start recovered
+            self.assertGreaterEqual(e, 28, res)  # core end recovered
+
+    def test_max_domain_length_bounds_final_domains(self):
+        rng = np.random.default_rng(13)
+        total, band = 100, 30
+        pairs = []
+        for a in range(1, total + 1):
+            for b in range(a + 1, min(a + band, total) + 1):
+                p = 0.35 if 10 <= a <= b <= 90 else 0.003
+                pairs.append((a, b, rng.random() < p))
+        table, eligible, bridge = _eb(pairs)
+        domains, _ = _calc_domains_by_dp_segmentation(
+            table,
+            eligible,
+            bridge,
+            1,
+            total,
+            pair_fdr=0.05,
+            detect_fdr=0.05,
+            merge_fdr=0.05,
+            max_domain_length=30,
+        )
+        for s, e in domains:
+            self.assertLessEqual(e - s + 1, 30)
+
+    def test_out_of_order_ends_raise(self):
+        table, eligible, bridge = _eb([(1, 3, True)])
+        with self.assertRaises(IncompatibleValuesError):
+            _calc_domains_by_dp_segmentation(
+                table,
+                eligible,
+                bridge,
+                10,
+                1,
+                pair_fdr=0.05,
+                detect_fdr=0.05,
+                merge_fdr=0.05,
+                max_domain_length=100,
+            )
+
+    def test_bad_max_domain_length_raises(self):
+        table, eligible, bridge = _eb([(1, 3, True)])
+        with self.assertRaises(OutOfBoundsError):
+            _calc_domains_by_dp_segmentation(
+                table,
+                eligible,
+                bridge,
+                1,
+                10,
+                pair_fdr=0.05,
+                detect_fdr=0.05,
+                merge_fdr=0.05,
+                max_domain_length=0,
+            )
 
 
 class ScanTestBase(ut.TestCase):
@@ -574,774 +1143,6 @@ class ScanTestBase(ut.TestCase):
         return idmut_dirs
 
 
-class TestCalcDomainsByDpSegmentation(ut.TestCase):
-    """End-to-end tests of the DP block-diagonal domain caller."""
-
-    TOTAL_END5, TOTAL_END3 = 1, 50
-    DOMAIN_A = (1, 15)
-    DOMAIN_B = (36, 50)
-    BAND = 10
-    N_COV = 2000.0
-    DOMAIN_FDR = 0.1
-
-    @classmethod
-    def _in_domain(cls, i: int, j: int) -> bool:
-        a_lo, a_hi = cls.DOMAIN_A
-        b_lo, b_hi = cls.DOMAIN_B
-        return (a_lo <= i and j <= a_hi) or (b_lo <= i and j <= b_hi)
-
-    def _build_table(self):
-        rows = _rows_over_region(
-            self.TOTAL_END5,
-            self.TOTAL_END3,
-            self.BAND,
-            self._in_domain,
-            n_cov=self.N_COV,
-        )
-        return _make_table(rows)
-
-    def test_domains_recovered_and_not_merged(self):
-        table = self._build_table()
-        domains = _calc_domains_by_dp_segmentation(
-            table,
-            self.TOTAL_END5,
-            self.TOTAL_END3,
-            min_pair_coverage=1,
-            min_expect_both=0,
-            anticorr_only=False,
-            detect_fdr=self.DOMAIN_FDR,
-            merge_fdr=self.DOMAIN_FDR,
-        )
-        self.assertTrue(domains, "Expected at least one domain to be called")
-        for start, end in domains:
-            self.assertFalse(
-                start <= self.DOMAIN_A[0] and self.DOMAIN_B[1] <= end,
-                f"Domain {(start, end)} spans both clusters",
-            )
-        for lo, hi in (self.DOMAIN_A, self.DOMAIN_B):
-            expect_length = hi - lo + 1
-            self.assertTrue(
-                any(
-                    max(min(end, hi) - max(start, lo) + 1, 0) >= expect_length / 2
-                    for start, end in domains
-                ),
-                f"Domain {(lo, hi)} not recovered in {domains}",
-            )
-
-    def test_uniform_correlation_is_one_domain(self):
-        # Every pair in the whole scanned region is strongly correlated:
-        # unlike the old density caller (which needed a sparser background to
-        # contrast against and called nothing), the distributional score sees
-        # the entire region as drawn from a wider-than-null distribution, so
-        # it is one domain spanning the whole region.
-        rows = _rows_over_region(
-            self.TOTAL_END5, self.TOTAL_END3, self.BAND, lambda i, j: True
-        )
-        table = _make_table(rows)
-        domains = _calc_domains_by_dp_segmentation(
-            table,
-            self.TOTAL_END5,
-            self.TOTAL_END3,
-            min_pair_coverage=1,
-            min_expect_both=0,
-            anticorr_only=False,
-            detect_fdr=self.DOMAIN_FDR,
-            merge_fdr=self.DOMAIN_FDR,
-        )
-        self.assertEqual(domains, [(self.TOTAL_END5, self.TOTAL_END3)])
-
-    def test_sparse_region_has_no_domain(self):
-        rows = _rows_over_region(
-            self.TOTAL_END5, self.TOTAL_END3, self.BAND, lambda i, j: False
-        )
-        table = _make_table(rows)
-        domains = _calc_domains_by_dp_segmentation(
-            table,
-            self.TOTAL_END5,
-            self.TOTAL_END3,
-            min_pair_coverage=1,
-            min_expect_both=0,
-            anticorr_only=False,
-            detect_fdr=self.DOMAIN_FDR,
-            merge_fdr=self.DOMAIN_FDR,
-        )
-        self.assertEqual(domains, [])
-
-    def test_min_pair_coverage_excludes_low_coverage_pairs(self):
-        table = self._build_table()
-        # Below the pairs' actual coverage (N_COV): pairs pass through
-        # unfiltered, and the domains are detected as usual.
-        domains = _calc_domains_by_dp_segmentation(
-            table,
-            self.TOTAL_END5,
-            self.TOTAL_END3,
-            min_pair_coverage=1,
-            min_expect_both=0,
-            anticorr_only=False,
-            detect_fdr=self.DOMAIN_FDR,
-            merge_fdr=self.DOMAIN_FDR,
-        )
-        self.assertTrue(domains)
-        # Above the pairs' actual coverage: every pair is filtered out,
-        # so no domain can be detected.
-        domains = _calc_domains_by_dp_segmentation(
-            table,
-            self.TOTAL_END5,
-            self.TOTAL_END3,
-            min_pair_coverage=int(self.N_COV) + 1,
-            min_expect_both=0,
-            anticorr_only=False,
-            detect_fdr=self.DOMAIN_FDR,
-            merge_fdr=self.DOMAIN_FDR,
-        )
-        self.assertEqual(domains, [])
-
-    def test_min_expect_both_excludes_pairs_with_low_expected_count(self):
-        # Same domain/background chi-squares as _build_table, but with the
-        # confusion cells built so the independence-expected both-mutated
-        # count (a * b / N) is far below 5 despite ample coverage (N_COV):
-        # standard chi-square practice requires expected cell counts >= ~5.
-        import pandas as pd
-
-        def build_table(low_expected: bool):
-            rows = _rows_over_region(
-                self.TOTAL_END5,
-                self.TOTAL_END3,
-                self.BAND,
-                self._in_domain,
-                n_cov=self.N_COV,
-            )
-            pos_a, pos_b, ns, chi2 = zip(*rows)
-            if low_expected:
-                only_a = [2.0] * len(rows)
-                only_b = [2.0] * len(rows)
-                both = [1.0] * len(rows)
-            else:
-                only_a = [n / 2 for n in ns]
-                only_b = [n / 2 for n in ns]
-                both = [n / 4 for n in ns]
-            neither = [
-                n - (a + b - ab) for n, a, b, ab in zip(ns, only_a, only_b, both)
-            ]
-            index = pd.MultiIndex.from_arrays(
-                [pos_a, pos_b], names=[POSITION_A, POSITION_B]
-            )
-            return pd.DataFrame(
-                {
-                    N_COL: ns,
-                    CHI_SQUARE_COL: chi2,
-                    NEITHER_COL: neither,
-                    ONLY_A_COL: only_a,
-                    ONLY_B_COL: only_b,
-                    BOTH_COL: both,
-                },
-                index=index,
-            )
-
-        # Low expected-both: every pair is excluded, so no domain is called.
-        table = build_table(low_expected=True)
-        domains = _calc_domains_by_dp_segmentation(
-            table,
-            self.TOTAL_END5,
-            self.TOTAL_END3,
-            min_pair_coverage=1,
-            min_expect_both=5,
-            anticorr_only=False,
-            detect_fdr=self.DOMAIN_FDR,
-            merge_fdr=self.DOMAIN_FDR,
-        )
-        self.assertEqual(domains, [], "Pairs with expected-both < 5 must be excluded")
-        # The same chi-squares with ample expected-both: recovered as usual.
-        table = build_table(low_expected=False)
-        domains = _calc_domains_by_dp_segmentation(
-            table,
-            self.TOTAL_END5,
-            self.TOTAL_END3,
-            min_pair_coverage=1,
-            min_expect_both=5,
-            anticorr_only=False,
-            detect_fdr=self.DOMAIN_FDR,
-            merge_fdr=self.DOMAIN_FDR,
-        )
-        self.assertTrue(domains)
-
-    def test_min_pair_coverage_must_be_at_least_one(self):
-        table = self._build_table()
-        with self.assertRaises(OutOfBoundsError):
-            _calc_domains_by_dp_segmentation(
-                table,
-                self.TOTAL_END5,
-                self.TOTAL_END3,
-                min_pair_coverage=0,
-                min_expect_both=0,
-                anticorr_only=False,
-                detect_fdr=self.DOMAIN_FDR,
-                merge_fdr=self.DOMAIN_FDR,
-            )
-
-    def test_anticorr_only_excludes_positive_correlation_domain(self):
-        # DOMAIN_A is built with mutually-exclusive (negative-correlation)
-        # confusion cells; DOMAIN_B, equally strong in chi-square, is built
-        # with co-occurring (positive-correlation) cells instead. Only the
-        # correlation sign distinguishes them.
-        import pandas as pd
-
-        a_rows = _rows_over_region(
-            *self.DOMAIN_A, self.BAND, lambda i, j: True, n_cov=self.N_COV
-        )
-        b_rows = _rows_over_region(
-            *self.DOMAIN_B, self.BAND, lambda i, j: True, n_cov=self.N_COV
-        )
-        table = pd.concat(
-            [
-                _make_signed_table(a_rows, negative=True),
-                _make_signed_table(b_rows, negative=False),
-            ]
-        ).sort_index()
-
-        def call(anticorr_only: bool):
-            return _calc_domains_by_dp_segmentation(
-                table,
-                self.TOTAL_END5,
-                self.TOTAL_END3,
-                min_pair_coverage=1,
-                min_expect_both=0,
-                anticorr_only=anticorr_only,
-                detect_fdr=self.DOMAIN_FDR,
-                merge_fdr=self.DOMAIN_FDR,
-            )
-
-        domains_restricted = call(anticorr_only=True)
-        self.assertTrue(
-            any(
-                s <= self.DOMAIN_A[0] and self.DOMAIN_A[1] <= e
-                for s, e in domains_restricted
-            ),
-            f"Negatively-correlated DOMAIN_A not recovered in {domains_restricted}",
-        )
-        self.assertFalse(
-            any(
-                s <= self.DOMAIN_B[1] and self.DOMAIN_B[0] <= e
-                for s, e in domains_restricted
-            ),
-            f"Positively-correlated DOMAIN_B must be invisible under "
-            f"anticorr_only=True, got {domains_restricted}",
-        )
-
-        # With anticorr_only off (the old sign-blind behavior), both
-        # domains are recovered regardless of sign.
-        domains_all = call(anticorr_only=False)
-        for lo, hi in (self.DOMAIN_A, self.DOMAIN_B):
-            self.assertTrue(
-                any(s <= lo and hi <= e for s, e in domains_all),
-                f"Domain {(lo, hi)} not recovered with anticorr_only=False, "
-                f"got {domains_all}",
-            )
-
-    def test_masked_pairs_never_contribute(self):
-        # A "masked" pocket in the gap between the two real domains:
-        # strongly correlated pairs, but at coverage far below
-        # min_pair_coverage, as if these positions had too little read
-        # depth to trust (even though, if not excluded, they would look
-        # like a spurious third domain). The filter must make them
-        # invisible, not merely down-weighted: calling with and without
-        # the pocket present must give byte-identical results -- including
-        # every candidate block's own locally-fit variance-inflation shape
-        # r, so the pocket is excluded from scoring too (at min_pair_coverage).
-        min_pair_coverage = 100
-
-        def build_rows(masked_pocket: bool):
-            rows = []
-            for i in range(self.TOTAL_END5, self.TOTAL_END3 + 1):
-                for j in range(i + 1, min(i + self.BAND, self.TOTAL_END3) + 1):
-                    if masked_pocket and 16 <= i and j <= 35:
-                        # N=1 (below min_pair_coverage), spuriously strong.
-                        rows.append((i, j, 1.0, 30.0))
-                    else:
-                        chi2 = 30.0 if self._in_domain(i, j) else 1.0
-                        rows.append((i, j, self.N_COV, chi2))
-            return rows
-
-        table_baseline = _make_table(build_rows(masked_pocket=False))
-        table_with_masked = _make_table(build_rows(masked_pocket=True))
-        domains_baseline = _calc_domains_by_dp_segmentation(
-            table_baseline,
-            self.TOTAL_END5,
-            self.TOTAL_END3,
-            min_pair_coverage=min_pair_coverage,
-            min_expect_both=0,
-            anticorr_only=False,
-            detect_fdr=self.DOMAIN_FDR,
-            merge_fdr=self.DOMAIN_FDR,
-        )
-        domains_with_masked = _calc_domains_by_dp_segmentation(
-            table_with_masked,
-            self.TOTAL_END5,
-            self.TOTAL_END3,
-            min_pair_coverage=min_pair_coverage,
-            min_expect_both=0,
-            anticorr_only=False,
-            detect_fdr=self.DOMAIN_FDR,
-            merge_fdr=self.DOMAIN_FDR,
-        )
-        self.assertTrue(domains_baseline, "Expected at least one domain to be called")
-        self.assertEqual(domains_baseline, domains_with_masked)
-
-    def test_domain_longer_than_band_recovered(self):
-        # Stress the far/near split in _triangle_sum_banded: a domain
-        # longer than the band width, so most of a candidate block's
-        # own triangle sum must come from the "far" (full-row) branch,
-        # not just the "near" (partial-row) branch close to its end.
-        total_end5, total_end3 = 1, 80
-        band = 15
-        domain = (20, 60)
-
-        def is_significant(i: int, j: int) -> bool:
-            return domain[0] <= i and j <= domain[1]
-
-        rows = _rows_over_region(
-            total_end5, total_end3, band, is_significant, n_cov=self.N_COV
-        )
-        table = _make_table(rows)
-        domains = _calc_domains_by_dp_segmentation(
-            table,
-            total_end5,
-            total_end3,
-            min_pair_coverage=1,
-            min_expect_both=0,
-            anticorr_only=False,
-            detect_fdr=self.DOMAIN_FDR,
-            merge_fdr=self.DOMAIN_FDR,
-        )
-        expect_length = domain[1] - domain[0] + 1
-        self.assertTrue(
-            any(
-                max(min(end, domain[1]) - max(start, domain[0]) + 1, 0)
-                >= expect_length / 2
-                for start, end in domains
-            ),
-            f"Domain {domain} not recovered in {domains}",
-        )
-
-    def test_out_of_order_ends_raise(self):
-        table = self._build_table()
-        with self.assertRaises(IncompatibleValuesError):
-            _calc_domains_by_dp_segmentation(
-                table,
-                self.TOTAL_END3,
-                self.TOTAL_END5,
-                min_pair_coverage=1,
-                min_expect_both=0,
-                anticorr_only=False,
-                detect_fdr=self.DOMAIN_FDR,
-                merge_fdr=self.DOMAIN_FDR,
-            )
-
-    def test_pair_outside_region_raises(self):
-        # A pair whose position lies beyond total_end3 would otherwise be
-        # scattered out of bounds (IndexError) or wrap a negative index;
-        # it must raise an explicit, interpretable error instead.
-        rows = _rows_over_region(
-            self.TOTAL_END5, self.TOTAL_END3, self.BAND, self._in_domain
-        )
-        rows.append((self.TOTAL_END3, self.TOTAL_END3 + 5, self.N_COV, 0.0))
-        table = _make_table(rows)
-        with self.assertRaises(OutOfBoundsError):
-            _calc_domains_by_dp_segmentation(
-                table,
-                self.TOTAL_END5,
-                self.TOTAL_END3,
-                min_pair_coverage=1,
-                min_expect_both=0,
-                anticorr_only=False,
-                detect_fdr=self.DOMAIN_FDR,
-                merge_fdr=self.DOMAIN_FDR,
-            )
-
-    def test_realistic_noise_does_not_fragment_the_domain(self):
-        # _block_score alone (no p-value gate) can prefer atomizing a real
-        # domain into single-pair fragments over reporting it whole, once
-        # per-pair chi-square carries realistic sampling noise rather than
-        # an idealized constant (verified this session: ~3.6% margin for a
-        # 150-pair domain). The Benjamini-Hochberg p-value gate closes this
-        # gap by rejecting most such "lucky" fragments against the full
-        # candidate pool. Build one real domain (every pair elevated, but
-        # each pair's own chi-square independently noisy) and confirm it
-        # comes back as one contiguous domain, not shattered into pieces
-        # far smaller than its true extent.
-        import numpy as np
-
-        total_end5, total_end3, band = 1, 30, 10
-        rng = np.random.default_rng(0)
-        true_r = 29.0
-        rows = []
-        for i in range(total_end5, total_end3 + 1):
-            for j in range(i + 1, min(i + band, total_end3) + 1):
-                chi2 = float((1 + true_r) * rng.chisquare(df=1))
-                rows.append((i, j, self.N_COV, chi2))
-        table = _make_table(rows)
-        domains = _calc_domains_by_dp_segmentation(
-            table,
-            total_end5,
-            total_end3,
-            min_pair_coverage=1,
-            min_expect_both=0,
-            anticorr_only=False,
-            detect_fdr=self.DOMAIN_FDR,
-            merge_fdr=self.DOMAIN_FDR,
-        )
-        self.assertTrue(domains, "Expected the domain to be recovered")
-        expect_length = total_end3 - total_end5 + 1
-        self.assertTrue(
-            any((end - start + 1) >= expect_length / 2 for start, end in domains),
-            f"Domain was fragmented into pieces far smaller than its true "
-            f"extent instead of reported (near-)whole: {domains}",
-        )
-
-
-class TestDpSegmentationAntiOverSplit(ut.TestCase):
-    """The core design property of the DP block caller: splitting a
-    domain forfeits the evidence of every significant pair that would
-    have to move to the background. Two adjacent sub-domains [1,50]
-    and [51,100], with a sparse background beyond [100,150] to give
-    the model something to contrast against, are called as ONE domain
-    when the pairs crossing between them (a in [1,50], b in [51,100])
-    are also dense, but as TWO separate domains when that crossing
-    region is sparse -- the exact mechanism discussed as the reason
-    the DP model keeps a domain bridged by many crossing pairs whole
-    instead of over-splitting it."""
-
-    TOTAL_END5, TOTAL_END3 = 1, 150
-    SUB_A = (1, 50)
-    SUB_B = (51, 100)
-    BAND = 149
-    N_COV = 2000.0
-    DOMAIN_FDR = 0.1
-
-    @classmethod
-    def _in_sub(cls, lo_hi, i: int, j: int) -> bool:
-        lo, hi = lo_hi
-        return lo <= i and j <= hi
-
-    def _build_table(self, dense_bridge: bool):
-        def is_significant(i: int, j: int) -> bool:
-            if self._in_sub(self.SUB_A, i, j) or self._in_sub(self.SUB_B, i, j):
-                return True
-            if (
-                dense_bridge
-                and self.SUB_A[0] <= i <= self.SUB_A[1]
-                and self.SUB_B[0] <= j <= self.SUB_B[1]
-            ):
-                return True
-            return False
-
-        rows = _rows_over_region(
-            self.TOTAL_END5,
-            self.TOTAL_END3,
-            self.BAND,
-            is_significant,
-            n_cov=self.N_COV,
-        )
-        return _make_table(rows)
-
-    def test_dense_bridge_keeps_domain_whole(self):
-        table = self._build_table(dense_bridge=True)
-        domains = _calc_domains_by_dp_segmentation(
-            table,
-            self.TOTAL_END5,
-            self.TOTAL_END3,
-            min_pair_coverage=1,
-            min_expect_both=0,
-            anticorr_only=False,
-            detect_fdr=self.DOMAIN_FDR,
-            merge_fdr=self.DOMAIN_FDR,
-        )
-        self.assertTrue(
-            any(
-                start <= self.SUB_A[0] and self.SUB_B[1] <= end
-                for start, end in domains
-            ),
-            f"Expected one domain spanning both sub-clusters in {domains}",
-        )
-
-    def test_sparse_bridge_splits_domain(self):
-        table = self._build_table(dense_bridge=False)
-        domains = _calc_domains_by_dp_segmentation(
-            table,
-            self.TOTAL_END5,
-            self.TOTAL_END3,
-            min_pair_coverage=1,
-            min_expect_both=0,
-            anticorr_only=False,
-            detect_fdr=self.DOMAIN_FDR,
-            merge_fdr=self.DOMAIN_FDR,
-        )
-        self.assertFalse(
-            any(
-                start <= self.SUB_A[0] and self.SUB_B[1] <= end
-                for start, end in domains
-            ),
-            f"Did not expect one domain spanning both sub-clusters in {domains}",
-        )
-        for lo, hi in (self.SUB_A, self.SUB_B):
-            expect_length = hi - lo + 1
-            self.assertTrue(
-                any(
-                    max(min(end, hi) - max(start, lo) + 1, 0) >= expect_length / 2
-                    for start, end in domains
-                ),
-                f"Sub-domain {(lo, hi)} not recovered in {domains}",
-            )
-
-
-class TestCutCrossingScores(ut.TestCase):
-    """``_cut_crossing_scores`` sums, at every cut ``m``, exactly the
-    observable pairs ``(a, b)`` with ``a <= m < b`` -- the pairs that
-    straddle that specific cut."""
-
-    def test_no_pairs_straddle_any_cut(self):
-        # A pair entirely on one side of every cut (or, trivially, an
-        # empty table) contributes to no cut at all.
-        table = _make_table([])
-        n_cross, chi2_cross = _cut_crossing_scores(table, 1, 10)
-        self.assertEqual(n_cross.shape, (9,))
-        self.assertTrue((n_cross == 0).all())
-        self.assertTrue((chi2_cross == 0).all())
-
-    def test_single_pair_straddles_exactly_the_cuts_between_its_ends(self):
-        # Pair (3, 7) straddles cuts 3, 4, 5, 6 (between position m and
-        # m + 1, for m = 3..6) and no others.
-        table = _make_table([(3, 7, 2000.0, 12.0)])
-        n_cross, chi2_cross = _cut_crossing_scores(table, 1, 10)
-        expect_n = [0, 0, 1, 1, 1, 1, 0, 0, 0]
-        expect_chi2 = [0, 0, 12.0, 12.0, 12.0, 12.0, 0, 0, 0]
-        self.assertEqual(n_cross.tolist(), expect_n)
-        self.assertEqual(chi2_cross.tolist(), expect_chi2)
-
-    def test_multiple_pairs_accumulate_at_a_shared_cut(self):
-        table = _make_table(
-            [(1, 5, 2000.0, 10.0), (2, 6, 2000.0, 20.0), (4, 5, 2000.0, 5.0)]
-        )
-        n_cross, chi2_cross = _cut_crossing_scores(table, 1, 6)
-        # Cut m=4 (between positions 4 and 5) is straddled by all three
-        # pairs: (1,5), (2,6), (4,5).
-        self.assertEqual(n_cross[3], 3)
-        self.assertEqual(chi2_cross[3], 35.0)
-
-
-class TestMergeConnectedBlocks(ut.TestCase):
-    """``_merge_connected_blocks`` merges adjacent blocks whenever *every*
-    cut in the gap between them (including the block-edge cut itself) is
-    connected: its crossing pairs clear both the effect-size bar
-    (``_block_score >= 0``) and Benjamini-Hochberg significance. Both gates
-    are required -- a cut's crossing-pair count can be in the thousands (see
-    ``_cut_crossing_scores``), so significance alone flags a
-    biologically-trivial elevation as "real" (verified below)."""
-
-    def _score_and_pvalue(self, n: float, chi2_sum: float):
-        from scipy.stats import chi2 as chi2dist
-
-        gain = float(_block_score(np.array([n]), np.array([chi2_sum]))[0])
-        pval = float(chi2dist.sf(chi2_sum, df=n))
-        return gain, pval
-
-    def test_transitive_merge_across_a_bridged_gap(self):
-        # Three blocks; every cut in both gaps is strongly connected, so
-        # all three should merge transitively into one domain.
-        blocks = [(0, 9), (20, 29), (40, 49)]
-        n_cross = np.full(49, 100.0)
-        chi2_cross = np.full(49, 100.0 * 4.0)  # mean chi2 = 4: strong signal
-        merged = _merge_connected_blocks(blocks, n_cross, chi2_cross, merge_fdr=0.1)
-        self.assertEqual(merged, [(0, 49)])
-
-    def test_one_null_cut_in_a_gap_keeps_that_gap_split(self):
-        # Gap 1 (cuts 9..19) is strong everywhere except cut 14, which is
-        # null; gap 2 (cuts 29..39) is strong everywhere. Only gap 2 should
-        # merge.
-        blocks = [(0, 9), (20, 29), (40, 49)]
-        n_cross = np.full(49, 100.0)
-        chi2_cross = np.full(49, 100.0 * 4.0)
-        n_cross[14] = 100.0
-        chi2_cross[14] = 100.0  # mean chi2 = 1: null
-        merged = _merge_connected_blocks(blocks, n_cross, chi2_cross, merge_fdr=0.1)
-        self.assertEqual(merged, [(0, 9), (20, 49)])
-
-    def test_effect_size_gate_rejects_a_faint_but_bh_significant_crossing(self):
-        # A gap whose crossing pairs are elevated only trivially above the
-        # null (mean chi2 = 1.05) but with a huge n (5000, the scale of an
-        # actual cut's crossing-pair count): BH-significance alone would
-        # call this "connected" (p ~ 7e-3), but the exact block score is
-        # negative (BIC-charged effect size below the bar), so the gap
-        # must stay split.
-        n, mean = 5000.0, 1.05
-        gain, pval = self._score_and_pvalue(n, n * mean)
-        self.assertLess(gain, 0.0)
-        self.assertLess(pval, 0.1)  # BH-significant on its own
-        blocks = [(0, 9), (20, 29)]
-        n_cross = np.full(19, n)
-        chi2_cross = np.full(19, n * mean)
-        merged = _merge_connected_blocks(blocks, n_cross, chi2_cross, merge_fdr=0.1)
-        self.assertEqual(merged, blocks)
-
-    def test_merge_never_extends_past_the_given_blocks(self):
-        blocks = [(0, 9), (20, 29)]
-        n_cross = np.full(19, 100.0)
-        chi2_cross = np.full(19, 100.0 * 4.0)
-        merged = _merge_connected_blocks(blocks, n_cross, chi2_cross, merge_fdr=0.1)
-        self.assertEqual(merged, [(0, 29)])
-
-    def test_grouping_is_independent_of_sweep_direction(self):
-        # Four blocks, three gaps: gap 1 and gap 3 strongly connected,
-        # gap 2 null. Whether grouped left-to-right (as implemented) or
-        # right-to-left, the connectivity of each gap is fixed in advance
-        # (it depends only on that gap's own cut scores, never on merge
-        # decisions elsewhere), so both sweep directions must produce the
-        # identical partition.
-        blocks = [(0, 9), (20, 29), (40, 49), (60, 69)]
-        n_cross = np.full(69, 100.0)
-        chi2_cross = np.full(69, 100.0 * 4.0)
-        n_cross[29:40] = 100.0
-        chi2_cross[29:40] = 100.0  # gap 2 (cuts 29..39) is null
-
-        def merge_right_to_left(blocks, n_cross, chi2_cross, merge_fdr):
-            from scipy.stats import chi2 as chi2dist
-
-            valid = n_cross > 0
-            gains = np.where(
-                valid, _block_score(np.maximum(n_cross, 1), chi2_cross), -1.0
-            )
-            with np.errstate(divide="ignore", invalid="ignore"):
-                pvals = np.where(
-                    valid, chi2dist.sf(chi2_cross, df=np.maximum(n_cross, 1)), 1.0
-                )
-            qvals = np.ones_like(pvals)
-            if valid.any():
-                qvals[valid] = calc_bh_adjusted_pvals(pvals[valid])
-            connected = valid & (gains >= 0.0) & (qvals <= merge_fdr)
-            gap_connected = [
-                bool(connected[blocks[i][1] : blocks[i + 1][0]].all())
-                for i in range(len(blocks) - 1)
-            ]
-            merged = [blocks[-1]]
-            for i in range(len(blocks) - 2, -1, -1):
-                if gap_connected[i]:
-                    _, e1 = merged[0]
-                    s0, _ = blocks[i]
-                    merged[0] = (s0, e1)
-                else:
-                    merged.insert(0, blocks[i])
-            return merged
-
-        forward = _merge_connected_blocks(blocks, n_cross, chi2_cross, merge_fdr=0.1)
-        backward = merge_right_to_left(blocks, n_cross, chi2_cross, merge_fdr=0.1)
-        self.assertEqual(forward, backward)
-        self.assertEqual(forward, [(0, 29), (40, 69)])
-
-    def test_fewer_than_two_blocks_returned_unchanged(self):
-        self.assertEqual(
-            _merge_connected_blocks([], np.zeros(0), np.zeros(0), merge_fdr=0.1), []
-        )
-        self.assertEqual(
-            _merge_connected_blocks([(0, 9)], np.zeros(0), np.zeros(0), merge_fdr=0.1),
-            [(0, 9)],
-        )
-
-
-class TestMergeConnectedBlocksIntegration(ut.TestCase):
-    """The scenario that motivated ``_merge_connected_blocks``: two dense
-    blocks (DOMAIN_A, DOMAIN_B) separated by a genuinely null gap --
-    every gap-internal and block-to-gap pair is pure null, so the DP's
-    own whole-bridge objective (union minus each block's own triangle)
-    is necessarily very negative and the DP splits them (see
-    ``_merge_connected_blocks``'s docstring for why a post-hoc re-test of
-    that same whole-bridge quantity could never find anything to join).
-    But when there is real, direct evidence connecting the two blocks
-    -- pairs with one endpoint in each, independent of the gap between
-    them -- the merge should still report one domain spanning both; when
-    that direct evidence is absent, it should correctly leave them split.
-    This is the real-world case discovered in a 1M-read dataset: two
-    pieces of what was structurally one long-range-paired domain,
-    separated by an unpaired linker with no correlations of its own,
-    wrongly reported as two domains until this mechanism was added."""
-
-    DOMAIN_A = (1, 10)
-    GAP = (11, 30)
-    DOMAIN_B = (31, 40)
-    TOTAL_END5, TOTAL_END3 = DOMAIN_A[0], DOMAIN_B[1]
-    BAND = TOTAL_END3 - TOTAL_END5
-    N_COV = 2000.0
-    DOMAIN_FDR = 0.1
-    # Below this many elevated direct A-to-B crossing pairs (out of the
-    # 10*10=100 possible), the crossing evidence itself nets negative;
-    # comfortably above it, the join should fire (verified offline).
-    N_CROSS_ELEVATED_JOINS = 10
-
-    def _build_table(self, n_cross_elevated: int):
-        a_lo, a_hi = self.DOMAIN_A
-        b_lo, b_hi = self.DOMAIN_B
-        cross_pairs = [
-            (i, j) for i in range(a_lo, a_hi + 1) for j in range(b_lo, b_hi + 1)
-        ]
-        elevated = set(cross_pairs[:n_cross_elevated])
-        rows = []
-        for i in range(self.TOTAL_END5, self.TOTAL_END3 + 1):
-            for j in range(i + 1, min(i + self.BAND, self.TOTAL_END3) + 1):
-                if a_lo <= i <= a_hi and a_lo <= j <= a_hi:
-                    chi2 = 30.0
-                elif b_lo <= i <= b_hi and b_lo <= j <= b_hi:
-                    chi2 = 30.0
-                elif (i, j) in elevated:
-                    chi2 = 30.0
-                else:
-                    chi2 = 1.0
-                rows.append((i, j, self.N_COV, chi2))
-        return _make_table(rows)
-
-    def _call(self, n_cross_elevated: int):
-        table = self._build_table(n_cross_elevated)
-        return _calc_domains_by_dp_segmentation(
-            table,
-            self.TOTAL_END5,
-            self.TOTAL_END3,
-            min_pair_coverage=1,
-            min_expect_both=0,
-            anticorr_only=False,
-            detect_fdr=self.DOMAIN_FDR,
-            merge_fdr=self.DOMAIN_FDR,
-        )
-
-    def test_dp_alone_splits_across_the_null_gap(self):
-        # With no direct crossing evidence at all, the DP itself must
-        # split -- the gap is genuinely null -- and the merge must not
-        # manufacture a connection that isn't there.
-        domains = self._call(n_cross_elevated=0)
-        self.assertFalse(
-            any(
-                start <= self.DOMAIN_A[0] and end >= self.DOMAIN_B[1]
-                for start, end in domains
-            ),
-            f"Did not expect A and B joined with no crossing evidence, got {domains}",
-        )
-        for lo, hi in (self.DOMAIN_A, self.DOMAIN_B):
-            self.assertTrue(
-                any(start <= lo and hi <= end for start, end in domains),
-                f"Sub-domain {(lo, hi)} not recovered whole in {domains}",
-            )
-
-    def test_real_crossing_evidence_joins_across_the_null_gap(self):
-        # The DP still splits them (the gap alone makes the whole-bridge
-        # objective very negative), but the direct A-to-B crossing pairs
-        # alone are real signal against the null, so the merge fires.
-        domains = self._call(n_cross_elevated=self.N_CROSS_ELEVATED_JOINS)
-        self.assertTrue(
-            any(
-                start <= self.DOMAIN_A[0] and end >= self.DOMAIN_B[1]
-                for start, end in domains
-            ),
-            f"Expected the real crossing evidence to join A and B, got {domains}",
-        )
-
-
 class TestFilterScan(ScanTestBase):
     """Test that filterscan identifies domains without clustering."""
 
@@ -1402,6 +1203,72 @@ class TestFilterScan(ScanTestBase):
         result = runner.invoke(seismic_cli, args, catch_exceptions=False)
         self.assertEqual(result.exit_code, 0, msg=result.output)
         set_config(verbosity=Level.ERROR, log_file_path=None, exit_on_error=True)
+
+
+class TestSplitAuthenticity(ScanTestBase):
+    """Validate that a genuine domain split is authentic: if two domains are
+    truly independent structural units, clustering them separately should
+    recover -- up to EM/sampling noise -- the same joint mixture as
+    clustering the merged region. Concretely, the merged region's cluster
+    count and proportions should match the CARTESIAN PRODUCT of the two
+    domains' independent clusterings: ``K_merged == K_A * K_B`` and the
+    merged proportions should equal the outer product of the two domains'
+    marginal proportions. This is a general check of the splitting concept
+    (not specific to the insulation-based caller): an authentic boundary is
+    one where the two sides are statistically independent, which is exactly
+    what the cartesian-product prediction tests."""
+
+    def _cluster_region(self, idmut_dirs, end5: int, end3: int, max_clusters: int):
+        filter_dirs = run_filter(
+            idmut_dirs,
+            region_coords=[(self.REF, end5, end3)],
+            filter_pos_table=False,
+            filter_read_table=False,
+            brotli_level=0,
+        )
+        cluster_dirs = run_cluster(
+            filter_dirs,
+            max_clusters=max_clusters,
+            min_em_runs=1,
+            max_em_runs=1,
+            jackpot=False,
+            cluster_pos_table=False,
+            cluster_abundance_table=False,
+            brotli_level=0,
+            seed=0,
+        )
+        report_file = cluster_dirs[0].joinpath("cluster-report.json")
+        dataset = ClusterMutsDataset(report_file)
+        params = get_clust_params(dataset)
+        proportions = params.loc[(0, "p")].to_numpy(dtype=float)
+        return dataset.best_k, proportions
+
+    def test_merged_region_matches_cartesian_product_of_separate_domains(self):
+        # DOMAINS[0] and DOMAINS[2] each independently fold into 2
+        # alternative structures, and are structurally unrelated to each
+        # other (no shared base pairing), so they are a genuine authentic-
+        # split pair. Use full-length reads (read_length == the merged
+        # reference's own length) so every read spans BOTH domains and can
+        # carry linking evidence about their JOINT cluster assignment --
+        # without that, no single read could ever reveal which domain-A
+        # structure co-occurs with which domain-B structure, and the merged
+        # clustering could not resolve a 4-way joint mixture at all.
+        idmut_dirs = self.sim_data([0, 2], 120, seed=0)
+        k_a, pi_a = self._cluster_region(idmut_dirs, 1, 60, max_clusters=4)
+        k_b, pi_b = self._cluster_region(idmut_dirs, 61, 120, max_clusters=4)
+        k_merged, pi_merged = self._cluster_region(idmut_dirs, 1, 120, max_clusters=8)
+        self.assertEqual(
+            k_merged,
+            k_a * k_b,
+            f"Expected the merged region's cluster count ({k_merged}) to "
+            f"equal the product of the separate domains' ({k_a} * {k_b})",
+        )
+        # Cluster labels are not aligned across the separate and merged
+        # runs, so compare the proportions as sorted, unlabeled sets: an
+        # authentic split predicts the merged proportions equal the outer
+        # product of the two domains' marginal proportions.
+        outer = np.outer(pi_a, pi_b).flatten()
+        np.testing.assert_allclose(np.sort(pi_merged), np.sort(outer), atol=0.05)
 
 
 if __name__ == "__main__":

@@ -103,7 +103,8 @@ All outputs go into ``{out}/{sample}/filterscan/{ref}/{reg}/``.
     The correlated pairs of positions found in the RNA.
 
 ``domains.csv``
-    The coordinates (5' and 3' ends) of the detected domains.
+    The coordinates (5' and 3' ends) of the final domains, and how each was
+    produced: called as-is, grown by ``--widen``, or inserted by ``--fill``.
 
 ``pairs_and_domains.html``
     An interactive plot of the correlated pairs and the domains built from them.
@@ -175,14 +176,33 @@ Correlated-pair detection
         connections; lower values merge fewer, more conservative ones.
 
 Domain length filters
-    ``--min-domain-length N``
-        Keep only the domains with at least this many positions (default 20).
+    ``--max-domain-length N``
+        Cap the length of every domain, in positions (default 0 = 2× the
+        median read length): the search for domains never calls one longer
+        than this, and ``--widen``/``--fill`` (below) never grow or insert
+        one longer than this either, so every domain fits within whatever
+        window the Cluster step will later analyze.
+    ``--min-block-length N``
+        Keep only the domains with at least this many positions (default
+        20): drops the shortest, least confident calls. Skipped when
+        ``--widen`` is set, since widening grows a short domain into its
+        neighboring gap instead of dropping it.
 
 Gap handling
-    ``--gap-mode {omit|insert|expand}``
-        What to do with the gaps between domains (default ``omit``):
-        ``omit`` leaves the gaps out, ``insert`` turns each gap into its own
-        domain, and ``expand`` grows the neighboring domains to fill the gaps.
+    ``--widen/--no-widen``
+        Grow each domain into the unstructured gaps on either side of it
+        (default: off), up to ``--max-domain-length`` in total. If two
+        neighboring domains both reach that limit before their shared gap
+        closes, whatever space is left between them stays a gap (which
+        ``--fill``, below, can then close).
+    ``--fill/--no-fill``
+        Insert domains into every gap that's left -- including the very
+        ends of the scanned region -- so every position ends up belonging
+        to exactly one domain (default: off). A gap longer than
+        ``--max-domain-length`` is split into the smallest number of
+        equally-sized domains that each stay within that limit, rather than
+        becoming one long, unwieldy domain. If ``--widen`` is also set, it
+        runs first, and ``--fill`` closes whatever gaps it leaves behind.
 
 Filter options
     All :doc:`filter` options are accepted and applied to each tile and domain.

@@ -110,10 +110,6 @@ DEFAULT_INJECTED_MUT_PROBS = {
     PROBE_NONE: "",
 }
 
-GAP_MODE_OMIT = "omit"
-GAP_MODE_INSERT = "insert"
-GAP_MODE_EXPAND = "expand"
-GAP_MODE = GAP_MODE_OMIT, GAP_MODE_INSERT, GAP_MODE_EXPAND
 
 FOLD_BACKEND_AUTO = "auto"
 FOLD_BACKEND_RNASTRUCTURE = "RNAstructure"
@@ -1208,20 +1204,57 @@ opt_erase_tiles = Option(
     help="Erase the filter reports/batches from the tiling step",
 )
 
-opt_min_domain_length = Option(
-    ("--min-domain-length",),
+opt_min_block_length = Option(
+    ("--min-block-length",),
     type=int,
     default=20,
-    help="Keep only the domains with at least this many positions",
+    help=(
+        "Keep only domains with at least this many positions (drops the "
+        "shortest called blocks; skipped when --widen is set, since "
+        "widening grows short domains into neighboring space instead of "
+        "dropping them)"
+    ),
 )
 
-opt_gap_mode = Option(
-    ("--gap-mode",),
-    type=Choice(GAP_MODE, case_sensitive=False),
-    default=GAP_MODE_OMIT,
-    help="If there are gaps between regions to cluster, OMIT (do not cluster) "
-    "the gaps, INSERT a new region into each gap, or EXPAND the existing "
-    "regions to fill the gaps",
+opt_validate_gaps = Option(
+    ("--validate-gaps/--no-validate-gaps",),
+    type=bool,
+    default=False,
+    help=(
+        "In clusterscan, validate every gap between adjacent filterscan "
+        "domains: test on the reads spanning each gap whether the two "
+        "domains' clusters are independent, and merge domains whose gap "
+        "fails (see --gap-min-assoc). Off by default because it re-filters "
+        "and re-clusters merged regions, which is expensive"
+    ),
+)
+
+opt_gap_min_assoc = Option(
+    ("--gap-min-assoc",),
+    type=float,
+    default=0.1,
+    help=(
+        "When validating a gap between two filterscan domains in "
+        "clusterscan, keep the gap only if the two domains' clusters are "
+        "independent on the reads spanning it. A gap fails (and the "
+        "domains are merged) when the free-association model beats the "
+        "independent (product) model by Bayesian information criterion "
+        "AND the fitted joint cluster proportions deviate from the outer "
+        "product of the marginals by more than this fraction: higher "
+        "values merge fewer (only strongly coupled) gaps; lower values "
+        "merge more"
+    ),
+)
+
+opt_max_domain_length = Option(
+    ("--max-domain-length",),
+    type=int,
+    default=0,
+    help=(
+        "Bound every candidate domain to at most this many positions when "
+        "finding domains, so no domain exceeds the length that clustering "
+        "can use (if 0, use 2x the median read length)"
+    ),
 )
 
 opt_band_width = Option(
@@ -1235,15 +1268,44 @@ opt_band_width = Option(
     ),
 )
 
+opt_pair_fdr = Option(
+    ("--pair-fdr",),
+    type=float,
+    default=0.05,
+    help=(
+        "Count a pair of positions as a domain-boundary-crossing bridge "
+        "only if its anti-correlation clears this false discovery rate "
+        "(FDR), Benjamini-Hochberg-adjusted over every analyzed pair's "
+        "exact hypergeometric p-value: higher values call more (and "
+        "weaker) bridges; lower values call fewer, more conservative ones "
+        "(this value also seeds the initial background bridge rate before it "
+        "is re-estimated from the pairs outside the first-pass domains)"
+    ),
+)
+
+opt_min_fold_change = Option(
+    ("--min-fold-change",),
+    type=float,
+    default=2.0,
+    help=(
+        "Count a pair of positions as a domain-boundary-crossing bridge "
+        "only if its expected-to-observed both-mutated fold change is at "
+        "least this value (reflects the underlying cluster split, e.g. a "
+        "50/50 split depletes joint mutations differently than a 90/10 "
+        "split): higher values require a larger effect to call a bridge"
+    ),
+)
+
 opt_detect_fdr = Option(
     ("--detect-fdr",),
     type=float,
-    default=0.10,
+    default=0.05,
     help=(
-        "Detect domains at this false discovery rate (FDR), Benjamini-"
-        "Hochberg-adjusted over every candidate block's exact chi-square "
-        "p-value: higher values call more (and weaker) domains; lower "
-        "values call fewer, more conservative domains"
+        "Call a region a domain only if its enrichment in bridge pairs "
+        "clears this false discovery rate (FDR), Benjamini-Hochberg-adjusted "
+        "over every candidate region's exact binomial p-value against the "
+        "background bridge rate: higher values call more (and weaker) "
+        "domains; lower values call fewer, more conservative ones"
     ),
 )
 
@@ -1252,10 +1314,12 @@ opt_merge_fdr = Option(
     type=float,
     default=0.05,
     help=(
-        "Merge adjacent domains separated by a gap whose crossing pairs "
-        "clear this false discovery rate (FDR), Benjamini-Hochberg-adjusted "
-        "over every cut in the gap: higher values merge more (and weaker) "
-        "connections; lower values merge fewer, more conservative ones"
+        "Merge two adjacent domains only if the bridge pairs crossing every "
+        "position between them are enriched at this false discovery rate "
+        "(FDR), Benjamini-Hochberg-adjusted over every candidate crossing "
+        "point's exact binomial p-value against the background bridge rate: "
+        "higher values merge more (joining domains connected by weaker "
+        "long-range pairs); lower values merge fewer"
     ),
 )
 
@@ -1283,13 +1347,33 @@ opt_min_expect_both = Option(
     ),
 )
 
-opt_anticorr_only = Option(
-    ("--anticorr-only/--no-anticorr-only",),
+opt_widen = Option(
+    ("--widen/--no-widen",),
     type=bool,
-    default=True,
+    default=False,
     help=(
-        "When finding domains, count only pairs of positions whose "
-        "mutations are negatively correlated"
+        "Grow each called domain into the gaps on either side of it, up to "
+        "max-domain-length in total length (runs before --fill): if the gap "
+        "between two domains is smaller than their combined remaining "
+        "budget, it closes entirely; otherwise each domain grows as much as "
+        "its own budget allows and any leftover space stays a gap (which "
+        "--fill can then fill). Domains that grew are recorded as 'widened' "
+        "and unchanged ones as 'original' in the report"
+    ),
+)
+
+opt_fill = Option(
+    ("--fill/--no-fill",),
+    type=bool,
+    default=False,
+    help=(
+        "Insert additional domains into every gap -- leading, interior, and "
+        "trailing (after --widen has run, if set) -- so every position in "
+        "the scanned region ends up in exactly one domain: a gap no longer "
+        "than max-domain-length becomes a single domain; a longer gap is "
+        "split into the minimum number of domains of as equal length as "
+        "possible, none exceeding max-domain-length. Inserted domains are "
+        "recorded as 'filled' in the report"
     ),
 )
 
