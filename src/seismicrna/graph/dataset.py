@@ -10,7 +10,7 @@ from .base import (
     make_path_subject,
     make_title_action_sample,
 )
-from .cgroup import ClusterGroupRunner, cgroup_table
+from .cgroup import ClusterGroupRunner, cgroup_table, get_clust_proportions
 from .onesource import OneSourceClusterGroupGraph
 from ..table import load_all_datasets
 from .rel import OneRelGraph, RelRunner
@@ -65,6 +65,19 @@ class DatasetGraph(OneRelGraph, OneSourceClusterGroupGraph, ABC):
     @cached_property
     def action(self):
         return get_action_name(self.dataset)
+
+    @cached_property
+    def clust_proportions(self):
+        """Proportion of each cluster, keyed by (k, cluster), loaded from
+        the cluster abundance table that accompanies this dataset; None
+        if the dataset is not clustered or no abundance table exists."""
+        return get_clust_proportions(
+            self.dataset.top,
+            self.dataset.sample,
+            self.dataset.branches,
+            self.dataset.ref,
+            self.dataset.region.name,
+        )
 
     @cached_property
     def path_subject(self):
@@ -194,6 +207,8 @@ class DatasetRunner(RelRunner, ClusterGroupRunner, ABC):
                     as_list=False,
                     ordered=False,
                     raise_on_error=False,
+                    label=f"graphing {cls.get_cmd()}",
+                    unit="graph",
                     kwargs=kwargs,
                 )
             )

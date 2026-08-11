@@ -396,6 +396,8 @@ def run(
                 as_list=False,
                 ordered=False,
                 raise_on_error=False,
+                label="folding tables",
+                unit="table",
                 args=args,
                 kwargs=dict(
                     fold_table_region=fold_table_region,

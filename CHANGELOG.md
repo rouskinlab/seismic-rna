@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### New Features
+
+- Added progress bars, shown at the bottom of the terminal while a task runs, one line per task so that a step of the workflow stays visible above the sample it is working on.
+  They cover every parallelized task (aligning, identifying mutations, filtering, clustering, folding, tabulating, graphing, exporting, and so on), the steps of `seismic wf`, and the unit tests run by `seismic test`.
+  Log messages appear above the bar, which stays on the last line at any verbosity and with any number of tasks running in parallel.
+  Progress is tracked down to the level of one sample or file, not the parts of a single sample's analysis, which begin and end too quickly to follow.
+  Progress bars are hidden automatically with `--quiet` (`-q`) or quieter, when stderr is not a terminal, and in the Python API; use `--no-progress` to hide them in every case.
+
+### Bug fixes
+
+- Fixed the message logged when a task fails formatting its arguments into the wrong place, e.g. `FAILED running the '('align',)' command` instead of `FAILED running the 'align' command`.
+
 ## 0.25.3 (2026-05-29)
 
 ### New Features

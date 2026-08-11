@@ -413,7 +413,7 @@ class EMRun(object):
         """Run the EM clustering algorithm."""
         import numpy as np
 
-        with logger.info.single_context("Running {}", self):
+        with logger.debug.single_context("Running {}", self):
             logger.debug(
                 "\n".join(
                     [

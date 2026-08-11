@@ -48,6 +48,8 @@ def run(
         as_list=True,
         ordered=False,
         raise_on_error=False,
+        label="drawing structures",
+        unit="region",
         args=args,
         kwargs=dict(
             fold_table_region=fold_table_region,

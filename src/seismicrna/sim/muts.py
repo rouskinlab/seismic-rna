@@ -710,6 +710,8 @@ def run(
         as_list=True,
         ordered=False,
         raise_on_error=False,
+        label="simulating mut rates",
+        unit="file",
         args=as_list_of_tuples(map(Path, ct_file)),
         kwargs=dict(
             pmut_paired=pmut_paired,

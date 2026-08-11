@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Iterable
 
 from .base import get_action_name
-from .cgroup import ClusterGroupRunner, cgroup_table, make_tracks
+from .cgroup import ClusterGroupRunner, cgroup_table, get_clust_proportions, make_tracks
 from .onesource import OneSourceGraph, OneSourceClusterGroupGraph
 from .table import TableGraph, TableRunner, TableWriter, RelTableGraph, RelTableRunner
 from ..core.table.base import Table, PositionTable, AbundanceTable
@@ -63,6 +63,19 @@ class OneTableRelClusterGroupGraph(
     def row_tracks(self):
         return make_tracks(
             self.table, self.k, self.clust, k_clust_list=self.k_clust_list
+        )
+
+    @cached_property
+    def clust_proportions(self):
+        """Proportion of each cluster, keyed by (k, cluster), loaded from
+        the cluster abundance table that accompanies this table. Returns
+        None if the table is not clustered or no abundance table exists."""
+        return get_clust_proportions(
+            self.table.top,
+            self.table.sample,
+            self.table.branches,
+            self.table.ref,
+            self.table.reg,
         )
 
 
@@ -158,6 +171,8 @@ class OneTableRunner(TableRunner, ABC):
                     as_list=False,
                     ordered=False,
                     raise_on_error=False,
+                    label=f"graphing {cls.get_cmd()}",
+                    unit="graph",
                     kwargs=kwargs,
                 )
             )

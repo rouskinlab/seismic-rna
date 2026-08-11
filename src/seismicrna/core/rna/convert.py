@@ -22,6 +22,8 @@ def run_ct_to_db(input_path: Iterable[str | Path], *, force: bool, num_cpus: int
         as_list=True,
         ordered=False,
         raise_on_error=False,
+        label="converting structures",
+        unit="file",
         args=as_list_of_tuples(ct_files),
         kwargs=dict(force=force),
     )
@@ -38,6 +40,8 @@ def run_db_to_ct(input_path: Iterable[str | Path], *, force: bool, num_cpus: int
         as_list=True,
         ordered=False,
         raise_on_error=False,
+        label="converting structures",
+        unit="file",
         args=as_list_of_tuples(db_files),
         kwargs=dict(force=force),
     )

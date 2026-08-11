@@ -400,6 +400,8 @@ def run(
                     as_list=False,
                     ordered=False,
                     raise_on_error=False,
+                    label="simulating FASTQs",
+                    unit="sample",
                     args=report_files,
                     kwargs=dict(
                         read_length=read_length,
@@ -421,6 +423,8 @@ def run(
                     as_list=False,
                     ordered=False,
                     raise_on_error=False,
+                    label="simulating FASTQs",
+                    unit="sample",
                     args=param_dirs,
                     kwargs=dict(
                         sample=sample,

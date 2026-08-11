@@ -125,6 +125,8 @@ def run(
         as_list=True,
         ordered=False,
         raise_on_error=False,
+        label="simulating clusters",
+        unit="file",
         args=as_list_of_tuples(map(Path, ct_file)),
         kwargs=dict(
             concentration=(clust_conc if clust_conc else None), force=force, seed=seed

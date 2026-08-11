@@ -2159,6 +2159,13 @@ opt_exit_on_error = Option(
     help="If an error occurs, whether to log a message or exit SEISMIC-RNA",
 )
 
+opt_progress = Option(
+    ("--progress/--no-progress",),
+    type=bool,
+    default=True,
+    help="Show progress bars for tasks on stderr (only if it is a terminal)",
+)
+
 
 def merge_params(*param_lists: list[Parameter], exclude: Iterable[Parameter] = ()):
     """Merge lists of Click parameters, dropping duplicates."""

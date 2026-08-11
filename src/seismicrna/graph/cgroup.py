@@ -59,12 +59,49 @@ def _track_count(tracks: list[tuple[int, int]] | None):
     return len(tracks) if tracks is not None else 1
 
 
-def _track_titles(tracks: list[tuple[int, int]] | None):
-    return (
-        format_clust_names(tracks, allow_duplicates=False)
-        if tracks is not None
-        else None
-    )
+def get_clust_proportions(top, sample, branches, ref, reg):
+    """Load the proportion of each cluster, keyed by (k, cluster), from
+    the cluster abundance table identified by these path fields. Returns
+    None if no such abundance table exists (e.g. the source is not
+    clustered)."""
+    from ..core import path
+    from ..cluster.data import ClusterAbundanceTableLoader
+
+    path_fields = {
+        path.TOP: top,
+        path.SAMPLE: sample,
+        path.BRANCHES: branches,
+        path.REF: ref,
+        path.REG: reg,
+    }
+    abundance_file = ClusterAbundanceTableLoader.build_path(path_fields)
+    if not abundance_file.is_file():
+        return None
+    return ClusterAbundanceTableLoader(abundance_file, verify_times=False).proportions
+
+
+def _format_proportion(proportion: float):
+    """Format a cluster proportion as a percentage."""
+    return f"{round(proportion * 100.0, 1)}%"
+
+
+def _track_titles(tracks: list[tuple[int, int]] | None, proportions=None):
+    """Format the title of each track, optionally annotating each
+    cluster with its proportion (as a percentage)."""
+    if tracks is None:
+        return None
+    names = format_clust_names(tracks, allow_duplicates=False)
+    if proportions is None:
+        return names
+    titles = list()
+    for name, k_clust in zip(names, tracks, strict=True):
+        proportion = proportions.get(k_clust)
+        titles.append(
+            f"{name} ({_format_proportion(proportion)})"
+            if proportion is not None
+            else name
+        )
+    return titles
 
 
 def cgroup_table(source: Dataset | Table, cgroup: str):
@@ -103,15 +140,31 @@ class ClusterGroupGraph(BaseGraph, ABC):
         """Number of columns of subplots."""
         return _track_count(self.col_tracks)
 
+    @property
+    def clust_proportions(self):
+        """Mapping from each (k, cluster) to its proportion, or None if
+        cluster proportions are not available for this graph."""
+        return None
+
+    @property
+    def row_proportions(self):
+        """Cluster proportions for the row tracks."""
+        return self.clust_proportions
+
+    @property
+    def col_proportions(self):
+        """Cluster proportions for the column tracks."""
+        return self.clust_proportions
+
     @cached_property
     def row_titles(self):
         """Titles of the rows."""
-        return _track_titles(self.row_tracks)
+        return _track_titles(self.row_tracks, self.row_proportions)
 
     @cached_property
     def col_titles(self):
         """Titles of the columns."""
-        return _track_titles(self.col_tracks)
+        return _track_titles(self.col_tracks, self.col_proportions)
 
     @cached_property
     def _subplots_params(self):

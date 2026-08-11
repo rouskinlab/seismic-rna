@@ -99,6 +99,8 @@ def run(
         as_list=True,
         ordered=False,
         raise_on_error=False,
+        label="clustering domains",
+        unit="region",
         args=as_list_of_tuples(filterscan_report_files),
         kwargs=kwargs,
     )

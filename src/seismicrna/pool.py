@@ -290,6 +290,8 @@ def run(
             as_list=False,
             ordered=False,
             raise_on_error=False,
+            label="pooling samples",
+            unit="reference",
             args=[
                 (out_dir, pooled_sample, branches_flat, ref, samples)
                 for (out_dir, branches_flat, ref), samples in pools.items()

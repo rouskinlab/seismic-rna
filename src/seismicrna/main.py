@@ -35,20 +35,34 @@ from .core.arg.cli import (
     opt_exit_on_error,
     opt_log,
     opt_log_color,
+    opt_progress,
     opt_quiet,
     opt_verbose,
 )
 from .core.logs import logger, set_config
+from .core.progress import set_config as set_progress_config
 from .urls import cli_docs, cli_github, cli_pypi, cli_conda, cli_biorxiv
 
-params = [opt_verbose, opt_quiet, opt_log, opt_log_color, opt_exit_on_error]
+params = [
+    opt_verbose,
+    opt_quiet,
+    opt_log,
+    opt_log_color,
+    opt_exit_on_error,
+    opt_progress,
+]
 
 
 # Group for main commands
 @group(params=params, context_settings={"show_default": True})
 @version_option(__version__, prog_name="seismic-rna")
 def cli(
-    verbose: int, quiet: int, log: str | Path, log_color: bool, exit_on_error: bool
+    verbose: int,
+    quiet: int,
+    log: str | Path,
+    log_color: bool,
+    exit_on_error: bool,
+    progress: bool,
 ):
     """Command line interface of SEISMIC-RNA."""
     if log:
@@ -56,7 +70,9 @@ def cli(
         log_file_path.parent.mkdir(parents=True, exist_ok=True)
     else:
         log_file_path = None
-    set_config(verbose - quiet, log_file_path, log_color, exit_on_error)
+    verbosity = verbose - quiet
+    set_config(verbosity, log_file_path, log_color, exit_on_error)
+    set_progress_config(progress, verbosity)
     logger.debug("This is SEISMIC-RNA, version {}", __version__)
 
 

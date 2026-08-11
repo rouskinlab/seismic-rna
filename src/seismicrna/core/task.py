@@ -1,11 +1,26 @@
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import (
+    FIRST_COMPLETED,
+    Future,
+    ProcessPoolExecutor,
+    as_completed,
+    wait,
+)
 from inspect import getmodule
 from itertools import filterfalse, repeat
 from os import getpid
 from typing import Any, Callable, Iterable
 
 from .logs import Level, logger, get_config, set_config
+from .progress import DEFAULT_UNIT, ProgressBar, console_has_bars, drawing, refresh_all
+from .progress import set_shared_config as set_progress_shared_config
 from .validate import require_equal
+
+# Seconds to wait for a task to finish before redrawing the progress bar.
+# A task in another process erases the bar to write a log message, so this is
+# how long the bar can be missing; redrawing more often than this would keep
+# it on screen slightly more of the time but write to the console constantly
+# throughout a long task.
+REFRESH_INTERVAL = 0.05
 
 
 def calc_pool_size(num_tasks: int, num_cpus: int, force_serial: bool = False):
@@ -65,6 +80,12 @@ class Task(object):
         # process, its log can begin one level deeper than its parent's.
         self._pid = getpid()
         self._context_levels = list(logger.context_levels)
+        # Record whether any process is drawing progress bars, so that if
+        # the task runs in another process, that process erases them before
+        # writing a log message over them. This must be true of the console,
+        # not of this process: a task that dispatches tasks of its own draws
+        # nothing itself, but the process that began the command still does.
+        self._console_has_bars = console_has_bars()
 
     @property
     def name(self):
@@ -89,6 +110,9 @@ class Task(object):
             # always-visible level (the lowest level, shown at any verbosity)
             # so the child's log nests one level deeper than its parent's.
             logger.context_levels = list(self._context_levels) + [min(Level)]
+            # This task shares the console with its parent process, which
+            # is the only process that may draw a progress bar on it.
+            set_progress_shared_config(self._console_has_bars)
             logger.debug("Process {} is a child of process {}", pid, self._pid)
         try:
             return self._func(*args, **kwargs)
@@ -102,6 +126,47 @@ class Task(object):
                 logger.file_stream.close()
 
 
+def _iter_finished(futures: list[Future], ordered: bool, bar: ProgressBar):
+    """Yield each future as it finishes, redrawing the progress bar while
+    waiting for the next one.
+
+    A task that runs in another process erases the progress bars before it
+    writes a log message, since only the process that owns them can draw
+    them; redrawing them here, in that process, brings them back below the
+    message, no matter how many messages the tasks write."""
+    if not drawing():
+        # No bar is on the console, so there is nothing to draw again while
+        # waiting: just take each task as it finishes, without waking up
+        # periodically. This asks about the console rather than about this
+        # task's own bar, because these tasks may write messages over the
+        # bars of the tasks that contain them even when they have none.
+        yield from (futures if ordered else as_completed(futures))
+        return
+    pending = list(futures)
+    while pending:
+        # If the results must be returned in order, then wait only for the
+        # first future, even if later ones finish before it.
+        done, _ = wait(
+            pending[:1] if ordered else pending,
+            timeout=REFRESH_INTERVAL,
+            return_when=FIRST_COMPLETED,
+        )
+        # Draw the whole block again, not just this task's bar: a task in
+        # another process erases every line of it to write a message. This
+        # happens on every pass, not only while waiting, so that the bars
+        # come back promptly even when tasks are finishing in a burst.
+        refresh_all()
+        if not done:
+            continue
+        for future in list(pending):
+            if future not in done:
+                if ordered:
+                    break
+                continue
+            pending.remove(future)
+            yield future
+
+
 def _dispatch(
     funcs: Callable | list[Callable],
     *,
@@ -110,6 +175,8 @@ def _dispatch(
     ordered: bool,
     raise_on_error: bool,
     force_serial: bool = False,
+    label: str = "",
+    unit: str = DEFAULT_UNIT,
     args: tuple | Iterable[tuple] = (),
     kwargs: dict[str, Any] | None = None,
 ):
@@ -157,36 +224,49 @@ def _dispatch(
     if pass_num_cpus:
         # Add the number of processes as a keyword argument.
         kwargs = {**kwargs, "num_cpus": num_cpus_per_task}
-    # Run the tasks.
-    if pool_size > 1:
-        # Run the tasks in parallel.
-        with ProcessPoolExecutor(max_workers=pool_size) as pool:
-            logger.trace("Opened process pool with {} processors", pool_size)
-            # Create and submit a Future for each task.
-            futures = [
-                pool.submit(Task(func), *task_args, **kwargs)
-                for func, task_args in zip(funcs, args, strict=True)
-            ]
-            for future in futures if ordered else as_completed(futures):
+    # Run the tasks, counting each one that finishes (whether or not it
+    # succeeds) on a progress bar; if these tasks have no label, then no bar
+    # is drawn. The bar is advanced explicitly on both paths rather than in a
+    # finally block, which would also count the GeneratorExit raised if this
+    # generator is abandoned.
+    with ProgressBar(label, num_tasks, unit) as bar:
+        if pool_size > 1:
+            # Run the tasks in parallel.
+            with ProcessPoolExecutor(max_workers=pool_size) as pool:
+                logger.trace("Opened process pool with {} processors", pool_size)
+                # Create and submit a Future for each task.
+                futures = [
+                    pool.submit(Task(func), *task_args, **kwargs)
+                    for func, task_args in zip(funcs, args, strict=True)
+                ]
+                for future in _iter_finished(futures, ordered, bar):
+                    try:
+                        result = future.result()
+                    except Exception as error:
+                        bar.tick()
+                        if raise_on_error:
+                            raise error
+                        else:
+                            logger.error(error)
+                    else:
+                        bar.tick()
+                        yield result
+            logger.trace("Closed process pool with {} processors", pool_size)
+        else:
+            # Run the tasks in series.
+            for func, task_args in zip(funcs, args, strict=True):
                 try:
-                    yield future.result()
+                    task = Task(func)
+                    result = task(*task_args, **kwargs)
                 except Exception as error:
+                    bar.tick()
                     if raise_on_error:
                         raise error
                     else:
                         logger.error(error)
-        logger.trace("Closed process pool with {} processors", pool_size)
-    else:
-        # Run the tasks in series.
-        for func, task_args in zip(funcs, args, strict=True):
-            try:
-                task = Task(func)
-                yield task(*task_args, **kwargs)
-            except Exception as error:
-                if raise_on_error:
-                    raise error
                 else:
-                    logger.error(error)
+                    bar.tick()
+                    yield result
 
 
 def dispatch(
@@ -198,6 +278,8 @@ def dispatch(
     ordered: bool,
     raise_on_error: bool,
     force_serial: bool = False,
+    label: str = "",
+    unit: str = DEFAULT_UNIT,
     args: tuple | Iterable[tuple] = (),
     kwargs: dict[str, Any] | None = None,
 ):
@@ -229,6 +311,20 @@ def dispatch(
         Run the tasks in series even if multiple CPUs are available
         (e.g. because each task parallelizes its own work and would
         otherwise spawn a nested pool of processes).
+    label: str
+        Name of these tasks on the progress bar. If empty (the default),
+        then these tasks get no progress bar, and whichever task contains
+        them keeps the bar. Name only tasks that a user would want to
+        follow, which means roughly one task per sample or per file: the
+        parts of one sample's analysis (batches of reads, regions, runs
+        of an algorithm) begin and end too quickly to follow, and naming
+        them would replace the bar many times per second. Note also that
+        with `ordered` set to True, the progress bar advances in bursts,
+        since each task's result is awaited in the order given, not the
+        order finished.
+    unit: str
+        What one task is, named on the progress bar beside the numbers so
+        that they read as e.g. "sample 2/3" rather than a bare "2/3".
     args: tuple | Iterable[tuple]
         Positional arguments to pass to each function in `funcs`. Can be
         a list of tuples of positional arguments or a single tuple that
@@ -246,6 +342,8 @@ def dispatch(
         ordered=ordered,
         raise_on_error=raise_on_error,
         force_serial=force_serial,
+        label=label,
+        unit=unit,
         args=args,
         kwargs=kwargs,
     )

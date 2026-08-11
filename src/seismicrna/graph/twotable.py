@@ -8,7 +8,13 @@ from typing import Any, Callable, Iterable
 
 
 from .base import get_action_name, make_title_action_sample, make_path_subject
-from .cgroup import ClusterGroupGraph, ClusterGroupRunner, cgroup_table, make_tracks
+from .cgroup import (
+    ClusterGroupGraph,
+    ClusterGroupRunner,
+    cgroup_table,
+    get_clust_proportions,
+    make_tracks,
+)
 from .table import (
     TableGraph,
     RelTableGraph,
@@ -234,6 +240,28 @@ class TwoTableRelClusterGroupGraph(
     def col_tracks(self):
         return make_tracks(self.table1, self.k1, self.clust1)
 
+    @cached_property
+    def row_proportions(self):
+        # Rows are faceted by the clusters of table 2.
+        return get_clust_proportions(
+            self.table2.top,
+            self.table2.sample,
+            self.table2.branches,
+            self.table2.ref,
+            self.table2.reg,
+        )
+
+    @cached_property
+    def col_proportions(self):
+        # Columns are faceted by the clusters of table 1.
+        return get_clust_proportions(
+            self.table1.top,
+            self.table1.sample,
+            self.table1.branches,
+            self.table1.ref,
+            self.table1.reg,
+        )
+
 
 class TwoTableMergedClusterGroupGraph(TwoTableRelClusterGroupGraph, ABC):
     """Graph of a pair of datasets over the same sequence in which the
@@ -451,6 +479,8 @@ class TwoTableRunner(TableRunner, ABC):
                     as_list=False,
                     ordered=False,
                     raise_on_error=False,
+                    label=f"graphing {cls.get_cmd()}",
+                    unit="graph",
                     kwargs=kwargs,
                 )
             )

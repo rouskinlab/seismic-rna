@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from abc import ABC, abstractmethod
 from functools import cached_property
 from itertools import chain
@@ -397,6 +398,13 @@ class BaseWriter(ABC):
 
 
 class BaseRunner(ABC):
+    @classmethod
+    def get_cmd(cls) -> str:
+        """Name of the command that graphs this kind of graph, which is the
+        name of the module that defines the runner, as in every graph
+        module's own COMMAND."""
+        return cls.__module__.split(os.path.extsep)[-1]
+
     @classmethod
     @abstractmethod
     def get_writer_type(cls) -> type[BaseWriter]:

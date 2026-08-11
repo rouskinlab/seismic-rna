@@ -70,6 +70,8 @@ def run(
         as_list=True,
         ordered=False,
         raise_on_error=False,
+        label="renumbering CT files",
+        unit="file",
         args=args,
         kwargs=dict(force=force or inplace),
     )

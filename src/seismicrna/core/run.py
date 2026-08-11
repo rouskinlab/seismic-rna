@@ -3,6 +3,7 @@ from typing import Callable, Optional
 
 from .arg import docdef
 from .logs import logger, log_exceptions
+from .progress import close_bars
 from .tmp import with_tmp_dir
 
 
@@ -36,6 +37,7 @@ def run_func(
         if with_tmp:
             func = with_tmp_dir(pass_keep_tmp)(func)
         func = docdef.auto(*args, **kwargs)(func)
+        func = close_bars(func)
         func = log_exceptions(default)(func)
         func = log_command(command)(func)
         return func

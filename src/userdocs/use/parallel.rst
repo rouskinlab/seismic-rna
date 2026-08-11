@@ -20,6 +20,10 @@ are processed simultaneously.
 On a shared computing cluster, set ``--num-cpus`` to your allocated core count
 rather than leaving it at the default.
 
+To watch how many of the inputs have been processed, see the progress bar,
+which counts every input as it finishes, however many are being processed at
+once.
+
 
 .. _batches:
 
@@ -53,3 +57,4 @@ See also
 --------------------------------------------------------------------------------
 
 - :doc:`branch` — run multiple analyses in parallel with different settings
+- :doc:`logging` — progress bars and log messages while a command runs

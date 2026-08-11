@@ -391,6 +391,37 @@ class TestBeginEnd(ut.TestCase):
         output = stream.getvalue()
         self.assertIn("Began doing x", output)
         self.assertNotIn("Ended doing x", output)
+        self.assertIn("FAILED doing x", output)
+
+    @restore_config
+    def test_failed_with_format_args(self):
+        # The failure message must be formatted with the same arguments as
+        # the message logged on entry, not with the arguments themselves
+        # substituted into the template.
+        set_config(verbosity=Level.DEBUG, log_color=False, exit_on_error=False)
+        stream = io.StringIO()
+        with mock.patch("seismicrna.core.logs.stderr", stream):
+            with self.assertRaises(ValueError):
+                with logger.debug.double_context(
+                    "running the {} command as {name}", "align", name="a test"
+                ):
+                    raise ValueError("boom")
+        out = stream.getvalue()
+        self.assertIn("Began running the align command as a test", out)
+        self.assertIn("FAILED running the align command as a test", out)
+
+    @restore_config
+    def test_failed_hidden_does_not_format(self):
+        # A failure is logged at WARNING, so at ERROR verbosity it is hidden
+        # and its template must not be formatted.
+        set_config(verbosity=Level.ERROR, log_color=False, exit_on_error=False)
+        stream = io.StringIO()
+        with mock.patch("seismicrna.core.logs.stderr", stream):
+            with self.assertRaises(ValueError):
+                # Passing a bad keyword would raise if .format() were called.
+                with logger.debug.double_context("value = {bad}", "oops"):
+                    raise ValueError("boom")
+        self.assertNotIn("value", stream.getvalue())
 
     @restore_config
     def test_begin_with_format_args(self):

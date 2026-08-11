@@ -272,6 +272,8 @@ def demult_fqs_pipeline(
             ordered=False,
             raise_on_error=False,
             force_serial=True,
+            label="demultiplexing reads",
+            unit="sample",
             args=iter_args,
             kwargs=dict(tmp_dir=tmp_dir, **kwargs),
         )
