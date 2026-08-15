@@ -190,19 +190,27 @@ class TestClusterScan(ScanTestBase):
 
     def test_domains012_read180(self):
         idmut_dirs = self.sim_data([0, 1, 2], 180, seed=0)
-        self.run_clusterscan_check(idmut_dirs, {(1, 60): 2, (121, 180): 2}, seed=0)
+        self.run_clusterscan_check(
+            idmut_dirs, {(1, 60): 2, (121, 180): 2}, seed=0, min_domain_length=20
+        )
 
     def test_domains012_read120(self):
         idmut_dirs = self.sim_data([0, 1, 2], 120, seed=0)
-        self.run_clusterscan_check(idmut_dirs, {(1, 60): 2, (121, 180): 2}, seed=0)
+        self.run_clusterscan_check(
+            idmut_dirs, {(1, 60): 2, (121, 180): 2}, seed=0, min_domain_length=20
+        )
 
     def test_domains012_read60(self):
         idmut_dirs = self.sim_data([0, 1, 2], 60, seed=0)
-        self.run_clusterscan_check(idmut_dirs, {(1, 60): 2, (121, 180): 2}, seed=0)
+        self.run_clusterscan_check(
+            idmut_dirs, {(1, 60): 2, (121, 180): 2}, seed=0, min_domain_length=20
+        )
 
     def test_domains02_read60(self):
         idmut_dirs = self.sim_data([0, 2], 60, seed=0)
-        self.run_clusterscan_check(idmut_dirs, {(1, 60): 2, (61, 120): 2}, seed=0)
+        self.run_clusterscan_check(
+            idmut_dirs, {(1, 60): 2, (61, 120): 2}, seed=0, min_domain_length=20
+        )
 
     def test_domains012_read180_cli(self):
         idmut_dirs = self.sim_data([0, 1, 2], 180, seed=0)
