@@ -989,6 +989,24 @@ def _filter_domains_length(domains: list[tuple[int, int]], min_length: int = 1):
     return [(end5, end3) for end5, end3 in domains if (end3 - end5 + 1) >= min_length]
 
 
+def _filter_domains_min_pairs(
+    domains: list[tuple[int, int]],
+    pos_a: np.ndarray,
+    pos_b: np.ndarray,
+    min_pairs: int,
+) -> list[tuple[int, int]]:
+    """Remove domains containing fewer than ``min_pairs`` bridge pairs
+    (``pos_a``, ``pos_b``: the endpoints of every bridge pair), i.e. pairs
+    whose both endpoints lie within the domain."""
+    import numpy as np
+
+    return [
+        (end5, end3)
+        for end5, end3 in domains
+        if int(((pos_a >= end5) & (pos_b <= end3)).sum()) >= min_pairs
+    ]
+
+
 def _split_gap_evenly(
     end5: int, end3: int, max_domain_length: int
 ) -> list[tuple[int, int]]:
@@ -1371,6 +1389,7 @@ def _calc_cluster_domains(
     fill: bool,
     max_domain_length: int,
     min_domain_length: int,
+    min_pairs: int,
 ):
     """Calculate the cluster regions for all tiles of one reference.
 
@@ -1456,6 +1475,12 @@ def _calc_cluster_domains(
         merge_fdr=merge_fdr,
         max_domain_length=max_domain_length,
     )
+    raw_domains = _filter_domains_min_pairs(
+        raw_domains,
+        pos_table.index.get_level_values(POSITION_A).to_numpy(),
+        pos_table.index.get_level_values(POSITION_B).to_numpy(),
+        min_pairs,
+    )
     # Widen domains into their neighboring gaps (capped at max_domain_length),
     # then fill whatever gaps remain (splitting any that are still too long).
     if widen:
@@ -1529,6 +1554,7 @@ def filterscan(
     fill: bool,
     max_domain_length: int,
     min_domain_length: int,
+    min_pairs: int,
     # Filter options
     region_coords: Iterable[tuple[str, int, int]],
     region_primers: Iterable[tuple[str, DNA, DNA]],
@@ -1684,6 +1710,7 @@ def filterscan(
                 fill=fill,
                 max_domain_length=max_domain_length,
                 min_domain_length=min_domain_length,
+                min_pairs=min_pairs,
                 num_cpus=num_cpus,
             )
         )
@@ -1772,6 +1799,7 @@ def filterscan(
             fill=fill,
             max_domain_length=max_domain_length,
             min_domain_length=min_domain_length,
+            min_pairs=min_pairs,
             # Results (store coordinates without the reference, which is
             # already recorded in the report).
             tile_coords=[(end5, end3) for _, end5, end3 in tile_coords],

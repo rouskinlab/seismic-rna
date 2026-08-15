@@ -220,6 +220,7 @@ def run(
     fill: bool,
     max_domain_length: int,
     min_domain_length: int,
+    min_pairs: int,
     # ClusterScan gap-validation options
     validate_gaps: bool,
     gap_min_assoc: float,
@@ -532,6 +533,7 @@ def run(
                     fill=fill,
                     max_domain_length=max_domain_length,
                     min_domain_length=min_domain_length,
+                    min_pairs=min_pairs,
                     filter_pos_table=filter_pos_table,
                     filter_read_table=filter_read_table,
                     # self_contained should always be True for filterscan

@@ -124,6 +124,7 @@ from .arg.cli import (
     opt_fill,
     opt_max_domain_length,
     opt_min_domain_length,
+    opt_min_pairs,
     opt_probe,
     opt_min_pearson_pool,
     opt_max_marcd_pool,
@@ -660,6 +661,7 @@ WidenF = OptionReportField(opt_widen)
 FillF = OptionReportField(opt_fill)
 MaxDomainLengthF = OptionReportField(opt_max_domain_length)
 MinDomainLengthF = OptionReportField(opt_min_domain_length)
+MinPairsF = OptionReportField(opt_min_pairs)
 TileCoordsF = ReportField("tile_coords", "Coordinates of tiles (end5, end3)", list)
 NumPositivePairsF = ReportField(
     "n_positive_pairs",
@@ -674,9 +676,7 @@ NullBridgeRateF = ReportField(
 NumDomainsF = ReportField("n_domains", "Number of domains detected", int)
 DomainCoordsF = ReportField(
     "domain_coords",
-    "Domains found, mapped from (end5, end3) to how each was produced: "
-    "'original' (called/determined as detected), 'widened' (--widen grew "
-    "it into a gap), or 'filled' (--fill inserted it into a gap)",
+    "Domains found, mapped from (end5, end3) to how each was produced: ",
     dict,
     iconv=iconv_domain_coords_actions,
     oconv=oconv_domain_coords_actions,

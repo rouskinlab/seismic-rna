@@ -1200,11 +1200,18 @@ opt_erase_tiles = Option(
 opt_min_domain_length = Option(
     ("--min-domain-length",),
     type=int,
-    default=20,
+    default=50,
     help=(
         "Keep only domains with at least this many positions (skipped "
         "with --widen, which grows short domains instead)"
     ),
+)
+
+opt_min_pairs = Option(
+    ("--min-pairs",),
+    type=int,
+    default=8,
+    help="Keep only domains containing at least this many bridge pairs",
 )
 
 opt_validate_gaps = Option(

@@ -16,6 +16,7 @@ from ..core.report import (
     FillF,
     MaxDomainLengthF,
     MinDomainLengthF,
+    MinPairsF,
     # Results.
     TileCoordsF,
     NumPositivePairsF,
@@ -48,6 +49,7 @@ class FilterScanReport(RegReport, FilterScanIO):
             FillF,
             MaxDomainLengthF,
             MinDomainLengthF,
+            MinPairsF,
             *super().get_param_report_fields(),
         ]
 

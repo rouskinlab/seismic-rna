@@ -1125,19 +1125,27 @@ class TestFilterScan(ScanTestBase):
 
     def test_domains012_read180(self):
         idmut_dirs = self.sim_data([0, 1, 2], 180, seed=0)
-        self.run_filterscan_check(idmut_dirs, [(1, 60), (121, 180)])
+        self.run_filterscan_check(
+            idmut_dirs, [(1, 60), (121, 180)], min_domain_length=20
+        )
 
     def test_domains012_read120(self):
         idmut_dirs = self.sim_data([0, 1, 2], 120, seed=0)
-        self.run_filterscan_check(idmut_dirs, [(1, 60), (121, 180)])
+        self.run_filterscan_check(
+            idmut_dirs, [(1, 60), (121, 180)], min_domain_length=20
+        )
 
     def test_domains012_read60(self):
         idmut_dirs = self.sim_data([0, 1, 2], 60, seed=0)
-        self.run_filterscan_check(idmut_dirs, [(1, 60), (121, 180)])
+        self.run_filterscan_check(
+            idmut_dirs, [(1, 60), (121, 180)], min_domain_length=20
+        )
 
     def test_domains02_read60(self):
         idmut_dirs = self.sim_data([0, 2], 60, seed=0)
-        self.run_filterscan_check(idmut_dirs, [(1, 60), (61, 120)])
+        self.run_filterscan_check(
+            idmut_dirs, [(1, 60), (61, 120)], min_domain_length=20
+        )
 
     def test_domains012_read180_cli(self):
         idmut_dirs = self.sim_data([0, 1, 2], 180, seed=0)

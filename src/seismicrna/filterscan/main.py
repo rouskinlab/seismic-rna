@@ -23,6 +23,7 @@ from ..core.arg.cli import (
     opt_fill,
     opt_max_domain_length,
     opt_min_domain_length,
+    opt_min_pairs,
 )
 from ..core.run import run_func
 from ..core.seq.xna import DNA
@@ -56,6 +57,7 @@ def run(
     fill: bool,
     max_domain_length: int,
     min_domain_length: int,
+    min_pairs: int,
     # Filter options
     region_coords: Iterable[tuple[str, int, int]],
     region_primers: Iterable[tuple[str, DNA, DNA]],
@@ -115,6 +117,7 @@ def run(
         fill=fill,
         max_domain_length=max_domain_length,
         min_domain_length=min_domain_length,
+        min_pairs=min_pairs,
         # Filter options
         region_coords=region_coords,
         region_primers=region_primers,
@@ -179,6 +182,7 @@ params = merge_params(
         opt_fill,
         opt_max_domain_length,
         opt_min_domain_length,
+        opt_min_pairs,
     ],
 )
 
