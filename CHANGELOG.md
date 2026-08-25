@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Bug fixes
+
+- Fixed `seismic cluster` crashing with `KeyError: 1` if no number of clusters passed the filters and `--min-clusters` was greater than 1.
+  Falling back to the ensemble average (K = 1) assumed that K = 1 had been run, which `--min-clusters` prevents.
+  K = 1 is still used when it was run, since it can fail only as underclustered and so can never contribute a cluster that the filters rejected; when it was not run, no clusters are written for that dataset, rather than falling back to a number of clusters greater than 1 that could be overclustered.
+- `seismic cluster` now fails immediately with a clear message if `--min-clusters` exceeds `--max-clusters`, instead of running no clustering and then crashing.
+
 ## 0.25.3 (2026-05-29)
 
 ### New Features
