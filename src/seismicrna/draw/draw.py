@@ -27,6 +27,7 @@ from ..core.task import dispatch
 from ..core.write import need_write
 from ..fold.report import FoldReport
 from ..filter.table import FilterPositionTable, FilterPositionTableLoader
+from ..duplex.table import DuplexPositionTable, DuplexPositionTableLoader
 
 TEMPLATE_STRING = """
 rnartist {
@@ -310,10 +311,21 @@ def build_jinja_data(
 
 class RNArtistRun(object):
     def _parse_profile(self):
-        match = re.search(r"(.+?)__(?:(average|.+?(?=-)))", self.profile)
-        self.mus_reg = match.group(1) if match else None
-        self.table_type = match.group(2) if match else None
-        if not match:
+        # A profile is "{region}__{average|cluster-K-C}". The region name
+        # itself may contain "__" (e.g. a duplex's fused region
+        # "regA__regB"), so match the cluster/average suffix at the end
+        # and take everything before it as the region (greedy).
+        match = re.fullmatch(r"(.+)__(average|cluster-\d+-\d+)", self.profile)
+        if match:
+            self.mus_reg = match.group(1)
+            self.table_type = (
+                AVERAGE_PREFIX
+                if match.group(2) == AVERAGE_PREFIX
+                else path.CLUSTER_STEP
+            )
+        else:
+            self.mus_reg = None
+            self.table_type = None
             logger.warning("Could not parse profile: {}.", self.profile)
 
     def __init__(
@@ -438,6 +450,11 @@ class RNArtistRun(object):
 
     @cached_property
     def table_classes(self):
+        # A structure folded from a duplex (its branch chain includes the
+        # duplex step) is backed by a duplex table, regardless of whether its
+        # profile name looks clustered or averaged.
+        if path.DUPLEX_STEP in self.branches:
+            return DuplexPositionTable, DuplexPositionTableLoader
         if self.table_type and self.table_type in TABLES:
             return TABLES.get(self.table_type)
         else:

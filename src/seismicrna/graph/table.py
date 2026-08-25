@@ -10,6 +10,7 @@ from ..cluster.data import ClusterPositionTableLoader, ClusterAbundanceTableLoad
 from ..core.table.base import Table, PositionTable
 from ..filter.table import FilterPositionTableLoader, FilterReadTableLoader
 from ..idmut.table import IDmutPositionTableLoader, IDmutReadTableLoader
+from ..duplex.table import DuplexPositionTableLoader
 
 
 class TableGraph(BaseGraph, ABC):
@@ -111,6 +112,7 @@ def load_pos_tables(input_paths: Iterable[str | Path], **kwargs):
         IDmutPositionTableLoader,
         FilterPositionTableLoader,
         ClusterPositionTableLoader,
+        DuplexPositionTableLoader,
     ]:
         yield from table_type.load_tables(paths, **kwargs)
 

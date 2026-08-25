@@ -698,6 +698,19 @@ JoinedClustersF = ReportField(
     iconv=iconv_dict_str_dict_int_dict_int_int,
 )
 
+# Duplex fields
+
+DuplexCutF = ReportField(
+    "duplex_cut", "Length of the 5' strand (strand-break position)", int
+)
+DuplexSourcesF = ReportField("duplex_sources", "Source table files", list, default=[])
+DuplexKsF = ReportField(
+    "duplex_ks",
+    "Numbers of clusters in the duplex (empty if unclustered)",
+    list,
+    default=[],
+)
+
 # Fold fields
 
 ProfileF = ReportField("profile", "Profile", str)

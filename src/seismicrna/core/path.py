@@ -51,6 +51,7 @@ CLUSTER_STEP = "cluster"
 FILTERSCAN_STEP = "filterscan"
 CLUSTERSCAN_STEP = "clusterscan"
 FOLD_STEP = "fold"
+DUPLEX_STEP = "duplex"
 GRAPH_STEP = "graph"
 LIST_STEP = "list"
 
@@ -87,7 +88,7 @@ CLUST_PARAMS_DIR = "parameters"
 CLUST_STATS_DIR = "statistics"
 CLUST_COUNTS_DIR = "read-counts"
 
-TABLES = (IDMUT_STEP, FILTER_STEP, CLUSTER_STEP)
+TABLES = (IDMUT_STEP, FILTER_STEP, CLUSTER_STEP, DUPLEX_STEP)
 
 # File extensions
 
@@ -438,6 +439,7 @@ StepField = PathField(
         FILTERSCAN_STEP,
         CLUSTERSCAN_STEP,
         FOLD_STEP,
+        DUPLEX_STEP,
         GRAPH_STEP,
     ],
     pattern=STEP_PATTERN,
@@ -711,6 +713,9 @@ FilterBatSeg = PathSegment(
 )
 FilterRepSeg = PathSegment(
     "filter-rep", {EXT: ReportExt}, frmt=FILTER_STEP + "-report{ext}"
+)
+DuplexRepSeg = PathSegment(
+    "duplex-rep", {EXT: ReportExt}, frmt=DUPLEX_STEP + "-report{ext}"
 )
 
 # Cluster

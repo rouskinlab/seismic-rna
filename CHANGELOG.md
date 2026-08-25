@@ -4,6 +4,13 @@
 
 ### New Features
 
+- Added the `duplex` command, which fuses two references into one duplex so that they can be cofolded as a pair rather than folded separately.
+  By default it duplexes every pair of input tables that share the same branches (as `seismic graph` compares every pair of tables); `--dimer` duplexes each table with itself to model a homodimer, and `--duplex-file` / `--duplex-sequence` give a second strand that carries no mutational data, such as an antisense oligo.
+  Each of these contributes its own duplexes, so any combination of them can be used at once, and `--no-duplex-pair` turns off the pairwise combinations.
+  Every strand spans its full reference by default, with the source table's data mapped onto its region; `--duplex-table-region` restricts every strand to its table region, and `--duplex-full-ref` / `--duplex-region-ref` override that choice for one reference.
+  When a source table is clustered, the duplex is the cross-product of the two strands' clusters, giving one fused profile per combination.
+- `seismic fold` now folds duplex tables with RNAcofold, using the Deigan or Cordero energy method (`--fold-fpaired` sets the fraction of bases assumed paired for Cordero pseudoenergies).
+  The resulting structures graph and draw like any other fold.
 - Added progress bars, shown at the bottom of the terminal while a task runs, one line per task so that a step of the workflow stays visible above the sample it is working on.
   They cover every parallelized task (aligning, identifying mutations, filtering, clustering, folding, tabulating, graphing, exporting, and so on), the steps of `seismic wf`, and the unit tests run by `seismic test`.
   Log messages appear above the bar, which stays on the last line at any verbosity and with any number of tasks running in parallel.

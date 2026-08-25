@@ -1438,6 +1438,14 @@ opt_fold_quantile = Option(
     help="Normalize and winsorize reactivities to this quantile for folding",
 )
 
+opt_fold_fpaired = Option(
+    ("--fold-fpaired",),
+    type=float,
+    default=0.5,
+    help="Assume this fraction of bases is paired when computing Cordero "
+    "pseudoenergies for cofolding",
+)
+
 opt_fold_temp = Option(
     ("--fold-temp",),
     type=float,
@@ -1528,6 +1536,67 @@ opt_fold_edelta = Option(
     default=1.0,
     help="Maximum energy difference (kcal/mol) from the MFE for suboptimal "
     "structures from RNAsubopt (overriden by --fold-mfe)",
+)
+
+# Cofold
+
+opt_duplex_pair = Option(
+    ("--duplex-pair/--no-duplex-pair",),
+    type=bool,
+    default=True,
+    help="Duplex every pair of input profiles",
+)
+
+opt_dimer = Option(
+    ("--dimer/--no-dimer",),
+    type=bool,
+    default=False,
+    help="Duplex each input profile with itself, to model a homodimer",
+)
+
+opt_duplex_table_region = Option(
+    ("--duplex-table-region/--duplex-full",),
+    type=bool,
+    default=False,
+    help="Default for every strand: build it from only the source table's "
+    "region (--duplex-table-region), or from its full reference sequence with "
+    "the table's data mapped onto that region (--duplex-full, the default)",
+)
+
+opt_duplex_full_ref = Option(
+    ("--duplex-full-ref",),
+    type=str,
+    multiple=True,
+    default=(),
+    help="Build the strand for this reference from its full reference sequence, "
+    "overriding --duplex-full/--duplex-table-region for it (repeatable)",
+)
+
+opt_duplex_region_ref = Option(
+    ("--duplex-region-ref",),
+    type=str,
+    multiple=True,
+    default=(),
+    help="Build the strand for this reference from only its table region, "
+    "overriding --duplex-full/--duplex-table-region for it (repeatable)",
+)
+
+opt_duplex_file = Option(
+    ("--duplex-file",),
+    type=Path(exists=True, dir_okay=False),
+    default=None,
+    help="Duplex each input profile with the sequences in this FASTA file "
+    "(the second strand of each duplex, without any mutational data)",
+)
+
+opt_duplex_sequence = Option(
+    ("--duplex-sequence",),
+    type=(str, DNA),
+    multiple=True,
+    default=(),
+    help="Duplex each input profile with a named strand given as its name "
+    "and its raw sequence 5' to 3' (e.g. --duplex-sequence ASO "
+    "ATTCACTTTCATAATGCTGG); this second strand carries no mutational data",
 )
 
 # Draw
