@@ -16,6 +16,7 @@ from .uniq import UniqReads
 from ..core import path
 from ..core.arg.cli import DEFAULT_MIN_MUT_GAPS, DEFAULT_MUT_COLLISIONS
 from ..core.header import validate_ks
+from ..core.error import NoDataError
 from ..core.logs import logger
 from ..core.random import get_random_integer_generator
 from ..core.task import dispatch
@@ -200,6 +201,61 @@ def run_ks(
     return runs_ks
 
 
+def choose_best_k(runs_ks: dict[int, EMRunsK], min_clusters: int = 1, dataset=None):
+    """Choose the number of clusters to write.
+
+    Parameters
+    ----------
+    runs_ks: dict[int, EMRunsK]
+        EM runs for each number of clusters that was run, keyed by that
+        number of clusters.
+    min_clusters: int
+        Fewest clusters that were allowed to run, named in the error if
+        no number of clusters passed the filters.
+    dataset
+        Dataset being clustered, named in the error if no number of
+        clusters passed the filters.
+
+    Returns
+    -------
+    int
+        The best number of clusters. If none passed the filters, then 1
+        (the ensemble average), which can fail only as underclustered.
+
+    Raises
+    ------
+    ValueError
+        If no number of clusters was run.
+    NoDataError
+        If no number of clusters passed the filters and K = 1 was not
+        among those run, so that the only numbers of clusters available
+        are greater than 1 and could be overclustered.
+    """
+    if not runs_ks:
+        raise ValueError("Cannot choose the best number of clusters from no runs")
+    best_k = find_best_k(list(runs_ks.values()))
+    if best_k >= 1:
+        return best_k
+    # No number of clusters passed the filters, including K = 1 if it ran.
+    # K = 1 can fail only as underclustered: its metrics for overclustering
+    # compare pairs of clusters, of which one cluster has none, so they are
+    # always NaN; and it runs only once, so the filters that compare runs
+    # are NaN too. Its data is just the ensemble average, so falling back to
+    # it cannot introduce a cluster that the filters rejected. That is not
+    # true of any K > 1, which could have failed as overclustered, so those
+    # are never used as a fallback.
+    if 1 in runs_ks:
+        logger.warning(
+            "No Ks passed filters for {}: defaulting to ensemble average (K = 1)",
+            dataset,
+        )
+        return 1
+    raise NoDataError(
+        f"No Ks passed filters for {dataset}: cannot fall back to ensemble "
+        f"average (K = 1) because of --min-clusters {min_clusters}"
+    )
+
+
 @with_tmp_dir(pass_keep_tmp=False)
 def cluster(
     dataset: FilterMutsDataset | JoinFilterMutsDataset,
@@ -280,6 +336,11 @@ def cluster(
             max_clusters_use = dataset.num_reads + 1
         else:
             raise ValueError(f"max_clusters must be ≥ 0, but got {max_clusters}")
+        if min_clusters > max_clusters_use:
+            raise ValueError(
+                "min_clusters must be ≤ max_clusters, but got "
+                f"min_clusters={min_clusters} and max_clusters={max_clusters}"
+            )
         # The cluster report expects the random seed to be an integer,
         # so if it is None, convert it to an integer. This also enables
         # a user to reproduce the clustering results by rerunning with
@@ -300,17 +361,13 @@ def cluster(
             **kwargs,
         )
         runs_ks_list = list(runs_ks.values())
+        # Choose the best number of clusters. If none passed the filters,
+        # this raises and nothing at all is written for this dataset, so
+        # that data from a number of clusters that failed the filters can
+        # never be used.
+        best_k = choose_best_k(runs_ks, min_clusters=min_clusters, dataset=dataset)
         # Choose which numbers of clusters to write.
-        if write_all_ks:
-            write_ks = runs_ks_list
-        elif (best_k := find_best_k(runs_ks_list)) >= 1:
-            write_ks = [runs_ks[best_k]]
-        else:
-            logger.warning(
-                "No Ks passed filters for {}: defaulting to ensemble average (K = 1)",
-                dataset,
-            )
-            write_ks = [runs_ks[1]]
+        write_ks = runs_ks_list if write_all_ks else [runs_ks[best_k]]
         # Output the cluster memberships in batches of reads.
         batch_writer = ClusterBatchWriter(
             dataset, write_ks, brotli_level, tmp_dir, branch, self_contained
