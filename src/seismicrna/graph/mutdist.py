@@ -264,7 +264,7 @@ class MutationDistanceGraph(DatasetGraph, ColorMapGraph):
             p_dist * num_reads,
             index=self._real_hist.index,
             columns=self._real_hist.columns,
-        ).rename(columns=get_null_name, level=REL_NAME, copy=False)
+        ).rename(columns=get_null_name, level=REL_NAME)
 
     @cached_property
     def g_test(self):

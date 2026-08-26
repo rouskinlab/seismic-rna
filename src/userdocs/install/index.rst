@@ -14,12 +14,12 @@ If you use Windows, we recommend installing and running SEISMIC-RNA using the
 Option 1: Install with Conda, if you already know how to use it
 ================================================================================
 
-SEISMIC-RNA is available from the Bioconda_ channel and compatible with Python
-3.11 and later.
+SEISMIC-RNA is available from the Bioconda_ channel and requires Python 3.13
+(no other version is supported).
 
 To install, type this into a terminal::
 
-    conda create -n seismic python=3.14
+    conda create -n seismic python=3.13
     conda activate seismic
     conda install -c conda-forge -c bioconda seismic-rna
 
@@ -63,7 +63,7 @@ Step 2: Create a Conda environment for SEISMIC-RNA
 Once Conda is installed, create a new virtual environment into which SEISMIC-RNA
 and all other necessary software will go::
 
-    conda create -n seismic python=3.14
+    conda create -n seismic python=3.13
 
 You can name your environment whatever you like using the ``-n`` option; in this
 example, it is named ``seismic``.
@@ -73,9 +73,8 @@ example, it is named ``seismic``.
     We recommend giving your environment a short name because you will need to
     type its name every time before using it.
 
-You must indicate which version of Python to use; we recommend the most recent
-stable release (currently version 3.14), though SEISMIC-RNA is compatible with
-version 3.11 and later.
+You must indicate which version of Python to use; SEISMIC-RNA supports only
+Python 3.13, so specify that version.
 
 Step 3: Activate the Conda environment for SEISMIC-RNA
 --------------------------------------------------------------------------------
@@ -126,9 +125,10 @@ Option 4: Install without Conda
 
 Although Conda is the easiest means to install SEISMIC-RNA, it is not necessary.
 
-First, if Python_ is not installed, then install the latest version.
-Confirm that Python version 3.11 or later and pip_ are installed by typing the
-following commands, one by one::
+First, if Python_ is not installed, then install Python 3.13, the only
+version SEISMIC-RNA supports.
+Confirm that Python 3.13 and pip_ are installed by typing the following
+commands, one by one::
 
     python --version
     pip --version

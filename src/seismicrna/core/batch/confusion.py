@@ -125,11 +125,13 @@ def calc_confusion_matrix(
         min_gap=min_gap,
         max_gap=max_gap,
     )
-    # Cache the values for faster access.
-    nv = n.values
-    av = a.values
-    bv = b.values
-    abv = ab.values
+    # Cache the values for faster access. Use writable copies, since a
+    # scalar-filled DataFrame/Series can back .values with a read-only
+    # array under pandas's Copy-on-Write.
+    nv = n.to_numpy(copy=True)
+    av = a.to_numpy(copy=True)
+    bv = b.to_numpy(copy=True)
+    abv = ab.to_numpy(copy=True)
     if read_weights is None:
         # count_intersection is numba-jitted; import it lazily so importing
         # this module does not import numba.
@@ -157,6 +159,10 @@ def calc_confusion_matrix(
             abv[i] = _count_intersection_weighted(
                 mutated_reads[pos5], mutated_reads[pos3], rwv
             )
+    n[:] = nv
+    a[:] = av
+    b[:] = bv
+    ab[:] = abv
     return n, a, b, ab
 
 

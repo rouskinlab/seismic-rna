@@ -368,22 +368,17 @@ def calc_rels_per_read(
     read_indexes: np.ndarray,
 ):
     """For each relationship, the number of positions in each read."""
+    import numpy as np
     import pandas as pd
 
-    counts = defaultdict(
-        partial(
-            pd.DataFrame, 0, index=cover_per_read.index, columns=cover_per_read.columns
-        )
-    )
-    # Reindex to the columns of cover_per_read (all bases in DNA.alph(),
-    # e.g. including N) so that bases absent from pos_index become 0
-    # rather than NaN, and the column order is preserved.
-    counts[NOCOV] = (
-        count_base_types(pos_index).reindex(cover_per_read.columns, fill_value=0)
-        - cover_per_read
-    )
-    match = cover_per_read.copy()
-    counts[MATCH] = match
+    columns = cover_per_read.columns
+    col_indexes = {base: i for i, base in enumerate(columns)}
+    # Accumulate into plain NumPy arrays, not DataFrame .values: pandas can
+    # mark the latter read-only under Copy-on-Write, so mutating in place
+    # raises ValueError.
+    cover_values = cover_per_read.to_numpy(copy=True)
+    counts_values = defaultdict(partial(np.zeros_like, cover_values))
+    counts_values[MATCH] = cover_values
     for pos, base in pos_index:
         # mutations is expected to contain every position in pos_index;
         # raise an interpretable error rather than a bare KeyError if not.
@@ -391,11 +386,25 @@ def calc_rels_per_read(
             pos_muts = mutations[pos]
         except KeyError:
             raise ValueError(f"Position {pos} is missing from mutations") from None
+        col = col_indexes[base]
         for mut, reads in pos_muts.items():
             if reads.size > 0:
                 rows = read_indexes[reads]
-                match[base].values[rows] -= 1
-                counts[mut][base].values[rows] += 1
+                cover_values[rows, col] -= 1
+                counts_values[mut][rows, col] += 1
+    counts = {
+        # Reindex to the columns of cover_per_read (all bases in DNA.alph(),
+        # e.g. including N) so that bases absent from pos_index become 0
+        # rather than NaN, and the column order is preserved.
+        NOCOV: (
+            count_base_types(pos_index).reindex(columns, fill_value=0) - cover_per_read
+        ),
+        **{
+            mut: pd.DataFrame(values, index=cover_per_read.index, columns=columns)
+            for mut, values in counts_values.items()
+        },
+    }
+    match = counts[MATCH]
     errors = [
         (
             f"Number of matches for base {repr(base)} must be ≥ 0 "
@@ -406,13 +415,12 @@ def calc_rels_per_read(
     ]
     if errors:
         raise ValueError("\n".join(errors))
-    result = dict(counts)
     logger.trace(
         "rels_per_read: {} relationship type(s) over {} read(s)",
-        len(result),
+        len(counts),
         len(cover_per_read),
     )
-    return result
+    return counts
 
 
 def calc_reads_per_pos(

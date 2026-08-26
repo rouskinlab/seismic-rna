@@ -122,9 +122,7 @@ def accumulate_counts(
                         end_counts.columns,
                         "end_counts.columns",
                     )
-                end_counts = end_counts.add(end_counts_i, fill_value=zero).astype(
-                    dtype, copy=False
-                )
+                end_counts = end_counts.add(end_counts_i, fill_value=zero).astype(dtype)
             if count_per_pos is not None:
                 require_isinstance("count_per_pos_i", count_per_pos_i, pd.DataFrame)
                 if validate:
