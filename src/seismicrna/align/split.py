@@ -262,6 +262,8 @@ def run(
         as_list=True,
         ordered=False,
         raise_on_error=False,
+        label="splitting alignments",
+        unit="file",
         args=as_list_of_tuples(xam_files),
         kwargs=dict(
             fasta=Path(fasta),

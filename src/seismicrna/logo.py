@@ -63,7 +63,7 @@ def draw_seismic_logo(
     small_linewidth = 6
     arc_fudge_deg = 1
 
-    blue = "#2186d9"
+    red = "#a00821"
     grey = "#242424"
 
     box_color = grey if not report else "none"
@@ -96,7 +96,7 @@ def draw_seismic_logo(
             R,
             *adjust_angles(180 - arc_fudge_deg, 360 + arc_fudge_deg),
             large_linewidth,
-            blue,
+            red,
         ),
         (
             center_large_left,
@@ -110,14 +110,14 @@ def draw_seismic_logo(
             r,
             *adjust_angles(180 - arc_fudge_deg, 360 + arc_fudge_deg),
             small_linewidth,
-            blue,
+            red,
         ),
         (
             center_outer_left,
             r,
             *adjust_angles(180 - arc_fudge_deg, 360 + arc_fudge_deg),
             small_linewidth,
-            blue,
+            red,
         ),
         (
             center_outer_right,
@@ -189,7 +189,7 @@ def draw_seismic_logo(
         upper_left_triangle = patches.Polygon(
             [top_left, top_right, bottom_left],
             closed=True,
-            facecolor=blue,
+            facecolor=red,
             edgecolor=None,
             zorder=1,
             antialiased=True,

@@ -75,6 +75,11 @@ Run individual steps of the workflow
 .. click:: seismicrna.table:cli
     :prog: seismic table
 
+.. _cli_duplex:
+
+.. click:: seismicrna.duplex:cli
+    :prog: seismic duplex
+
 .. _cli_fold:
 
 .. click:: seismicrna.fold:cli

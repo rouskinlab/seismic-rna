@@ -107,6 +107,8 @@ def run(
         as_list=True,
         ordered=False,
         raise_on_error=False,
+        label="identifying mutations",
+        unit="reference",
         args=as_list_of_tuples(xam_files),
         kwargs=dict(
             fasta=idmut_fasta,

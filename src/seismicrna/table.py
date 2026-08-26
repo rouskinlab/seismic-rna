@@ -161,6 +161,8 @@ def run(
                 as_list=False,
                 ordered=False,
                 raise_on_error=False,
+                label="tabulating",
+                unit="dataset",
                 args=args,
                 kwargs=dict(force=force),
             )

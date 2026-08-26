@@ -865,6 +865,8 @@ def fqs_pipeline(
             as_list=True,
             ordered=False,
             raise_on_error=False,
+            label="aligning reads",
+            unit="sample",
             args=iter_args,
             kwargs=dict(tmp_dir=tmp_dir, **kwargs),
         )

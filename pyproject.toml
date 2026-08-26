@@ -36,6 +36,7 @@ dependencies = [
     "matplotlib >=3.0",
     "viennarna>=2.6",
     "pyahocorasick >=2.2.0",
+    "tqdm >=4.66",
 ]
 dynamic = ["version"]
 

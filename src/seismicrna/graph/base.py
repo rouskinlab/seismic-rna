@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from abc import ABC, abstractmethod
 from functools import cached_property
 from itertools import chain
@@ -18,6 +19,7 @@ from ..filter.dataset import FilterDataset
 from ..filter.table import FilterTable
 from ..idmut.dataset import IDmutDataset
 from ..idmut.table import IDmutTable
+from ..duplex.table import DuplexTable
 from ..core.arg.cli import (
     arg_input_path,
     opt_csv,
@@ -38,6 +40,7 @@ from ..core.write import need_write
 ACTION_IDMUT = "unfiltered"
 ACTION_FILTER = "filtered"
 ACTION_CLUSTER = "clustered"
+ACTION_DUPLEX = "duplex"
 
 
 def get_action_name(source: MutsDataset | Table):
@@ -47,6 +50,8 @@ def get_action_name(source: MutsDataset | Table):
         return ACTION_FILTER
     if isinstance(source, (ClusterDataset, ClusterTable, ClusterAbundanceTable)):
         return ACTION_CLUSTER
+    if isinstance(source, DuplexTable):
+        return ACTION_DUPLEX
     raise TypeError(source)
 
 
@@ -74,14 +79,20 @@ def make_path_subject(action: str, k: int | None, clust: int | None):
         path (e.g. ``"all"``, ``"filtered"``, or
         ``"clustered-2-1"``).
     """
-    if action == ACTION_IDMUT or action == ACTION_FILTER:
+    if (
+        action == ACTION_IDMUT
+        or action == ACTION_FILTER
+        or (action == ACTION_DUPLEX and not (k or clust))
+    ):
         if k or clust:
             raise ValueError(
                 f"For {action} data, k and clust must both "
                 f"be 0 or None, but got {k} and {clust}"
             )
         return action
-    if action == ACTION_CLUSTER:
+    if action == ACTION_CLUSTER or action == ACTION_DUPLEX:
+        # A clustered duplex (a cluster product) labels its combinations
+        # like clusters, e.g. "duplex-4-1".
         return "-".join(
             map(
                 str,
@@ -397,6 +408,13 @@ class BaseWriter(ABC):
 
 
 class BaseRunner(ABC):
+    @classmethod
+    def get_cmd(cls) -> str:
+        """Name of the command that graphs this kind of graph, which is the
+        name of the module that defines the runner, as in every graph
+        module's own COMMAND."""
+        return cls.__module__.split(os.path.extsep)[-1]
+
     @classmethod
     @abstractmethod
     def get_writer_type(cls) -> type[BaseWriter]:

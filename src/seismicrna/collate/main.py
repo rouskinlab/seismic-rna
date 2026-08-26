@@ -124,7 +124,9 @@ def run(
     # Collect all HTML graphs.
     input_files = list()
     if include_graph:
-        for graph in path.find_files_chain(input_path, [path.HtmlSeg]):
+        for graph in path.find_files_chain(
+            input_path, [path.HtmlSeg], warn_if_no_matches=False
+        ):
             try:
                 graph_segs = path.parse(graph, path.GRAPH_SEGS)
                 if (
@@ -135,7 +137,9 @@ def run(
             except path.PathValueError:
                 continue
     if include_svg:
-        for svg in path.find_files_chain(input_path, [path.SvgSeg]):
+        for svg in path.find_files_chain(
+            input_path, [path.SvgSeg], warn_if_no_matches=False
+        ):
             try:
                 svg_segs = path.parse(svg, path.DRAW_SEGS)
                 if svg_segs.get("step", None) == "fold":

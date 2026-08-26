@@ -301,6 +301,8 @@ def run(
         as_list=True,
         ordered=False,
         raise_on_error=False,
+        label="folding regions",
+        unit="region",
         args=as_list_of_tuples(regions.regions),
         kwargs=dict(
             sim_dir=sim_dir,

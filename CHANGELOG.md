@@ -2,8 +2,24 @@
 
 ## Unreleased
 
+### New Features
+
+- Added the `duplex` command, which fuses two references into one duplex so that they can be cofolded as a pair rather than folded separately.
+  By default it duplexes every pair of input tables that share the same branches (as `seismic graph` compares every pair of tables); `--dimer` duplexes each table with itself to model a homodimer, and `--duplex-file` / `--duplex-sequence` give a second strand that carries no mutational data, such as an antisense oligo.
+  Each of these contributes its own duplexes, so any combination of them can be used at once, and `--no-duplex-pair` turns off the pairwise combinations.
+  Every strand spans its full reference by default, with the source table's data mapped onto its region; `--duplex-table-region` restricts every strand to its table region, and `--duplex-full-ref` / `--duplex-region-ref` override that choice for one reference.
+  When a source table is clustered, the duplex is the cross-product of the two strands' clusters, giving one fused profile per combination.
+- `seismic fold` now folds duplex tables with RNAcofold, using the Deigan or Cordero energy method (`--fold-fpaired` sets the fraction of bases assumed paired for Cordero pseudoenergies).
+  The resulting structures graph and draw like any other fold.
+- Added progress bars, shown at the bottom of the terminal while a task runs, one line per task so that a step of the workflow stays visible above the sample it is working on.
+  They cover every parallelized task (aligning, identifying mutations, filtering, clustering, folding, tabulating, graphing, exporting, and so on), the steps of `seismic wf`, and the unit tests run by `seismic test`.
+  Log messages appear above the bar, which stays on the last line at any verbosity and with any number of tasks running in parallel.
+  Progress is tracked down to the level of one sample or file, not the parts of a single sample's analysis, which begin and end too quickly to follow.
+  Progress bars are hidden automatically with `--quiet` (`-q`) or quieter, when stderr is not a terminal, and in the Python API; use `--no-progress` to hide them in every case.
+
 ### Bug fixes
 
+- Fixed the message logged when a task fails formatting its arguments into the wrong place, e.g. `FAILED running the '('align',)' command` instead of `FAILED running the 'align' command`.
 - Fixed `seismic cluster` crashing with `KeyError: 1` if no number of clusters passed the filters and `--min-clusters` was greater than 1.
   Falling back to the ensemble average (K = 1) assumed that K = 1 had been run, which `--min-clusters` prevents.
   K = 1 is still used when it was run, since it can fail only as underclustered and so can never contribute a cluster that the filters rejected; when it was not run, no clusters are written for that dataset, rather than falling back to a number of clusters greater than 1 that could be overclustered.

@@ -273,6 +273,8 @@ def run(
         as_list=True,
         ordered=False,
         raise_on_error=False,
+        label="filtering regions",
+        unit="region",
         args=[
             (dataset, region)
             for ref, ref_datasets in datasets.items()

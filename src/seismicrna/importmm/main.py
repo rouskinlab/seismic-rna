@@ -51,6 +51,8 @@ def run(
         as_list=True,
         ordered=False,
         raise_on_error=False,
+        label="importing mutations",
+        unit="file",
         args=as_list_of_tuples(list(input_path)),
         kwargs=dict(
             sample=sample,

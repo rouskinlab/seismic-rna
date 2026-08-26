@@ -154,6 +154,15 @@ def color_wrap(level: Level, body: str) -> str:
         return body
 
 
+# Hook through which console output is written, or None to write directly to
+# stderr. Its purpose is to let core.progress keep any progress bars pinned
+# below the log messages. Because core.progress imports this module, this
+# module must not import core.progress, so core.progress installs the hook
+# itself (and removes it when progress bars are disabled). The hook is not
+# part of the logger configuration, so erase_config() leaves it untouched.
+console_hook: Optional[Callable[[str], None]] = None
+
+
 class LoggingContext(object):
     """Context manager that delimits a task in the log.
 
@@ -202,8 +211,10 @@ class LoggingContext(object):
             )
         if self._began_ended:
             if exc_type is not None:
-                self._logger.warning(
-                    f"FAILED {self._template}", self._args, self._kwargs
+                # Log the failure at the WARNING level, which is at least as
+                # important as the level of the task itself.
+                self._logger._log(
+                    Level.WARNING, f"FAILED {self._template}", self._args, self._kwargs
                 )
             else:
                 self._logger._log(
@@ -288,7 +299,10 @@ class Logger(object):
         if self.console_enabled:
             if self.log_color:
                 body = color_wrap(level, body)
-            stderr.write(body)
+            if console_hook is not None:
+                console_hook(body)
+            else:
+                stderr.write(body)
         if self.file_stream is not None:
             timestamp = datetime.now().strftime(r"%Y-%m-%d %H:%M:%S.%f")
             self.file_stream.stream.write(f"{timestamp}  {body}")

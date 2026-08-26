@@ -381,6 +381,8 @@ def run(
                 as_list=False,
                 ordered=False,
                 raise_on_error=False,
+                label="joining regions",
+                unit="region",
                 args=args,
                 kwargs=kwargs,
             )

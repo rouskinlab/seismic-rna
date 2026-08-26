@@ -124,7 +124,7 @@ def run_ks(
             else:
                 min_runs_k = 1
                 max_runs_k = 1
-            logger.info("Began EM k={}: {}-{} run(s)", k, min_runs_k, max_runs_k)
+            logger.debug("Began EM k={}: {}-{} run(s)", k, min_runs_k, max_runs_k)
             # Accumulate EM runs for this K.
             runs_k = list()
             num_runs_k = 0

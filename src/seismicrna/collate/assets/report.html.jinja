@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ title }}</title>
+<style>
+{{ gridstack_css | safe }}
+</style>
+<style>
+{{ report_css | safe }}
+</style>
+</head>
+<body>
+
+<div class="topbar" id="topbar">
+<header class="app-header">
+    <div class="brand">
+        <div class="logo">{{ logo_svg | safe }}</div>
+        <div class="titles">
+            <h1>{{ title }}</h1>
+            <div class="subtitle">{{ subtitle }}</div>
+        </div>
+    </div>
+    <div class="toolbar">
+        <label class="search" title="Filter graphs">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input id="search-input" type="search" placeholder="Filter graphs&hellip;" autocomplete="off" spellcheck="false">
+        </label>
+        {% if groups|length > 1 %}
+        <button class="btn" id="expand-all-btn" title="Collapse or expand every group">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+            <span class="label">Collapse all</span>
+        </button>
+        {% endif %}
+        <button class="btn" id="reset-all-btn" title="Restore the default layout for every group">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            <span class="label">Reset layout</span>
+        </button>
+        <button class="btn" id="theme-btn" title="Toggle color theme (auto / light / dark)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            <span class="label">Auto</span>
+        </button>
+    </div>
+</header>
+
+{% if groups|length > 1 %}
+<nav class="groupnav" id="groupnav">
+    {% for group in groups %}
+    <a href="#{{ group.group_id }}">{{ group.group_name }}</a>
+    {% endfor %}
+</nav>
+{% endif %}
+</div>
+<div class="topbar-trigger" id="topbar-trigger" aria-hidden="true"></div>
+
+<main>
+{% for group in groups %}
+<section class="group" id="{{ group.group_id }}" data-group-id="{{ group.group_id }}">
+    <div class="group-header">
+        <span class="group-drag-handle" title="Drag to reorder groups" aria-hidden="true">&#8942;&#8942;</span>
+        <button class="group-collapse" title="Collapse group" aria-label="Collapse group">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <span class="group-title">{{ group.group_name }}</span>
+        <span class="group-meta">{{ group.files|length }} graph{{ "s" if group.files|length != 1 }}</span>
+        <div class="group-actions">
+            <button class="btn" data-act="reset-group" title="Reset this group's layout">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                <span class="label">Reset</span>
+            </button>
+        </div>
+    </div>
+    <div class="group-body">
+        <div class="grid-stack" data-group-id="{{ group.group_id }}">
+        {% for file in group.files %}
+            <div class="grid-stack-item" gs-x="{{ file.x }}" gs-y="{{ file.y }}" gs-w="{{ file.w }}" gs-h="{{ file.h }}" gs-id="{{ file.id }}"
+                 data-search="{{ file.name }} {{ file.sample }} {{ file.reference }} {{ file.region }} {{ file.branches }}">
+                <div class="grid-stack-item-content">
+                    <div class="tile-header">
+                        <span class="drag-dots">&#8942;&#8942;</span>
+                        <div class="tile-titles">
+                            <span class="tile-name" title="{{ file.name }}">{{ file.name }}</span>
+                            <span class="tile-sub"><b>{{ file.sample }}</b> &middot; {{ file.reference }} &middot; {{ file.region }}{% if file.branches and file.branches not in ("unknown", "[]") %} &middot; {{ file.branches }}{% endif %}</span>
+                        </div>
+                        <div class="tile-actions">
+                            <button class="tile-btn" data-act="fullscreen" title="Fullscreen">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                            </button>
+                            <button class="tile-btn" data-act="collapse" title="Collapse graph">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="tile-body">
+                        {% if file.kind == "plotly" %}
+                        <div class="plot-host">{{ file.plot_div | safe }}</div>
+                        {% elif file.kind == "svg" %}
+                        <div class="svg-host">{{ file.svg | safe }}</div>
+                        {% elif file.kind == "iframe" %}
+                        <iframe data-src="{{ file.src }}" data-resizable title="{{ file.name }}" loading="lazy"></iframe>
+                        {% elif file.kind == "srcdoc" %}
+                        <iframe srcdoc="{{ file.srcdoc }}" data-resizable title="{{ file.name }}" loading="lazy"></iframe>
+                        {% else %}
+                        <div class="tile-error">[Unable to load graph]</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+        {% if group.files|length == 0 %}
+        <div class="empty-note">No graphs in this group.</div>
+        {% endif %}
+    </div>
+</section>
+{% endfor %}
+</main>
+
+<div id="fs-backdrop" hidden></div>
+<div id="toast"></div>
+
+{% if plotly_libs %}
+<script>{{ plotly_config | safe }}</script>
+<script>window.__seismicPlotly = {};</script>
+{% for version, lib in plotly_libs.items() %}
+<script>{{ lib | safe }}</script>
+<script>window.__seismicPlotly["{{ version }}"] = window.Plotly;</script>
+{% endfor %}
+<script>
+// Render thunks keyed by plot div id; run lazily when a tile nears the viewport.
+window.__seismicRender = {};
+{% for group in groups %}{% for file in group.files %}{% if file.kind == "plotly" %}
+window.__seismicRender["{{ file.div_id }}"] = function () {
+    (function (Plotly) {
+        {{ file.data_js | safe }}
+        var _d = document.getElementById("{{ file.div_id }}");
+        if (_d) { _d._seismicPlotly = Plotly; }
+    })(window.__seismicPlotly["{{ file.plotly_version }}"] || window.Plotly);
+};
+{% endif %}{% endfor %}{% endfor %}
+</script>
+{% endif %}
+
+{% if contains_svg %}
+<script>
+{{ svg_pan_zoom_js | safe }}
+</script>
+{% endif %}
+
+<script>
+{{ gridstack_js | safe }}
+</script>
+{% if groups|length > 1 %}
+<script>
+{{ sortable_js | safe }}
+</script>
+{% endif %}
+<script>
+window.__reportConfig = {{ report_config | safe }};
+</script>
+<script>
+{{ report_js | safe }}
+</script>
+</body>
+</html>

@@ -267,6 +267,8 @@ def run(
         as_list=True,
         ordered=False,
         raise_on_error=False,
+        label="simulating end coords",
+        unit="file",
         args=as_list_of_tuples(map(Path, ct_file)),
         kwargs=dict(
             center_fmean=center_fmean,

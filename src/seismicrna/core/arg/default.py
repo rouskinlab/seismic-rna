@@ -30,6 +30,7 @@ defaults_to_none = dict(
     fold_regions_file=None,
     fold_constraint=None,
     fold_commands=None,
+    duplex_file=None,
     eddy_prior_paired_file=None,
     eddy_prior_unpaired_file=None,
     samples_meta=None,

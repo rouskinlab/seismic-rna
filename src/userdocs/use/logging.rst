@@ -39,6 +39,68 @@ These flags must go between ``seismic`` and the subcommand::
     seismic -v cluster out/sars2-fse
 
 
+Progress bars
+--------------------------------------------------------------------------------
+
+While a task runs, SEISMIC-RNA shows a progress bar at the bottom of the
+terminal, such as::
+
+    align                 |█████         | step 2/8   [00:42<02:31]
+    aligning reads        |████████▌     | sample 3/7 [00:42<01:38]
+
+Each bar names the task, what it is counting and which one it is on, how long
+it has been running, and roughly how much longer it will take.
+The numbers always say what they count, so ``sample 3/7`` can only mean the
+3rd of 7 samples.
+Everything is numbered from 1, so these bars mean that the workflow is on step
+2 of 8 (``align``), which is aligning the 3rd of its 7 samples.
+The gauge always matches the numbers beside it: a task on its last item shows
+a full gauge, as does a task with only one item.
+
+Tasks nest, and each one gets its own line, the task that contains the others
+on top.
+The names are padded to the same width so that the gauges line up in a column,
+and the whole block stays at the bottom of the terminal.
+When a task finishes, its bar stays where it is and the next task takes the
+line below, so the block grows downward in the order the tasks ran, with the
+step of the workflow on top.
+A finished bar shows the time its task took, instead of the time still to
+come, which also tells it apart from a task still running::
+
+    cluster               |█████████     | step 5/8      [01:04<00:38]
+    aligning reads        |██████████████| sample 2/2    [00:11]
+    identifying mutations |██████████████| reference 2/2 [00:03]
+    filtering regions     |██████████████| region 2/2    [00:11]
+    clustering            |███████       | region 1/2    [00:18<00:18]
+
+The block may not fill the terminal, or there would be no room for the log;
+once it is full, each further finished bar goes into the log instead, so that
+a long run does not push everything else off the screen.
+
+Progress is tracked down to the level of one sample (or one file), not below
+it.
+The parts of a single sample's analysis, such as batches of reads or runs of
+the clustering algorithm, begin and end too quickly to follow, so they get no
+bar of their own.
+
+Log messages appear above the bars, which stay at the bottom of the terminal
+however many messages are written, even with ``-vv`` and even while tasks are
+running in parallel.
+When the command finishes, every bar stays on the terminal as a record of the
+run: what each task did and how long it took.
+
+Progress bars are hidden automatically when they would not be useful:
+
+- with ``--quiet`` (``-q``) or quieter, whose purpose is to write little or
+  nothing to the terminal
+- when standard error is not a terminal, e.g. redirected to a file or piped
+  into another program
+- inside the Python API, which has no terminal of its own
+
+Use ``--no-progress`` (between ``seismic`` and the subcommand) to hide them in
+every case.
+
+
 Log files
 --------------------------------------------------------------------------------
 

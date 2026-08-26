@@ -232,6 +232,8 @@ def run(
         as_list=True,
         ordered=False,
         raise_on_error=False,
+        label="simulating mutations",
+        unit="file",
         args=as_list_of_tuples(map(Path, param_dir)),
         kwargs=dict(
             sample=sample,

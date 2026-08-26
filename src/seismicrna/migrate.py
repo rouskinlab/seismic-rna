@@ -332,6 +332,8 @@ def migrate_out_dir(out_dir: Path, num_cpus: int):
         ordered=False,
         raise_on_error=False,
         as_list=True,
+        label="migrating samples",
+        unit="sample",
         args=as_list_of_tuples(sample_dirs),
     )
 

@@ -56,6 +56,8 @@ def run(
         as_list=True,
         ordered=False,
         raise_on_error=False,
+        label="exporting",
+        unit="sample",
         args=list(tables.items()),
         kwargs=dict(
             samples_metadata=samples_metadata,

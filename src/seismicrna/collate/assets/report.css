@@ -1,0 +1,446 @@
+/* SEISMIC-RNA collated report — modern dashboard styling. */
+
+:root {
+    --bg: #f4f6fb;
+    --bg-elev: #ffffff;
+    --bg-sunken: #eef1f7;
+    --card: #ffffff;
+    --card-header: #f7f9fd;
+    --border: #e2e7f0;
+    --border-strong: #cdd4e2;
+    --text: #1c2333;
+    --text-soft: #5b6577;
+    --text-faint: #8a93a6;
+    --accent: #4361ee;
+    --accent-soft: #e6ecff;
+    --accent-strong: #2f49c9;
+    --danger: #e5484d;
+    --shadow-sm: 0 1px 2px rgba(20, 30, 55, 0.06), 0 1px 3px rgba(20, 30, 55, 0.05);
+    --shadow-md: 0 4px 12px rgba(20, 30, 55, 0.10), 0 2px 4px rgba(20, 30, 55, 0.06);
+    --shadow-lg: 0 18px 45px rgba(20, 30, 55, 0.22);
+    --radius: 12px;
+    --radius-sm: 8px;
+    --header-h: 42px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+        Arial, "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    color-scheme: light;
+}
+
+html[data-theme="dark"] {
+    --bg: #0f1420;
+    --bg-elev: #161c2b;
+    --bg-sunken: #0b0f18;
+    --card: #171e2e;
+    --card-header: #1c2436;
+    --border: #29324a;
+    --border-strong: #3a4560;
+    --text: #e7ecf6;
+    --text-soft: #a3adc2;
+    --text-faint: #6f7b93;
+    --accent: #6c8cff;
+    --accent-soft: #23304f;
+    --accent-strong: #86a2ff;
+    --danger: #ff6b6f;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* NB: do NOT set `height: 100%` on body — it caps the sticky containing
+ * block to one viewport, which makes the sticky header/nav scroll away. */
+body {
+    min-height: 100vh;
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+/* ---------- Auto-hiding top bar (header + group nav) ---------- */
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    transition: transform 0.28s ease;
+    will-change: transform;
+}
+.topbar.hidden { transform: translateY(-100%); }
+/* Thin always-on strip at the very top that catches the pointer to reveal the
+ * bar, even when the pointer is over a graph iframe (whose events would not
+ * otherwise reach this document). */
+.topbar-trigger {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 8px;
+    z-index: 58;
+}
+
+/* ---------- App header ---------- */
+/* The whole title bar is the brand crimson. The logo is transparent in its
+ * upper-left triangle by design, so it sits directly on the crimson bar and
+ * that region shows through as the intended color. */
+.app-header {
+    --crimson: #a00821;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 20px;
+    background: var(--crimson);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.28);
+    color: #fff;
+}
+
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.brand .logo { display: flex; height: 34px; width: 34px; flex: 0 0 auto; }
+.brand .logo svg { height: 100%; width: 100%; }
+
+/* Legible controls on the crimson bar. */
+.app-header .brand h1 { color: #fff; }
+.app-header .brand .subtitle { color: rgba(255, 255, 255, 0.72); }
+.app-header .search {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.28);
+}
+.app-header .search:focus-within {
+    border-color: #fff;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.22);
+}
+.app-header .search svg { color: rgba(255, 255, 255, 0.75); }
+.app-header .search input { color: #fff; }
+.app-header .search input::placeholder { color: rgba(255, 255, 255, 0.6); }
+.app-header .btn {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.28);
+    color: #fff;
+}
+.app-header .btn:hover {
+    background: rgba(255, 255, 255, 0.24);
+    border-color: rgba(255, 255, 255, 0.55);
+    color: #fff;
+}
+.app-header .btn.active {
+    background: rgba(255, 255, 255, 0.28);
+    border-color: #fff;
+    color: #fff;
+}
+.brand .titles { min-width: 0; }
+.brand h1 {
+    font-size: 15px;
+    font-weight: 650;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.brand .subtitle {
+    font-size: 11.5px;
+    color: var(--text-faint);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.toolbar { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }
+
+.search {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg-sunken);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 5px 12px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.search svg { width: 14px; height: 14px; color: var(--text-faint); flex: 0 0 auto; }
+.search input {
+    border: none;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 13px;
+    width: 150px;
+    outline: none;
+}
+.search input::placeholder { color: var(--text-faint); }
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-soft);
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.05s;
+}
+.btn:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-strong); }
+.btn:active { transform: translateY(1px); }
+.btn.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-strong); }
+.btn svg { width: 15px; height: 15px; }
+.btn.icon-only { width: 32px; padding: 0; justify-content: center; }
+.btn.danger:hover { background: color-mix(in srgb, var(--danger) 14%, transparent); border-color: var(--danger); color: var(--danger); }
+
+/* ---------- Group navigation ---------- */
+.groupnav {
+    display: flex;
+    gap: 6px;
+    padding: 8px 20px;
+    background: color-mix(in srgb, var(--bg-elev) 92%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+.groupnav a {
+    font-size: 12.5px;
+    color: var(--text-soft);
+    text-decoration: none;
+    padding: 4px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+}
+.groupnav a:hover { background: var(--accent-soft); color: var(--accent-strong); }
+
+/* ---------- Main / groups ---------- */
+main {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    transition: padding-bottom 0.15s ease;
+}
+/* While a tile is being resized, open up room below the last group so the
+ * bottom-most graph can be dragged taller (and the page can auto-scroll
+ * into the space instead of getting stuck at the end of the document). */
+body.gs-resizing main { padding-bottom: 85vh; }
+/* While dragging or resizing a tile, don't let iframes / plots swallow the
+ * pointer, so the grab tracks the cursor smoothly across a graph. */
+body.gs-resizing .tile-body,
+body.gs-dragging .tile-body { pointer-events: none; }
+
+.group {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    scroll-margin-top: 110px;
+}
+.group-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--card-header);
+}
+.group-drag-handle {
+    flex: 0 0 auto;
+    color: var(--text-faint);
+    letter-spacing: 1px;
+    font-size: 13px;
+    line-height: 1;
+    cursor: grab;
+    padding: 0 2px;
+    user-select: none;
+}
+.group-drag-handle:active { cursor: grabbing; }
+.group-sortable-ghost { opacity: 0.4; }
+.group-sortable-drag .group-header { box-shadow: var(--shadow-lg); }
+.group.group-dragging { box-shadow: var(--shadow-lg); border-color: var(--accent); }
+.group-collapse {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px; height: 24px;
+    border: none;
+    background: transparent;
+    color: var(--text-soft);
+    cursor: pointer;
+    border-radius: 6px;
+    transition: transform 0.2s, background 0.15s;
+}
+.group-collapse:hover { background: var(--accent-soft); color: var(--accent-strong); }
+.group.collapsed .group-collapse { transform: rotate(-90deg); }
+.group-title { font-size: 14.5px; font-weight: 650; letter-spacing: 0.2px; }
+.group-meta {
+    font-size: 11.5px;
+    color: var(--text-faint);
+    background: var(--bg-sunken);
+    padding: 2px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+}
+.group-actions { margin-left: auto; display: flex; gap: 6px; }
+/* Height is animated explicitly in JS (CSS can't animate to/from auto). */
+.group-body { transition: height 0.28s ease; overflow: hidden; }
+
+/* ---------- GridStack tiles ---------- */
+.grid-stack { min-height: 40px; }
+
+.grid-stack-item-content {
+    display: flex;
+    flex-direction: column;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    inset: 6px;
+    transition: box-shadow 0.18s, border-color 0.18s;
+}
+.grid-stack-item:hover .grid-stack-item-content { box-shadow: var(--shadow-md); }
+.grid-stack-item.gs-fullscreen {
+    position: fixed !important;
+    inset: 0 !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+    transform: none !important;
+    z-index: 200;
+}
+.grid-stack-item.gs-fullscreen .grid-stack-item-content { inset: 0; border-radius: 0; box-shadow: var(--shadow-lg); }
+/* Collapsing a graph makes no sense while it fills the window. */
+.grid-stack-item.gs-fullscreen .tile-btn[data-act="collapse"] { display: none; }
+/* No resizing/dragging a tile while it fills the window. */
+.grid-stack-item.gs-fullscreen .ui-resizable-handle { display: none !important; }
+.grid-stack-item.gs-fullscreen .tile-header { cursor: default; }
+
+.tile-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: var(--header-h);
+    flex: 0 0 auto;
+    padding: 0 6px 0 10px;
+    background: var(--card-header);
+    border-bottom: 1px solid var(--border);
+    cursor: grab;
+    user-select: none;
+}
+.tile-header:active { cursor: grabbing; }
+.grid-stack-item.gs-fullscreen .tile-header { cursor: default; }
+.drag-dots { color: var(--text-faint); flex: 0 0 auto; letter-spacing: 1px; font-size: 12px; }
+.tile-titles { min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; }
+.tile-name {
+    font-size: 12.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.tile-sub {
+    font-size: 10.5px;
+    color: var(--text-faint);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.tile-sub b { color: var(--text-soft); font-weight: 600; }
+.tile-actions { display: flex; gap: 2px; flex: 0 0 auto; }
+.tile-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px; height: 26px;
+    border: none;
+    background: transparent;
+    color: var(--text-faint);
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.15s, color 0.15s;
+}
+.tile-btn:hover { background: var(--accent-soft); color: var(--accent-strong); }
+.tile-btn svg { width: 15px; height: 15px; }
+
+.tile-body {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    background: var(--card);
+    overflow: hidden;
+}
+.grid-stack-item.tile-collapsed .tile-body { display: none; }
+.grid-stack-item.tile-collapsed .grid-stack-item-content { height: auto; }
+
+.plot-host, .svg-host { position: absolute; inset: 0; width: 100%; height: 100%; }
+.plot-host .plotly-graph-div { width: 100% !important; height: 100% !important; }
+.svg-host svg { width: 100%; height: 100%; display: block; }
+.tile-body iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
+
+.tile-error {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px; text-align: center;
+    color: var(--danger); font-size: 13px;
+}
+
+/* GridStack visual polish */
+.grid-stack > .grid-stack-item > .ui-resizable-handle { filter: none; }
+.grid-stack-placeholder > .placeholder-content {
+    background: var(--accent-soft);
+    border: 2px dashed var(--accent);
+    border-radius: var(--radius);
+    inset: 6px;
+    opacity: 0.7;
+}
+.grid-stack-item.ui-draggable-dragging .grid-stack-item-content,
+.grid-stack-item.ui-resizable-resizing .grid-stack-item-content { box-shadow: var(--shadow-lg); border-color: var(--accent); }
+
+.empty-note {
+    padding: 40px 16px;
+    text-align: center;
+    color: var(--text-faint);
+    font-size: 13px;
+}
+[hidden] { display: none !important; }
+
+/* Fullscreen backdrop */
+#fs-backdrop {
+    position: fixed; inset: 0; z-index: 190;
+    background: rgba(10, 14, 22, 0.55);
+    backdrop-filter: blur(2px);
+}
+
+/* Toast */
+#toast {
+    position: fixed;
+    bottom: 22px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--text);
+    color: var(--bg-elev);
+    padding: 9px 16px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 500;
+    box-shadow: var(--shadow-md);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 300;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (max-width: 640px) {
+    .search input { width: 96px; }
+    .btn .label { display: none; }
+    .btn { padding: 0 9px; }
+}

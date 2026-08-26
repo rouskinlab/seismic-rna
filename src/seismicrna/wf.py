@@ -14,7 +14,20 @@ from . import (
     collate as collate_mod,
     export as export_mod,
 )
-from .core.arg.cmd import CMD_WORKFLOW
+from .core.arg.cmd import (
+    CMD_ALIGN,
+    CMD_CLUSTER,
+    CMD_COLLATE,
+    CMD_DEMULT,
+    CMD_DRAW,
+    CMD_EXPORT,
+    CMD_FILTER,
+    CMD_FILTERSCAN,
+    CMD_FOLD,
+    CMD_GRAPH,
+    CMD_IDMUT,
+    CMD_WORKFLOW,
+)
 from .core.arg.cli import (
     merge_params,
     opt_branch,
@@ -52,6 +65,7 @@ from .core.arg.cli import (
     opt_mutdist_null,
     opt_collate,
 )
+from .core.progress import ProgressBar
 from .core.run import run_func
 from .core.seq.xna import DNA
 from .core.table.base import (
@@ -266,6 +280,7 @@ def run(
     deigan_slope: float,
     deigan_intercept: float,
     fold_quantile: float,
+    fold_fpaired: float,
     fold_constraint: str | None,
     fold_commands: str | None,
     eddy_prior_paired_file: str | None,
@@ -366,6 +381,47 @@ def run(
         if step in wf_branches:
             raise ValueError(f"--wf-branch got multiple branches for step {repr(step)}")
         wf_branches[step] = branch
+    # Steps of the workflow that will run, in order, shown on a progress
+    # bar. The clusterscan step counts as part of the cluster step, and the
+    # ROC and rolling AUC graphs as part of the fold step, because each runs
+    # only if the step it accompanies runs. All other graphs count as one
+    # step, since they are much faster than the steps that make their input.
+    wf_graph = any(
+        [
+            graph_mprof,
+            graph_tmprof,
+            graph_ncov,
+            graph_mhist,
+            graph_abundance,
+            graph_giniroll,
+            graph_poscorr,
+            graph_mutdist,
+        ]
+    )
+    wf_steps = [
+        step
+        for step, step_runs in [
+            (CMD_DEMULT, demult),
+            (CMD_ALIGN, True),
+            (CMD_IDMUT, True),
+            (CMD_FILTERSCAN if scan else CMD_FILTER, True),
+            (CMD_CLUSTER, cluster),
+            (CMD_FOLD, fold),
+            (CMD_DRAW, draw),
+            (CMD_GRAPH, wf_graph),
+            (CMD_COLLATE, collate),
+            (CMD_EXPORT, export),
+        ]
+        if step_runs
+    ]
+    # The bar of the workflow itself counts its steps; the task running
+    # inside each step names itself on its own bar below.
+    steps = ProgressBar("workflow", len(wf_steps), unit="step")
+
+    def end_step():
+        """Count one step of the workflow as finished."""
+        steps.tick()
+
     if demult:
         for dmz, dmy, dmx in demultiplex_mod.run(
             fasta=fasta,
@@ -391,6 +447,7 @@ def run(
         # Clear the input FASTQ files once the demultiplexed FASTQ files
         # have been generated.
         fastqx = list()
+        end_step()
     input_path.extend(
         flatten(
             align_mod.run(
@@ -448,6 +505,7 @@ def run(
             )
         )
     )
+    end_step()
     input_path.extend(
         flatten(
             idmut_mod.run(
@@ -479,6 +537,7 @@ def run(
             )
         )
     )
+    end_step()
     if scan:
         # filterscan replaces the filter step: it runs the filter step
         # over tiles to detect domains. The two are mutually exclusive.
@@ -594,6 +653,7 @@ def run(
                 )
             )
         )
+    end_step()
     # clusterscan runs whenever any FilterScanReports are present (from
     # the filterscan step above or passed in directly).
     if cluster and list(
@@ -680,6 +740,7 @@ def run(
                 )
             )
         )
+        end_step()
     if fold:
         input_path.extend(
             flatten(
@@ -698,6 +759,7 @@ def run(
                     deigan_intercept=deigan_intercept,
                     fold_temp=fold_temp,
                     fold_quantile=fold_quantile,
+                    fold_fpaired=fold_fpaired,
                     fold_constraint=fold_constraint,
                     fold_commands=fold_commands,
                     eddy_prior_paired_file=eddy_prior_paired_file,
@@ -771,6 +833,7 @@ def run(
                     )
                 )
             )
+        end_step()
     if draw:
         input_path.extend(
             flatten(
@@ -789,6 +852,7 @@ def run(
                 )
             )
         )
+        end_step()
     if graph_mprof or graph_tmprof:
         rels = list()
         if graph_mprof:
@@ -932,6 +996,8 @@ def run(
                 )
             )
         )
+    if wf_graph:
+        end_step()
     if collate:
         collate_mod.run(
             input_path=input_path,
@@ -944,6 +1010,7 @@ def run(
             collate_out_dir=collate_out_dir,
             force=force,
         )
+        end_step()
     if export:
         export_mod.run(
             input_path=input_path,
@@ -954,6 +1021,8 @@ def run(
             num_cpus=num_cpus,
             force=force,
         )
+        end_step()
+    steps.close()
 
 
 graph_options = [

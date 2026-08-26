@@ -160,6 +160,8 @@ def run(
         as_list=True,
         ordered=False,
         raise_on_error=False,
+        label="scanning regions",
+        unit="reference",
         args=as_list_of_tuples(idmut_report_files),
         kwargs=kwargs,
     )

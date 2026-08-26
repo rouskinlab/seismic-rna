@@ -105,6 +105,8 @@ def run(
         as_list=True,
         ordered=False,
         raise_on_error=False,
+        label="writing lists",
+        unit="table",
         args=list(iter_tables(input_path)),
         kwargs=dict(
             branch=branch,

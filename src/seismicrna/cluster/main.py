@@ -91,6 +91,8 @@ def run(
         as_list=True,
         ordered=False,
         raise_on_error=False,
+        label="clustering",
+        unit="region",
         args=as_list_of_tuples(datasets),
         kwargs=dict(
             tmp_pfx=tmp_pfx,
