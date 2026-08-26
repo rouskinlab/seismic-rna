@@ -21,7 +21,7 @@ To install, type this into a terminal::
 
     conda create -n seismic python=3.14
     conda activate seismic
-    conda install -c bioconda -c conda-forge seismic-rna
+    conda install -c conda-forge -c bioconda seismic-rna
 
 If installing with Conda fails, then try :ref:`conda_install_fails`.
 
@@ -99,7 +99,7 @@ Step 4: Install SEISMIC-RNA and its dependencies
 
 Run this command to install SEISMIC-RNA and all other software it requires::
 
-    conda install -c bioconda -c conda-forge seismic-rna
+    conda install -c conda-forge -c bioconda seismic-rna
 
 If installing with Conda fails, then try :ref:`conda_install_fails`.
 
@@ -153,7 +153,7 @@ Option 5A: Update SEISMIC-RNA to the latest stable version
 
 Type this if you had initially installed SEISMIC-RNA with Conda::
 
-    conda update -c bioconda -c conda-forge seismic-rna
+    conda update -c conda-forge -c bioconda seismic-rna
 
 or this if you had initially installed it with pip::
 
@@ -167,7 +167,7 @@ Option 5B: Install a specific version of SEISMIC-RNA
 
 Type this if you had initially installed SEISMIC-RNA with Conda::
 
-    conda install -c bioconda -c conda-forge seismic-rna=x.y.z
+    conda install -c conda-forge -c bioconda seismic-rna=x.y.z
 
 or this if you had initially installed it with pip::
 
@@ -194,12 +194,12 @@ The easiest way to install them is with Conda, using the following commands:
 ============= =================================================================
 Dependency    Command to install with Conda
 ============= =================================================================
-Bowtie2_      ``conda install -c bioconda -c conda-forge bowtie2``
-Fastp_        ``conda install -c bioconda -c conda-forge fastp``
-RNAstructure_ ``conda install -c bioconda -c conda-forge rnastructure>=6.6``
-Samtools_     ``conda install -c bioconda -c conda-forge samtools``
-seqkit_       ``conda install -c bioconda -c conda-forge seqkit>=2.10.1``
-ViennaRNA_    ``conda install -c bioconda -c conda-forge viennarna>=2.7.2``
+Bowtie2_      ``conda install -c conda-forge -c bioconda bowtie2``
+Fastp_        ``conda install -c conda-forge -c bioconda fastp``
+RNAstructure_ ``conda install -c conda-forge -c bioconda rnastructure>=6.6``
+Samtools_     ``conda install -c conda-forge -c bioconda samtools``
+seqkit_       ``conda install -c conda-forge -c bioconda seqkit>=2.10.1``
+ViennaRNA_    ``conda install -c conda-forge -c bioconda viennarna>=2.7.2``
 ============= =================================================================
 
 .. note::
