@@ -202,9 +202,8 @@ def clusterscan(
             ref=ref,
             reg=reg,
             branches=report_branches,
-            domain_coords={},
-            best_ks=[],
-            merged_domains=[],
+            best_ks={},
+            merged_domains={},
             began=began,
             ended=datetime.now(),
         ).save(top, force=force)
@@ -389,9 +388,12 @@ def clusterscan(
         ref=ref,
         reg=reg,
         branches=report_branches,
-        domain_coords={(d["end5"], d["end3"]): "original" for d in domains},
-        best_ks=[d["k"] for d in domains],
-        merged_domains=[[list(m) for m in d["members"]] for d in domains],
+        best_ks={(d["end5"], d["end3"]): d["k"] for d in domains},
+        merged_domains={
+            (d["end5"], d["end3"]): d["members"]
+            for d in domains
+            if len(d["members"]) >= 2
+        },
         began=began,
         ended=datetime.now(),
     ).save(top, force=force)

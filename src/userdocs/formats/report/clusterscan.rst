@@ -5,21 +5,20 @@ Clusterscan Report
 Clusterscan Report: Fields
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-===================================================================== ====================
-Name                                                                  Data Type
-===================================================================== ====================
-Sample                                                                str
-Branches                                                              dict[str, str]
-Reference                                                             str
-Region                                                                str
-Coordinates of domains (end5, end3)                                   list[list[int]]
-Best number of clusters for each domain                               list[int]
-Original filterscan domains (end5, end3) comprising each final domain list
-Time began                                                            str
-Time ended                                                            str
-Time taken (minutes)                                                  float
-Version of SEISMIC-RNA                                                str
-===================================================================== ====================
+========================================================================================================================================= ===============
+Name                                                                                                                                      Data Type
+========================================================================================================================================= ===============
+Sample                                                                                                                                    str
+Branches                                                                                                                                  dict[str, str]
+Reference                                                                                                                                 str
+Region                                                                                                                                    str
+Best number of clusters for each domain, keyed by domain coordinates (end5, end3)                                                         dict[str, int]
+Filterscan domains (end5, end3) merged into each final domain, keyed by the final domain (end5, end3); omits domains that were not merged dict[str, list]
+Time began                                                                                                                                str
+Time ended                                                                                                                                str
+Time taken (minutes)                                                                                                                      float
+Version of SEISMIC-RNA                                                                                                                    str
+========================================================================================================================================= ===============
 
 Clusterscan Report: Example
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -34,22 +33,16 @@ Clusterscan Report: Example
         },
         "Reference": "myref",
         "Region": "full",
-        "Coordinates of domains (end5, end3)": [
-            [3, 56],
-            [124, 174]
-        ],
-        "Best number of clusters for each domain": [
-            2,
-            2
-        ],
-        "Original filterscan domains (end5, end3) comprising each final domain": [
-            [
-                [3, 56]
-            ],
-            [
-                [124, 174]
+        "Best number of clusters for each domain, keyed by domain coordinates (end5, end3)": {
+            "3,56": 2,
+            "124,230": 3
+        },
+        "Filterscan domains (end5, end3) merged into each final domain, keyed by the final domain (end5, end3); omits domains that were not merged": {
+            "124,230": [
+                [124, 174],
+                [175, 230]
             ]
-        ],
+        },
         "Time began": "2026-07-02 at 10:07:48",
         "Time ended": "2026-07-02 at 10:14:39",
         "Time taken (minutes)": 6.85,

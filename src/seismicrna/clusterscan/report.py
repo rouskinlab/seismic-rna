@@ -1,5 +1,5 @@
 from ..core import path
-from ..core.report import RegReport, DomainCoordsF, BestKsF, MergedDomainsF
+from ..core.report import RegReport, BestKsF, MergedDomainsF
 from .io import ClusterScanIO
 
 
@@ -10,9 +10,4 @@ class ClusterScanReport(RegReport, ClusterScanIO):
 
     @classmethod
     def get_result_report_fields(cls):
-        return [
-            DomainCoordsF,
-            BestKsF,
-            MergedDomainsF,
-            *super().get_result_report_fields(),
-        ]
+        return [BestKsF, MergedDomainsF, *super().get_result_report_fields()]

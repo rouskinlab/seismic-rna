@@ -8,7 +8,7 @@ from click.testing import CliRunner
 
 from seismicrna.core import path
 from seismicrna.core.logs import Level, set_config
-from seismicrna.core.report import DomainCoordsF, BestKsF, MergedDomainsF
+from seismicrna.core.report import BestKsF, MergedDomainsF
 from seismicrna.main import cli as seismic_cli
 from seismicrna.clusterscan.report import ClusterScanReport
 from seismicrna.clusterscan.gap import evaluate_gap
@@ -167,13 +167,14 @@ class TestClusterScan(ScanTestBase):
             **kwargs,
         )
         report = self.load_report()
-        final_domains = [tuple(d) for d in report.get_field(DomainCoordsF)]
-        best_ks = report.get_field(BestKsF)
+        domain_k = report.get_field(BestKsF)
         merged = report.get_field(MergedDomainsF)
-        # Every final domain maps to at least one original filterscan domain,
-        # and the mapping has one entry per final domain.
-        self.assertEqual(len(merged), len(final_domains))
-        domain_k = dict(zip(final_domains, best_ks))
+        # merged only records final domains formed from >=2 original
+        # filterscan domains; every such domain must be a real final domain,
+        # and its member list must actually span at least two domains.
+        for coords, members in merged.items():
+            self.assertIn(coords, domain_k)
+            self.assertGreaterEqual(len(members), 2)
         for (exp5, exp3), expect_k in expect_regions.items():
             expect_length = exp3 - exp5 + 1
             for (reg5, reg3), k in domain_k.items():

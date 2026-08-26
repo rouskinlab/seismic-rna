@@ -1,6 +1,9 @@
 from ..core import path
 from ..core.report import (
     RegReport,
+    # Region ends.
+    End5F,
+    End3F,
     # Domain-detection parameters.
     TileLengthF,
     TileMinOverlapF,
@@ -35,6 +38,9 @@ class FilterScanReport(RegReport, FilterScanIO):
     @classmethod
     def get_param_report_fields(cls):
         return [
+            # Region 5' and 3' ends.
+            End5F,
+            End3F,
             TileLengthF,
             TileMinOverlapF,
             EraseTilesF,

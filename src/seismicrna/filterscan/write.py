@@ -87,9 +87,7 @@ def _expected_both_mutated(table: pd.DataFrame) -> pd.Series:
 
 
 def _analyzed_pairs_mask(
-    table: pd.DataFrame,
-    min_pair_coverage: int,
-    min_expect_both: float,
+    table: pd.DataFrame, min_pair_coverage: int, min_expect_both: float
 ) -> pd.Series:
     """Pairs usable for statistical analysis: enough joint coverage
     (``min_pair_coverage``) and a large enough independence-expected
@@ -450,9 +448,7 @@ def _bridge_mask(
         raise OutOfBoundsError(
             f"min_fold_change must be ≥ 1, but got {min_fold_change}"
         )
-    eligible = _analyzed_pairs_mask(
-        table, min_pair_coverage, min_expect_both
-    )
+    eligible = _analyzed_pairs_mask(table, min_pair_coverage, min_expect_both)
     bridge = pd.Series(False, index=table.index)
     pvalue = pd.Series(np.nan, index=table.index)
     qvalue = pd.Series(np.nan, index=table.index)
@@ -990,15 +986,11 @@ def _filter_domains_length(domains: list[tuple[int, int]], min_length: int = 1):
 
 
 def _filter_domains_min_pairs(
-    domains: list[tuple[int, int]],
-    pos_a: np.ndarray,
-    pos_b: np.ndarray,
-    min_pairs: int,
+    domains: list[tuple[int, int]], pos_a: np.ndarray, pos_b: np.ndarray, min_pairs: int
 ) -> list[tuple[int, int]]:
     """Remove domains containing fewer than ``min_pairs`` bridge pairs
     (``pos_a``, ``pos_b``: the endpoints of every bridge pair), i.e. pairs
     whose both endpoints lie within the domain."""
-    import numpy as np
 
     return [
         (end5, end3)
@@ -1339,10 +1331,7 @@ def _write_domains_to_csv(
 
 
 def _write_pairs_with_confusion(
-    pos_table: pd.DataFrame,
-    pvalue: pd.Series,
-    qvalue: pd.Series,
-    csv_file: str | Path,
+    pos_table: pd.DataFrame, pvalue: pd.Series, qvalue: pd.Series, csv_file: str | Path
 ):
     """Write the given pairs' 2x2 confusion-matrix counts to a CSV file,
     along with the exact hypergeometric (Fisher) left-tail p-value
@@ -1784,6 +1773,9 @@ def filterscan(
             ref=idmut_dataset.ref,
             reg=total_region.name,
             branches=report_branches,
+            # Region 5' and 3' ends.
+            end5=total_region.end5,
+            end3=total_region.end3,
             # Domain-detection parameters.
             tile_length=tile_length,
             tile_min_overlap=tile_min_overlap,

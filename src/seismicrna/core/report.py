@@ -260,6 +260,37 @@ def oconv_domain_coords_actions(mapping: dict[tuple[int, int], str]) -> dict[str
     return {f"{end5},{end3}": action for (end5, end3), action in mapping.items()}
 
 
+def iconv_domain_coords_ks(mapping: dict[str, int]) -> dict[tuple[int, int], int]:
+    result = {}
+    for key, k in mapping.items():
+        end5_str, end3_str = key.split(",")
+        result[(int(end5_str), int(end3_str))] = int(k)
+    return result
+
+
+def oconv_domain_coords_ks(mapping: dict[tuple[int, int], int]) -> dict[str, int]:
+    return {f"{end5},{end3}": int(k) for (end5, end3), k in mapping.items()}
+
+
+def iconv_domain_coords_members(
+    mapping: dict[str, list[list[int]]],
+) -> dict[tuple[int, int], list[tuple[int, int]]]:
+    result = {}
+    for key, members in mapping.items():
+        end5_str, end3_str = key.split(",")
+        result[(int(end5_str), int(end3_str))] = [(m[0], m[1]) for m in members]
+    return result
+
+
+def oconv_domain_coords_members(
+    mapping: dict[tuple[int, int], list[tuple[int, int]]],
+) -> dict[str, list[list[int]]]:
+    return {
+        f"{end5},{end3}": [list(m) for m in members]
+        for (end5, end3), members in mapping.items()
+    }
+
+
 def iconv_dict_str_dict_int_dict_int_int(
     mapping: dict[Any, dict[Any, dict[Any, Any]]],
 ) -> dict[str, dict[int, dict[int, int]]]:
@@ -681,11 +712,20 @@ DomainCoordsF = ReportField(
     iconv=iconv_domain_coords_actions,
     oconv=oconv_domain_coords_actions,
 )
-BestKsF = ReportField("best_ks", "Best number of clusters for each domain", list)
+BestKsF = ReportField(
+    "best_ks",
+    "Best number of clusters for each domain, keyed by domain coordinates (end5, end3)",
+    dict,
+    iconv=iconv_domain_coords_ks,
+    oconv=oconv_domain_coords_ks,
+)
 MergedDomainsF = ReportField(
     "merged_domains",
-    "Original filterscan domains (end5, end3) comprising each final domain",
-    list,
+    "Filterscan domains (end5, end3) merged into each final domain, keyed by "
+    "the final domain (end5, end3); omits domains that were not merged",
+    dict,
+    iconv=iconv_domain_coords_members,
+    oconv=oconv_domain_coords_members,
 )
 
 # Join fields
