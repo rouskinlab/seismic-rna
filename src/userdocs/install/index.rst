@@ -220,6 +220,22 @@ follow its link above to find the instructions for installing it manually.
     from an item on the list below) to find the path of the executable.
     Then in Finder, open the directory that contains the executable.
 
+.. note::
+    Some steps of SEISMIC-RNA (such as ``cluster`` and ``graph``) create image
+    files using a tool called Kaleido, which automatically downloads a small,
+    self-contained copy of the Google Chrome web browser the first time it is
+    needed; you do not need to install Chrome yourself.
+    On a minimal Linux system (such as a bare-bones Docker container), this
+    automatic download may fail to run because a few common system files that
+    most Linux computers already have are missing.
+    If this happens, SEISMIC-RNA will print an error message with a command
+    to fix it; on most Linux systems (Ubuntu/Debian), that command is::
+
+        sudo apt-get install -y libnss3 libnspr4 libatk1.0-0 \
+            libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 \
+            libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 \
+            libasound2 libpango-1.0-0 libcairo2 fonts-liberation
+
 
 Confirm that each dependency is installed by running each of these commands,
 one at a time::

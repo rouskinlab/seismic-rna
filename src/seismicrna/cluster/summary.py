@@ -6,6 +6,7 @@ from .emk import EMRunsK, NOCONV
 from .names import JACKPOT_QUOTIENT
 from ..core.header import NUM_CLUSTS_NAME
 from ..core.logs import logger
+from ..core.plot import write_plotly_image
 
 from typing import TYPE_CHECKING
 
@@ -97,7 +98,7 @@ def graph_attrs(table: pd.DataFrame, to_dir: Path):
             continue
         try:
             fig = graph_attr(table[attr], passing_text)
-            fig.write_image(to_dir.joinpath(f"{key}.pdf"))
+            write_plotly_image(fig, to_dir.joinpath(f"{key}.pdf"))
         except Exception as error:
             logger.error(error)
 

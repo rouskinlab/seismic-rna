@@ -9,6 +9,7 @@ from .uniq import UniqReads
 from ..core import path
 from ..core.header import NUM_CLUSTS_NAME
 from ..core.logs import logger
+from ..core.plot import write_plotly_image
 
 from typing import TYPE_CHECKING
 
@@ -87,7 +88,7 @@ def graph_log_obs_exp(log_obs_exp: pd.DataFrame, ks: list[EMRunsK], to_dir: Path
                     showarrow=False,
                 )
             file = to_dir.joinpath(f"log-obs-exp_k{k}{path.PDF_EXT}")
-            fig.write_image(file)
+            write_plotly_image(fig, file)
         except Exception as error:
             logger.error(error)
 

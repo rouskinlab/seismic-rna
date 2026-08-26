@@ -32,6 +32,7 @@ from ..core.arg.cli import (
 )
 from ..core.dataset import MutsDataset
 from ..core.logs import format_sample_reference_region
+from ..core.plot import write_plotly_image
 from ..core.seq.xna import DNA
 from ..core.table.base import Table
 from ..core.write import need_write
@@ -321,7 +322,7 @@ class BaseGraph(ABC):
         """Write the graph to an image file."""
         file = self.get_path(ext)
         if need_write(file, force):
-            self.figure.write_image(file)
+            write_plotly_image(self.figure, file)
         return file
 
     def write_svg(self, force: bool):
