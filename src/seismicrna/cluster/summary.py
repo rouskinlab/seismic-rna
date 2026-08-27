@@ -4,9 +4,9 @@ from pathlib import Path
 
 from .emk import EMRunsK, NOCONV
 from .names import JACKPOT_QUOTIENT
+from ..core import path
 from ..core.header import NUM_CLUSTS_NAME
 from ..core.logs import logger
-from ..core.plot import write_plotly_image
 
 from typing import TYPE_CHECKING
 
@@ -98,12 +98,15 @@ def graph_attrs(table: pd.DataFrame, to_dir: Path):
             continue
         try:
             fig = graph_attr(table[attr], passing_text)
-            write_plotly_image(fig, to_dir.joinpath(f"{key}.pdf"))
+            fig.write_html(to_dir.joinpath(f"{key}{path.HTML_EXT}"))
         except Exception as error:
             logger.error(error)
 
 
-def write_summaries(ks: list[EMRunsK], to_dir: Path):
+def write_summaries(ks: list[EMRunsK], to_dir: Path, html: bool = True):
+    """Summarize the runs as a table and (unless html is False) as a
+    graph of each attribute."""
     table = tabulate(ks)
     write_table(table, to_dir)
-    graph_attrs(table, to_dir)
+    if html:
+        graph_attrs(table, to_dir)

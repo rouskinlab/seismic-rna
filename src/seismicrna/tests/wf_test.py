@@ -205,9 +205,6 @@ class TestWorkflow(ut.TestCase):
             cgroup=GROUP_BY_K,
             csv=True,
             html=True,
-            svg=True,
-            pdf=True,
-            png=True,
             verify_times=True,
             num_cpus=1,
             force=False,
@@ -297,7 +294,7 @@ class TestWorkflow(ut.TestCase):
         # named "{step}_{branch1}_{branch2}..." with the branches accumulated
         # along that step's ancestry, and graphs inherit the branches of the
         # data they visualize.
-        graph_formats = [".csv", ".html", ".svg", ".pdf", ".png"]
+        graph_formats = [".csv", ".html"]
         A = path.ALIGN_STEP
         I = path.IDMUT_STEP  # noqa: E741
         F = path.FILTER_STEP
@@ -627,9 +624,6 @@ class TestWorkflow(ut.TestCase):
             cgroup=GROUP_BY_K,
             csv=True,
             html=True,
-            svg=True,
-            pdf=True,
-            png=True,
             verify_times=True,
             num_cpus=1,
             force=False,
@@ -651,7 +645,7 @@ class TestWorkflow(ut.TestCase):
             [self.out_dir.joinpath(sample).joinpath("cluster") for sample in samples],
             **clust_rel_graph_kwargs,
         )
-        graph_formats = [".csv", ".html", ".svg", ".pdf", ".png"]
+        graph_formats = [".csv", ".html"]
         for sample in samples:
             self.assertTrue(self.out_dir.joinpath(f"{sample}__webapp.json").is_file())
             sample_dir = self.out_dir.joinpath(sample)

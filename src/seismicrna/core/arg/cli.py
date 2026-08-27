@@ -1775,27 +1775,6 @@ opt_html = Option(
     help="Output each graph in an interactive HyperText Markup Language file",
 )
 
-opt_svg = Option(
-    ("--svg/--no-svg",),
-    type=bool,
-    default=False,
-    help="Output each graph in a Scalable Vector Graphics file",
-)
-
-opt_pdf = Option(
-    ("--pdf/--no-pdf",),
-    type=bool,
-    default=False,
-    help="Output each graph in a Portable Document Format file",
-)
-
-opt_png = Option(
-    ("--png/--no-png",),
-    type=bool,
-    default=False,
-    help="Output each graph in a Portable Network Graphics file",
-)
-
 opt_graph_mprof = Option(
     ("--graph-mprof/--no-graph-mprof",),
     type=bool,

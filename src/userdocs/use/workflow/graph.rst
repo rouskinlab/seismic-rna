@@ -48,8 +48,8 @@ Outputs
 
 ``{graph-type}.html``
     Interactive HTML plot (viewable in any web browser).
-``{graph-type}.svg`` or ``{graph-type}.png``
-    Static image (depending on options).
+``{graph-type}.csv``
+    The graphed data, as a table.
 
 Outputs go into ``{out}/{sample}/graph/{ref}/{reg}/``.
 
@@ -84,8 +84,6 @@ Common options shared by all graph subcommands include:
     own file (``k``), or all clusters in one file (``a``).
 ``--html`` / ``--no-html``
     Write an interactive HTML plot (default on).
-``--svg`` / ``--png`` / ``--pdf``
-    Also write static SVG, PNG, and/or PDF images (default off).
 ``--csv`` / ``--no-csv``
     Also write the graphed data as a CSV file (default on).
 ``--force``

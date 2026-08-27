@@ -9,7 +9,6 @@ from .uniq import UniqReads
 from ..core import path
 from ..core.header import NUM_CLUSTS_NAME
 from ..core.logs import logger
-from ..core.plot import write_plotly_image
 
 from typing import TYPE_CHECKING
 
@@ -87,13 +86,18 @@ def graph_log_obs_exp(log_obs_exp: pd.DataFrame, ks: list[EMRunsK], to_dir: Path
                     yanchor="bottom",
                     showarrow=False,
                 )
-            file = to_dir.joinpath(f"log-obs-exp_k{k}{path.PDF_EXT}")
-            write_plotly_image(fig, file)
+            file = to_dir.joinpath(f"log-obs-exp_k{k}{path.HTML_EXT}")
+            fig.write_html(file)
         except Exception as error:
             logger.error(error)
 
 
-def write_obs_exp_counts(uniq_reads: UniqReads, ks: list[EMRunsK], to_dir: Path):
+def write_obs_exp_counts(
+    uniq_reads: UniqReads, ks: list[EMRunsK], to_dir: Path, html: bool = True
+):
+    """Write the observed and expected counts, as a table and (unless
+    html is False) as a graph."""
     log_obs_exp = assemble_log_obs_exp(uniq_reads, ks)
     table_log_obs_exp(log_obs_exp, to_dir)
-    graph_log_obs_exp(log_obs_exp, ks, to_dir)
+    if html:
+        graph_log_obs_exp(log_obs_exp, ks, to_dir)

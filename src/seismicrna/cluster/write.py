@@ -274,6 +274,7 @@ def cluster(
     cluster_pos_table: bool,
     cluster_abundance_table: bool,
     verify_times: bool,
+    html: bool,
     seed: int | None,
     **kwargs,
 ):
@@ -376,11 +377,11 @@ def cluster(
         # Write the observed and expected counts for every best run.
         counts_dir = tmp_clust_dir.joinpath(path.CLUST_COUNTS_DIR)
         counts_dir.mkdir()
-        write_obs_exp_counts(uniq_reads, runs_ks_list, counts_dir)
+        write_obs_exp_counts(uniq_reads, runs_ks_list, counts_dir, html=html)
         # Summarize the runs in table and graph format.
         statistics_dir = tmp_clust_dir.joinpath(path.CLUST_STATS_DIR)
         statistics_dir.mkdir()
-        write_summaries(runs_ks_list, statistics_dir)
+        write_summaries(runs_ks_list, statistics_dir, html=html)
         # Write the cluster report.
         ended = datetime.now()
         report = ClusterReport.from_clusters(

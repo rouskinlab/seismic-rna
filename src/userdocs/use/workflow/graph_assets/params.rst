@@ -137,6 +137,3 @@ Each graph subcommand can output graphs in several formats:
 -   ``--html/--no-html``: **Output the graph as an interactive HTML file.**
     Useful when you need an interactive graph that you can resize, filter, and
     hover over to see more details.
--   ``--pdf/--no-pdf``: **Output the graph as a PDF file.**
-    Useful when you need to edit the graph in a vector graphics program like
-    Inkscape or Illustrator.

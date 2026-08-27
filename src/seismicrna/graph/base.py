@@ -20,19 +20,9 @@ from ..filter.table import FilterTable
 from ..idmut.dataset import IDmutDataset
 from ..idmut.table import IDmutTable
 from ..duplex.table import DuplexTable
-from ..core.arg.cli import (
-    arg_input_path,
-    opt_csv,
-    opt_html,
-    opt_svg,
-    opt_pdf,
-    opt_png,
-    opt_force,
-    opt_num_cpus,
-)
+from ..core.arg.cli import arg_input_path, opt_csv, opt_html, opt_force, opt_num_cpus
 from ..core.dataset import MutsDataset
 from ..core.logs import format_sample_reference_region
-from ..core.plot import write_plotly_image
 from ..core.seq.xna import DNA
 from ..core.table.base import Table
 from ..core.write import need_write
@@ -318,46 +308,13 @@ class BaseGraph(ABC):
             self.figure.write_html(file)
         return file
 
-    def _write_image(self, ext: str, force: bool):
-        """Write the graph to an image file."""
-        file = self.get_path(ext)
-        if need_write(file, force):
-            write_plotly_image(self.figure, file)
-        return file
-
-    def write_svg(self, force: bool):
-        """Write the graph to an SVG file."""
-        return self._write_image(path.SVG_EXT, force)
-
-    def write_pdf(self, force: bool):
-        """Write the graph to a PDF file."""
-        return self._write_image(path.PDF_EXT, force)
-
-    def write_png(self, force: bool):
-        """Write the graph to a PNG file."""
-        return self._write_image(path.PNG_EXT, force)
-
-    def write(
-        self,
-        csv: bool,
-        html: bool,
-        svg: bool,
-        pdf: bool,
-        png: bool,
-        force: bool = False,
-    ):
+    def write(self, csv: bool, html: bool, force: bool = False):
         """Write the filtered files."""
         files = list()
         if csv:
             files.append(self.write_csv(force))
         if html:
             files.append(self.write_html(force))
-        if svg:
-            files.append(self.write_svg(force))
-        if pdf:
-            files.append(self.write_pdf(force))
-        if png:
-            files.append(self.write_png(force))
         return files
 
     @cached_property
@@ -388,21 +345,11 @@ class BaseWriter(ABC):
     def iter_graphs(self, *args, **kwargs) -> Generator[BaseGraph, None, None]:
         """Yield every graph."""
 
-    def write(
-        self,
-        *args,
-        csv: bool,
-        html: bool,
-        svg: bool,
-        pdf: bool,
-        png: bool,
-        force: bool,
-        **kwargs,
-    ):
+    def write(self, *args, csv: bool, html: bool, force: bool, **kwargs):
         """Generate and write every type of graph."""
         return list(
             chain(
-                graph.write(csv=csv, html=html, svg=svg, pdf=pdf, png=png, force=force)
+                graph.write(csv=csv, html=html, force=force)
                 for graph in self.iter_graphs(*args, **kwargs)
             )
         )
@@ -440,7 +387,7 @@ class BaseRunner(ABC):
     @classmethod
     def universal_output_params(cls):
         """Universal parameters controlling the output graph."""
-        return [opt_csv, opt_html, opt_svg, opt_pdf, opt_png, opt_force, opt_num_cpus]
+        return [opt_csv, opt_html, opt_force, opt_num_cpus]
 
     @classmethod
     def get_var_params(cls) -> list[Argument | Option]:

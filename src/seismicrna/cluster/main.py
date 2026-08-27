@@ -33,6 +33,7 @@ from ..core.arg.cli import (
     opt_write_all_ks,
     opt_cluster_pos_table,
     opt_cluster_abundance_table,
+    opt_html,
     opt_verify_times,
     opt_brotli_level,
     opt_self_contained,
@@ -75,6 +76,7 @@ def run(
     write_all_ks: bool,
     cluster_pos_table: bool,
     cluster_abundance_table: bool,
+    html: bool,
     verify_times: bool,
     brotli_level: int,
     self_contained: bool,
@@ -121,6 +123,7 @@ def run(
             write_all_ks=write_all_ks,
             cluster_pos_table=cluster_pos_table,
             cluster_abundance_table=cluster_abundance_table,
+            html=html,
             verify_times=verify_times,
             brotli_level=brotli_level,
             self_contained=self_contained,
@@ -160,6 +163,7 @@ params = [
     opt_cluster_pos_table,
     opt_cluster_abundance_table,
     # Validation
+    opt_html,
     opt_verify_times,
     # Compression
     opt_brotli_level,
