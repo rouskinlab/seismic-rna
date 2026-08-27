@@ -112,7 +112,7 @@ Option 3: Install with Conda, if ``conda install seismic-rna`` fails
 ================================================================================
 
 Conda may fail to install SEISMIC-RNA if some dependencies are not compatible
-with your hardware and/or operating system (especially for Apple Silicon).
+with your hardware and/or operating system.
 If that happens, then first :ref:`install_dependencies` and subsequently
 :ref:`install_seismicrna_without_conda`.
 
@@ -124,6 +124,10 @@ Option 4: Install without Conda
 ================================================================================
 
 Although Conda is the easiest means to install SEISMIC-RNA, it is not necessary.
+
+.. warning::
+    On a Mac with an Intel processor, SEISMIC-RNA cannot be installed with pip
+    alone; use Conda instead (:ref:`intel_mac_numba`).
 
 First, if Python_ is not installed, then install Python 3.13, the only
 version SEISMIC-RNA supports.
@@ -247,6 +251,29 @@ download the latest stable version that has been released.
 In a terminal, type this command to install it and all its Python dependencies::
 
     pip install seismic-rna
+
+.. _intel_mac_numba:
+
+.. note::
+    **Macs with Intel processors.**
+    On these computers, ``pip install seismic-rna`` fails while building a
+    dependency called llvmlite, with an error that mentions ``CMake`` and
+    ``Could not find a package configuration file provided by "LLVM"``.
+
+    The reason is that Numba and llvmlite (which SEISMIC-RNA uses to speed up
+    its calculations) no longer distribute versions built for Intel Macs on the
+    Python Package Index, so pip tries to build llvmlite from its source code,
+    which fails unless you have installed LLVM yourself.
+    Macs with Apple Silicon processors, as well as Linux computers, are not
+    affected.
+
+    To fix this, install Numba with Conda before installing SEISMIC-RNA::
+
+        conda install -c conda-forge "numba>=0.67"
+        pip install seismic-rna
+
+    Installing all of SEISMIC-RNA with Conda avoids this problem entirely, and
+    is the recommended approach.
 
 Option 2B: Install SEISMIC-RNA from GitHub
 --------------------------------------------------------------------------------
