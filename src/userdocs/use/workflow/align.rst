@@ -49,7 +49,7 @@ Quick example
 
 Align paired-end reads in separate files to a reference::
 
-    seismic align ref.fa -x sample1_R1.fastq.gz sample1_R2.fastq.gz
+    seismic align ref.fa -x sample1_R1.fastq.gz -x sample1_R2.fastq.gz
 
 
 Options
