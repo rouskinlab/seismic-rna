@@ -213,27 +213,39 @@ This command writes ``out/nodms/list/rre/full/filter-position-list.csv``,
 a :doc:`/formats/list/listpos` file that lists position 176 as the only
 position to mask.
 
-Rerun the workflow with the option ``--mask-pos-file``::
+Rerun the workflow with the option ``--mask-pos-file``, this time putting the
+masked results in a new branch instead of overwriting the original,
+unmasked output::
 
-    seismic wf --force --probe none --mask-pos-file out/nodms/list/rre/full/filter-position-list.csv hiv-rre.fa out/nodms/idmut/rre
+    seismic wf --probe none --mask-pos-file out/nodms/list/rre/full/filter-position-list.csv --wf-branch filter no176 hiv-rre.fa out/nodms/idmut/rre
 
 This is what each of the arguments does:
 
 - ``wf`` means run the entire workflow.
-- ``--force`` means overwrite any output files that already exist.
 - ``--probe none`` means use the defaults for an untreated control with no
   chemical probe: keep G and U bases, do not mask out poly(A) sequences, and
   disable observer bias correction.
 - ``--mask-pos-file out/nodms/list/rre/full/filter-position-list.csv`` means
   mask every position listed in this file (position 176).
+- ``--wf-branch filter no176`` means run the Filter step, and every step
+  downstream of it, under a new branch named ``no176``, instead of
+  overwriting the original, unmasked output.
+  (Single-step commands such as ``seismic filter`` take a plain
+  ``--branch``/``-b`` option, but ``seismic wf`` runs many steps in one
+  command, so it instead takes ``--wf-branch STEP NAME``, giving the name of
+  the step to branch followed by the branch name; see :doc:`/use/branch`.)
+  Its outputs go into ``{step}_no176`` directories (e.g.
+  ``out/nodms/filter_no176/rre/full/`` and ``out/nodms/graph_no176/rre/full/``)
+  alongside the original outputs, rather than overwriting them.
 - ``hiv-rre.fa`` means use the sequence in this FASTA file as the reference
   (i.e. mutation-free) sequence for the RNA.
 - ``out/nodms/idmut/rre`` means search this directory for data files: in this
   case, the data from the IDmut step for sample ``nodms``, reference ``rre``.
 
 After the command finishes running, you can see that position 176 was masked out
-by opening ``out/nodms/graph/rre/full/profile_filtered_m-ratio-q0.html`` (position
-175 is highlighted to make the gap between it and position 177 more clear):
+by opening ``out/nodms/graph_no176/rre/full/profile_filtered_m-ratio-q0.html``
+(position 175 is highlighted to make the gap between it and position 177 more
+clear):
 
     .. image:: img/nodms_profile_filtered-176_m-ratio.png
 
