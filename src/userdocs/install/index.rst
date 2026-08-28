@@ -25,8 +25,7 @@ To install, type this into a terminal::
 
 If installing with Conda fails, then try :ref:`conda_install_fails`.
 
-After you have installed SEISMIC-RNA, :ref:`set_datapath` and (optionally)
-:ref:`test_seismicrna`.
+After you have installed SEISMIC-RNA, :ref:`set_datapath`.
 
 
 Option 2: Install with Conda, if you don't know how to use it
@@ -102,8 +101,7 @@ Run this command to install SEISMIC-RNA and all other software it requires::
 
 If installing with Conda fails, then try :ref:`conda_install_fails`.
 
-After you have installed SEISMIC-RNA, :ref:`set_datapath` and (optionally)
-:ref:`test_seismicrna`.
+After you have installed SEISMIC-RNA, :ref:`set_datapath`.
 
 
 .. _conda_install_fails:
@@ -116,8 +114,7 @@ with your hardware and/or operating system.
 If that happens, then first :ref:`install_dependencies` and subsequently
 :ref:`install_seismicrna_without_conda`.
 
-After you have installed SEISMIC-RNA, :ref:`set_datapath` and (optionally)
-:ref:`test_seismicrna`.
+After you have installed SEISMIC-RNA, :ref:`set_datapath`.
 
 
 Option 4: Install without Conda
@@ -140,8 +137,7 @@ commands, one by one::
 After installing Python and pip, follow :ref:`install_dependencies` and then
 :ref:`install_seismicrna_without_conda`.
 
-After you have installed SEISMIC-RNA, follow :ref:`set_datapath` and optionally
-:ref:`test_seismicrna`.
+After you have installed SEISMIC-RNA, follow :ref:`set_datapath`.
 
 
 .. _install_update:
@@ -163,8 +159,6 @@ or this if you had initially installed it with pip::
 
     pip install -U seismic-rna
 
-After updating, it is a good idea to :ref:`test_seismicrna`.
-
 
 Option 5B: Install a specific version of SEISMIC-RNA
 --------------------------------------------------------------------------------
@@ -180,8 +174,6 @@ or this if you had initially installed it with pip::
 .. note::
 
     When specifying the version, use ``=`` with Conda and ``==`` with pip.
-
-After updating, it is a good idea to run the tests (see :ref:`test_seismicrna`).
 
 
 .. _install_dependencies:
@@ -339,7 +331,13 @@ Appendix 4: Test SEISMIC-RNA
 
 SEISMIC-RNA comes with hundreds of tests to verify that it is working properly
 on your system.
-We recommend running the tests each time you install or update SEISMIC-RNA.
+
+.. note::
+    Running the full test suite can take more than 30 minutes, so it is
+    entirely optional. Every release of SEISMIC-RNA is already tested to
+    confirm that all tests pass before it is published, so you do not need
+    to run the tests yourself unless you suspect a problem with your own
+    installation.
 
 Step 1: Run SEISMIC-RNA's testing suite
 --------------------------------------------------------------------------------
