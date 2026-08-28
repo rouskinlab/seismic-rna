@@ -113,9 +113,14 @@ different path, or ``--log ""`` to disable log files.
 
 The log file records messages at **the same verbosity level as the terminal**,
 so ``-v`` enlarges both the terminal output and the log file.
-Each line in the log file is prefixed with a timestamp::
+Each line in the log file is prefixed with a timestamp, followed by the level,
+the ID of the process that wrote the message, and the message itself::
 
     2026-06-04 14:22:01.123456  Info      12345 Clustering sars2-fse / region fse
+
+The process ID is helpful for telling apart messages from parallel work: when
+SEISMIC-RNA uses multiple CPUs at once, each one runs in its own process, so
+messages that share a process ID come from the same task.
 
 To view a log file, open it with less_:
 
