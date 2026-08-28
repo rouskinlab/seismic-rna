@@ -18,17 +18,21 @@ TL;DR
 
 #. Process the no-DMS control::
 
-    seismic wf -x fq/nodms --keep-g --keep-u --mask-polya 0 --min-mut-gap 0 hiv-rre.fa
+    seismic wf -x fq/nodms --probe none hiv-rre.fa
+
+#. Generate a list of positions to mask from the no-DMS control::
+
+    seismic list --max-fmut-pos 0.05 out/nodms/filter/rre/full
 
 #. Process the DMS-treated replicates separately::
 
-    seismic wf -x fq/dms1 -x fq/dms2 --mask-pos rre 176 -P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC hiv-rre.fa
+    seismic wf -x fq/dms1 -x fq/dms2 --probe DMS --mask-pos-file out/nodms/list/rre/full/filter-position-list.csv -P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC hiv-rre.fa
     seismic graph scatter out/dms[12]/filter/rre/26-204/filter-position-table.csv
 
 #. Pool the replicates and process them together::
 
     seismic pool dms-pool out/dms[12]
-    seismic wf --mask-pos rre 176 -P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC -k 2 --fold --fold-quantile 0.95 hiv-rre.fa out/dms-pool/idmut
+    seismic wf --probe DMS --mask-pos-file out/nodms/list/rre/full/filter-position-list.csv -P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC -k 2 --fold --fold-quantile 0.95 hiv-rre.fa out/dms-pool/idmut
 
 
 Scientific premise
@@ -94,19 +98,19 @@ Run the workflow on the no-DMS control
 
 Process the no-DMS control through the whole workflow with this command::
 
-    seismic wf -x fq/nodms --keep-g --keep-u --mask-polya 0 --min-mut-gap 0 hiv-rre.fa
+    seismic wf -x fq/nodms --probe none hiv-rre.fa
 
 This is what each of the arguments does:
 
 - ``wf`` means run the entire workflow.
 - ``-x fq/nodms`` means search inside ``fq/nodms`` for pairs of FASTQ files of
   paired-end reads with mate 1 and mate 2 in separate files.
-- ``--keep-g --keep-u`` means keep G and U bases (which do not react with DMS and should
-  typically be masked out in DMS-modified samples).
-- ``--mask-polya 0`` means do not mask out poly(A) sequences (which can produce
-  artifacts in DMS-modified samples).
-- ``--min-mut-gap 0`` means disable observer bias correction (which only appies
-  to DMS-modified samples).
+- ``--probe none`` means use the defaults for an untreated control with no
+  chemical probe: keep G and U bases (which do not react with DMS and should
+  typically be masked out in DMS-modified samples), do not mask out poly(A)
+  sequences (which can produce artifacts in DMS-modified samples), and
+  disable observer bias correction (which only applies to DMS-modified
+  samples).
 - ``hiv-rre.fa`` means use the sequence in this FASTA file as the reference
   (i.e. mutation-free) sequence for the RNA.
 
@@ -189,21 +193,39 @@ to check if it actually was a mixture, and if so to fix it.
 For the purposes of this tutorial, you will learn how to mask out position 176
 so that it does not skew the results.
 
-Rerun the workflow with the option ``--mask-pos rre 176``::
+Rather than looking up and typing position 176 by hand, use ``seismic list`` to
+generate a List of Positions file of every position whose mutation rate
+exceeds a threshold, then pass that file to ``--mask-pos-file``::
 
-    seismic wf --force --keep-g --keep-u --mask-polya 0 --min-mut-gap 0 --mask-pos rre 176 hiv-rre.fa out/nodms/idmut/rre
+    seismic list --max-fmut-pos 0.05 out/nodms/filter/rre/full
+
+This is what each of the arguments does:
+
+- ``list`` means scan per-position mutation rate tables and write a list of
+  positions that fail the given quality thresholds.
+- ``--max-fmut-pos 0.05`` means flag any position with a mutation rate above
+  5% (only position 176 exceeds this threshold; every other position is no
+  greater than 1%).
+- ``out/nodms/filter/rre/full`` means scan the per-position table for sample
+  ``nodms``, reference ``rre``, region ``full``.
+
+This command writes ``out/nodms/list/rre/full/filter-position-list.csv``,
+a :doc:`/formats/list/listpos` file that lists position 176 as the only
+position to mask.
+
+Rerun the workflow with the option ``--mask-pos-file``::
+
+    seismic wf --force --probe none --mask-pos-file out/nodms/list/rre/full/filter-position-list.csv hiv-rre.fa out/nodms/idmut/rre
 
 This is what each of the arguments does:
 
 - ``wf`` means run the entire workflow.
 - ``--force`` means overwrite any output files that already exist.
-- ``--keep-g --keep-u`` means keep G and U bases (which do not react with DMS and should
-  typically be masked out in DMS-modified samples).
-- ``--mask-polya 0`` means do not mask out poly(A) sequences (which can produce
-  artifacts in DMS-modified samples).
-- ``--min-mut-gap 0`` means disable observer bias correction (which only appies
-  to DMS-modified samples).
-- ``--mask-pos rre 176`` means mask position 176 in reference ``rre``.
+- ``--probe none`` means use the defaults for an untreated control with no
+  chemical probe: keep G and U bases, do not mask out poly(A) sequences, and
+  disable observer bias correction.
+- ``--mask-pos-file out/nodms/list/rre/full/filter-position-list.csv`` means
+  mask every position listed in this file (position 176).
 - ``hiv-rre.fa`` means use the sequence in this FASTA file as the reference
   (i.e. mutation-free) sequence for the RNA.
 - ``out/nodms/idmut/rre`` means search this directory for data files: in this
@@ -226,7 +248,7 @@ Run the workflow on both DMS-treated replicates
 
 Process the DMS-treated samples through the whole workflow with this command::
 
-    seismic wf -x fq/dms1 -x fq/dms2 --mask-pos rre 176 -P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC hiv-rre.fa
+    seismic wf -x fq/dms1 -x fq/dms2 --probe DMS --mask-pos-file out/nodms/list/rre/full/filter-position-list.csv -P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC hiv-rre.fa
 
 This is what each of the arguments does:
 
@@ -235,8 +257,12 @@ This is what each of the arguments does:
   paired-end reads with mate 1 and mate 2 in separate files.
 - ``-x fq/dms2`` means search inside ``fq/dms2`` for pairs of FASTQ files of
   paired-end reads with mate 1 and mate 2 in separate files.
-- ``--mask-pos rre 176`` means mask position 176 (because it had a high mutation
-  rate in the no-DMS sample).
+- ``--probe DMS`` means use the default options for a DMS-treated sample: mask
+  G and U bases, mask out poly(A) sequences, and enable observer bias
+  correction.
+- ``--mask-pos-file out/nodms/list/rre/full/filter-position-list.csv`` means
+  mask every position listed in this file (position 176, because it had a
+  high mutation rate in the no-DMS sample).
 - ``-P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC`` defines a
   region of the reference ``rre`` that corresponds to the amplicon flanked by
   primers ``GGAGCTTTGTTCCTTGGGTTCTTGG`` and ``GGAGCTGTTGATCCTTTAGGTATCTTTC``.
@@ -299,14 +325,18 @@ Now that the replicates are pooled, the overall coverage will be higher, and so
 clustering is more likely to detect true alternative structures.
 Process the pooled sample, including with clustering, by running this command::
 
-    seismic -v wf --mask-pos rre 176 -P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC -k 2 --fold --fold-quantile 0.95 hiv-rre.fa out/dms-pool/idmut
+    seismic -v wf --probe DMS --mask-pos-file out/nodms/list/rre/full/filter-position-list.csv -P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC -k 2 --fold --fold-quantile 0.95 hiv-rre.fa out/dms-pool/idmut
 
 This is what each of the arguments does:
 
 - ``-v`` means use verbose mode (to print more messages to the console).
 - ``wf`` means run the entire workflow.
-- ``--mask-pos rre 176`` means mask position 176 (because it had a high mutation
-  rate in the no-DMS sample).
+- ``--probe DMS`` means use the default options for a DMS-treated sample: mask
+  G and U bases, mask out poly(A) sequences, and enable observer bias
+  correction.
+- ``--mask-pos-file out/nodms/list/rre/full/filter-position-list.csv`` means
+  mask every position listed in this file (position 176, because it had a
+  high mutation rate in the no-DMS sample).
 - ``-P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC`` defines a
   region of the reference ``rre`` that corresponds to the amplicon flanked by
   primers ``GGAGCTTTGTTCCTTGGGTTCTTGG`` and ``GGAGCTGTTGATCCTTTAGGTATCTTTC``.
