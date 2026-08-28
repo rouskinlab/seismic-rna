@@ -10,7 +10,31 @@ Download example file
 --------------------------------------------------------------------------------
 
 Paired-end FASTQ files were generated using ``seismic sim``. The files, with
-their corresponding reference fasta file, can be downloaded here: https://raw.githubusercontent.com/rouskinlab/seismic-rna/main/src/userdocs/tutorials/clustering/fq/Clustering.zip
+their corresponding reference fasta file, can be downloaded here:
+
+If you have ``wget``, you can download the tutorial data simply by typing ::
+
+    wget https://raw.githubusercontent.com/rouskinlab/seismic-rna/main/src/userdocs/tutorials/clustering/data.tar
+
+Otherwise, click this link to download the tutorial data:
+https://raw.githubusercontent.com/rouskinlab/seismic-rna/main/src/userdocs/tutorials/clustering/data.tar
+
+To ensure the download is complete and not corrupted, verify that the SHA-256
+checksum is ``f4216f9234d1bb344f1c75d34433758aff734138d6c3fc124d50a63be5d8023d``
+by typing this command::
+
+    shasum -a 256 data.tar
+
+If this command prints a different checksum, then retry the download.
+If the problem persists, then raise an issue (see :doc:`../../issues`).
+
+After downloading and verifying the data, untar the data by typing ::
+
+    tar xvf data.tar
+
+and then navigate into the ``data`` directory::
+
+    cd data
 
 Run the SEISMIC-RNA workflow
 --------------------------------------------------------------------------------
@@ -45,7 +69,7 @@ SEISMIC-RNA also allows for further analysis. For instance, a rolling
 correlation plot can be done, comparing the clusters. For that, the ``seismic graph``
 function can be used::
 
-    seismic graph corroll /out/sim_clustering_ref/cluster/sim_clustering_ref/full/cluster-position-table.csv --compself
+    seismic graph corroll out/sim_clustering_ref/cluster/sim_clustering_ref/full/cluster-position-table.csv --compself
 
 Where ``corroll`` indicated the type of plot (rolling correlation,
 see :doc:`../../cli` for more information), and ``--compself`` indicated that

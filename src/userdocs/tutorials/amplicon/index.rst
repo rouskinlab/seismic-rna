@@ -26,13 +26,13 @@ TL;DR
 
 #. Process the DMS-treated replicates separately::
 
-    seismic wf -x fq/dms1 -x fq/dms2 --probe DMS --mask-pos-file out/nodms/list/rre/full/filter-position-list.csv -P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC hiv-rre.fa
+    seismic wf -x fq/dms1 -x fq/dms2 --probe DMS --mask-pos-file out/nodms/filter/rre/full/filter-position-list.csv -P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC hiv-rre.fa
     seismic graph scatter out/dms[12]/filter/rre/26-204/filter-position-table.csv
 
 #. Pool the replicates and process them together::
 
     seismic pool dms-pool out/dms[12]
-    seismic wf --probe DMS --mask-pos-file out/nodms/list/rre/full/filter-position-list.csv -P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC -k 2 --fold --fold-quantile 0.95 hiv-rre.fa out/dms-pool/idmut
+    seismic wf --probe DMS --mask-pos-file out/nodms/filter/rre/full/filter-position-list.csv -P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC --cluster -k 2 --fold --fold-quantile 0.95 hiv-rre.fa out/dms-pool/idmut
 
 
 Scientific premise
@@ -209,15 +209,16 @@ This is what each of the arguments does:
 - ``out/nodms/filter/rre/full`` means scan the per-position table for sample
   ``nodms``, reference ``rre``, region ``full``.
 
-This command writes ``out/nodms/list/rre/full/filter-position-list.csv``,
-a :doc:`/formats/list/listpos` file that lists position 176 as the only
+This command writes ``out/nodms/filter/rre/full/filter-position-list.csv``
+(in the same directory as the per-position table you gave it), a
+:doc:`/formats/list/listpos` file that lists position 176 as the only
 position to mask.
 
 Rerun the workflow with the option ``--mask-pos-file``, this time putting the
 masked results in a new branch instead of overwriting the original,
 unmasked output::
 
-    seismic wf --probe none --mask-pos-file out/nodms/list/rre/full/filter-position-list.csv --wf-branch filter no176 hiv-rre.fa out/nodms/idmut/rre
+    seismic wf --probe none --mask-pos-file out/nodms/filter/rre/full/filter-position-list.csv --wf-branch filter no176 hiv-rre.fa out/nodms/idmut/rre
 
 This is what each of the arguments does:
 
@@ -225,7 +226,7 @@ This is what each of the arguments does:
 - ``--probe none`` means use the defaults for an untreated control with no
   chemical probe: keep G and U bases, do not mask out poly(A) sequences, and
   disable observer bias correction.
-- ``--mask-pos-file out/nodms/list/rre/full/filter-position-list.csv`` means
+- ``--mask-pos-file out/nodms/filter/rre/full/filter-position-list.csv`` means
   mask every position listed in this file (position 176).
 - ``--wf-branch filter no176`` means run the Filter step, and every step
   downstream of it, under a new branch named ``no176``, instead of
@@ -260,7 +261,7 @@ Run the workflow on both DMS-treated replicates
 
 Process the DMS-treated samples through the whole workflow with this command::
 
-    seismic wf -x fq/dms1 -x fq/dms2 --probe DMS --mask-pos-file out/nodms/list/rre/full/filter-position-list.csv -P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC hiv-rre.fa
+    seismic wf -x fq/dms1 -x fq/dms2 --probe DMS --mask-pos-file out/nodms/filter/rre/full/filter-position-list.csv -P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC hiv-rre.fa
 
 This is what each of the arguments does:
 
@@ -272,7 +273,7 @@ This is what each of the arguments does:
 - ``--probe DMS`` means use the default options for a DMS-treated sample: mask
   G and U bases, mask out poly(A) sequences, and enable observer bias
   correction.
-- ``--mask-pos-file out/nodms/list/rre/full/filter-position-list.csv`` means
+- ``--mask-pos-file out/nodms/filter/rre/full/filter-position-list.csv`` means
   mask every position listed in this file (position 176, because it had a
   high mutation rate in the no-DMS sample).
 - ``-P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC`` defines a
@@ -300,10 +301,10 @@ run the command ::
   You could instead type this expression to list both table files explicitly,
   but the former requires fewer key strokes.
 
-Open ``out/dms1__and__dms2/graph/rre/26-204/scatter_filtered_m-ratio-q0.html``
+Open ``out/dms1_VS_dms2/graph/rre/26-204/scatter_filtered_m-ratio-q0.html``
 in a web browser to view the scatter plot and correlation:
 
-    .. image:: img/dms1__and__dms2_scatter_filtered_m-ratio.png
+    .. image:: img/dms1_VS_dms2_scatter_filtered_m-ratio.png
 
 The Pearson correlation is 0.998, which is extremely high.
 (For a general amplicon, ≥0.98 would be ideal, and ≥0.95 would be decent).
@@ -337,7 +338,7 @@ Now that the replicates are pooled, the overall coverage will be higher, and so
 clustering is more likely to detect true alternative structures.
 Process the pooled sample, including with clustering, by running this command::
 
-    seismic -v wf --probe DMS --mask-pos-file out/nodms/list/rre/full/filter-position-list.csv -P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC -k 2 --fold --fold-quantile 0.95 hiv-rre.fa out/dms-pool/idmut
+    seismic -v wf --probe DMS --mask-pos-file out/nodms/filter/rre/full/filter-position-list.csv -P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC --cluster -k 2 --fold --fold-quantile 0.95 hiv-rre.fa out/dms-pool/idmut
 
 This is what each of the arguments does:
 
@@ -346,13 +347,15 @@ This is what each of the arguments does:
 - ``--probe DMS`` means use the default options for a DMS-treated sample: mask
   G and U bases, mask out poly(A) sequences, and enable observer bias
   correction.
-- ``--mask-pos-file out/nodms/list/rre/full/filter-position-list.csv`` means
+- ``--mask-pos-file out/nodms/filter/rre/full/filter-position-list.csv`` means
   mask every position listed in this file (position 176, because it had a
   high mutation rate in the no-DMS sample).
 - ``-P rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC`` defines a
   region of the reference ``rre`` that corresponds to the amplicon flanked by
   primers ``GGAGCTTTGTTCCTTGGGTTCTTGG`` and ``GGAGCTGTTGATCCTTTAGGTATCTTTC``.
-- ``-k 2`` means enable clustering to find alternative structures.
+- ``--cluster`` means enable clustering to find alternative structures.
+- ``-k 2`` means try up to 2 clusters when clustering (has no effect unless
+  ``--cluster`` is also given).
 - ``--fold`` means enable secondary structure prediction.
 - ``--fold-quantile 0.95`` sets the 95th percentile of the mutation rates to 1 and scales the
   rest of the data accordingly (optional; 0.95 is the default).
