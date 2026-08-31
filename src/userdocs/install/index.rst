@@ -247,7 +247,8 @@ In a terminal, type this command to install it and all its Python dependencies::
 .. _intel_mac_numba:
 
 .. note::
-    **Macs with Intel processors.**
+    **Macs with Intel processors or M-series processors running an Intel
+    (x86_64) build of Python via Rosetta.**
     On these computers, ``pip install seismic-rna`` fails while building a
     dependency called llvmlite, with an error that mentions ``CMake`` and
     ``Could not find a package configuration file provided by "LLVM"``.
@@ -256,8 +257,8 @@ In a terminal, type this command to install it and all its Python dependencies::
     its calculations) no longer distribute versions built for Intel Macs on the
     Python Package Index, so pip tries to build llvmlite from its source code,
     which fails unless you have installed LLVM yourself.
-    Macs with Apple Silicon processors, as well as Linux computers, are not
-    affected.
+    Macs with Apple Silicon processors running a native ARM64 build of Python,
+    as well as Linux computers, are not affected.
 
     To fix this, install Numba with Conda before installing SEISMIC-RNA::
 
