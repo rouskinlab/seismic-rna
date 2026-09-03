@@ -23,6 +23,7 @@ the only command most users need to invoke.
     filterscan
     clusterscan
     table
+    duplex
     fold
     graph
     draw

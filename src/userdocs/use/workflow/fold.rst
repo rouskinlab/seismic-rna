@@ -14,6 +14,12 @@ soft constraints to guide the structure prediction.
 Requires either RNAstructure_ (Fold/ShapeKnots) or ViennaRNA_ (RNAfold/RNAsubopt)
 depending on the ``--fold-backend`` setting.
 
+Duplex tables from :doc:`duplex` are cofolded instead, with RNAcofold_ from
+ViennaRNA, so that base pairs can form between the two strands as well as
+within them.
+Cofolding always uses ViennaRNA (whatever ``--fold-backend`` says) and supports
+only the ``Deigan`` and ``Cordero`` energy methods.
+
 
 Inputs
 ================================================================================
@@ -22,6 +28,9 @@ Table CSV files or table output directories
     Per-position mutation rate tables produced by ``seismic table``.
     Pass a table CSV, the directory containing it, or a higher-level directory.
     See :doc:`/use/inputs`.
+
+    Duplex position tables from :doc:`duplex` are also accepted, and are
+    cofolded rather than folded.
 
 
 Outputs
@@ -127,6 +136,7 @@ See also
 ================================================================================
 
 - :doc:`table` — produces the mutation rate tables this step uses
+- :doc:`duplex` — combines two references into a duplex for cofolding
 - :doc:`draw` — visualizes the predicted structures
 - :doc:`/formats/data/ct`, :doc:`/formats/report/fold`
 - :doc:`/use/branch`, :doc:`/use/parallel`
@@ -134,3 +144,4 @@ See also
 
 .. _RNAstructure: https://rna.urmc.rochester.edu/RNAstructure.html
 .. _ViennaRNA: https://www.tbi.univie.ac.at/RNA/
+.. _RNAcofold: https://www.tbi.univie.ac.at/RNA/RNAcofold.1.html

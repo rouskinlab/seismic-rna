@@ -27,6 +27,7 @@ multiple commands.
     workflow/filterscan
     workflow/clusterscan
     workflow/table
+    workflow/duplex
     workflow/fold
     workflow/graph
     workflow/draw

@@ -3,8 +3,8 @@ Report Formats
 ========================================================================
 
 A report file is produced by the steps ``align``, ``idmut``, ``pool``,
-``filter``, ``filterscan``, ``cluster``, ``clusterscan``, ``join``, and
-``fold`` and serves three purposes:
+``filter``, ``filterscan``, ``cluster``, ``clusterscan``, ``join``,
+``duplex``, and ``fold`` and serves three purposes:
 
 - Record the parameters with which the step was run.
 - Summarize the results of the step.
@@ -25,6 +25,7 @@ read and widely supported by software.
     cluster
     clusterscan
     join
+    duplex
     fold
 
 .. _JSON format: https://en.wikipedia.org/wiki/JSON
