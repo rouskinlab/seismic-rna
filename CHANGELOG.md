@@ -2,6 +2,34 @@
 
 ## Unreleased
 
+### Fixes
+
+- Relaxed the Python requirement from `>=3.13.15` to `>=3.13,<3.14`, and the floors for `matplotlib`, `plotly`, `pyahocorasick`, and `scipy`, so that the package can be built for Bioconda (conda-forge lags PyPI, and the tightest floors were not actually required by the code).
+
+### Documentation
+
+- Documented `seismic duplex`, including its report format, and listed every step that `seismic wf` runs.
+- Added installation notes for Macs with Intel and M-series processors.
+- Fixed inconsistencies among the code, the tutorials, and the downloadable tutorial data.
+
+
+## 0.26.0 (2026-08-26)
+
+### Breaking changes
+
+- The `ensembles` step has been split into two steps: `filterscan`, which detects domains, and `clusterscan`, which clusters each domain.
+  Its output directory `ensembles/` is likewise replaced by `filterscan/` and `clusterscan/`, so output of the `ensembles` step from version 0.25 must be regenerated; output of every other step from version 0.25 can be read by version 0.26 without migrating.
+- The domain-finding algorithm of `filterscan` was replaced with a model based on the false discovery rate of bridge pairs (position pairs that link two parts of a domain).
+  Its options `--threshold-divisor`, `--min-cluster-length`, `--max-cluster-length`, and `--gap-mode` were removed, replaced by the new options listed under New Features.
+  `--min-pairs` now means the minimum number of bridge pairs in a domain (default 8), not the minimum number of correlated pairs needed to cluster a region (default 2).
+- Graphs are now output only as interactive HTML files.
+  The options `--svg`, `--pdf`, and `--png` were removed, along with the `kaleido` dependency they required; `--html`/`--no-html` (added to `cluster` and `clusterscan`) controls whether each graph is output.
+  Structure drawings from `seismic draw` are unaffected and still support SVG and PNG.
+- SEISMIC-RNA now requires Python 3.13 (previously 3.11) and newer versions of its dependencies, each of which now also has an upper bound; `tqdm` was added (for progress bars) and `kaleido` removed.
+- Logging was simplified from eight levels to five.
+- `--min-mut-gap` was removed from `seismic sim fastq` and `seismic sim total`; use `--min-mut-gap-weights` instead.
+- The default for `--mask-polya` is now probe-dependent: 5 for a chemical probe, but 0 (i.e. do not mask poly(A) stretches) when `--probe` is `none`.
+
 ### New Features
 
 - Added the `duplex` command, which fuses two references into one duplex so that they can be cofolded as a pair rather than folded separately.
@@ -16,6 +44,10 @@
   Log messages appear above the bar, which stays on the last line at any verbosity and with any number of tasks running in parallel.
   Progress is tracked down to the level of one sample or file, not the parts of a single sample's analysis, which begin and end too quickly to follow.
   Progress bars are hidden automatically with `--quiet` (`-q`) or quieter, when stderr is not a terminal, and in the Python API; use `--no-progress` to hide them in every case.
+- `seismic filterscan` detects domains with a new set of options: `--band-width`, `--min-pair-coverage`, and `--min-expect-both` choose which position pairs to analyze; `--pair-fdr` and `--min-fold-change` call a pair as a bridge pair; `--detect-fdr` and `--merge-fdr` detect and merge domains; and `--widen`, `--fill`, `--max-domain-length`, `--min-domain-length`, and `--min-pairs` shape the domains that are kept.
+- `seismic clusterscan` gained `--validate-gaps`/`--no-validate-gaps` and `--gap-min-assoc`, which check that the gaps between domains are real, and its report fields were reworked (`best_ks` and `merged_domains` are now keyed by domain coordinates, and the redundant `domain_coords` field was dropped).
+- `seismic wf` gained `--wf-branch STEP NAME`, which runs one step under a branch (previously `wf` could not branch any step), and `--scan`, which runs `filterscan` in place of `filter`.
+- SEISMIC-RNA starts up faster, because heavy modules are now imported only when they are needed.
 
 ### Bug fixes
 
@@ -24,6 +56,13 @@
   Falling back to the ensemble average (K = 1) assumed that K = 1 had been run, which `--min-clusters` prevents.
   K = 1 is still used when it was run, since it can fail only as underclustered and so can never contribute a cluster that the filters rejected; when it was not run, no clusters are written for that dataset, rather than falling back to a number of clusters greater than 1 that could be overclustered.
 - `seismic cluster` now fails immediately with a clear message if `--min-clusters` exceeds `--max-clusters`, instead of running no clustering and then crashing.
+- Fixed `seismic clusterscan` not inheriting the branch of the `filterscan` step that produced its input.
+- Fixed reading batch counts from read-only arrays under pandas 3.0, and removed uses of the `copy=` keyword that pandas 3.0 deprecated.
+- Fixed possible integer overflow by casting the results of NumPy slices and reductions to Python scalars.
+- Fixed bugs in `PartialTabulator.correct_bias` and `seismic sim fold`.
+- Fixed `read_weights` being set for batches other than `ClusterMutsBatch`.
+- Fixed the logging configuration being erased by the logging unit tests, which crashed the logger.
+
 
 ## 0.25.3 (2026-05-29)
 
