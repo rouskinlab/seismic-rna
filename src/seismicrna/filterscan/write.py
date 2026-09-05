@@ -69,7 +69,7 @@ ONLY_B_COL = "Only B Mutated"
 BOTH_COL = "Both Mutated"
 CONFUSION_COLS = (NEITHER_COL, ONLY_A_COL, ONLY_B_COL, BOTH_COL)
 P_VALUE_COL = "P-value"
-Q_VALUE_COL = "Q-value"
+ADJ_P_VALUE_COL = "BH-adjusted P-value"
 FOLD_CHANGE_COL = "Fold Change"
 
 
@@ -399,7 +399,7 @@ def _bridge_mask(
     pair_fdr: float,
     min_fold_change: float,
 ) -> tuple[pd.Series, pd.Series, pd.Series, pd.Series]:
-    """``(eligible, bridge, pvalue, qvalue)`` over the pairs of ``table``:
+    """``(eligible, bridge, pvalue, adj_pvalue)`` over the pairs of ``table``:
     two boolean masks, and the raw and Benjamini-Hochberg-adjusted p-values
     (NaN where not eligible, since ineligible pairs are excluded from the
     family).
@@ -422,14 +422,15 @@ def _bridge_mask(
       and ``b`` at position B independently, at most ``ab`` are mutated at
       both. This is the coverage-preserving permutation null evaluated
       exactly, needing no chi-square approximation. Benjamini-Hochberg-
-      adjusted over the eligible pairs, kept when ``q < pair_fdr``. Because it
-      is a left-tail test, only depleted (anti-correlated) pairs can reach
-      small p-values, so significance alone already enforces the direction
-      that matters: a per-molecule modification-loading factor scales every
-      position together and so can create only positive correlation (its
-      contribution to the covariance is ``μ_i·μ_j·Var(loading) ≥ 0``), while
-      mutual exclusivity (negative correlation) is the signature of genuine
-      alternative structure, immune to that confound.
+      adjusted over the eligible pairs, kept when ``p_adj <= pair_fdr``.
+      Because it is a left-tail test, only depleted (anti-correlated) pairs
+      can reach small p-values, so significance alone already enforces the
+      direction that matters: a per-molecule modification-loading factor
+      scales every position together and so can create only positive
+      correlation (its contribution to the covariance is
+      ``μ_i·μ_j·Var(loading) ≥ 0``), while mutual exclusivity (negative
+      correlation) is the signature of genuine alternative structure, immune
+      to that confound.
     - *effect size*: the observed joint-mutation count is at most the
       independence expectation reduced by ``min_fold_change``, i.e.
       ``ab ≤ (a·b)/n / min_fold_change`` (``ab = 0`` always passes). This is
@@ -451,18 +452,18 @@ def _bridge_mask(
     eligible = _analyzed_pairs_mask(table, min_pair_coverage, min_expect_both)
     bridge = pd.Series(False, index=table.index)
     pvalue = pd.Series(np.nan, index=table.index)
-    qvalue = pd.Series(np.nan, index=table.index)
+    adj_pvalue = pd.Series(np.nan, index=table.index)
     if not eligible.any():
-        return eligible, bridge, pvalue, qvalue
+        return eligible, bridge, pvalue, adj_pvalue
     sub = table[eligible]
     n = sub[N_COL].to_numpy(dtype=np.int64)
     ab = sub[BOTH_COL].to_numpy(dtype=np.int64)
     a = (sub[ONLY_A_COL] + sub[BOTH_COL]).to_numpy(dtype=np.int64)
     b = (sub[ONLY_B_COL] + sub[BOTH_COL]).to_numpy(dtype=np.int64)
     pvals = hypergeom.cdf(ab, n, a, b)
-    qvals = calc_bh_adjusted_pvals(pvals)
+    adj_pvals = calc_bh_adjusted_pvals(pvals)
     pvalue.loc[sub.index] = pvals
-    qvalue.loc[sub.index] = qvals
+    adj_pvalue.loc[sub.index] = adj_pvals
     # Effect size: observed at most the independence expectation reduced by
     # min_fold_change, i.e. ab <= (a*b)/n / min_fold_change. Compare the
     # observed count against this threshold (in float, to avoid integer
@@ -470,9 +471,9 @@ def _bridge_mask(
     # special-casing -- it is <= any non-negative threshold and always passes.
     expected = (a.astype(float) * b) / n
     effect = ab <= expected / min_fold_change
-    is_bridge = (qvals < pair_fdr) & effect
+    is_bridge = (adj_pvals <= pair_fdr) & effect
     bridge.loc[sub.index[is_bridge]] = True
-    return eligible, bridge, pvalue, qvalue
+    return eligible, bridge, pvalue, adj_pvalue
 
 
 def _block_score(n_elig: np.ndarray, n_bridge: np.ndarray, pi0: float) -> np.ndarray:
@@ -655,7 +656,7 @@ def _calc_block_pvalue_cutoff(
     can score positively under the BIC-corrected LLR, but is unlikely to
     survive Benjamini-Hochberg correction against the full candidate pool.
 
-    Returns the largest raw p-value whose BH-adjusted q-value is
+    Returns the largest raw p-value whose BH-adjusted p-value is
     ``<= detect_fdr``, or ``-1.0`` if none survive (so no p-value, always
     ``>= 0``, is ever admitted -- i.e. "admit nothing")."""
     import numpy as np
@@ -678,8 +679,8 @@ def _calc_block_pvalue_cutoff(
     if ne_all.size == 0:
         return -1.0
     pvals = binom.sf(nb_all - 1, ne_all, pi0)
-    qvals = calc_bh_adjusted_pvals(pvals)
-    significant = pvals[qvals <= detect_fdr]
+    adj_pvals = calc_bh_adjusted_pvals(pvals)
+    significant = pvals[adj_pvals <= detect_fdr]
     if significant.size == 0:
         return -1.0
     return float(significant.max())
@@ -844,10 +845,10 @@ def _merge_connected_blocks(
     gains = np.where(valid, _block_score(ne, nb, pi0), -1.0)
     with np.errstate(divide="ignore", invalid="ignore"):
         pvals = np.where(valid, binom.sf(nb - 1, ne, pi0), 1.0)
-    qvals = np.ones_like(pvals)
+    adj_pvals = np.ones_like(pvals)
     if valid.any():
-        qvals[valid] = calc_bh_adjusted_pvals(pvals[valid])
-    connected_cut = valid & (gains >= 0.0) & (qvals <= merge_fdr)
+        adj_pvals[valid] = calc_bh_adjusted_pvals(pvals[valid])
+    connected_cut = valid & (gains >= 0.0) & (adj_pvals <= merge_fdr)
     merged: list[tuple[int, int]] = [blocks[0]]
     n_connected = 0
     for i in range(len(blocks) - 1):
@@ -1331,11 +1332,14 @@ def _write_domains_to_csv(
 
 
 def _write_pairs_with_confusion(
-    pos_table: pd.DataFrame, pvalue: pd.Series, qvalue: pd.Series, csv_file: str | Path
+    pos_table: pd.DataFrame,
+    pvalue: pd.Series,
+    adj_pvalue: pd.Series,
+    csv_file: str | Path,
 ):
     """Write the given pairs' 2x2 confusion-matrix counts to a CSV file,
     along with the exact hypergeometric (Fisher) left-tail p-value
-    (``pvalue``) and its Benjamini-Hochberg-adjusted q-value (``qvalue``),
+    (``pvalue``) and its Benjamini-Hochberg-adjusted p-value (``adj_pvalue``),
     both aligned to ``pos_table``'s index and passed in rather than
     recomputed here -- ``_bridge_mask`` already computed them once, and the
     BH adjustment in particular depends on the full eligible family, not
@@ -1356,7 +1360,7 @@ def _write_pairs_with_confusion(
         | {col: pos_table[col].to_numpy() for col in CONFUSION_COLS}
         | {
             P_VALUE_COL: pvalue.loc[pos_table.index].to_numpy(),
-            Q_VALUE_COL: qvalue.loc[pos_table.index].to_numpy(),
+            ADJ_P_VALUE_COL: adj_pvalue.loc[pos_table.index].to_numpy(),
             FOLD_CHANGE_COL: fold_changes,
         }
     )
@@ -1443,7 +1447,7 @@ def _calc_cluster_domains(
     # (displayed/saved/counted in n_positive_pairs) when it is a bridge -- the
     # same criterion the domain caller itself uses -- so the reported pairs
     # match what actually drove the called domains.
-    eligible, bridge, pvalue, qvalue = _bridge_mask(
+    eligible, bridge, pvalue, adj_pvalue = _bridge_mask(
         table, min_pair_coverage, min_expect_both, pair_fdr, min_fold_change
     )
     pos_table = table[bridge]
@@ -1493,7 +1497,7 @@ def _calc_cluster_domains(
     # Write the pairs and domains to CSV files.
     report_dir.mkdir(parents=True, exist_ok=True)
     _write_pairs_with_confusion(
-        pos_table, pvalue, qvalue, report_dir.joinpath(PAIRS_CSV)
+        pos_table, pvalue, adj_pvalue, report_dir.joinpath(PAIRS_CSV)
     )
     _write_domains_to_csv(domain_actions, report_dir.joinpath(DOMAINS_CSV))
     logger.debug(

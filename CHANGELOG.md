@@ -2,8 +2,15 @@
 
 ## Unreleased
 
+### Breaking changes
+
+- In `pairs.csv` from `seismic filterscan`, the column `Q-value` was renamed `BH-adjusted P-value`, which is what it has always contained: a p-value adjusted with the Benjamini-Hochberg procedure, not a q-value in the sense of Storey (which also estimates the fraction of true null hypotheses).
+  Any script that reads that column by name must be updated.
+
 ### Fixes
 
+- `seismic filterscan` now calls a pair of positions a bridge pair when its BH-adjusted p-value is less than *or equal to* `--pair-fdr`, matching both the Benjamini-Hochberg procedure and the tests against `--detect-fdr` and `--merge-fdr`, which already used `<=`.
+  Previously, a pair whose adjusted p-value fell exactly on `--pair-fdr` was discarded.
 - Relaxed the Python requirement from `>=3.13.15` to `>=3.13,<3.14`, and the floors for `matplotlib`, `plotly`, `pyahocorasick`, and `scipy`, so that the package can be built for Bioconda (conda-forge lags PyPI, and the tightest floors were not actually required by the code).
 
 ### Documentation

@@ -35,7 +35,7 @@ from seismicrna.filterscan.write import (
     BOTH_COL,
     BRIDGE_COL,
     P_VALUE_COL,
-    Q_VALUE_COL,
+    ADJ_P_VALUE_COL,
     FOLD_CHANGE_COL,
     _calc_tiles,
     _build_banded_table,
@@ -185,21 +185,21 @@ class TestWritePairsWithConfusion(ut.TestCase):
         from scipy.stats import hypergeom
 
         pos_table = self._table([(1, 5, 900, 30, 20, 50), (2, 9, 800, 60, 40, 100)])
-        # pvalue and qvalue are passed in, as they would be from
+        # pvalue and adj_pvalue are passed in, as they would be from
         # _bridge_mask, rather than recomputed here.
         expected_pvals = [
             hypergeom.cdf(50, 1000, 80, 70),
             hypergeom.cdf(100, 1000, 160, 140),
         ]
-        expected_qvals = calc_bh_adjusted_pvals(np.array(expected_pvals))
+        expected_adj_pvals = calc_bh_adjusted_pvals(np.array(expected_pvals))
         pvalue = pd.Series(expected_pvals, index=pos_table.index)
-        qvalue = pd.Series(expected_qvals, index=pos_table.index)
+        adj_pvalue = pd.Series(expected_adj_pvals, index=pos_table.index)
         with tempfile.TemporaryDirectory() as tmp:
             csv_file = Path(tmp) / "pairs.csv"
-            _write_pairs_with_confusion(pos_table, pvalue, qvalue, csv_file)
+            _write_pairs_with_confusion(pos_table, pvalue, adj_pvalue, csv_file)
             out = pd.read_csv(csv_file)
         # The position columns, the four confusion cells, and the p-value,
-        # q-value, and fold change derived from them.
+        # BH-adjusted p-value, and fold change derived from them.
         self.assertListEqual(
             list(out.columns),
             [
@@ -207,7 +207,7 @@ class TestWritePairsWithConfusion(ut.TestCase):
                 POSITION_B,
                 *CONFUSION_COLS,
                 P_VALUE_COL,
-                Q_VALUE_COL,
+                ADJ_P_VALUE_COL,
                 FOLD_CHANGE_COL,
             ],
         )
@@ -223,8 +223,8 @@ class TestWritePairsWithConfusion(ut.TestCase):
         self.assertListEqual(list(recovered_n), [1000, 1000])
         # P-value: exact hypergeometric left-tail P(X <= both).
         np.testing.assert_allclose(out[P_VALUE_COL], expected_pvals)
-        # Q-value: the BH-adjusted p-value passed in.
-        np.testing.assert_allclose(out[Q_VALUE_COL], expected_qvals)
+        # BH-adjusted p-value: the value passed in.
+        np.testing.assert_allclose(out[ADJ_P_VALUE_COL], expected_adj_pvals)
         # Fold change: independence expectation over the observed count.
         expected_fcs = [(80 * 70 / 1000) / 50, (160 * 140 / 1000) / 100]
         np.testing.assert_allclose(out[FOLD_CHANGE_COL], expected_fcs)

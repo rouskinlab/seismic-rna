@@ -140,7 +140,7 @@ All outputs go into ``{out}/{sample}/filterscan/{ref}/{reg}/``.
 
 ``pairs.csv``
     The bridge pairs of positions found in the RNA, with each pair's P-value,
-    BH-adjusted Q-value, and fold change.
+    BH-adjusted P-value, and fold change.
 
 ``domains.csv``
     The coordinates (5' and 3' ends) of the final domains, and how each was
