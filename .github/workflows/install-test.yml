@@ -1,10 +1,19 @@
 name: Install SEISMIC-RNA and run its test suite
 
 on:
-  # Run on every push of every branch, i.e. every time code is uploaded.
+  # Run on every push of every branch, i.e. every time code is uploaded,
+  # except a push that only changes the documentation, which cannot affect
+  # whether the tests pass.
   push:
-  # Also run on every pull request, so that code is tested before it is merged.
+    paths-ignore:
+      - src/userdocs/**
+      - src/devdocs/**
+  # Also run on every pull request, so that code is tested before it is
+  # merged, with the same documentation-only exception as above.
   pull_request:
+    paths-ignore:
+      - src/userdocs/**
+      - src/devdocs/**
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
