@@ -28,7 +28,19 @@ If installing with Conda fails, then try :ref:`conda_install_fails`.
 After you have installed SEISMIC-RNA, :ref:`set_datapath`.
 
 
-Option 2: Install with Conda, if you don't know how to use it
+Option 2: Install a release of SEISMIC-RNA that is not yet on Conda
+================================================================================
+
+New releases of SEISMIC-RNA appear on the Python Package Index (PyPI_)
+immediately, but can take additional time to reach Bioconda_ afterward.
+If you want to install a release before it has reached Bioconda, then first
+:ref:`install_dependencies` using Conda, and subsequently install SEISMIC-RNA
+itself with pip by following :ref:`install_from_pypi`.
+
+After you have installed SEISMIC-RNA, :ref:`set_datapath`.
+
+
+Option 3: Install with Conda, if you don't know how to use it
 ================================================================================
 
 Conda provides the easiest way to install SEISMIC-RNA.
@@ -48,12 +60,12 @@ executable followed by ``init``, e.g. ::
 
 .. note::
 
-    Another popular package manage is Mamba_, which is a drop-in replacement 
+    Another popular package manage is Mamba_, which is a drop-in replacement
     for Conda reimplemented in C++. It can be much faster than Conda in the
     event you plan to install any additional packages alongside SEISMIC-RNA.
     If you wish to use Mamba instead of Conda, simply install Mamba and
     replace all instances of the ``conda`` command in this documentation
-    with ``mamba``. The default installation location of Mamba is 
+    with ``mamba``. The default installation location of Mamba is
     ``~/miniforge3/bin/mamba``
 
 Step 2: Create a Conda environment for SEISMIC-RNA
@@ -106,18 +118,18 @@ After you have installed SEISMIC-RNA, :ref:`set_datapath`.
 
 .. _conda_install_fails:
 
-Option 3: Install with Conda, if ``conda install seismic-rna`` fails
+Option 4: Install with Conda, if ``conda install seismic-rna`` fails
 ================================================================================
 
 Conda may fail to install SEISMIC-RNA if some dependencies are not compatible
 with your hardware and/or operating system.
 If that happens, then first :ref:`install_dependencies` and subsequently
-:ref:`install_seismicrna_without_conda`.
+install SEISMIC-RNA itself with pip by following :ref:`install_from_pypi`.
 
 After you have installed SEISMIC-RNA, :ref:`set_datapath`.
 
 
-Option 4: Install without Conda
+Option 5: Install without Conda
 ================================================================================
 
 Although Conda is the easiest means to install SEISMIC-RNA, it is not necessary.
@@ -135,20 +147,90 @@ commands, one by one::
     pip --version
 
 After installing Python and pip, follow :ref:`install_dependencies` and then
-:ref:`install_seismicrna_without_conda`.
+install SEISMIC-RNA itself, either :ref:`install_from_pypi` (recommended) or
+:ref:`install_from_github` if you need the latest, unreleased source code.
 
 After you have installed SEISMIC-RNA, follow :ref:`set_datapath`.
 
 
+.. _install_from_pypi:
+
+Option 6: Install SEISMIC-RNA from the Python Package Index
+================================================================================
+
+We recommend installing SEISMIC-RNA from the Python Package Index, which will
+download the latest stable version that has been released.
+In a terminal, type this command to install it and all its Python dependencies::
+
+    pip install seismic-rna
+
+.. _intel_mac_numba:
+
+.. note::
+    **Macs with Intel processors or M-series processors running an Intel
+    (x86_64) build of Python via Rosetta.**
+    On these computers, ``pip install seismic-rna`` fails while building a
+    dependency called llvmlite, with an error that mentions ``CMake`` and
+    ``Could not find a package configuration file provided by "LLVM"``.
+
+    The reason is that Numba and llvmlite (which SEISMIC-RNA uses to speed up
+    its calculations) no longer distribute versions built for Intel Macs on the
+    Python Package Index, so pip tries to build llvmlite from its source code,
+    which fails unless you have installed LLVM yourself.
+    Macs with Apple Silicon processors running a native ARM64 build of Python,
+    as well as Linux computers, are not affected.
+
+    To fix this, install Numba with Conda before installing SEISMIC-RNA::
+
+        conda install -c conda-forge "numba>=0.67"
+        pip install seismic-rna
+
+    Installing all of SEISMIC-RNA with Conda avoids this problem entirely, and
+    is the recommended approach.
+
+After you have installed SEISMIC-RNA, :ref:`set_datapath`.
+
+
+.. _install_from_github:
+
+Option 7: Install SEISMIC-RNA from GitHub
+================================================================================
+
+We do *not* recommend installing from GitHub unless you need the latest source
+code (most users do not), which may be unstable or contain significant bugs.
+In a terminal, navigate to the directory into which to install SEISMIC-RNA.
+If Git_ is installed on your computer, then clone the GitHub repository::
+
+    git clone https://github.com/rouskinlab/seismic-rna.git
+
+Otherwise, open ``https://github.com/rouskinlab/seismic-rna`` in a web browser,
+click "Code" then "Download ZIP", unzip the file after it has downloaded, and
+move it to the directory where you want to keep the source code.
+
+To install SEISMIC-RNA, type ``pip install`` followed by the path of the source
+code directory that you downloaded, e.g. ::
+
+    pip install ~/Downloads/seismic-rna
+
+If you want to be able to modify the source code after you install SEISMIC-RNA
+and have those changes come into effect, then add the flag ``-e``, e.g. ::
+
+    pip install -e ~/Downloads/seismic-rna
+
+Otherwise, you may delete the source code after installation to save space.
+
+After you have installed SEISMIC-RNA, :ref:`set_datapath`.
+
+
 .. _install_update:
 
-Option 5: Update to another version of SEISMIC-RNA
+Option 8: Update to another version of SEISMIC-RNA
 ================================================================================
 
 If you have already installed SEISMIC-RNA, you can install a different version
 easily.
 
-Option 5A: Update SEISMIC-RNA to the latest stable version
+Option 8A: Update SEISMIC-RNA to the latest stable version
 --------------------------------------------------------------------------------
 
 Type this if you had initially installed SEISMIC-RNA with Conda::
@@ -160,7 +242,7 @@ or this if you had initially installed it with pip::
     pip install -U seismic-rna
 
 
-Option 5B: Install a specific version of SEISMIC-RNA
+Option 8B: Install a specific version of SEISMIC-RNA
 --------------------------------------------------------------------------------
 
 Type this if you had initially installed SEISMIC-RNA with Conda::
@@ -230,74 +312,9 @@ If the dependency is installed, then it should print out the path to it.
 If it says something like ``not found``, then the dependency is not installed.
 
 
-.. _install_seismicrna_without_conda:
-
-Appendix 2: Install SEISMIC-RNA without Conda
-================================================================================
-
-Option 2A: Install SEISMIC-RNA from the Python Package Index
---------------------------------------------------------------------------------
-
-We recommend installing SEISMIC-RNA from the Python Package Index, which will
-download the latest stable version that has been released.
-In a terminal, type this command to install it and all its Python dependencies::
-
-    pip install seismic-rna
-
-.. _intel_mac_numba:
-
-.. note::
-    **Macs with Intel processors or M-series processors running an Intel
-    (x86_64) build of Python via Rosetta.**
-    On these computers, ``pip install seismic-rna`` fails while building a
-    dependency called llvmlite, with an error that mentions ``CMake`` and
-    ``Could not find a package configuration file provided by "LLVM"``.
-
-    The reason is that Numba and llvmlite (which SEISMIC-RNA uses to speed up
-    its calculations) no longer distribute versions built for Intel Macs on the
-    Python Package Index, so pip tries to build llvmlite from its source code,
-    which fails unless you have installed LLVM yourself.
-    Macs with Apple Silicon processors running a native ARM64 build of Python,
-    as well as Linux computers, are not affected.
-
-    To fix this, install Numba with Conda before installing SEISMIC-RNA::
-
-        conda install -c conda-forge "numba>=0.67"
-        pip install seismic-rna
-
-    Installing all of SEISMIC-RNA with Conda avoids this problem entirely, and
-    is the recommended approach.
-
-Option 2B: Install SEISMIC-RNA from GitHub
---------------------------------------------------------------------------------
-
-We do *not* recommend installing from GitHub unless you need the latest source
-code (most users do not), which may be unstable or contain significant bugs.
-In a terminal, navigate to the directory into which to install SEISMIC-RNA.
-If Git_ is installed on your computer, then clone the GitHub repository::
-
-    git clone https://github.com/rouskinlab/seismic-rna.git
-
-Otherwise, open ``https://github.com/rouskinlab/seismic-rna`` in a web browser,
-click "Code" then "Download ZIP", unzip the file after it has downloaded, and
-move it to the directory where you want to keep the source code.
-
-To install SEISMIC-RNA, type ``pip install`` followed by the path of the source
-code directory that you downloaded, e.g. ::
-
-    pip install ~/Downloads/seismic-rna
-
-If you want to be able to modify the source code after you install SEISMIC-RNA
-and have those changes come into effect, then add the flag ``-e``, e.g. ::
-
-    pip install -e ~/Downloads/seismic-rna
-
-Otherwise, you may delete the source code after installation to save space.
-
-
 .. _set_datapath:
 
-Appendix 3: Set the DATAPATH environment variable
+Appendix 2: Set the DATAPATH environment variable
 ================================================================================
 
 RNAstructure_ requires an environment variable called ``DATAPATH`` to point to
@@ -327,7 +344,7 @@ unless you remove or edit that line in your shell RC file.
 
 .. _test_seismicrna:
 
-Appendix 4: Test SEISMIC-RNA
+Appendix 3: Test SEISMIC-RNA
 ================================================================================
 
 SEISMIC-RNA comes with hundreds of tests to verify that it is working properly
@@ -364,7 +381,7 @@ Step 2: Interpret the test results
 Regardless of the verbosity, if all tests succeed, then it will print a message
 similar to this::
 
-    Ran 903 tests in 196.699s
+    Ran 1651 tests in 1176.813s
 
     OK
 
