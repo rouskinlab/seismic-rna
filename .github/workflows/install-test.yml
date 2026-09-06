@@ -66,14 +66,16 @@ jobs:
         shell: bash -el {0}
     steps:
       # The AlmaLinux image is minimal, so install the tools that the later
-      # steps (checkout, Miniconda, and Conda itself) need. This must come
-      # before the checkout, which needs git.
+      # steps (checkout, Miniconda, Conda itself, and the Meson build of
+      # SEISMIC-RNA) need. This must come before the checkout, which needs
+      # git; gcc is needed because SEISMIC-RNA compiles native extensions
+      # with Meson, which has no compiler to find on a bare image.
       - name: Install prerequisites in the Linux container
         if: matrix.container != ''
         # Conda is not installed yet, so do not use a login shell here.
         shell: bash -e {0}
         run: |
-          dnf install -y bzip2 findutils git tar which
+          dnf install -y bzip2 findutils gcc git tar which
       - name: Checkout this GitHub repository
         uses: actions/checkout@v4
       - name: Set up Miniconda
