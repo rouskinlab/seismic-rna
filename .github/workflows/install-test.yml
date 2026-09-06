@@ -1,32 +1,79 @@
 name: Install SEISMIC-RNA and run its test suite
 
 on:
-  # Runs on pushes targeting the main branch
+  # Run on every push of every branch, i.e. every time code is uploaded.
   push:
-    branches:
-      - main
-    paths:
-      - src/seismicrna/**
-      - pyproject.toml
-      - environment.yml
-      - .github/workflows/install-test.yml
+  # Also run on every pull request, so that code is tested before it is merged.
+  pull_request:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+# Run at most one set of tests per branch (or pull request) at a time.
+# If new commits are pushed while a run is still going, then cancel the
+# obsolete run rather than queueing it, since only the newest code matters.
 concurrency:
-  group: tests
-  cancel-in-progress: false
+  group: tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   install-test:
-    runs-on: ubuntu-latest
+    # Every entry of the matrix becomes its own job, and GitHub Actions runs
+    # jobs in parallel by default, so all operating systems are tested
+    # simultaneously (the whole workflow takes as long as the slowest system,
+    # not as long as all of them combined).
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    # Run inside a Docker container if the matrix entry names one; an empty
+    # string means to run directly on the GitHub-hosted runner.
+    container: ${{ matrix.container }}
+    # The full test suite takes roughly 40-50 minutes; allow generous headroom
+    # for slower runners rather than letting the 6 hour default apply.
+    timeout-minutes: 180
+    strategy:
+      # Cancel the other operating systems as soon as one of them fails,
+      # so that a failure surfaces immediately and no runner minutes are
+      # spent on a run that is already known to need fixing and rerunning.
+      fail-fast: true
+      matrix:
+        include:
+          # Linux flavor 1: Ubuntu (x86-64), run directly on the runner.
+          - name: Ubuntu (x86-64)
+            runner: ubuntu-latest
+            container: ''
+            miniforge_version: ''
+          # Linux flavor 2: Red Hat Enterprise Linux (x86-64).
+          # GitHub does not host RHEL runners, so run in a container on the
+          # Ubuntu runner. AlmaLinux is a free, binary-compatible rebuild of
+          # RHEL; unlike Red Hat's own UBI images, it ships the complete set
+          # of RHEL packages, and unlike RHEL itself it needs no subscription.
+          - name: Red Hat Enterprise Linux 9 / AlmaLinux (x86-64)
+            runner: ubuntu-latest
+            container: almalinux:9
+            miniforge_version: latest
+          # macOS on Apple silicon (ARM64).
+          - name: macOS (ARM64)
+            runner: macos-latest
+            container: ''
+            miniforge_version: ''
+          # macOS on Intel (x86-64).
+          - name: macOS (x86-64)
+            runner: macos-15-intel
+            container: ''
+            miniforge_version: ''
     defaults:
       run:
         # Ensure the workflow runs with bash (on GitHub Actions, Conda only works with bash)
         shell: bash -el {0}
     steps:
+      # The AlmaLinux image is minimal, so install the tools that the later
+      # steps (checkout, Miniconda, and Conda itself) need. This must come
+      # before the checkout, which needs git.
+      - name: Install prerequisites in the Linux container
+        if: matrix.container != ''
+        # Conda is not installed yet, so do not use a login shell here.
+        shell: bash -e {0}
+        run: |
+          dnf install -y bzip2 findutils git tar which
       - name: Checkout this GitHub repository
         uses: actions/checkout@v4
       - name: Set up Miniconda
@@ -36,6 +83,10 @@ jobs:
           environment-file: environment.yml
           condarc-file: condarc.yml
           python-version: 3.13
+          # Containers have no Conda preinstalled, so download Miniforge.
+          # For the GitHub-hosted runners this is an empty string, which the
+          # action treats the same as not giving the input at all.
+          miniforge-version: ${{ matrix.miniforge_version }}
       - name: Install SEISMIC-RNA from source
         run: |
           pip install .
@@ -43,4 +94,6 @@ jobs:
         run: |
           echo "Running tests for $(seismic --version)"
           seismic --log "" --exit-on-error test -vv
+      - name: Run the command line interface test
+        run: |
           bash seismic_cli_test.sh
