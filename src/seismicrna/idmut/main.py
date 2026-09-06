@@ -34,9 +34,11 @@ from ..core.arg.cli import (
     opt_force,
     opt_keep_tmp,
 )
+from ..core.depend import require_dependency
 from ..core.logs import logger
 from ..core.ngs.xam import DuplicateSampleReferenceError
 from ..core.run import run_func
+from ..core.shell import SAMTOOLS_CMD
 from ..core.task import as_list_of_tuples, dispatch
 
 
@@ -87,7 +89,9 @@ def run(
     force: bool,
     keep_tmp: bool,
 ):
-    """Compute relationships between references and aligned reads."""
+    """Identify mutations, matches, and ambiguities in aligned reads."""
+    # Check for external dependencies.
+    require_dependency(SAMTOOLS_CMD, __name__)
     fasta = Path(fasta)
     if sep_strands:
         # Create a temporary FASTA file of forward and reverse strands.
