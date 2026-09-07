@@ -2,14 +2,6 @@
 Install
 ********************************************************************************
 
-.. warning::
-
-    We recommend installing SEISMIC-RNA with Conda_ or Mamba_ (see
-    :ref:`install_with_conda` below).
-    However, the latest version of SEISMIC-RNA available through Conda or
-    Mamba is 0.25.3.
-    If you need a newer version, then see :ref:`install_without_conda`.
-
 
 System Requirements
 ================================================================================
