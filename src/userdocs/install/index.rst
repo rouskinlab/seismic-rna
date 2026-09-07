@@ -11,7 +11,7 @@ If you use Windows, we recommend installing and running SEISMIC-RNA using the
 `Windows Subsystem for Linux (WSL)`_.
 
 
-TL;DR
+TL;DR: Quick Installation with Conda or Mamba
 ================================================================================
 
 If you already have Conda_ or Mamba_ installed and know how to use it, then
