@@ -25,20 +25,27 @@
     color: #d9d9d9;
 }
 
-/* Expanded sub-menu items (l2 and deeper) — slightly lighter gray. */
+/*
+ * Expanded sub-menu items: one shade per depth. Each is dark enough to keep
+ * #d9d9d9 text above 4.5:1 (7.12, 6.28 and 4.89 respectively); the old l4
+ * shade #6e6e6e was 3.61 and failed.
+ */
 .wy-menu-vertical li.toctree-l2 a,
 .wy-menu-vertical li.toctree-l2:hover,
-.wy-menu-vertical li.toctree-l2.current > a,
-.wy-menu-vertical li.toctree-l2.current > a:hover,
+.wy-menu-vertical li.toctree-l2.current > a {
+    background-color: #424242;
+    color: #d9d9d9;
+}
+
 .wy-menu-vertical li.toctree-l3 a,
 .wy-menu-vertical li.toctree-l3.current > a {
-    background-color: #424242;
+    background-color: #4a4a4a;
     color: #d9d9d9;
 }
 
 .wy-menu-vertical li.toctree-l4 a,
 .wy-menu-vertical li.toctree-l4.current > a {
-    background-color: #6e6e6e;
+    background-color: #5a5a5a;
     color: #d9d9d9;
 }
 
@@ -82,4 +89,86 @@
     border-top: none;
     margin-top: 0;
     padding-top: 0.3em;
+}
+
+/*
+ * Sidebar items inside the open section, at rest.
+ *
+ * sphinx-rtd-theme marks the open branch by filling it with light greys:
+ *
+ *     li.toctree-l2.current li.toctree-l3 > a { background: #c9c9c9 }
+ *     li.toctree-l3.current li.toctree-l4 > a { background: #bdbdbd }
+ *
+ * Against this sidebar's #d9d9d9 text that is 1.17:1, i.e. unreadable until
+ * hovered. Those rules are (0,4,3), so they need an override at the same
+ * specificity. Keep the depth shades instead, and mark the current item with
+ * the brand rule down its left edge, since the light fill was the only thing
+ * that distinguished it.
+ */
+.wy-menu-vertical li.toctree-l2.current li.toctree-l3 > a {
+    background-color: #4a4a4a;
+    color: #d9d9d9;
+}
+
+.wy-menu-vertical li.toctree-l3.current li.toctree-l4 > a {
+    background-color: #5a5a5a;
+    color: #d9d9d9;
+}
+
+.wy-menu-vertical li.toctree-l2.current > a,
+.wy-menu-vertical li.toctree-l3.current > a,
+.wy-menu-vertical li.toctree-l4.current > a {
+    box-shadow: inset 3px 0 0 #a00821;
+}
+
+/* The theme's separator is a light hairline meant for a light sidebar. */
+.wy-menu-vertical li.current a {
+    border-right: 0;
+}
+
+/*
+ * Sidebar link hover.
+ *
+ * sphinx-rtd-theme hovers any link inside the current section to a light
+ * background:
+ *
+ *     .wy-menu-vertical li.current a:hover { background: #d6d6d6 }
+ *
+ * It changes the background but not the text colour, which is fine on the
+ * theme's light sidebar. Ours is dark, with #d9d9d9 text, so on hover that
+ * light text lands on a light background: a contrast ratio of 1.03:1, i.e.
+ * invisible. That rule is (0,3,2) and beats the (0,2,2) rules above, so it
+ * needs an override at the same specificity or higher; this file is loaded
+ * last, so a tie is enough.
+ *
+ * Change --nav-hover-fg / --nav-hover-bg to recolour every sidebar hover.
+ */
+.wy-nav-side {
+    --nav-hover-fg: #ffffff;
+    --nav-hover-bg: #566673;
+}
+
+/*
+ * The last two selectors match the (0,4,3) rest-state rules above, which
+ * would otherwise outrank a (0,3,2) hover rule and leave the open branch
+ * with no hover feedback at all.
+ */
+.wy-menu-vertical li.current a:hover,
+.wy-menu-vertical li.toctree-l1 a:hover,
+.wy-menu-vertical li.toctree-l2 a:hover,
+.wy-menu-vertical li.toctree-l3 a:hover,
+.wy-menu-vertical li.toctree-l4 a:hover,
+.wy-menu-vertical li.toctree-l2.current li.toctree-l3 > a:hover,
+.wy-menu-vertical li.toctree-l3.current li.toctree-l4 > a:hover {
+    background: var(--nav-hover-bg);
+    color: var(--nav-hover-fg);
+}
+
+/* Expand/collapse arrows follow the link colour. */
+.wy-menu-vertical a:hover button.toctree-expand,
+.wy-menu-vertical li.current > a:hover button.toctree-expand,
+.wy-menu-vertical li.toctree-l2 a:hover button.toctree-expand,
+.wy-menu-vertical li.toctree-l3 a:hover button.toctree-expand,
+.wy-menu-vertical li.toctree-l4 a:hover button.toctree-expand {
+    color: var(--nav-hover-fg);
 }
